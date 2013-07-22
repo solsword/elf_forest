@@ -62,8 +62,8 @@ void setup_cache(index vsize, index isize, vertex_buffer *buf);
 void add_vertex(const vertex *v, vertex_buffer *buf);
 
 // Reuses an existing vertex from the data cache. index can either be positive
-// (an absolute index) or negative (an offset backwards from the last given
-// vertex, with -1 being that last vertex).
+// (an absolute index) or negative (an offset backwards in the index list from
+// the last given index, with -1 being that last index).
 void reuse_vertex(int i, vertex_buffer *buf);
 
 // Compiles the given vertex buffer into a pair of OpenGL array objects,

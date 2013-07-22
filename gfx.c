@@ -5,7 +5,7 @@
 
 #include "conv.h"
 #include "world.h"
-#include "physics.h"
+#include "tick.h"
 #include "gfx.h"
 #include "render.h"
 #include "display.h"
@@ -60,12 +60,9 @@ static void render(void) {
   eye_pos.y = 0.0;
   eye_pos.z = 1.0;
   render_frame(&MAIN_FRAME, &eye_pos, 0, 0);
-  tick_general_controls();
-  /*
-  tick(gameticks());
-  */
   glutSwapBuffers();
   glClear( GL_COLOR_BUFFER_BIT );
+  tick(ticks_expected());
 }
 
 // Individual setup functions:

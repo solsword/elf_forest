@@ -27,6 +27,7 @@ extern uint8_t DOWN[N_CONTROLS];
 extern uint8_t UP[N_CONTROLS];
 
 extern uint8_t PAUSED;
+extern uint8_t PHYSICS_PAUSED;
 
 extern int ZOOM;
 

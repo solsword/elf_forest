@@ -31,9 +31,11 @@ typedef struct block_entity_s block_entity;
  *************************/
 
 struct entity_s {
+  vector size; // Dimensions.
   vector pos; // Position within a frame.
   vector vel; // Velocity.
   vector impulse; // Net impulse to be applied this tick.
+  bbox box; // Bounding box.
   GLuint texture; // OpenGL texture.
   vertex_buffer model; // Model.
 };
@@ -41,5 +43,11 @@ struct entity_s {
 struct block_entity_s {
   uint16_t x, y, z; // Position within a chunk.
 };
+
+/*************
+ * Functions *
+ *************/
+
+void tick_entities(void);
 
 #endif //ifndef ENTITIES_H

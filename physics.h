@@ -4,20 +4,30 @@
 // physics.h
 // Physical simulation.
 
+#include "world.h"
+#include "octree.h"
+#include "vector.h"
+
 /**************
  * Structures *
  **************/
 
-// A vector of 3 floats.
-struct vector_s;
-typedef struct vector_s vector;
+// TODO: Any of these?
+
+/*************
+ * Constants *
+ *************/
+
+extern float GRAVITY;
 
 /*************************
  * Structure Definitions *
  *************************/
 
-struct vector_s {
-  float x, y, z;
-};
+// TODO: Any of these?
+
+/*************
+ * Functions *
+ *************/
 
 #endif //ifndef PHYSICS_H

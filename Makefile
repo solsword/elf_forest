@@ -28,6 +28,10 @@ OBJECTS=$(OBJ_DIR)/world.o \
 				$(OBJ_DIR)/physics.o \
 				$(OBJ_DIR)/entities.o \
 				$(OBJ_DIR)/vbo.o \
+				$(OBJ_DIR)/tick.o \
+				$(OBJ_DIR)/list.o \
+				$(OBJ_DIR)/vector.o \
+				$(OBJ_DIR)/octree.o \
 				$(OBJ_DIR)/main.o
 
 # Noise test objects:

@@ -198,8 +198,8 @@ static inline block block_at(frame *f, frame_pos pos) {
   cidx.z = (pos.z + HALF_FRAME) & FC_MASK;
   // These values will be correct:
   fcidx.x = cidx.x >> CHUNK_BITS;
-  fcidx.y = cidx.x >> CHUNK_BITS;
-  fcidx.z = cidx.x >> CHUNK_BITS;
+  fcidx.y = cidx.y >> CHUNK_BITS;
+  fcidx.z = cidx.z >> CHUNK_BITS;
   return c_get_block(
     chunk_at(
       f,
@@ -219,8 +219,8 @@ static inline block block_at_xyz(frame *f, int x, int y, int z) {
   cidx.z = (z + HALF_FRAME) & FC_MASK;
   // These values will be correct:
   fcidx.x = cidx.x >> CHUNK_BITS;
-  fcidx.y = cidx.x >> CHUNK_BITS;
-  fcidx.z = cidx.x >> CHUNK_BITS;
+  fcidx.y = cidx.y >> CHUNK_BITS;
+  fcidx.z = cidx.z >> CHUNK_BITS;
   return c_get_block(
     chunk_at(
       f,
@@ -240,8 +240,8 @@ static inline void set_block(frame *f, frame_pos pos, block b) {
   cidx.z = (pos.z + HALF_FRAME) & FC_MASK;
   // These values will be correct:
   fcidx.x = cidx.x >> CHUNK_BITS;
-  fcidx.y = cidx.x >> CHUNK_BITS;
-  fcidx.z = cidx.x >> CHUNK_BITS;
+  fcidx.y = cidx.y >> CHUNK_BITS;
+  fcidx.z = cidx.z >> CHUNK_BITS;
   c_put_block(
     chunk_at(
       f,
@@ -252,40 +252,33 @@ static inline void set_block(frame *f, frame_pos pos, block b) {
   );
 }
 
+// These block neighbor functions will return 0x0000 when the pos argument is
+// out-of-range. Given that block types *could* change, we'll define a constant
+// here to represent that independent of blocks.h instead of just using B_VOID.
+static const block OUT_OF_RANGE = 0;
+
 static inline block block_above(frame *f, frame_pos pos) {
-  return (
-    (pos.z < HALF_FRAME - 1) && block_at_xyz(f, pos.x, pos.y, pos.z+1)
-  ) || B_VOID;
+  return (pos.z < HALF_FRAME - 1) * block_at_xyz(f, pos.x, pos.y, pos.z+1);
 }
 
 static inline block block_below(frame *f, frame_pos pos) {
-  return (
-    (pos.z > 0) && block_at_xyz(f, pos.x, pos.y, pos.z-1)
-  ) || B_VOID;
+  return (pos.z > -HALF_FRAME) * block_at_xyz(f, pos.x, pos.y, pos.z-1);
 }
 
 static inline block block_north(frame *f, frame_pos pos) {
-  return (
-    (pos.y < HALF_FRAME - 1) && block_at_xyz(f, pos.x, pos.y+1, pos.z)
-  ) || B_VOID;
+  return (pos.y < HALF_FRAME - 1) * block_at_xyz(f, pos.x, pos.y+1, pos.z);
 }
 
 static inline block block_south(frame *f, frame_pos pos) {
-  return (
-    (pos.y > 0) && block_at_xyz(f, pos.x, pos.y-1, pos.z)
-  ) || B_VOID;
+  return (pos.y > -HALF_FRAME) * block_at_xyz(f, pos.x, pos.y-1, pos.z);
 }
 
 static inline block block_east(frame *f, frame_pos pos) {
-  return (
-    (pos.x < HALF_FRAME - 1) && block_at_xyz(f, pos.x+1, pos.y, pos.z)
-  ) || B_VOID;
+  return (pos.x < HALF_FRAME - 1) * block_at_xyz(f, pos.x+1, pos.y, pos.z);
 }
 
 static inline block block_west(frame *f, frame_pos pos) {
-  return (
-    (pos.x > 0) && block_at_xyz(f, pos.x-1, pos.y, pos.z)
-  ) || B_VOID;
+  return (pos.x > -HALF_FRAME) * block_at_xyz(f, pos.x-1, pos.y, pos.z);
 }
 
 /*************

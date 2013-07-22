@@ -3,8 +3,6 @@
 
 #include <assert.h>
 #include <stdlib.h>
-// DEBUG
-#include <stdio.h>
 
 #include <GLee.h> // glBindBuffer etc.
 
@@ -19,7 +17,7 @@
 
 static inline block cull_face(block here, block neighbor) {
   return (
-    block_is(neighbor, B_VOID)
+    block_is(neighbor, OUT_OF_RANGE)
   ||
     (
       is_opaque(neighbor)
@@ -37,7 +35,7 @@ static inline block cull_face(block here, block neighbor) {
 // the given vertex buffer. They use local xyz coordinates to specify the
 // position of the triangles that they're adding.
 static inline void push_top(
-  vertex_buffer vb,
+  vertex_buffer *vb,
   chunk_index idx,
   tcoords st
 ) {
@@ -46,27 +44,27 @@ static inline void push_top(
   v.x = idx.x;        v.nx = 0;    v.s = st.s;
   v.y = idx.y;        v.ny = 0;    v.t = st.t + 1;
   v.z = idx.z + 1;    v.nz = 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
   // top left
   v.y += 1;                        v.t -= 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
   // top right
   v.x += 1;                        v.s += 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
-  reuse_vertex(-3, &vb); // reuse bottom left
+  reuse_vertex(-3, vb); // reuse bottom left
 
-  reuse_vertex(-2, &vb); // reuse top right
+  reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
   v.y -= 1;                        v.t += 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 }
 
 static inline void push_bottom(
-  vertex_buffer vb,
+  vertex_buffer *vb,
   chunk_index idx,
   tcoords st
 ) {
@@ -75,27 +73,27 @@ static inline void push_bottom(
   v.x = idx.x + 1;    v.nx =  0;    v.s = st.s;
   v.y = idx.y;        v.ny =  0;    v.t = st.t + 1;
   v.z = idx.z;        v.nz = -1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
   // top left
   v.y += 1;                        v.t -= 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
   // top right
   v.x -= 1;                        v.s += 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
-  reuse_vertex(-3, &vb); // reuse bottom left
+  reuse_vertex(-3, vb); // reuse bottom left
 
-  reuse_vertex(-2, &vb); // reuse top right
+  reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
   v.y -= 1;                        v.t += 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 }
 
 static inline void push_north(
-  vertex_buffer vb,
+  vertex_buffer *vb,
   chunk_index idx,
   tcoords st
 ) {
@@ -104,27 +102,27 @@ static inline void push_north(
   v.x = idx.x + 1;    v.nx = 0;    v.s = st.s;
   v.y = idx.y + 1;    v.ny = 1;    v.t = st.t + 1;
   v.z = idx.z;        v.nz = 0;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
   // top left
   v.z += 1;                        v.t -= 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
   // top right
   v.x -= 1;                        v.s += 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
-  reuse_vertex(-3, &vb); // reuse bottom left
+  reuse_vertex(-3, vb); // reuse bottom left
 
-  reuse_vertex(-2, &vb); // reuse top right
+  reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
   v.z -= 1;                        v.t += 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 }
 
 static inline void push_south(
-  vertex_buffer vb,
+  vertex_buffer *vb,
   chunk_index idx,
   tcoords st
 ) {
@@ -133,27 +131,27 @@ static inline void push_south(
   v.x = idx.x;    v.nx =  0;    v.s = st.s;
   v.y = idx.y;    v.ny = -1;    v.t = st.t + 1;
   v.z = idx.z;    v.nz =  0;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
   // top left
   v.z += 1;                        v.t -= 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
   // top right
   v.x += 1;                        v.s += 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
-  reuse_vertex(-3, &vb); // reuse bottom left
+  reuse_vertex(-3, vb); // reuse bottom left
 
-  reuse_vertex(-2, &vb); // reuse top right
+  reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
   v.z -= 1;                        v.t += 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 }
 
 static inline void push_east(
-  vertex_buffer vb,
+  vertex_buffer *vb,
   chunk_index idx,
   tcoords st
 ) {
@@ -162,27 +160,27 @@ static inline void push_east(
   v.x = idx.x + 1;    v.nx = 1;    v.s = st.s;
   v.y = idx.y;        v.ny = 0;    v.t = st.t + 1;
   v.z = idx.z;        v.nz = 0;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
   // top left
   v.z += 1;                        v.t -= 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
   // top right
   v.y += 1;                        v.s += 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
-  reuse_vertex(-3, &vb); // reuse bottom left
+  reuse_vertex(-3, vb); // reuse bottom left
 
-  reuse_vertex(-2, &vb); // reuse top right
+  reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
   v.z -= 1;                        v.t += 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 }
 
 static inline void push_west(
-  vertex_buffer vb,
+  vertex_buffer *vb,
   chunk_index idx,
   tcoords st
 ) {
@@ -191,23 +189,23 @@ static inline void push_west(
   v.x = idx.x;        v.nx = -1;    v.s = st.s;
   v.y = idx.y + 1;    v.ny =  0;    v.t = st.t + 1;
   v.z = idx.z;        v.nz =  0;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
   // top left
   v.z += 1;                        v.t -= 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
   // top right
   v.y -= 1;                        v.s += 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 
-  reuse_vertex(-3, &vb); // reuse bottom left
+  reuse_vertex(-3, vb); // reuse bottom left
 
-  reuse_vertex(-2, &vb); // reuse top right
+  reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
   v.z -= 1;                        v.t += 1;
-  add_vertex(&v, &vb);
+  add_vertex(&v, vb);
 }
 
 /*************
@@ -237,8 +235,9 @@ void compile_chunk(frame *f, frame_chunk_index idx) {
       }
     }
   }
-  printf("checking counts... %d  %d\n", opaque_count, translucent_count);
   if (opaque_count == 0 && translucent_count == 0) {
+    cleanup_vertex_buffer(&(c->opaque_vertices));
+    cleanup_vertex_buffer(&(c->translucent_vertices));
     return;
   }
 
@@ -292,54 +291,54 @@ void compile_chunk(frame *f, frame_chunk_index idx) {
           if (!cull_face(here, neighbor)) {
             compute_face_tc(here, BD_ORI_UP, &st);
             if (is_translucent(here)) {
-              push_top(c->translucent_vertices, cidx, st);
+              push_top(&(c->translucent_vertices), cidx, st);
             } else {
-              push_top(c->opaque_vertices, cidx, st);
+              push_top(&(c->opaque_vertices), cidx, st);
             }
           }
           neighbor = block_north(f, pos);
           if (!cull_face(here, neighbor)) {
             compute_face_tc(here, BD_ORI_NORTH, &st);
             if (is_translucent(here)) {
-              push_north(c->translucent_vertices, cidx, st);
+              push_north(&(c->translucent_vertices), cidx, st);
             } else {
-              push_north(c->opaque_vertices, cidx, st);
+              push_north(&(c->opaque_vertices), cidx, st);
             }
           }
           neighbor = block_south(f, pos);
           if (!cull_face(here, neighbor)) {
             compute_face_tc(here, BD_ORI_SOUTH, &st);
             if (is_translucent(here)) {
-              push_south(c->translucent_vertices, cidx, st);
+              push_south(&(c->translucent_vertices), cidx, st);
             } else {
-              push_south(c->opaque_vertices, cidx, st);
+              push_south(&(c->opaque_vertices), cidx, st);
             }
           }
           neighbor = block_east(f, pos);
           if (!cull_face(here, neighbor)) {
             compute_face_tc(here, BD_ORI_EAST, &st);
             if (is_translucent(here)) {
-              push_east(c->translucent_vertices, cidx, st);
+              push_east(&(c->translucent_vertices), cidx, st);
             } else {
-              push_east(c->opaque_vertices, cidx, st);
+              push_east(&(c->opaque_vertices), cidx, st);
             }
           }
           neighbor = block_west(f, pos);
           if (!cull_face(here, neighbor)) {
             compute_face_tc(here, BD_ORI_WEST, &st);
             if (is_translucent(here)) {
-              push_west(c->translucent_vertices, cidx, st);
+              push_west(&(c->translucent_vertices), cidx, st);
             } else {
-              push_west(c->opaque_vertices, cidx, st);
+              push_west(&(c->opaque_vertices), cidx, st);
             }
           }
           neighbor = block_below(f, pos);
           if (!cull_face(here, neighbor)) {
             compute_face_tc(here, BD_ORI_DOWN, &st);
             if (is_translucent(here)) {
-              push_bottom(c->translucent_vertices, cidx, st);
+              push_bottom(&(c->translucent_vertices), cidx, st);
             } else {
-              push_bottom(c->opaque_vertices, cidx, st);
+              push_bottom(&(c->opaque_vertices), cidx, st);
             }
           }
         }
@@ -347,10 +346,6 @@ void compile_chunk(frame *f, frame_chunk_index idx) {
     }
   }
   // Compile the buffers:
-  printf("compiling...\n");
-  compile_buffers(&(c->opaque_vertices));
-  compile_buffers(&(c->translucent_vertices));
-  /*
   if (opaque_count > 0) {
     compile_buffers(&(c->opaque_vertices));
   } else {
@@ -361,5 +356,4 @@ void compile_chunk(frame *f, frame_chunk_index idx) {
   } else {
     cleanup_vertex_buffer(&(c->translucent_vertices));
   }
-  */
 }

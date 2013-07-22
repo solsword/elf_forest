@@ -64,7 +64,7 @@ void render_frame(
 
   //*
   // DEBUG: Render a bounding box:
-  glColor4ub(128, 128, 128, 255); // grey
+  glColor4ub(128, 128, 128, 128); // 50% 50% grey
 
   glBegin( GL_LINE_LOOP );
 
@@ -148,7 +148,7 @@ void render_frame(
   glEnd();
 
   glBindTexture( GL_TEXTURE_2D, 0 );
-  */
+  // */
 }
 
 // This function renders one layer of the given chunk.
@@ -176,15 +176,36 @@ void render_chunk_layer(
   // Translate to the chunk position:
   glTranslatef(idx.x*CHUNK_SIZE, idx.y*CHUNK_SIZE, idx.z*CHUNK_SIZE);
 
+  // Set our drawing color:
+  glColor4ub(255, 255, 255, 255); // 100% white
+
+  // DEBUG: Draw a bounding box:
+  //*
+  glBegin( GL_LINE_LOOP );
+
+  glVertex3f(0, 0, 0);
+  glVertex3f(0, CHUNK_SIZE, 0);
+  glVertex3f(CHUNK_SIZE, CHUNK_SIZE, 0);
+  glVertex3f(CHUNK_SIZE, 0, 0);
+
+  glEnd();
+
+  glBegin( GL_LINE_LOOP );
+
+  glVertex3f(0, 0, CHUNK_SIZE);
+  glVertex3f(0, CHUNK_SIZE, CHUNK_SIZE);
+  glVertex3f(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
+  glVertex3f(CHUNK_SIZE, 0, CHUNK_SIZE);
+
+  glEnd();
+  // */
+
   // Scale our texture coordinates so that 1.0 -> 1/width or 1/height:
   glMatrixMode( GL_TEXTURE );
   glPushMatrix();
   glLoadIdentity();
   glScalef(1/(float)BLOCK_ATLAS_WIDTH, 1/(float)BLOCK_ATLAS_HEIGHT, 1);
   glMatrixMode( GL_MODELVIEW );
-
-  // Set our drawing color:
-  glColor4ub(255, 255, 255, 255);
 
   // Draw the appropriate vertex buffer:
   draw_vertex_buffer(vb, BLOCK_ATLAS);

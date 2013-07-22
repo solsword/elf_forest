@@ -20,6 +20,7 @@ uint8_t DOWN[N_CONTROLS];
 uint8_t UP[N_CONTROLS];
 
 uint8_t PAUSED = 0;
+uint8_t PHYSICS_PAUSED = 0;
 
 int ZOOM = 0;
 
@@ -114,6 +115,7 @@ void setup_control(void) {
 void tick_general_controls(void) {
   if (DOWN[C_PAUSE]) {
     PAUSED = !PAUSED;
+    PHYSICS_PAUSED = !PHYSICS_PAUSED;
   }
   if (CONTROLS[C_ZOOM_IN]) {
     ZOOM += 1;
