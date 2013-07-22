@@ -1,12 +1,14 @@
 # Directories:
 OBJ_DIR=obj
 BIN_DIR=bin
-RES_DIR=res
+OUT_DIR=out
+TEST_DIR=$(OUT_DIR)/test
 
 # Don't worry about modification times on directories:
 MAKEFLAGS+=--assume-old=$(OBJ_DIR)
 MAKEFLAGS+=--assume-old=$(BIN_DIR)
-MAKEFLAGS+=--assume-old=$(RES_DIR)
+MAKEFLAGS+=--assume-old=$(OUT_DIR)
+MAKEFLAGS+=--assume-old=$(TEST_DIR)
 
 # Compiler & Flags:
 CC=gcc
@@ -38,13 +40,11 @@ all: game test_noise
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(BIN_DIR)
-	rm -rf $(RES_DIR)/test
+	rm -rf $(OUT_DIR)
 game: $(BIN_DIR)/elf_forest
-test_noise: $(RES_DIR)/test/noise_test_2D.ppm \
-	          $(RES_DIR)/test/noise_test_3D.ppm \
-	          $(RES_DIR)/test/noise_test_2D_F.ppm \
-						$(RES_DIR)/test/noise_test_3D_F.ppm \
-						$(RES_DIR)/test/noise_test_ex.ppm
+test_noise: $(TEST_DIR)/noise_test_2D.ppm $(TEST_DIR)/noise_test_3D.ppm \
+	          $(TEST_DIR)/noise_test_2D_F.ppm $(TEST_DIR)/noise_test_3D_F.ppm \
+						$(TEST_DIR)/noise_test_ex.ppm
 checkgl:
 	$(CC) -E check_gl_version.h | tail -n 8
 
@@ -54,8 +54,11 @@ $(OBJ_DIR):
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
-$(RES_DIR):
-	mkdir -p $(RES_DIR)
+$(OUT_DIR):
+	mkdir -p $(OUT_DIR)
+
+$(TEST_DIR):
+	mkdir -p $(TEST_DIR)
 
 *.c: ;
 *.h: ;
@@ -79,7 +82,7 @@ $(BIN_DIR)/elf_forest: $(OBJECTS) $(BIN_DIR)
 $(BIN_DIR)/test_noise: $(NTOBJECTS) $(BIN_DIR)
 	$(CC) $(NTOBJECTS) $(LFLAGS) -o $(BIN_DIR)/test_noise
 
-$(RES_DIR)/test/noise_test%2D.ppm $(RES_DIR)/test/noise_test%3D.ppm \
-  $(RES_DIR)/test/noise_test%2D_F.ppm $(RES_DIR)/test/noise_test%3D_F.ppm \
-  $(RES_DIR)/test/noise_test%ex.ppm: $(BIN_DIR)/test_noise $(RES_DIR)
-	cd $(RES_DIR)/test && ../../$(BIN_DIR)/test_noise
+$(TEST_DIR)/noise_test%2D.ppm $(TEST_DIR)/noise_test%3D.ppm \
+  $(TEST_DIR)/noise_test%2D_F.ppm $(TEST_DIR)/noise_test%3D_F.ppm \
+  $(TEST_DIR)/noise_test%ex.ppm: $(BIN_DIR)/test_noise $(TEST_DIR)
+	cd $(TEST_DIR) && ../../$(BIN_DIR)/test_noise
