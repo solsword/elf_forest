@@ -10,6 +10,7 @@
 #include <GL/gl.h>
 
 #include "blocks.h"
+#include "vbo.h"
 
 /**************
  * Structures *
@@ -19,9 +20,26 @@
 struct chunk_s;
 typedef struct chunk_s chunk;
 
+// Picks out a block within a chunk:
+struct chunk_index_s;
+typedef struct chunk_index_s chunk_index;
+
 // An NxNxN-chunk frame:
 struct frame_s;
 typedef struct frame_s frame;
+
+// Picks out a chunk within a frame:
+struct frame_chunk_index_s;
+typedef struct frame_chunk_index_s frame_chunk_index;
+
+// Picks out a block within a frame:
+struct frame_index_s;
+typedef struct frame_index_s frame_index;
+
+// Frame-coordinate integer position. 0, 0, 0 is at the center of the frame,
+// with the edges at -HALF_FRAME and HALF_FRAME - 1.
+struct frame_pos_s;
+typedef struct frame_pos_s frame_pos;
 
 /***********
  * Globals *
@@ -51,131 +69,222 @@ extern frame MAIN_FRAME;
  * Structure Definitions *
  *************************/
 
-struct chunk_s { // 4096*16 + 32*4 + 32 + 16*2 = 65664 =~ 8 KB
+// (16 * 16 * 16) * 16 = 65536 = 8 KB
+// (16 * 16 * 16) * 32 = 131072 = 16 KB
+struct chunk_s {
   block blocks[CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE]; // Block data.
-  GLuint opaque_vertex_bo; // The opaque vertex buffer object.
-  GLuint opaque_index_bo; // The opaque index buffer object.
-  GLuint translucent_vertex_bo; // The translucent vertex buffer object.
-  GLuint translucent_index_bo; // The translucent index buffer object.
-  uint32_t o_vcount; // The opaque vertex count for the buffer objects.
-  uint32_t t_vcount; // The translucent vertex count for the buffer objects.
+  vertex_buffer opaque_vertices; // The opaque vertices.
+  vertex_buffer translucent_vertices; // The translucent vertices.
   uint16_t x, y; // Absolute location within the region.
 };
 
-struct frame_s { // (32 * 32 * 32) * 65664 + 16*2 + 8*3 = 2151678008 =~ 256.5 MB
+struct chunk_index_s {
+  uint16_t x, y, z;
+};
+
+// (16 * 16 * 16) * 65536 = 32 MB
+// (32 * 32 * 32) * 65536 = 256 MB
+// (16 * 16 * 16) * 131072 = 64 MB
+struct frame_s {
   chunk chunks[FRAME_SIZE*FRAME_SIZE*FRAME_SIZE]; // Chunk data.
   uint16_t wx, wy; // World offsets
   uint8_t cx_o, cy_o, cz_o; // Data offsets
     // (to avoid having to shuffle data around within the array all the time)
 };
 
+struct frame_index_s {
+  uint16_t x, y, z;
+};
+
+struct frame_chunk_index_s {
+  uint16_t x, y, z;
+};
+
+struct frame_pos_s {
+  int x, y, z;
+};
+
 /********************
  * Inline Functions *
  ********************/
 
-static inline chunk* chunk_at(frame *f, uint16_t cx, uint16_t cy, uint16_t cz) {
+// Coordinate conversions:
+// Note that these are hand-inlined in various places for speed.
+
+static inline void fpos__fidx(frame_pos *pos, frame_index *idx) {
+  idx->x = (pos->x + HALF_FRAME) & FC_MASK;
+  idx->y = (pos->y + HALF_FRAME) & FC_MASK;
+  idx->z = (pos->z + HALF_FRAME) & FC_MASK;
+}
+static inline void fpos__cidx(frame_pos *pos, chunk_index *idx) {
+  idx->x = (pos->x + HALF_FRAME) & CH_MASK;
+  idx->y = (pos->y + HALF_FRAME) & CH_MASK;
+  idx->z = (pos->z + HALF_FRAME) & CH_MASK;
+}
+
+static inline void fpos__fcidx(frame_pos *pos, frame_chunk_index *idx) {
+  idx->x = ((pos->x + HALF_FRAME) & FC_MASK) >> CHUNK_BITS;
+  idx->y = ((pos->y + HALF_FRAME) & FC_MASK) >> CHUNK_BITS;
+  idx->z = ((pos->z + HALF_FRAME) & FC_MASK) >> CHUNK_BITS;
+}
+
+static inline void fidx__cidx(frame_index *fidx, chunk_index *cidx) {
+  cidx->x = fidx->x & CH_MASK;
+  cidx->y = fidx->y & CH_MASK;
+  cidx->z = fidx->z & CH_MASK;
+}
+
+static inline void fidx__fcidx(frame_index *fidx, frame_chunk_index *fcidx) {
+  fcidx->x = fidx->x >> CHUNK_BITS;
+  fcidx->y = fidx->y >> CHUNK_BITS;
+  fcidx->z = fidx->z >> CHUNK_BITS;
+}
+
+static inline void fidx__fpos(frame_index *idx, frame_pos *pos) {
+  pos->x = (idx->x - HALF_FRAME);
+  pos->y = (idx->y - HALF_FRAME);
+  pos->z = (idx->z - HALF_FRAME);
+}
+
+static inline void fcidx__fpos(frame_chunk_index *idx, frame_pos *pos) {
+  pos->x = (idx->x << CHUNK_BITS) - HALF_FRAME;
+  pos->y = (idx->y << CHUNK_BITS) - HALF_FRAME;
+  pos->z = (idx->z << CHUNK_BITS) - HALF_FRAME;
+}
+
+// Indexing functions:
+// These must be super-fast 'cause they crop up in all sorts of inner loops.
+
+static inline chunk* chunk_at(frame *f, frame_chunk_index idx) {
   return &(
     (f->chunks)[
-      ((cx + f->cx_o) & FR_MASK) +
-      (((cy + f->cy_o) & FR_MASK) << FRAME_BITS) +
-      (((cz + f->cz_o) & FR_MASK) << (FRAME_BITS*2))
+      ((idx.x + f->cx_o) & FR_MASK) +
+      (((idx.y + f->cy_o) & FR_MASK) << FRAME_BITS) +
+      (((idx.z + f->cz_o) & FR_MASK) << (FRAME_BITS*2))
     ]
   );
 }
 
 static inline block c_get_block(
   chunk *c,
-  uint16_t lx,
-  uint16_t ly,
-  uint16_t lz
+  chunk_index idx
 ) {
   return (c->blocks)[
-    (lx & CH_MASK) +
-    ((ly & CH_MASK) << CHUNK_BITS) +
-    ((lz & CH_MASK) << (CHUNK_BITS*2))
+    (idx.x & CH_MASK) +
+    ((idx.y & CH_MASK) << CHUNK_BITS) +
+    ((idx.z & CH_MASK) << (CHUNK_BITS*2))
   ];
 }
 
 static inline void c_put_block(
   chunk *c,
-  uint16_t lx,
-  uint16_t ly,
-  uint16_t lz,
+  chunk_index idx,
   block b
 ) {
   (c->blocks)[
-    (lx & CH_MASK) +
-    ((ly & CH_MASK) << CHUNK_BITS) +
-    ((lz & CH_MASK) << (CHUNK_BITS*2))
+    (idx.x & CH_MASK) +
+    ((idx.y & CH_MASK) << CHUNK_BITS) +
+    ((idx.z & CH_MASK) << (CHUNK_BITS*2))
   ] = b;
 }
 
-static inline block block_at(frame *f, int x, int y, int z) {
-  // -256 -- 255 (frame coords) => 0 -- 511 (array coords)
-  uint16_t ax = (x + HALF_FRAME) & FC_MASK;
-  uint16_t ay = (y + HALF_FRAME) & FC_MASK;
-  uint16_t az = (z + HALF_FRAME) & FC_MASK;
+static inline block block_at(frame *f, frame_pos pos) {
+  chunk_index cidx;
+  frame_chunk_index fcidx;
+  // Note: these values will be out-of-range, but they'll be clamped by the
+  // code in c_get_block and they won't overflow, so we're fine.
+  cidx.x = (pos.x + HALF_FRAME) & FC_MASK;
+  cidx.y = (pos.y + HALF_FRAME) & FC_MASK;
+  cidx.z = (pos.z + HALF_FRAME) & FC_MASK;
+  // These values will be correct:
+  fcidx.x = cidx.x >> CHUNK_BITS;
+  fcidx.y = cidx.x >> CHUNK_BITS;
+  fcidx.z = cidx.x >> CHUNK_BITS;
   return c_get_block(
     chunk_at(
       f,
-      ax >> CHUNK_BITS,
-      ay >> CHUNK_BITS,
-      az >> CHUNK_BITS
+      fcidx
     ),
-    ax, ay, az
+    cidx
   );
 }
 
-static inline void set_block(frame *f, int x, int y, int z, block b) {
-  // -256 -- 255 (frame coords) => 0 -- 511 (array coords)
-  uint16_t ax = (x + HALF_FRAME) & FC_MASK;
-  uint16_t ay = (y + HALF_FRAME) & FC_MASK;
-  uint16_t az = (z + HALF_FRAME) & FC_MASK;
+static inline block block_at_xyz(frame *f, int x, int y, int z) {
+  chunk_index cidx;
+  frame_chunk_index fcidx;
+  // Note: these values will be out-of-range, but they'll be clamped by the
+  // code in c_get_block and they won't overflow, so we're fine.
+  cidx.x = (x + HALF_FRAME) & FC_MASK;
+  cidx.y = (y + HALF_FRAME) & FC_MASK;
+  cidx.z = (z + HALF_FRAME) & FC_MASK;
+  // These values will be correct:
+  fcidx.x = cidx.x >> CHUNK_BITS;
+  fcidx.y = cidx.x >> CHUNK_BITS;
+  fcidx.z = cidx.x >> CHUNK_BITS;
+  return c_get_block(
+    chunk_at(
+      f,
+      fcidx
+    ),
+    cidx
+  );
+}
+
+static inline void set_block(frame *f, frame_pos pos, block b) {
+  chunk_index cidx;
+  frame_chunk_index fcidx;
+  // Note: these values will be out-of-range, but they'll be clamped by the
+  // code in c_get_block and they won't overflow, so we're fine.
+  cidx.x = (pos.x + HALF_FRAME) & FC_MASK;
+  cidx.y = (pos.y + HALF_FRAME) & FC_MASK;
+  cidx.z = (pos.z + HALF_FRAME) & FC_MASK;
+  // These values will be correct:
+  fcidx.x = cidx.x >> CHUNK_BITS;
+  fcidx.y = cidx.x >> CHUNK_BITS;
+  fcidx.z = cidx.x >> CHUNK_BITS;
   c_put_block(
     chunk_at(
       f,
-      ax >> CHUNK_BITS,
-      ay >> CHUNK_BITS,
-      az >> CHUNK_BITS
+      fcidx
     ),
-    ax, ay, az,
+    cidx,
     b
   );
 }
 
-static inline block block_above(frame *f, int x, int y, int z) {
+static inline block block_above(frame *f, frame_pos pos) {
   return (
-    (z < HALF_FRAME - 1) && block_at(f, x, y, z+1)
+    (pos.z < HALF_FRAME - 1) && block_at_xyz(f, pos.x, pos.y, pos.z+1)
   ) || B_VOID;
 }
 
-static inline block block_below(frame *f, int x, int y, int z) {
+static inline block block_below(frame *f, frame_pos pos) {
   return (
-    (z > 0) && block_at(f, x, y, z-1)
+    (pos.z > 0) && block_at_xyz(f, pos.x, pos.y, pos.z-1)
   ) || B_VOID;
 }
 
-static inline block block_north(frame *f, int x, int y, int z) {
+static inline block block_north(frame *f, frame_pos pos) {
   return (
-    (y < HALF_FRAME - 1) && block_at(f, x, y+1, z)
+    (pos.y < HALF_FRAME - 1) && block_at_xyz(f, pos.x, pos.y+1, pos.z)
   ) || B_VOID;
 }
 
-static inline block block_south(frame *f, int x, int y, int z) {
+static inline block block_south(frame *f, frame_pos pos) {
   return (
-    (y > 0) && block_at(f, x, y-1, z)
+    (pos.y > 0) && block_at_xyz(f, pos.x, pos.y-1, pos.z)
   ) || B_VOID;
 }
 
-static inline block block_east(frame *f, int x, int y, int z) {
+static inline block block_east(frame *f, frame_pos pos) {
   return (
-    (x < HALF_FRAME - 1) && block_at(f, x+1, y, z)
+    (pos.x < HALF_FRAME - 1) && block_at_xyz(f, pos.x+1, pos.y, pos.z)
   ) || B_VOID;
 }
 
-static inline block block_west(frame *f, int x, int y, int z) {
+static inline block block_west(frame *f, frame_pos pos) {
   return (
-    (x > 0) && block_at(f, x-1, y, z)
+    (pos.x > 0) && block_at_xyz(f, pos.x-1, pos.y, pos.z)
   ) || B_VOID;
 }
 
@@ -185,7 +294,7 @@ static inline block block_west(frame *f, int x, int y, int z) {
 
 // Computes block exposure for the given chunk (hence the need for the whole
 // frame). All of the frame's chunk data should already be loaded.
-void compute_exposure(frame *f, uint16_t cx, uint16_t cy, uint16_t cz);
+void compute_exposure(frame *f, frame_chunk_index idx);
 
 // Puts some sparse junk data into the main frame for testing.
 void setup_test_world(frame *f);
@@ -195,5 +304,11 @@ void setup_test_world_terrain(frame *f);
 
 // Computes exposure for and compiles every chunk in the given frame.
 void test_compile_frame(frame *f);
+
+// Cleans up memory allocated by the given frame.
+void cleanup_frame(frame *f);
+
+// Cleans up memory allocated by the given chunk.
+void cleanup_chunk(chunk *c);
 
 #endif // ifndef WORLD_H

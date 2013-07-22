@@ -25,6 +25,9 @@ OBJECTS=$(OBJ_DIR)/world.o \
 				$(OBJ_DIR)/ctl.o \
 				$(OBJ_DIR)/tex.o \
 				$(OBJ_DIR)/noise.o \
+				$(OBJ_DIR)/physics.o \
+				$(OBJ_DIR)/entities.o \
+				$(OBJ_DIR)/vbo.o \
 				$(OBJ_DIR)/main.o
 
 # Noise test objects:

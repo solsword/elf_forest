@@ -1,0 +1,2 @@
+// entities.c
+// Entity definitions.

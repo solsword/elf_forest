@@ -1,24 +1,27 @@
 #ifndef DISPLAY_H
-#define RENDER_H
+#define DISPLAY_H
 
 // display.h
 // Functions for setting up display information.
 
 #include "world.h"
 
-/*************
- * Constants *
- *************/
+/****************
+ * Enumerations *
+ ****************/
 
-static const uint16_t VERTEX_STRIDE = 8;
+// Layers of a chunk:
+typedef enum {
+  L_TRANSLUCENT,
+  L_OPAQUE,
+  N_LAYERS
+} layer;
 
 /*************
  * Functions *
  *************/
 
-void compile_chunk(frame *f, uint16_t cx, uint16_t cy, uint16_t cz);
+// Allocates and fills in display lists for the given chunk.
+void compile_chunk(frame *f, frame_chunk_index idx);
 
-// Removes all of the display lists associated with the given frame.
-void cleanup_frame(frame *f);
-
-#endif // ifndef RENDER_H
+#endif // ifndef DISPLAY_H

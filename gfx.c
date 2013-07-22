@@ -4,10 +4,11 @@
 #include <math.h>
 
 #include "conv.h"
+#include "world.h"
+#include "physics.h"
 #include "gfx.h"
 #include "render.h"
 #include "display.h"
-#include "world.h"
 #include "ctl.h"
 
 /***************
@@ -54,7 +55,11 @@ static void resize(int w, int h) {
 }
 
 static void render(void) {
-  render_frame(&MAIN_FRAME, 0, 0, 1, 0, 0);
+  vector eye_pos;
+  eye_pos.x = 0.0;
+  eye_pos.y = 0.0;
+  eye_pos.z = 1.0;
+  render_frame(&MAIN_FRAME, &eye_pos, 0, 0);
   tick_general_controls();
   /*
   tick(gameticks());

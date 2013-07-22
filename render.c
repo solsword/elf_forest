@@ -8,6 +8,8 @@
 
 #include <GLee.h> // glBindBuffer etc.
 
+#include "vbo.h"
+#include "physics.h"
 #include "render.h"
 #include "conv.h"
 #include "display.h"
@@ -20,7 +22,7 @@
 
 void render_frame(
   frame *f,
-  float ex, float ey, float ez,
+  vector *eye_pos,
   float yaw,
   float pitch
 ) {
@@ -39,9 +41,9 @@ void render_frame(
     HALF_FRAME + r*sin(theta),
     FULL_FRAME * 0.75 - 0.25 * FULL_FRAME * (ZOOM/(0.75*FULL_FRAME)),
     //0, 0, 0,
-    ex+HALF_FRAME, ey+HALF_FRAME, ez+HALF_FRAME,
+    eye_pos->x+HALF_FRAME, eye_pos->y+HALF_FRAME, eye_pos->z+HALF_FRAME,
     0, 0, 1
-  ); // Look north from ex, ey, ez
+  ); // Look north from eye_pos
   if (!PAUSED) {
     theta += M_PI/256;
   }
@@ -50,11 +52,11 @@ void render_frame(
   // Transform according to the camera parameters:
   /*
   gluLookAt(
-    ex+HALF_FRAME, ey-HALF_FRAME/2, ez+HALF_FRAME,
+    eye_pos->x+HALF_FRAME, eye_pos->y-HALF_FRAME/2, eye_pos->z+HALF_FRAME,
     //0, 0, 0,
-    ex+HALF_FRAME, ey+HALF_FRAME + 1, ez+HALF_FRAME,
+    eye_pos->x+HALF_FRAME, eye_pos->y+HALF_FRAME + 1, eye_pos->z+HALF_FRAME,
     0, 0, 1
-  ); // Look north from ex, ey, ez
+  ); // Look north from eye_pos
   */
   // Rotate according to the pitch and yaw given:
   glRotatef(-yaw*R2D, 0, 0, 1);
@@ -101,20 +103,20 @@ void render_frame(
   // */
 
   // Render the opaque parts of each chunk:
-  uint16_t cx, cy, cz;
-  for (cx = 0; cx < FRAME_SIZE; ++cx) {
-    for (cy = 0; cy < FRAME_SIZE; ++cy) {
-      for (cz = 0; cz < FRAME_SIZE; ++cz) {
-        render_chunk_opaque(f, cx, cy, cz);
+  frame_chunk_index idx;
+  for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
+    for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
+      for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
+        render_chunk_layer(f, idx, L_OPAQUE);
       }
     }
   }
 
   // Now render the translucent parts:
-  for (cx = 0; cx < FRAME_SIZE; ++cx) {
-    for (cy = 0; cy < FRAME_SIZE; ++cy) {
-      for (cz = 0; cz < FRAME_SIZE; ++cz) {
-        render_chunk_translucent(f, cx, cy, cz);
+  for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
+    for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
+      for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
+        render_chunk_layer(f, idx, L_TRANSLUCENT);
       }
     }
   }
@@ -149,97 +151,49 @@ void render_frame(
   */
 }
 
-// We want two versions of this function: one that will render the opaque parts
-// of the chunk, and another that will render the translucent parts. We'll
-// define the function as a macro with substitution points for the key
-// differences and then define each variant below without copy-pasting any
-// code.
-#define RENDER_CHUNK_VAR \
-  void FNAME( \
-    frame *f, \
-    uint16_t cx, uint16_t cy, uint16_t cz \
-  ) { \
-    chunk *c = chunk_at(f, cx, cy, cz); \
-    glMatrixMode( GL_MODELVIEW ); \
-    glPushMatrix(); \
-    /* Translate to the chunk position: */ \
-    glTranslatef(cx*CHUNK_SIZE, cy*CHUNK_SIZE, cz*CHUNK_SIZE); \
-    if (c->VBO == 0 || c->IBO == 0) { \
-      glPopMatrix(); \
-      return; \
-    } \
-    /* Enable array functionality: */ \
-    glDisableClientState( GL_COLOR_ARRAY ); \
-    glEnableClientState( GL_VERTEX_ARRAY ); \
-    glEnableClientState( GL_NORMAL_ARRAY ); \
-    glEnableClientState( GL_TEXTURE_COORD_ARRAY ); \
-    /* Bind our texture: */ \
-    glBindTexture( GL_TEXTURE_2D, BLOCK_ATLAS ); \
-    /* Scale our texture coordinates so that 1.0 -> 1/width or 1/height: */ \
-    glMatrixMode( GL_TEXTURE ); \
-    glPushMatrix(); \
-    glLoadIdentity(); \
-    glScalef(1/(float)BLOCK_ATLAS_WIDTH, 1/(float)BLOCK_ATLAS_HEIGHT, 1); \
-    glMatrixMode( GL_MODELVIEW ); \
-    /* Set our drawing color: */ \
-    glColor4ub(255, 255, 255, 255); \
-    /* Bind the buffer object holding vertex data: */ \
-    glBindBuffer( GL_ARRAY_BUFFER, c->VBO ); \
-    /* Set the vertex/normal/texture data strides & offsets: */ \
-    glVertexPointer( \
-      3, \
-      GL_SHORT, \
-      VERTEX_STRIDE*sizeof(GLshort), \
-      (const GLvoid *)0 \
-    ); \
-    glNormalPointer( \
-      GL_SHORT, \
-      VERTEX_STRIDE*sizeof(GLshort), \
-      (const GLvoid *) (3*sizeof(GLshort)) \
-    ); \
-    glTexCoordPointer( \
-      2, \
-      GL_SHORT, \
-      VERTEX_STRIDE*sizeof(GLshort), \
-      (const GLvoid *) (6*sizeof(GLshort)) \
-    ); \
-    /* Bind the buffer object holding index data: */ \
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, c->IBO ); \
-    /* Draw the entire index array as triangles: */ \
-    glDrawElements( GL_TRIANGLES, c->VCOUNT, GL_UNSIGNED_INT, 0 ); \
-    /* Unbind the buffers: */ \
-    glBindBuffer( GL_ARRAY_BUFFER, 0 ); \
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 ); \
-    /* Unbind our texture: */ \
-    glBindTexture( GL_TEXTURE_2D, 0 ); \
-    /* Reset the texture matrix: */ \
-    glMatrixMode( GL_TEXTURE ); \
-    glPopMatrix(); \
-    glMatrixMode( GL_MODELVIEW ); \
-    /* Disable the array functionality: */ \
-    glDisableClientState( GL_VERTEX_ARRAY ); \
-    glDisableClientState( GL_NORMAL_ARRAY ); \
-    /* Pop the model view matrix: */ \
-    glPopMatrix(); \
+// This function renders one layer of the given chunk.
+void render_chunk_layer(
+  frame *f,
+  frame_chunk_index idx,
+  layer l
+) {
+  chunk *c = chunk_at(f, idx);
+  vertex_buffer *vb = &(c->opaque_vertices); // Default value
+  if (l == L_OPAQUE) {
+    vb = &(c->opaque_vertices);
+  } else if (l == L_TRANSLUCENT) {
+    vb = &(c->translucent_vertices);
+  }
+  // Skip this layer quickly if it's empty:
+  if (vb->vertices == 0 || vb->indices == 0) {
+    return;
   }
 
-#define FNAME render_chunk_opaque
-#define VBO opaque_vertex_bo
-#define IBO opaque_index_bo
-#define VCOUNT o_vcount
+  // Push a model view matrix:
+  glMatrixMode( GL_MODELVIEW );
+  glPushMatrix();
 
-// The opaque variant:
-RENDER_CHUNK_VAR
+  // Translate to the chunk position:
+  glTranslatef(idx.x*CHUNK_SIZE, idx.y*CHUNK_SIZE, idx.z*CHUNK_SIZE);
 
-#undef FNAME
-#undef VBO
-#undef IBO
-#undef VCOUNT
+  // Scale our texture coordinates so that 1.0 -> 1/width or 1/height:
+  glMatrixMode( GL_TEXTURE );
+  glPushMatrix();
+  glLoadIdentity();
+  glScalef(1/(float)BLOCK_ATLAS_WIDTH, 1/(float)BLOCK_ATLAS_HEIGHT, 1);
+  glMatrixMode( GL_MODELVIEW );
 
-#define FNAME render_chunk_translucent
-#define VBO translucent_vertex_bo
-#define IBO translucent_index_bo
-#define VCOUNT t_vcount
+  // Set our drawing color:
+  glColor4ub(255, 255, 255, 255);
 
-// The translucent variant:
-RENDER_CHUNK_VAR
+  // Draw the appropriate vertex buffer:
+  draw_vertex_buffer(vb, BLOCK_ATLAS);
+
+  // Reset the texture matrix:
+  glMatrixMode( GL_TEXTURE );
+  glPopMatrix();
+  glMatrixMode( GL_MODELVIEW );
+
+  // Pop the model view matrix:
+  glPopMatrix();
+}
