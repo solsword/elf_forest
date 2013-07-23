@@ -10,6 +10,7 @@
 #include <GL/gl.h>
 
 #include "blocks.h"
+#include "list.h"
 #include "vbo.h"
 
 /**************
@@ -76,6 +77,7 @@ struct chunk_s {
   vertex_buffer opaque_vertices; // The opaque vertices.
   vertex_buffer translucent_vertices; // The translucent vertices.
   uint16_t x, y; // Absolute location within the region.
+  list *tile_entities; // Tile entities.
 };
 
 struct chunk_index_s {
@@ -83,13 +85,14 @@ struct chunk_index_s {
 };
 
 // (16 * 16 * 16) * 65536 = 32 MB
-// (32 * 32 * 32) * 65536 = 256 MB
 // (16 * 16 * 16) * 131072 = 64 MB
+// (32 * 32 * 32) * 65536 = 256 MB
 struct frame_s {
   chunk chunks[FRAME_SIZE*FRAME_SIZE*FRAME_SIZE]; // Chunk data.
   uint16_t wx, wy; // World offsets
   uint8_t cx_o, cy_o, cz_o; // Data offsets
     // (to avoid having to shuffle data around within the array all the time)
+  list *entities; // Active entities
 };
 
 struct frame_index_s {
@@ -290,7 +293,7 @@ static inline block block_west(frame *f, frame_pos pos) {
 void compute_exposure(frame *f, frame_chunk_index idx);
 
 // Puts some sparse junk data into the main frame for testing.
-void setup_test_world(frame *f);
+void setup_test_world_junk(frame *f);
 
 // Uses noise to create a test frame.
 void setup_test_world_terrain(frame *f);

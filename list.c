@@ -255,7 +255,7 @@ void reverse(list *l) {
   l->first = last;
 }
 
-void foreach(void (*f)(void *), list *l) {
+void foreach(list *l, void (*f)(void *)) {
   node *current = l->first;
   while (current != NULL) {
     f(current->contents);

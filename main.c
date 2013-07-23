@@ -1,13 +1,10 @@
-#include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "world.h"
-#include "render.h"
-#include "display.h"
-#include "gfx.h"
-#include "ctl.h"
 #include "tex.h"
+#include "ctl.h"
+#include "gfx.h"
 
 int main(int argc, char** argv) {
   srand(545438);

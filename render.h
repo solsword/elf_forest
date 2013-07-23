@@ -27,4 +27,8 @@ void render_chunk_layer(
   layer l // Which layer to render.
 );
 
+// Renders the given entity. Takes it as a void* instead of an entity* so that
+// it can be passed to list's foreach().
+void render_entity(void *e);
+
 #endif // ifndef RENDER_H

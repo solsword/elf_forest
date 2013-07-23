@@ -97,7 +97,8 @@ static void activate_gfx_callbacks(void) {
 
 // Sets various OpenGL settings:
 void glsettings() {
-  glDisable( GL_CULL_FACE );
+  glEnable( GL_CULL_FACE );
+  glFrontFace( GL_CW );
   glEnable( GL_BLEND );
   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
   glEnable( GL_STENCIL_TEST );

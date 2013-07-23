@@ -6,6 +6,7 @@
 #include <sys/time.h>
 
 #include "tick.h"
+#include "world.h"
 #include "ctl.h"
 #include "entities.h"
 
@@ -56,6 +57,6 @@ void tick(int steps) {
   int i;
   for (i = 0; i < steps; ++i) {
     TICK_COUNT = (TICK_COUNT + 1) % TICKS_PER_SECOND_I;
-    tick_entities();
+    tick_entities(&MAIN_FRAME);
   }
 }

@@ -15,43 +15,45 @@ CC=gcc
 CFLAGS=-g -O2 -c -Wall -ffast-math
 LFLAGS=-lm -lGL -lGLU -lglut -lglee -lpng
 
-# TODO: headers like conv.h?
-
 # Objects:
-OBJECTS=$(OBJ_DIR)/world.o \
-				$(OBJ_DIR)/render.o \
-				$(OBJ_DIR)/gfx.o \
-				$(OBJ_DIR)/display.o \
-				$(OBJ_DIR)/ctl.o \
-				$(OBJ_DIR)/tex.o \
-				$(OBJ_DIR)/noise.o \
-				$(OBJ_DIR)/physics.o \
-				$(OBJ_DIR)/entities.o \
-				$(OBJ_DIR)/vbo.o \
-				$(OBJ_DIR)/tick.o \
-				$(OBJ_DIR)/list.o \
-				$(OBJ_DIR)/vector.o \
-				$(OBJ_DIR)/octree.o \
-				$(OBJ_DIR)/main.o
+CORE_OBJECTS=$(OBJ_DIR)/world.o \
+             $(OBJ_DIR)/render.o \
+             $(OBJ_DIR)/gfx.o \
+             $(OBJ_DIR)/display.o \
+             $(OBJ_DIR)/ctl.o \
+             $(OBJ_DIR)/tex.o \
+             $(OBJ_DIR)/noise.o \
+             $(OBJ_DIR)/physics.o \
+             $(OBJ_DIR)/entities.o \
+             $(OBJ_DIR)/vbo.o \
+             $(OBJ_DIR)/tick.o \
+             $(OBJ_DIR)/list.o \
+             $(OBJ_DIR)/vector.o \
+             $(OBJ_DIR)/octree.o
+
+MAIN_OBJECTS=$(OBJ_DIR)/main.o
+
+TEST_OBJECTS=$(OBJ_DIR)/test.o
 
 # Noise test objects:
 NTOBJECTS=$(OBJ_DIR)/noise.o \
-					$(OBJ_DIR)/test_noise.o
+          $(OBJ_DIR)/test_noise.o
 
 # The default goal:
 .DEFAULT_GOAL := game
 
-.PHONY: all clean game test_noise checkgl
+.PHONY: all clean game test test_noise checkgl
 
-all: game test_noise
+all: game test test_noise
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(BIN_DIR)
 	rm -rf $(OUT_DIR)
 game: $(BIN_DIR)/elf_forest
+test: $(BIN_DIR)/test
 test_noise: $(TEST_DIR)/noise_test_2D.ppm $(TEST_DIR)/noise_test_3D.ppm \
-	          $(TEST_DIR)/noise_test_2D_F.ppm $(TEST_DIR)/noise_test_3D_F.ppm \
-						$(TEST_DIR)/noise_test_ex.ppm
+            $(TEST_DIR)/noise_test_2D_F.ppm $(TEST_DIR)/noise_test_3D_F.ppm \
+            $(TEST_DIR)/noise_test_ex.ppm
 checkgl:
 	$(CC) -E check_gl_version.h | tail -n 8
 
@@ -83,13 +85,16 @@ include $(OBJ_DIR)/obj.d
 $(OBJ_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -o $@
 
-$(BIN_DIR)/elf_forest: $(OBJECTS) $(BIN_DIR)
-	$(CC) $(OBJECTS) $(LFLAGS) -o $(BIN_DIR)/elf_forest
+$(BIN_DIR)/elf_forest: $(CORE_OBJECTS) $(MAIN_OBJECTS) $(BIN_DIR)
+	$(CC) $(CORE_OBJECTS) $(MAIN_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/elf_forest
+
+$(BIN_DIR)/test: $(CORE_OBJECTS) $(TEST_OBJECTS) $(BIN_DIR)
+	$(CC) $(CORE_OBJECTS) $(TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/test
 
 $(BIN_DIR)/test_noise: $(NTOBJECTS) $(BIN_DIR)
 	$(CC) $(NTOBJECTS) $(LFLAGS) -o $(BIN_DIR)/test_noise
 
 $(TEST_DIR)/noise_test%2D.ppm $(TEST_DIR)/noise_test%3D.ppm \
-  $(TEST_DIR)/noise_test%2D_F.ppm $(TEST_DIR)/noise_test%3D_F.ppm \
-  $(TEST_DIR)/noise_test%ex.ppm: $(BIN_DIR)/test_noise $(TEST_DIR)
+$(TEST_DIR)/noise_test%2D_F.ppm $(TEST_DIR)/noise_test%3D_F.ppm \
+$(TEST_DIR)/noise_test%ex.ppm: $(BIN_DIR)/test_noise $(TEST_DIR)
 	cd $(TEST_DIR) && ../../$(BIN_DIR)/test_noise

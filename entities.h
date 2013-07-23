@@ -48,6 +48,7 @@ struct block_entity_s {
  * Functions *
  *************/
 
-void tick_entities(void);
+// Ticks all entities attached to the given frame.
+void tick_entities(frame *f);
 
 #endif //ifndef ENTITIES_H

@@ -52,7 +52,7 @@ void destroy_elements(void *element, list *l);
 void reverse(list *l);
 
 // Runs the given function sequentially on each element in the list.
-void foreach(void (*f)(void *), list *l);
+void foreach(list *l, void (*f)(void *));
 
 // Frees the memory associated with a list.
 void cleanup_list(list *l);

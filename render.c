@@ -15,6 +15,7 @@
 #include "display.h"
 #include "gfx.h"
 #include "tex.h"
+#include "entities.h"
 
 /*************
  * Functions *
@@ -111,6 +112,9 @@ void render_frame(
       }
     }
   }
+
+  // Now render all of our entities:
+  //foreach(f->entities, &render_entity);
 
   // Now render the translucent parts:
   for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
@@ -217,4 +221,22 @@ void render_chunk_layer(
 
   // Pop the model view matrix:
   glPopMatrix();
+}
+
+void render_entity(void *thing) {
+  entity *e = (entity*) thing;
+  // DEBUG: Test triangle:
+  //*
+  glColor4ub(255, 255, 255, 255); // white
+
+  glBegin( GL_TRIANGLES );
+
+  glVertex3f(e->pos.x - 1, e->pos.y, e->pos.z - 1);
+
+  glVertex3f(e->pos.x, e->pos.y, e->pos.z + 1);
+
+  glVertex3f(e->pos.x + 1, e->pos.y, e->pos.z - 1);
+
+  glEnd();
+  // */
 }
