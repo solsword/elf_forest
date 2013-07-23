@@ -52,7 +52,7 @@ struct octree_s {
  ********************/
 
 // Returns whether the given octree has children or not.
-static inline uint8_t has_children(octree *ot) {
+static inline int has_children(octree *ot) {
   return (ot->octants[0] != NULL);
 }
 
@@ -60,9 +60,9 @@ static inline uint8_t has_children(octree *ot) {
  * Functions *
  *************/
 
-// Allocates and initializes an octree that spans a frame down to the defined
-// minimum dimension (OCTREE_RESOLUTION).
-octree * setup_octree(void);
+// Allocates and initializes an octree with the given span that divides down to
+// the defined minimum dimension (OCTREE_RESOLUTION).
+octree * setup_octree(uint32_t span);
 
 // Frees the memory associated with an octree. Note that this also frees the
 // contents list of each octant in the tree.

@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
+#include <stdio.h>
+#include <errno.h>
 
 #include "list.h"
 
@@ -35,18 +37,22 @@ struct node_s {
 
 list *create_list(void) {
   list *l = (list *) malloc(sizeof(list));
+  if (l == NULL) {
+    perror("Failed to create list.");
+    exit(errno);
+  }
   l->first = NULL;
   l->last = NULL;
   return l;
 }
 
-uint8_t is_empty(list *l) {
+int is_empty(list *l) {
   return (l->first == NULL);
 }
 
-uint8_t contains(void *element, list *l) {
+int contains(void *element, list *l) {
   node *current = l->first;
-  uint8_t result = 0;
+  int result = 0;
   while (current != NULL) {
     current = current->next;
     if (current->contents == element) {
@@ -59,6 +65,10 @@ uint8_t contains(void *element, list *l) {
 
 void push_element(void *element, list *l) {
   node *new_node = (node *) malloc(sizeof(node));
+  if (new_node == NULL) {
+    perror("Failed to create node.");
+    exit(errno);
+  }
   new_node->contents = element;
   if (l->first == NULL) {
     assert(l->last == NULL); // Integrity check
@@ -73,6 +83,10 @@ void push_element(void *element, list *l) {
 
 void append_element(void *element, list *l) {
   node *new_node = (node *) malloc(sizeof(node));
+  if (new_node == NULL) {
+    perror("Failed to create node.");
+    exit(errno);
+  }
   new_node->contents = element;
   new_node->next = NULL;
   if (l->first == NULL) {
@@ -261,6 +275,17 @@ void foreach(list *l, void (*f)(void *)) {
     f(current->contents);
     current = current->next;
   }
+}
+
+void * find_element(list *l, int (*match)(void *)) {
+  node *current = l->first;
+  while (current != NULL) {
+    if (match(current->contents)) {
+      return current->contents;
+    };
+    current = current->next;
+  }
+  return NULL;
 }
 
 void cleanup_list(list *l) {

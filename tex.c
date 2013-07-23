@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "tex.h"
 
@@ -308,7 +309,8 @@ txinfo* loadPNG(const char *filename) {
 
   fp = fopen(filename, "rb");
   if (fp == NULL) {
-    return NULL;
+    perror(filename);
+    exit(errno);
   }
 
   png_structp png_ptr = png_create_read_struct(
@@ -316,19 +318,22 @@ txinfo* loadPNG(const char *filename) {
     NULL, NULL, NULL // We won't worry about PNG errors for now.
   );
   if (png_ptr == NULL) {
-    return NULL;
+    fprintf(stderr, "Failed to create PNG read struct.\n");
+    exit(1);
   }
 
   png_infop info_ptr = png_create_info_struct(png_ptr);
   if (info_ptr == NULL) {
     png_destroy_read_struct(&png_ptr, (png_infopp)NULL, (png_infopp)NULL);
-    return NULL;
+    fprintf(stderr, "Failed to create PNG info struct.\n");
+    exit(1);
   }
 
   png_infop end_info = png_create_info_struct(png_ptr);
   if (end_info == NULL) {
     png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
-    return NULL;
+    fprintf(stderr, "Failed to create PNG end info struct.\n");
+    exit(1);
   }
 
   // Get ready to read data:
@@ -346,7 +351,8 @@ txinfo* loadPNG(const char *filename) {
   txinfo *result = (txinfo*) malloc(sizeof(txinfo));
   if (result == NULL) {
     png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-    return NULL;
+    perror("Couldn't allocate space for texture info.");
+    exit(errno);
   }
 
   // Get the size info:
@@ -366,7 +372,8 @@ txinfo* loadPNG(const char *filename) {
   if (result->data == NULL) {
     png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
     free(result);
-    return NULL;
+    perror("Couldn't allocate space for texture data.");
+    exit(errno);
   }
 
   // Ask libpng for the array of byte arrays that corresponds to the image data:

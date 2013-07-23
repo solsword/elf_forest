@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
 
 #include <GLee.h> // glDeleteBuffers etc.
 
@@ -12,7 +14,7 @@
  * Functions *
  *************/
 
-void setup_cache(index vsize, index isize, vertex_buffer *vb) {
+void setup_cache(vb_index vsize, vb_index isize, vertex_buffer *vb) {
   if (vb->vertices != 0) {
     glDeleteBuffers(1, &(vb->vertices));
   }
@@ -27,7 +29,15 @@ void setup_cache(index vsize, index isize, vertex_buffer *vb) {
     vb->allocated = 0;
   }
   vb->vdata = (vertex *) malloc(vsize*sizeof(vertex));
-  vb->idata = (index *) malloc(isize*sizeof(index));
+  if (vb->vdata == NULL) {
+    perror("Failed to allocate vertex data cache.");
+    exit(errno);
+  }
+  vb->idata = (vb_index *) malloc(isize*sizeof(vb_index));
+  if (vb->idata == NULL) {
+    perror("Failed to allocate vertex indices cache.");
+    exit(errno);
+  }
   vb->allocated = 1;
 }
 
@@ -47,7 +57,7 @@ void add_vertex(const vertex *v, vertex_buffer *vb) {
 
 void reuse_vertex(int i, vertex_buffer *vb) {
   if (i >= 0) {
-    vb->idata[vb->vertex_count] = (index) i;
+    vb->idata[vb->vertex_count] = (vb_index) i;
   } else {
     vb->idata[vb->vertex_count] = vb->idata[vb->vertex_count + i];
   }
@@ -79,7 +89,7 @@ void compile_buffers(vertex_buffer *vb) {
   glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, vb->indices );
   glBufferData(
     GL_ELEMENT_ARRAY_BUFFER,
-    sizeof(index) * vb->vertex_count,
+    sizeof(vb_index) * vb->vertex_count,
     (const GLvoid *) vb->idata,
     GL_STATIC_DRAW
   );

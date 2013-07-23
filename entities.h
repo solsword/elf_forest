@@ -8,8 +8,10 @@
 
 #include <GL/gl.h>
 
-#include "physics.h"
 #include "vbo.h"
+#include "list.h"
+#include "vector.h"
+#include "bbox.h"
 
 /**************
  * Structures *
@@ -26,18 +28,25 @@ typedef struct entity_s entity;
 struct block_entity_s;
 typedef struct block_entity_s block_entity;
 
+/***********
+ * Globals *
+ ***********/
+
+extern list *ENTITY_PROTOTYPES;
+
 /*************************
  * Structure Definitions *
  *************************/
 
 struct entity_s {
+  char type[24]; // Entity type.
   vector size; // Dimensions.
+  GLuint texture; // OpenGL texture.
+  vertex_buffer model; // Model.
   vector pos; // Position within a frame.
   vector vel; // Velocity.
   vector impulse; // Net impulse to be applied this tick.
   bbox box; // Bounding box.
-  GLuint texture; // OpenGL texture.
-  vertex_buffer model; // Model.
 };
 
 struct block_entity_s {
@@ -48,7 +57,32 @@ struct block_entity_s {
  * Functions *
  *************/
 
+// Adds a new entity prototype to the ENTITY_PROTOTYPES list.
+void add_entity_type(entity *e);
+
+// Sets up the entities system, which defines the ENTITY_PROTOTYPES list.
+void setup_entities(void);
+
+// Cleans up the memory used for the entities system.
+void cleanup_entities(void);
+
 // Ticks all entities attached to the given frame.
 void tick_entities(frame *f);
+
+// Copies an entity from the types list, sets it up, and adds it to the given
+// frame at the given position. This involves allocating space for the new
+// entity.
+void spawn_entity(const char *type, vector *pos, frame *f);
+
+// Scans the given list of entities and returns the first one with the given
+// type. Returns NULL if no such entity exists.
+entity *find_by_type(const char *type, list *l);
+
+// Recomputes the bounding box of the given entity based on its position and
+// size.
+void compute_bb(entity *e);
+
+// Zeroes out the velocity and impulse fields of the given entity.
+void clear_kinetics(entity *e);
 
 #endif //ifndef ENTITIES_H

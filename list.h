@@ -26,11 +26,11 @@ typedef struct list_s list;
 list *create_list(void);
 
 // Tests whether the given list is empty.
-uint8_t is_empty(list *l);
+int is_empty(list *l);
 
 // Test whether the given list contains the given element (uses address
 // comparison).
-uint8_t contains(void *element, list *l);
+int contains(void *element, list *l);
 
 // Allocates an entry for and adds the given element to the front (push) or
 // back (append) of the given list.
@@ -53,6 +53,10 @@ void reverse(list *l);
 
 // Runs the given function sequentially on each element in the list.
 void foreach(list *l, void (*f)(void *));
+
+// Scans the list until the given function returns non-zero, and returns the
+// element that matched. Returns NULL if no match was found.
+void * find_element(list *l, int (*match)(void *));
 
 // Frees the memory associated with a list.
 void cleanup_list(list *l);

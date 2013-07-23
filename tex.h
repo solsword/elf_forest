@@ -102,7 +102,7 @@ void setup_textures(void);
 // been loaded into OpenGL.
 GLuint load_texture(const char *filename);
 
-// Loads a PNG file and returns a newly-malloc'd txinfo pointer.
+// Loads a PNG file and returns a newly-allocated txinfo pointer.
 txinfo* loadPNG(const char *filename);
 
 // Returns an OpenGL texture handle created using the given texture info:

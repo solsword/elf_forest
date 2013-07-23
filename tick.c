@@ -24,7 +24,7 @@ int TICK_COUNT = 0;
  *************/
 
 int ticks_expected(void) {
-  static uint8_t first = 1;
+  static int first = 1;
   static float ticks_per_us = 0.0;
   static float stored = 0.0;
   static struct timeval lasttime;

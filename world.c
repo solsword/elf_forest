@@ -7,10 +7,8 @@
 #include <stdio.h>
 
 #include "blocks.h"
-#include "vbo.h"
 #include "world.h"
-#include "display.h"
-#include "noise.h"
+#include "octree.h"
 
 /***********
  * Globals *
@@ -73,6 +71,19 @@ void compute_exposure(frame *f, frame_chunk_index idx) {
   }
 }
 
+void setup_frame(frame *f) {
+  frame_chunk_index idx;
+  for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
+    for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
+      for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
+        setup_chunk(chunk_at(f, idx));
+      }
+    }
+  }
+  f->entities = create_list();
+  f->oct = setup_octree(FULL_FRAME);
+}
+
 void cleanup_frame(frame *f) {
   frame_chunk_index idx;
   for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
@@ -82,9 +93,16 @@ void cleanup_frame(frame *f) {
       }
     }
   }
+  destroy_list(f->entities);
+  cleanup_octree(f->oct);
+}
+
+void setup_chunk(chunk *c) {
+  c->block_entities = create_list();
 }
 
 void cleanup_chunk(chunk *c) {
   cleanup_vertex_buffer(&(c->opaque_vertices));
   cleanup_vertex_buffer(&(c->translucent_vertices));
+  destroy_list(c->block_entities);
 }

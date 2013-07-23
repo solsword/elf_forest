@@ -2,6 +2,8 @@
 // Octree implementation.
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
 
 #include "vector.h"
 #include "list.h"
@@ -22,6 +24,10 @@ octree * setup_octree_recursive(uint32_t size, vector *origin) {
   int i;
   vector subori;
   octree *result = (octree *) malloc(sizeof(octree));
+  if (result == NULL) {
+    perror("Failed to create octant.");
+    exit(errno);
+  }
   vector vsize = { .x=size, .y=size, .z=size };
   compute_bbox(*origin, vsize, &(result->box));
   result->contents = create_list();
@@ -82,12 +88,12 @@ void oct_remove_recursive(void *object, octree *ot) {
  * Functions *
  *************/
 
-octree * setup_octree(void) {
+octree * setup_octree(uint32_t span) {
   vector origin;
   origin.x = 0;
   origin.y = 0;
   origin.z = 0;
-  return setup_octree_recursive(FULL_FRAME, &origin);
+  return setup_octree_recursive(span, &origin);
 }
 
 void cleanup_octree(octree *ot) {

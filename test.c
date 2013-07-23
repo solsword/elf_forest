@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "test.h"
 #include "noise.h"
@@ -12,6 +13,7 @@
 #include "tex.h"
 #include "ctl.h"
 #include "gfx.h"
+#include "entities.h"
 
 /********
  * Main *
@@ -27,6 +29,7 @@ int main(int argc, char** argv) {
   setup_textures();
   // Set up the test world (must happen after glutInit!):
   printf("Loading test world...\n");
+  setup_frame(&MAIN_FRAME);
   test_setup_world_terrain(&MAIN_FRAME);
   printf("...done.\n");
   test_spawn_player(&MAIN_FRAME);
@@ -147,4 +150,10 @@ void test_compile_frame(frame *f) {
 }
 
 void test_spawn_player(frame *f) {
+  entity *player = (entity *) malloc(sizeof(entity));
+  if (player == NULL) {
+    perror("Failed to create player entity.");
+    exit(errno);
+  }
+  append_element(player, f->entities);
 }

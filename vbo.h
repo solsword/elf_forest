@@ -12,8 +12,8 @@
  * Structures & Types *
  **********************/
 
-// An index into a vertex array.
-typedef uint32_t index;
+// An index into a vertex buffer.
+typedef uint32_t vb_index;
 
 // All of the data needed to define a vertex: 3D position, 3D normal, and s and
 // t texture coordinates, each stored as a 16-bit unsigned int.
@@ -36,15 +36,15 @@ struct vertex_s {
 
 struct vertex_buffer_s {
   vertex *vdata; // The vertex data cache (temporary storage).
-  index *idata; // The index data cache (temporary storage).
+  vb_index *idata; // The index data cache (temporary storage).
   uint8_t allocated; // Whether the data caches are allocated or not.
   GLuint vertices; // The vertices buffer.
   GLuint indices; // The indices buffer.
   // # of vertices in the data array:
-  index stored_vertex_count;
+  vb_index stored_vertex_count;
   // # of vertices in the shape (some may be referenced more than once by the
   // index list):
-  index vertex_count;
+  vb_index vertex_count;
 };
 
 /*************
@@ -56,7 +56,7 @@ struct vertex_buffer_s {
 // this will free the old buffer and set up a new one. This function also
 // deletes (if necessary) and unbinds the OpenGL arrays associated with the
 // given vertex buffer object.
-void setup_cache(index vsize, index isize, vertex_buffer *buf);
+void setup_cache(vb_index vsize, vb_index isize, vertex_buffer *buf);
 
 // Copies the given vertex into the given buffer's data cache.
 void add_vertex(const vertex *v, vertex_buffer *buf);

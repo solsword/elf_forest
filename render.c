@@ -114,7 +114,7 @@ void render_frame(
   }
 
   // Now render all of our entities:
-  //foreach(f->entities, &render_entity);
+  foreach(f->entities, &render_entity);
 
   // Now render the translucent parts:
   for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {

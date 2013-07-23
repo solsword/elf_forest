@@ -4,8 +4,6 @@
 // vector.h
 // 3D floating point vectors.
 
-#include "world.h"
-#include "list.h"
 #include "conv.h"
 
 /**************
@@ -34,25 +32,6 @@ extern const vector V_WEST;
 struct vector_s {
   float x, y, z;
 };
-
-/********************
- * Inline Functions *
- ********************/
-
-// Converts a vector v to a frame position using the floor of the vector's
-// coords.
-static inline void vec__fpos(vector *v, frame_pos *pos) {
-  pos->x = fastfloor(v->x);
-  pos->y = fastfloor(v->y);
-  pos->z = fastfloor(v->z);
-}
-
-// Converts a frame position to a vector.
-static inline void fpos__vec(frame_pos *pos, vector *v) {
-  v->x = (float) pos->x;
-  v->y = (float) pos->y;
-  v->z = (float) pos->z;
-}
 
 /*************
  * Functions *

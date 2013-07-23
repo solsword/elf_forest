@@ -39,7 +39,7 @@ static inline void compute_bbox(vector origin, vector size, bbox *box) {
 }
 
 // Returns 1 if boxes b1 and b2 intersect, and 0 otherwise:
-static inline uint8_t intersects(bbox b1, bbox b2) {
+static inline int intersects(bbox b1, bbox b2) {
   return (
     (b1.min.x <= b2.max.x) && (b2.min.x <= b1.max.x)
   &&

@@ -12,6 +12,8 @@
 #include "blocks.h"
 #include "list.h"
 #include "vbo.h"
+#include "vector.h"
+#include "octree.h"
 
 /**************
  * Structures *
@@ -77,7 +79,7 @@ struct chunk_s {
   vertex_buffer opaque_vertices; // The opaque vertices.
   vertex_buffer translucent_vertices; // The translucent vertices.
   uint16_t x, y; // Absolute location within the region.
-  list *tile_entities; // Tile entities.
+  list *block_entities; // Tile entities.
 };
 
 struct chunk_index_s {
@@ -93,6 +95,7 @@ struct frame_s {
   uint8_t cx_o, cy_o, cz_o; // Data offsets
     // (to avoid having to shuffle data around within the array all the time)
   list *entities; // Active entities
+  octree *oct; // An octree for the frame
 };
 
 struct frame_index_s {
@@ -153,6 +156,18 @@ static inline void fcidx__fpos(frame_chunk_index *idx, frame_pos *pos) {
   pos->x = (idx->x << CHUNK_BITS) - HALF_FRAME;
   pos->y = (idx->y << CHUNK_BITS) - HALF_FRAME;
   pos->z = (idx->z << CHUNK_BITS) - HALF_FRAME;
+}
+
+static inline void vec__fpos(vector *v, frame_pos *pos) {
+  pos->x = fastfloor(v->x);
+  pos->y = fastfloor(v->y);
+  pos->z = fastfloor(v->z);
+}
+
+static inline void fpos__vec(frame_pos *pos, vector *v) {
+  v->x = (float) pos->x;
+  v->y = (float) pos->y;
+  v->z = (float) pos->z;
 }
 
 // Indexing functions:
@@ -292,17 +307,14 @@ static inline block block_west(frame *f, frame_pos pos) {
 // frame). All of the frame's chunk data should already be loaded.
 void compute_exposure(frame *f, frame_chunk_index idx);
 
-// Puts some sparse junk data into the main frame for testing.
-void setup_test_world_junk(frame *f);
-
-// Uses noise to create a test frame.
-void setup_test_world_terrain(frame *f);
-
-// Computes exposure for and compiles every chunk in the given frame.
-void test_compile_frame(frame *f);
+// Initializes the given frame:
+void setup_frame(frame *f);
 
 // Cleans up memory allocated by the given frame.
 void cleanup_frame(frame *f);
+
+// Initializes the given chunk:
+void setup_chunk(chunk *c);
 
 // Cleans up memory allocated by the given chunk.
 void cleanup_chunk(chunk *c);
