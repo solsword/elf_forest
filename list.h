@@ -2,9 +2,20 @@
 #define LIST_H
 
 // list.h
-// Simple singly-linked lists.
+// Simple array-based lists.
 
 #include <stdint.h>
+
+/***********
+ * Globals *
+ ***********/
+
+// Defines what size memory chunk lists use internally.
+extern const size_t LIST_CHUNK_SIZE;
+
+// Defines how many empty chunks we should keep at the end of a shrinking list
+// before reallocating to a smaller size.
+extern const size_t LIST_KEEP_CHUNKS;
 
 /**************
  * Structures *
@@ -30,23 +41,23 @@ int is_empty(list *l);
 
 // Test whether the given list contains the given element (uses address
 // comparison).
-int contains(void *element, list *l);
+int contains(list *l, void *element);
 
-// Allocates an entry for and adds the given element to the front (push) or
-// back (append) of the given list.
-void push_element(void *element, list *l);
-void append_element(void *element, list *l);
+// Adds the given element to the end of the given list. Allocates new memory to
+// expand the list as necessary.
+void append_element(list *l, void *element);
 
 // Removes just the first copy of the given element from the given list (uses
 // address comparison). Returns the removed element, or NULL if the given
 // element wasn't found.
-void * remove_element(void *element, list *l);
+void * remove_element(list *l, void *element);
 
 // Removes all copies of the given element from the given list (uses address
 // comparison). If the destroy version is used free() is called on each element
-// as it is removed from the list.
-void remove_elements(void *element, list *l);
-void destroy_elements(void *element, list *l);
+// as it is removed from the list. Both versions return the number of elements
+// removed.
+int remove_all_elements(list *l, void *element);
+int destroy_all_elements(list *l, void *element);
 
 // Reverses the given list. Doesn't allocate or free any memory.
 void reverse(list *l);

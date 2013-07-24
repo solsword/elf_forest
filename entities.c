@@ -24,7 +24,7 @@ list *ENTITY_PROTOTYPES;
 // Function for searching a list of entities and finding the first of the given
 // type. Returns 1 if the entity pointer passed has type SEARCH_TYPE, and 0
 // otherwise.
-char *SEARCH_TYPE = NULL;
+const char *SEARCH_TYPE = NULL;
 int scan_type(void *thing) {
   entity *e = (entity *) thing;
   return !strcmp(e->type, SEARCH_TYPE);
@@ -37,7 +37,7 @@ int scan_type(void *thing) {
 // Loads the data for the given entity type, populating the fields of the given
 // entity object. Make sure to call setup_entities() first.
 void add_entity_type(entity *e) {
-  append_element((void *)e, ENTITY_PROTOTYPES);
+  append_element(ENTITY_PROTOTYPES, (void *)e);
 }
 
 void setup_entities(void) {
@@ -64,15 +64,27 @@ void spawn_entity(const char *type, vector *pos, frame *f) {
     perror("Failed to spawn entity.");
     exit(errno);
   }
+  // Find the prototype that matches the given name:
   entity *prototype = find_by_type(type, ENTITY_PROTOTYPES);
   if (prototype == NULL) {
     fprintf(stderr, "Failed to spawn entity: invalid type '%s'.\n", type);
     free(e);
     return;
   }
-  compute_bb(e);
+  // Copy its data into our new entity:
+  copy_entity_data(prototype, e);
+  // Fill in the given position:
+  e->pos.x = pos->x;
+  e->pos.y = pos->y;
+  e->pos.z = pos->z;
+  // Zero out the velocity and impulse fields:
   clear_kinetics(e);
-  append_element((void *)e, f->entities);
+  // Compute the bounding box:
+  compute_bb(e);
+  // Put the object into the frame's octree:
+  e->octant = oct_insert(f->oct, (void *) e, &(e->box));
+  // Finally add it onto the frame's active entities list:
+  append_element(f->entities, (void *)e);
 }
 
 entity *find_by_type(const char *type, list *l) {

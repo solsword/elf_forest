@@ -14,13 +14,14 @@
  * Constants *
  *************/
 
-const int OCTREE_RESOLUTION = 4;
+const int OCTREE_RESOLUTION = 8;
+const int OCTREE_MAX_DEPTH = 6; // ~~ 5MB (vs. ~~ 37MB at depth 7)
 
 /********************
  * Helper Functions *
  ********************/
 
-octree * setup_octree_recursive(uint32_t size, vector *origin) {
+octree * setup_octree_recursive(size_t size, vector *origin, int depth) {
   int i;
   vector subori;
   octree *result = (octree *) malloc(sizeof(octree));
@@ -30,8 +31,9 @@ octree * setup_octree_recursive(uint32_t size, vector *origin) {
   }
   vector vsize = { .x=size, .y=size, .z=size };
   compute_bbox(*origin, vsize, &(result->box));
+  result->count = 0;
   result->contents = create_list();
-  if (size > OCTREE_RESOLUTION) {
+  if (size > OCTREE_RESOLUTION && depth < OCTREE_MAX_DEPTH) {
     for (i = 0; i < 8; ++i) {
       subori.x = origin->x - (size >> 2);
       subori.x += ((size >> 1) * (i & 1));
@@ -39,7 +41,7 @@ octree * setup_octree_recursive(uint32_t size, vector *origin) {
       subori.y += ((size >> 1) * ((i & 2) >> 1));
       subori.z = origin->z - (size >> 2);
       subori.z += ((size >> 1) * ((i & 4) >> 2));
-      result->octants[i] = setup_octree_recursive(size >> 1, &subori);
+      result->octants[i] = setup_octree_recursive(size >> 1, &subori, depth+1);
     }
   } else {
     for (i = 0; i < 8; ++i) {
@@ -61,49 +63,65 @@ void cleanup_octree_recursive(octree *ot) {
   free(ot);
 }
 
-void oct_insert_recursive(void *object, bbox *box, octree *ot) {
+octree * oct_insert_recursive(octree *ot, void *object, bbox *box) {
   int i;
-  if (has_children(ot)) {
+  octree *match = NULL;
+  int stay_here = 0;
+  if (oct_has_children(ot)) {
     for (i = 0; i < 8; ++i) {
       if (intersects(*box, ot->octants[i]->box)) {
-        oct_insert_recursive(object, box, ot->octants[i]);
+        if (match == NULL) {
+          match = ot->octants[i];
+        } else {
+          stay_here = 1;
+        }
       }
     }
+    if (stay_here) { // The box spans multiple children: we'll store it here:
+      append_element(ot->contents, object);
+      return ot;
+    } else if (match != NULL) { // We can recurse into a single child:
+      return oct_insert_recursive(match, object, box);
+    }
   } else { // Objects are only stored in leaf nodes.
-    append_element(object, ot->contents);
+    append_element(ot->contents, object);
+    return ot;
   }
+  return NULL; // Bounding box doesn't overlap this octree!
 }
 
-void oct_remove_recursive(void *object, octree *ot) {
+int oct_remove_recursive(octree *ot, void *object) {
   int i;
-  if (has_children(ot)) {
+  int removed = 0;
+  if (oct_has_children(ot)) {
     for (i = 0; i < 8; ++i) {
-      oct_remove_recursive(object, ot->octants[i]);
+      removed += oct_remove_recursive(ot->octants[i], object);
     }
   }
-  remove_elements(object, ot->contents);
+  removed += remove_all_elements(ot->contents, object);
+  return removed;
 }
 
 /*************
  * Functions *
  *************/
 
-octree * setup_octree(uint32_t span) {
+octree * setup_octree(size_t span) {
   vector origin;
   origin.x = 0;
   origin.y = 0;
   origin.z = 0;
-  return setup_octree_recursive(span, &origin);
+  return setup_octree_recursive(span, &origin, 0);
 }
 
 void cleanup_octree(octree *ot) {
   cleanup_octree_recursive(ot);
 }
 
-void oct_insert(void *object, bbox *box, octree *ot) {
-  oct_insert_recursive(object, box, ot);
+octree * oct_insert(octree *ot, void *object, bbox *box) {
+  return oct_insert_recursive(ot, object, box);
 }
 
-void oct_remove(void *object, octree *ot) {
-  oct_remove_recursive(object, ot);
+int oct_remove(octree *ot, void *object) {
+  return oct_remove_recursive(ot, object);
 }

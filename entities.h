@@ -5,6 +5,7 @@
 // Entity definitions.
 
 #include <stdint.h>
+#include <string.h>
 
 #include <GL/gl.h>
 
@@ -12,6 +13,8 @@
 #include "list.h"
 #include "vector.h"
 #include "bbox.h"
+#include "octree.h"
+#include "world.h"
 
 /**************
  * Structures *
@@ -42,16 +45,49 @@ struct entity_s {
   char type[24]; // Entity type.
   vector size; // Dimensions.
   GLuint texture; // OpenGL texture.
-  vertex_buffer model; // Model.
+  vertex_buffer * model; // Model.
+
+  float mass; // Mass.
+  float walk; // Movement impulse.
+  float jump; // Jump impulse.
+
   vector pos; // Position within a frame.
+  float yaw, pitch; // Facing.
+
   vector vel; // Velocity.
   vector impulse; // Net impulse to be applied this tick.
+
   bbox box; // Bounding box.
+  octree * octant; // Octant within a frame.
 };
 
 struct block_entity_s {
   uint16_t x, y, z; // Position within a chunk.
 };
+
+/********************
+ * Inline Functions *
+ ********************/
+
+static inline void copy_entity_data(entity *from, entity *to) {
+  strcpy(to->type, from->type);
+  to->size.x = from->size.x;
+  to->size.y = from->size.y;
+  to->size.z = from->size.z;
+  to->texture = from->texture;
+  to->model = from->model;
+  to->mass = from->mass;
+  to->walk = from->walk;
+  to->jump = from->jump;
+}
+
+static inline void copy_entity_pos(entity *from, entity *to) {
+  to->pos.x = from->pos.x;
+  to->pos.y = from->pos.y;
+  to->pos.z = from->pos.z;
+  to->yaw = from->yaw;
+  to->pitch = from->pitch;
+}
 
 /*************
  * Functions *

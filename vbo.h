@@ -29,9 +29,9 @@ typedef struct vertex_buffer_s vertex_buffer;
  *************************/
 
 struct vertex_s {
-  uint16_t x, y, z;
-  uint16_t nx, ny, nz;
-  uint16_t s, t;
+  GLshort x, y, z;
+  GLshort nx, ny, nz;
+  GLshort s, t;
 };
 
 struct vertex_buffer_s {

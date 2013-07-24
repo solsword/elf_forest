@@ -1,5 +1,5 @@
 // list.c
-// Simple singly-linked lists.
+// Simple array-based lists.
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -9,27 +9,58 @@
 
 #include "list.h"
 
-/**********************
- * Private Structures *
- **********************/
+/***********
+ * Globals *
+ ***********/
 
-// A node in a list:
-struct node_s;
-typedef struct node_s node;
+// We're more worried about mallocs than about saving space:
+const size_t LIST_CHUNK_SIZE = 16;
+const size_t LIST_KEEP_CHUNKS = 4;
 
 /*************************
  * Structure Definitions *
  *************************/
 
 struct list_s {
-  node *first;
-  node *last;
+  size_t size; // Measured in chunks, not entries.
+  size_t count; // Measured in entries.
+  void **elements;
 };
 
-struct node_s {
-  void *contents;
-  node *next;
-};
+/*********************
+ * Private Functions *
+ *********************/
+
+static inline void grow_if_necessary(list *l) {
+  if (l->count == l->size*LIST_CHUNK_SIZE) { // We need more memory.
+    void ** new_elements = (void **) realloc(
+      l->elements,
+      sizeof(void *) * (l->size*LIST_CHUNK_SIZE)
+    );
+    if (new_elements == NULL) {
+      perror("Failed to allocate additional list chunk.");
+      exit(errno);
+    }
+    l->elements = new_elements;
+    l->size += 1;
+  }
+}
+
+static inline void shrink_if_necessary(list *l) {
+  if (l->count < (l->size - LIST_KEEP_CHUNKS)*LIST_CHUNK_SIZE) {
+    // We should free our extra elements.
+    void ** new_elements = (void **) realloc(
+      l->elements,
+      sizeof(void *) * ((l->size - LIST_KEEP_CHUNKS)*LIST_CHUNK_SIZE)
+    );
+    if (new_elements == NULL) {
+      perror("Failed to remove empty list chunks.");
+      exit(errno);
+    }
+    l->elements = new_elements;
+    l->size -= LIST_KEEP_CHUNKS;
+  }
+}
 
 /*************
  * Functions *
@@ -41,21 +72,25 @@ list *create_list(void) {
     perror("Failed to create list.");
     exit(errno);
   }
-  l->first = NULL;
-  l->last = NULL;
+  l->elements = (void **) malloc(sizeof(void *)*LIST_CHUNK_SIZE);
+  if (l->elements == NULL) {
+    perror("Failed to create initial list chunk.");
+    exit(errno);
+  }
+  l->size = 1;
+  l->count = 0;
   return l;
 }
 
 int is_empty(list *l) {
-  return (l->first == NULL);
+  return (l->count == 0);
 }
 
-int contains(void *element, list *l) {
-  node *current = l->first;
+int contains(list *l, void *element) {
+  size_t i;
   int result = 0;
-  while (current != NULL) {
-    current = current->next;
-    if (current->contents == element) {
+  for (i = 0; i < l->count; ++i) {
+    if (l->elements[i] == element) {
       result = 1;
       break;
     }
@@ -63,254 +98,108 @@ int contains(void *element, list *l) {
   return result;
 }
 
-void push_element(void *element, list *l) {
-  node *new_node = (node *) malloc(sizeof(node));
-  if (new_node == NULL) {
-    perror("Failed to create node.");
-    exit(errno);
-  }
-  new_node->contents = element;
-  if (l->first == NULL) {
-    assert(l->last == NULL); // Integrity check
-    new_node->next = NULL;
-    l->first = new_node;
-    l->last = new_node;
-  } else {
-    new_node->next = l->first;
-    l->first = new_node;
-  }
+void append_element(list *l, void *element) {
+  grow_if_necessary(l);
+  l->elements[l->count] = element;
+  l->count += 1;
 }
 
-void append_element(void *element, list *l) {
-  node *new_node = (node *) malloc(sizeof(node));
-  if (new_node == NULL) {
-    perror("Failed to create node.");
-    exit(errno);
-  }
-  new_node->contents = element;
-  new_node->next = NULL;
-  if (l->first == NULL) {
-    assert(l->last == NULL); // Integrity check
-    l->first = new_node;
-    l->last = new_node;
-  } else {
-    l->last->next = new_node;
-    l->last = new_node;
-  }
-}
-
-void* remove_element(void *element, list *l) {
-  node *current = l->first;
-  node *last = NULL;
+void* remove_element(list *l, void *element) {
+  size_t i, j;
   void *result = NULL;
-  while (current != NULL && current->contents != element) {
-    last = current;
-    current = current->next;
-  }
-  if (current != NULL) {
-    result = current->contents;
-    if (last == NULL) { // At the start of the list.
-      assert(l->first == current); // Integrity check.
-      if (current->next == NULL) { // Which is also the end of the list!
-        assert(l->last == current); // Integrity check.
-        l->first = NULL;
-        l->last = NULL;
-      } else { // Just at the start.
-        l->first = current->next;
+  for (i = 0; i < l->count; ++i) {
+    if (l->elements[i] == element) {
+      result = l->elements[i];
+      for (j = i; j < (l->count - 1); ++j) {
+        l->elements[j] = l->elements[j+1];
       }
-    } else if (current->next == NULL) { // At the end of the list.
-      assert(l->last == current); // Integrity check.
-      last->next = NULL;
-      l->last = last;
-    } else { // Somewhere in the middle of the list.
-      last->next = current->next;
+      l->count -= 1;
+      shrink_if_necessary(l);
+      break;
     }
-    free(current);
   }
   return result;
 }
 
-void remove_elements(void *element, list *l) {
-  node *current = l->first;
-  node *last = NULL;
-  node *removed;
-  while (current != NULL) {
-    if (current->contents == element) {
-      if (last == NULL) { // At the start of the list.
-        assert(l->first == current); // Integrity check.
-        if (current->next == NULL) { // Which is also the end of the list!
-          assert(l->last == current); // Integrity check.
-          // Empty the list:
-          l->first = NULL;
-          l->last = NULL;
-          // Capture the node that was removed:
-          removed = current;
-          // We're done here:
-          current = NULL;
-          // Free the removed node:
-          free(removed);
-        } else { // Just at the start.
-          // Splice out the current node:
-          l->first = current->next;
-          // Capture the node that was removed:
-          removed = current;
-          // Walk the list forward:
-          last = NULL;
-          current = current->next;
-          // Free the removed node:
-          free(removed);
-        }
-      } else if (current->next == NULL) { // At the end of the list.
-        assert(l->last == current); // Integrity check.
-        // Splice out the current node:
-        last->next = NULL;
-        l->last = last;
-        // Capture the node that was removed:
-        removed = current;
-        // We're done with the list:
-        current = NULL;
-        // Free the removed node:
-        free(removed);
-      } else { // Somewhere in the middle of the list.
-        // Splice out the current node:
-        last->next = current->next;
-        // Capture the node that was removed:
-        removed = current;
-        // Walk the list forward (last remains the same):
-        current = current->next;
-        // Free the removed element:
-        free(removed);
-      }
-    } else {
-      // Walk forward without removing the current node:
-      last = current;
-      current = current->next;
+int remove_all_elements(list *l, void *element) {
+  size_t i;
+  size_t removed = 0;
+  size_t skip = 0;
+  for (i = 0; i < l->count; ++i) {
+    while (l->elements[i + skip] == element) {
+      skip += 1;
+      removed += 1;
+      l->count -= 1;
+    }
+    if (skip > 0 && i < l->count) {
+      l->elements[i] = l->elements[i + skip];
     }
   }
+  shrink_if_necessary(l);
+  return removed;
 }
 
-void destroy_elements(void *element, list *l) {
-  node *current = l->first;
-  node *last = NULL;
-  node *removed;
-  while (current != NULL) {
-    if (current->contents == element) {
-      if (last == NULL) { // At the start of the list.
-        assert(l->first == current); // Integrity check.
-        if (current->next == NULL) { // Which is also the end of the list!
-          assert(l->last == current); // Integrity check.
-          // Empty the list:
-          l->first = NULL;
-          l->last = NULL;
-          // Capture the node that was removed:
-          removed = current;
-          // We're done here:
-          current = NULL;
-          // Free the removed node and its contents:
-          free(removed->contents);
-          free(removed);
-        } else { // Just at the start.
-          // Splice out the current node:
-          l->first = current->next;
-          // Capture the node that was removed:
-          removed = current;
-          // Walk the list forward:
-          last = NULL;
-          current = current->next;
-          // Free the removed node:
-          free(removed->contents);
-          free(removed);
-        }
-      } else if (current->next == NULL) { // At the end of the list.
-        assert(l->last == current); // Integrity check.
-        // Splice out the current node:
-        last->next = NULL;
-        l->last = last;
-        // Capture the node that was removed:
-        removed = current;
-        // We're done with the list:
-        current = NULL;
-        // Free the removed node:
-        free(removed->contents);
-        free(removed);
-      } else { // Somewhere in the middle of the list.
-        // Splice out the current node:
-        last->next = current->next;
-        // Capture the node that was removed:
-        removed = current;
-        // Walk the list forward (last remains the same):
-        current = current->next;
-        // Free the removed element:
-        free(removed->contents);
-        free(removed);
-      }
-    } else {
-      // Walk forward without removing the current node:
-      last = current;
-      current = current->next;
+// Same code as remove_all but with an extra free()
+int destroy_all_elements(list *l, void *element) {
+  size_t i;
+  size_t removed = 0;
+  size_t skip = 0;
+  for (i = 0; i < l->count; ++i) {
+    while (l->elements[i + skip] == element) {
+      free(element);
+      skip += 1;
+      removed += 1;
+      l->count -= 1;
+    }
+    if (skip > 0 && i < l->count) {
+      l->elements[i] = l->elements[i + skip];
     }
   }
+  shrink_if_necessary(l);
+  return removed;
 }
 
 void reverse(list *l) {
-  node *current = l->first;
-  node *last = NULL;
-  node *next;
-  // Rewire the last pointer to the first node:
-  l->last = current;
-  // Flop the next pointer at each node:
-  while (current != NULL) {
-    next = current->next;
-    current->next = last;
-    last = current;
-    current = next;
+  size_t i;
+  void *phased;
+  for (i = 0; i < (l->count / 2); ++i) {
+    phased = l->elements[l->count - i - 1];
+    l->elements[l->count - i - 1] = l->elements[i];
+    l->elements[i] = phased;
   }
-  // Rewire the first pointer:
-  l->first = last;
 }
 
 void foreach(list *l, void (*f)(void *)) {
-  node *current = l->first;
-  while (current != NULL) {
-    f(current->contents);
-    current = current->next;
+  size_t i;
+  for (i = 0; i < l->count; ++i) {
+    f(l->elements[i]);
   }
 }
 
 void * find_element(list *l, int (*match)(void *)) {
-  node *current = l->first;
-  while (current != NULL) {
-    if (match(current->contents)) {
-      return current->contents;
-    };
-    current = current->next;
+  size_t i;
+  for (i = 0; i < l->count; ++i) {
+    if (match(l->elements[i])) {
+      return l->elements[i];
+    }
   }
   return NULL;
 }
 
 void cleanup_list(list *l) {
-  node *current = l->first;
-  node *next = l->first;
-  l->first = NULL;
-  l->last = NULL;
-  while (current != NULL) {
-    next = current->next;
-    free(current);
-    current = next;
-  }
+  l->count = 0;
+  l->size = 0;
+  free(l->elements);
   free(l);
 }
 
 void destroy_list(list *l) {
-  node *current = l->first;
-  node *next = l->first;
-  l->first = NULL;
-  l->last = NULL;
-  while (current != NULL) {
-    next = current->next;
-    free(current->contents);
-    free(current);
-    current = next;
+  size_t i;
+  for (i = 0; i < l->count; ++i) {
+    free(l->elements[i]);
   }
+  l->count = 0;
+  l->size = 0;
+  free(l->elements);
   free(l);
 }

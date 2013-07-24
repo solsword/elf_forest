@@ -10,6 +10,7 @@
 #include "ctl.h"
 #include "gfx.h"
 #include "world.h"
+#include "entities.h"
 
 /********************
  * Global variables *
@@ -22,13 +23,39 @@ uint8_t UP[N_CONTROLS];
 uint8_t PAUSED = 0;
 uint8_t PHYSICS_PAUSED = 0;
 
+float STRAFE_COEFFICIENT = 0.7;
+
 int ZOOM = 0;
+
+/********************
+ * Inline Functions *
+ ********************/
+
+static inline void update_modifier_states(void) {
+  int modifiers = glutGetModifiers();
+  if (modifiers & GLUT_ACTIVE_SHIFT) {
+    CONTROLS[C_SHIFT] = 1;
+  } else {
+    CONTROLS[C_SHIFT] = 0;
+  }
+  if (modifiers & GLUT_ACTIVE_CTRL) {
+    CONTROLS[C_CTRL] = 1;
+  } else {
+    CONTROLS[C_CTRL] = 0;
+  }
+  if (modifiers & GLUT_ACTIVE_ALT) {
+    CONTROLS[C_ALT] = 1;
+  } else {
+    CONTROLS[C_ALT] = 0;
+  }
+}
 
 /*************
  * Functions *
  *************/
 
 static void keyboard(unsigned char key, int x, int y) {
+  update_modifier_states();
   if (key == 'q') {
     quit();
   } else if (key == 'p') {
@@ -59,7 +86,8 @@ static void keyboard(unsigned char key, int x, int y) {
 }
 
 static void keyboard_up(unsigned char key, int x, int y) {
-  if (key == 'p') {
+  update_modifier_states();
+  if (key == 'p' || key == 'P' || key == '\f') {
     CONTROLS[C_PAUSE] = 0;
     UP[C_PAUSE] = 1;
   } else if (key == ' ') {
@@ -87,12 +115,15 @@ static void keyboard_up(unsigned char key, int x, int y) {
 }
 
 static void special(int key, int x, int y) {
+  update_modifier_states();
 }
 
 static void special_up(int key, int x, int y) {
+  update_modifier_states();
 }
 
 static void mouse(int button, int state, int x, int y) {
+  update_modifier_states();
 }
 
 static void motion(int x, int y) {
@@ -128,8 +159,39 @@ void tick_general_controls(void) {
   clear_edge_triggers();
 }
 
-void tick_motion_controls(void) {
-  // TODO: HERE
+void tick_motion_controls(entity *e) {
+  vector forward;
+  vface(&forward, e->yaw, 0);
+  vector v;
+  // TODO: Test for walking on ground.
+  if (CONTROLS[C_FORWARD]) {
+    vcopy(&v, &forward);
+    vscale(&v, e->walk);
+    vadd(&(e->impulse), &v);
+  }
+  if (CONTROLS[C_REVERSE]) {
+    vcopy(&v, &forward);
+    vscale(&v, -e->walk);
+    vadd(&(e->impulse), &v);
+  }
+  if (CONTROLS[C_LEFT]) {
+    vcopy(&v, &forward);
+    vyaw(&v, M_PI_2);
+    vscale(&v, e->walk * STRAFE_COEFFICIENT);
+    vadd(&(e->impulse), &v);
+  }
+  if (CONTROLS[C_RIGHT]) {
+    vcopy(&v, &forward);
+    vyaw(&v, -M_PI_2);
+    vscale(&v, e->walk * STRAFE_COEFFICIENT);
+    vadd(&(e->impulse), &v);
+  }
+  // TODO: Test for on ground.
+  if (DOWN[C_JUMP]) {
+    vcopy(&v, &V_UP);
+    vscale(&v, e->jump);
+    vadd(&(e->impulse), &v);
+  }
 }
 
 void clear_edge_triggers(void) {

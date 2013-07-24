@@ -121,6 +121,7 @@ void draw_vertex_buffer(vertex_buffer *vb, GLuint txid) {
   glDisableClientState( GL_COLOR_ARRAY );
   glEnableClientState( GL_VERTEX_ARRAY );
   glEnableClientState( GL_NORMAL_ARRAY );
+  //glDisableClientState( GL_NORMAL_ARRAY );
   glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
   // Bind the given texture:
@@ -136,11 +137,15 @@ void draw_vertex_buffer(vertex_buffer *vb, GLuint txid) {
     sizeof(vertex),
     (const GLvoid *)0
   );
+  //*
   glNormalPointer(
     GL_SHORT,
     sizeof(vertex),
     (const GLvoid *) (3*sizeof(GLshort))
   );
+  // */
+  // DEBUG!
+  //glNormal3f(0.0, 0.0, 1.0);
   glTexCoordPointer(
     2,
     GL_SHORT,

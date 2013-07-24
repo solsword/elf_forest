@@ -10,6 +10,7 @@
 #include "world.h"
 #include "tex.h"
 #include "display.h"
+#include "util.h"
 
 /*********************
  * Private Functions *
@@ -33,7 +34,11 @@ static inline block cull_face(block here, block neighbor) {
 
 // The various push_* functions add vertex/index data for faces of a cube to
 // the given vertex buffer. They use local xyz coordinates to specify the
-// position of the triangles that they're adding.
+// position of the triangles that they're adding. Note that because normals
+// need to be specified using min and max short values, we temporarily define
+// some macros to make this easier.
+#define P1 smaxof(GLshort) // +1
+#define N1 sminof(GLshort) // -1
 static inline void push_top(
   vertex_buffer *vb,
   chunk_index idx,
@@ -41,9 +46,9 @@ static inline void push_top(
 ) {
   vertex v;
   // bottom left
-  v.x = idx.x;        v.nx = 0;    v.s = st.s;
-  v.y = idx.y;        v.ny = 0;    v.t = st.t + 1;
-  v.z = idx.z + 1;    v.nz = 1;
+  v.x = idx.x;        v.nx =  0;    v.s = st.s;
+  v.y = idx.y;        v.ny =  0;    v.t = st.t + 1;
+  v.z = idx.z + 1;    v.nz = P1;
   add_vertex(&v, vb);
 
   // top left
@@ -72,7 +77,7 @@ static inline void push_bottom(
   // bottom left
   v.x = idx.x + 1;    v.nx =  0;    v.s = st.s;
   v.y = idx.y;        v.ny =  0;    v.t = st.t + 1;
-  v.z = idx.z;        v.nz = -1;
+  v.z = idx.z;        v.nz = N1;
   add_vertex(&v, vb);
 
   // top left
@@ -99,9 +104,9 @@ static inline void push_north(
 ) {
   vertex v;
   // bottom left
-  v.x = idx.x + 1;    v.nx = 0;    v.s = st.s;
-  v.y = idx.y + 1;    v.ny = 1;    v.t = st.t + 1;
-  v.z = idx.z;        v.nz = 0;
+  v.x = idx.x + 1;    v.nx =  0;    v.s = st.s;
+  v.y = idx.y + 1;    v.ny = P1;    v.t = st.t + 1;
+  v.z = idx.z;        v.nz =  0;
   add_vertex(&v, vb);
 
   // top left
@@ -129,7 +134,7 @@ static inline void push_south(
   vertex v;
   // bottom left
   v.x = idx.x;    v.nx =  0;    v.s = st.s;
-  v.y = idx.y;    v.ny = -1;    v.t = st.t + 1;
+  v.y = idx.y;    v.ny = N1;    v.t = st.t + 1;
   v.z = idx.z;    v.nz =  0;
   add_vertex(&v, vb);
 
@@ -157,9 +162,9 @@ static inline void push_east(
 ) {
   vertex v;
   // bottom left
-  v.x = idx.x + 1;    v.nx = 1;    v.s = st.s;
-  v.y = idx.y;        v.ny = 0;    v.t = st.t + 1;
-  v.z = idx.z;        v.nz = 0;
+  v.x = idx.x + 1;    v.nx = P1;    v.s = st.s;
+  v.y = idx.y;        v.ny =  0;    v.t = st.t + 1;
+  v.z = idx.z;        v.nz =  0;
   add_vertex(&v, vb);
 
   // top left
@@ -186,7 +191,7 @@ static inline void push_west(
 ) {
   vertex v;
   // bottom left
-  v.x = idx.x;        v.nx = -1;    v.s = st.s;
+  v.x = idx.x;        v.nx = N1;    v.s = st.s;
   v.y = idx.y + 1;    v.ny =  0;    v.t = st.t + 1;
   v.z = idx.z;        v.nz =  0;
   add_vertex(&v, vb);
@@ -207,6 +212,9 @@ static inline void push_west(
   v.z -= 1;                        v.t += 1;
   add_vertex(&v, vb);
 }
+// Clean up our short macro definitions:
+#undef P1
+#undef N1
 
 /*************
  * Functions *

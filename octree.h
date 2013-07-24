@@ -36,6 +36,7 @@ typedef struct octree_s octree;
  *************/
 
 extern const int OCTREE_RESOLUTION;
+extern const int OCTREE_MAX_DEPTH;
 
 /*************************
  * Structure Definitions *
@@ -43,6 +44,7 @@ extern const int OCTREE_RESOLUTION;
 
 struct octree_s {
   bbox box;
+  size_t count;
   octree *octants[8];
   list *contents;
 };
@@ -52,26 +54,35 @@ struct octree_s {
  ********************/
 
 // Returns whether the given octree has children or not.
-static inline int has_children(octree *ot) {
+static inline int oct_has_children(octree *ot) {
   return (ot->octants[0] != NULL);
+}
+
+// Returns whether the given octree is empty or not.
+static inline int oct_is_empty(octree *ot) {
+  return (ot->count == 0);
 }
 
 /*************
  * Functions *
  *************/
 
-// Allocates and initializes an octree with the given span that divides down to
-// the defined minimum dimension (OCTREE_RESOLUTION).
-octree * setup_octree(uint32_t span);
+// Allocates and initializes an octree which subdivides the given span. The
+// octree will have OCTREE_RESOLUTION dimension at its lowest point, unless
+// that would require it to be deeper than OCTREE_MAX_DEPTH, in which case
+// it'll be OCTREE_MAX_DEPTH deep.
+octree * setup_octree(size_t span);
 
 // Frees the memory associated with an octree. Note that this also frees the
 // contents list of each octant in the tree.
 void cleanup_octree(octree *ot);
 
 // Inserts the given object into the given octree using the given bounding box.
-void oct_insert(void *object, bbox *box, octree *ot);
+// Returns the octant where the object is stored.
+octree * oct_insert(octree *ot, void *object, bbox *box);
 
-// Removes all copies of the given object from the given octree.
-void oct_remove(void *object, octree *ot);
+// Removes all copies of the given object from the given octant and its
+// children. Returns the number of objects removed.
+int oct_remove(octree *ot, void *object);
 
 #endif //ifndef OCTREE_H

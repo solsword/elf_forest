@@ -4,14 +4,16 @@
 #include <math.h>
 // DEBUG:
 #include <stdio.h>
-#include "ctl.h"
 
 #include <GLee.h> // glBindBuffer etc.
+
+// DEBUG:
+#include "ctl.h"
 
 #include "vbo.h"
 #include "physics.h"
 #include "render.h"
-#include "conv.h"
+#include "util.h"
 #include "display.h"
 #include "gfx.h"
 #include "tex.h"
@@ -48,6 +50,14 @@ void render_frame(
   if (!PAUSED) {
     theta += M_PI/256;
   }
+  // DEBUG: Set light position:
+  GLfloat pos[4] = {
+    HALF_FRAME,
+    HALF_FRAME,
+    (float) HALF_FRAME * 1.5,
+    0.0
+  };
+  glLightfv( GL_LIGHT0, GL_POSITION, pos);
   //theta = 0;
   
   // Transform according to the camera parameters:
@@ -225,6 +235,11 @@ void render_chunk_layer(
 
 void render_entity(void *thing) {
   entity *e = (entity*) thing;
+  // Translate to the frame origin:
+  glMatrixMode( GL_MODELVIEW );
+  glPushMatrix();
+  glTranslatef(HALF_FRAME, HALF_FRAME, HALF_FRAME);
+
   // DEBUG: Test triangle:
   //*
   glColor4ub(255, 255, 255, 255); // white
@@ -237,6 +252,15 @@ void render_entity(void *thing) {
 
   glVertex3f(e->pos.x + 1, e->pos.y, e->pos.z - 1);
 
+  // 2-sided for extra visibility:
+  glVertex3f(e->pos.x - 1, e->pos.y, e->pos.z - 1);
+
+  glVertex3f(e->pos.x + 1, e->pos.y, e->pos.z - 1);
+
+  glVertex3f(e->pos.x, e->pos.y, e->pos.z + 1);
+
   glEnd();
   // */
+
+  glPopMatrix();
 }

@@ -29,13 +29,33 @@ int main(int argc, char** argv) {
   setup_textures();
   // Set up the test world (must happen after glutInit!):
   printf("Loading test world...\n");
+  setup_entities();
   setup_frame(&MAIN_FRAME);
   test_setup_world_terrain(&MAIN_FRAME);
   printf("...done.\n");
   test_spawn_player(&MAIN_FRAME);
+  // DEBUG: enable and set up some simple lighting:
+  glEnable( GL_LIGHTING );
+  glShadeModel( GL_FLAT );
+  float pos[4] = { 0, 0, -50, 0 };
+  float ambient[4] = { 0.3, 0.3, 0.3, 1.0 };
+  float diffuse[4] = { 1.0, 1.0, 1.0, 1.0 };
+  float specular[4] = { 0.0, 0.0, 0.0, 1.0 };
+  float grey[4] = { 0.5, 0.5, 0.5, 1.0 };
+  float white[4] = { 1.0, 1.0, 1.0, 1.0 };
+  glLightfv( GL_LIGHT0, GL_POSITION, pos);
+  glLightfv( GL_LIGHT0, GL_AMBIENT, ambient);
+  glLightfv( GL_LIGHT0, GL_DIFFUSE, diffuse);
+  glLightfv( GL_LIGHT0, GL_SPECULAR, specular);
+  glMaterialfv( GL_FRONT, GL_AMBIENT, grey );
+  glMaterialfv( GL_FRONT, GL_DIFFUSE, white );
+  glMaterialfv( GL_FRONT, GL_SPECULAR, white );
+  glMaterialf( GL_FRONT, GL_SHININESS, 50.0 );
+  glEnable( GL_LIGHT0 );
   // Start the GLUT main loop:
   loop();
   cleanup_frame(&MAIN_FRAME);
+  cleanup_entities();
   return 0;
 }
 
@@ -150,10 +170,6 @@ void test_compile_frame(frame *f) {
 }
 
 void test_spawn_player(frame *f) {
-  entity *player = (entity *) malloc(sizeof(entity));
-  if (player == NULL) {
-    perror("Failed to create player entity.");
-    exit(errno);
-  }
-  append_element(player, f->entities);
+  vector pos = { .x=0.0, .y=0.0, .z=1.0 };
+  spawn_entity("elf", &pos, &MAIN_FRAME);
 }
