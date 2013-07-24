@@ -1,5 +1,9 @@
-#include <GL/gl.h>
-#include <GL/glut.h>
+// gfx.c
+// Graphics environment wrangling.
+
+#include <GL/glu.h>
+
+#include <GLFW/glfw3.h>
 
 #include <math.h>
 
@@ -16,17 +20,23 @@
  ***************/
 
 // Stores the window ID when that gets set up.
-int WINDOW;
+GLFWwindow * WINDOW;
+
+// Should we render to the screen or not?
+int RENDER = 1;
+
+// The current width/height of the window.
+int WINDOW_WIDTH = 0;
+int WINDOW_HEIGHT = 0;
 
 // Default arguments to prepare(...)
-const int DEFAULT_MODE = GLUT_RGBA | GLUT_DOUBLE | GLUT_STENCIL;
 const int DEFAULT_WIDTH = 800;
 const int DEFAULT_HEIGHT = 600;
 const char* DEFAULT_NAME = "Elf Forest";
 const float DEFAULT_R = 0;
 const float DEFAULT_G = 0;
 const float DEFAULT_B = 0;
-const float DEFAULT_A = 1.0;
+const float DEFAULT_A = 1;
 
 // Camera parameters
 const double FOV = M_PI/2.0;
@@ -38,13 +48,9 @@ const double FAR = 362.0; // 256x256 diagonal
  * Functions *
  *************/
 
-// GLUT callback functions:
+// GLFW callback functions:
 
-static void idle(void) {
-  glutPostRedisplay();
-}
-
-static void resize(int w, int h) {
+void resize(GLFWwindow *window, int w, int h) {
   int dw = ASPECT*h;
   if (w < dw) {
     int dh = w/ASPECT;
@@ -52,47 +58,58 @@ static void resize(int w, int h) {
   } else {
     glViewport((w - dw)/2.0, 0, dw, h);
   }
+  WINDOW_WIDTH = w;
+  WINDOW_HEIGHT = h;
 }
 
-static void render(void) {
+static void set_active(GLFWwindow *window, int active) {
+  if (active) {
+    // Start rendering if we had stopped:
+    RENDER = 1;
+  } else {
+    // Pause and stop rendering:
+    RENDER = 0;
+    PAUSED = 1;
+    PHYSICS_PAUSED = 1;
+  }
+}
+
+void focus(GLFWwindow *window, int focus) {
+  set_active(window, focus);
+}
+
+void minmaximize(GLFWwindow *window, int minimized) {
+  set_active(window, !minimized);
+}
+
+void render(GLFWwindow *window) {
   vector eye_pos;
-  eye_pos.x = 0.0;
-  eye_pos.y = 0.0;
-  eye_pos.z = 1.0;
-  render_frame(&MAIN_FRAME, &eye_pos, 0, 0);
-  glutSwapBuffers();
+  //vcopy(&eye_pos, &(PLAYER->pos));
+  eye_pos.x = PLAYER->pos.x;
+  eye_pos.y = PLAYER->pos.y;
+  eye_pos.z = PLAYER->pos.z + 0.7;
+  render_frame(&MAIN_FRAME, &eye_pos, PLAYER->yaw, PLAYER->pitch);
+  glfwSwapBuffers(window);
   glClear( GL_COLOR_BUFFER_BIT );
-  tick(ticks_expected());
 }
 
 // Individual setup functions:
 
-// Initialize the GLUT context:
+// Initialize the GLFW context:
 static void init_context(int* argc, char** argv) {
-  glutInit( argc, argv );
-}
-
-static void set_mode(int mode) {
-  glutInitDisplayMode( mode );
-}
-
-static void set_size(int width, int height) {
-  glutInitWindowSize( width, height );
-}
-
-static void create_window(const char* name) {
-  WINDOW = glutCreateWindow( name );
-}
-
-static void set_bg_color(float r, float g, float b, float a) {
-  glClearColor( r, g, b, a );
+  if (!glfwInit()) {
+    exit(-1);
+  }
 }
 
 static void activate_gfx_callbacks(void) {
-  // Setup the glut callback functions:
-  glutIdleFunc( idle );
-  glutReshapeFunc( resize );
-  glutDisplayFunc( render );
+  // Setup the callback functions:
+  glfwSetWindowRefreshCallback(WINDOW, &render);
+  // We don't care about window resize events as long as they don't affect our
+  // framebuffer.
+  glfwSetFramebufferSizeCallback( WINDOW, &resize );
+  glfwSetWindowIconifyCallback( WINDOW, &minmaximize );
+  glfwSetWindowFocusCallback( WINDOW, &focus );
 }
 
 // Sets various OpenGL settings:
@@ -101,7 +118,7 @@ void glsettings() {
   glFrontFace( GL_CW );
   glEnable( GL_BLEND );
   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-  glEnable( GL_STENCIL_TEST );
+  glEnable( GL_STENCIL_TEST ); // Do we need this?
   glEnable( GL_TEXTURE_2D );
   glEnable( GL_DEPTH_TEST );
   glDepthFunc( GL_LESS );
@@ -120,7 +137,6 @@ void glperspective() {
 void prepare_default(int* argc, char** argv) {
   prepare(
     argc, argv,
-    DEFAULT_MODE,
     DEFAULT_WIDTH, DEFAULT_HEIGHT, 
     DEFAULT_NAME,
     DEFAULT_R,
@@ -133,7 +149,6 @@ void prepare_default(int* argc, char** argv) {
 void prepare(
   int* argc,
   char** argv,
-  int mode,
   int w,
   int h,
   const char* name,
@@ -143,9 +158,13 @@ void prepare(
   float a
 ) {
   init_context(argc, argv);
-  set_mode(mode);
-  set_size(w, h);
-  create_window(name);
+  WINDOW = glfwCreateWindow( w, h, name, NULL, NULL );
+  if (!WINDOW) {
+    glfwTerminate();
+    exit(-1);
+  }
+  glfwGetWindowSize(WINDOW, &WINDOW_WIDTH, &WINDOW_HEIGHT);
+  glfwMakeContextCurrent(WINDOW);
   set_bg_color( r, g, b, a);
   glsettings();
   glperspective();
@@ -157,49 +176,24 @@ void cleanup(void) {
 }
 
 void loop(void) {
-  // Swap buffers and loop away:
-  glutSwapBuffers();
-  glutMainLoop();
+  while (!glfwWindowShouldClose(WINDOW)) {
+    if (RENDER) {
+      render(WINDOW);
+    }
+    glfwPollEvents();
+    tick(ticks_expected());
+  }
+  glfwTerminate();
 }
 
 void quit(void) {
   cleanup();
-  glutDestroyWindow( WINDOW );
+  glfwTerminate();
   exit(0);
 }
 
 void fail(int err) {
   cleanup();
-  glutDestroyWindow(WINDOW);
+  glfwTerminate();
   exit(err);
-}
-
-void clear_color_buffer(void) {
-  glClear( GL_COLOR_BUFFER_BIT );
-}
-
-void clear_depth_buffer(void) {
-  glClear( GL_DEPTH_BUFFER_BIT );
-}
-
-void clear_stencil_buffer(void) {
-  glClear( GL_STENCIL_BUFFER_BIT );
-}
-
-void write_stencil_mode(void) {
-  glColorMask(0, 0, 0, 0); // Don't update the color buffer
-  glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE ); // Write to the stencil buffer
-  glStencilFunc( GL_ALWAYS, 0x1, 0x1); // Ignore the stencil buffer
-}
-
-void stencil_mode(void) {
-  glColorMask(1, 1, 1, 1); // Write to the color buffer
-  glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP ); // Don't change the stencil buffer
-  glStencilFunc( GL_EQUAL, 0x1, 0x1); // Respect the stencil buffer
-}
-
-void no_stencil_mode(void) {
-  glColorMask(1, 1, 1, 1); // Write to the color buffer
-  glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP ); // Don't change the stencil buffer
-  glStencilFunc( GL_ALWAYS, 0x1, 0x1); // Ignore the stencil buffer
 }

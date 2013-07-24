@@ -74,15 +74,15 @@ static inline int oct_is_empty(octree *ot) {
 octree * setup_octree(size_t span);
 
 // Frees the memory associated with an octree. Note that this also frees the
-// contents list of each octant in the tree.
+// contents list of each octant in the tree (but not, of course, the elements
+// of that contents list, since elements are duplicated throughout the tree).
 void cleanup_octree(octree *ot);
 
 // Inserts the given object into the given octree using the given bounding box.
-// Returns the octant where the object is stored.
-octree * oct_insert(octree *ot, void *object, bbox *box);
+void oct_insert(octree *ot, void *object, bbox *box);
 
 // Removes all copies of the given object from the given octant and its
-// children. Returns the number of objects removed.
+// children. Returns the number of copies removed.
 int oct_remove(octree *ot, void *object);
 
 #endif //ifndef OCTREE_H

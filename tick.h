@@ -8,9 +8,21 @@
  * Constants *
  *************/
 
-extern const float TICKS_PER_SECOND;
-extern const int TICKS_PER_SECOND_I;
+// The desired number of ticks per second. The number of ticks per frame may
+// vary, as may the number of frames per second, but the number of ticks per
+// second shouldn't rise above this value (and will only fall below it if the
+// machine can't keep up).
+#define TICKS_PER_SECOND 60.0
+#define TICKS_PER_SECOND_I 60
 
+// Inverse of TICKS_PER_SECOND:
+#define SECONDS_PER_TICK (1.0 / TICKS_PER_SECOND)
+
+/***********
+ * Globals *
+ ***********/
+
+// The number of ticks since the start of this second:
 extern int TICK_COUNT;
 
 /*************

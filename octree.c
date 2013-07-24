@@ -63,42 +63,35 @@ void cleanup_octree_recursive(octree *ot) {
   free(ot);
 }
 
-octree * oct_insert_recursive(octree *ot, void *object, bbox *box) {
-  int i;
-  octree *match = NULL;
-  int stay_here = 0;
+void oct_insert_recursive(octree *ot, void *object, bbox *box) {
+  int i, lastcount;
   if (oct_has_children(ot)) {
     for (i = 0; i < 8; ++i) {
       if (intersects(*box, ot->octants[i]->box)) {
-        if (match == NULL) {
-          match = ot->octants[i];
-        } else {
-          stay_here = 1;
-        }
+        lastcount = ot->octants[i]->count;
+        oct_insert_recursive(ot->octants[i], object, box);
+        ot->count += ot->octants[i]->count - lastcount;
       }
     }
-    if (stay_here) { // The box spans multiple children: we'll store it here:
-      append_element(ot->contents, object);
-      return ot;
-    } else if (match != NULL) { // We can recurse into a single child:
-      return oct_insert_recursive(match, object, box);
-    }
-  } else { // Objects are only stored in leaf nodes.
-    append_element(ot->contents, object);
-    return ot;
   }
-  return NULL; // Bounding box doesn't overlap this octree!
+  // Whether we added it to any children or not, we should store it here:
+  append_element(ot->contents, object);
+  ot->count += 1;
 }
 
 int oct_remove_recursive(octree *ot, void *object) {
   int i;
-  int removed = 0;
-  if (oct_has_children(ot)) {
-    for (i = 0; i < 8; ++i) {
-      removed += oct_remove_recursive(ot->octants[i], object);
+  int removed = remove_all_elements(ot->contents, object);
+  if (removed > 0) {
+    if (oct_has_children(ot)) {
+      for (i = 0; i < 8; ++i) {
+        if (!oct_is_empty(ot->octants[i])) {
+          removed += oct_remove_recursive(ot->octants[i], object);
+        }
+      }
     }
   }
-  removed += remove_all_elements(ot->contents, object);
+  ot->count -= removed;
   return removed;
 }
 
@@ -118,8 +111,10 @@ void cleanup_octree(octree *ot) {
   cleanup_octree_recursive(ot);
 }
 
-octree * oct_insert(octree *ot, void *object, bbox *box) {
-  return oct_insert_recursive(ot, object, box);
+void oct_insert(octree *ot, void *object, bbox *box) {
+  if (intersects(*box, ot->box)) {
+    oct_insert_recursive(ot, object, box);
+  }
 }
 
 int oct_remove(octree *ot, void *object) {

@@ -1,0 +1,26 @@
+performance
+  optimize exposure computation by caching block resuls (27-element array)
+  double-check octree performance
+  time chunk loading
+loading
+  implement dynamic chunk loading
+  implement player position management
+physics
+  terrain collision detection
+  entity collision detection
+terrain
+  forests
+  caves
+  erosion
+graphics
+  voxel mipmapping
+  block lighting
+  fix water rendering
+  entity models & textures
+world
+  plant growth
+  water flow
+gameplay
+  glyphs
+  songs
+  plants

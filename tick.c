@@ -10,12 +10,9 @@
 #include "ctl.h"
 #include "entities.h"
 
-/*************
- * Constants *
- *************/
-
-const float TICKS_PER_SECOND = 60.0;
-const int TICKS_PER_SECOND_I = 60;
+/***********
+ * Globals *
+ ***********/
 
 int TICK_COUNT = 0;
 
@@ -57,6 +54,7 @@ void tick(int steps) {
   int i;
   for (i = 0; i < steps; ++i) {
     TICK_COUNT = (TICK_COUNT + 1) % TICKS_PER_SECOND_I;
+    tick_motion_controls();
     tick_entities(&MAIN_FRAME);
   }
 }

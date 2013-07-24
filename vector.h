@@ -55,8 +55,9 @@ static inline void vscale(vector *v, float scale) {
 
 // Rotates the vector around the z-axis by the given angle theta.
 static inline void vyaw(vector *v, float yaw) {
-  v->x = v->x*cosf(yaw) - v->y*sinf(yaw);
-  v->y = v->x*sinf(yaw) + v->y*cosf(yaw);
+  float ox = v->x;
+  v->x = (v->x)*cosf(yaw) - (v->y)*sinf(yaw);
+  v->y = (ox)*sinf(yaw) + (v->y)*cosf(yaw);
 }
 
 // Rotates the vector around its perpendicular in the x-y plane by the given
@@ -71,6 +72,13 @@ static inline void vpitch(vector *v, float pitch) {
   v->z = r * sinf(phi);
 }
 
+// Overwrites the given vector with all zeroes.
+static inline void vzero(vector *v) {
+  v->x = 0;
+  v->y = 0;
+  v->z = 0;
+}
+
 // Overwrites the given vector with a normal vector facing in the given
 // direction. North is yaw=0, pitch=0 is horizontal.
 static inline void vface(vector *v, float yaw, float pitch) {
@@ -83,6 +91,16 @@ static inline void vadd(vector *target, const vector *value) {
   target->x += value->x;
   target->y += value->y;
   target->z += value->z;
+}
+
+static inline void vadd_scaled(
+  vector *target,
+  const vector *value,
+  float scale
+) {
+  target->x += value->x * scale;
+  target->y += value->y * scale;
+  target->z += value->z * scale;
 }
 
 static inline void vsub(vector *target, const vector *value) {

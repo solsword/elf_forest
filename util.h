@@ -47,4 +47,14 @@ static inline int fastfloor(float x) {
   return ix - (ix > x);
 }
 
+// Normalizes the given angle to be between -M_PI and M_PI.
+static inline void norm_angle(float *angle) {
+    while (*angle > M_PI) {
+      *angle -= M_PI*2;
+    }
+    while (*angle < -M_PI) {
+      *angle += M_PI*2;
+    }
+}
+
 #endif // ifndef UTIL_H

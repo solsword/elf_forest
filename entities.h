@@ -13,7 +13,6 @@
 #include "list.h"
 #include "vector.h"
 #include "bbox.h"
-#include "octree.h"
 #include "world.h"
 
 /**************
@@ -58,7 +57,7 @@ struct entity_s {
   vector impulse; // Net impulse to be applied this tick.
 
   bbox box; // Bounding box.
-  octree * octant; // Octant within a frame.
+  frame *fr; // The frame that this entity is in.
 };
 
 struct block_entity_s {
@@ -89,6 +88,12 @@ static inline void copy_entity_pos(entity *from, entity *to) {
   to->pitch = from->pitch;
 }
 
+static inline void add_entity(frame *f, entity *e) {
+  e->fr = f;
+  oct_insert(f->oct, (void *) e, &(e->box));
+  append_element(f->entities, (void *)e);
+}
+
 /*************
  * Functions *
  *************/
@@ -105,14 +110,17 @@ void cleanup_entities(void);
 // Ticks all entities attached to the given frame.
 void tick_entities(frame *f);
 
+// Ticks the given entity (it's assumed to be an entity):
+void tick_entity(void *thing);
+
 // Copies an entity from the types list, sets it up, and adds it to the given
 // frame at the given position. This involves allocating space for the new
-// entity.
-void spawn_entity(const char *type, vector *pos, frame *f);
+// entity. Returns a pointer to the entity spawned.
+entity * spawn_entity(const char *type, vector *pos, frame *f);
 
 // Scans the given list of entities and returns the first one with the given
 // type. Returns NULL if no such entity exists.
-entity *find_by_type(const char *type, list *l);
+entity * find_by_type(const char *type, list *l);
 
 // Recomputes the bounding box of the given entity based on its position and
 // size.

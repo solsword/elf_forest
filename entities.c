@@ -6,10 +6,12 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include "world.h"
-#include "entities.h"
-#include "static_entities.h"
 #include "list.h"
+#include "gfx.h"
+#include "world.h"
+#include "physics.h"
+#include "static_entities.h"
+#include "entities.h"
 
 /***********
  * Globals *
@@ -56,20 +58,26 @@ void cleanup_entities(void) {
 }
 
 void tick_entities(frame *f) {
+  foreach(f->entities, &tick_entity);
 }
 
-void spawn_entity(const char *type, vector *pos, frame *f) {
+void tick_entity(void *thing) {
+  entity *e = (entity *) thing;
+  tick_physics(e);
+}
+
+entity * spawn_entity(const char *type, vector *pos, frame *f) {
   entity *e = (entity *) malloc(sizeof(entity));
   if (e == NULL) {
     perror("Failed to spawn entity.");
-    exit(errno);
+    fail(errno);
   }
   // Find the prototype that matches the given name:
   entity *prototype = find_by_type(type, ENTITY_PROTOTYPES);
   if (prototype == NULL) {
     fprintf(stderr, "Failed to spawn entity: invalid type '%s'.\n", type);
     free(e);
-    return;
+    return NULL;
   }
   // Copy its data into our new entity:
   copy_entity_data(prototype, e);
@@ -77,17 +85,20 @@ void spawn_entity(const char *type, vector *pos, frame *f) {
   e->pos.x = pos->x;
   e->pos.y = pos->y;
   e->pos.z = pos->z;
+  // Set yaw and pitch to 0:
+  e->yaw = 0;
+  e->pitch = 0;
   // Zero out the velocity and impulse fields:
   clear_kinetics(e);
   // Compute the bounding box:
   compute_bb(e);
-  // Put the object into the frame's octree:
-  e->octant = oct_insert(f->oct, (void *) e, &(e->box));
-  // Finally add it onto the frame's active entities list:
-  append_element(f->entities, (void *)e);
+  // Put the object into the given frame:
+  add_entity(f, e);
+  // Return the entity:
+  return e;
 }
 
-entity *find_by_type(const char *type, list *l) {
+entity * find_by_type(const char *type, list *l) {
   SEARCH_TYPE = type;
   return (entity *) find_element(l, &scan_type);
 }

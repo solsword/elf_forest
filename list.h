@@ -4,6 +4,7 @@
 // list.h
 // Simple array-based lists.
 
+#include <stdlib.h>
 #include <stdint.h>
 
 /***********

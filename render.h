@@ -8,6 +8,27 @@
 #include "display.h"
 #include "physics.h"
 
+/*********
+ * Enums *
+ *********/
+
+typedef enum {
+  VM_FIRST,
+  VM_SECOND,
+  VM_THIRD,
+  NUM_VIEW_MODES
+} view_mode;
+
+/***********
+ * Globals *
+ ***********/
+
+// The view mode (first, second, or third person).
+extern view_mode VIEW_MODE;
+
+// How far the camera will be from the model in third-person view.
+extern float THIRD_PERSON_DISTANCE;
+
 /*************
  * Functions *
  *************/

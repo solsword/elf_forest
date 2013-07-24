@@ -4,9 +4,10 @@
 // physics.h
 // Physical simulation.
 
-#include "world.h"
 #include "octree.h"
 #include "vector.h"
+#include "world.h"
+#include "entities.h"
 
 /**************
  * Structures *
@@ -29,5 +30,7 @@ extern float GRAVITY;
 /*************
  * Functions *
  *************/
+
+void tick_physics(entity *e);
 
 #endif //ifndef PHYSICS_H

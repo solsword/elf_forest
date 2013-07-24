@@ -21,13 +21,13 @@
 
 int main(int argc, char** argv) {
   srand(545438);
-  // Prepare the GLUT context:
+  // Prepare the window context:
   prepare_default(&argc, argv);
   // Set up controls:
   setup_control();
   // Set up textures:
   setup_textures();
-  // Set up the test world (must happen after glutInit!):
+  // Set up the test world:
   printf("Loading test world...\n");
   setup_entities();
   setup_frame(&MAIN_FRAME);
@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
   glMaterialfv( GL_FRONT, GL_SPECULAR, white );
   glMaterialf( GL_FRONT, GL_SHININESS, 50.0 );
   glEnable( GL_LIGHT0 );
-  // Start the GLUT main loop:
+  // Start the main loop:
   loop();
   cleanup_frame(&MAIN_FRAME);
   cleanup_entities();
@@ -171,5 +171,5 @@ void test_compile_frame(frame *f) {
 
 void test_spawn_player(frame *f) {
   vector pos = { .x=0.0, .y=0.0, .z=1.0 };
-  spawn_entity("elf", &pos, &MAIN_FRAME);
+  PLAYER = spawn_entity("elf", &pos, &MAIN_FRAME);
 }

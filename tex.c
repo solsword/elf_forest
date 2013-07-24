@@ -319,21 +319,21 @@ txinfo* loadPNG(const char *filename) {
   );
   if (png_ptr == NULL) {
     fprintf(stderr, "Failed to create PNG read struct.\n");
-    exit(1);
+    exit(-1);
   }
 
   png_infop info_ptr = png_create_info_struct(png_ptr);
   if (info_ptr == NULL) {
     png_destroy_read_struct(&png_ptr, (png_infopp)NULL, (png_infopp)NULL);
     fprintf(stderr, "Failed to create PNG info struct.\n");
-    exit(1);
+    exit(-1);
   }
 
   png_infop end_info = png_create_info_struct(png_ptr);
   if (end_info == NULL) {
     png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
     fprintf(stderr, "Failed to create PNG end info struct.\n");
-    exit(1);
+    exit(-1);
   }
 
   // Get ready to read data:

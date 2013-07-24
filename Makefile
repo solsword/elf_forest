@@ -13,7 +13,12 @@ MAKEFLAGS+=--assume-old=$(TEST_DIR)
 # Compiler & Flags:
 CC=gcc
 CFLAGS=-g -O2 -c -Wall -ffast-math
-LFLAGS=-lm -lGL -lGLU -lglut -lglee -lpng
+
+LIBS_OPENGL=-lglee -lGL -lGLU
+LIBS_GLFW=-lglfw3 -lrt -lXrandr -lXi -lXxf86vm -lXrender -lXext -lX11 \
+          -lpthread -lxcb -lXau -lXdmcp
+
+LFLAGS=-lm -lpng $(LIBS_OPENGL) $(LIBS_GLFW)
 
 # Objects:
 CORE_OBJECTS=$(OBJ_DIR)/world.o \
