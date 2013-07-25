@@ -52,6 +52,7 @@ struct entity_s {
 
   vector pos; // Position within a frame.
   float yaw, pitch; // Facing.
+  uint8_t on_ground; // Whether the entity is resting on ground.
 
   vector vel; // Velocity.
   vector impulse; // Net impulse to be applied this tick.
@@ -88,10 +89,35 @@ static inline void copy_entity_pos(entity *from, entity *to) {
   to->pitch = from->pitch;
 }
 
+// Adds the given entity to the given frame.
 static inline void add_entity(frame *f, entity *e) {
   e->fr = f;
   oct_insert(f->oct, (void *) e, &(e->box));
   append_element(f->entities, (void *)e);
+}
+
+// Zeroes out the velocity and impulse fields of the given entity.
+static inline void clear_kinetics(entity *e) {
+  e->vel.x = 0;
+  e->vel.y = 0;
+  e->vel.z = 0;
+  e->impulse.x = 0;
+  e->impulse.y = 0;
+  e->impulse.z = 0;
+}
+
+// Recomputes the bounding box of the given entity based on its position and
+// size.
+static inline void compute_bb(entity *e) {
+  float s2 = e->size.x/2.0;
+  e->box.min.x = e->pos.x - s2;
+  e->box.max.x = e->pos.x + s2;
+  s2 = e->size.y/2.0;
+  e->box.min.y = e->pos.y - s2;
+  e->box.max.y = e->pos.y + s2;
+  s2 = e->size.z/2.0;
+  e->box.min.z = e->pos.z - s2;
+  e->box.max.z = e->pos.z + s2;
 }
 
 /*************
@@ -121,12 +147,5 @@ entity * spawn_entity(const char *type, vector *pos, frame *f);
 // Scans the given list of entities and returns the first one with the given
 // type. Returns NULL if no such entity exists.
 entity * find_by_type(const char *type, list *l);
-
-// Recomputes the bounding box of the given entity based on its position and
-// size.
-void compute_bb(entity *e);
-
-// Zeroes out the velocity and impulse fields of the given entity.
-void clear_kinetics(entity *e);
 
 #endif //ifndef ENTITIES_H

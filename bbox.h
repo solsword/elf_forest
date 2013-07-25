@@ -4,6 +4,7 @@
 // bbox.h
 // Bounding box implementation.
 
+#include "util.h"
 #include "vector.h"
 
 /**************
@@ -48,5 +49,13 @@ static inline int intersects(bbox b1, bbox b2) {
     (b1.min.z <= b2.max.z) && (b2.min.z <= b1.max.z)
   );
 }
+
+// Integer min/max coordinates of the box:
+static inline int b_i_min_x(bbox b) { return fastfloor(b.min.x); }
+static inline int b_i_max_x(bbox b) { return  fastceil(b.max.x); }
+static inline int b_i_min_y(bbox b) { return fastfloor(b.min.y); }
+static inline int b_i_max_y(bbox b) { return  fastceil(b.max.y); }
+static inline int b_i_min_z(bbox b) { return fastfloor(b.min.z); }
+static inline int b_i_max_z(bbox b) { return  fastceil(b.max.z); }
 
 #endif //ifndef BBOX_H

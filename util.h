@@ -46,6 +46,11 @@ static inline int fastfloor(float x) {
   int ix = (int) x;
   return ix - (ix > x);
 }
+// Likewise for ceil():
+static inline int fastceil(float x) {
+  int ix = (int) x;
+  return ix + (ix < x);
+}
 
 // Normalizes the given angle to be between -M_PI and M_PI.
 static inline void norm_angle(float *angle) {

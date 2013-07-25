@@ -102,24 +102,3 @@ entity * find_by_type(const char *type, list *l) {
   SEARCH_TYPE = type;
   return (entity *) find_element(l, &scan_type);
 }
-
-void compute_bb(entity *e) {
-  float s2 = e->size.x/2.0;
-  e->box.min.x = e->pos.x - s2;
-  e->box.max.x = e->pos.x + s2;
-  s2 = e->size.y/2.0;
-  e->box.min.y = e->pos.y - s2;
-  e->box.max.y = e->pos.y + s2;
-  s2 = e->size.z/2.0;
-  e->box.min.z = e->pos.z - s2;
-  e->box.max.z = e->pos.z + s2;
-}
-
-void clear_kinetics(entity *e) {
-  e->vel.x = 0;
-  e->vel.y = 0;
-  e->vel.z = 0;
-  e->impulse.x = 0;
-  e->impulse.y = 0;
-  e->impulse.z = 0;
-}
