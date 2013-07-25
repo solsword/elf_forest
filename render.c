@@ -25,6 +25,7 @@
 
 view_mode VIEW_MODE = VM_THIRD;
 
+float SECOND_PERSON_DISTANCE = 2.7;
 float THIRD_PERSON_DISTANCE = 3.2;
 
 /*************
@@ -33,11 +34,11 @@ float THIRD_PERSON_DISTANCE = 3.2;
 
 void render_frame(
   frame *f,
-  vector *eye_pos,
+  vector *head_pos,
   float yaw,
   float pitch
 ) {
-  //static float theta = 0;
+  // Clear the buffers:
   clear_color_buffer();
   clear_depth_buffer();
 
@@ -47,39 +48,72 @@ void render_frame(
 
   // DEBUG: spin right 'round:
   /*
+  static float theta = 0;
   float r = 0.75*FULL_FRAME - ZOOM;
   gluLookAt(
     HALF_FRAME + r*cos(theta),
     HALF_FRAME + r*sin(theta),
     FULL_FRAME * 0.75 - 0.25 * FULL_FRAME * (ZOOM/(0.75*FULL_FRAME)),
     //0, 0, 0,
-    eye_pos->x+HALF_FRAME, eye_pos->y+HALF_FRAME, eye_pos->z+HALF_FRAME,
+    head_pos->x+HALF_FRAME, head_pos->y+HALF_FRAME, head_pos->z+HALF_FRAME,
     0, 0, 1
-  ); // Look north from eye_pos
+  ); // Look north from head_pos
   if (!PAUSED) {
     theta += M_PI/256;
   }
   */
 
-  // Rotate according to the pitch and yaw given:
-  glRotatef(-pitch*R2D, 1, 0, 0);
-  glRotatef(-yaw*R2D, 0, 1, 0);
+  // Compute an eye vector:
+  vector eye_vector, up_vector;
+  vface(&eye_vector, yaw, pitch);
+  vface(&up_vector, yaw, pitch + M_PI_2);
 
-
-  // Transform according to the camera parameters:
   //*
-  gluLookAt(
-    eye_pos->x+HALF_FRAME, eye_pos->y+HALF_FRAME, eye_pos->z+HALF_FRAME,
-    //0, 0, 0,
-    eye_pos->x+HALF_FRAME, eye_pos->y+HALF_FRAME + 1, eye_pos->z+HALF_FRAME,
-    0, 0, 1
-  ); // Look north from eye_pos
-  // */
-
-  // Back up if we're in 3rd person view:
-  if (VIEW_MODE == VM_THIRD) {
-    glTranslatef(0, THIRD_PERSON_DISTANCE, 0);
+  if (VIEW_MODE == VM_FIRST) {
+    // Look from head_pos in the direction given by eye_vector:
+    gluLookAt(
+      head_pos->x + HALF_FRAME, // look from
+        head_pos->y + HALF_FRAME,
+        head_pos->z + HALF_FRAME,
+      head_pos->x + HALF_FRAME + eye_vector.x, // look at
+        head_pos->y + HALF_FRAME + eye_vector.y,
+        head_pos->z + HALF_FRAME + eye_vector.z,
+      up_vector.x, // up
+        up_vector.y,
+        up_vector.z
+    );
+  } else if (VIEW_MODE == VM_SECOND) {
+    // Look at head_pos in the opposite direction from eye_vector from
+    // SECOND_PERSON_DISTANCE units away.
+    vscale(&eye_vector, SECOND_PERSON_DISTANCE*ZOOM);
+    gluLookAt(
+      head_pos->x + HALF_FRAME + eye_vector.x, // look from
+        head_pos->y + HALF_FRAME + eye_vector.y,
+        head_pos->z + HALF_FRAME + eye_vector.z,
+      head_pos->x + HALF_FRAME, // look at
+        head_pos->y + HALF_FRAME,
+        head_pos->z + HALF_FRAME,
+      up_vector.x, // up
+        up_vector.y,
+        up_vector.z
+    );
+  } else if (VIEW_MODE == VM_THIRD) {
+    // Look at head_pos in the direction given by the eye_vector from
+    // THIRD_PERSON_DISTANCE units away.
+    vscale(&eye_vector, THIRD_PERSON_DISTANCE*ZOOM);
+    gluLookAt(
+      head_pos->x + HALF_FRAME - eye_vector.x, // look from
+        head_pos->y + HALF_FRAME - eye_vector.y,
+        head_pos->z + HALF_FRAME - eye_vector.z,
+      head_pos->x + HALF_FRAME, // look at
+        head_pos->y + HALF_FRAME,
+        head_pos->z + HALF_FRAME,
+      up_vector.x, // up
+        up_vector.y,
+        up_vector.z
+    );
   }
+  // */
 
   // DEBUG: Set light position:
   GLfloat pos[4] = {

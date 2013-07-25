@@ -19,7 +19,7 @@ typedef enum {
   C_PAUSE,
   C_JUMP, C_CROUCH,
   C_LEFT, C_RIGHT, C_FORWARD, C_REVERSE,
-  C_ZOOM_IN, C_ZOOM_OUT,
+  C_CHANGE_VIEW, C_ZOOM_IN, C_ZOOM_OUT,
   N_CONTROLS
 } control;
 
@@ -48,13 +48,19 @@ extern float MOUSE_SENSITIVITY;
 // The player entity will receive control inputs:
 extern entity * PLAYER;
 
+// The pitch limits for looking up or down:
+extern float MAX_PITCH;
+extern float MIN_PITCH;
+
 // Attenuation of strafing relative to forward motion:
 extern float STRAFE_COEFFICIENT;
 // Attenuation of backing up relative to forward motion:
 extern float BACKUP_COEFFICIENT;
 
-// DEBUG:
-extern int ZOOM;
+// Zoom level and limits (smaller numbers are closer):
+extern float ZOOM;
+extern float MIN_ZOOM;
+extern float MAX_ZOOM;
 
 /********************
  * Inline Functions *

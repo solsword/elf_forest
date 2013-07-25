@@ -13,6 +13,7 @@
 #include "gfx.h"
 #include "world.h"
 #include "entities.h"
+#include "render.h"
 
 /********************
  * Global variables *
@@ -23,6 +24,7 @@ int KEYMAP[N_CONTROLS] = {
   GLFW_KEY_P, // pause
   GLFW_KEY_SPACE, GLFW_KEY_LEFT_CONTROL, // jump, crouch
   GLFW_KEY_A, GLFW_KEY_D, GLFW_KEY_W, GLFW_KEY_S, // movement
+  GLFW_KEY_V, // swap views
   GLFW_KEY_KP_ADD, GLFW_KEY_KP_SUBTRACT, // zoom in/out
 };
 
@@ -33,14 +35,19 @@ uint8_t UP[N_CONTROLS];
 uint8_t PAUSED = 0;
 uint8_t PHYSICS_PAUSED = 0;
 
-float MOUSE_SENSITIVITY = 1.0/12.0;
+float MOUSE_SENSITIVITY = 1.0/6.0;
 
 entity * PLAYER = NULL;
+
+float MAX_PITCH = M_PI_2;
+float MIN_PITCH = -M_PI_2;
 
 float STRAFE_COEFFICIENT = 0.7;
 float BACKUP_COEFFICIENT = 0.4;
 
-int ZOOM = 0;
+float ZOOM = 1.0;
+float MIN_ZOOM = 0.5;
+float MAX_ZOOM = 2.5;
 
 /*************
  * Callbacks *
@@ -83,6 +90,12 @@ static void mouse_moved(double dx, double dy) {
     PLAYER->pitch -= dy*ASPECT*M_PI*MOUSE_SENSITIVITY;
     norm_angle(&(PLAYER->yaw));
     norm_angle(&(PLAYER->pitch));
+    if (PLAYER->pitch > MAX_PITCH) {
+      PLAYER->pitch = MAX_PITCH;
+    }
+    if (PLAYER->pitch < MIN_PITCH) {
+      PLAYER->pitch = MIN_PITCH;
+    }
   }
 }
 
@@ -113,14 +126,19 @@ void tick_general_controls(void) {
     PHYSICS_PAUSED = !PHYSICS_PAUSED;
   }
 
+  // Changing viewpoints:
+  if (DOWN[C_CHANGE_VIEW]) {
+    VIEW_MODE = (VIEW_MODE + 1) % NUM_VIEW_MODES;
+  }
+
   // Zooming:
   if (CONTROLS[C_ZOOM_IN]) {
-    ZOOM += 1;
-    ZOOM = ZOOM > HALF_FRAME *1.3 ? HALF_FRAME*1.3 : ZOOM;
+    ZOOM *= 0.9;
+    ZOOM = ZOOM < MIN_ZOOM ? MIN_ZOOM : ZOOM;
   }
   if (CONTROLS[C_ZOOM_OUT]) {
-    ZOOM -= 1;
-    ZOOM = ZOOM < 0 ? 0 : ZOOM;
+    ZOOM *= 1.1;
+    ZOOM = ZOOM > MAX_ZOOM ? MAX_ZOOM : ZOOM;
   }
 
   // Clear the edge triggers:

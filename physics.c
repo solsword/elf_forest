@@ -16,6 +16,8 @@
 
 float GRAVITY = 9.81;
 
+float DRAG = 0.975;
+
 /*************
  * Functions *
  *************/
@@ -30,6 +32,7 @@ void tick_physics(entity *e) {
   //acceleration.z -= GRAVITY;
   vadd_scaled(&(e->vel), &acceleration, dt);
   vadd_scaled(&(e->pos), &(e->vel), dt);
+  vscale(&(e->vel), DRAG);
   // TODO: collision detection & resolution
   // Reset impulse:
   vzero(&(e->impulse));

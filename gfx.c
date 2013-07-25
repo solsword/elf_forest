@@ -83,12 +83,10 @@ void minmaximize(GLFWwindow *window, int minimized) {
 }
 
 void render(GLFWwindow *window) {
-  vector eye_pos;
-  //vcopy(&eye_pos, &(PLAYER->pos));
-  eye_pos.x = PLAYER->pos.x;
-  eye_pos.y = PLAYER->pos.y;
-  eye_pos.z = PLAYER->pos.z + 0.7;
-  render_frame(&MAIN_FRAME, &eye_pos, PLAYER->yaw, PLAYER->pitch);
+  vector head_pos;
+  vcopy(&head_pos, &(PLAYER->pos));
+  head_pos.z += 0.7;
+  render_frame(&MAIN_FRAME, &head_pos, PLAYER->yaw, PLAYER->pitch);
   glfwSwapBuffers(window);
   glClear( GL_COLOR_BUFFER_BIT );
 }

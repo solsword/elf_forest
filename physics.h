@@ -21,6 +21,9 @@
 
 extern float GRAVITY;
 
+// Fractional momentum loss:
+extern float DRAG;
+
 /*************************
  * Structure Definitions *
  *************************/

@@ -79,7 +79,7 @@ static inline void vzero(vector *v) {
   v->z = 0;
 }
 
-// Overwrites the given vector with a normal vector facing in the given
+// Overwrites the given vector with a unit vector facing in the given
 // direction. North is yaw=0, pitch=0 is horizontal.
 static inline void vface(vector *v, float yaw, float pitch) {
   v->x = -sinf(yaw) * cosf(pitch);

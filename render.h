@@ -26,7 +26,8 @@ typedef enum {
 // The view mode (first, second, or third person).
 extern view_mode VIEW_MODE;
 
-// How far the camera will be from the model in third-person view.
+// Base camera<->model distances in second/third person views:
+extern float SECOND_PERSON_DISTANCE;
 extern float THIRD_PERSON_DISTANCE;
 
 /*************
