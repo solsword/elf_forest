@@ -54,6 +54,7 @@ struct entity_s {
   float yaw, pitch; // Facing.
   uint8_t on_ground; // Whether the entity is resting on ground.
 
+  vector control; // Control inputs.
   vector vel; // Velocity.
   vector impulse; // Net impulse to be applied this tick.
 

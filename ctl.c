@@ -42,6 +42,7 @@ entity * PLAYER = NULL;
 float MAX_PITCH = M_PI_2;
 float MIN_PITCH = -M_PI_2;
 
+float ACCELERATION = 100.0;
 float STRAFE_COEFFICIENT = 0.7;
 float BACKUP_COEFFICIENT = 0.4;
 
@@ -147,32 +148,32 @@ void tick_motion_controls(void) {
   vface(&forward, PLAYER->yaw, 0);
   vector v;
   // TODO: Limited air control?
-  if (CONTROLS[C_FORWARD] && PLAYER->on_ground) {
+  if (CONTROLS[C_FORWARD]) {
     vcopy(&v, &forward);
     vscale(&v, PLAYER->walk);
-    vadd(&(PLAYER->impulse), &v);
+    vadd(&(PLAYER->control), &v);
   }
-  if (CONTROLS[C_REVERSE] && PLAYER->on_ground) {
+  if (CONTROLS[C_REVERSE]) {
     vcopy(&v, &forward);
     vscale(&v, -PLAYER->walk * BACKUP_COEFFICIENT);
-    vadd(&(PLAYER->impulse), &v);
+    vadd(&(PLAYER->control), &v);
   }
-  if (CONTROLS[C_LEFT] && PLAYER->on_ground) {
+  if (CONTROLS[C_LEFT]) {
     vcopy(&v, &forward);
     vyaw(&v, M_PI_2);
     vscale(&v, PLAYER->walk * STRAFE_COEFFICIENT);
-    vadd(&(PLAYER->impulse), &v);
+    vadd(&(PLAYER->control), &v);
   }
-  if (CONTROLS[C_RIGHT] && PLAYER->on_ground) {
+  if (CONTROLS[C_RIGHT]) {
     vcopy(&v, &forward);
     vyaw(&v, -M_PI_2);
     vscale(&v, PLAYER->walk * STRAFE_COEFFICIENT);
-    vadd(&(PLAYER->impulse), &v);
+    vadd(&(PLAYER->control), &v);
   }
   if (DOWN[C_JUMP] && PLAYER->on_ground) {
     vcopy(&v, &V_UP);
     vscale(&v, PLAYER->jump);
-    vadd(&(PLAYER->impulse), &v);
+    vadd(&(PLAYER->control), &v);
     DOWN[C_JUMP] = 0;
   }
 }
