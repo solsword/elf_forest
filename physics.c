@@ -17,7 +17,7 @@
  * Constants *
  *************/
 
-const float TARGET_RESOLUTION = 1.0/120.0;
+const float TARGET_RESOLUTION = 1.0/180.0;
 
 const float TREAD_DEPTH = 0.01; // TODO: Test vs bevel.
 
@@ -37,9 +37,9 @@ const float CORNER_BEVEL = 0.025;
  * Globals *
  ***********/
 
-float GRAVITY = 9.81;
+float GRAVITY = 20.0;
 
-float DRAG = 0.975;
+float DRAG = 0.985;
 
 // Initially we're at 1:1 time.
 float DT = SECONDS_PER_TICK;
@@ -100,144 +100,379 @@ static inline int get_face(const frame_pos *pos, const vector *v) {
 
 // Resolves block collisions via strict repositioning and velocity rewriting.
 static inline void resolve_block_collisions(entity *e) {
-  int nx, ny, nz; // integer min coords
-  int xx, xy, xz; // integer max coords
-  float pd_x = 0, pd_y = 0, pd_z = 0; // penetration depths
-  frame_pos pos; // position of block to test
-  frame *f = e->fr; // grab a reference to the frame
-  // Look up min/max coords:
+  int nx, ny, nz; // integer bbox min coords
+  int xx, xy, xz; // integer bbox max coords
+  int cx, cy, cz; // integer center coords
+  int snx, sny, snz; // integer 'side' min coords
+  int sxx, sxy, sxz; // integer 'side' max coords
+  frame_pos pos; // the voxel we're considering
   nx = b_i_min_x(e->box); xx = b_i_max_x(e->box);
   ny = b_i_min_y(e->box); xy = b_i_max_y(e->box);
   nz = b_i_min_z(e->box); xz = b_i_max_z(e->box);
-  e->on_ground = 0; // Clear our on_ground state
-  printf("RBC\n");
+  cx = fastfloor(e->pos.x);
+  cy = fastfloor(e->pos.y);
+  cz = fastfloor(e->pos.z);
+  snx = (cx < nx + 1) * cx + (1 - (cx < nx + 1)) * (nx + 1);
+  sxx = (cx > xx - 1) * cx + (1 - (cx > xx - 1)) * (xx - 1);
+  sny = (cy < ny + 1) * cy + (1 - (cy < ny + 1)) * (ny + 1);
+  sxy = (cy > xy - 1) * cy + (1 - (cy > xy - 1)) * (xy - 1);
+  snz = (cz < nz + 1) * cz + (1 - (cz < nz + 1)) * (nz + 1);
+  sxz = (cz > cz - 1) * cz + (1 - (cz > cz - 1)) * (xz - 1);
+  /*
+  printf(
+    "rbf/ppos: %.3f %.3f %.3f\n",
+    e->pos.x, e->pos.y, e->pos.z
+  );
+  printf(
+    "rbf/bb: %d %d : %d %d : %d %d\n",
+    nx, xx,
+    ny, xy,
+    nz, xz
+  );
+  printf(
+    "rbf/si: %d %d : %d %d : %d %d\n",
+    snx, sxx,
+    sny, sxy,
+    snz, sxz
+  );
+  // */
+  pos.x = nx;
+  // Slide based on side blocks only:
+  int constrained = 0; // collision flags for each direction
+  float adj = 0, adj_alt = 0; // how far to adjust (main/alt)
   // north/south
-  for (pos.x = nx; pos.x < xx; ++pos.x) {
-    pd_x = (
-      (pos.x == nx) * ((nx + 1) - e->box.min.x)
-    +
-      (pos.x == xx) * (e->box.max.x - (xx - 1)) 
-    +
-      (pos.x != nx && pos.x != xx)
-    );
-          for (pos.z = nz; pos.z < xz; ++pos.z) {
-            pd_z = (
-              (pos.z == nz) * ((nz + 1) - e->box.min.z)
-            +
-              (pos.z == xz) * (e->box.max.z - (xz - 1)) 
-            +
-              (pos.z != nz && pos.z != xz)
-            );
-              pos.y = ny; // south
-              pd_y = ((ny + 1) - e->box.min.y);
-              if (
-                pd_y > 0
-              &&
-                exclude_corners(pd_x, pd_y, pd_z)
-              &&
-                is_solid(block_at(f, pos))
-              &&
-                get_face(&pos, &(e->pos)) | F_NORTH
-              ) {
-                printf("rbc: south\n");
-                e->box.min.y += pd_y + BOUNCE_DISTANCE;
-                e->pos.y += pd_y + BOUNCE_DISTANCE;
-                e->vel.y *= (e->vel.y > 0);
-              }
-              pos.y = xy - 1; // north
-              pd_y = (e->box.max.y - (xy - 1));
-              if (
-                pd_y > 0
-              &&
-                exclude_corners(pd_x, pd_y, pd_z)
-              &&
-                is_solid(block_at(f, pos))
-              &&
-                get_face(&pos, &(e->pos)) | F_SOUTH
-              ) {
-                printf("rbc: north\n");
-                e->box.max.y -= pd_y + BOUNCE_DISTANCE;
-                e->pos.y -= pd_y + BOUNCE_DISTANCE;
-                e->vel.y *= (e->vel.y < 0);
-              }
+  for (pos.x = snx; pos.x <= sxx; ++pos.x) {
+    //for (pos.y = sny; pos.y <= sxy; ++pos.y) {
+      for (pos.z = snz; pos.z <= sxz; ++pos.z) {
+        if ((constrained & F_NORTH) && (constrained & F_SOUTH)) {
+          // If we've already adjusted both top and bot, we can break:
+          goto eastwest;
+        }
+        if (!(constrained & F_SOUTH)) {
+          pos.y = ny; // south
+          if (is_solid(block_at(e->fr, pos))) {
+            // Adjust position, velocity, and bounding box.
+            adj = ((ny + 1) - e->box.min.y) + BOUNCE_DISTANCE;
+            e->pos.y += adj;
+            e->box.min.y += adj;
+            e->vel.y *= (e->vel.y > 0);
+            constrained |= F_SOUTH;
           }
+        }
+        if (!(constrained & F_NORTH)) {
+          pos.y = xy; // north
+          if (is_solid(block_at(e->fr, pos))) {
+            // Adjust position, velocity, and bounding box.
+            adj = (xy - e->box.max.y) - BOUNCE_DISTANCE;
+            e->pos.y += adj;
+            e->box.max.y += adj;
+            e->vel.y *= (e->vel.y < 0);
+            constrained |= F_NORTH;
+          }
+        }
+      }
+    //}
   }
+  eastwest:
   // east/west
-      for (pos.y = ny; pos.y < xy; ++pos.y) {
-          for (pos.z = nz; pos.z < xz; ++pos.z) {
-              pos.x = nx; // west
-              pd_x = ((nx + 1) - e->box.min.x);
-              if (
-                pd_x > 0
-              &&
-                exclude_corners(pd_x, pd_y, pd_z)
-              &&
-                is_solid(block_at(f, pos))
-              &&
-                get_face(&pos, &(e->pos)) | F_EAST
-              ) {
-                printf("rbc: west\n");
-                e->box.min.x += pd_x + BOUNCE_DISTANCE;
-                e->pos.x += pd_x + BOUNCE_DISTANCE;
-                e->vel.x *= (e->vel.x > 0);
-              }
-              pos.x = xx - 1; // east
-              pd_x = (e->box.max.x - (xx - 1));
-              if (
-                pd_x > 0
-              &&
-                exclude_corners(pd_x, pd_y, pd_z)
-              &&
-                is_solid(block_at(f, pos))
-              &&
-                get_face(&pos, &(e->pos)) | F_WEST
-              ) {
-                printf("rbc: east\n");
-                e->box.max.x -= pd_x + BOUNCE_DISTANCE;
-                e->pos.x -= pd_x + BOUNCE_DISTANCE;
-                e->vel.x *= (e->vel.x < 0);
-              }
+  //for (pos.x = snx; pos.x <= sxx; ++pos.x) {
+    for (pos.y = sny; pos.y <= sxy; ++pos.y) {
+      for (pos.z = snz; pos.z <= sxz; ++pos.z) {
+        if ((constrained & F_EAST) && (constrained & F_WEST)) {
+          // If we've already adjusted both top and bot, we can break:
+          goto topbot;
+        }
+        if (!(constrained & F_WEST)) {
+          pos.x = nx; // west
+          if (is_solid(block_at(e->fr, pos))) {
+            // Adjust position, velocity, and bounding box.
+            adj = (nx + 1) - e->box.min.x + BOUNCE_DISTANCE;
+            e->pos.x += adj;
+            e->box.min.x += adj;
+            e->vel.x *= (e->vel.x > 0);
+            constrained |= F_WEST;
           }
+        }
+        if (!(constrained & F_EAST)) {
+          pos.x = xx; // east
+          if (is_solid(block_at(e->fr, pos))) {
+            // Adjust position, velocity, and bounding box.
+            adj = (xx - e->box.max.x) - BOUNCE_DISTANCE;
+            e->pos.x += adj;
+            e->box.max.x += adj;
+            e->vel.x *= (e->vel.x < 0);
+            constrained |= F_EAST;
+          }
+        }
       }
-  // top/bottom
-  for (pos.x = nx; pos.x < xx; ++pos.x) {
-      for (pos.y = ny; pos.y < xy; ++pos.y) {
-              pos.z = nz; // bot
-              pd_z = ((nz + 1) - e->box.min.z);
-              pd_z -= TREAD_DEPTH;
-              pd_z *= (pd_z > 0);
-              if (
-                pd_z > TREAD_DEPTH
-              &&
-                exclude_corners(pd_x, pd_y, pd_z)
-              &&
-                is_solid(block_at(f, pos))
-              &&
-                get_face(&pos, &(e->pos)) | F_ABOVE
-              ) {
-                printf("rbc: bot\n");
-                e->on_ground = 1;
-                e->box.min.z += pd_z + BOUNCE_DISTANCE;
-                e->pos.z += pd_z + BOUNCE_DISTANCE;
-                e->vel.z *= (e->vel.z > 0);
-              }
-              pos.z = xz - 1; // top
-              pd_z = (e->box.max.z - (xz - 1));
-              if (
-                pd_z > 0
-              &&
-                exclude_corners(pd_x, pd_y, pd_z)
-              &&
-                is_solid(block_at(f, pos))
-              &&
-                get_face(&pos, &(e->pos)) | F_BELOW
-              ) {
-                printf("rbc: top\n");
-                e->box.max.z -= pd_z + BOUNCE_DISTANCE;
-                e->pos.z -= pd_z + BOUNCE_DISTANCE;
-                e->vel.z *= (e->vel.z < 0);
-              }
+    }
+  //}
+  topbot:
+  // top/bot
+  for (pos.x = snx; pos.x <= sxx; ++pos.x) {
+    for (pos.y = sny; pos.y <= sxy; ++pos.y) {
+      //for (pos.z = snz; pos.z <= sxz; ++pos.z) {
+        if ((constrained & F_ABOVE) && (constrained & F_BELOW)) {
+          // If we've already adjusted both top and bot, we can break:
+          goto diagonals;
+        }
+        if (!(constrained & F_BELOW)) {
+          pos.z = nz; // bot
+          if (is_solid(block_at(e->fr, pos))) {
+            // Adjust position, velocity, and bounding box.
+            adj = ((nz + 1) - e->box.min.z) - TREAD_DEPTH;
+            e->pos.z += adj;
+            e->box.min.z += adj;
+            e->vel.z *= (e->vel.z > 0);
+            constrained |= F_BELOW;
+          }
+        }
+        if (!(constrained & F_ABOVE)) {
+          pos.z = xz; // top
+          if (is_solid(block_at(e->fr, pos))) {
+            // Adjust position, velocity, and bounding box.
+            adj = (xz - e->box.max.z) - BOUNCE_DISTANCE;
+            e->pos.z += adj;
+            e->box.max.z += adj;
+            e->vel.z *= (e->vel.z < 0);
+            constrained |= F_ABOVE;
+          }
+        }
+      //}
+    }
+  }
+  // Check diagonals if we need to:
+  diagonals:
+  adj = 0;
+  /*
+  // tn/ts/bn/bs
+  for (pos.x = nx; pos.x <= xx; ++pos.x) {
+    if (!(constrained & F_SOUTH)) { // south
+      pos.y = ny;
+      adj = (ny + 1) - e->box.min.y + BOUNCE_DISTANCE;
+      pos.z = nz;
+      // bot-south
+      if ( !(constrained & F_BELOW) && is_solid(block_at(e->fr, pos))) {
+        adj_alt = ((nz + 1) - e->box.min.z) - TREAD_DEPTH;
+        if (adj > adj_alt) {
+          e->pos.y += adj;
+          e->box.min.y += adj;
+          e->vel.y *= (e->vel.y > 0);
+          constrained |= F_SOUTH;
+        } else {
+          e->pos.z += adj_alt;
+          e->box.min.z += adj_alt;
+          e->vel.z *= (e->vel.z > 0);
+          constrained |= F_BELOW;
+        }
       }
+      pos.z = xz;
+      // top-south
+      if ( !(constrained & F_ABOVE) && is_solid(block_at(e->fr, pos))) {
+        adj_alt = (xz - e->box.max.z) - BOUNCE_DISTANCE;
+        if (adj > adj_alt) {
+          e->pos.y += adj;
+          e->box.min.y += adj;
+          e->vel.y *= (e->vel.y > 0);
+          constrained |= F_SOUTH;
+        } else {
+          e->pos.z += adj_alt;
+          e->box.max.z += adj_alt;
+          e->vel.z *= (e->vel.z < 0);
+          constrained |= F_ABOVE;
+        }
+      }
+    }
+    if (!(constrained & F_NORTH)) { // north
+      pos.y = xy;
+      adj = (xy - e->box.max.y) - BOUNCE_DISTANCE;
+      pos.z = nz;
+      // bot-north
+      if ( !(constrained & F_BELOW) && is_solid(block_at(e->fr, pos))) {
+        adj_alt = ((nz + 1) - e->box.min.z) - TREAD_DEPTH;
+        if (adj > adj_alt) {
+          e->pos.y += adj;
+          e->box.max.y += adj;
+          e->vel.y *= (e->vel.y < 0);
+          constrained |= F_NORTH;
+        } else {
+          e->pos.z += adj_alt;
+          e->box.min.z += adj_alt;
+          e->vel.z *= (e->vel.z > 0);
+          constrained |= F_BELOW;
+        }
+      }
+      pos.z = xz;
+      // top-north
+      if ( !(constrained & F_ABOVE) && is_solid(block_at(e->fr, pos))) {
+        adj_alt = (xz - e->box.max.z) - BOUNCE_DISTANCE;
+        if (adj > adj_alt) {
+          e->pos.y += adj;
+          e->box.max.y += adj;
+          e->vel.y *= (e->vel.y < 0);
+          constrained |= F_NORTH;
+        } else {
+          e->pos.z += adj_alt;
+          e->box.max.z += adj_alt;
+          e->vel.z *= (e->vel.z < 0);
+          constrained |= F_ABOVE;
+        }
+      }
+    }
+  }
+  // te/tw/be/bw
+  for (pos.y = ny; pos.y <= xy; ++pos.y) {
+    if (!(constrained & F_WEST)) { // west
+      pos.x = nx;
+      adj = (nx + 1) - e->box.min.x + BOUNCE_DISTANCE;
+      pos.z = nz;
+      // bot-west
+      if ( !(constrained & F_BELOW) && is_solid(block_at(e->fr, pos))) {
+        adj_alt = ((nz + 1) - e->box.min.z) - TREAD_DEPTH;
+        if (adj > adj_alt) {
+          e->pos.x += adj;
+          e->box.min.x += adj;
+          e->vel.x *= (e->vel.x > 0);
+          constrained |= F_WEST;
+        } else {
+          e->pos.z += adj_alt;
+          e->box.min.z += adj_alt;
+          e->vel.z *= (e->vel.z > 0);
+          constrained |= F_BELOW;
+        }
+      }
+      pos.z = xz;
+      // top-west
+      if ( !(constrained & F_ABOVE) && is_solid(block_at(e->fr, pos))) {
+        adj_alt = (xz - e->box.max.z) - BOUNCE_DISTANCE;
+        if (adj > adj_alt) {
+          e->pos.x += adj;
+          e->box.min.x += adj;
+          e->vel.x *= (e->vel.x > 0);
+          constrained |= F_WEST;
+        } else {
+          e->pos.z += adj_alt;
+          e->box.max.z += adj_alt;
+          e->vel.z *= (e->vel.z < 0);
+          constrained |= F_ABOVE;
+        }
+      }
+    }
+    if (!(constrained & F_EAST)) { // east
+      pos.x = xx;
+      adj = (xx - e->box.max.x) - BOUNCE_DISTANCE;
+      pos.z = nz;
+      // bot-east
+      if ( !(constrained & F_BELOW) && is_solid(block_at(e->fr, pos))) {
+        adj_alt = ((nz + 1) - e->box.min.z) - TREAD_DEPTH;
+        if (adj > adj_alt) {
+          e->pos.x += adj;
+          e->box.max.x += adj;
+          e->vel.x *= (e->vel.x < 0);
+          constrained |= F_EAST;
+        } else {
+          e->pos.z += adj_alt;
+          e->box.min.z += adj_alt;
+          e->vel.z *= (e->vel.z > 0);
+          constrained |= F_BELOW;
+        }
+      }
+      pos.z = xz;
+      // top-east
+      if ( !(constrained & F_ABOVE) && is_solid(block_at(e->fr, pos))) {
+        adj_alt = (xz - e->box.max.z) - BOUNCE_DISTANCE;
+        if (adj > adj_alt) {
+          e->pos.x += adj;
+          e->box.max.x += adj;
+          e->vel.x *= (e->vel.x < 0);
+          constrained |= F_EAST;
+        } else {
+          e->pos.z += adj_alt;
+          e->box.max.z += adj_alt;
+          e->vel.z *= (e->vel.z < 0);
+          constrained |= F_ABOVE;
+        }
+      }
+    }
+  }
+  // ne/nw/se/sw
+  for (pos.z = nz; pos.z <= xz; ++pos.z) {
+    if (!(constrained & F_WEST)) { // west
+      pos.x = nx;
+      adj = (nx + 1) - e->box.min.x + BOUNCE_DISTANCE;
+      pos.y = ny;
+      // south-west
+      if ( !(constrained & F_SOUTH) && is_solid(block_at(e->fr, pos))) {
+        adj_alt = ((ny + 1) - e->box.min.y) + BOUNCE_DISTANCE;
+        if (adj > adj_alt) {
+          e->pos.x += adj;
+          e->box.min.x += adj;
+          e->vel.x *= (e->vel.x > 0);
+          constrained |= F_WEST;
+        } else {
+          e->pos.y += adj_alt;
+          e->box.min.y += adj_alt;
+          e->vel.y *= (e->vel.y > 0);
+          constrained |= F_SOUTH;
+        }
+      }
+      pos.y = xy;
+      // north-west
+      if ( !(constrained & F_NORTH) && is_solid(block_at(e->fr, pos))) {
+        adj_alt = (xy - e->box.max.y) - BOUNCE_DISTANCE;
+        if (adj > adj_alt) {
+          e->pos.x += adj;
+          e->box.min.x += adj;
+          e->vel.x *= (e->vel.x > 0);
+          constrained |= F_WEST;
+        } else {
+          e->pos.y += adj_alt;
+          e->box.max.y += adj_alt;
+          e->vel.y *= (e->vel.y < 0);
+          constrained |= F_NORTH;
+        }
+      }
+    }
+    if (!(constrained & F_EAST)) { // east
+      pos.x = xx;
+      adj = (xx - e->box.max.x) - BOUNCE_DISTANCE;
+      pos.y = ny;
+      // south-east
+      if ( !(constrained & F_SOUTH) && is_solid(block_at(e->fr, pos))) {
+        adj_alt = ((ny + 1) - e->box.min.y) + BOUNCE_DISTANCE;
+        if (adj > adj_alt) {
+          e->pos.x += adj;
+          e->box.max.x += adj;
+          e->vel.x *= (e->vel.x < 0);
+          constrained |= F_EAST;
+        } else {
+          e->pos.y += adj_alt;
+          e->box.min.y += adj_alt;
+          e->vel.y *= (e->vel.y > 0);
+          constrained |= F_SOUTH;
+        }
+      }
+      pos.y = xy;
+      // north-east
+      if ( !(constrained & F_NORTH) && is_solid(block_at(e->fr, pos))) {
+        adj_alt = (xy - e->box.max.y) - BOUNCE_DISTANCE;
+        if (adj > adj_alt) {
+          e->pos.x += adj;
+          e->box.max.x += adj;
+          e->vel.x *= (e->vel.x < 0);
+          constrained |= F_EAST;
+        } else {
+          e->pos.y += adj_alt;
+          e->box.max.y += adj_alt;
+          e->vel.y *= (e->vel.y < 0);
+          constrained |= F_NORTH;
+        }
+      }
+    }
+  }
+  // */
+  if (constrained & F_BELOW) {
+    e->on_ground = 1;
   }
 }
 
@@ -257,10 +492,11 @@ void tick_physics(entity *e) {
   acceleration.x = e->impulse.x / e->mass;
   acceleration.y = e->impulse.y / e->mass;
   acceleration.z = e->impulse.z / e->mass;
-  //acceleration.z -= GRAVITY;
+  acceleration.z -= GRAVITY;
   vadd_scaled(&(e->vel), &acceleration, dt);
   vadd_scaled(&(e->pos), &(e->vel), dt);
-  vscale(&(e->vel), DRAG);
+  e->vel.x *= DRAG;
+  e->vel.y *= DRAG;
   resolve_entity_collisions(e);
   resolve_block_collisions(e);
   // TODO: collision detection & resolution

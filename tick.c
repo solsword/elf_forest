@@ -57,4 +57,5 @@ void tick(int steps) {
     tick_motion_controls();
     tick_entities(&MAIN_FRAME);
   }
+  clear_edge_triggers();
 }

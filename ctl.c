@@ -140,43 +140,40 @@ void tick_general_controls(void) {
     ZOOM *= 1.1;
     ZOOM = ZOOM > MAX_ZOOM ? MAX_ZOOM : ZOOM;
   }
-
-  // Clear the edge triggers:
-  clear_edge_triggers();
 }
 
 void tick_motion_controls(void) {
   vector forward;
   vface(&forward, PLAYER->yaw, 0);
   vector v;
-  // TODO: Test for walking on ground.
-  if (CONTROLS[C_FORWARD]) {
+  // TODO: Limited air control?
+  if (CONTROLS[C_FORWARD] && PLAYER->on_ground) {
     vcopy(&v, &forward);
     vscale(&v, PLAYER->walk);
     vadd(&(PLAYER->impulse), &v);
   }
-  if (CONTROLS[C_REVERSE]) {
+  if (CONTROLS[C_REVERSE] && PLAYER->on_ground) {
     vcopy(&v, &forward);
     vscale(&v, -PLAYER->walk * BACKUP_COEFFICIENT);
     vadd(&(PLAYER->impulse), &v);
   }
-  if (CONTROLS[C_LEFT]) {
+  if (CONTROLS[C_LEFT] && PLAYER->on_ground) {
     vcopy(&v, &forward);
     vyaw(&v, M_PI_2);
     vscale(&v, PLAYER->walk * STRAFE_COEFFICIENT);
     vadd(&(PLAYER->impulse), &v);
   }
-  if (CONTROLS[C_RIGHT]) {
+  if (CONTROLS[C_RIGHT] && PLAYER->on_ground) {
     vcopy(&v, &forward);
     vyaw(&v, -M_PI_2);
     vscale(&v, PLAYER->walk * STRAFE_COEFFICIENT);
     vadd(&(PLAYER->impulse), &v);
   }
-  // TODO: Test for on ground.
-  if (DOWN[C_JUMP]) {
+  if (DOWN[C_JUMP] && PLAYER->on_ground) {
     vcopy(&v, &V_UP);
     vscale(&v, PLAYER->jump);
     vadd(&(PLAYER->impulse), &v);
+    DOWN[C_JUMP] = 0;
   }
 }
 

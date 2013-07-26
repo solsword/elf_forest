@@ -87,8 +87,7 @@ void tick_general_controls(void);
 // The motion-related controls. Updates the PLAYER entity.
 void tick_motion_controls(void);
 
-// Clears the DOWN and UP arrays. Called by tick_general_controls at the end of
-// each tick.
+// Clears the DOWN and UP arrays. Called at the end of each tick.
 void clear_edge_triggers(void);
 
 #endif //ifndef CONTROL_H
