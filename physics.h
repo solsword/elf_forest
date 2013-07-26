@@ -28,9 +28,6 @@ extern const float TREAD_DEPTH;
 // How far from a block an entity should be placed when sliding along it.
 extern const float BOUNCE_DISTANCE;
 
-// The size of the corner bevel for block bounding boxes.
-extern const float CORNER_BEVEL;
-
 /***********
  * Globals *
  ***********/
@@ -43,7 +40,7 @@ extern float DRAG;
 // The amount of time per timestep.
 extern float DT;
 
-// The number of simulation substeps per tick.
+// The number of full simulation substeps per tick.
 extern int SUBSTEPS;
 
 /*************************
