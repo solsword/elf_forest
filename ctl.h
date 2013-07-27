@@ -54,6 +54,8 @@ extern float MIN_PITCH;
 
 // How fast entities accelerate:
 extern float ACCELERATION;
+// Velocity damping factor when no controls are active:
+extern float CONTROL_DAMPING_FACTOR;
 // Attenuation of strafing relative to forward motion:
 extern float STRAFE_COEFFICIENT;
 // Attenuation of backing up relative to forward motion:

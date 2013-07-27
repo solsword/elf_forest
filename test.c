@@ -115,7 +115,8 @@ void test_setup_world_terrain(frame *f) {
         0.0,
         8, EX_TERRAIN, EX_TERRAIN_F
       );
-      terrain_height = (int) ((noise + 1.0) * (HALF_FRAME - 4)) - HALF_FRAME;
+      //terrain_height = (int) ((noise + 1.0) * (HALF_FRAME - 4)) - HALF_FRAME;
+      terrain_height = (int) ((noise + 1.0) * 5) - 2;
       noise = fractal_sxnoise_3d_table(
         (float) pos.x * TERRAIN_NOISE_SCALE,
         (float) pos.y * TERRAIN_NOISE_SCALE,
@@ -170,6 +171,6 @@ void test_compile_frame(frame *f) {
 }
 
 void test_spawn_player(frame *f) {
-  vector pos = { .x=0.0, .y=0.0, .z=1.0 };
+  vector pos = { .x=0.0, .y=0.0, .z=10.0 };
   PLAYER = spawn_entity("elf", &pos, &MAIN_FRAME);
 }

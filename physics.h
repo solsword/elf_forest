@@ -22,9 +22,6 @@
 // The desired time per integration tick.
 extern const float TARGET_RESOLUTION;
 
-// How far entity bounding boxes should extend into blocks they're walking on.
-extern const float TREAD_DEPTH;
-
 // How far from a block an entity should be placed when sliding along it.
 extern const float BOUNCE_DISTANCE;
 
@@ -34,8 +31,9 @@ extern const float BOUNCE_DISTANCE;
 
 extern float GRAVITY;
 
-// Fractional momentum loss:
-extern float DRAG;
+// Drag forces:
+extern float AIR_DRAG;
+extern float GROUND_DRAG;
 
 // The amount of time per timestep.
 extern float DT;

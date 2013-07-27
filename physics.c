@@ -12,14 +12,13 @@
 #include "world.h"
 #include "entities.h"
 #include "physics.h"
+#include "ctl.h"
 
 /*************
  * Constants *
  *************/
 
 const float TARGET_RESOLUTION = 1.0/180.0;
-
-const float TREAD_DEPTH = 0.001;
 
 const float BOUNCE_DISTANCE = 0.0005;
 
@@ -29,7 +28,8 @@ const float BOUNCE_DISTANCE = 0.0005;
 
 float GRAVITY = 20.0;
 
-float DRAG = 0.985;
+float AIR_DRAG = 0.9995;
+float GROUND_DRAG = 0.97;
 
 // Initially we're at 1:1 time.
 float DT = SECONDS_PER_TICK;
@@ -181,6 +181,41 @@ done_z:
   e->pos.z += increment->z;
 }
 
+// Edits the entity's velocity according to control inputs. Note that we only
+// constrain result velocity in two dimensions. Also note that a lack of
+// control inputs translates to active velocity damping.
+static inline void integrate_control_inputs(entity *e, float dt) {
+  float prx, pry; // proposed x/y
+  float vm2, pm2, w2; // squared velocity/proposed/walk magnitudes
+  float limit; // the velocity limit
+  float scale; // the scaling factor
+  prx = e->vel.x; pry = e->vel.y;
+  prx += e->control.x*dt; pry += e->control.y*dt;
+  vm2 = (e->vel.x * e->vel.x) + (e->vel.y * e->vel.y);
+  pm2 = prx*prx + pry*pry;
+  w2 = e->walk * e->walk;
+  if (pm2 < vm2 || pm2 < w2) {
+    if (e->control.x == 0 && e->control.y == 0) {
+      e->vel.x = prx * CONTROL_DAMPING_FACTOR;
+      e->vel.y = pry * CONTROL_DAMPING_FACTOR;
+      e->vel.z = e->vel.z + e->control.z*dt;
+    } else {
+      e->vel.x = prx;
+      e->vel.y = pry;
+      e->vel.z = e->vel.z + e->control.z*dt;
+    }
+  } else {
+    limit = vm2 > w2 ? sqrtf(vm2) : e->walk;
+    scale = limit/sqrtf(pm2);
+    prx *= scale;
+    pry *= scale;
+    e->vel.x = prx;
+    e->vel.y = pry;
+    e->vel.z = e->vel.z + e->control.z*dt;
+  }
+  vzero(&(e->control));
+}
+
 // Updates an entity's position while respecting solid blocks.
 static inline void update_position_collide_blocks(entity *e, float dt) {
   frame_pos min, max; // min/max block positions
@@ -247,8 +282,10 @@ void tick_physics(entity *e) {
   acceleration.z = e->impulse.z / e->mass;
   acceleration.z -= GRAVITY;
   vadd_scaled(&(e->vel), &acceleration, dt);
-  e->vel.x *= DRAG;
-  e->vel.y *= DRAG;
+  e->vel.x *= (e->on_ground)*GROUND_DRAG + (1 - e->on_ground)*AIR_DRAG;
+  e->vel.y *= (e->on_ground)*GROUND_DRAG + (1 - e->on_ground)*AIR_DRAG;
+  // No drag for z.
+  integrate_control_inputs(e, dt);
   update_position_collide_blocks(e, dt);
   check_on_ground(e);
   resolve_entity_collisions(e);
