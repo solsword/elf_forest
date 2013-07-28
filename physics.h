@@ -35,8 +35,13 @@ extern float GRAVITY;
 extern float AIR_DRAG;
 extern float GROUND_DRAG;
 
+// Control scaling for air influence:
+extern float AIR_CONTROL;
+
 // The amount of time per timestep.
 extern float DT;
+// The amount of time per substep.
+extern float SUB_DT;
 
 // The number of full simulation substeps per tick.
 extern int SUBSTEPS;
@@ -50,6 +55,8 @@ extern int SUBSTEPS;
 /*************
  * Functions *
  *************/
+
+void adjust_resolution(void);
 
 void tick_physics(entity *e);
 

@@ -22,6 +22,7 @@ frame MAIN_FRAME;
 
 void compute_exposure(frame *f, frame_chunk_index idx) {
   frame_pos base, pos;
+  block ba, bb, bn, bs, be, bw;
   // Get frame coords from chunk coords:
   fcidx__fpos(&idx, &base);
   for (pos.x = base.x; pos.x < base.x + CHUNK_SIZE; ++pos.x) {
@@ -33,12 +34,12 @@ void compute_exposure(frame *f, frame_chunk_index idx) {
           set_block(f, pos, set_exposed(b));
         } else {
           //printf("vis: 0x%04x\n", b);
-          block ba = block_above(f, pos);
-          block bb = block_below(f, pos);
-          block bn = block_north(f, pos);
-          block bs = block_south(f, pos);
-          block be = block_east(f, pos);
-          block bw = block_west(f, pos);
+          ba = block_above(f, pos);
+          bb = block_below(f, pos);
+          bn = block_north(f, pos);
+          bs = block_south(f, pos);
+          be = block_east(f, pos);
+          bw = block_west(f, pos);
           if (is_translucent(b)) {
             //printf("TL!\n");
             if (
@@ -105,4 +106,8 @@ void cleanup_chunk(chunk *c) {
   cleanup_vertex_buffer(&(c->opaque_vertices));
   cleanup_vertex_buffer(&(c->translucent_vertices));
   destroy_list(c->block_entities);
+}
+
+void tick_blocks(frame *f) {
+  // TODO: HERE
 }

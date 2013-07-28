@@ -78,7 +78,7 @@ struct chunk_s {
   block blocks[CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE]; // Block data.
   vertex_buffer opaque_vertices; // The opaque vertices.
   vertex_buffer translucent_vertices; // The translucent vertices.
-  uint16_t x, y; // Absolute location within the region.
+  uint16_t x, y, z; // Absolute location within the region.
   list *block_entities; // Tile entities.
 };
 
@@ -318,5 +318,8 @@ void setup_chunk(chunk *c);
 
 // Cleans up memory allocated by the given chunk.
 void cleanup_chunk(chunk *c);
+
+// Ticks all blocks attached to the given frame:
+void tick_blocks(frame *f);
 
 #endif // ifndef WORLD_H

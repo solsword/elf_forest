@@ -23,7 +23,7 @@
  * Globals *
  ***********/
 
-view_mode VIEW_MODE = VM_THIRD;
+view_mode VIEW_MODE = VM_FIRST;
 
 float SECOND_PERSON_DISTANCE = 2.7;
 float THIRD_PERSON_DISTANCE = 3.2;
@@ -299,20 +299,47 @@ void render_entity(void *thing) {
   // Rotate according to the entity's facing:
   glRotatef(e->yaw*R2D, 0, 0, 1);
 
-  // DEBUG: Test triangle:
+  // DEBUG: Render bounding box:
   //*
   glColor4ub(255, 255, 255, 255); // white
 
-  glBegin( GL_TRIANGLES );
+  float hx, hy, hz;
+  hx = e->size.x*0.5;
+  hy = e->size.y*0.5;
+  hz = e->size.z*0.5;
 
-  glVertex3f(-1, 0, -1);
-  glVertex3f(0, 0, 1);
-  glVertex3f(1, 0, -1);
+  glBegin( GL_LINE_LOOP );
 
-  // 2-sided for extra visibility:
-  glVertex3f(-1, 0, -1);
-  glVertex3f(1, 0, -1);
-  glVertex3f(0, 0, 1);
+  glVertex3f(-hx, -hy, -hz);
+  glVertex3f(-hx, hy, -hz);
+  glVertex3f(hx, hy, -hz);
+  glVertex3f(hx, -hy, -hz);
+
+  glEnd();
+
+
+  glBegin( GL_LINE_LOOP );
+
+  glVertex3f(-hx, -hy, hz);
+  glVertex3f(-hx, hy, hz);
+  glVertex3f(hx, hy, hz);
+  glVertex3f(hx, -hy, hz);
+
+  glEnd();
+
+  glBegin( GL_LINES );
+
+  glVertex3f(-hx, -hy, -hz);
+  glVertex3f(-hx, -hy, hz);
+
+  glVertex3f(-hx, hy, -hz);
+  glVertex3f(-hx, hy, hz);
+
+  glVertex3f(hx, hy, -hz);
+  glVertex3f(hx, hy, hz);
+
+  glVertex3f(hx, -hy, -hz);
+  glVertex3f(hx, -hy, hz);
 
   glEnd();
   // */

@@ -9,6 +9,7 @@
 #include "world.h"
 #include "ctl.h"
 #include "entities.h"
+#include "physics.h"
 
 /***********
  * Globals *
@@ -51,11 +52,14 @@ void tick(int steps) {
   if (steps == 0 || PAUSED) {
     return;
   }
+  adjust_resolution();
   int i;
   for (i = 0; i < steps; ++i) {
     TICK_COUNT = (TICK_COUNT + 1) % TICKS_PER_SECOND_I;
     tick_motion_controls();
     tick_entities(&MAIN_FRAME);
+    warp_space(&MAIN_FRAME, PLAYER);
+    tick_blocks(&MAIN_FRAME);
   }
   clear_edge_triggers();
 }

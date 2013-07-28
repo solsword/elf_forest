@@ -409,7 +409,9 @@ GLuint create_texture(txinfo* info) {
   glTexParameterf(
     GL_TEXTURE_2D,
     GL_TEXTURE_MIN_FILTER,
-    GL_NEAREST_MIPMAP_NEAREST
+    GL_NEAREST
+    //GL_NEAREST_MIPMAP_NEAREST
+    //TODO: disable or use mipmapping!
   );
 
   // Load texture data:

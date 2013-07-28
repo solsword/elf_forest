@@ -33,13 +33,13 @@ int WINDOW_HEIGHT = 0;
 const int DEFAULT_WIDTH = 800;
 const int DEFAULT_HEIGHT = 600;
 const char* DEFAULT_NAME = "Elf Forest";
-const float DEFAULT_R = 0;
-const float DEFAULT_G = 0;
-const float DEFAULT_B = 0;
-const float DEFAULT_A = 1;
+const float DEFAULT_R = 0.65;
+const float DEFAULT_G = 0.71;
+const float DEFAULT_B = 1.0;
+const float DEFAULT_A = 1.0;
 
 // Camera parameters
-const double FOV = M_PI/2.0;
+const double FOV = M_PI/3.0;
 const double ASPECT = 4.0/3.0;
 const double NEAR = 0.2;
 const double FAR = 362.0; // 256x256 diagonal

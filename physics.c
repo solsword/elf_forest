@@ -29,10 +29,13 @@ const float BOUNCE_DISTANCE = 0.0005;
 float GRAVITY = 20.0;
 
 float AIR_DRAG = 0.9995;
-float GROUND_DRAG = 0.97;
+float GROUND_DRAG = 0.85;
+
+float AIR_CONTROL = 0.5;
 
 // Initially we're at 1:1 time.
 float DT = SECONDS_PER_TICK;
+float SUB_DT = 0;
 
 int SUBSTEPS = 2;
 
@@ -184,40 +187,35 @@ done_z:
 // Edits the entity's velocity according to control inputs. Note that we only
 // constrain result velocity in two dimensions. Also note that a lack of
 // control inputs translates to active velocity damping.
-static inline void integrate_control_inputs(entity *e, float dt) {
+static inline void integrate_control_inputs(entity *e) {
   float prx, pry; // proposed x/y
-  float vm2, pm2, w2; // squared velocity/proposed/walk magnitudes
+  float vm2, pm2, w, w2; // squared velocity/proposed/walk magnitudes
   float limit; // the velocity limit
   float scale; // the scaling factor
   prx = e->vel.x; pry = e->vel.y;
-  prx += e->control.x*dt; pry += e->control.y*dt;
+  prx += e->control.x*SUB_DT; pry += e->control.y*SUB_DT;
   vm2 = (e->vel.x * e->vel.x) + (e->vel.y * e->vel.y);
   pm2 = prx*prx + pry*pry;
-  w2 = e->walk * e->walk;
+  w = e->walk * AIR_CONTROL;
+  w2 = w * w;
   if (pm2 < vm2 || pm2 < w2) {
-    if (e->control.x == 0 && e->control.y == 0) {
-      e->vel.x = prx * CONTROL_DAMPING_FACTOR;
-      e->vel.y = pry * CONTROL_DAMPING_FACTOR;
-      e->vel.z = e->vel.z + e->control.z*dt;
-    } else {
-      e->vel.x = prx;
-      e->vel.y = pry;
-      e->vel.z = e->vel.z + e->control.z*dt;
-    }
+    e->vel.x = prx;
+    e->vel.y = pry;
+    e->vel.z = e->vel.z + e->control.z*SUB_DT;
   } else {
-    limit = vm2 > w2 ? sqrtf(vm2) : e->walk;
+    limit = vm2 > w2 ? sqrtf(vm2) : w;
     scale = limit/sqrtf(pm2);
     prx *= scale;
     pry *= scale;
     e->vel.x = prx;
     e->vel.y = pry;
-    e->vel.z = e->vel.z + e->control.z*dt;
+    e->vel.z = e->vel.z + e->control.z*SUB_DT;
   }
   vzero(&(e->control));
 }
 
 // Updates an entity's position while respecting solid blocks.
-static inline void update_position_collide_blocks(entity *e, float dt) {
+static inline void update_position_collide_blocks(entity *e) {
   frame_pos min, max; // min/max block positions
   vector increment; // the increment vector
   // fill in min/max coords
@@ -226,7 +224,7 @@ static inline void update_position_collide_blocks(entity *e, float dt) {
   min.z = b_i_min_z(e->box); max.z = b_i_max_z(e->box);
   // compute increment
   vcopy(&increment, &(e->vel));
-  vscale(&increment, dt);
+  vscale(&increment, SUB_DT);
   // Update x/y axes according to the magnitude of their increments:
   if (increment.y > increment.x) {
     update_position_y(e, &min, &max, &increment);
@@ -264,31 +262,30 @@ static inline void check_on_ground(entity *e) {
   }
 }
 
-static inline void adjust_resolution(void) {
-  SUBSTEPS = (int) (DT / TARGET_RESOLUTION) & 1;
-}
-
 /*************
  * Functions *
  *************/
 
+void adjust_resolution(void) {
+  SUBSTEPS = (int) (DT / TARGET_RESOLUTION) & 1;
+  SUB_DT = DT / SUBSTEPS;
+}
+
 void tick_physics(entity *e) {
-  adjust_resolution();
-  float dt = DT/SUBSTEPS;
   vector acceleration;
   // Integrate kinetics:
   acceleration.x = e->impulse.x / e->mass;
   acceleration.y = e->impulse.y / e->mass;
   acceleration.z = e->impulse.z / e->mass;
   acceleration.z -= GRAVITY;
-  vadd_scaled(&(e->vel), &acceleration, dt);
+  resolve_entity_collisions(e);
+  vadd_scaled(&(e->vel), &acceleration, SUB_DT);
   e->vel.x *= (e->on_ground)*GROUND_DRAG + (1 - e->on_ground)*AIR_DRAG;
   e->vel.y *= (e->on_ground)*GROUND_DRAG + (1 - e->on_ground)*AIR_DRAG;
-  // No drag for z.
-  integrate_control_inputs(e, dt);
-  update_position_collide_blocks(e, dt);
   check_on_ground(e);
-  resolve_entity_collisions(e);
+  // No drag for z.
+  integrate_control_inputs(e);
+  update_position_collide_blocks(e);
   // TODO: collision detection & resolution
   // Recompute the entity's bounding box:
   compute_bb(e);

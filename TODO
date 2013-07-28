@@ -13,6 +13,7 @@ terrain
   caves
   erosion
 graphics
+  use or disable texture mipmapping
   voxel mipmapping
   block lighting
   fix water rendering

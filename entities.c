@@ -20,6 +20,13 @@
 list *ENTITY_PROTOTYPES;
 
 /*********************
+ * Private Variables *
+ *********************/
+
+// Warp counts:
+int WARP_X, WARP_Y, WARP_Z;
+
+/*********************
  * Private Functions *
  *********************/
 
@@ -30,6 +37,15 @@ const char *SEARCH_TYPE = NULL;
 int scan_type(void *thing) {
   entity *e = (entity *) thing;
   return !strcmp(e->type, SEARCH_TYPE);
+}
+
+// warp_space iteration function:
+static inline void warp_entity(void *thing) {
+  entity *e = (entity *) thing;
+  e->pos.x += WARP_X * CHUNK_SIZE;
+  e->pos.y += WARP_Y * CHUNK_SIZE;
+  e->pos.z += WARP_Z * CHUNK_SIZE;
+  compute_bb(e);
 }
 
 /*************
@@ -64,6 +80,19 @@ void tick_entities(frame *f) {
 void tick_entity(void *thing) {
   entity *e = (entity *) thing;
   tick_physics(e);
+}
+
+void warp_space(frame *f, entity *e) {
+  // TODO: Handle loading and unloading entities & chunks
+  WARP_X = -fastfloor(e->pos.x / CHUNK_SIZE);
+  WARP_Y = -fastfloor(e->pos.y / CHUNK_SIZE);
+  WARP_Z = -fastfloor(e->pos.z / CHUNK_SIZE);
+  f->cx_o = (f->cx_o - WARP_X) % FRAME_SIZE;
+  f->cy_o = (f->cy_o - WARP_Y) % FRAME_SIZE;
+  f->cz_o = (f->cz_o - WARP_Z) % FRAME_SIZE;
+  if (WARP_X || WARP_Y || WARP_Z) {
+    foreach(f->entities, &warp_entity);
+  }
 }
 
 entity * spawn_entity(const char *type, vector *pos, frame *f) {

@@ -140,6 +140,10 @@ void tick_entities(frame *f);
 // Ticks the given entity (it's assumed to be an entity):
 void tick_entity(void *thing);
 
+// Ensures that the given entity is at the center of the given frame by warping
+// space around it:
+void warp_space(frame *f, entity *e);
+
 // Copies an entity from the types list, sets it up, and adds it to the given
 // frame at the given position. This involves allocating space for the new
 // entity. Returns a pointer to the entity spawned.
