@@ -19,6 +19,13 @@
 
 #include "render.h"
 
+/*************
+ * Constants *
+ *************/
+
+const float AIR_FOG_DENSITY = 0.005; // TODO: adjust these.
+const float WATER_FOG_DENSITY = 0.05;
+
 /***********
  * Globals *
  ***********/
@@ -27,6 +34,8 @@ view_mode VIEW_MODE = VM_FIRST;
 
 float SECOND_PERSON_DISTANCE = 2.7;
 float THIRD_PERSON_DISTANCE = 3.2;
+
+float FOG_DENSITY = 0.01;
 
 /*************
  * Functions *
@@ -45,6 +54,9 @@ void render_frame(
   // Set up a fresh model view:
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
+
+  // Set the fog distance:
+  set_fog_density(FOG_DENSITY);
 
   // DEBUG: spin right 'round:
   /*
@@ -177,7 +189,10 @@ void render_frame(
   // Now render all of our entities:
   foreach(f->entities, &render_entity);
 
-  // Now render the translucent parts:
+  // Now render the translucent parts (without face-culling and using a
+  // read-only depth buffer):
+  glDisable( GL_CULL_FACE );
+  glDepthMask( GL_FALSE );
   for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
@@ -185,35 +200,8 @@ void render_frame(
       }
     }
   }
-
-  // DEBUG: Test quad for our texture:
-  /*
-  glColor4ub(255, 255, 255, 255); // white
-  glBindTexture( GL_TEXTURE_2D, BLOCK_ATLAS );
-
-  glBegin( GL_TRIANGLES );
-  glTexCoord2f(0, 0);
-  glVertex3f(0, 0, 0);
-
-  glTexCoord2f(0, 1);
-  glVertex3f(0, FULL_FRAME, 0);
-
-  glTexCoord2f(1, 1);
-  glVertex3f(FULL_FRAME, FULL_FRAME, 0);
-
-  glTexCoord2f(0, 0);
-  glVertex3f(0, 0, 0);
-
-  glTexCoord2f(1, 1);
-  glVertex3f(FULL_FRAME, FULL_FRAME, 0);
-
-  glTexCoord2f(1, 0);
-  glVertex3f(FULL_FRAME, 0, 0);
-
-  glEnd();
-
-  glBindTexture( GL_TEXTURE_2D, 0 );
-  // */
+  glEnable( GL_CULL_FACE );
+  glDepthMask( GL_TRUE );
 }
 
 // This function renders one layer of the given chunk.

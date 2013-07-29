@@ -8,10 +8,12 @@
 #include <math.h>
 
 #include "util.h"
+#include "vbo.h"
 #include "world.h"
 #include "tick.h"
 #include "gfx.h"
 #include "render.h"
+#include "ui.h"
 #include "display.h"
 #include "ctl.h"
 
@@ -84,9 +86,9 @@ void minmaximize(GLFWwindow *window, int minimized) {
 
 void render(GLFWwindow *window) {
   vector head_pos;
-  vcopy(&head_pos, &(PLAYER->pos));
-  head_pos.z += 0.7;
+  get_head_pos(PLAYER, &head_pos);
   render_frame(&MAIN_FRAME, &head_pos, PLAYER->yaw, PLAYER->pitch);
+  render_ui();
   glfwSwapBuffers(window);
   glClear( GL_COLOR_BUFFER_BIT );
 }
@@ -116,10 +118,15 @@ void glsettings() {
   glFrontFace( GL_CW );
   glEnable( GL_BLEND );
   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+  glBlendColor(1.0, 1.0, 1.0, 1.0);
   glEnable( GL_STENCIL_TEST ); // Do we need this?
   glEnable( GL_TEXTURE_2D );
   glEnable( GL_DEPTH_TEST );
   glDepthFunc( GL_LESS );
+  glDepthMask( GL_TRUE );
+  glEnable( GL_FOG );
+  glHint( GL_FOG_HINT, GL_FASTEST );
+  glFogi( GL_FOG_MODE, GL_EXP2 );
 }
 
 // Sets up the OpenGL perspective:

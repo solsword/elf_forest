@@ -25,3 +25,5 @@ gameplay
   glyphs
   songs
   plants
+bugs/testing
+  ensure diagonal/orthogonal speed is the same

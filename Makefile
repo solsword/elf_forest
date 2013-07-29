@@ -34,6 +34,7 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/tick.o \
              $(OBJ_DIR)/list.o \
              $(OBJ_DIR)/vector.o \
+             $(OBJ_DIR)/ui.o \
              $(OBJ_DIR)/octree.o
 
 MAIN_OBJECTS=$(OBJ_DIR)/main.o

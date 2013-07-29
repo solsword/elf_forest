@@ -22,16 +22,25 @@ const float TARGET_RESOLUTION = 1.0/180.0;
 
 const float BOUNCE_DISTANCE = 0.0005;
 
+const float MIN_VELOCITY = 0.05;
+
+const move_flag MF_ON_GROUND = 0x01;
+const move_flag MF_IN_LIQUID = 0x02;
+const move_flag MF_CROUCHING = 0x04;
+
 /***********
  * Globals *
  ***********/
 
 float GRAVITY = 20.0;
 
-float AIR_DRAG = 0.9995;
-float GROUND_DRAG = 0.85;
+float AIR_DRAG = 0.985;
+float GROUND_DRAG = 0.90;
+float LIQUID_DRAG = 0.84;
 
-float AIR_CONTROL = 0.5;
+float CROUCH_COEFFICIENT = 0.3;
+float STRAFE_COEFFICIENT = 0.7;
+float BACKUP_COEFFICIENT = 0.4;
 
 // Initially we're at 1:1 time.
 float DT = SECONDS_PER_TICK;
@@ -188,30 +197,31 @@ done_z:
 // constrain result velocity in two dimensions. Also note that a lack of
 // control inputs translates to active velocity damping.
 static inline void integrate_control_inputs(entity *e) {
-  float prx, pry; // proposed x/y
-  float vm2, pm2, w, w2; // squared velocity/proposed/walk magnitudes
-  float limit; // the velocity limit
-  float scale; // the scaling factor
-  prx = e->vel.x; pry = e->vel.y;
-  prx += e->control.x*SUB_DT; pry += e->control.y*SUB_DT;
-  vm2 = (e->vel.x * e->vel.x) + (e->vel.y * e->vel.y);
-  pm2 = prx*prx + pry*pry;
-  w = e->walk * AIR_CONTROL;
-  w2 = w * w;
-  if (pm2 < vm2 || pm2 < w2) {
-    e->vel.x = prx;
-    e->vel.y = pry;
-    e->vel.z = e->vel.z + e->control.z*SUB_DT;
+  float base = e->walk;
+  float backup = 1.0;
+  vector forward, right, v;
+  vface(&forward, e->yaw, 0);
+  vface(&right, e->yaw - M_PI_2, 0);
+  if (in_liquid(e)) {
+    base = e->swim;
   } else {
-    limit = vm2 > w2 ? sqrtf(vm2) : w;
-    scale = limit/sqrtf(pm2);
-    prx *= scale;
-    pry *= scale;
-    e->vel.x = prx;
-    e->vel.y = pry;
-    e->vel.z = e->vel.z + e->control.z*SUB_DT;
+    if (!on_ground(e)) {
+      base = e->fly;
+    }
+    if (is_crouching(e)) {
+      base *= CROUCH_COEFFICIENT;
+    }
   }
-  vzero(&(e->control));
+  vzero(&v);
+  backup = (
+    (e->control.y < 0) * BACKUP_COEFFICIENT +
+    (1 - e->control.y >= 0)
+  );
+  vadd_scaled(&v, &forward, e->control.y * backup);
+  vadd_scaled(&v, &right, e->control.x * STRAFE_COEFFICIENT);
+  vadd_scaled(&v, &V_UP, e->control.z);
+  vnorm(&v);
+  vadd_scaled(&(e->impulse), &v, base);
 }
 
 // Updates an entity's position while respecting solid blocks.
@@ -234,32 +244,55 @@ static inline void update_position_collide_blocks(entity *e) {
     update_position_y(e, &min, &max, &increment);
   }
   // Update z last:
-  // first update z:
   update_position_z(e, &min, &max, &increment);
 }
 
-static inline void check_on_ground(entity *e) {
+static inline void check_move_flags(entity *e) {
   frame_pos pos;
-  e->on_ground = 0;
-  if (e->vel.z > 0) {
-    return;
+  // MF_ON_GROUND
+  clear_on_ground(e);
+  if (e->vel.z <= 0) {
+    pos.z = fastfloor(e->box.min.z - BOUNCE_DISTANCE*2.0);
+    for (
+      pos.x = b_i_min_x(e->box);
+      pos.x <= b_i_max_x(e->box) && !on_ground(e);
+      ++pos.x
+    ) {
+      for (
+        pos.y = b_i_min_y(e->box);
+        pos.y <= b_i_max_y(e->box) && !on_ground(e);
+        ++pos.y
+      ) {
+        if (is_solid(block_at(e->fr, pos))) {
+          set_on_ground(e);
+        }
+      }
+    }
   }
-  pos.z = fastfloor(e->box.min.z - BOUNCE_DISTANCE*2.0);
+  // MF_IN_LIQUID
+  clear_in_liquid(e);
   for (
     pos.x = b_i_min_x(e->box);
-    pos.x <= b_i_max_x(e->box) && !e->on_ground;
+    pos.x <= b_i_max_x(e->box) && !in_liquid(e);
     ++pos.x
   ) {
     for (
       pos.y = b_i_min_y(e->box);
-      pos.y <= b_i_max_y(e->box) && !e->on_ground;
+      pos.y <= b_i_max_y(e->box) && !in_liquid(e);
       ++pos.y
     ) {
-      if (is_solid(block_at(e->fr, pos))) {
-        e->on_ground = 1;
+      for (
+        pos.z = b_i_min_z(e->box);
+        pos.z <= b_i_max_z(e->box) && !in_liquid(e);
+        ++pos.z
+      ) {
+        if (is_liquid(block_at(e->fr, pos))) {
+          set_in_liquid(e);
+        }
       }
     }
   }
+  // MF_CROUCHING handled in ctl.c
 }
 
 /*************
@@ -272,21 +305,46 @@ void adjust_resolution(void) {
 }
 
 void tick_physics(entity *e) {
+  float drag;
   vector acceleration;
+  // Recompute our movement flags:
+  check_move_flags(e);
+  // Get control impulse:
+  integrate_control_inputs(e);
   // Integrate kinetics:
   acceleration.x = e->impulse.x / e->mass;
   acceleration.y = e->impulse.y / e->mass;
   acceleration.z = e->impulse.z / e->mass;
-  acceleration.z -= GRAVITY;
+  if (in_liquid(e)) {
+    acceleration.z -= GRAVITY * (1 - e->buoyancy);
+  } else {
+    acceleration.z -= GRAVITY;
+  }
+  // Resolve entity collisions:
   resolve_entity_collisions(e);
+  // Integrate acceleration into velocity:
   vadd_scaled(&(e->vel), &acceleration, SUB_DT);
-  e->vel.x *= (e->on_ground)*GROUND_DRAG + (1 - e->on_ground)*AIR_DRAG;
-  e->vel.y *= (e->on_ground)*GROUND_DRAG + (1 - e->on_ground)*AIR_DRAG;
-  check_on_ground(e);
-  // No drag for z.
-  integrate_control_inputs(e);
+  // Drag:
+  if (in_liquid(e)) {
+    drag = LIQUID_DRAG;
+  } else if (on_ground(e)) {
+    drag = GROUND_DRAG;
+  } else {
+    drag = AIR_DRAG;
+  }
+  vscale(&(e->vel), drag);
+  // Make sure that if we're accelerating we've got at least a minimum velocity:
+  int mvx = fabs(e->vel.x) < MIN_VELOCITY;
+  int mvy = fabs(e->vel.y) < MIN_VELOCITY;
+  int mvz = fabs(e->vel.z) < MIN_VELOCITY;
+  e->vel.x += (mvx && acceleration.x > 0)*MIN_VELOCITY;
+  e->vel.x += (mvx && acceleration.x < 0)*-MIN_VELOCITY;
+  e->vel.y += (mvy && acceleration.y > 0)*MIN_VELOCITY;
+  e->vel.y += (mvy && acceleration.y < 0)*-MIN_VELOCITY;
+  e->vel.z += (mvz && acceleration.z > 0)*MIN_VELOCITY;
+  e->vel.z += (mvz && acceleration.z < 0)*-MIN_VELOCITY;
+  // Update our position while respecting solid blocks:
   update_position_collide_blocks(e);
-  // TODO: collision detection & resolution
   // Recompute the entity's bounding box:
   compute_bb(e);
   // Reset impulse:

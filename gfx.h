@@ -42,6 +42,10 @@ extern const double FAR;
  ********************/
 
 static inline void set_bg_color(float r, float g, float b, float a) {
+  float color[4];
+  color[0] = r; color[1] = g; color[2] = b; color[3] = a;
+  glClearColor( r, g, b, a );
+  glFogfv( GL_FOG_COLOR, color );
   glClearColor( r, g, b, a );
 }
 
@@ -73,6 +77,10 @@ static inline void no_stencil_mode(void) {
   glColorMask(1, 1, 1, 1); // Write to the color buffer
   glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP ); // Don't change the stencil buffer
   glStencilFunc( GL_ALWAYS, 0x1, 0x1); // Ignore the stencil buffer
+}
+
+static inline void set_fog_density(float density) {
+  glFogf( GL_FOG_DENSITY, density );
 }
 
 /*************

@@ -15,6 +15,12 @@
 #include "bbox.h"
 #include "world.h"
 
+/*********
+ * Types *
+ *********/
+
+typedef uint8_t move_flag;
+
 /**************
  * Structures *
  **************/
@@ -43,16 +49,21 @@ extern list *ENTITY_PROTOTYPES;
 struct entity_s {
   char type[24]; // Entity type.
   vector size; // Dimensions.
+  vector head_pos; // Head position relative to overall position.
   GLuint texture; // OpenGL texture.
   vertex_buffer * model; // Model.
 
   float mass; // Mass.
-  float walk; // Movement impulse.
+  float walk; // Walk speed.
+  float swim; // Swim speed.
+  float fly; // Fly speed.
   float jump; // Jump impulse.
+
+  float buoyancy; // Buoyancy.
 
   vector pos; // Position within a frame.
   float yaw, pitch; // Facing.
-  uint8_t on_ground; // Whether the entity is resting on ground.
+  move_flag move_flags; // Movement flags.
 
   vector control; // Control inputs.
   vector vel; // Velocity.
@@ -75,10 +86,16 @@ static inline void copy_entity_data(entity *from, entity *to) {
   to->size.x = from->size.x;
   to->size.y = from->size.y;
   to->size.z = from->size.z;
+  to->head_pos.x = from->head_pos.x;
+  to->head_pos.y = from->head_pos.y;
+  to->head_pos.z = from->head_pos.z;
   to->texture = from->texture;
   to->model = from->model;
   to->mass = from->mass;
   to->walk = from->walk;
+  to->swim = from->swim;
+  to->fly = from->fly;
+  to->buoyancy = from->buoyancy;
   to->jump = from->jump;
 }
 
@@ -119,6 +136,22 @@ static inline void compute_bb(entity *e) {
   s2 = e->size.z/2.0;
   e->box.min.z = e->pos.z - s2;
   e->box.max.z = e->pos.z + s2;
+}
+
+static inline void get_head_pos(entity *e, vector *result) {
+  vcopy(result, &(e->head_pos));
+  //vyaw(result, e->yaw);
+  // TODO: 3-d rotating creatures like birds/fish?
+  //vpitch(&hp, e->pitch);
+  vadd(result, &(e->pos));
+}
+
+static inline block head_block(entity *e) {
+  vector hp;
+  frame_pos pos;
+  get_head_pos(e, &hp);
+  vec__fpos(&hp, &pos);
+  return block_at(e->fr, pos);
 }
 
 /*************

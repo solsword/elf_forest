@@ -87,6 +87,12 @@ static inline void vface(vector *v, float yaw, float pitch) {
   v->z = sinf(pitch);
 }
 
+static inline void vnorm(vector *v) {
+  float m = vmag(v);
+  m += (m == 0);
+  vscale(v, 1.0/m);
+}
+
 static inline void vadd(vector *target, const vector *value) {
   target->x += value->x;
   target->y += value->y;

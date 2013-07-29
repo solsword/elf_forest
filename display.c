@@ -299,9 +299,6 @@ void compile_chunk(frame *f, frame_chunk_index idx) {
             compute_face_tc(here, BD_ORI_UP, &st);
             if (is_translucent(here)) {
               push_top(&(c->translucent_vertices), cidx, st);
-              cidx.z += 1;
-              push_bottom(&(c->translucent_vertices), cidx, st);
-              cidx.z -= 1;
             } else {
               push_top(&(c->opaque_vertices), cidx, st);
             }
@@ -311,9 +308,6 @@ void compile_chunk(frame *f, frame_chunk_index idx) {
             compute_face_tc(here, BD_ORI_NORTH, &st);
             if (is_translucent(here)) {
               push_north(&(c->translucent_vertices), cidx, st);
-              cidx.y += 1;
-              push_south(&(c->translucent_vertices), cidx, st);
-              cidx.y -= 1;
             } else {
               push_north(&(c->opaque_vertices), cidx, st);
             }
@@ -323,9 +317,6 @@ void compile_chunk(frame *f, frame_chunk_index idx) {
             compute_face_tc(here, BD_ORI_SOUTH, &st);
             if (is_translucent(here)) {
               push_south(&(c->translucent_vertices), cidx, st);
-              cidx.y -= 1;
-              push_north(&(c->translucent_vertices), cidx, st);
-              cidx.y += 1;
             } else {
               push_south(&(c->opaque_vertices), cidx, st);
             }
@@ -335,9 +326,6 @@ void compile_chunk(frame *f, frame_chunk_index idx) {
             compute_face_tc(here, BD_ORI_EAST, &st);
             if (is_translucent(here)) {
               push_east(&(c->translucent_vertices), cidx, st);
-              cidx.x -= 1;
-              push_west(&(c->translucent_vertices), cidx, st);
-              cidx.x += 1;
             } else {
               push_east(&(c->opaque_vertices), cidx, st);
             }
@@ -347,9 +335,6 @@ void compile_chunk(frame *f, frame_chunk_index idx) {
             compute_face_tc(here, BD_ORI_WEST, &st);
             if (is_translucent(here)) {
               push_west(&(c->translucent_vertices), cidx, st);
-              cidx.x += 1;
-              push_east(&(c->translucent_vertices), cidx, st);
-              cidx.x -= 1;
             } else {
               push_west(&(c->opaque_vertices), cidx, st);
             }
@@ -359,9 +344,6 @@ void compile_chunk(frame *f, frame_chunk_index idx) {
             compute_face_tc(here, BD_ORI_DOWN, &st);
             if (is_translucent(here)) {
               push_bottom(&(c->translucent_vertices), cidx, st);
-              cidx.z -= 1;
-              push_top(&(c->translucent_vertices), cidx, st);
-              cidx.z += 1;
             } else {
               push_bottom(&(c->opaque_vertices), cidx, st);
             }

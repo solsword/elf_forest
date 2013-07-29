@@ -19,6 +19,13 @@ typedef enum {
   NUM_VIEW_MODES
 } view_mode;
 
+/*************
+ * Constants *
+ *************/
+
+extern const float AIR_FOG_DENSITY;
+extern const float WATER_FOG_DENSITY;
+
 /***********
  * Globals *
  ***********/
@@ -29,6 +36,21 @@ extern view_mode VIEW_MODE;
 // Base camera<->model distances in second/third person views:
 extern float SECOND_PERSON_DISTANCE;
 extern float THIRD_PERSON_DISTANCE;
+
+// The fog distance:
+extern float FOG_DENSITY;
+
+/********************
+ * Inline Functions *
+ ********************/
+
+static inline void set_tint(float r, float g, float b, float a) {
+  glBlendColor(r, g, b, a);
+}
+
+static inline void no_tint(void) {
+  glBlendColor(1.0, 1.0, 1.0, 1.0);
+}
 
 /*************
  * Functions *

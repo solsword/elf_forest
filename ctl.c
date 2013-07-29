@@ -42,10 +42,6 @@ entity * PLAYER = NULL;
 float MAX_PITCH = M_PI_2;
 float MIN_PITCH = -M_PI_2;
 
-float ACCELERATION = 100.0;
-float STRAFE_COEFFICIENT = 0.7;
-float BACKUP_COEFFICIENT = 0.4;
-
 float ZOOM = 1.0;
 float MIN_ZOOM = 0.5;
 float MAX_ZOOM = 2.5;
@@ -107,6 +103,7 @@ static void activate_ctl_callbacks(void) {
 
 void setup_control(void) {
   disable_cursor();
+  glfwSetCursorPos(WINDOW, WINDOW_WIDTH/2.0, WINDOW_HEIGHT/2.0);
   activate_ctl_callbacks();
 }
 
@@ -144,37 +141,39 @@ void tick_general_controls(void) {
 }
 
 void tick_motion_controls(void) {
-  vector forward;
-  vface(&forward, PLAYER->yaw, 0);
-  vector v;
-  // TODO: Limited air control?
+  vzero(&(PLAYER->control));
   if (CONTROLS[C_FORWARD]) {
-    vcopy(&v, &forward);
-    vscale(&v, ACCELERATION);
-    vadd(&(PLAYER->control), &v);
+    vadd(&(PLAYER->control), &V_NORTH);
   }
   if (CONTROLS[C_REVERSE]) {
-    vcopy(&v, &forward);
-    vscale(&v, -ACCELERATION * BACKUP_COEFFICIENT);
-    vadd(&(PLAYER->control), &v);
+    vadd(&(PLAYER->control), &V_SOUTH);
   }
   if (CONTROLS[C_LEFT]) {
-    vcopy(&v, &forward);
-    vyaw(&v, M_PI_2);
-    vscale(&v, ACCELERATION * STRAFE_COEFFICIENT);
-    vadd(&(PLAYER->control), &v);
+    vadd(&(PLAYER->control), &V_WEST);
   }
   if (CONTROLS[C_RIGHT]) {
-    vcopy(&v, &forward);
-    vyaw(&v, -M_PI_2);
-    vscale(&v, ACCELERATION * STRAFE_COEFFICIENT);
-    vadd(&(PLAYER->control), &v);
+    vadd(&(PLAYER->control), &V_EAST);
   }
-  if ((DOWN[C_JUMP] || CONTROLS[C_JUMP]) && PLAYER->on_ground) {
-    vcopy(&v, &V_UP);
-    vscale(&v, PLAYER->jump);
-    vadd(&(PLAYER->impulse), &v); // Jump gets added directly to impulse
-    DOWN[C_JUMP] = 0;
+  // Note: unlike other control inputs, jump inputs are just impulses.
+  if (DOWN[C_JUMP] || CONTROLS[C_JUMP]) {
+    if (in_liquid(PLAYER)) {
+      vadd(&(PLAYER->control), &V_UP);
+    } else if (on_ground(PLAYER)) {
+      vector v;
+      vcopy(&v, &V_UP);
+      vscale(&v, PLAYER->jump);
+      vadd(&(PLAYER->impulse), &v);
+      DOWN[C_JUMP] = 0; // we'll only jump once per frame max
+    }
+  }
+  if (CONTROLS[C_CROUCH]) {
+    if (in_liquid(PLAYER)) {
+      vadd(&(PLAYER->control), &V_DOWN);
+    } else {
+      set_crouching(PLAYER);
+    }
+  } else {
+    clear_crouching(PLAYER);
   }
 }
 
