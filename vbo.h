@@ -20,7 +20,8 @@ typedef uint32_t vb_index;
 struct vertex_s;
 typedef struct vertex_s vertex;
 
-// An abstraction of OpenGL's buffer objects. Uses 
+// An abstraction of OpenGL's buffer objects. Uses an index buffer along with a
+// vertex buffer.
 struct vertex_buffer_s;
 typedef struct vertex_buffer_s vertex_buffer;
 

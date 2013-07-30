@@ -62,7 +62,7 @@ extern frame MAIN_FRAME;
  * Constants *
  *************/
 
-#define CHUNK_BITS 3
+#define CHUNK_BITS 4
 #define CHUNK_SIZE (1 << CHUNK_BITS)
 #define FRAME_BITS 3
 #define FRAME_SIZE (1 << FRAME_BITS)

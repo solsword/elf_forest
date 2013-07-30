@@ -36,7 +36,7 @@ float GRAVITY = 20.0;
 
 float AIR_DRAG = 0.985;
 float GROUND_DRAG = 0.90;
-float LIQUID_DRAG = 0.84;
+float LIQUID_DRAG = 0.87;
 
 float CROUCH_COEFFICIENT = 0.3;
 float STRAFE_COEFFICIENT = 0.7;

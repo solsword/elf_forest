@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <assert.h>
 
 #include <GLee.h> // glDeleteBuffers etc.
 
@@ -17,12 +18,12 @@
 void setup_cache(vb_index vsize, vb_index isize, vertex_buffer *vb) {
   if (vb->vertices != 0) {
     glDeleteBuffers(1, &(vb->vertices));
+    vb->vertices = 0;
   }
   if (vb->indices != 0) {
     glDeleteBuffers(1, &(vb->indices));
+    vb->indices = 0;
   }
-  vb->vertices = 0;
-  vb->indices = 0;
   if (vb->allocated) {
     free(vb->vdata);
     free(vb->idata);
@@ -38,10 +39,15 @@ void setup_cache(vb_index vsize, vb_index isize, vertex_buffer *vb) {
     perror("Failed to allocate vertex indices cache.");
     exit(errno);
   }
+  vb->stored_vertex_count = 0;
+  vb->vertex_count = 0;
   vb->allocated = 1;
 }
 
 void add_vertex(const vertex *v, vertex_buffer *vb) {
+  assert(vb->allocated);
+  if (vb->allocated != 1) {
+  }
   vb->vdata[vb->stored_vertex_count].x = v->x;
   vb->vdata[vb->stored_vertex_count].y = v->y;
   vb->vdata[vb->stored_vertex_count].z = v->z;
@@ -56,6 +62,7 @@ void add_vertex(const vertex *v, vertex_buffer *vb) {
 }
 
 void reuse_vertex(int i, vertex_buffer *vb) {
+  assert(vb->allocated);
   if (i >= 0) {
     vb->idata[vb->vertex_count] = (vb_index) i;
   } else {
@@ -65,12 +72,15 @@ void reuse_vertex(int i, vertex_buffer *vb) {
 }
 
 void compile_buffers(vertex_buffer *vb) {
+  assert(vb->allocated);
   // Clear out any old OpenGL buffers:
   if (vb->vertices != 0) {
     glDeleteBuffers(1, &(vb->vertices));
+    vb->vertices = 0;
   }
   if (vb->indices != 0) {
     glDeleteBuffers(1, &(vb->indices));
+    vb->indices = 0;
   }
   // Generate new buffers:
   glGenBuffers(1, &(vb->vertices));
@@ -107,8 +117,16 @@ void cleanup_vertex_buffer(vertex_buffer *vb) {
     free(vb->idata);
     vb->allocated = 0;
   }
-  glDeleteBuffers(1, &(vb->vertices));
-  glDeleteBuffers(1, &(vb->indices));
+  if (vb->vertices != 0) {
+    glDeleteBuffers(1, &(vb->vertices));
+    vb->vertices = 0;
+  }
+  if (vb->indices != 0) {
+    glDeleteBuffers(1, &(vb->indices));
+    vb->indices = 0;
+  }
+  vb->stored_vertex_count = 0;
+  vb->vertex_count = 0;
 }
 
 void draw_vertex_buffer(vertex_buffer *vb, GLuint txid) {

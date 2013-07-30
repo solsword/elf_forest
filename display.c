@@ -1,6 +1,10 @@
 // display.c
 // Functions for setting up display information.
 
+#ifdef DEBUG
+  #include <stdio.h>
+#endif
+
 #include <assert.h>
 #include <stdlib.h>
 
@@ -283,6 +287,49 @@ void compile_chunk(chunk *c) {
   st.t = 0;
   block ba = 0, bb = 0, bn = 0, bs = 0, be = 0, bw = 0;
 
+#ifdef DEBUG
+  int opaque_vcount = 0;
+  int opaque_icount = 0;
+  int translucent_vcount = 0;
+  int translucent_icount = 0;
+  #define CHECK_OPAQUE \
+    opaque_vcount += 4; \
+    opaque_icount += 6; \
+    if (opaque_vcount > opaque_count*24) { \
+      printf( \
+        "Opaque vertex count exceeded: %d > %d\n", \
+        opaque_vcount, \
+        opaque_count * 24 \
+      ); \
+      exit(-1); \
+    } \
+    if (opaque_icount > opaque_count*36) { \
+      printf( \
+        "Opaque index count exceeded: %d > %d\n", \
+        opaque_icount, \
+        opaque_count * 36 \
+      ); \
+      exit(-1); \
+    }
+  #define CHECK_TRANSLUCENT \
+    if (translucent_vcount > translucent_count*24) { \
+      printf( \
+        "Translucent vertex count exceeded: %d > %d\n", \
+        translucent_vcount, \
+        translucent_count * 24 \
+      ); \
+      exit(-1); \
+    } \
+    if (translucent_icount > translucent_count*36) { \
+      printf( \
+        "Translucent index count exceeded: %d > %d\n", \
+        translucent_icount, \
+        translucent_count * 24 \
+      ); \
+      exit(-1); \
+    }
+#endif
+
   for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
@@ -293,48 +340,84 @@ void compile_chunk(chunk *c) {
           if (!cull_face(here, ba)) {
             compute_face_tc(here, BD_ORI_UP, &st);
             if (is_translucent(here)) {
+#ifdef DEBUG
+              CHECK_TRANSLUCENT
+#endif
               push_top(&(c->translucent_vertices), idx, st);
             } else {
+#ifdef DEBUG
+              CHECK_OPAQUE
+#endif
               push_top(&(c->opaque_vertices), idx, st);
             }
           }
           if (!cull_face(here, bn)) {
             compute_face_tc(here, BD_ORI_NORTH, &st);
             if (is_translucent(here)) {
+#ifdef DEBUG
+              CHECK_TRANSLUCENT
+#endif
               push_north(&(c->translucent_vertices), idx, st);
             } else {
+#ifdef DEBUG
+              CHECK_OPAQUE
+#endif
               push_north(&(c->opaque_vertices), idx, st);
             }
           }
           if (!cull_face(here, bs)) {
             compute_face_tc(here, BD_ORI_SOUTH, &st);
             if (is_translucent(here)) {
+#ifdef DEBUG
+              CHECK_TRANSLUCENT
+#endif
               push_south(&(c->translucent_vertices), idx, st);
             } else {
+#ifdef DEBUG
+              CHECK_OPAQUE
+#endif
               push_south(&(c->opaque_vertices), idx, st);
             }
           }
           if (!cull_face(here, be)) {
             compute_face_tc(here, BD_ORI_EAST, &st);
             if (is_translucent(here)) {
+#ifdef DEBUG
+              CHECK_TRANSLUCENT
+#endif
               push_east(&(c->translucent_vertices), idx, st);
             } else {
+#ifdef DEBUG
+              CHECK_OPAQUE
+#endif
               push_east(&(c->opaque_vertices), idx, st);
             }
           }
           if (!cull_face(here, bw)) {
             compute_face_tc(here, BD_ORI_WEST, &st);
             if (is_translucent(here)) {
+#ifdef DEBUG
+              CHECK_TRANSLUCENT
+#endif
               push_west(&(c->translucent_vertices), idx, st);
             } else {
+#ifdef DEBUG
+              CHECK_OPAQUE
+#endif
               push_west(&(c->opaque_vertices), idx, st);
             }
           }
           if (!cull_face(here, bb)) {
             compute_face_tc(here, BD_ORI_DOWN, &st);
             if (is_translucent(here)) {
+#ifdef DEBUG
+              CHECK_TRANSLUCENT
+#endif
               push_bottom(&(c->translucent_vertices), idx, st);
             } else {
+#ifdef DEBUG
+              CHECK_OPAQUE
+#endif
               push_bottom(&(c->opaque_vertices), idx, st);
             }
           }

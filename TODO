@@ -3,6 +3,7 @@ performance
   double-check octree performance
   time chunk loading
   render ordering of chunks
+  support path caching
 loading
   implement dynamic chunk loading
   implement player position management
@@ -12,6 +13,7 @@ terrain
   forests
   caves
   erosion
+  block support
 graphics
   use or disable texture mipmapping
   voxel mipmapping

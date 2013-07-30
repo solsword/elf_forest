@@ -12,7 +12,9 @@ MAKEFLAGS+=--assume-old=$(TEST_DIR)
 
 # Compiler & Flags:
 CC=gcc
-CFLAGS=-g -O3 -c -Wall -ffast-math
+DEBUG_FLAGS=-g -O0 -DDEBUG
+OPT_FLAGS=-O3
+CFLAGS=-c -Wall -ffast-math $(DEBUG_FLAGS)
 
 LIBS_OPENGL=-lglee -lGL -lGLU
 LIBS_GLFW=-lglfw3 -lrt -lXrandr -lXi -lXxf86vm -lXrender -lXext -lX11 \

@@ -43,9 +43,9 @@ int scan_type(void *thing) {
 // warp_space iteration function:
 static inline void warp_entity(void *thing) {
   entity *e = (entity *) thing;
-  e->pos.x += WARP_X * CHUNK_SIZE;
-  e->pos.y += WARP_Y * CHUNK_SIZE;
-  e->pos.z += WARP_Z * CHUNK_SIZE;
+  e->pos.x -= WARP_X * CHUNK_SIZE;
+  e->pos.y -= WARP_Y * CHUNK_SIZE;
+  e->pos.z -= WARP_Z * CHUNK_SIZE;
   compute_bb(e);
 }
 
@@ -99,7 +99,6 @@ void warp_space(frame *f, entity *e) {
   f->region_offset.y += WARP_Y;
   f->region_offset.z += WARP_Z;
   if (WARP_X || WARP_Y || WARP_Z) {
-    int count = 0;
     // Warp entities if we changed offsets:
     foreach(f->entities, &warp_entity);
     // Also mark dirty chunks as necessary:
@@ -116,7 +115,9 @@ void warp_space(frame *f, entity *e) {
           ||
             c->rpos.z != rcpos.z
           ) {
-            count += 1;
+            c->rpos.x = rcpos.x;
+            c->rpos.y = rcpos.y;
+            c->rpos.z = rcpos.z;
             mark_for_reload(c);
           }
         }

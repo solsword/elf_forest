@@ -125,7 +125,8 @@ void glsettings() {
   glEnable( GL_DEPTH_TEST );
   glDepthFunc( GL_LESS );
   glDepthMask( GL_TRUE );
-  glEnable( GL_FOG );
+  //glEnable( GL_FOG );
+  glDisable( GL_FOG );
   glHint( GL_FOG_HINT, GL_FASTEST );
   glFogi( GL_FOG_MODE, GL_EXP2 );
 }

@@ -15,7 +15,7 @@
  *************/
 
 // TODO: adjust this; dynamic load capping
-const int LOAD_CAP = 1024;
+const int LOAD_CAP = 2;
 
 /***********
  * Globals *
@@ -41,11 +41,13 @@ void mark_for_reload(chunk *c) {
 
 void tick_load(void) {
   int n = 0;
-  chunk *c = (chunk *) pop_element(DIRTY_CHUNKS);
-  while (n < LOAD_CAP && c != NULL) {
-    load_chunk(c);
-    c = (chunk *) pop_element(DIRTY_CHUNKS);
-    n += 1;
+  chunk *c;
+  if (get_length(DIRTY_CHUNKS) > 0) {
+    do {
+      c = (chunk *) pop_element(DIRTY_CHUNKS);
+      load_chunk(c);
+      n += 1;
+    } while (n < LOAD_CAP && c != NULL);
   }
 }
 
@@ -101,6 +103,7 @@ void compute_exposure(chunk *c) {
 
 void load_chunk(chunk *c) {
   // TODO: Diff data?
+  // TODO: Block entities!
   chunk_index idx;
   region_pos rpos;
   for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
