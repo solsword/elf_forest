@@ -22,6 +22,6 @@ typedef enum {
  *************/
 
 // Allocates and fills in display lists for the given chunk.
-void compile_chunk(frame *f, frame_chunk_index idx);
+void compile_chunk(chunk *c);
 
 #endif // ifndef DISPLAY_H

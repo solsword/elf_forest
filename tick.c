@@ -10,6 +10,7 @@
 #include "ctl.h"
 #include "entities.h"
 #include "physics.h"
+#include "data.h"
 
 /***********
  * Globals *
@@ -52,7 +53,7 @@ void tick(int steps) {
   if (steps == 0 || PAUSED) {
     return;
   }
-  adjust_resolution();
+  adjust_physics_resolution();
   int i;
   for (i = 0; i < steps; ++i) {
     TICK_COUNT = (TICK_COUNT + 1) % TICKS_PER_SECOND_I;
@@ -61,5 +62,6 @@ void tick(int steps) {
     warp_space(&MAIN_FRAME, PLAYER);
     tick_blocks(&MAIN_FRAME);
   }
+  tick_load();
   clear_edge_triggers();
 }

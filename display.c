@@ -18,8 +18,8 @@
 
 static inline block cull_face(block here, block neighbor) {
   return (
-    block_is(neighbor, OUT_OF_RANGE)
-  ||
+    !block_is(neighbor, OUT_OF_RANGE)
+  &&
     (
       is_opaque(neighbor)
     ||
@@ -220,19 +220,18 @@ static inline void push_west(
  * Functions *
  *************/
 
-void compile_chunk(frame *f, frame_chunk_index idx) {
-  chunk *c = chunk_at(f, idx);
-
+void compile_chunk(chunk *c) {
   // Count the number of "active" blocks (those not surrounded by solid
   // blocks). We use the cached exposure data here (call compute_exposure
   // first!).
   uint16_t opaque_count = 0;
   uint16_t translucent_count = 0;
-  chunk_index cidx;
-  for (cidx.x = 0; cidx.x < CHUNK_SIZE; ++cidx.x) {
-    for (cidx.y = 0; cidx.y < CHUNK_SIZE; ++cidx.y) {
-      for (cidx.z = 0; cidx.z < CHUNK_SIZE; ++cidx.z) {
-        block here = c_get_block(c, cidx);
+  chunk_index idx;
+  block here = 0;
+  for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
+    for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
+      for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
+        here = c_get_block(c, idx);
         if (is_exposed(here) && !is_invisible(here)) {
           if (is_translucent(here)) {
             translucent_count += 1;
@@ -282,70 +281,61 @@ void compile_chunk(frame *f, frame_chunk_index idx) {
   tcoords st; // texture coordinates
   st.s = 0;
   st.t = 0;
-  block here = 0; // local blocks:
-  block neighbor = 0;
+  block ba = 0, bb = 0, bn = 0, bs = 0, be = 0, bw = 0;
 
-  frame_pos base, pos;
-  fcidx__fpos(&idx, &base);
-  for (pos.x = base.x; pos.x < base.x + CHUNK_SIZE; ++pos.x) {
-    for (pos.y = base.y; pos.y < base.y + CHUNK_SIZE; ++pos.y) {
-      for (pos.z = base.z; pos.z < base.z + CHUNK_SIZE; ++pos.z) {
-        fpos__cidx(&pos, &cidx);
-        here = block_at(f, pos);
-        neighbor = here;
+  for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
+    for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
+      for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
+        // get local block and neighbors:
+        here = c_get_block(c, idx);
+        c_get_neighbors(c, idx, &ba, &bb, &bn, &bs, &be, &bw);
         if (is_exposed(here) && !is_invisible(here)) {
-          neighbor = block_above(f, pos);
-          if (!cull_face(here, neighbor)) {
+          if (!cull_face(here, ba)) {
             compute_face_tc(here, BD_ORI_UP, &st);
             if (is_translucent(here)) {
-              push_top(&(c->translucent_vertices), cidx, st);
+              push_top(&(c->translucent_vertices), idx, st);
             } else {
-              push_top(&(c->opaque_vertices), cidx, st);
+              push_top(&(c->opaque_vertices), idx, st);
             }
           }
-          neighbor = block_north(f, pos);
-          if (!cull_face(here, neighbor)) {
+          if (!cull_face(here, bn)) {
             compute_face_tc(here, BD_ORI_NORTH, &st);
             if (is_translucent(here)) {
-              push_north(&(c->translucent_vertices), cidx, st);
+              push_north(&(c->translucent_vertices), idx, st);
             } else {
-              push_north(&(c->opaque_vertices), cidx, st);
+              push_north(&(c->opaque_vertices), idx, st);
             }
           }
-          neighbor = block_south(f, pos);
-          if (!cull_face(here, neighbor)) {
+          if (!cull_face(here, bs)) {
             compute_face_tc(here, BD_ORI_SOUTH, &st);
             if (is_translucent(here)) {
-              push_south(&(c->translucent_vertices), cidx, st);
+              push_south(&(c->translucent_vertices), idx, st);
             } else {
-              push_south(&(c->opaque_vertices), cidx, st);
+              push_south(&(c->opaque_vertices), idx, st);
             }
           }
-          neighbor = block_east(f, pos);
-          if (!cull_face(here, neighbor)) {
+          if (!cull_face(here, be)) {
             compute_face_tc(here, BD_ORI_EAST, &st);
             if (is_translucent(here)) {
-              push_east(&(c->translucent_vertices), cidx, st);
+              push_east(&(c->translucent_vertices), idx, st);
             } else {
-              push_east(&(c->opaque_vertices), cidx, st);
+              push_east(&(c->opaque_vertices), idx, st);
             }
           }
-          neighbor = block_west(f, pos);
-          if (!cull_face(here, neighbor)) {
+          if (!cull_face(here, bw)) {
             compute_face_tc(here, BD_ORI_WEST, &st);
             if (is_translucent(here)) {
-              push_west(&(c->translucent_vertices), cidx, st);
+              push_west(&(c->translucent_vertices), idx, st);
             } else {
-              push_west(&(c->opaque_vertices), cidx, st);
+              push_west(&(c->opaque_vertices), idx, st);
             }
           }
-          neighbor = block_below(f, pos);
-          if (!cull_face(here, neighbor)) {
+          if (!cull_face(here, bb)) {
             compute_face_tc(here, BD_ORI_DOWN, &st);
             if (is_translucent(here)) {
-              push_bottom(&(c->translucent_vertices), cidx, st);
+              push_bottom(&(c->translucent_vertices), idx, st);
             } else {
-              push_bottom(&(c->opaque_vertices), cidx, st);
+              push_bottom(&(c->opaque_vertices), idx, st);
             }
           }
         }

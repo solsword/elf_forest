@@ -78,7 +78,7 @@ static inline void clear_crouching(entity *e) {e->move_flags &= ~MF_CROUCHING;}
  * Functions *
  *************/
 
-void adjust_resolution(void);
+void adjust_physics_resolution(void);
 
 void tick_physics(entity *e);
 

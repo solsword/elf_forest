@@ -15,6 +15,7 @@
 #include "render.h"
 #include "ui.h"
 #include "display.h"
+#include "data.h"
 #include "ctl.h"
 
 /***************
@@ -178,6 +179,8 @@ void prepare(
 
 void cleanup(void) {
   cleanup_frame(&MAIN_FRAME);
+  cleanup_entities();
+  cleanup_data();
 }
 
 void loop(void) {

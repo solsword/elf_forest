@@ -299,7 +299,7 @@ static inline void check_move_flags(entity *e) {
  * Functions *
  *************/
 
-void adjust_resolution(void) {
+void adjust_physics_resolution(void) {
   SUBSTEPS = (int) (DT / TARGET_RESOLUTION) & 1;
   SUB_DT = DT / SUBSTEPS;
 }

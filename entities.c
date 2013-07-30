@@ -12,6 +12,7 @@
 #include "physics.h"
 #include "static_entities.h"
 #include "entities.h"
+#include "data.h"
 
 /***********
  * Globals *
@@ -83,15 +84,44 @@ void tick_entity(void *thing) {
 }
 
 void warp_space(frame *f, entity *e) {
-  // TODO: Handle loading and unloading entities & chunks
-  WARP_X = -fastfloor(e->pos.x / CHUNK_SIZE);
-  WARP_Y = -fastfloor(e->pos.y / CHUNK_SIZE);
-  WARP_Z = -fastfloor(e->pos.z / CHUNK_SIZE);
-  f->cx_o = (f->cx_o - WARP_X) % FRAME_SIZE;
-  f->cy_o = (f->cy_o - WARP_Y) % FRAME_SIZE;
-  f->cz_o = (f->cz_o - WARP_Z) % FRAME_SIZE;
+  frame_chunk_index fcidx;
+  region_chunk_pos rcpos;
+  chunk *c;
+  // TODO: Handle loading and unloading entities
+  // Warp offset coordiantes:
+  WARP_X = fastfloor(e->pos.x / CHUNK_SIZE);
+  WARP_Y = fastfloor(e->pos.y / CHUNK_SIZE);
+  WARP_Z = fastfloor(e->pos.z / CHUNK_SIZE);
+  f->chunk_offset.x = (f->chunk_offset.x + WARP_X) % FRAME_SIZE;
+  f->chunk_offset.y = (f->chunk_offset.y + WARP_Y) % FRAME_SIZE;
+  f->chunk_offset.z = (f->chunk_offset.z + WARP_Z) % FRAME_SIZE;
+  f->region_offset.x += WARP_X;
+  f->region_offset.y += WARP_Y;
+  f->region_offset.z += WARP_Z;
   if (WARP_X || WARP_Y || WARP_Z) {
+    int count = 0;
+    // Warp entities if we changed offsets:
     foreach(f->entities, &warp_entity);
+    // Also mark dirty chunks as necessary:
+    for (fcidx.x = 0; fcidx.x < FRAME_SIZE; ++fcidx.x) {
+      for (fcidx.y = 0; fcidx.y < FRAME_SIZE; ++fcidx.y) {
+        for (fcidx.z = 0; fcidx.z < FRAME_SIZE; ++fcidx.z) {
+          // Get the new intended region chunk position:
+          fcidx__rcpos(&fcidx, f, &rcpos);
+          c = chunk_at(f, fcidx);
+          if (
+            c->rpos.x != rcpos.x
+          ||
+            c->rpos.y != rcpos.y
+          ||
+            c->rpos.z != rcpos.z
+          ) {
+            count += 1;
+            mark_for_reload(c);
+          }
+        }
+      }
+    }
   }
 }
 

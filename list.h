@@ -44,9 +44,19 @@ int is_empty(list *l);
 // comparison).
 int contains(list *l, void *element);
 
+// Returns the length of the given list.
+size_t get_length(list *l);
+
+// Returns the ith element of the given list, or NULL if i is out of range.
+void * get_element(list *l, size_t i);
+
 // Adds the given element to the end of the given list. Allocates new memory to
 // expand the list as necessary.
 void append_element(list *l, void *element);
+
+// Removes and returns the last element of the given list. Returns NULL if the
+// list is already empty.
+void * pop_element(list *l);
 
 // Removes just the first copy of the given element from the given list (uses
 // address comparison). Returns the removed element, or NULL if the given

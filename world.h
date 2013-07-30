@@ -19,6 +19,14 @@
  * Structures *
  **************/
 
+// Block position within a region:
+struct region_pos_s;
+typedef struct region_pos_s region_pos;
+
+// Chunk position within a region:
+struct region_chunk_pos_s;
+typedef struct region_chunk_pos_s region_chunk_pos;
+
 // An NxNxN chunk of the grid:
 struct chunk_s;
 typedef struct chunk_s chunk;
@@ -64,13 +72,21 @@ extern frame MAIN_FRAME;
 #define FR_MASK (FRAME_SIZE - 1) // Frame mask
 #define FC_MASK (CHUNK_SIZE*FRAME_SIZE - 1) // Frame coordinate mask
 
-#define TERRAIN_NOISE_SCALE 1.0/8.0
-#define TERRAIN_SEA_LEVEL -5
-#define TERRAIN_DIRT_DEPTH 10
-
 /*************************
  * Structure Definitions *
  *************************/
+
+struct region_pos_s {
+  long int x, y, z;
+};
+
+struct region_chunk_pos_s {
+  int x, y, z;
+};
+
+struct chunk_index_s {
+  unsigned int x, y, z;
+};
 
 // (16 * 16 * 16) * 16 = 65536 = 8 KB
 // (16 * 16 * 16) * 32 = 131072 = 16 KB
@@ -78,36 +94,32 @@ struct chunk_s {
   block blocks[CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE]; // Block data.
   vertex_buffer opaque_vertices; // The opaque vertices.
   vertex_buffer translucent_vertices; // The translucent vertices.
-  uint16_t x, y, z; // Absolute location within the region.
+  region_chunk_pos rpos; // Absolute location within the region.
   list *block_entities; // Tile entities.
 };
 
-struct chunk_index_s {
-  uint16_t x, y, z;
+struct frame_index_s {
+  unsigned int x, y, z;
+};
+
+struct frame_chunk_index_s {
+  unsigned int x, y, z;
+};
+
+struct frame_pos_s {
+  int x, y, z;
 };
 
 // (16 * 16 * 16) * 65536 = 32 MB
 // (16 * 16 * 16) * 131072 = 64 MB
 // (32 * 32 * 32) * 65536 = 256 MB
 struct frame_s {
-  chunk chunks[FRAME_SIZE*FRAME_SIZE*FRAME_SIZE]; // Chunk data.
-  uint16_t wx, wy; // World offsets
-  uint8_t cx_o, cy_o, cz_o; // Data offsets
+  chunk chunks[FRAME_SIZE*FRAME_SIZE*FRAME_SIZE]; // chunk data
+  region_chunk_pos region_offset; // location of frame origin within the region
+  frame_chunk_index chunk_offset; // data offset
     // (to avoid having to shuffle data around within the array all the time)
-  list *entities; // Active entities
+  list *entities; // active entities
   octree *oct; // An octree for the frame
-};
-
-struct frame_index_s {
-  uint16_t x, y, z;
-};
-
-struct frame_chunk_index_s {
-  uint16_t x, y, z;
-};
-
-struct frame_pos_s {
-  int x, y, z;
 };
 
 /********************
@@ -115,7 +127,13 @@ struct frame_pos_s {
  ********************/
 
 // Coordinate conversions:
-// Note that these are hand-inlined in various places for speed.
+// Note that these are hand-inlined in a few places for speed.
+
+static inline void cidx__rpos(chunk *c, chunk_index *idx, region_pos *pos) {
+  pos->x = (c->rpos.x << CHUNK_BITS) + idx->x;
+  pos->y = (c->rpos.y << CHUNK_BITS) + idx->y;
+  pos->z = (c->rpos.z << CHUNK_BITS) + idx->z;
+}
 
 static inline void fpos__fidx(frame_pos *pos, frame_index *idx) {
   idx->x = (pos->x + HALF_FRAME) & FC_MASK;
@@ -128,22 +146,10 @@ static inline void fpos__cidx(frame_pos *pos, chunk_index *idx) {
   idx->z = (pos->z + HALF_FRAME) & CH_MASK;
 }
 
-static inline void fpos__fcidx(frame_pos *pos, frame_chunk_index *idx) {
-  idx->x = ((pos->x + HALF_FRAME) & FC_MASK) >> CHUNK_BITS;
-  idx->y = ((pos->y + HALF_FRAME) & FC_MASK) >> CHUNK_BITS;
-  idx->z = ((pos->z + HALF_FRAME) & FC_MASK) >> CHUNK_BITS;
-}
-
 static inline void fidx__cidx(frame_index *fidx, chunk_index *cidx) {
   cidx->x = fidx->x & CH_MASK;
   cidx->y = fidx->y & CH_MASK;
   cidx->z = fidx->z & CH_MASK;
-}
-
-static inline void fidx__fcidx(frame_index *fidx, frame_chunk_index *fcidx) {
-  fcidx->x = fidx->x >> CHUNK_BITS;
-  fcidx->y = fidx->y >> CHUNK_BITS;
-  fcidx->z = fidx->z >> CHUNK_BITS;
 }
 
 static inline void fidx__fpos(frame_index *idx, frame_pos *pos) {
@@ -152,10 +158,14 @@ static inline void fidx__fpos(frame_index *idx, frame_pos *pos) {
   pos->z = (idx->z - HALF_FRAME);
 }
 
-static inline void fcidx__fpos(frame_chunk_index *idx, frame_pos *pos) {
-  pos->x = (idx->x << CHUNK_BITS) - HALF_FRAME;
-  pos->y = (idx->y << CHUNK_BITS) - HALF_FRAME;
-  pos->z = (idx->z << CHUNK_BITS) - HALF_FRAME;
+static inline void fcidx__rcpos(
+  frame_chunk_index *idx,
+  frame *f,
+  region_chunk_pos *pos
+) {
+  pos->x = f->region_offset.x + idx->x - (FRAME_SIZE / 2);
+  pos->y = f->region_offset.y + idx->y - (FRAME_SIZE / 2);
+  pos->z = f->region_offset.z + idx->z - (FRAME_SIZE / 2);
 }
 
 static inline void vec__fpos(vector *v, frame_pos *pos) {
@@ -176,9 +186,9 @@ static inline void fpos__vec(frame_pos *pos, vector *v) {
 static inline chunk* chunk_at(frame *f, frame_chunk_index idx) {
   return &(
     (f->chunks)[
-      ((idx.x + f->cx_o) & FR_MASK) +
-      (((idx.y + f->cy_o) & FR_MASK) << FRAME_BITS) +
-      (((idx.z + f->cz_o) & FR_MASK) << (FRAME_BITS*2))
+      ((idx.x + f->chunk_offset.x) & FR_MASK) +
+      (((idx.y + f->chunk_offset.y) & FR_MASK) << FRAME_BITS) +
+      (((idx.z + f->chunk_offset.z) & FR_MASK) << (FRAME_BITS*2))
     ]
   );
 }
@@ -299,22 +309,45 @@ static inline block block_west(frame *f, frame_pos pos) {
   return (pos.x > -HALF_FRAME) * block_at_xyz(f, pos.x-1, pos.y, pos.z);
 }
 
+static inline void c_get_neighbors(
+  chunk *c,
+  chunk_index idx,
+  block *ba, block *bb,
+  block *bn, block *bs,
+  block *be, block *bw
+) {
+  // note that even underflow should wrap correctly here
+  chunk_index nbr;
+  nbr.x = idx.x;
+  nbr.y = idx.y;
+  nbr.z = idx.z + 1;
+  *ba = (idx.z < CHUNK_SIZE - 1) * c_get_block(c, nbr);
+  nbr.z = idx.z - 1;
+  *bb = (idx.z > 0) *c_get_block(c, nbr);
+  nbr.z = idx.z;
+  nbr.y = idx.y + 1;
+  *bn = (idx.y < CHUNK_SIZE - 1) * c_get_block(c, nbr);
+  nbr.y = idx.y - 1;
+  *bs = (idx.y > 0) * c_get_block(c, nbr);
+  nbr.y = idx.y;
+  nbr.x = idx.x + 1;
+  *be = (idx.x < CHUNK_SIZE - 1) * c_get_block(c, nbr);
+  nbr.x = idx.x - 1;
+  *bw = (idx.x > 0) * c_get_block(c, nbr);
+}
+
 /*************
  * Functions *
  *************/
 
-// Computes block exposure for the given chunk (hence the need for the whole
-// frame). All of the frame's chunk data should already be loaded.
-void compute_exposure(frame *f, frame_chunk_index idx);
-
 // Initializes the given frame:
-void setup_frame(frame *f);
+void setup_frame(frame *f, region_chunk_pos *roff);
 
 // Cleans up memory allocated by the given frame.
 void cleanup_frame(frame *f);
 
 // Initializes the given chunk:
-void setup_chunk(chunk *c);
+void setup_chunk(chunk *c, region_chunk_pos *rpos);
 
 // Cleans up memory allocated by the given chunk.
 void cleanup_chunk(chunk *c);

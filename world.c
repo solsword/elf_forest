@@ -7,8 +7,9 @@
 #include <stdio.h>
 
 #include "blocks.h"
-#include "world.h"
+#include "terrain.h"
 #include "octree.h"
+#include "world.h"
 
 /***********
  * Globals *
@@ -20,64 +21,20 @@ frame MAIN_FRAME;
  * Functions *
  *************/
 
-void compute_exposure(frame *f, frame_chunk_index idx) {
-  frame_pos base, pos;
-  block ba, bb, bn, bs, be, bw;
-  // Get frame coords from chunk coords:
-  fcidx__fpos(&idx, &base);
-  for (pos.x = base.x; pos.x < base.x + CHUNK_SIZE; ++pos.x) {
-    for (pos.y = base.y; pos.y < base.y + CHUNK_SIZE; ++pos.y) {
-      for (pos.z = base.z; pos.z < base.z + CHUNK_SIZE; ++pos.z) {
-        block b = block_at(f, pos);
-        if (is_invisible(b)) {
-          //printf("invis: 0x%04x\n", b);
-          set_block(f, pos, set_exposed(b));
-        } else {
-          //printf("vis: 0x%04x\n", b);
-          ba = block_above(f, pos);
-          bb = block_below(f, pos);
-          bn = block_north(f, pos);
-          bs = block_south(f, pos);
-          be = block_east(f, pos);
-          bw = block_west(f, pos);
-          if (is_translucent(b)) {
-            //printf("TL!\n");
-            if (
-              !(is_opaque(ba) || shares_translucency(b, ba))
-              || !(is_opaque(bb) || shares_translucency(b, bb))
-              || !(is_opaque(bn) || shares_translucency(b, bn))
-              || !(is_opaque(bs) || shares_translucency(b, bs))
-              || !(is_opaque(be) || shares_translucency(b, be))
-              || !(is_opaque(bw) || shares_translucency(b, bw))
-            ) {
-              //printf("exposed\n");
-              set_block(f, pos, set_exposed(b));
-            }
-          } else {
-            if (
-              !is_opaque(ba)
-              || !is_opaque(bb)
-              || !is_opaque(bn)
-              || !is_opaque(bs)
-              || !is_opaque(be)
-              || !is_opaque(bw)
-            ) {
-              //printf("exposed\n");
-              set_block(f, pos, set_exposed(b));
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-void setup_frame(frame *f) {
+void setup_frame(frame *f, region_chunk_pos *roff) {
   frame_chunk_index idx;
+  region_chunk_pos rpos;
+  f->chunk_offset.x = 0;
+  f->chunk_offset.y = 0;
+  f->chunk_offset.z = 0;
+  f->region_offset.x = roff->x;
+  f->region_offset.y = roff->y;
+  f->region_offset.z = roff->z;
   for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
-        setup_chunk(chunk_at(f, idx));
+        fcidx__rcpos(&idx, f, &rpos);
+        setup_chunk(chunk_at(f, idx), &rpos);
       }
     }
   }
@@ -98,8 +55,11 @@ void cleanup_frame(frame *f) {
   cleanup_octree(f->oct);
 }
 
-void setup_chunk(chunk *c) {
+void setup_chunk(chunk *c, region_chunk_pos *rpos) {
   c->block_entities = create_list();
+  c->rpos.x = rpos->x;
+  c->rpos.y = rpos->y;
+  c->rpos.z = rpos->z;
 }
 
 void cleanup_chunk(chunk *c) {

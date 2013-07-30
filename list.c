@@ -35,7 +35,7 @@ static inline void grow_if_necessary(list *l) {
   if (l->count == l->size*LIST_CHUNK_SIZE) { // We need more memory.
     void ** new_elements = (void **) realloc(
       l->elements,
-      sizeof(void *) * (l->size*LIST_CHUNK_SIZE)
+      sizeof(void *) * ((l->size + 1)*LIST_CHUNK_SIZE)
     );
     if (new_elements == NULL) {
       perror("Failed to allocate additional list chunk.");
@@ -47,7 +47,11 @@ static inline void grow_if_necessary(list *l) {
 }
 
 static inline void shrink_if_necessary(list *l) {
-  if (l->count < (l->size - LIST_KEEP_CHUNKS)*LIST_CHUNK_SIZE) {
+  if (
+    l->size > LIST_KEEP_CHUNKS
+  &&
+    l->count < (l->size - LIST_KEEP_CHUNKS)*LIST_CHUNK_SIZE
+  ) {
     // We should free our extra elements.
     void ** new_elements = (void **) realloc(
       l->elements,
@@ -98,10 +102,32 @@ int contains(list *l, void *element) {
   return result;
 }
 
+size_t get_length(list *l) {
+  return l->count;
+}
+
+void * get_element(list *l, size_t i) {
+  if (i >= l->count) {
+    return NULL;
+  }
+  return l->elements[i];
+}
+
 void append_element(list *l, void *element) {
   grow_if_necessary(l);
   l->elements[l->count] = element;
   l->count += 1;
+}
+
+void * pop_element(list *l) {
+  void *result = NULL;
+  if (l->count == 0) {
+    return NULL;
+  }
+  result = l->elements[l->count - 1];
+  l->count -= 1;
+  shrink_if_necessary(l);
+  return result;
 }
 
 void* remove_element(list *l, void *element) {

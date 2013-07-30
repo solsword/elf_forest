@@ -12,7 +12,7 @@ MAKEFLAGS+=--assume-old=$(TEST_DIR)
 
 # Compiler & Flags:
 CC=gcc
-CFLAGS=-g -O2 -c -Wall -ffast-math
+CFLAGS=-g -O3 -c -Wall -ffast-math
 
 LIBS_OPENGL=-lglee -lGL -lGLU
 LIBS_GLFW=-lglfw3 -lrt -lXrandr -lXi -lXxf86vm -lXrender -lXext -lX11 \
@@ -35,6 +35,8 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/list.o \
              $(OBJ_DIR)/vector.o \
              $(OBJ_DIR)/ui.o \
+             $(OBJ_DIR)/terrain.o \
+             $(OBJ_DIR)/data.o \
              $(OBJ_DIR)/octree.o
 
 MAIN_OBJECTS=$(OBJ_DIR)/main.o
