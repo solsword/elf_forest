@@ -47,6 +47,16 @@ static inline void compute_geoforms(
   }
 }
 
+static inline float abssq(float noise) {
+  noise = (0.999 - fabs(noise));
+  return noise * noise;
+}
+
+static inline float abscb(float noise) {
+  noise = (0.999 - fabs(noise));
+  return noise * noise * noise;
+}
+
 
 /*************
  * Functions *
@@ -60,6 +70,8 @@ block terrain_block(region_pos pos) {
   static int cave_layer_2_b = 0, cave_layer_2_t = 0;
   static int cave_layer_3_b = 0, cave_layer_3_t = 0;
   static float nlst = 0, nlow = 0, nmid = 0, nhig = 0, nhst = 0;
+  float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
+  float roughness = 0.5;
   if (xcache != pos.x || ycache != pos.y) {
     xcache = pos.x; ycache = pos.y;
     // recompute everything:
@@ -70,11 +82,22 @@ block terrain_block(region_pos pos) {
     nhig = sxnoise_2d(pos.x * TR_FREQUENCY_HIGH, pos.y * TR_FREQUENCY_HIGH);
     nhst = sxnoise_2d(pos.x * TR_FREQUENCY_HIGHEST, pos.y*TR_FREQUENCY_HIGHEST);
     // compute geoform mixing factors:
-    float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
     compute_geoforms(nlst, &depths, &oceans, &plains, &hills, &mountains);
     // mix terrain height:
     terrain = (int) (
-      nlow * (
+      (
+        abscb(nlow)
+      *
+        (
+          depths * TR_DEPTHS_VAR +
+          oceans * TR_OCEANS_VAR +
+          plains * TR_PLAINS_VAR +
+          hills * TR_HILLS_VAR +
+          mountains * TR_MOUNTAINS_VAR 
+        )
+      )
+    +
+      (
         depths * TR_DEPTHS_HEIGHT +
         oceans * TR_OCEANS_HEIGHT +
         plains * TR_PLAINS_HEIGHT +
@@ -82,8 +105,10 @@ block terrain_block(region_pos pos) {
         mountains * TR_MOUNTAINS_HEIGHT 
       )
     );
-    terrain += TR_DETAIL * nmid;
-    terrain += TR_BUMPS * nhig;
+    terrain += TR_DETAIL_LOW * abscb(nmid);
+    terrain += TR_DETAIL_MID * abssq(nhig);
+    roughness = 0.5 * abssq(nmid);
+    terrain += roughness * TR_DETAIL_HIGH * nhst;
     // dirt depth:
     dirt = TR_DIRT_MID + (int) (
       nmid * TR_DIRT_VAR

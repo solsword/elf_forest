@@ -14,8 +14,8 @@
  * Constants *
  *************/
 
-// TODO: adjust this; dynamic load capping
-const int LOAD_CAP = 2;
+// TODO: dynamic load capping?
+const int LOAD_CAP = 16;
 
 /***********
  * Globals *
@@ -41,13 +41,11 @@ void mark_for_reload(chunk *c) {
 
 void tick_load(void) {
   int n = 0;
-  chunk *c;
-  if (get_length(DIRTY_CHUNKS) > 0) {
-    do {
-      c = (chunk *) pop_element(DIRTY_CHUNKS);
-      load_chunk(c);
-      n += 1;
-    } while (n < LOAD_CAP && c != NULL);
+  chunk *c = NULL;
+  while (n < LOAD_CAP && get_length(DIRTY_CHUNKS) > 0) {
+    c = (chunk *) pop_element(DIRTY_CHUNKS);
+    load_chunk(c);
+    n += 1;
   }
 }
 

@@ -82,6 +82,6 @@ void test_compile_frame(frame *f) {
 }
 
 void test_spawn_player(frame *f) {
-  vector pos = { .x=0.0, .y=0.0, .z=6.0 };
-  PLAYER = spawn_entity("elf", &pos, &MAIN_FRAME);
+  vector pos = { .x=0.0, .y=0.0, .z=18.0 };
+  PLAYER = spawn_entity("tester", &pos, &MAIN_FRAME);
 }

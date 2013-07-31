@@ -4,9 +4,20 @@
 // static_entities.h
 // System-defined static entity information.
 
-#define NUM_STATIC_ENTITY_TYPES 4
+#define NUM_STATIC_ENTITY_TYPES 5
 
 entity STATIC_ENTITY_TYPES[NUM_STATIC_ENTITY_TYPES] = {
+  {
+    .type="tester",
+    .size={.x=0.7,.y=0.7,.z=1.8},
+    .head_pos={.x=0.0,.y=0.0,.z=0.75},
+    .mass=45,
+    .walk=12000,
+    .swim=8000,
+    .buoyancy=0.7,
+    .fly=300,
+    .jump=120000,
+  },
   {
     .type="elf",
     .size={.x=0.7,.y=0.7,.z=1.8},

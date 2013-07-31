@@ -309,17 +309,20 @@ void tick_physics(entity *e) {
   vector acceleration;
   // Recompute our movement flags:
   check_move_flags(e);
+  e->move_flags |= MF_IN_LIQUID;
   // Get control impulse:
   integrate_control_inputs(e);
   // Integrate kinetics:
   acceleration.x = e->impulse.x / e->mass;
   acceleration.y = e->impulse.y / e->mass;
   acceleration.z = e->impulse.z / e->mass;
+  /*
   if (in_liquid(e)) {
     acceleration.z -= GRAVITY * (1 - e->buoyancy);
   } else {
     acceleration.z -= GRAVITY;
   }
+  */
   // Resolve entity collisions:
   resolve_entity_collisions(e);
   // Integrate acceleration into velocity:

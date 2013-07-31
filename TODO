@@ -4,6 +4,7 @@ performance
   time chunk loading
   render ordering of chunks
   support path caching
+  dynamic load capping
 loading
   implement dynamic chunk loading
   implement player position management
