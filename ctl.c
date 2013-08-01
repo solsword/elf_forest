@@ -22,7 +22,7 @@
 int KEYMAP[N_CONTROLS] = {
   GLFW_KEY_Q, // quit
   GLFW_KEY_P, // pause
-  GLFW_KEY_SPACE, GLFW_KEY_LEFT_CONTROL, // jump, crouch
+  GLFW_KEY_SPACE, GLFW_KEY_LEFT_SHIFT, // jump, crouch
   GLFW_KEY_A, GLFW_KEY_D, GLFW_KEY_W, GLFW_KEY_S, // movement
   GLFW_KEY_V, // swap views
   GLFW_KEY_KP_ADD, GLFW_KEY_KP_SUBTRACT, // zoom in/out

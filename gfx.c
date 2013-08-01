@@ -182,6 +182,7 @@ void cleanup(void) {
   cleanup_frame(&MAIN_FRAME);
   cleanup_entities();
   cleanup_data();
+  cleanup_ui();
 }
 
 void loop(void) {

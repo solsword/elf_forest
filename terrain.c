@@ -12,6 +12,17 @@
  * Inline Functions *
  ********************/
 
+static inline void get_noise(
+  float x, float y,
+  float *lowest, float *low, float *medium, float *high, float *highest
+) {
+  *lowest  = sxnoise_2d( x * TR_FREQUENCY_LOWEST ,   y * TR_FREQUENCY_LOWEST  );
+  *low     = sxnoise_2d( x * TR_FREQUENCY_LOW    ,   y * TR_FREQUENCY_LOW     );
+  *medium  = sxnoise_2d( x * TR_FREQUENCY_MID    ,   y * TR_FREQUENCY_MID     );
+  *high    = sxnoise_2d( x * TR_FREQUENCY_HIGH   ,   y * TR_FREQUENCY_HIGH    );
+  *highest = sxnoise_2d( x * TR_FREQUENCY_HIGHEST,   y * TR_FREQUENCY_HIGHEST );
+}
+
 static inline void compute_geoforms(
   float index,
   float *depths, float *oceans, float *plains, float *hills, float *mountains
@@ -47,13 +58,17 @@ static inline void compute_geoforms(
   }
 }
 
-static inline float abssq(float noise) {
-  noise = (0.999 - fabs(noise));
+static inline float oabs(float noise) {
+  return (0.999 - fabs(noise));
+}
+
+static inline float oabssq(float noise) {
+  noise = oabs(noise);
   return noise * noise;
 }
 
-static inline float abscb(float noise) {
-  noise = (0.999 - fabs(noise));
+static inline float oabscb(float noise) {
+  noise = oabs(noise);
   return noise * noise * noise;
 }
 
@@ -76,17 +91,14 @@ block terrain_block(region_pos pos) {
     xcache = pos.x; ycache = pos.y;
     // recompute everything:
     // generate some noise at each frequency (which we'll reuse several times):
-    nlst = sxnoise_2d(pos.x * TR_FREQUENCY_LOWEST, pos.y * TR_FREQUENCY_LOWEST);
-    nlow = sxnoise_2d(pos.x * TR_FREQUENCY_LOW, pos.y * TR_FREQUENCY_LOW);
-    nmid = sxnoise_2d(pos.x * TR_FREQUENCY_MID, pos.y * TR_FREQUENCY_MID);
-    nhig = sxnoise_2d(pos.x * TR_FREQUENCY_HIGH, pos.y * TR_FREQUENCY_HIGH);
-    nhst = sxnoise_2d(pos.x * TR_FREQUENCY_HIGHEST, pos.y*TR_FREQUENCY_HIGHEST);
+    get_noise(pos.x, pos.y, &nlst, &nlow, &nmid, &nhig, &nhst);
     // compute geoform mixing factors:
-    compute_geoforms(nlst, &depths, &oceans, &plains, &hills, &mountains);
+    //compute_geoforms(nlst, &depths, &oceans, &plains, &hills, &mountains);
+    get_geoforms(pos.x, pos.y, &depths, &oceans, &plains, &hills, &mountains);
     // mix terrain height:
     terrain = (int) (
       (
-        abscb(nlow)
+        oabssq(nlow)
       *
         (
           depths * TR_DEPTHS_VAR +
@@ -105,9 +117,16 @@ block terrain_block(region_pos pos) {
         mountains * TR_MOUNTAINS_HEIGHT 
       )
     );
-    terrain += TR_DETAIL_LOW * abscb(nmid);
-    terrain += TR_DETAIL_MID * abssq(nhig);
-    roughness = 0.5 * abssq(nmid);
+    roughness = 0.3 * oabssq(nmid) + 0.7 * (
+      depths * TR_DEPTHS_ROUGHNESS +
+      oceans * TR_OCEANS_ROUGHNESS +
+      plains * TR_PLAINS_ROUGHNESS +
+      hills * TR_HILLS_ROUGHNESS +
+      mountains * TR_MOUNTAINS_ROUGHNESS 
+    );
+    terrain += TR_DETAIL_LOW * oabs(nmid);
+    terrain += (0.5 + 0.5 * roughness) * TR_DETAIL_MID * oabs(nhig);
+    //terrain += roughness * TR_DETAIL_MID * oabssq(nhig);
     terrain += roughness * TR_DETAIL_HIGH * nhst;
     // dirt depth:
     dirt = TR_DIRT_MID + (int) (
@@ -132,4 +151,13 @@ block terrain_block(region_pos pos) {
     }
     return B_STONE;
   }
+}
+
+void get_geoforms(
+  int x, int y,
+  float *depths, float *oceans, float *plains, float *hills, float *mountains
+) {
+  float noise = 0, ignore = 0;
+  get_noise(x, y, &noise, &ignore, &ignore, &ignore, &ignore);
+  compute_geoforms(noise, depths, oceans, plains, hills, mountains);
 }

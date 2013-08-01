@@ -154,6 +154,12 @@ static inline block head_block(entity *e) {
   return block_at(e->fr, pos);
 }
 
+static inline void get_region_pos(entity *e, region_pos *result) {
+  result->x = e->pos.x + (e->fr->region_offset.x << CHUNK_BITS);
+  result->y = e->pos.y + (e->fr->region_offset.y << CHUNK_BITS);
+  result->z = e->pos.z + (e->fr->region_offset.z << CHUNK_BITS);
+}
+
 /*************
  * Functions *
  *************/

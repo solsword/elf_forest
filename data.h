@@ -27,8 +27,9 @@ extern const int LOAD_CAP;
  * Globals *
  ***********/
 
-// Chunks that need to be reloaded:
-extern list *DIRTY_CHUNKS;
+// Chunks that need to be reloaded/recompiled:
+extern list *CHUNKS_TO_RELOAD;
+extern list *CHUNKS_TO_RECOMPILE;
 
 /*************************
  * Structure Definitions *
@@ -46,11 +47,14 @@ void setup_data(void);
 // Cleans up the data subsytem.
 void cleanup_data(void);
 
-// Marks the given chunk as dirty.
+// Marks the given chunk for reloading.
 void mark_for_reload(chunk *c);
 
-// Ticks the chunk loading system, loading as much data as allowed.
-void tick_load(void);
+// Marks the given chunk for recompilation.
+void mark_for_recompile(chunk *c);
+
+// Ticks the chunk data system, loading/recompiling as many chunks as allowed.
+void tick_data(void);
 
 // Computes block exposure for the given chunk.
 void compute_exposure(chunk *c);

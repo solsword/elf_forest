@@ -55,6 +55,6 @@ void tick(int steps) {
     warp_space(&MAIN_FRAME, PLAYER);
     tick_blocks(&MAIN_FRAME);
   }
-  tick_load();
+  tick_data();
   clear_edge_triggers();
 }

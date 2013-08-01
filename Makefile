@@ -14,13 +14,16 @@ MAKEFLAGS+=--assume-old=$(TEST_DIR)
 CC=gcc
 DEBUG_FLAGS=-g -O0 -DDEBUG
 OPT_FLAGS=-O3
-CFLAGS=-c -Wall -ffast-math $(DEBUG_FLAGS)
+INCLUDE_FLAGS=-I/usr/include/freetype2
+CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(DEBUG_FLAGS)
 
 LIBS_OPENGL=-lglee -lGL -lGLU
 LIBS_GLFW=-lglfw3 -lrt -lXrandr -lXi -lXxf86vm -lXrender -lXext -lX11 \
           -lpthread -lxcb -lXau -lXdmcp
+LIBS_FTGL=-lftgl
+LIBS=$(LIBS_OPENGL) $(LIBS_GLFW) $(LIBS_FTGL)
 
-LFLAGS=-lm -lpng $(LIBS_OPENGL) $(LIBS_GLFW)
+LFLAGS=-lm -lpng $(LIBS)
 
 # Objects:
 CORE_OBJECTS=$(OBJ_DIR)/world.o \
@@ -83,7 +86,8 @@ $(TEST_DIR):
 *.h: ;
 
 $(OBJ_DIR)/obj.d:: *.c *.h $(OBJ_DIR)
-	gcc -MM *.c | sed "s/^\([^ ]\)/$(OBJ_DIR)\/\1/" > $(OBJ_DIR)/obj.d
+	gcc -MM $(INCLUDE_FLAGS) *.c | sed "s/^\([^ ]\)/$(OBJ_DIR)\/\1/" >\
+		$(OBJ_DIR)/obj.d
 
 Makefile: ;
 

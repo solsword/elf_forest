@@ -436,4 +436,6 @@ void compile_chunk(chunk *c) {
   } else {
     cleanup_vertex_buffer(&(c->translucent_vertices));
   }
+  // Mark the chunk as compiled:
+  c->flags &= ~CF_NEEDS_RECOMIPLE;
 }

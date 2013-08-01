@@ -60,6 +60,7 @@ void setup_chunk(chunk *c, region_chunk_pos *rpos) {
   c->rpos.x = rpos->x;
   c->rpos.y = rpos->y;
   c->rpos.z = rpos->z;
+  c->flags = 0;
 }
 
 void cleanup_chunk(chunk *c) {

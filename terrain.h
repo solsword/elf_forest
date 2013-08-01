@@ -12,12 +12,14 @@
  **************/
 
 // Top-level terrain parameters:
-#define TR_SEA_LEVEL -5
+#define TR_SEA_LEVEL 0
 #define TR_DIRT_MID 6
 #define TR_DIRT_VAR 5
 
 // Basic frequencies:
-#define TR_FREQUENCY_LOWEST 0.0009
+//#define TR_FREQUENCY_LOWEST 0.0001
+// DEBUG:
+#define TR_FREQUENCY_LOWEST 0.0005
 #define TR_FREQUENCY_LOW 0.003
 #define TR_FREQUENCY_MID 0.01
 #define TR_FREQUENCY_HIGH 0.05
@@ -26,28 +28,34 @@
 // Geoform parameters:
 
 // Noise->geoform mapping:
-#define TR_GEOMAP_DEPTHS -0.1
+#define TR_GEOMAP_DEPTHS (-0.1)
 #define TR_GEOMAP_OCEAN 0.0
 #define TR_GEOMAP_PLAINS 0.3
 #define TR_GEOMAP_HILLS 0.8
 #define TR_GEOMAP_MOUNTAINS 0.95
 
 // Heights:
-#define TR_DEPTHS_HEIGHT -180
-#define TR_OCEANS_HEIGHT -45
+#define TR_DEPTHS_HEIGHT (-180)
+#define TR_OCEANS_HEIGHT (-60)
 #define TR_PLAINS_HEIGHT 3
-#define TR_HILLS_HEIGHT 15
-#define TR_MOUNTAINS_HEIGHT 70
+#define TR_HILLS_HEIGHT 40
+#define TR_MOUNTAINS_HEIGHT 170
 
 // Variances:
 #define TR_DEPTHS_VAR 90
 #define TR_OCEANS_VAR 50
 #define TR_PLAINS_VAR 7
-#define TR_HILLS_VAR 30
-#define TR_MOUNTAINS_VAR 100
+#define TR_HILLS_VAR 40
+#define TR_MOUNTAINS_VAR 120
 
 // Roughnesses:
+#define TR_DEPTHS_ROUGHNESS 0.4
+#define TR_OCEANS_ROUGHNESS 0.2
+#define TR_PLAINS_ROUGHNESS 0.1
+#define TR_HILLS_ROUGHNESS 0.5
+#define TR_MOUNTAINS_ROUGHNESS 0.7
 
+// Details:
 #define TR_DETAIL_LOW 7
 #define TR_DETAIL_MID 4
 #define TR_DETAIL_HIGH 3
@@ -58,5 +66,10 @@
  *************/
 
 block terrain_block(region_pos pos);
+
+void get_geoforms(
+  int x, int y,
+  float *depths, float *oceans, float *plains, float *hills, float *mountains
+);
 
 #endif // ifndef TERRAIN_H

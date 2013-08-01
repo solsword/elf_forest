@@ -14,36 +14,53 @@
  * Constants *
  *************/
 
-// TODO: dynamic load capping?
+// TODO: dynamic capping?
 const int LOAD_CAP = 16;
+const int COMPILE_CAP = 1024;
 
 /***********
  * Globals *
  ***********/
 
-list *DIRTY_CHUNKS;
+list *CHUNKS_TO_RELOAD;
+list *CHUNKS_TO_RECOMPILE;
 
 /*************
  * Functions *
  *************/
 
 void setup_data(void) {
-  DIRTY_CHUNKS = create_list();
+  CHUNKS_TO_RELOAD = create_list();
+  CHUNKS_TO_RECOMPILE = create_list();
 }
 
 void cleanup_data(void) {
-  cleanup_list(DIRTY_CHUNKS);
+  cleanup_list(CHUNKS_TO_RELOAD);
+  cleanup_list(CHUNKS_TO_RECOMPILE);
 }
 
 void mark_for_reload(chunk *c) {
-  append_element(DIRTY_CHUNKS, (void *) c);
+  c->flags |= CF_NEEDS_RELOAD;
+  append_element(CHUNKS_TO_RELOAD, (void *) c);
 }
 
-void tick_load(void) {
+void mark_for_recompile(chunk *c) {
+  c->flags |= CF_NEEDS_RECOMIPLE;
+  append_element(CHUNKS_TO_RECOMPILE, (void *) c);
+}
+
+void tick_data(void) {
   int n = 0;
   chunk *c = NULL;
-  while (n < LOAD_CAP && get_length(DIRTY_CHUNKS) > 0) {
-    c = (chunk *) pop_element(DIRTY_CHUNKS);
+  while (n < LOAD_CAP && get_length(CHUNKS_TO_RECOMPILE) > 0) {
+    c = (chunk *) pop_element(CHUNKS_TO_RECOMPILE);
+    compile_chunk(c);
+    n += 1;
+  }
+  n = 0;
+  c = NULL;
+  while (n < LOAD_CAP && get_length(CHUNKS_TO_RELOAD) > 0) {
+    c = (chunk *) pop_element(CHUNKS_TO_RELOAD);
     load_chunk(c);
     n += 1;
   }
@@ -112,6 +129,8 @@ void load_chunk(chunk *c) {
       }
     }
   }
+  c->flags &= ~CF_NEEDS_RELOAD;
+  c->flags |= CF_NEEDS_RECOMIPLE;
   compute_exposure(c);
   compile_chunk(c);
 }

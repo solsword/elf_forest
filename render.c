@@ -127,16 +127,7 @@ void render_frame(
   }
   // */
 
-  // DEBUG: Set light position:
-  GLfloat pos[4] = {
-    HALF_FRAME,
-    HALF_FRAME,
-    (float) HALF_FRAME * 1.5,
-    0.0
-  };
-  glLightfv( GL_LIGHT0, GL_POSITION, pos);
-
-  //*
+  /*
   // DEBUG: Render a bounding box:
   glColor4ub(128, 128, 128, 128); // 50% 50% grey
 
@@ -156,23 +147,6 @@ void render_frame(
   glVertex3f(FULL_FRAME, FULL_FRAME, FULL_FRAME);
   glVertex3f(FULL_FRAME, 0, FULL_FRAME);
 
-  glEnd();
-
-  // DEBUG: Render axes:
-  glColor4ub(255, 0, 0, 255); // red = x
-  glBegin( GL_LINES );
-  glVertex3f(-0.5, -0.5, -0.5);
-  glVertex3f(0.5, -0.5, -0.5);
-  glEnd();
-  glColor4ub(0, 128, 0, 255); // green = y
-  glBegin( GL_LINES );
-  glVertex3f(-0.5, -0.5, -0.5);
-  glVertex3f(-0.5, 0.5, -0.5);
-  glEnd();
-  glColor4ub(0, 0, 255, 255); // blue = z
-  glBegin( GL_LINES );
-  glVertex3f(-0.5, -0.5, -0.5);
-  glVertex3f(-0.5, -0.5, 0.5);
   glEnd();
   // */
 
@@ -211,6 +185,10 @@ void render_chunk_layer(
   layer l
 ) {
   chunk *c = chunk_at(f, idx);
+  // Skip this chunk if it's out-of-date:
+  if (c->flags & CF_NEEDS_RELOAD) {
+    return;
+  }
   vertex_buffer *vb = &(c->opaque_vertices); // Default value
   if (l == L_OPAQUE) {
     vb = &(c->opaque_vertices);
@@ -232,8 +210,8 @@ void render_chunk_layer(
   // Set our drawing color:
   glColor4ub(255, 255, 255, 255); // 100% white
 
+  /*
   // DEBUG: Draw a bounding box:
-  //*
   glBegin( GL_LINE_LOOP );
 
   glVertex3f(0, 0, 0);

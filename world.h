@@ -27,6 +27,9 @@ typedef struct region_pos_s region_pos;
 struct region_chunk_pos_s;
 typedef struct region_chunk_pos_s region_chunk_pos;
 
+// Flags for a chunk:
+typedef uint16_t chunk_flag;
+
 // An NxNxN chunk of the grid:
 struct chunk_s;
 typedef struct chunk_s chunk;
@@ -72,6 +75,9 @@ extern frame MAIN_FRAME;
 #define FR_MASK (FRAME_SIZE - 1) // Frame mask
 #define FC_MASK (CHUNK_SIZE*FRAME_SIZE - 1) // Frame coordinate mask
 
+static const chunk_flag     CF_NEEDS_RELOAD = 0x0001;
+static const chunk_flag  CF_NEEDS_RECOMIPLE = 0x0002;
+
 /*************************
  * Structure Definitions *
  *************************/
@@ -96,6 +102,7 @@ struct chunk_s {
   vertex_buffer translucent_vertices; // The translucent vertices.
   region_chunk_pos rpos; // Absolute location within the region.
   list *block_entities; // Tile entities.
+  chunk_flag flags; // Flags
 };
 
 struct frame_index_s {
