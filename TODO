@@ -19,7 +19,6 @@ graphics
   use or disable texture mipmapping
   voxel mipmapping
   block lighting
-  fix chunk edge holes!
   entity models & textures
 world
   plant growth
@@ -29,4 +28,5 @@ gameplay
   songs
   plants
 bugs/testing
-  remove ability to see through ceiling blocks diagonally
+  fix chunk edge holes!
+  fix tree canopy height bugs!

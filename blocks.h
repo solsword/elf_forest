@@ -218,7 +218,7 @@ static const block_limit        BL_MIN_SOLID =  0x4000;
 // Normal solid blocks go here.
 
 // The first translucent block:
-static const block_limit  BL_MIN_TRANSLUCENT =  0xff00;
+static const block_limit  BL_MIN_TRANSLUCENT =  0xfd00;
 
 /**********
  * Blocks *
@@ -253,8 +253,11 @@ static const block       B_STONE = 0x4100;
 static const block        B_DIRT = 0x4200;
 static const block       B_GRASS = 0x4300;
 static const block        B_SAND = 0x4400;
+static const block       B_TRUNK = 0x4500;
 
 // Translucent solid blocks:
+static const block    B_BRANCHES = 0xfd00;
+static const block      B_LEAVES = 0xfe00;
 static const block       B_GLASS = 0xff00;
 
 /*************
