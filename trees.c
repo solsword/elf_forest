@@ -14,6 +14,8 @@
 
 int TREE_HASH_OFFSET = 11;
 
+tree_milieu TREE_MILIEU;
+
 /*************
  * Functions *
  *************/

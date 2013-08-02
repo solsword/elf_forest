@@ -30,7 +30,7 @@ block terrain_block(region_pos pos) {
     .z=TREE_NOTREE_Z
   };
   int tunnel = 0;
-  int height = 0;
+  int altitude = 0;
   if (xcache != pos.x || ycache != pos.y) {
     xcache = pos.x; ycache = pos.y;
     // recompute everything:
@@ -72,8 +72,8 @@ block terrain_block(region_pos pos) {
     sandy =
       oceans * oceans > (TR_BEACH_THRESHOLD + (0.03 * terrain - TR_SEA_LEVEL));
   }
-  // Height measures height above/below the base terrain height:
-  height = pos.z - terrain;
+  // Altitude measures height above/below the base terrain height:
+  altitude = pos.z - terrain;
   // DEBUG: (tunnels are expensive)
   tunnel = 0;
   /*
@@ -83,23 +83,23 @@ block terrain_block(region_pos pos) {
     depths, oceans, plains, hills, mountains // TODO: Use these arguments!
   );
   // */
-  if (use_tree_block(terrain, height, canopy_height, TR_SEA_LEVEL, trunk)) {
+  if (use_tree_block(terrain, altitude, canopy_height, TR_SEA_LEVEL, trunk)) {
     return tree_block(&pos, &trunk, canopy_height, nmid);
   }
   if (
     tunnel
   &&
-    height <= 0
+    altitude <= 0
   &&
     (
       terrain > TR_SEA_LEVEL
     ||
-      height < -TR_TUNNEL_UNDERSEA_OFFSET
+      altitude < -TR_TUNNEL_UNDERSEA_OFFSET
     )
   ) {
     return B_AIR;
   }
-  if (height == 0) {
+  if (altitude == 0) {
     if (sandy) {
       return B_SAND;
     } else if (pos.z >= TR_SEA_LEVEL) {
@@ -107,14 +107,14 @@ block terrain_block(region_pos pos) {
     } else {
       return B_DIRT;
     }
-  } else if (height > 0) {
+  } else if (altitude > 0) {
     if (pos.z > TR_SEA_LEVEL) {
       return B_AIR;
     } else {
       return B_WATER;
     }
   } else {
-    if (height > -dirt) {
+    if (altitude > -dirt) {
       if (sandy) {
         return B_SAND;
       } else {
