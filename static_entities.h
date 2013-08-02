@@ -10,13 +10,13 @@ entity STATIC_ENTITY_TYPES[NUM_STATIC_ENTITY_TYPES] = {
   {
     .type="tester",
     .size={.x=0.7,.y=0.7,.z=1.8},
-    .head_pos={.x=0.0,.y=0.0,.z=0.75},
+    .head_pos={.x=0.0,.y=0.0,.z=0.7},
     .mass=45,
-    .walk=60000,
-    .swim=40000,
+    .walk=12000,
+    .swim=8000,
     .buoyancy=0.7,
     .fly=300,
-    .jump=600000,
+    .jump=120000,
   },
   {
     .type="elf",

@@ -20,22 +20,6 @@
  * Private Functions *
  *********************/
 
-static inline block cull_face(block here, block neighbor) {
-  return (
-    !block_is(neighbor, OUT_OF_RANGE)
-  &&
-    (
-      is_opaque(neighbor)
-    ||
-      (
-        is_translucent(here)
-      &&
-        shares_translucency(here, neighbor)
-      )
-    )
-  );
-}
-
 // The various push_* functions add vertex/index data for faces of a cube to
 // the given vertex buffer. They use local xyz coordinates to specify the
 // position of the triangles that they're adding. Note that because normals
@@ -232,11 +216,13 @@ void compile_chunk(chunk *c) {
   uint16_t translucent_count = 0;
   chunk_index idx;
   block here = 0;
+  block_flag flags = 0;
   for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
         here = c_get_block(c, idx);
-        if (is_exposed(here) && !is_invisible(here)) {
+        flags = c_get_flags(c, idx);
+        if ((flags & BF_EXPOSED_ANY) && !is_invisible(here)) {
           if (is_translucent(here)) {
             translucent_count += 1;
           } else {
@@ -285,7 +271,6 @@ void compile_chunk(chunk *c) {
   tcoords st; // texture coordinates
   st.s = 0;
   st.t = 0;
-  block ba = 0, bb = 0, bn = 0, bs = 0, be = 0, bw = 0;
 
 #ifdef DEBUG
   int opaque_vcount = 0;
@@ -335,91 +320,92 @@ void compile_chunk(chunk *c) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
         // get local block and neighbors:
         here = c_get_block(c, idx);
-        c_get_neighbors(c, idx, &ba, &bb, &bn, &bs, &be, &bw);
-        if (is_exposed(here) && !is_invisible(here)) {
-          if (!cull_face(here, ba)) {
-            compute_face_tc(here, BD_ORI_UP, &st);
-            if (is_translucent(here)) {
+        if (is_invisible(here)) {
+          continue;
+        }
+        flags = c_get_flags(c, idx);
+        if (flags & BF_EXPOSED_ABOVE) {
+          compute_face_tc(here, BD_ORI_UP, &st);
+          if (is_translucent(here)) {
 #ifdef DEBUG
-              CHECK_TRANSLUCENT
+            CHECK_TRANSLUCENT
 #endif
-              push_top(&(c->translucent_vertices), idx, st);
-            } else {
+            push_top(&(c->translucent_vertices), idx, st);
+          } else {
 #ifdef DEBUG
-              CHECK_OPAQUE
+            CHECK_OPAQUE
 #endif
-              push_top(&(c->opaque_vertices), idx, st);
-            }
+            push_top(&(c->opaque_vertices), idx, st);
           }
-          if (!cull_face(here, bn)) {
-            compute_face_tc(here, BD_ORI_NORTH, &st);
-            if (is_translucent(here)) {
+        }
+        if (flags & BF_EXPOSED_BELOW) {
+          compute_face_tc(here, BD_ORI_DOWN, &st);
+          if (is_translucent(here)) {
 #ifdef DEBUG
-              CHECK_TRANSLUCENT
+            CHECK_TRANSLUCENT
 #endif
-              push_north(&(c->translucent_vertices), idx, st);
-            } else {
+            push_bottom(&(c->translucent_vertices), idx, st);
+          } else {
 #ifdef DEBUG
-              CHECK_OPAQUE
+            CHECK_OPAQUE
 #endif
-              push_north(&(c->opaque_vertices), idx, st);
-            }
+            push_bottom(&(c->opaque_vertices), idx, st);
           }
-          if (!cull_face(here, bs)) {
-            compute_face_tc(here, BD_ORI_SOUTH, &st);
-            if (is_translucent(here)) {
+        }
+        if (flags & BF_EXPOSED_NORTH) {
+          compute_face_tc(here, BD_ORI_NORTH, &st);
+          if (is_translucent(here)) {
 #ifdef DEBUG
-              CHECK_TRANSLUCENT
+            CHECK_TRANSLUCENT
 #endif
-              push_south(&(c->translucent_vertices), idx, st);
-            } else {
+            push_north(&(c->translucent_vertices), idx, st);
+          } else {
 #ifdef DEBUG
-              CHECK_OPAQUE
+            CHECK_OPAQUE
 #endif
-              push_south(&(c->opaque_vertices), idx, st);
-            }
+            push_north(&(c->opaque_vertices), idx, st);
           }
-          if (!cull_face(here, be)) {
-            compute_face_tc(here, BD_ORI_EAST, &st);
-            if (is_translucent(here)) {
+        }
+        if (flags & BF_EXPOSED_SOUTH) {
+          compute_face_tc(here, BD_ORI_SOUTH, &st);
+          if (is_translucent(here)) {
 #ifdef DEBUG
-              CHECK_TRANSLUCENT
+            CHECK_TRANSLUCENT
 #endif
-              push_east(&(c->translucent_vertices), idx, st);
-            } else {
+            push_south(&(c->translucent_vertices), idx, st);
+          } else {
 #ifdef DEBUG
-              CHECK_OPAQUE
+            CHECK_OPAQUE
 #endif
-              push_east(&(c->opaque_vertices), idx, st);
-            }
+            push_south(&(c->opaque_vertices), idx, st);
           }
-          if (!cull_face(here, bw)) {
-            compute_face_tc(here, BD_ORI_WEST, &st);
-            if (is_translucent(here)) {
+        }
+        if (flags & BF_EXPOSED_EAST) {
+          compute_face_tc(here, BD_ORI_EAST, &st);
+          if (is_translucent(here)) {
 #ifdef DEBUG
-              CHECK_TRANSLUCENT
+            CHECK_TRANSLUCENT
 #endif
-              push_west(&(c->translucent_vertices), idx, st);
-            } else {
+            push_east(&(c->translucent_vertices), idx, st);
+          } else {
 #ifdef DEBUG
-              CHECK_OPAQUE
+            CHECK_OPAQUE
 #endif
-              push_west(&(c->opaque_vertices), idx, st);
-            }
+            push_east(&(c->opaque_vertices), idx, st);
           }
-          if (!cull_face(here, bb)) {
-            compute_face_tc(here, BD_ORI_DOWN, &st);
-            if (is_translucent(here)) {
+        }
+        if (flags & BF_EXPOSED_WEST) {
+          compute_face_tc(here, BD_ORI_WEST, &st);
+          if (is_translucent(here)) {
 #ifdef DEBUG
-              CHECK_TRANSLUCENT
+            CHECK_TRANSLUCENT
 #endif
-              push_bottom(&(c->translucent_vertices), idx, st);
-            } else {
+            push_west(&(c->translucent_vertices), idx, st);
+          } else {
 #ifdef DEBUG
-              CHECK_OPAQUE
+            CHECK_OPAQUE
 #endif
-              push_bottom(&(c->opaque_vertices), idx, st);
-            }
+            push_west(&(c->opaque_vertices), idx, st);
           }
         }
       }
@@ -436,6 +422,4 @@ void compile_chunk(chunk *c) {
   } else {
     cleanup_vertex_buffer(&(c->translucent_vertices));
   }
-  // Mark the chunk as compiled:
-  c->flags &= ~CF_NEEDS_RECOMIPLE;
 }

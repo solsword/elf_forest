@@ -6,6 +6,8 @@
 
 #include <stdint.h>
 
+#include "util.h"
+
 /************
  * Typedefs *
  ************/
@@ -14,7 +16,7 @@ typedef uint16_t block;
 typedef uint8_t block_id;
 typedef uint16_t block_count;
 typedef uint16_t block_range;
-typedef uint16_t block_flag;
+typedef uint8_t block_flag;
 typedef uint16_t block_data;
 typedef uint16_t block_limit;
 
@@ -28,8 +30,8 @@ static const block_count BLOCK_TYPE_COUNT = 256;
  * Ranges *
  **********/
 
-static const block_range  BR_FLAGS = 0x00f8;
-static const block_range   BR_DATA = 0x0007;
+static const block_range  BR_FLAGS = 0x00c0;
+static const block_range   BR_DATA = 0x003f;
 static const block_range     BR_ID = 0xff00;
 
 /*********
@@ -41,23 +43,39 @@ static const block_range     BR_ID = 0xff00;
 
 // The ability to turn a flag read into a 1 or 0 (instead of an N or 0) is
 // useful sometimes. Flag shifts tell you how many bits to shift (and
-// simultaneously are used to define the flag itself).
+// simultaneously are used to define the flag itself). Note that dynamic block
+// flags are stored separately from normal block data/ids.
 
-#define     BFS_EXPOSED_SHIFT 7;
-#define    BFS_RESERVED_SHIFT 6;
-#define      BFS_ON_OFF_SHIFT 5;
-#define  BFS_ORIENTABLE_SHIFT 4;
-#define  BFS_HAS_ENTITY_SHIFT 3;
+#define  BFS_EXPOSED_ABOVE_SHIFT 0
+#define  BFS_EXPOSED_BELOW_SHIFT 1
+#define  BFS_EXPOSED_NORTH_SHIFT 2
+#define  BFS_EXPOSED_SOUTH_SHIFT 3
+#define   BFS_EXPOSED_EAST_SHIFT 4
+#define   BFS_EXPOSED_WEST_SHIFT 5
+
+#define     BFS_ORIENTABLE_SHIFT 6
+#define     BFS_HAS_ENTITY_SHIFT 7
 
 // Dynamic flags:
 // --------------
 
-// Is this block exposed?
-static const block_flag     BF_EXPOSED = 1 << BFS_EXPOSED_SHIFT;
-// Reserved for future use.
-static const block_flag    BF_RESERVED = 1 << BFS_RESERVED_SHIFT;
-// Generic on/off.
-static const block_flag      BF_ON_OFF = 1 << BFS_ON_OFF_SHIFT;
+// Block exposure:
+static const block_flag  BF_EXPOSED_ABOVE = 1 << BFS_EXPOSED_ABOVE_SHIFT;
+static const block_flag  BF_EXPOSED_BELOW = 1 << BFS_EXPOSED_BELOW_SHIFT;
+static const block_flag  BF_EXPOSED_NORTH = 1 << BFS_EXPOSED_NORTH_SHIFT;
+static const block_flag  BF_EXPOSED_SOUTH = 1 << BFS_EXPOSED_SOUTH_SHIFT;
+static const block_flag   BF_EXPOSED_EAST = 1 << BFS_EXPOSED_EAST_SHIFT;
+static const block_flag   BF_EXPOSED_WEST = 1 << BFS_EXPOSED_WEST_SHIFT;
+
+static const block_flag BF_EXPOSED_ANY = 
+  (1 << BFS_EXPOSED_ABOVE_SHIFT) |
+  (1 << BFS_EXPOSED_BELOW_SHIFT) |
+  (1 << BFS_EXPOSED_NORTH_SHIFT) |
+  (1 << BFS_EXPOSED_SOUTH_SHIFT) |
+  (1 << BFS_EXPOSED_EAST_SHIFT) |
+  (1 << BFS_EXPOSED_WEST_SHIFT);
+
+static const block_flag BF_ALL_FLAGS = umaxof(block_flag);
 
 // Static flags:
 // -------------
@@ -250,18 +268,6 @@ static inline block_id just_id(block b) {
 
 static inline block full_block(block_id id) {
   return ((block) id) << 8;
-}
-
-// Flag checks:
-
-static inline block is_exposed(block b) {
-  return b & BF_EXPOSED;
-}
-
-// Flag sets:
-
-static inline block set_exposed(block b) {
-  return b | BF_EXPOSED;
 }
 
 // Type checks:

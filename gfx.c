@@ -44,7 +44,7 @@ const float DEFAULT_A = 1.0;
 // Camera parameters
 const double FOV = M_PI/3.0;
 const double ASPECT = 4.0/3.0;
-const double NEAR = 0.2;
+const double NEAR = 0.15;
 const double FAR = 362.0; // 256x256 diagonal
 
 /*************

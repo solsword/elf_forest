@@ -118,7 +118,7 @@ void warp_space(frame *f, entity *e) {
             c->rpos.x = rcpos.x;
             c->rpos.y = rcpos.y;
             c->rpos.z = rcpos.z;
-            mark_for_reload(c);
+            mark_for_reload(f, fcidx);
           }
         }
       }

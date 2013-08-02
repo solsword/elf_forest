@@ -54,11 +54,14 @@ int main(int argc, char** argv) {
 
 void test_compile_frame(frame *f) {
   frame_chunk_index idx;
+  chunk_neighborhood *cnb;
   printf("Computing exposure and compiling chunks...");
   for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
-        load_chunk(chunk_at(f, idx));
+        cnb = get_neighborhood(f, idx);
+        load_chunk(cnb);
+        free(cnb);
       }
     }
   }

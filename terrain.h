@@ -61,12 +61,25 @@
 #define TR_DETAIL_HIGH 3
 // TODO: trenches/canyons etc?
 
+// Tunnels:
+#define TR_FREQUENCY_TUNNEL_REGIONS 0.015
+#define TR_FREQUENCY_TUNNELS 0.031
+#define TR_FREQUENCY_TUNNEL_DETAILS 0.11
+#define TR_TUNNEL_YZ_OFFSET 73
+#define TR_TUNNEL_THRESHOLD 0.45
+#define TR_TUNNEL_UNDERSEA_OFFSET 8 // TODO: handle undersea tunnels elsehow?
+
 /*************
  * Functions *
  *************/
 
+// Returns the block ID for the block at the given position:
 block terrain_block(region_pos pos);
 
+// Computes geoform weights at the given location. Note that this isn't used
+// internally because the noise values that it generates are reused elsewhere
+// in terrain_block, but it should produce exactly the same geoform values as
+// terrain_block uses.
 void get_geoforms(
   int x, int y,
   float *depths, float *oceans, float *plains, float *hills, float *mountains

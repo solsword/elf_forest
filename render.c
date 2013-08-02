@@ -165,7 +165,7 @@ void render_frame(
 
   // Now render the translucent parts (without face-culling and using a
   // read-only depth buffer):
-  glDisable( GL_CULL_FACE );
+  //glDisable( GL_CULL_FACE );
   glDepthMask( GL_FALSE );
   for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
@@ -174,7 +174,7 @@ void render_frame(
       }
     }
   }
-  glEnable( GL_CULL_FACE );
+  //glEnable( GL_CULL_FACE );
   glDepthMask( GL_TRUE );
 }
 
@@ -186,7 +186,7 @@ void render_chunk_layer(
 ) {
   chunk *c = chunk_at(f, idx);
   // Skip this chunk if it's out-of-date:
-  if (c->flags & CF_NEEDS_RELOAD) {
+  if (c->chunk_flags & CF_NEEDS_RELOAD) {
     return;
   }
   vertex_buffer *vb = &(c->opaque_vertices); // Default value
@@ -210,7 +210,7 @@ void render_chunk_layer(
   // Set our drawing color:
   glColor4ub(255, 255, 255, 255); // 100% white
 
-  /*
+  //*
   // DEBUG: Draw a bounding box:
   glBegin( GL_LINE_LOOP );
 

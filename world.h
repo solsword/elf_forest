@@ -98,11 +98,12 @@ struct chunk_index_s {
 // (16 * 16 * 16) * 32 = 131072 = 16 KB
 struct chunk_s {
   block blocks[CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE]; // Block data.
+  block_flag block_flags[CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE]; // Block flags.
   vertex_buffer opaque_vertices; // The opaque vertices.
   vertex_buffer translucent_vertices; // The translucent vertices.
   region_chunk_pos rpos; // Absolute location within the region.
   list *block_entities; // Tile entities.
-  chunk_flag flags; // Flags
+  chunk_flag chunk_flags; // Flags
 };
 
 struct frame_index_s {
@@ -221,6 +222,41 @@ static inline void c_put_block(
     ((idx.y & CH_MASK) << CHUNK_BITS) +
     ((idx.z & CH_MASK) << (CHUNK_BITS*2))
   ] = b;
+}
+
+static inline block_flag c_get_flags(
+  chunk *c,
+  chunk_index idx
+) {
+  return (c->block_flags)[
+    (idx.x & CH_MASK) +
+    ((idx.y & CH_MASK) << CHUNK_BITS) +
+    ((idx.z & CH_MASK) << (CHUNK_BITS*2))
+  ];
+}
+
+static inline void c_set_flags(
+  chunk *c,
+  chunk_index idx,
+  block_flag flags
+) {
+  (c->block_flags)[
+    (idx.x & CH_MASK) +
+    ((idx.y & CH_MASK) << CHUNK_BITS) +
+    ((idx.z & CH_MASK) << (CHUNK_BITS*2))
+  ] |= flags;
+}
+
+static inline void c_clear_flags(
+  chunk *c,
+  chunk_index idx,
+  block_flag flags
+) {
+  (c->block_flags)[
+    (idx.x & CH_MASK) +
+    ((idx.y & CH_MASK) << CHUNK_BITS) +
+    ((idx.z & CH_MASK) << (CHUNK_BITS*2))
+  ] &= ~flags;
 }
 
 static inline block block_at(frame *f, frame_pos pos) {
