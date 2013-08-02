@@ -252,6 +252,7 @@ static const block    B_BOUNDARY = 0x4000;
 static const block       B_STONE = 0x4100;
 static const block        B_DIRT = 0x4200;
 static const block       B_GRASS = 0x4300;
+static const block        B_SAND = 0x4400;
 
 // Translucent solid blocks:
 static const block       B_GLASS = 0xff00;

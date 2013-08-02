@@ -61,7 +61,7 @@ static inline void render_vision_effects() {
     step_t = 0.5/BLOCK_ATLAS_WIDTH;
     FOG_DENSITY = 1.0;
   } else if (shares_translucency(hb, B_WATER)) {
-    glBlendColor(0.2, 0.2, 0.9, 1.0);
+    glBlendColor(0.5, 0.5, 0.9, 1.0);
     FOG_DENSITY = WATER_FOG_DENSITY;
   } else {
     glBlendColor(1.0, 1.0, 1.0, 1.0);

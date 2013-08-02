@@ -235,6 +235,18 @@ static inline block_flag c_get_flags(
   ];
 }
 
+static inline void c_put_flags(
+  chunk *c,
+  chunk_index idx,
+  block_flag flags
+) {
+  (c->block_flags)[
+    (idx.x & CH_MASK) +
+    ((idx.y & CH_MASK) << CHUNK_BITS) +
+    ((idx.z & CH_MASK) << (CHUNK_BITS*2))
+  ] = flags;
+}
+
 static inline void c_set_flags(
   chunk *c,
   chunk_index idx,

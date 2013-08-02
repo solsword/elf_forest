@@ -168,7 +168,8 @@ block terrain_block(region_pos pos) {
   static int cave_layer_2_b = 0, cave_layer_2_t = 0;
   static int cave_layer_3_b = 0, cave_layer_3_t = 0;
   static float nlst = 0, nlow = 0, nmid = 0, nhig = 0, nhst = 0;
-  float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
+  static float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
+  static int sandy = 0;
   int tunnel = 0;
   if (xcache != pos.x || ycache != pos.y) {
     xcache = pos.x; ycache = pos.y;
@@ -176,6 +177,11 @@ block terrain_block(region_pos pos) {
     // generate some noise at each frequency (which we'll reuse several times):
     get_noise(pos.x, pos.y, &nlst, &nlow, &nmid, &nhig, &nhst);
     // compute geoform mixing factors:
+    depths = 0;
+    oceans = 0;
+    plains = 0;
+    hills = 0;
+    mountains = 0;
     compute_geoforms(nlst, &depths, &oceans, &plains, &hills, &mountains);
     // compute terrain height:
     terrain = get_terrain_height(
@@ -194,8 +200,11 @@ block terrain_block(region_pos pos) {
     dirt = TR_DIRT_MID + (int) (
       nmid * TR_DIRT_VAR
     );
+    // sandiness:
+    sandy =
+      oceans * oceans > (TR_BEACH_THRESHOLD + (0.03 * terrain - TR_SEA_LEVEL));
   }
-  // DEBUG: no tunnels (they're expensive)
+  // DEBUG: (tunnels are expensive)
   tunnel = 0;
   /*
   tunnel = get_tunnel(
@@ -217,7 +226,9 @@ block terrain_block(region_pos pos) {
     return B_AIR;
   }
   if (pos.z == terrain) {
-    if (pos.z >= TR_SEA_LEVEL) {
+    if (sandy) {
+      return B_SAND;
+    } else if (pos.z >= TR_SEA_LEVEL) {
       return B_GRASS;
     } else {
       return B_DIRT;
@@ -230,7 +241,11 @@ block terrain_block(region_pos pos) {
     }
   } else {
     if (terrain - pos.z < dirt) {
-      return B_DIRT;
+      if (sandy) {
+        return B_SAND;
+      } else {
+        return B_DIRT;
+      }
     }
     return B_STONE;
   }

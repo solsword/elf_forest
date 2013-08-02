@@ -55,7 +55,7 @@ void render_frame(
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  // Set the fog distance:
+  // Set the fog density:
   set_fog_density(FOG_DENSITY);
 
   // DEBUG: spin right 'round:

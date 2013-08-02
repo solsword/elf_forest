@@ -30,23 +30,120 @@ list *CHUNKS_TO_RECOMPILE;
  * Inline Functions *
  ********************/
 
-static inline int opaque_occludes_face(neighbor) {
+static inline int occludes_face(block neighbor, block occluded) {
   return (
     block_is(neighbor, OUT_OF_RANGE)
   ||
     is_opaque(neighbor)
+  ||
+    (
+      is_translucent(neighbor)
+    &&
+      is_translucent(occluded)
+    &&
+      shares_translucency(neighbor, occluded)
+    )
   );
 }
 
-static inline int translucent_occludes_face(block neighbor, block b) {
-  return (
-    block_is(neighbor, OUT_OF_RANGE)
-  ||
-    is_opaque(neighbor)
-  ||
-    shares_translucency(b, neighbor)
-  );
-}
+// Macro-expanded face-checking functions:
+#define CHECK_ANY_FACE \
+  static inline int FN_NAME( \
+    chunk_index idx, \
+    chunk *neighbor, \
+    block here, block there \
+  ) { \
+    if (block_is(there, OUT_OF_RANGE) && neighbor) { \
+      assert(OOR_AXIS == OOR_RESET); \
+      OOR_AXIS = OOR_REPLACE; \
+      there = c_get_block(neighbor, idx); \
+      if (occludes_face(here, there)) { \
+        if (c_get_flags(neighbor, idx) & OOR_EXPOSED) { \
+          c_clear_flags(neighbor, idx, OOR_EXPOSED); \
+          mark_for_recompile(neighbor); \
+        } \
+      } else { \
+        if (!(c_get_flags(neighbor, idx) & OOR_EXPOSED)) { \
+          c_set_flags(neighbor, idx, OOR_EXPOSED); \
+          mark_for_recompile(neighbor); \
+        } \
+      } \
+      OOR_AXIS = OOR_RESET; \
+    } \
+    return occludes_face(there, here); \
+  } \
+
+#define FN_NAME check_top_face
+#define OOR_AXIS idx.z
+#define OOR_REPLACE 0
+#define OOR_RESET (CHUNK_SIZE - 1)
+#define OOR_EXPOSED BF_EXPOSED_BELOW
+CHECK_ANY_FACE
+#undef FN_NAME
+#undef OOR_AXIS
+#undef OOR_REPLACE
+#undef OOR_RESET
+#undef OOR_EXPOSED
+
+#define FN_NAME check_bot_face
+#define OOR_AXIS idx.z
+#define OOR_REPLACE (CHUNK_SIZE - 1)
+#define OOR_RESET 0
+#define OOR_EXPOSED BF_EXPOSED_ABOVE
+CHECK_ANY_FACE
+#undef FN_NAME
+#undef OOR_AXIS
+#undef OOR_REPLACE
+#undef OOR_RESET
+#undef OOR_EXPOSED
+
+#define FN_NAME check_north_face
+#define OOR_AXIS idx.y
+#define OOR_REPLACE 0
+#define OOR_RESET (CHUNK_SIZE - 1)
+#define OOR_EXPOSED BF_EXPOSED_SOUTH
+CHECK_ANY_FACE
+#undef FN_NAME
+#undef OOR_AXIS
+#undef OOR_REPLACE
+#undef OOR_RESET
+#undef OOR_EXPOSED
+
+#define FN_NAME check_south_face
+#define OOR_AXIS idx.y
+#define OOR_REPLACE (CHUNK_SIZE - 1)
+#define OOR_RESET 0
+#define OOR_EXPOSED BF_EXPOSED_NORTH
+CHECK_ANY_FACE
+#undef FN_NAME
+#undef OOR_AXIS
+#undef OOR_REPLACE
+#undef OOR_RESET
+#undef OOR_EXPOSED
+
+#define FN_NAME check_east_face
+#define OOR_AXIS idx.x
+#define OOR_REPLACE 0
+#define OOR_RESET (CHUNK_SIZE - 1)
+#define OOR_EXPOSED BF_EXPOSED_WEST
+CHECK_ANY_FACE
+#undef FN_NAME
+#undef OOR_AXIS
+#undef OOR_REPLACE
+#undef OOR_RESET
+#undef OOR_EXPOSED
+
+#define FN_NAME check_west_face
+#define OOR_AXIS idx.x
+#define OOR_REPLACE (CHUNK_SIZE - 1)
+#define OOR_RESET 0
+#define OOR_EXPOSED BF_EXPOSED_EAST
+CHECK_ANY_FACE
+#undef FN_NAME
+#undef OOR_AXIS
+#undef OOR_REPLACE
+#undef OOR_RESET
+#undef OOR_EXPOSED
 
 /*************
  * Functions *
@@ -152,212 +249,30 @@ void compute_exposure(chunk_neighborhood *cnb) {
   for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
+        // get main block and neighbors:
         b = c_get_block(cnb->c, idx);
-        flags = 0;
-        c_clear_flags(cnb->c, idx, BF_ALL_FLAGS);
-        // get neighboring blocks:
         c_get_neighbors(cnb->c, idx, &ba, &bb, &bn, &bs, &be, &bw);
-        // invisible blocks:
-        if (is_invisible(b)) {
-          // above
-          if (block_is(ba, OUT_OF_RANGE) && cnb->above) {
-            assert(idx.z == CHUNK_SIZE - 1);
-            idx.z = 0;
-            c_set_flags(cnb->above, idx, BF_EXPOSED_BELOW);
-            mark_for_recompile(cnb->above);
-            idx.z = CHUNK_SIZE - 1;
-          }
-          // below
-          if (block_is(bb, OUT_OF_RANGE) && cnb->below) {
-            assert(idx.z == 0);
-            idx.z = CHUNK_SIZE - 1;
-            c_set_flags(cnb->below, idx, BF_EXPOSED_ABOVE);
-            mark_for_recompile(cnb->below);
-            idx.z = 0;
-          }
-          // north
-          if (block_is(bn, OUT_OF_RANGE) && cnb->north) {
-            assert(idx.y == CHUNK_SIZE - 1);
-            idx.y = 0;
-            c_set_flags(cnb->north, idx, BF_EXPOSED_SOUTH);
-            mark_for_recompile(cnb->north);
-            idx.y = CHUNK_SIZE - 1;
-          }
-          // south
-          if (block_is(bs, OUT_OF_RANGE) && cnb->south) {
-            assert(idx.y == 0);
-            idx.y = CHUNK_SIZE - 1;
-            c_set_flags(cnb->south, idx, BF_EXPOSED_NORTH);
-            mark_for_recompile(cnb->south);
-            idx.y = 0;
-          }
-          // east
-          if (block_is(be, OUT_OF_RANGE) && cnb->east) {
-            assert(idx.x == CHUNK_SIZE - 1);
-            idx.x = 0;
-            c_set_flags(cnb->east, idx, BF_EXPOSED_WEST);
-            mark_for_recompile(cnb->east);
-            idx.x = CHUNK_SIZE - 1;
-          }
-          // west
-          if (block_is(bw, OUT_OF_RANGE) && cnb->west) {
-            assert(idx.x == 0);
-            idx.x = CHUNK_SIZE - 1;
-            c_set_flags(cnb->west, idx, BF_EXPOSED_EAST);
-            mark_for_recompile(cnb->west);
-            idx.x = 0;
-          }
-        // translucent blocks:
-        } else if (is_translucent(b)) {
-          // above
-          if (block_is(ba, OUT_OF_RANGE) && cnb->above) {
-            assert(idx.z == CHUNK_SIZE - 1);
-            idx.z = 0;
-            ba = c_get_block(cnb->above, idx);
-            if (!translucent_occludes_face(b, ba)) {
-              c_set_flags(cnb->above, idx, BF_EXPOSED_BELOW);
-              mark_for_recompile(cnb->above);
-            }
-            idx.z = CHUNK_SIZE - 1;
-          }
-          if (!translucent_occludes_face(ba, b)) {
-            flags |= BF_EXPOSED_ABOVE;
-          }
-          // below
-          if (block_is(bb, OUT_OF_RANGE) && cnb->below) {
-            assert(idx.z == 0);
-            idx.z = CHUNK_SIZE - 1;
-            bb = c_get_block(cnb->below, idx);
-            if (!translucent_occludes_face(b, bb)) {
-              c_set_flags(cnb->below, idx, BF_EXPOSED_ABOVE);
-              mark_for_recompile(cnb->below);
-            }
-            idx.z = 0;
-          }
-          if (!translucent_occludes_face(bb, b)) {
-            flags |= BF_EXPOSED_BELOW;
-          }
-          // north
-          if (block_is(bn, OUT_OF_RANGE) && cnb->north) {
-            assert(idx.y == CHUNK_SIZE - 1);
-            idx.y = 0;
-            bn = c_get_block(cnb->north, idx);
-            if (!translucent_occludes_face(b, bn)) {
-              c_set_flags(cnb->north, idx, BF_EXPOSED_SOUTH);
-              mark_for_recompile(cnb->north);
-            }
-            idx.y = CHUNK_SIZE - 1;
-          }
-          if (!translucent_occludes_face(bn, b)) {
-            flags |= BF_EXPOSED_NORTH;
-          }
-          // south
-          if (block_is(bs, OUT_OF_RANGE) && cnb->south) {
-            assert(idx.y == 0);
-            idx.y = CHUNK_SIZE - 1;
-            bs = c_get_block(cnb->south, idx);
-            if (!translucent_occludes_face(b, bs)) {
-              c_set_flags(cnb->south, idx, BF_EXPOSED_NORTH);
-              mark_for_recompile(cnb->south);
-            }
-            idx.y = 0;
-          }
-          if (!translucent_occludes_face(bs, b)) {
-            flags |= BF_EXPOSED_SOUTH;
-          }
-          // east
-          if (block_is(be, OUT_OF_RANGE) && cnb->east) {
-            assert(idx.x == CHUNK_SIZE - 1);
-            idx.x = 0;
-            be = c_get_block(cnb->east, idx);
-            if (!translucent_occludes_face(b, be)) {
-              c_set_flags(cnb->east, idx, BF_EXPOSED_WEST);
-              mark_for_recompile(cnb->east);
-            }
-            idx.x = CHUNK_SIZE - 1;
-          }
-          if (!translucent_occludes_face(be, b)) {
-            flags |= BF_EXPOSED_EAST;
-          }
-          // west
-          if (block_is(bw, OUT_OF_RANGE) && cnb->west) {
-            assert(idx.x == 0);
-            idx.x = CHUNK_SIZE - 1;
-            bw = c_get_block(cnb->west, idx);
-            if (!translucent_occludes_face(b, bw)) {
-              c_set_flags(cnb->west, idx, BF_EXPOSED_EAST);
-              mark_for_recompile(cnb->west);
-            }
-            idx.x = 0;
-          }
-          if (!translucent_occludes_face(bw, b)) {
-            flags |= BF_EXPOSED_WEST;
-          }
-        // all other blocks:
-        } else {
-          // above
-          if (block_is(ba, OUT_OF_RANGE) && cnb->above) {
-            assert(idx.z == CHUNK_SIZE - 1);
-            idx.z = 0;
-            ba = c_get_block(cnb->above, idx);
-            idx.z = CHUNK_SIZE - 1;
-          }
-          if (!opaque_occludes_face(ba)) {
-            flags |= BF_EXPOSED_ABOVE;
-          }
-          // below
-          if (block_is(bb, OUT_OF_RANGE) && cnb->below) {
-            assert(idx.z == 0);
-            idx.z = CHUNK_SIZE - 1;
-            bb = c_get_block(cnb->below, idx);
-            idx.z = 0;
-          }
-          if (!opaque_occludes_face(bb)) {
-            flags |= BF_EXPOSED_BELOW;
-          }
-          // north
-          if (block_is(bn, OUT_OF_RANGE) && cnb->north) {
-            assert(idx.y == CHUNK_SIZE - 1);
-            idx.y = 0;
-            bn = c_get_block(cnb->north, idx);
-            idx.y = CHUNK_SIZE - 1;
-          }
-          if (!opaque_occludes_face(bn)) {
-            flags |= BF_EXPOSED_NORTH;
-          }
-          // south
-          if (block_is(bs, OUT_OF_RANGE) && cnb->south) {
-            assert(idx.y == 0);
-            idx.y = CHUNK_SIZE - 1;
-            bs = c_get_block(cnb->south, idx);
-            idx.y = 0;
-          }
-          if (!opaque_occludes_face(bs)) {
-            flags |= BF_EXPOSED_SOUTH;
-          }
-          // east
-          if (block_is(be, OUT_OF_RANGE) && cnb->east) {
-            assert(idx.x == CHUNK_SIZE - 1);
-            idx.x = 0;
-            be = c_get_block(cnb->east, idx);
-            idx.x = CHUNK_SIZE - 1;
-          }
-          if (!opaque_occludes_face(be)) {
-            flags |= BF_EXPOSED_EAST;
-          }
-          // west
-          if (block_is(bw, OUT_OF_RANGE) && cnb->west) {
-            assert(idx.x == 0);
-            idx.x = CHUNK_SIZE - 1;
-            bw = c_get_block(cnb->west, idx);
-            idx.x = 0;
-          }
-          if (!opaque_occludes_face(bw)) {
-            flags |= BF_EXPOSED_WEST;
-          }
+        flags = 0;
+        if (!check_top_face(idx, cnb->above, b, ba)) {
+          flags |= BF_EXPOSED_ABOVE;
+        }
+        if (!check_bot_face(idx, cnb->below, b, bb)) {
+          flags |= BF_EXPOSED_BELOW;
+        }
+        if (!check_north_face(idx, cnb->north, b, bn)) {
+          flags |= BF_EXPOSED_NORTH;
+        }
+        if (!check_south_face(idx, cnb->south, b, bs)) {
+          flags |= BF_EXPOSED_SOUTH;
+        }
+        if (!check_east_face(idx, cnb->east, b, be)) {
+          flags |= BF_EXPOSED_EAST;
+        }
+        if (!check_west_face(idx, cnb->west, b, bw)) {
+          flags |= BF_EXPOSED_WEST;
         }
         // Set the computed exposure flags:
-        c_set_flags(cnb->c, idx, flags);
+        c_put_flags(cnb->c, idx, flags);
       }
     }
   }

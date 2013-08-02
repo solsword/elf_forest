@@ -13,6 +13,7 @@
 
 // Top-level terrain parameters:
 #define TR_SEA_LEVEL 0
+#define TR_BEACH_THRESHOLD 0.25
 #define TR_DIRT_MID 6
 #define TR_DIRT_VAR 5
 
