@@ -24,7 +24,10 @@ block trunk_block(region_pos pos, const trunk *trk) {
   int dx = pos.x - trk->root.x;
   int dy = pos.y - trk->root.y;
   int dz = pos.z - trk->root.z;
-  int radius;
+  float radius;
+  if (dz > trk->height) {
+    return B_AIR;
+  }
   if (dx == 0 && dy == 0) {
     if (trk->height >= TREE_MIN_HEIGHT_REAL_TRUNK) {
       if (
@@ -37,12 +40,10 @@ block trunk_block(region_pos pos, const trunk *trk) {
     } else {
       return B_BRANCHES;
     }
-  } else {
-    return B_AIR;
-    /*
-    radius = trk->radius;
+  } else if (dz > 1) {
+    radius = trk->radius + 0.6;
     radius -= dz % 2;
-    radius -= dz % 3;
+    if (radius > 2) { radius -= dz % 3; }
     radius = fmax(
       TREE_BRANCH_MIN_LENGTH,
       radius
@@ -51,12 +52,14 @@ block trunk_block(region_pos pos, const trunk *trk) {
       trk->height - dz,
       radius
     );
+    assert(dz >= trk->height || radius > 0);
     if (dx*dx + dy*dy <= radius*radius) {
       return B_LEAVES;
     } else {
       return B_AIR;
     }
-    // */
+  } else {
+    return B_AIR;
   }
 }
 

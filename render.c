@@ -166,7 +166,6 @@ void render_frame(
   // Now render the translucent parts (without face-culling and using a
   // read-only depth buffer):
   glDisable( GL_CULL_FACE );
-  glDepthMask( GL_FALSE );
   for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
@@ -175,7 +174,6 @@ void render_frame(
     }
   }
   glEnable( GL_CULL_FACE );
-  glDepthMask( GL_TRUE );
 }
 
 // This function renders one layer of the given chunk.

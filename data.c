@@ -2,7 +2,7 @@
 // Loading from and saving to disk.
 
 #include <stdint.h>
-#include <assert.h>
+#include <stdio.h>
 
 #include "blocks.h"
 #include "list.h"
@@ -54,7 +54,11 @@ static inline int occludes_face(block neighbor, block occluded) {
     block here, block there \
   ) { \
     if (block_is(there, OUT_OF_RANGE) && neighbor) { \
-      assert(OOR_AXIS == OOR_RESET); \
+      if (OOR_AXIS != OOR_RESET) { \
+        fprintf(stderr, "Error: OUT_OF_RANGE at non-edge!\n");\
+        fprintf(stderr, "  OOR_AXIS = %d, edge = %d\n", OOR_AXIS, OOR_RESET);\
+        exit(-1); \
+      } \
       OOR_AXIS = OOR_REPLACE; \
       there = c_get_block(neighbor, idx); \
       if (occludes_face(here, there)) { \

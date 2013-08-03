@@ -323,7 +323,11 @@ static inline block block_is(block b, block c) {
 }
 
 static inline block shares_translucency(block b, block c) {
-  return (just_id(b) | 1) == (just_id(c) | 1);
+  return (
+    (just_id(b) | 1) == (just_id(c) | 1)
+  &&
+    !block_is(b, B_LEAVES)
+  );
 }
 
 #endif // ifndef BLOCKS_H

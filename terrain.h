@@ -73,6 +73,12 @@
 #define TR_TUNNEL_THRESHOLD 0.45
 #define TR_TUNNEL_UNDERSEA_OFFSET 8 // TODO: handle undersea tunnels elsehow?
 
+/***********
+ * Globals *
+ ***********/
+
+extern float TR_NOISE_OFFSET;
+
 /********************
  * Inline Functions *
  ********************/
@@ -81,6 +87,8 @@ static inline void get_noise(
   int x, int y,
   float *lowest, float *low, float *medium, float *high, float *highest
 ) {
+  x += TR_NOISE_OFFSET;
+  y += TR_NOISE_OFFSET;
   *lowest  = sxnoise_2d( x * TR_FREQUENCY_LOWEST ,   y * TR_FREQUENCY_LOWEST  );
   *low     = sxnoise_2d( x * TR_FREQUENCY_LOW    ,   y * TR_FREQUENCY_LOW     );
   *medium  = sxnoise_2d( x * TR_FREQUENCY_MID    ,   y * TR_FREQUENCY_MID     );

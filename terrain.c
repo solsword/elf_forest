@@ -9,6 +9,12 @@
 #include "trees.h"
 #include "terrain.h"
 
+/***********
+ * Globals *
+ ***********/
+
+float TR_NOISE_OFFSET = 7300;
+
 /*************
  * Functions *
  *************/

@@ -78,12 +78,15 @@ static const float TREE_CROWN_FRACTION = 0.1;
 // Branch length as a percentage of tree height:
 static const float TREE_BRANCH_FRACTION = 0.2;
 
+// Branches part of each branch vs. leaves part:
+static const float TREE_BRANCH_PROPORTION = 0.34;
+
 // Minimum branch length:
 static const int TREE_BRANCH_MIN_LENGTH = 1;
 
 // Geoform tree influences:
-static const int TREE_DEPTHS_HEIGHT = 0;
-static const int TREE_OCEANS_HEIGHT = 0;
+static const int TREE_DEPTHS_HEIGHT = -50;
+static const int TREE_OCEANS_HEIGHT = -20;
 static const int TREE_PLAINS_HEIGHT = 20;
 static const int TREE_HILLS_HEIGHT = 18;
 static const int TREE_MOUNTAINS_HEIGHT = 15;
@@ -177,9 +180,9 @@ static inline int compute_tree_trunk(int tx, int ty, int radius, trunk *trk) {
     nlst, nlow, nmid, nhig, nhst,
     depths, oceans, plains, hills, mountains
   ) + 1;
-  //if (!valid_trunk_elevation(trk->root.z)) {
-    //return 0;
-  //}
+  if (!valid_trunk_elevation(trk->root.z)) {
+    return 0;
+  }
   trk->height += TREE_DIRT_EFFECT * ((1 + nmid) / 2.0) * TR_DIRT_VAR;
   trk->height += TREE_CANOPY_DETAIL_HIGH * ((1 + nhig) / 2.0);
   trk->height += TREE_CANOPY_DETAIL_HIGHEST * nhst;
@@ -188,7 +191,7 @@ static inline int compute_tree_trunk(int tx, int ty, int radius, trunk *trk) {
 }
 
 static inline void compute_tree_cell(
-  int x, int y,
+  long int x, long int y,
   int offset,
   tree_cell *cell
 ) {
@@ -200,9 +203,9 @@ static inline void compute_tree_cell(
   cell->scale = TREE_GRID_BASE;
 
   // Compute base origin:
-  cell->origin.x = ((x - offset) / cell->scale) * cell->scale;
+  cell->origin.x = fastfloor((x - offset) / (float) cell->scale) * cell->scale;
   cell->origin.x += offset;
-  cell->origin.y = ((y - offset)/ cell->scale) * cell->scale;
+  cell->origin.y = fastfloor((y - offset) / (float) cell->scale) * cell->scale;
   cell->origin.y += offset;
   cell->origin.z = 0;
 

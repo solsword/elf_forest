@@ -129,6 +129,8 @@ void glsettings() {
   glDisable( GL_FOG );
   glHint( GL_FOG_HINT, GL_FASTEST );
   glFogi( GL_FOG_MODE, GL_EXP2 );
+  glAlphaFunc(GL_GREATER, 0.5);
+  glEnable( GL_ALPHA_TEST );
 }
 
 // Sets up the OpenGL perspective:
