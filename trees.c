@@ -20,17 +20,15 @@ tree_milieu TREE_MILIEU;
  * Functions *
  *************/
 
-block tree_block(
-  const region_pos *pos, const region_pos *trunk,
-  int canopy_height, float noise
-) {
-  int dx = pos->x - trunk->x;
-  int dy = pos->y - trunk->y;
-  int dz = pos->z - trunk->z;
+block trunk_block(region_pos pos, const trunk *trk) {
+  int dx = pos.x - trk->root.x;
+  int dy = pos.y - trk->root.y;
+  int dz = pos.z - trk->root.z;
+  int radius;
   if (dx == 0 && dy == 0) {
-    if (canopy_height >= TREE_MIN_HEIGHT_REAL_TRUNK) {
+    if (trk->height >= TREE_MIN_HEIGHT_REAL_TRUNK) {
       if (
-        dz < canopy_height - fastceil(canopy_height * TREE_CROWN_FRACTION)
+        dz < trk->height - fastceil(trk->height * TREE_CROWN_FRACTION)
       ) {
         return B_TRUNK;
       } else {
@@ -40,21 +38,36 @@ block tree_block(
       return B_BRANCHES;
     }
   } else {
-    int branch_length = fastceil(canopy_height * TREE_BRANCH_FRACTION);
-    branch_length -= dz % 2;
-    branch_length -= dz % 3;
-    branch_length = fmax(
+    return B_AIR;
+    /*
+    radius = trk->radius;
+    radius -= dz % 2;
+    radius -= dz % 3;
+    radius = fmax(
       TREE_BRANCH_MIN_LENGTH,
-      branch_length
+      radius
     );
-    branch_length = fmin(
-      canopy_height - dz,
-      branch_length
+    radius = fmin(
+      trk->height - dz,
+      radius
     );
-    if (dx*dx + dy*dy <= branch_length*branch_length) {
+    if (dx*dx + dy*dy <= radius*radius) {
       return B_LEAVES;
     } else {
       return B_AIR;
     }
+    // */
   }
+}
+
+block tree_block(region_pos pos, const tree_milieu *trm) {
+  int i;
+  block result = B_AIR;
+  for (i = 0; i < trm->a.n_trunks; ++i) {
+    result = tree_growth(result, trunk_block(pos, &(trm->a.trunks[i])));
+  }
+  for (i = 0; i < trm->b.n_trunks; ++i) {
+    result = tree_growth(result, trunk_block(pos, &(trm->b.trunks[i])));
+  }
+  return result;
 }

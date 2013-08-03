@@ -23,12 +23,6 @@ block terrain_block(region_pos pos) {
   static int cave_layer_3_b = 0, cave_layer_3_t = 0;
   static float nlst = 0, nlow = 0, nmid = 0, nhig = 0, nhst = 0;
   static float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
-  static int canopy_height = 0;
-  static region_pos trunk = {
-    .x=TREE_NOTREE_X,
-    .y=TREE_NOTREE_Y,
-    .z=TREE_NOTREE_Z
-  };
   int tunnel = 0;
   int altitude = 0;
   if (xcache != pos.x || ycache != pos.y) {
@@ -60,14 +54,8 @@ block terrain_block(region_pos pos) {
     dirt = TR_DIRT_MID + (int) (
       nmid * TR_DIRT_VAR
     );
-    // compute trunk coordinates:
-    compute_trunk_coords(
-      pos.x, pos.y,
-      &trunk, &canopy_height,
-      nlst, nlow, nmid, nhig, nhst,
-      depths, oceans, plains, hills, mountains,
-      terrain, dirt
-    );
+    // compute a tree milieu:
+    compute_tree_milieu(pos.x, pos.y, &TREE_MILIEU);
     // sandiness:
     sandy =
       oceans * oceans > (TR_BEACH_THRESHOLD + (0.03 * terrain - TR_SEA_LEVEL));
@@ -83,9 +71,6 @@ block terrain_block(region_pos pos) {
     depths, oceans, plains, hills, mountains // TODO: Use these arguments!
   );
   // */
-  if (use_tree_block(terrain, altitude, canopy_height, TR_SEA_LEVEL, trunk)) {
-    return tree_block(&pos, &trunk, canopy_height, nmid);
-  }
   if (
     tunnel
   &&
@@ -109,6 +94,9 @@ block terrain_block(region_pos pos) {
     }
   } else if (altitude > 0) {
     if (pos.z > TR_SEA_LEVEL) {
+      if (altitude <= TREE_MAX_CANOPY_HEIGHT) {
+        return tree_block(pos, &TREE_MILIEU);
+      }
       return B_AIR;
     } else {
       return B_WATER;

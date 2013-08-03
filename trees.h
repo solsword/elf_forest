@@ -4,6 +4,10 @@
 // trees.h
 // Tree generation functions.
 
+// DEBUG:
+#include <stdio.h>
+#include <assert.h>
+
 #include "noise.h" // for the HASH array
 #include "terrain.h"
 
@@ -27,37 +31,43 @@ typedef struct tree_milieu_s tree_milieu;
  * Constants *
  *************/
 
-// Coordinates signifying "no tree":
-#define TREE_NOTREE_X (-1)
-#define TREE_NOTREE_Y (-1)
-#define TREE_NOTREE_Z (-1)
-
 // Max trunks/grid cell:
 #define TREE_MAX_TRUNKS 5
 
 // Tree grid sizes:
+/*
 static const int TREE_GRID_SMALL = 7;
 static const int TREE_GRID_MEDIUM = 14;
 static const int TREE_GRID_LARGE = 21;
+*/
+
+#define TREE_GRID_BITS 5
+
+static const int TREE_GRID_BASE = 1 << TREE_GRID_BITS;
+static const int TREE_GRID_MIN = 1 << (TREE_GRID_BITS - 2);
 
 // Tree grid offsets:
-static const int TREE_GRID_OFFSET_A = 2;
-static const int TREE_GRID_OFFSET_B = 5;
+static const int TREE_GRID_OFFSET = 20;
+//static const int TREE_GRID_OFFSET_A = 2;
+//static const int TREE_GRID_OFFSET_B = 5;
 // Offsets by size:
 // Small: 0, A, B
 // Medium: 0, B, A + SMALL
 // Large: 0, A + SMALL, B + MEDIUM
 
 // Tree widths:
+/*
 static const int TREE_WIDTH_MIN = 3;
 static const int TREE_WIDTH_STEP = 2;
 static const int TREE_WIDTH_COUNT = 7;
+*/
 
 // Elevation above which no trees will grow:
 static const int TREE_TREELINE = 150;
 
-// Minimum canopy height for trees to grow:
+// Minimum/maximum canopy height for trees:
 static const int TREE_MIN_CANOPY_HEIGHT = 3;
+static const int TREE_MAX_CANOPY_HEIGHT = 35;
 
 // Minimum height for trees to develop full trunks vs. just branches:
 static const int TREE_MIN_HEIGHT_REAL_TRUNK = 5;
@@ -72,20 +82,18 @@ static const float TREE_BRANCH_FRACTION = 0.2;
 static const int TREE_BRANCH_MIN_LENGTH = 1;
 
 // Geoform tree influences:
-static const float TREE_DEPTHS_DENSITY = 0;
 static const int TREE_DEPTHS_HEIGHT = 0;
-
-static const float TREE_OCEANS_DENSITY = 0;
 static const int TREE_OCEANS_HEIGHT = 0;
-
-static const float TREE_PLAINS_DENSITY = 24; // TODO: Biome influences!
 static const int TREE_PLAINS_HEIGHT = 20;
-
-static const float TREE_HILLS_DENSITY = 6;
 static const int TREE_HILLS_HEIGHT = 18;
-
-static const float TREE_MOUNTAINS_DENSITY = 45;
 static const int TREE_MOUNTAINS_HEIGHT = 15;
+
+// Tree density frequencies:
+static const float TREE_DENSITY_FREQUENCY_LOW = 0.021;
+static const float TREE_DENSITY_FACTOR_LOW = 3*4*4;
+
+static const float TREE_DENSITY_FREQUENCY_HIGH = 0.063;
+static const float TREE_DENSITY_FACTOR_HIGH = 2*4*4;
 
 // Canopy height factors:
 static const int TREE_DIRT_EFFECT = 2;
@@ -112,117 +120,163 @@ extern tree_milieu TREE_MILIEU;
 struct trunk_s {
   region_pos root;
   int height;
+  int radius;
 };
 
 struct tree_cell_s {
   int scale;
   region_pos origin;
+  int n_trunks;
   trunk trunks[TREE_MAX_TRUNKS];
 };
 
 struct tree_milieu_s {
-  tree_cell s_o, s_a, s_b;
-  tree_cell m_o, m_a, m_b;
-  tree_cell l_o, l_a, l_b;
+  tree_cell a, b;
 };
 
 /********************
  * Inline Functions *
  ********************/
 
-static inline int real_trunk(region_pos trunk) {
+static inline int valid_trunk_elevation(int root) {
   return (
-    trunk.x != TREE_NOTREE_X
-  ||
-    trunk.y != TREE_NOTREE_Y
-  ||
-    trunk.z != TREE_NOTREE_Z
+    root < TREE_TREELINE
+  &&
+    root > TR_SEA_LEVEL // TODO: Underwater seaweed "trees"
   );
 }
 
-static inline int use_tree_block(
-  int terrain,
-  int altitude,
-  int canopy_height,
-  int sea_level, 
-  region_pos trunk
-) {
-  return (
-    altitude > 0
-  &&
-    altitude <= canopy_height
-  &&
-    terrain < TREE_TREELINE
-  &&
-    terrain > sea_level // TODO: Underwater seaweed "trees"
-  &&
-    real_trunk(trunk)
-  );
+static inline block tree_growth(block existing, block grow) {
+  if (block_is(existing, B_AIR) || block_is(existing, B_LEAVES)) {
+    return grow;
+  } else if (block_is(existing, B_BRANCHES) && block_is(grow, B_TRUNK)) {
+    return grow;
+  } else {
+    return existing;
+  }
 }
 
-static inline void compute_trunk_coords(
-  int x, int y,
-  region_pos *trunk, int *canopy_height,
-  float nlst, float nlow, float nmid, float nhig, float nhst,
-  float depths, float oceans, float plains, float hills, float mountains,
-  int terrain, int dirt
-) {
-  int bin_width;
-  float density;
-  trunk->x = TREE_NOTREE_X;
-  trunk->y = TREE_NOTREE_Y;
-  trunk->z = TREE_NOTREE_Z;
-  *canopy_height = (
+static inline int compute_tree_trunk(int tx, int ty, int radius, trunk *trk) {
+  float nlst = 0, nlow = 0, nmid = 0, nhig = 0, nhst = 0;
+  float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
+  trk->radius = radius;
+  trk->root.x = tx;
+  trk->root.y = ty;
+  // compute terrain at the trunk location:
+  get_noise(tx, ty, &nlst, &nlow, &nmid, &nhig, &nhst);
+  compute_geoforms(nlst, &depths, &oceans, &plains, &hills, &mountains);
+  // fill in the trunk height (return 0 if the height is too low):
+  trk->height = (
     depths * TREE_DEPTHS_HEIGHT +
     oceans * TREE_OCEANS_HEIGHT +
     plains * TREE_PLAINS_HEIGHT +
     hills * TREE_HILLS_HEIGHT +
     mountains * TREE_MOUNTAINS_HEIGHT
   );
-  *canopy_height += TREE_DIRT_EFFECT * (dirt - TR_DIRT_MID);
-  *canopy_height += TREE_CANOPY_DETAIL_HIGH * nhig;
-  *canopy_height += TREE_CANOPY_DETAIL_HIGHEST * nhst;
-  *canopy_height += TREE_ALTITUDE_EFFECT * (terrain / TREE_ALTITUDE_STEP);
-  if (*canopy_height < TREE_MIN_CANOPY_HEIGHT) {
-    return;
-  }
-  density = (
-    depths * TREE_DEPTHS_DENSITY +
-    oceans * TREE_OCEANS_DENSITY +
-    plains * TREE_PLAINS_DENSITY +
-    hills * TREE_HILLS_DENSITY +
-    mountains * TREE_MOUNTAINS_DENSITY
-  ) + TREE_DENSITY_OFFSET;
-  density = 1 - density;
-  density *= density;
-  // DEBUG:
-  //bin_width = 1 + TREE_BASE_BIN_WIDTH * density;
-  bin_width = 4;
-  // TODO: liven things up a bit!
-  trunk->x = ((x / bin_width) * bin_width) + bin_width / 2;
-  trunk->y = ((y / bin_width) * bin_width) + bin_width / 2;
-  trunk->z = 4;
-  // compute terrain height at the discovered trunk x/y:
-  /*
-  get_noise(
-    trunk->x, trunk->y, 
-    &nlst, &nlow, &nmid, &nhig, &nhst
-  );
-  compute_geoforms(nlst, &depths, &oceans, &plains, &hills, &mountains);
-  trunk->z = get_terrain_height(
+  trk->root.z = get_terrain_height(
     nlst, nlow, nmid, nhig, nhst,
     depths, oceans, plains, hills, mountains
+  ) + 1;
+  //if (!valid_trunk_elevation(trk->root.z)) {
+    //return 0;
+  //}
+  trk->height += TREE_DIRT_EFFECT * ((1 + nmid) / 2.0) * TR_DIRT_VAR;
+  trk->height += TREE_CANOPY_DETAIL_HIGH * ((1 + nhig) / 2.0);
+  trk->height += TREE_CANOPY_DETAIL_HIGHEST * nhst;
+  trk->height += TREE_ELEVATION_EFFECT * (trk->root.z / TREE_ELEVATION_STEP);
+  return trk->height >= TREE_MIN_CANOPY_HEIGHT;
+}
+
+static inline void compute_tree_cell(
+  int x, int y,
+  int offset,
+  tree_cell *cell
+) {
+  int nudge = 0;
+  int hash = 0;
+  float nlow = 0, nhig = 0;
+
+  // Start at the base scale:
+  cell->scale = TREE_GRID_BASE;
+
+  // Compute base origin:
+  cell->origin.x = ((x - offset) / cell->scale) * cell->scale;
+  cell->origin.x += offset;
+  cell->origin.y = ((y - offset)/ cell->scale) * cell->scale;
+  cell->origin.y += offset;
+  cell->origin.z = 0;
+
+  // Get some noise to use for tree density:
+  nlow = sxnoise_2d(
+    cell->origin.x * TREE_DENSITY_FREQUENCY_LOW,
+    cell->origin.y * TREE_DENSITY_FREQUENCY_LOW
   );
-  */
+  nhig = sxnoise_2d(
+    cell->origin.x * TREE_DENSITY_FREQUENCY_HIGH,
+    cell->origin.y * TREE_DENSITY_FREQUENCY_HIGH
+  );
+  // Compute tree density:
+  cell->n_trunks = ((1 + nlow) / 2.0) * TREE_DENSITY_FACTOR_LOW;
+  cell->n_trunks += ((1 + nhig) / 2.0) * TREE_DENSITY_FACTOR_HIGH;
+
+  assert(cell->n_trunks > 0);
+
+  // Subdivide as necessary while throwing in a bit of randomness:
+  while (cell->n_trunks > TREE_MAX_TRUNKS) {
+    cell->scale = cell->scale >> 1;
+    if (cell->scale < TREE_GRID_MIN) {
+      cell->scale = TREE_GRID_MIN;
+      cell->n_trunks = TREE_MAX_TRUNKS;
+      break;
+    }
+    hash = HASH[
+      (cell->origin.x & 0xff) + HASH[(
+        cell->origin.y & 0xff) + TREE_HASH_OFFSET
+      ]
+    ];
+    nudge = ( (int) (hash / 86.0)) - 1;
+    cell->n_trunks = (cell->n_trunks >> 2) + nudge;
+    cell->origin.x += ((x - cell->origin.x) / cell->scale) * cell->scale;
+    cell->origin.y += ((y - cell->origin.y) / cell->scale) * cell->scale;
+  }
+
+  // Fill in the actual trunks:
+  int i = 0;
+  int radius = 1;
+  int from = 0, to = cell->scale - 1;
+  int tx = 0, ty = 0;
+  for (i = 0; i < cell->n_trunks; ++i) {
+    hash = HASH[(cell->origin.x & 0xff) + HASH[(cell->origin.y & 0xff) + hash]];
+    radius = 2 + nudge + (2 * nudge) + (cell->scale / 8);
+    radius = radius < 1 ? 1 : radius;
+    radius = radius > cell->scale/2 ? cell->scale/2 : radius;
+    from = radius;
+    to = cell->scale - (radius + 1);
+    tx = from + ( (int) (hash * (to - from) / 256.0) );
+    hash = HASH[(cell->origin.x & 0xff) + HASH[(cell->origin.y & 0xff) + hash]];
+    ty = from + ( (int) (hash * (to - from) / 256.0) );
+    tx += cell->origin.x;
+    ty += cell->origin.y;
+    if ( !compute_tree_trunk(tx, ty, radius, &(cell->trunks[i])) ) {
+      cell->n_trunks -= 1;
+      i -= 1;
+    };
+  }
+}
+
+static inline void compute_tree_milieu(int x, int y, tree_milieu *trm) {
+  compute_tree_cell(x, y, 0, &(trm->a));
+  compute_tree_cell(x, y, TREE_GRID_OFFSET, &(trm->b));
 }
 
 /*************
  * Functions *
  *************/
 
-block tree_block(
-  const region_pos *pos, const region_pos *trunk,
-  int canopy_height, float noise
-);
+// Computes a block ID given a tree, a location, and some noise.
+block trunk_block(region_pos pos, const trunk *trk);
+
+// Computes a block ID given a tree milieu, a location, and some noise.
+block tree_block(region_pos pos, const tree_milieu *trm);
 
 #endif // ifndef TREES_H
