@@ -15,6 +15,18 @@
 #include "vector.h"
 #include "octree.h"
 
+/****************
+ * Enumerations *
+ ****************/
+
+// Layers of a chunk:
+typedef enum {
+  L_TRANSLUCENT,
+  L_TRANSPARENT,
+  L_OPAQUE,
+  N_LAYERS
+} layer;
+
 /**************
  * Structures *
  **************/
@@ -99,8 +111,8 @@ struct chunk_index_s {
 struct chunk_s {
   block blocks[CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE]; // Block data.
   block_flag block_flags[CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE]; // Block flags.
-  vertex_buffer opaque_vertices; // The opaque vertices.
-  vertex_buffer translucent_vertices; // The translucent vertices.
+  // TODO: merge those
+  vertex_buffer layers[N_LAYERS]; // The vertex buffers.
   region_chunk_pos rpos; // Absolute location within the region.
   list *block_entities; // Tile entities.
   chunk_flag chunk_flags; // Flags

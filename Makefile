@@ -39,6 +39,7 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/tick.o \
              $(OBJ_DIR)/list.o \
              $(OBJ_DIR)/vector.o \
+             $(OBJ_DIR)/diff.o \
              $(OBJ_DIR)/ui.o \
              $(OBJ_DIR)/terrain.o \
              $(OBJ_DIR)/data.o \

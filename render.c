@@ -163,9 +163,19 @@ void render_frame(
   // Now render all of our entities:
   foreach(f->entities, &render_entity);
 
-  // Now render the translucent parts (without face-culling and using a
-  // read-only depth buffer):
+  // Now render the (partially) transparent parts
+  for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
+    for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
+      for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
+        render_chunk_layer(f, idx, L_TRANSPARENT);
+      }
+    }
+  }
+
+  // Finally the translucent parts (without face-culling and using a read-only
+  // depth buffer):
   glDisable( GL_CULL_FACE );
+  glDepthMask( GL_FALSE );
   for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
@@ -173,6 +183,7 @@ void render_frame(
       }
     }
   }
+  glDepthMask( GL_TRUE );
   glEnable( GL_CULL_FACE );
 }
 
@@ -180,19 +191,15 @@ void render_frame(
 void render_chunk_layer(
   frame *f,
   frame_chunk_index idx,
-  layer l
+  layer ly
 ) {
   chunk *c = chunk_at(f, idx);
   // Skip this chunk if it's out-of-date:
   if (c->chunk_flags & CF_NEEDS_RELOAD) {
     return;
   }
-  vertex_buffer *vb = &(c->opaque_vertices); // Default value
-  if (l == L_OPAQUE) {
-    vb = &(c->opaque_vertices);
-  } else if (l == L_TRANSLUCENT) {
-    vb = &(c->translucent_vertices);
-  }
+  vertex_buffer *vb = &(c->layers[ly]);
+
   // Skip this layer quickly if it's empty:
   if (vb->vertices == 0 || vb->indices == 0) {
     return;

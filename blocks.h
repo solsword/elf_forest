@@ -217,8 +217,8 @@ static const block_limit        BL_MIN_SOLID =  0x4000;
 
 // Normal solid blocks go here.
 
-// The first translucent block:
-static const block_limit  BL_MIN_TRANSLUCENT =  0xfd00;
+// The first (partially) transparent block:
+static const block_limit  BL_MIN_TRANSPARENT =  0xfd00;
 
 /**********
  * Blocks *
@@ -305,14 +305,18 @@ static inline block is_invisible(block b) {
 }
 
 static inline block is_translucent(block b) {
-  return is_translucent_liquid(b) || b >= BL_MIN_TRANSLUCENT;
+  return is_translucent_liquid(b);
+}
+
+static inline block is_transparent(block b) {
+  return b >= BL_MIN_TRANSPARENT;
 }
 
 static inline block is_opaque(block b) {
   return (
     (b >= BL_MIN_O_LIQUID)
   &&
-    (b < BL_MIN_TRANSLUCENT)
+    (b < BL_MIN_TRANSPARENT)
   );
 }
 

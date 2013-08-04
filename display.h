@@ -6,16 +6,19 @@
 
 #include "world.h"
 
-/****************
- * Enumerations *
- ****************/
+/********************
+ * Inline Functions *
+ ********************/
 
-// Layers of a chunk:
-typedef enum {
-  L_TRANSLUCENT,
-  L_OPAQUE,
-  N_LAYERS
-} layer;
+static inline layer block_layer(block b) {
+  if (is_transparent(b)) {
+    return L_TRANSPARENT;
+  } else if (is_translucent(b)) {
+    return L_TRANSLUCENT;
+  } else {
+    return L_OPAQUE;
+  }
+}
 
 /*************
  * Functions *

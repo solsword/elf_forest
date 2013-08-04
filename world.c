@@ -64,8 +64,10 @@ void setup_chunk(chunk *c, region_chunk_pos *rpos) {
 }
 
 void cleanup_chunk(chunk *c) {
-  cleanup_vertex_buffer(&(c->opaque_vertices));
-  cleanup_vertex_buffer(&(c->translucent_vertices));
+  layer ly;
+  for (ly = 0; ly < N_LAYERS; ++ly) {
+    cleanup_vertex_buffer(&(c->layers[ly]));
+  }
   destroy_list(c->block_entities);
 }
 

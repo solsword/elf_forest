@@ -212,8 +212,12 @@ void compile_chunk(chunk *c) {
   // Count the number of "active" blocks (those not surrounded by solid
   // blocks). We use the cached exposure data here (call compute_exposure
   // first!).
-  uint16_t opaque_count = 0;
-  uint16_t translucent_count = 0;
+  uint16_t counts[N_LAYERS];
+  uint16_t total = 0;
+  layer i;
+  for (i = 0; i < N_LAYERS; ++i) {
+    counts[i] = 0;
+  }
   chunk_index idx;
   block here = 0;
   block_flag flags = 0;
@@ -223,18 +227,16 @@ void compile_chunk(chunk *c) {
         here = c_get_block(c, idx);
         flags = c_get_flags(c, idx);
         if ((flags & BF_EXPOSED_ANY) && !is_invisible(here)) {
-          if (is_translucent(here)) {
-            translucent_count += 1;
-          } else {
-            opaque_count += 1;
-          }
+          total += 1;
+          counts[block_layer(here)] += 1;
         }
       }
     }
   }
-  if (opaque_count == 0 && translucent_count == 0) {
-    cleanup_vertex_buffer(&(c->opaque_vertices));
-    cleanup_vertex_buffer(&(c->translucent_vertices));
+  if (total == 0) {
+    for (i = 0; i < N_LAYERS; ++i) {
+      cleanup_vertex_buffer(&(c->layers[i]));
+    }
     return;
   }
 
@@ -257,59 +259,42 @@ void compile_chunk(chunk *c) {
   // (Re)allocate caches for the vertex buffers. Note that we might cull some
   // faces later, but we're going to ignore that for now, since these arrays
   // are temporary.
-  setup_cache(
-    24*opaque_count,
-    36*opaque_count,
-    &(c->opaque_vertices)
-  );
-  setup_cache(
-    24*translucent_count,
-    36*translucent_count,
-    &(c->translucent_vertices)
-  );
+  for (i = 0; i < N_LAYERS; ++i) {
+    setup_cache(
+      24*counts[i],
+      36*counts[i],
+      &(c->layers[i])
+    );
+  }
 
-  tcoords st; // texture coordinates
-  st.s = 0;
-  st.t = 0;
+  layer ly; // which layer a block falls into
+  tcoords st = { .s=0, .t=0 }; // texture coordinates
 
 #ifdef DEBUG
-  int opaque_vcount = 0;
-  int opaque_icount = 0;
-  int translucent_vcount = 0;
-  int translucent_icount = 0;
-  #define CHECK_OPAQUE \
-    opaque_vcount += 4; \
-    opaque_icount += 6; \
-    if (opaque_vcount > opaque_count*24) { \
+  int vcounts[N_LAYERS];
+  int icounts[N_LAYERS];
+  for (i = 0; i < N_LAYERS; ++i) {
+    vcounts[i] = 0;
+    icounts[i] = 0;
+  }
+  #define CHECK_LAYER(i) \
+    vcounts[i] += 4; \
+    icounts[i] += 6; \
+    if (vcounts[i] > counts[i]*24) { \
       printf( \
-        "Opaque vertex count exceeded: %d > %d\n", \
-        opaque_vcount, \
-        opaque_count * 24 \
+        "Vertex count exceeded for layer %d: %d > %d\n", \
+        i, \
+        vcounts[i], \
+        counts[i] * 24 \
       ); \
       exit(-1); \
     } \
-    if (opaque_icount > opaque_count*36) { \
+    if (icounts[i] > counts[i]*36) { \
       printf( \
-        "Opaque index count exceeded: %d > %d\n", \
-        opaque_icount, \
-        opaque_count * 36 \
-      ); \
-      exit(-1); \
-    }
-  #define CHECK_TRANSLUCENT \
-    if (translucent_vcount > translucent_count*24) { \
-      printf( \
-        "Translucent vertex count exceeded: %d > %d\n", \
-        translucent_vcount, \
-        translucent_count * 24 \
-      ); \
-      exit(-1); \
-    } \
-    if (translucent_icount > translucent_count*36) { \
-      printf( \
-        "Translucent index count exceeded: %d > %d\n", \
-        translucent_icount, \
-        translucent_count * 24 \
+        "Index count exceeded for layer %d: %d > %d\n", \
+        i, \
+        icounts[i], \
+        counts[i] * 36 \
       ); \
       exit(-1); \
     }
@@ -324,102 +309,58 @@ void compile_chunk(chunk *c) {
           continue;
         }
         flags = c_get_flags(c, idx);
+        ly = block_layer(here);
         if (flags & BF_EXPOSED_ABOVE) {
+#ifdef DEBUG
+          CHECK_LAYER(ly)
+#endif
           compute_face_tc(here, BD_ORI_UP, &st);
-          if (is_translucent(here)) {
-#ifdef DEBUG
-            CHECK_TRANSLUCENT
-#endif
-            push_top(&(c->translucent_vertices), idx, st);
-          } else {
-#ifdef DEBUG
-            CHECK_OPAQUE
-#endif
-            push_top(&(c->opaque_vertices), idx, st);
-          }
+          push_top(&(c->layers[ly]), idx, st);
         }
         if (flags & BF_EXPOSED_BELOW) {
+#ifdef DEBUG
+          CHECK_LAYER(ly)
+#endif
           compute_face_tc(here, BD_ORI_DOWN, &st);
-          if (is_translucent(here)) {
-#ifdef DEBUG
-            CHECK_TRANSLUCENT
-#endif
-            push_bottom(&(c->translucent_vertices), idx, st);
-          } else {
-#ifdef DEBUG
-            CHECK_OPAQUE
-#endif
-            push_bottom(&(c->opaque_vertices), idx, st);
-          }
+          push_bottom(&(c->layers[ly]), idx, st);
         }
         if (flags & BF_EXPOSED_NORTH) {
+#ifdef DEBUG
+          CHECK_LAYER(ly)
+#endif
           compute_face_tc(here, BD_ORI_NORTH, &st);
-          if (is_translucent(here)) {
-#ifdef DEBUG
-            CHECK_TRANSLUCENT
-#endif
-            push_north(&(c->translucent_vertices), idx, st);
-          } else {
-#ifdef DEBUG
-            CHECK_OPAQUE
-#endif
-            push_north(&(c->opaque_vertices), idx, st);
-          }
+          push_north(&(c->layers[ly]), idx, st);
         }
         if (flags & BF_EXPOSED_SOUTH) {
+#ifdef DEBUG
+          CHECK_LAYER(ly)
+#endif
           compute_face_tc(here, BD_ORI_SOUTH, &st);
-          if (is_translucent(here)) {
-#ifdef DEBUG
-            CHECK_TRANSLUCENT
-#endif
-            push_south(&(c->translucent_vertices), idx, st);
-          } else {
-#ifdef DEBUG
-            CHECK_OPAQUE
-#endif
-            push_south(&(c->opaque_vertices), idx, st);
-          }
+          push_south(&(c->layers[ly]), idx, st);
         }
         if (flags & BF_EXPOSED_EAST) {
+#ifdef DEBUG
+          CHECK_LAYER(ly)
+#endif
           compute_face_tc(here, BD_ORI_EAST, &st);
-          if (is_translucent(here)) {
-#ifdef DEBUG
-            CHECK_TRANSLUCENT
-#endif
-            push_east(&(c->translucent_vertices), idx, st);
-          } else {
-#ifdef DEBUG
-            CHECK_OPAQUE
-#endif
-            push_east(&(c->opaque_vertices), idx, st);
-          }
+          push_east(&(c->layers[ly]), idx, st);
         }
         if (flags & BF_EXPOSED_WEST) {
+#ifdef DEBUG
+          CHECK_LAYER(ly)
+#endif
           compute_face_tc(here, BD_ORI_WEST, &st);
-          if (is_translucent(here)) {
-#ifdef DEBUG
-            CHECK_TRANSLUCENT
-#endif
-            push_west(&(c->translucent_vertices), idx, st);
-          } else {
-#ifdef DEBUG
-            CHECK_OPAQUE
-#endif
-            push_west(&(c->opaque_vertices), idx, st);
-          }
+          push_west(&(c->layers[ly]), idx, st);
         }
       }
     }
   }
-  // Compile the buffers:
-  if (opaque_count > 0) {
-    compile_buffers(&(c->opaque_vertices));
-  } else {
-    cleanup_vertex_buffer(&(c->opaque_vertices));
-  }
-  if (translucent_count > 0) {
-    compile_buffers(&(c->translucent_vertices));
-  } else {
-    cleanup_vertex_buffer(&(c->translucent_vertices));
+  // Compile or cleanup each buffer:
+  for (i = 0; i < N_LAYERS; ++i) {
+    if (counts[i] > 0) {
+      compile_buffers(&(c->layers[i]));
+    } else {
+      cleanup_vertex_buffer(&(c->layers[i]));
+    }
   }
 }
