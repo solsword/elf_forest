@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
   setup_textures();
   // Set up the test world:
   printf("Loading test world...\n");
-  setup_test_world_terrain(&MAIN_FRAME);
+  //setup_test_world_terrain(&MAIN_FRAME);
   printf("...done.\n");
   // Start the main loop:
   loop();
