@@ -31,7 +31,7 @@ typedef struct tree_milieu_s tree_milieu;
  * Constants *
  *************/
 
-// Max trunks/grid cell:
+/// Max trunks/grid cell:
 #define TREE_MAX_TRUNKS 5
 
 // Tree grid sizes:
@@ -150,13 +150,12 @@ static inline int valid_trunk_elevation(int root) {
 }
 
 static inline block tree_growth(block existing, block grow) {
-  if (block_is(existing, B_AIR) || block_is(existing, B_LEAVES)) {
-    return grow;
-  } else if (block_is(existing, B_BRANCHES) && block_is(grow, B_TRUNK)) {
-    return grow;
-  } else {
-    return existing;
-  }
+  int can_grow = (
+    (block_is(existing, B_AIR) || block_is(existing, B_LEAVES))
+      || 
+    (block_is(existing, B_BRANCHES) && block_is(grow, B_TRUNK))
+  );
+  return can_grow * grow + (!can_grow) * existing;
 }
 
 static inline int compute_tree_trunk(int tx, int ty, int radius, trunk *trk) {

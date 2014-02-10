@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
   setup_ui();
   setup_entities();
   setup_data();
-  region_chunk_pos roff = {.x=0, .y=0, .z=0};
+  region_chunk_pos roff = {.x=-117, .y=57, .z=0};
   setup_frame(&MAIN_FRAME, &roff);
   test_compile_frame(&MAIN_FRAME);
   printf("...done.\n");
@@ -69,7 +69,7 @@ void test_compile_frame(frame *f) {
 }
 
 void test_spawn_player(frame *f) {
-  vector pos = { .x=2.0, .y=2.0, .z=70.0 };
+  vector pos = { .x=2.0, .y=2.0, .z=50.0 };
   PLAYER = spawn_entity("tester", &pos, &MAIN_FRAME);
   //PLAYER = spawn_entity("elf", &pos, &MAIN_FRAME);
 }

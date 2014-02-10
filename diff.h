@@ -13,7 +13,7 @@
  * Structures *
  **************/
 
-// A position within a diff:
+// A block position within a diff:
 struct diff_pos_s;
 typedef struct diff_pos_s diff_pos;
 
@@ -91,9 +91,11 @@ static inline void dpos__fpos(
   const frame *f,
   frame_pos *fpos
 ) {
-  fpos->x = dpos->x + d->offset.x - f->region_offset.x;
-  fpos->y = dpos->y + d->offset.y - f->region_offset.y;
-  fpos->z = dpos->z + d->offset.z - f->region_offset.z;
+  region_pos roff;
+  rcpos__rpos(&(f->region_offset), &roff);
+  fpos->x = dpos->x + d->offset.x - roff.x;
+  fpos->y = dpos->y + d->offset.y - roff.y;
+  fpos->z = dpos->z + d->offset.z - roff.z;
 }
 
 static inline void fpos__dpos(
@@ -102,9 +104,11 @@ static inline void fpos__dpos(
   const diff *d,
   diff_pos *dpos
 ) {
-  dpos->x = fpos->x + f->region_offset.x - d->offset.x;
-  dpos->y = fpos->y + f->region_offset.y - d->offset.y;
-  dpos->z = fpos->z + f->region_offset.z - d->offset.z;
+  region_pos roff;
+  rcpos__rpos(&(f->region_offset), &roff);
+  dpos->x = fpos->x + roff.x - d->offset.x;
+  dpos->y = fpos->y + roff.y - d->offset.y;
+  dpos->z = fpos->z + roff.z - d->offset.z;
 }
 
 static inline block d_get_block(const diff *d, diff_pos *dpos) {

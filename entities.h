@@ -155,9 +155,10 @@ static inline block head_block(entity *e) {
 }
 
 static inline void get_region_pos(entity *e, region_pos *result) {
-  result->x = e->pos.x + (e->fr->region_offset.x << CHUNK_BITS);
-  result->y = e->pos.y + (e->fr->region_offset.y << CHUNK_BITS);
-  result->z = e->pos.z + (e->fr->region_offset.z << CHUNK_BITS);
+  rcpos__rpos(&(e->fr->region_offset), result);
+  result->x += e->pos.x;
+  result->y += e->pos.y;
+  result->z += e->pos.z;
 }
 
 /*************

@@ -62,8 +62,8 @@ typedef struct frame_chunk_index_s frame_chunk_index;
 struct frame_index_s;
 typedef struct frame_index_s frame_index;
 
-// Frame-coordinate integer position. 0, 0, 0 is at the center of the frame,
-// with the edges at -HALF_FRAME and HALF_FRAME - 1.
+// Frame-coordinate integer block position. 0, 0, 0 is at the center of the
+// frame, with the edges at -HALF_FRAME and HALF_FRAME - 1.
 struct frame_pos_s;
 typedef struct frame_pos_s frame_pos;
 
@@ -149,10 +149,29 @@ struct frame_s {
 // Coordinate conversions:
 // Note that these are hand-inlined in a few places for speed.
 
+static inline void rcpos__rpos(
+  region_chunk_pos *rcpos,
+  region_pos *rpos
+) {
+  rpos->x = ((long int) rcpos->x) << CHUNK_BITS;
+  rpos->y = ((long int) rcpos->y) << CHUNK_BITS;
+  rpos->z = ((long int) rcpos->z) << CHUNK_BITS;
+}
+
+static inline void rpos__rcpos(
+  region_pos *rpos,
+  region_chunk_pos *rcpos
+) {
+  rcpos->x = rpos->x >> CHUNK_BITS;
+  rcpos->y = rpos->y >> CHUNK_BITS;
+  rcpos->z = rpos->z >> CHUNK_BITS;
+}
+
 static inline void cidx__rpos(chunk *c, chunk_index *idx, region_pos *pos) {
-  pos->x = (c->rpos.x << CHUNK_BITS) + idx->x;
-  pos->y = (c->rpos.y << CHUNK_BITS) + idx->y;
-  pos->z = (c->rpos.z << CHUNK_BITS) + idx->z;
+  rcpos__rpos(&(c->rpos), pos);
+  pos->x += idx->x;
+  pos->y += idx->y;
+  pos->z += idx->z;
 }
 
 static inline void fpos__fidx(frame_pos *pos, frame_index *idx) {

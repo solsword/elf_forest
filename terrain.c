@@ -6,7 +6,7 @@
 #include "blocks.h"
 #include "world.h"
 #include "noise.h"
-#include "trees.h"
+//#include "trees.h"
 #include "terrain.h"
 
 /***********
@@ -61,7 +61,7 @@ block terrain_block(region_pos pos) {
       nmid * TR_DIRT_VAR
     );
     // compute a tree milieu:
-    compute_tree_milieu(pos.x, pos.y, &TREE_MILIEU);
+    //compute_tree_milieu(pos.x, pos.y, &TREE_MILIEU);
     // sandiness:
     sandy =
       oceans * oceans > (TR_BEACH_THRESHOLD + (0.03 * terrain - TR_SEA_LEVEL));
@@ -76,7 +76,6 @@ block terrain_block(region_pos pos) {
     &pos,
     depths, oceans, plains, hills, mountains // TODO: Use these arguments!
   );
-  // */
   if (
     tunnel
   &&
@@ -90,6 +89,46 @@ block terrain_block(region_pos pos) {
   ) {
     return B_AIR;
   }
+  // */
+  // /*
+  int surface = altitude == 0;
+  int underground = altitude < 0;
+  int topsoil = altitude > -dirt;
+  int underwater = pos.z <= TR_SEA_LEVEL;
+  int on_land = pos.z >= TR_SEA_LEVEL;
+  return (
+    surface * (
+        sandy * (
+          B_SAND
+        ) + (1 - sandy) * (
+          on_land * (
+            B_GRASS
+          ) + (1 - on_land) * (
+            B_DIRT
+          )
+        )
+    ) + (1 - surface) * (
+      underground * (
+        topsoil * (
+          sandy * (
+            B_SAND
+          ) + (1 - sandy) * (
+            B_DIRT
+          )
+        ) + (1 - topsoil) * (
+          B_STONE
+        )
+      ) + (1 - underground) * (
+        underwater * (
+          B_WATER
+        ) + (1 - underwater) * (
+          B_AIR
+        )
+      )
+    )
+  );
+  // */
+  /*
   if (altitude == 0) {
     if (sandy) {
       return B_SAND;
@@ -99,13 +138,13 @@ block terrain_block(region_pos pos) {
       return B_DIRT;
     }
   } else if (altitude > 0) {
-    if (pos.z > TR_SEA_LEVEL) {
-      if (altitude <= TREE_MAX_CANOPY_HEIGHT) {
-        return tree_block(pos, &TREE_MILIEU);
-      }
-      return B_AIR;
-    } else {
+    if (pos.z <= TR_SEA_LEVEL) {
+      //if (altitude <= TREE_MAX_CANOPY_HEIGHT) {
+        //return tree_block(pos, &TREE_MILIEU);
+      //}
       return B_WATER;
+    } else {
+      return B_AIR;
     }
   } else {
     if (altitude > -dirt) {
@@ -117,6 +156,7 @@ block terrain_block(region_pos pos) {
     }
     return B_STONE;
   }
+  // */
 }
 
 void get_geoforms(

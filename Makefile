@@ -17,8 +17,8 @@ OPT_FLAGS=-O3
 INCLUDE_FLAGS=-I/usr/include/freetype2
 CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(DEBUG_FLAGS)
 
-LIBS_OPENGL=-lglee -lGL -lGLU
-LIBS_GLFW=-lglfw3 -lrt -lXrandr -lXi -lXxf86vm -lXrender -lXext -lX11 \
+LIBS_OPENGL=-lGLee -lGL -lGLU
+LIBS_GLFW=-lglfw -lrt -lXrandr -lXi -lXxf86vm -lXrender -lXext -lX11 \
           -lpthread -lxcb -lXau -lXdmcp
 LIBS_FTGL=-lftgl
 LIBS=$(LIBS_OPENGL) $(LIBS_GLFW) $(LIBS_FTGL)
