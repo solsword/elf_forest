@@ -14,7 +14,7 @@
 #include "ui/ui.h"
 #include "control/ctl.h"
 #include "world/entities.h"
-//#include "gen/terrain.h"
+#include "gen/terrain.h" // to draw geoform and other terrain data
 
 /*******************
  * Local Variables *

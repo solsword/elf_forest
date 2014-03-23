@@ -4,6 +4,7 @@
 #include <png.h>
 #include <GLee.h> // glGenerateMipmaps
 
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>

@@ -4,6 +4,8 @@
 // static_entities.h
 // System-defined static entity information.
 
+#include "entities.h"
+
 #define NUM_STATIC_ENTITY_TYPES 5
 
 entity STATIC_ENTITY_TYPES[NUM_STATIC_ENTITY_TYPES] = {

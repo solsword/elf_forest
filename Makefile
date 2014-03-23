@@ -107,8 +107,8 @@ Makefile: ;
 
 include $(OBJ_DIR)/obj.d
 
-# A cleanup rule for object files not specified in obj.d:
-$(OBJ_DIR)/%.o: %.c
+# How to build things based on their dependencies as specified in obj.d:
+$(OBJ_DIR)/%.o:
 	$(CC) $(CFLAGS) $< -o $@
 
 $(BIN_DIR)/elf_forest: $(CORE_OBJECTS) $(MAIN_OBJECTS) $(BIN_DIR)
