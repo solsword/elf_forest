@@ -2,9 +2,10 @@
 OBJ_DIR=obj
 BIN_DIR=bin
 OUT_DIR=out
+SRC_DIR=src
 TEST_DIR=$(OUT_DIR)/test
 
-# Don't worry about modification times on directories:
+# Don't worry about modification times on output directories:
 MAKEFLAGS+=--assume-old=$(OBJ_DIR)
 MAKEFLAGS+=--assume-old=$(BIN_DIR)
 MAKEFLAGS+=--assume-old=$(OUT_DIR)
@@ -14,16 +15,17 @@ MAKEFLAGS+=--assume-old=$(TEST_DIR)
 CC=gcc
 DEBUG_FLAGS=-g -O0 -DDEBUG
 OPT_FLAGS=-O3
-INCLUDE_FLAGS=-I/usr/include/freetype2
+INCLUDE_FLAGS=-I/usr/include/freetype2 -I$(SRC_DIR)
 CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(DEBUG_FLAGS)
 
 LIBS_OPENGL=-lGLee -lGL -lGLU
 LIBS_GLFW=-lglfw -lrt -lXrandr -lXi -lXxf86vm -lXrender -lXext -lX11 \
           -lpthread -lxcb -lXau -lXdmcp
 LIBS_FTGL=-lftgl
-LIBS=$(LIBS_OPENGL) $(LIBS_GLFW) $(LIBS_FTGL)
+LIBS_PNG=-lpng
+LIBS=$(LIBS_OPENGL) $(LIBS_GLFW) $(LIBS_FTGL) $(LIBS_PNG)
 
-LFLAGS=-lm -lpng $(LIBS)
+LFLAGS=-lm $(LIBS)
 
 # Objects:
 CORE_OBJECTS=$(OBJ_DIR)/world.o \
@@ -84,11 +86,18 @@ $(OUT_DIR):
 $(TEST_DIR):
 	mkdir -p $(TEST_DIR)
 
-*.c: ;
-*.h: ;
+$(SRC_DIR)/*.c: ;
+$(SRC_DIR)/*/*.c: ;
+$(SRC_DIR)/*.h: ;
+$(SRC_DIR)/*/*.h: ;
 
-$(OBJ_DIR)/obj.d:: *.c *.h $(OBJ_DIR)
-	gcc -MM $(INCLUDE_FLAGS) *.c | sed "s/^\([^ ]\)/$(OBJ_DIR)\/\1/" >\
+$(OBJ_DIR)/obj.d: \
+$(SRC_DIR)/*.c \
+$(SRC_DIR)/*/*.c \
+$(SRC_DIR)/*.h \
+$(SRC_DIR)/*/*.h  \
+$(OBJ_DIR)
+	$(CC) -MM $(INCLUDE_FLAGS) $(SRC_DIR)/*.c $(SRC_DIR)/*/*.c | sed "s/^\([^ ]\)/$(OBJ_DIR)\/\1/" >\
 		$(OBJ_DIR)/obj.d
 
 Makefile: ;
@@ -98,6 +107,7 @@ Makefile: ;
 
 include $(OBJ_DIR)/obj.d
 
+# A cleanup rule for object files not specified in obj.d:
 $(OBJ_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -o $@
 

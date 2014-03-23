@@ -1,5 +1,5 @@
 performance
-  optimize exposure computation by caching block resuls (27-element array)
+  optimize exposure computation by caching block results (27-element array)
   double-check octree performance
   time chunk loading
   render ordering of chunks
@@ -8,6 +8,7 @@ performance
 loading
   implement dynamic chunk loading
   implement player position management
+  separate loading/compiling of chunks
 physics
   entity collision detection
 terrain
