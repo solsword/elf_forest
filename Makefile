@@ -29,6 +29,7 @@ LFLAGS=-lm $(LIBS)
 
 # Objects:
 CORE_OBJECTS=$(OBJ_DIR)/world.o \
+             $(OBJ_DIR)/exposure.o \
              $(OBJ_DIR)/render.o \
              $(OBJ_DIR)/gfx.o \
              $(OBJ_DIR)/display.o \
@@ -39,14 +40,14 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/entities.o \
              $(OBJ_DIR)/vbo.o \
              $(OBJ_DIR)/tick.o \
-             $(OBJ_DIR)/list.o \
              $(OBJ_DIR)/vector.o \
-             $(OBJ_DIR)/diff.o \
-             $(OBJ_DIR)/ui.o \
+             $(OBJ_DIR)/list.o \
+             $(OBJ_DIR)/queue.o \
+             $(OBJ_DIR)/octree.o \
              $(OBJ_DIR)/terrain.o \
              $(OBJ_DIR)/data.o \
              $(OBJ_DIR)/trees.o \
-             $(OBJ_DIR)/octree.o
+             $(OBJ_DIR)/ui.o
 
 MAIN_OBJECTS=$(OBJ_DIR)/main.o
 

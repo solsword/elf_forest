@@ -57,7 +57,7 @@ static inline void warp_entity(void *thing) {
 // Loads the data for the given entity type, populating the fields of the given
 // entity object. Make sure to call setup_entities() first.
 void add_entity_type(entity *e) {
-  append_element(ENTITY_PROTOTYPES, (void *)e);
+  l_append_element(ENTITY_PROTOTYPES, (void *)e);
 }
 
 void setup_entities(void) {
@@ -76,7 +76,7 @@ void cleanup_entities(void) {
 }
 
 void tick_entities(frame *f) {
-  foreach(f->entities, &tick_entity);
+  l_foreach(f->entities, &tick_entity);
 }
 
 void tick_entity(void *thing) {
@@ -101,7 +101,7 @@ void warp_space(frame *f, entity *e) {
   f->region_offset.z += WARP_Z;
   if (WARP_X || WARP_Y || WARP_Z) {
     // Warp entities if we changed offsets:
-    foreach(f->entities, &warp_entity);
+    l_foreach(f->entities, &warp_entity);
     // Also mark dirty chunks as necessary:
     for (fcidx.x = 0; fcidx.x < FRAME_SIZE; ++fcidx.x) {
       for (fcidx.y = 0; fcidx.y < FRAME_SIZE; ++fcidx.y) {
@@ -161,5 +161,5 @@ entity * spawn_entity(const char *type, vector *pos, frame *f) {
 
 entity * find_by_type(const char *type, list *l) {
   SEARCH_TYPE = type;
-  return (entity *) find_element(l, &scan_type);
+  return (entity *) l_find_element(l, &scan_type);
 }

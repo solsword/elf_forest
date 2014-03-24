@@ -112,7 +112,7 @@ static inline void copy_entity_pos(entity *from, entity *to) {
 static inline void add_entity(frame *f, entity *e) {
   e->fr = f;
   oct_insert(f->oct, (void *) e, &(e->box));
-  append_element(f->entities, (void *)e);
+  l_append_element(f->entities, (void *)e);
 }
 
 // Zeroes out the velocity and impulse fields of the given entity.

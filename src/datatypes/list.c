@@ -14,7 +14,7 @@
  ***********/
 
 // We're more worried about mallocs than about saving space:
-const size_t LIST_CHUNK_SIZE = 16;
+const size_t LIST_CHUNK_SIZE = 64;
 const size_t LIST_KEEP_CHUNKS = 4;
 
 /*************************
@@ -86,11 +86,30 @@ list *create_list(void) {
   return l;
 }
 
-int is_empty(list *l) {
+void cleanup_list(list *l) {
+  l->count = 0;
+  l->size = 0;
+  free(l->elements);
+  free(l);
+}
+
+void destroy_list(list *l) {
+  size_t i;
+  for (i = 0; i < l->count; ++i) {
+    free(l->elements[i]);
+  }
+  l->count = 0;
+  l->size = 0;
+  free(l->elements);
+  free(l);
+}
+
+
+int l_is_empty(list *l) {
   return (l->count == 0);
 }
 
-int contains(list *l, void *element) {
+int l_contains(list *l, void *element) {
   size_t i;
   int result = 0;
   for (i = 0; i < l->count; ++i) {
@@ -102,24 +121,24 @@ int contains(list *l, void *element) {
   return result;
 }
 
-size_t get_length(list *l) {
+size_t l_get_length(list *l) {
   return l->count;
 }
 
-void * get_element(list *l, size_t i) {
+void * l_get_element(list *l, size_t i) {
   if (i >= l->count) {
     return NULL;
   }
   return l->elements[i];
 }
 
-void append_element(list *l, void *element) {
+void l_append_element(list *l, void *element) {
   grow_if_necessary(l);
   l->elements[l->count] = element;
   l->count += 1;
 }
 
-void * pop_element(list *l) {
+void * l_pop_element(list *l) {
   void *result = NULL;
   if (l->count == 0) {
     return NULL;
@@ -130,7 +149,7 @@ void * pop_element(list *l) {
   return result;
 }
 
-void* remove_element(list *l, void *element) {
+void* l_remove_element(list *l, void *element) {
   size_t i, j;
   void *result = NULL;
   for (i = 0; i < l->count; ++i) {
@@ -147,7 +166,7 @@ void* remove_element(list *l, void *element) {
   return result;
 }
 
-int remove_all_elements(list *l, void *element) {
+int l_remove_all_elements(list *l, void *element) {
   size_t i;
   size_t removed = 0;
   size_t skip = 0;
@@ -166,7 +185,7 @@ int remove_all_elements(list *l, void *element) {
 }
 
 // Same code as remove_all but with an extra free()
-int destroy_all_elements(list *l, void *element) {
+int l_destroy_all_elements(list *l, void *element) {
   size_t i;
   size_t removed = 0;
   size_t skip = 0;
@@ -185,7 +204,7 @@ int destroy_all_elements(list *l, void *element) {
   return removed;
 }
 
-void reverse(list *l) {
+void l_reverse(list *l) {
   size_t i;
   void *phased;
   for (i = 0; i < (l->count / 2); ++i) {
@@ -195,14 +214,14 @@ void reverse(list *l) {
   }
 }
 
-void foreach(list *l, void (*f)(void *)) {
+void l_foreach(list *l, void (*f)(void *)) {
   size_t i;
   for (i = 0; i < l->count; ++i) {
     f(l->elements[i]);
   }
 }
 
-void * find_element(list *l, int (*match)(void *)) {
+void * l_find_element(list *l, int (*match)(void *)) {
   size_t i;
   for (i = 0; i < l->count; ++i) {
     if (match(l->elements[i])) {
@@ -210,22 +229,4 @@ void * find_element(list *l, int (*match)(void *)) {
     }
   }
   return NULL;
-}
-
-void cleanup_list(list *l) {
-  l->count = 0;
-  l->size = 0;
-  free(l->elements);
-  free(l);
-}
-
-void destroy_list(list *l) {
-  size_t i;
-  for (i = 0; i < l->count; ++i) {
-    free(l->elements[i]);
-  }
-  l->count = 0;
-  l->size = 0;
-  free(l->elements);
-  free(l);
 }

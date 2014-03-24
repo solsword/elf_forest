@@ -73,7 +73,7 @@ void render_chunk_layer(
 );
 
 // Renders the given entity. Takes it as a void* instead of an entity* so that
-// it can be passed to list's foreach().
+// this function can be passed to list's l_foreach().
 void render_entity(void *e);
 
 #endif // ifndef RENDER_H

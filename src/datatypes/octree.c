@@ -75,13 +75,13 @@ void oct_insert_recursive(octree *ot, void *object, bbox *box) {
     }
   }
   // Whether we added it to any children or not, we should store it here:
-  append_element(ot->contents, object);
+  l_append_element(ot->contents, object);
   ot->count += 1;
 }
 
 int oct_remove_recursive(octree *ot, void *object) {
   int i;
-  int removed = remove_all_elements(ot->contents, object);
+  int removed = l_remove_all_elements(ot->contents, object);
   if (removed > 0) {
     if (oct_has_children(ot)) {
       for (i = 0; i < 8; ++i) {
