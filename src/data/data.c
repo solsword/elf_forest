@@ -7,19 +7,20 @@
 #include "data.h"
 
 #include "datatypes/queue.h"
+//#include "datatypes/map.h"
 #include "graphics/display.h"
 #include "gen/terrain.h"
 #include "world/blocks.h"
 #include "world/world.h"
-#include "world/exposure.h"
+#include "world/chunk_data.h"
 
 /*************
  * Constants *
  *************/
 
 // TODO: dynamic capping?
-const int LOAD_CAP = 16;
-const int COMPILE_CAP = 1024;
+int const LOAD_CAP = 16;
+int const COMPILE_CAP = 1024;
 
 /***********
  * Globals *
@@ -58,8 +59,8 @@ void mark_for_recompile(frame *f, frame_chunk_index fcidx) {
 
 void tick_data(void) {
   int n = 0;
+  int skipped = 0;
   chunk_neighborhood *cnb = NULL;
-  chunk *c = NULL;
   while (n < LOAD_CAP && q_get_length(CHUNKS_TO_RELOAD) > 0) {
     cnb = (chunk_neighborhood *) q_pop_element(CHUNKS_TO_RELOAD);
     load_chunk(cnb);
@@ -68,17 +69,24 @@ void tick_data(void) {
     n += 1;
   }
   n = 0;
-  while (n < COMPILE_CAP && q_get_length(CHUNKS_TO_RECOMPILE) > 0) {
+  skipped = 0;
+  while (n < COMPILE_CAP && (q_get_length(CHUNKS_TO_RECOMPILE) - skipped) > 0) {
     cnb = (chunk_neighborhood *) q_pop_element(CHUNKS_TO_RECOMPILE);
-    compute_exposure(cnb);
-    compile_chunk(cnb->c);
-    cnb->c->chunk_flags &= ~CF_NEEDS_RECOMIPLE;
-    n += 1;
+    if (is_fully_loaded(cnb)) {
+      compute_exposure(cnb);
+      compile_chunk(cnb->c);
+      cnb->c->chunk_flags &= ~CF_NEEDS_RECOMIPLE;
+      free(cnb);
+      n += 1;
+    } else {
+      q_push_element(CHUNKS_TO_RECOMPILE, (void *) cnb);
+      skipped += 1;
+    }
   }
 }
 
 void load_chunk(chunk_neighborhood *cnb) {
-  // TODO: Diff data?
+  // TODO: Data from disk!
   // TODO: Block entities!
   chunk_index idx;
   region_pos rpos;
@@ -90,5 +98,4 @@ void load_chunk(chunk_neighborhood *cnb) {
       }
     }
   }
-  mark_for_recompile(cnb->c);
 }

@@ -35,8 +35,8 @@ typedef struct octree_s octree;
  * Constants *
  *************/
 
-extern const int OCTREE_RESOLUTION;
-extern const int OCTREE_MAX_DEPTH;
+extern int const OCTREE_RESOLUTION;
+extern int const OCTREE_MAX_DEPTH;
 
 /*************************
  * Structure Definitions *

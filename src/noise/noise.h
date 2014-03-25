@@ -92,11 +92,11 @@ extern uint32_t EX_TERRAIN_F[];
 // squared values are mainly provided because they're used in the algorithm for
 // a squared distance comparison.
 
-extern const float SURFLET_RADIUS_2D;
-extern const float SURFLET_SQ_RADIUS_2D;
+extern float const SURFLET_RADIUS_2D;
+extern float const SURFLET_SQ_RADIUS_2D;
 
-extern const float SURFLET_RADIUS_2D;
-extern const float SURFLET_SQ_RADIUS_2D;
+extern float const SURFLET_RADIUS_2D;
+extern float const SURFLET_SQ_RADIUS_2D;
 
 /********
  * Data *
@@ -104,8 +104,8 @@ extern const float SURFLET_SQ_RADIUS_2D;
 
 // The numbers 0-255 shuffled and then copied twice two copies reduces the
 // amount of %ing you have to do to keep indices within range.
-static const int HASH_MASK = 0xff;
-static const int HASH[512] = {
+static int const HASH_MASK = 0xff;
+static int const HASH[512] = {
   248, 244, 209,  63, 108,  81,  67, 202,
   240, 140, 196, 217, 194,  48, 213, 234,
   216,  94, 160,  72, 200, 190, 126,  15,

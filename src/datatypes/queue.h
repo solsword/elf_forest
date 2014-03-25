@@ -12,24 +12,24 @@
  ***********/
 
 // Defines what size memory chunk queues use internally.
-extern const size_t QUEUE_CHUNK_SIZE;
+extern size_t const QUEUE_CHUNK_SIZE;
 
 // Defines the how much we multiply the queue size by when expanding the queue
 // (shouldn't be less than 2 or errors may occur).
-extern const size_t QUEUE_EXPAND_RATIO;
+extern size_t const QUEUE_EXPAND_RATIO;
 
 // Defines the ratio between the queue elements and the queue's array size that
 // must hold before a queue shrink will be triggered:
-extern const size_t QUEUE_SHRINK_THRESHOLD;
+extern size_t const QUEUE_SHRINK_THRESHOLD;
 
 // Defines how much the queue shrinks when a shrink happens (the ratio between
 // the new queue size and the old size). Must not be larger than the
 // QUEUE_SHRINK_THRESHOLD.
-extern const size_t QUEUE_SHRINK_RATIO;
+extern size_t const QUEUE_SHRINK_RATIO;
 
 // Defines the minimum number of chunks below which a queue will not shrink (it
 // may not start with this many chunks though).
-extern const size_t QUEUE_MIN_CHUNKS;
+extern size_t const QUEUE_MIN_CHUNKS;
 
 /**************
  * Structures *

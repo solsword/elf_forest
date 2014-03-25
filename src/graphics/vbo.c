@@ -44,7 +44,7 @@ void setup_cache(vb_index vsize, vb_index isize, vertex_buffer *vb) {
   vb->allocated = 1;
 }
 
-void add_vertex(const vertex *v, vertex_buffer *vb) {
+void add_vertex(vertex const * const v, vertex_buffer *vb) {
   assert(vb->allocated);
   if (vb->allocated != 1) {
   }
@@ -91,7 +91,7 @@ void compile_buffers(vertex_buffer *vb) {
   glBufferData(
     GL_ARRAY_BUFFER,
     sizeof(vertex) * vb->stored_vertex_count,
-    (const GLvoid *) vb->vdata,
+    (GLvoid const *) vb->vdata,
     GL_STATIC_DRAW
   );
   glBindBuffer( GL_ARRAY_BUFFER, 0 );
@@ -100,7 +100,7 @@ void compile_buffers(vertex_buffer *vb) {
   glBufferData(
     GL_ELEMENT_ARRAY_BUFFER,
     sizeof(vb_index) * vb->vertex_count,
-    (const GLvoid *) vb->idata,
+    (GLvoid const *) vb->idata,
     GL_STATIC_DRAW
   );
   glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
@@ -153,13 +153,13 @@ void draw_vertex_buffer(vertex_buffer *vb, GLuint txid) {
     3,
     GL_SHORT,
     sizeof(vertex),
-    (const GLvoid *)0
+    (GLvoid const *)0
   );
   //*
   glNormalPointer(
     GL_SHORT,
     sizeof(vertex),
-    (const GLvoid *) (3*sizeof(GLshort))
+    (GLvoid const *) (3*sizeof(GLshort))
   );
   // */
   // DEBUG!
@@ -168,7 +168,7 @@ void draw_vertex_buffer(vertex_buffer *vb, GLuint txid) {
     2,
     GL_SHORT,
     sizeof(vertex),
-    (const GLvoid *) (6*sizeof(GLshort))
+    (GLvoid const *) (6*sizeof(GLshort))
   );
 
   // Bind the buffer object holding index data:

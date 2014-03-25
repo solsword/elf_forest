@@ -7,16 +7,25 @@
 #include <stdint.h>
 
 #include "datatypes/queue.h"
+//#include "datatypes/map.h"
 #include "world/blocks.h"
 #include "world/world.h"
-#include "world/exposure.h"
+#include "world/chunk_data.h"
+
+/**************
+ * Structures *
+ **************/
+
+// An entity is a non-voxel object that can move around freely in the world.
+struct chunk_cache_s;
+typedef struct chunk_cache_s chunk_cache;
 
 /*************
  * Constants *
  *************/
 
 // Max chunks to load per tick:
-extern const int LOAD_CAP;
+extern int const LOAD_CAP;
 
 /***********
  * Globals *
@@ -25,6 +34,14 @@ extern const int LOAD_CAP;
 // Chunks that need to be reloaded/recompiled:
 extern queue *CHUNKS_TO_RELOAD;
 extern queue *CHUNKS_TO_RECOMPILE;
+
+/*************************
+ * Structure Definitions *
+ *************************/
+
+struct chunk_cache_s {
+  list *chunks;
+};
 
 /*************
  * Functions *
@@ -40,7 +57,7 @@ void cleanup_data(void);
 void mark_for_reload(frame *f, frame_chunk_index fcidx);
 
 // Marks the given chunk for recompilation.
-void mark_for_recompile(chunk *c);
+void mark_for_recompile(frame *f, frame_chunk_index fcidx);
 
 // Ticks the chunk data system, loading/recompiling as many chunks as allowed.
 void tick_data(void);

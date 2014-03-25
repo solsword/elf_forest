@@ -88,8 +88,9 @@ extern frame MAIN_FRAME;
 #define FR_MASK (FRAME_SIZE - 1) // Frame mask
 #define FC_MASK (CHUNK_SIZE*FRAME_SIZE - 1) // Frame coordinate mask
 
-static const chunk_flag     CF_NEEDS_RELOAD = 0x0001;
-static const chunk_flag  CF_NEEDS_RECOMIPLE = 0x0002;
+static chunk_flag const           CF_LOADED = 0x0001;
+static chunk_flag const     CF_NEEDS_RELOAD = 0x0002;
+static chunk_flag const  CF_NEEDS_RECOMIPLE = 0x0004;
 
 /*************************
  * Structure Definitions *
@@ -370,7 +371,7 @@ static inline void set_block(frame *f, frame_pos pos, block b) {
 // These block neighbor functions will return 0x0000 when the pos argument is
 // out-of-range. Given that block types *could* change, we'll define a constant
 // here to represent that independent of blocks.h instead of just using B_VOID.
-static const block OUT_OF_RANGE = 0;
+static block const OUT_OF_RANGE = 0;
 
 static inline block block_above(frame *f, frame_pos pos) {
   return (pos.z < HALF_FRAME - 1) * block_at_xyz(f, pos.x, pos.y, pos.z+1);

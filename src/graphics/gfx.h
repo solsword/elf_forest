@@ -23,19 +23,19 @@ extern int WINDOW_WIDTH;
 extern int WINDOW_HEIGHT;
 
 // Default arguments to prepare(...)
-extern const int DEFAULT_WIDTH;
-extern const int DEFAULT_HEIGHT;
-extern const char* DEFAULT_NAME;
-extern const float DEFAULT_R;
-extern const float DEFAULT_G;
-extern const float DEFAULT_B;
-extern const float DEFAULT_A;
+extern int const DEFAULT_WIDTH;
+extern int const DEFAULT_HEIGHT;
+extern char const * const DEFAULT_NAME;
+extern float const DEFAULT_R;
+extern float const DEFAULT_G;
+extern float const DEFAULT_B;
+extern float const DEFAULT_A;
 
 // Camera parameters
-extern const double FOV;
-extern const double ASPECT;
-extern const double NEAR;
-extern const double FAR;
+extern double const FOV;
+extern double const ASPECT;
+extern double const NEAR;
+extern double const FAR;
 
 /********************
  * Inline Functions *
@@ -106,7 +106,7 @@ void prepare(
   char** argv,
   int w,
   int h,
-  const char* name,
+  char const * const name,
   float r,
   float g,
   float b,

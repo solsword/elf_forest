@@ -22,7 +22,7 @@ tree_milieu TREE_MILIEU;
  * Functions *
  *************/
 
-block trunk_block(region_pos pos, const trunk *trk) {
+block trunk_block(region_pos pos, trunk const * const trk) {
   int dx = pos.x - trk->root.x;
   int dy = pos.y - trk->root.y;
   int dz = pos.z - trk->root.z;
@@ -65,7 +65,7 @@ block trunk_block(region_pos pos, const trunk *trk) {
   }
 }
 
-block tree_block(region_pos pos, const tree_milieu *trm) {
+block tree_block(region_pos pos, tree_milieu const * const trm) {
   int i;
   block result = B_AIR;
   for (i = 0; i < trm->a.n_trunks; ++i) {

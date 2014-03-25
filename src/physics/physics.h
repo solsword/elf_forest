@@ -14,19 +14,19 @@
  *************/
 
 // The desired time per integration tick.
-extern const float TARGET_RESOLUTION;
+extern float const TARGET_RESOLUTION;
 
 // How far from a block an entity should be placed when sliding along it.
-extern const float BOUNCE_DISTANCE;
+extern float const BOUNCE_DISTANCE;
 
 // Minimum velocity: any nonzero velocity will be scaled to at least this
 // number.
-extern const float MIN_VELOCITY;
+extern float const MIN_VELOCITY;
 
 // Movement flags:
-extern const move_flag MF_ON_GROUND;
-extern const move_flag MF_IN_LIQUID;
-extern const move_flag MF_CROUCHING;
+extern move_flag const MF_ON_GROUND;
+extern move_flag const MF_IN_LIQUID;
+extern move_flag const MF_CROUCHING;
 
 /***********
  * Globals *

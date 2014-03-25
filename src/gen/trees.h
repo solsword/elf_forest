@@ -37,20 +37,20 @@ typedef struct tree_milieu_s tree_milieu;
 
 // Tree grid sizes:
 /*
-static const int TREE_GRID_SMALL = 7;
-static const int TREE_GRID_MEDIUM = 14;
-static const int TREE_GRID_LARGE = 21;
+static int const TREE_GRID_SMALL = 7;
+static int const TREE_GRID_MEDIUM = 14;
+static int const TREE_GRID_LARGE = 21;
 */
 
 #define TREE_GRID_BITS 5
 
-static const int TREE_GRID_BASE = 1 << TREE_GRID_BITS;
-static const int TREE_GRID_MIN = 1 << (TREE_GRID_BITS - 2);
+static int const TREE_GRID_BASE = 1 << TREE_GRID_BITS;
+static int const TREE_GRID_MIN = 1 << (TREE_GRID_BITS - 2);
 
 // Tree grid offsets:
-static const int TREE_GRID_OFFSET = 20;
-//static const int TREE_GRID_OFFSET_A = 2;
-//static const int TREE_GRID_OFFSET_B = 5;
+static int const TREE_GRID_OFFSET = 20;
+//static int const TREE_GRID_OFFSET_A = 2;
+//static int const TREE_GRID_OFFSET_B = 5;
 // Offsets by size:
 // Small: 0, A, B
 // Medium: 0, B, A + SMALL
@@ -58,54 +58,54 @@ static const int TREE_GRID_OFFSET = 20;
 
 // Tree widths:
 /*
-static const int TREE_WIDTH_MIN = 3;
-static const int TREE_WIDTH_STEP = 2;
-static const int TREE_WIDTH_COUNT = 7;
+static int const TREE_WIDTH_MIN = 3;
+static int const TREE_WIDTH_STEP = 2;
+static int const TREE_WIDTH_COUNT = 7;
 */
 
 // Elevation above which no trees will grow:
-static const int TREE_TREELINE = 150;
+static int const TREE_TREELINE = 150;
 
 // Minimum/maximum canopy height for trees:
-static const int TREE_MIN_CANOPY_HEIGHT = 3;
-static const int TREE_MAX_CANOPY_HEIGHT = 35;
+static int const TREE_MIN_CANOPY_HEIGHT = 3;
+static int const TREE_MAX_CANOPY_HEIGHT = 35;
 
 // Minimum height for trees to develop full trunks vs. just branches:
-static const int TREE_MIN_HEIGHT_REAL_TRUNK = 5;
+static int const TREE_MIN_HEIGHT_REAL_TRUNK = 5;
 
 // Percentage of tree height taken by crown branches:
-static const float TREE_CROWN_FRACTION = 0.1;
+static float const TREE_CROWN_FRACTION = 0.1;
 
 // Branch length as a percentage of tree height:
-static const float TREE_BRANCH_FRACTION = 0.2;
+static float const TREE_BRANCH_FRACTION = 0.2;
 
 // Branches part of each branch vs. leaves part:
-static const float TREE_BRANCH_PROPORTION = 0.34;
+static float const TREE_BRANCH_PROPORTION = 0.34;
 
 // Minimum branch length:
-static const int TREE_BRANCH_MIN_LENGTH = 1;
+static int const TREE_BRANCH_MIN_LENGTH = 1;
 
 // Geoform tree influences:
-static const int TREE_DEPTHS_HEIGHT = -50;
-static const int TREE_OCEANS_HEIGHT = -20;
-static const int TREE_PLAINS_HEIGHT = 20;
-static const int TREE_HILLS_HEIGHT = 18;
-static const int TREE_MOUNTAINS_HEIGHT = 15;
+static int const TREE_DEPTHS_HEIGHT = -50;
+static int const TREE_OCEANS_HEIGHT = -20;
+static int const TREE_PLAINS_HEIGHT = 20;
+static int const TREE_HILLS_HEIGHT = 18;
+static int const TREE_MOUNTAINS_HEIGHT = 15;
 
 // Tree density frequencies:
-static const float TREE_DENSITY_FREQUENCY_LOW = 0.021;
-static const float TREE_DENSITY_FACTOR_LOW = 3*4*4;
+static float const TREE_DENSITY_FREQUENCY_LOW = 0.021;
+static float const TREE_DENSITY_FACTOR_LOW = 3*4*4;
 
-static const float TREE_DENSITY_FREQUENCY_HIGH = 0.063;
-static const float TREE_DENSITY_FACTOR_HIGH = 2*4*4;
+static float const TREE_DENSITY_FREQUENCY_HIGH = 0.063;
+static float const TREE_DENSITY_FACTOR_HIGH = 2*4*4;
 
 // Canopy height factors:
-static const int TREE_DIRT_EFFECT = 2;
-static const int TREE_ELEVATION_EFFECT = -1;
-static const float TREE_ELEVATION_STEP = 32;
+static int const TREE_DIRT_EFFECT = 2;
+static int const TREE_ELEVATION_EFFECT = -1;
+static float const TREE_ELEVATION_STEP = 32;
 
-static const int TREE_CANOPY_DETAIL_HIGH = 3;
-static const int TREE_CANOPY_DETAIL_HIGHEST = 1;
+static int const TREE_CANOPY_DETAIL_HIGH = 3;
+static int const TREE_CANOPY_DETAIL_HIGHEST = 1;
 
 /***********
  * Globals *
@@ -277,9 +277,9 @@ static inline void compute_tree_milieu(int x, int y, tree_milieu *trm) {
  *************/
 
 // Computes a block ID given a tree, a location, and some noise.
-block trunk_block(region_pos pos, const trunk *trk);
+block trunk_block(region_pos pos, trunk const * const trk);
 
 // Computes a block ID given a tree milieu, a location, and some noise.
-block tree_block(region_pos pos, const tree_milieu *trm);
+block tree_block(region_pos pos, tree_milieu const * const trm);
 
 #endif // ifndef TREES_H

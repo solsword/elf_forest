@@ -14,8 +14,8 @@
  * Constants *
  *************/
 
-const int OCTREE_RESOLUTION = 8;
-const int OCTREE_MAX_DEPTH = 6; // ~~ 5MB (vs. ~~ 37MB at depth 7)
+int const OCTREE_RESOLUTION = 8;
+int const OCTREE_MAX_DEPTH = 6; // ~~ 5MB (vs. ~~ 37MB at depth 7)
 
 /********************
  * Helper Functions *

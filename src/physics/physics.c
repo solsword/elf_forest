@@ -18,15 +18,15 @@
  * Constants *
  *************/
 
-const float TARGET_RESOLUTION = 1.0/180.0;
+float const TARGET_RESOLUTION = 1.0/180.0;
 
-const float BOUNCE_DISTANCE = 0.0005;
+float const BOUNCE_DISTANCE = 0.0005;
 
-const float MIN_VELOCITY = 0.05;
+float const MIN_VELOCITY = 0.05;
 
-const move_flag MF_ON_GROUND = 0x01;
-const move_flag MF_IN_LIQUID = 0x02;
-const move_flag MF_CROUCHING = 0x04;
+move_flag const MF_ON_GROUND = 0x01;
+move_flag const MF_IN_LIQUID = 0x02;
+move_flag const MF_CROUCHING = 0x04;
 
 /***********
  * Globals *

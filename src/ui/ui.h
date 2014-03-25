@@ -9,10 +9,10 @@
  ***********/
 
 // The font file:
-extern const char *FONT_FILE;
+extern char const * const FONT_FILE;
 
 // The font resolution:
-extern const int FONT_RESOLUTION;
+extern int const FONT_RESOLUTION;
 
 // The width/height of a surface that will fill the screen at z=-1 given an
 // identity modelview matrix:
@@ -33,6 +33,6 @@ void cleanup_ui(void);
 void render_ui(void);
 
 // Renders the given (utf-8) string.
-void render_string(const char *str, float size, float left, float top);
+void render_string(char const * const str, float size, float left, float top);
 
 #endif // ifndef UI_H

@@ -68,6 +68,18 @@ void test_compile_frame(frame *f) {
       }
     }
   }
+  for (idx.x = 1; idx.x < FRAME_SIZE - 1; ++idx.x) {
+    for (idx.y = 1; idx.y < FRAME_SIZE - 1; ++idx.y) {
+      for (idx.z = 1; idx.z < FRAME_SIZE - 1; ++idx.z) {
+        cnb = get_neighborhood(f, idx);
+        if (is_fully_loaded(cnb)) {
+          compute_exposure(cnb);
+        }
+        compile_chunk(cnb->c);
+        free(cnb);
+      }
+    }
+  }
   printf("\n  ...done.\n");
 }
 

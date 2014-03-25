@@ -24,15 +24,15 @@ typedef uint16_t block_limit;
  * Constants *
  *************/
 
-static const block_count BLOCK_TYPE_COUNT = 256;
+static block_count const BLOCK_TYPE_COUNT = 256;
 
 /**********
  * Ranges *
  **********/
 
-static const block_range  BR_FLAGS = 0x00c0;
-static const block_range   BR_DATA = 0x003f;
-static const block_range     BR_ID = 0xff00;
+static block_range const  BR_FLAGS = 0x00c0;
+static block_range const   BR_DATA = 0x003f;
+static block_range const     BR_ID = 0xff00;
 
 /*********
  * Flags *
@@ -60,14 +60,14 @@ static const block_range     BR_ID = 0xff00;
 // --------------
 
 // Block exposure:
-static const block_flag  BF_EXPOSED_ABOVE = 1 << BFS_EXPOSED_ABOVE_SHIFT;
-static const block_flag  BF_EXPOSED_BELOW = 1 << BFS_EXPOSED_BELOW_SHIFT;
-static const block_flag  BF_EXPOSED_NORTH = 1 << BFS_EXPOSED_NORTH_SHIFT;
-static const block_flag  BF_EXPOSED_SOUTH = 1 << BFS_EXPOSED_SOUTH_SHIFT;
-static const block_flag   BF_EXPOSED_EAST = 1 << BFS_EXPOSED_EAST_SHIFT;
-static const block_flag   BF_EXPOSED_WEST = 1 << BFS_EXPOSED_WEST_SHIFT;
+static block_flag const  BF_EXPOSED_ABOVE = 1 << BFS_EXPOSED_ABOVE_SHIFT;
+static block_flag const  BF_EXPOSED_BELOW = 1 << BFS_EXPOSED_BELOW_SHIFT;
+static block_flag const  BF_EXPOSED_NORTH = 1 << BFS_EXPOSED_NORTH_SHIFT;
+static block_flag const  BF_EXPOSED_SOUTH = 1 << BFS_EXPOSED_SOUTH_SHIFT;
+static block_flag const   BF_EXPOSED_EAST = 1 << BFS_EXPOSED_EAST_SHIFT;
+static block_flag const   BF_EXPOSED_WEST = 1 << BFS_EXPOSED_WEST_SHIFT;
 
-static const block_flag BF_EXPOSED_ANY = 
+static block_flag const BF_EXPOSED_ANY = 
   (1 << BFS_EXPOSED_ABOVE_SHIFT) |
   (1 << BFS_EXPOSED_BELOW_SHIFT) |
   (1 << BFS_EXPOSED_NORTH_SHIFT) |
@@ -75,15 +75,15 @@ static const block_flag BF_EXPOSED_ANY =
   (1 << BFS_EXPOSED_EAST_SHIFT) |
   (1 << BFS_EXPOSED_WEST_SHIFT);
 
-static const block_flag BF_ALL_FLAGS = umaxof(block_flag);
+static block_flag const BF_ALL_FLAGS = umaxof(block_flag);
 
 // Static flags:
 // -------------
 
 // Is this block orientable?
-static const block_flag  BF_ORIENTABLE = 1 << BFS_ORIENTABLE_SHIFT;
+static block_flag const  BF_ORIENTABLE = 1 << BFS_ORIENTABLE_SHIFT;
 // Does this block have an entity associated with it?
-static const block_flag  BF_HAS_ENTITY = 1 << BFS_HAS_ENTITY_SHIFT;
+static block_flag const  BF_HAS_ENTITY = 1 << BFS_HAS_ENTITY_SHIFT;
 
 /********
  * Data *
@@ -93,15 +93,15 @@ static const block_flag  BF_HAS_ENTITY = 1 << BFS_HAS_ENTITY_SHIFT;
 // multiple overlapping values.
 
 // Orientations:
-static const block_data        BD_ORI_UP = 0x0000;
-static const block_data      BD_ORI_DOWN = 0x0001;
-static const block_data     BD_ORI_NORTH = 0x0002;
-static const block_data     BD_ORI_SOUTH = 0x0003;
-static const block_data      BD_ORI_EAST = 0x0004;
-static const block_data      BD_ORI_WEST = 0x0005;
+static block_data const        BD_ORI_UP = 0x0000;
+static block_data const      BD_ORI_DOWN = 0x0001;
+static block_data const     BD_ORI_NORTH = 0x0002;
+static block_data const     BD_ORI_SOUTH = 0x0003;
+static block_data const      BD_ORI_EAST = 0x0004;
+static block_data const      BD_ORI_WEST = 0x0005;
                             
-static const block_data        BD_ORI_IN = 0x0006;
-static const block_data       BD_ORI_OUT = 0x0007;
+static block_data const        BD_ORI_IN = 0x0006;
+static block_data const       BD_ORI_OUT = 0x0007;
 
 // Macro versions (for defining other constants):
 #define     M_BD_ORI_UP 0x0000
@@ -114,17 +114,17 @@ static const block_data       BD_ORI_OUT = 0x0007;
 #define    M_BD_ORI_OUT 0x0007
                           
 // Faces (same as orientations; front <-> north by default):
-static const block_data      BD_FACE_TOP = 0x0000;
-static const block_data      BD_FACE_BOT = 0x0001;
+static block_data const      BD_FACE_TOP = 0x0000;
+static block_data const      BD_FACE_BOT = 0x0001;
                           
-static const block_data    BD_FACE_FRONT = 0x0002;
-static const block_data     BD_FACE_BACK = 0x0003;
+static block_data const    BD_FACE_FRONT = 0x0002;
+static block_data const     BD_FACE_BACK = 0x0003;
                           
-static const block_data    BD_FACE_RIGHT = 0x0004;
-static const block_data     BD_FACE_LEFT = 0x0005;
+static block_data const    BD_FACE_RIGHT = 0x0004;
+static block_data const     BD_FACE_LEFT = 0x0005;
                           
-static const block_data   BD_FACE_INSIDE = 0x0006;
-static const block_data  BD_FACE_OUTSIDE = 0x0007;
+static block_data const   BD_FACE_INSIDE = 0x0006;
+static block_data const  BD_FACE_OUTSIDE = 0x0007;
 
 // Macro versions (for defining other constants):
 #define     M_BD_FACE_TOP 0x0000
@@ -142,7 +142,7 @@ static const block_data  BD_FACE_OUTSIDE = 0x0007;
 // BD_ORI_TOP] and get BD_ORI_BACK. Note that the extra "IN" and "OUT" faces
 // don't rotate, and rotating to face them does nothing.
 
-static const block_data ROTATE_FACE[8][8] = {
+static block_data const ROTATE_FACE[8][8] = {
 // Facing UP:
 //  TOP               BOT               FRONT              BACK
   { M_BD_FACE_FRONT,  M_BD_FACE_BACK ,  M_BD_FACE_BOT   ,  M_BD_FACE_TOP    ,
@@ -200,25 +200,25 @@ static const block_data ROTATE_FACE[8][8] = {
 // -----------------
 
 // The last invisible block:
-static const block_limit    BL_MAX_INVISIBLE =  0x02ff;
+static block_limit const    BL_MAX_INVISIBLE =  0x02ff;
 // The last translucent liquid block:
-static const block_limit     BL_MAX_T_LIQUID =  0x04ff;
+static block_limit const     BL_MAX_T_LIQUID =  0x04ff;
 
 // Normal non-solid blocks go here.
 
 // The first opaque liquid block:
-static const block_limit     BL_MIN_O_LIQUID =  0x3d00;
+static block_limit const     BL_MIN_O_LIQUID =  0x3d00;
 
 // Solid limits:
 // -------------
 
 // The first solid block:
-static const block_limit        BL_MIN_SOLID =  0x4000;
+static block_limit const        BL_MIN_SOLID =  0x4000;
 
 // Normal solid blocks go here.
 
 // The first (partially) transparent block:
-static const block_limit  BL_MIN_TRANSPARENT =  0xfd00;
+static block_limit const  BL_MIN_TRANSPARENT =  0xfd00;
 
 /**********
  * Blocks *
@@ -228,37 +228,37 @@ static const block_limit  BL_MIN_TRANSPARENT =  0xfd00;
 // ----------
 
 // Invisible blocks:
-static const block        B_VOID = 0x0000;
-static const block         B_AIR = 0x0100;
-static const block       B_ETHER = 0x0200;
+static block const        B_VOID = 0x0000;
+static block const         B_AIR = 0x0100;
+static block const       B_ETHER = 0x0200;
 
 // Translucent liquid blocks:
-static const block       B_WATER = 0x0300;
-static const block  B_WATER_FLOW = 0x0400;
+static block const       B_WATER = 0x0300;
+static block const  B_WATER_FLOW = 0x0400;
 
 // Visible non-solid blocks:
-static const block      B_MIASMA = 0x0500;
+static block const      B_MIASMA = 0x0500;
 
 // Opaque liquid blocks:
-static const block        B_LAVA = 0x3d00;
-static const block   B_LAVA_FLOW = 0x3e00;
-static const block   B_QUICKSAND = 0x3f00;
+static block const        B_LAVA = 0x3d00;
+static block const   B_LAVA_FLOW = 0x3e00;
+static block const   B_QUICKSAND = 0x3f00;
 
 // Solid:
 // ------
 
 // Opaque solid blocks:
-static const block    B_BOUNDARY = 0x4000;
-static const block       B_STONE = 0x4100;
-static const block        B_DIRT = 0x4200;
-static const block       B_GRASS = 0x4300;
-static const block        B_SAND = 0x4400;
-static const block       B_TRUNK = 0x4500;
+static block const    B_BOUNDARY = 0x4000;
+static block const       B_STONE = 0x4100;
+static block const        B_DIRT = 0x4200;
+static block const       B_GRASS = 0x4300;
+static block const        B_SAND = 0x4400;
+static block const       B_TRUNK = 0x4500;
 
 // Translucent solid blocks:
-static const block    B_BRANCHES = 0xfd00;
-static const block      B_LEAVES = 0xfe00;
-static const block       B_GLASS = 0xff00;
+static block const    B_BRANCHES = 0xfd00;
+static block const      B_LEAVES = 0xfe00;
+static block const       B_GLASS = 0xff00;
 
 /*************
  * Functions *

@@ -4,10 +4,10 @@
 
 #include "noise.h"
 
-static const float SCALE = 1/32.0;
-static const float NOISE_Z = 0.0;
+static float const SCALE = 1/32.0;
+static float const NOISE_Z = 0.0;
 
-static const int FALSE_COLOR[96] = {
+static int const FALSE_COLOR[96] = {
   0x0,  0x0,  0xf,
   0x1,  0x1,  0xf,
   0x2,  0x2,  0xf,
@@ -75,7 +75,7 @@ float example_noise(float x, float y) {
   );
 }
 
-void write_ppm(float (*noisefunc)(float, float), const char *filename) {
+void write_ppm(float (*noisefunc)(float, float), char const * const filename) {
   FILE *fp;
   fp = fopen(filename, "w");
   fprintf(fp, "P3\n");

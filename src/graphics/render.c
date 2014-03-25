@@ -24,8 +24,8 @@
  * Constants *
  *************/
 
-const float AIR_FOG_DENSITY = 0.005; // TODO: adjust these.
-const float WATER_FOG_DENSITY = 0.05;
+float const AIR_FOG_DENSITY = 0.005; // TODO: adjust these.
+float const WATER_FOG_DENSITY = 0.05;
 
 /***********
  * Globals *

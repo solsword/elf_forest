@@ -60,7 +60,7 @@ struct vertex_buffer_s {
 void setup_cache(vb_index vsize, vb_index isize, vertex_buffer *buf);
 
 // Copies the given vertex into the given buffer's data cache.
-void add_vertex(const vertex *v, vertex_buffer *buf);
+void add_vertex(vertex const * const v, vertex_buffer *buf);
 
 // Reuses an existing vertex from the data cache. index can either be positive
 // (an absolute index) or negative (an offset backwards in the index list from

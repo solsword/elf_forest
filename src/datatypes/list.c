@@ -14,8 +14,8 @@
  ***********/
 
 // We're more worried about mallocs than about saving space:
-const size_t LIST_CHUNK_SIZE = 64;
-const size_t LIST_KEEP_CHUNKS = 4;
+size_t const LIST_CHUNK_SIZE = 64;
+size_t const LIST_KEEP_CHUNKS = 4;
 
 /*************************
  * Structure Definitions *
@@ -127,6 +127,9 @@ size_t l_get_length(list *l) {
 
 void * l_get_element(list *l, size_t i) {
   if (i >= l->count) {
+#ifdef DEBUG
+    fprintf(stderr, "Warning: Accessing element beyond end of list.\n");
+#endif
     return NULL;
   }
   return l->elements[i];
@@ -141,6 +144,9 @@ void l_append_element(list *l, void *element) {
 void * l_pop_element(list *l) {
   void *result = NULL;
   if (l->count == 0) {
+#ifdef DEBUG
+    fprintf(stderr, "Warning: Pop from empty list.\n");
+#endif
     return NULL;
   }
   result = l->elements[l->count - 1];
@@ -217,14 +223,14 @@ void l_reverse(list *l) {
 void l_foreach(list *l, void (*f)(void *)) {
   size_t i;
   for (i = 0; i < l->count; ++i) {
-    f(l->elements[i]);
+    (*f)(l->elements[i]);
   }
 }
 
 void * l_find_element(list *l, int (*match)(void *)) {
   size_t i;
   for (i = 0; i < l->count; ++i) {
-    if (match(l->elements[i])) {
+    if ((*match)(l->elements[i])) {
       return l->elements[i];
     }
   }

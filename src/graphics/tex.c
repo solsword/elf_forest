@@ -15,7 +15,7 @@
  * Global variables *
  ********************/
 
-const char *BLOCK_TEXTURE_FILE = "res/textures.png";
+char const * const BLOCK_TEXTURE_FILE = "res/textures.png";
 
 GLuint BLOCK_ATLAS = 0;
 uint16_t BLOCK_ATLAS_WIDTH = 1;
@@ -25,7 +25,7 @@ uint16_t BLOCK_ATLAS_HEIGHT = 1;
  * Data *
  ********/
 
-const uint16_t BLOCK_TEXTURE_MAP[1024] = {
+uint16_t const BLOCK_TEXTURE_MAP[1024] = {
 // VOID                                AIR
    0x000, 0x000, 0x000, 0x000,         0x000, 0x000, 0x000, 0x000,
 // ETHER                               WATER
@@ -297,7 +297,7 @@ void setup_textures(void) {
   free(txi);
 }
 
-GLuint load_texture(const char *filename) {
+GLuint load_texture(char const * const filename) {
   txinfo* txi = loadPNG(filename);
   GLuint result = create_texture(txi);
   free(txi->data);
@@ -305,7 +305,7 @@ GLuint load_texture(const char *filename) {
   return result;
 }
 
-txinfo* loadPNG(const char *filename) {
+txinfo* loadPNG(char const * const filename) {
   FILE *fp;
 
   fp = fopen(filename, "rb");

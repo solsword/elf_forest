@@ -1,8 +1,8 @@
-#ifndef EXPOSURE_H
-#define EXPOSURE_H
+#ifndef CHUNK_DATA_H
+#define CHUNK_DATA_H
 
-// exposure.h
-// Computing the exposure of the blocks in a chunk neighborhood.
+// chunk_data.h
+// Routines for computing various chunk data like exposure, lighting, etc.
 
 #include <stdint.h>
 
@@ -35,8 +35,12 @@ struct chunk_neighborhood_s {
 // position.
 chunk_neighborhood * get_neighborhood(frame *f, frame_chunk_index fcidx);
 
+// Returns 1 if all of the chunks in the given chunk neighborhood are non-NULL
+// and are loaded, or 0 if any of them are NULL or unloaded.
+int is_fully_loaded(chunk_neighborhood *cnb);
+
 // Computes block exposure for the given chunk, assuming that its entire
 // neighborhood is loaded.
 void compute_exposure(chunk_neighborhood *cnb);
 
-#endif // ifndef EXPOSURE_H
+#endif // ifndef CHUNK_DATA_H

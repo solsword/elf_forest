@@ -1,12 +1,13 @@
-// exposure.c
-// Computing the exposure of the blocks in a chunk neighborhood.
+// chunk_data.c
+// Routines for computing various chunk data like exposure, lighting, etc.
 
 #include <stdint.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "blocks.h"
 #include "world.h"
-#include "exposure.h"
+#include "chunk_data.h"
 
 #include "datatypes/list.h"
 
@@ -116,6 +117,10 @@ CHECK_ANY_FACE
 chunk_neighborhood * get_neighborhood(frame *f, frame_chunk_index fcidx) {
   chunk_neighborhood *result =
     (chunk_neighborhood *) malloc(sizeof(chunk_neighborhood));
+  if (result == NULL) {
+    fprintf(stderr, "Failed to allocate a chunk neighborhood.\n");
+    exit(errno);
+  }
   result->c = chunk_at(f, fcidx);
   if (fcidx.z < FRAME_SIZE - 1) {
     fcidx.z += 1;
@@ -162,11 +167,40 @@ chunk_neighborhood * get_neighborhood(frame *f, frame_chunk_index fcidx) {
   return result;
 }
 
+int is_fully_loaded(chunk_neighborhood *cnb) {
+  return (
+    (cnb->c != NULL && !(cnb->c->chunk_flags & CF_NEEDS_RELOAD))
+  &&
+    (cnb->above != NULL && !(cnb->above->chunk_flags & CF_NEEDS_RELOAD))
+  &&
+    (cnb->below != NULL && !(cnb->below->chunk_flags & CF_NEEDS_RELOAD))
+  &&
+    (cnb->north != NULL && !(cnb->north->chunk_flags & CF_NEEDS_RELOAD))
+  &&
+    (cnb->south != NULL && !(cnb->south->chunk_flags & CF_NEEDS_RELOAD))
+  &&
+    (cnb->east != NULL && !(cnb->east->chunk_flags & CF_NEEDS_RELOAD))
+  &&
+    (cnb->west != NULL && !(cnb->west->chunk_flags & CF_NEEDS_RELOAD))
+  );
+}
+
 void compute_exposure(chunk_neighborhood *cnb) {
   chunk_index idx;
   block b = 0;
   block_flag flags = 0;
   block ba = 0, bb = 0, bn = 0, bs = 0, be = 0, bw = 0;
+  if (!is_fully_loaded(cnb)) {
+    fprintf(stderr, "Error: compute_exposure on non-fully-loaded chunk!\n");
+    fprintf(
+      stderr,
+      "  rpos = (%d, %d, %d)\n",
+      cnb->c->rpos.x,
+      cnb->c->rpos.y,
+      cnb->c->rpos.z
+    );
+    exit(-1);
+  }
   for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {

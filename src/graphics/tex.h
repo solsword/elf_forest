@@ -18,14 +18,14 @@ typedef struct tcoords_s tcoords; // A pair of texture coordinates
  *************/
 
 // Pixel dimension of each block texture:
-static const uint8_t BLOCK_TEXTURE_SIZE = 16;
+static uint8_t const BLOCK_TEXTURE_SIZE = 16;
 
 /********************
  * Global variables *
  ********************/
 
 // The file to load block textures from:
-extern const char *BLOCK_TEXTURE_FILE;
+extern char const * const BLOCK_TEXTURE_FILE;
 
 // The OpenGL texture ID for the blocks texture atlas:
 extern GLuint BLOCK_ATLAS;
@@ -39,7 +39,7 @@ extern uint16_t BLOCK_ATLAS_HEIGHT;
 
 // Contains top, front, sides, and bottom atlas indices for each texture ID,
 // running from index [id << 2] to index [(id << 2) + 3].
-extern const uint16_t BLOCK_TEXTURE_MAP[];
+extern uint16_t const BLOCK_TEXTURE_MAP[];
 
 /*************************
  * Structure Definitions *
@@ -100,10 +100,10 @@ void setup_textures(void);
 // Loads a PNG file into an OpenGL texture and returns the texture handle.
 // Takes care of freeing the texture info struct and associated data once it's
 // been loaded into OpenGL.
-GLuint load_texture(const char *filename);
+GLuint load_texture(char const * const filename);
 
 // Loads a PNG file and returns a newly-allocated txinfo pointer.
-txinfo* loadPNG(const char *filename);
+txinfo* loadPNG(char const * const filename);
 
 // Returns an OpenGL texture handle created using the given texture info:
 GLuint create_texture(txinfo* info);

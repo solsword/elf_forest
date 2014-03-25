@@ -35,7 +35,7 @@ int WARP_X, WARP_Y, WARP_Z;
 // Function for searching a list of entities and finding the first of the given
 // type. Returns 1 if the entity pointer passed has type SEARCH_TYPE, and 0
 // otherwise.
-const char *SEARCH_TYPE = NULL;
+char const * SEARCH_TYPE = NULL;
 int scan_type(void *thing) {
   entity *e = (entity *) thing;
   return !strcmp(e->type, SEARCH_TYPE);
@@ -120,6 +120,7 @@ void warp_space(frame *f, entity *e) {
             c->rpos.y = rcpos.y;
             c->rpos.z = rcpos.z;
             mark_for_reload(f, fcidx);
+            mark_for_recompile(f, fcidx);
           }
         }
       }
@@ -127,7 +128,7 @@ void warp_space(frame *f, entity *e) {
   }
 }
 
-entity * spawn_entity(const char *type, vector *pos, frame *f) {
+entity * spawn_entity(char const * const type, vector *pos, frame *f) {
   entity *e = (entity *) malloc(sizeof(entity));
   if (e == NULL) {
     perror("Failed to spawn entity.");
@@ -159,7 +160,7 @@ entity * spawn_entity(const char *type, vector *pos, frame *f) {
   return e;
 }
 
-entity * find_by_type(const char *type, list *l) {
+entity * find_by_type(char const * const type, list *l) {
   SEARCH_TYPE = type;
   return (entity *) l_find_element(l, &scan_type);
 }

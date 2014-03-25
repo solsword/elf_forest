@@ -24,8 +24,8 @@ typedef enum {
  * Constants *
  *************/
 
-extern const float AIR_FOG_DENSITY;
-extern const float WATER_FOG_DENSITY;
+extern float const AIR_FOG_DENSITY;
+extern float const WATER_FOG_DENSITY;
 
 /***********
  * Globals *

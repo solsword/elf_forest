@@ -188,10 +188,10 @@ void warp_space(frame *f, entity *e);
 // Copies an entity from the types list, sets it up, and adds it to the given
 // frame at the given position. This involves allocating space for the new
 // entity. Returns a pointer to the entity spawned.
-entity * spawn_entity(const char *type, vector *pos, frame *f);
+entity * spawn_entity(char const * const type, vector *pos, frame *f);
 
 // Scans the given list of entities and returns the first one with the given
 // type. Returns NULL if no such entity exists.
-entity * find_by_type(const char *type, list *l);
+entity * find_by_type(char const * const type, list *l);
 
 #endif //ifndef ENTITIES_H

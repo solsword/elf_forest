@@ -122,9 +122,9 @@ uint32_t EX_TERRAIN_F[9] = {
 // symmetric set. We can exploit this duplication to add some magnitude
 // variation to our vectors (which effectively adds a free lower-frequency
 // component to the noise).
-static const float GRLEN_2D = 25.0;
-static const float GRDIV_2D = 1.0/25.0;
-static const int GRADIENTS_2D[128] = {
+static float const GRLEN_2D = 25.0;
+static float const GRDIV_2D = 1.0/25.0;
+static int const GRADIENTS_2D[128] = {
 // Three 20-entry columns -> 60 1x2 vectors (120 ints):
    25,   0,       20,   0,       16,   0,
    24,   7,       19,   5,       15,   4,
@@ -160,9 +160,9 @@ static const int GRADIENTS_2D[128] = {
 // into a shift (<< 2). We'll waste more space to turn a mod (%12) into a mask
 // (& 0x3f). Unlike the 2D case, we won't worry about magnitude variation, as
 // that would force us to compute a real dot product.
-static const float GRLEN_3D = M_SQRT2;
-static const float GRDIV_3D = 1.0/M_SQRT2;
-static const int GRADIENTS_3D[256] = {
+static float const GRLEN_3D = M_SQRT2;
+static float const GRDIV_3D = 1.0/M_SQRT2;
+static int const GRADIENTS_3D[256] = {
 // 12 1x3 vectors plus an extra padding column of zeroes to align the vectors.
 // We repeat this 5 times to make 60 4-int entries, and then duplicate 4
 // semi-symmetric entries to make 64 (this adds a slight bias since we'd need
@@ -249,14 +249,14 @@ static const int GRADIENTS_3D[256] = {
 #define TWO_RT3 (2.0 / RT3)
 
 // sqrt(3)/2 squared is 3/4:
-const float SURFLET_RADIUS_2D = RT3_TWO;
-const float SURFLET_SQ_RADIUS_2D = 0.75;
+float const SURFLET_RADIUS_2D = RT3_TWO;
+float const SURFLET_SQ_RADIUS_2D = 0.75;
 
 // The 3D simplices aren't quite regular (regular tetrahedrons don't tile
 // properly), so this value is a bit of a fudge. A regular unit tetrahedron
 // would have height 0.81, but we'll assume that our distorted tetrahedra will only have maximum allowable radius ~.75. Squaring that will yield 0.5625.
-const float SURFLET_RADIUS_3D = 0.75;
-const float SURFLET_SQ_RADIUS_3D = 0.5625;
+float const SURFLET_RADIUS_3D = 0.75;
+float const SURFLET_SQ_RADIUS_3D = 0.5625;
 
 // These scaling values are chosen based on trial-and-error.
 // Because of this it might be possible for a value outside [-1,1] to be
@@ -446,8 +446,8 @@ float sxnoise_2d(float x, float y) {
 // going to be some distortion in the noise, but we'll choose our skew factor
 // (or let Perlin choose it for us, in fact) to minimize this.
 float sxnoise_3d(float x, float y, float z) {
-  const float skew = 1.0/3.0;
-  const float unskew = -1.0/6.0;
+  float const skew = 1.0/3.0;
+  float const unskew = -1.0/6.0;
   // Skew the input space (see note above).
   float sk = skew * (x + y + z);
   float sx = x + sk;

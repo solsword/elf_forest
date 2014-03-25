@@ -34,8 +34,8 @@
  *************/
 
 // radians <-> degrees
-static const float R2D = 180*M_1_PI;
-static const float D2R = M_PI/180;
+static float const R2D = 180*M_1_PI;
+static float const D2R = M_PI/180;
 
 /********************
  * Inline Functions *

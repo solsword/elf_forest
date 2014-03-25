@@ -12,11 +12,11 @@
  ***********/
 
 // Defines what size memory chunk lists use internally.
-extern const size_t LIST_CHUNK_SIZE;
+extern size_t const LIST_CHUNK_SIZE;
 
 // Defines how many empty chunks we should keep at the end of a shrinking list
 // before reallocating to a smaller size.
-extern const size_t LIST_KEEP_CHUNKS;
+extern size_t const LIST_KEEP_CHUNKS;
 
 /**************
  * Structures *

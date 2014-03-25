@@ -34,19 +34,19 @@ int WINDOW_WIDTH = 0;
 int WINDOW_HEIGHT = 0;
 
 // Default arguments to prepare(...)
-const int DEFAULT_WIDTH = 800;
-const int DEFAULT_HEIGHT = 600;
-const char* DEFAULT_NAME = "Elf Forest";
-const float DEFAULT_R = 0.65;
-const float DEFAULT_G = 0.71;
-const float DEFAULT_B = 1.0;
-const float DEFAULT_A = 1.0;
+int const DEFAULT_WIDTH = 800;
+int const DEFAULT_HEIGHT = 600;
+char const * const DEFAULT_NAME = "Elf Forest";
+float const DEFAULT_R = 0.65;
+float const DEFAULT_G = 0.71;
+float const DEFAULT_B = 1.0;
+float const DEFAULT_A = 1.0;
 
 // Camera parameters
-const double FOV = M_PI/3.0;
-const double ASPECT = 4.0/3.0;
-const double NEAR = 0.15;
-const double FAR = 362.0; // 256x256 diagonal
+double const FOV = M_PI/3.0;
+double const ASPECT = 4.0/3.0;
+double const NEAR = 0.15;
+double const FAR = 362.0; // 256x256 diagonal
 
 /*************
  * Functions *
@@ -161,7 +161,7 @@ void prepare(
   char** argv,
   int w,
   int h,
-  const char* name,
+  char const * const name,
   float r,
   float g,
   float b,

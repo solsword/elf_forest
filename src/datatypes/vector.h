@@ -20,12 +20,12 @@ typedef struct vector_s vector;
  * Constants *
  *************/
 
-extern const vector V_UP;
-extern const vector V_DOWN;
-extern const vector V_NORTH;
-extern const vector V_SOUTH;
-extern const vector V_EAST;
-extern const vector V_WEST;
+extern vector const V_UP;
+extern vector const V_DOWN;
+extern vector const V_NORTH;
+extern vector const V_SOUTH;
+extern vector const V_EAST;
+extern vector const V_WEST;
 
 /*************************
  * Structure Definitions *
@@ -39,11 +39,11 @@ struct vector_s {
  * Inline Functions *
  ********************/
 
-static inline float vmag(const vector *v) {
+static inline float vmag(vector const * const v) {
   return sqrtf(v->x*v->x + v->y*v->y + v->z*v->z);
 }
 
-static inline float vmag2(const vector *v) {
+static inline float vmag2(vector const * const v) {
   return v->x*v->x + v->y*v->y + v->z*v->z;
 }
 
@@ -93,15 +93,15 @@ static inline void vnorm(vector *v) {
   vscale(v, 1.0/m);
 }
 
-static inline void vadd(vector *target, const vector *value) {
+static inline void vadd(vector * const target, vector const * const value) {
   target->x += value->x;
   target->y += value->y;
   target->z += value->z;
 }
 
 static inline void vadd_scaled(
-  vector *target,
-  const vector *value,
+  vector * const target,
+  vector const * const value,
   float scale
 ) {
   target->x += value->x * scale;
@@ -109,19 +109,19 @@ static inline void vadd_scaled(
   target->z += value->z * scale;
 }
 
-static inline void vsub(vector *target, const vector *value) {
+static inline void vsub(vector * const target, vector const * const value) {
   target->x -= value->x;
   target->y -= value->y;
   target->z -= value->z;
 }
 
-static inline void vcopy(vector *target, const vector *value) {
+static inline void vcopy(vector * const target, vector const * const value) {
   target->x = value->x;
   target->y = value->y;
   target->z = value->z;
 }
 
-static inline int vdot(const vector *first, const vector *second) {
+static inline int vdot(vector const * const first, vector const * const second){
   return (
     (first->x * second->x) +
     (first->y * second->y) +

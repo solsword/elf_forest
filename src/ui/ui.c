@@ -28,9 +28,9 @@ char * TXT = NULL;
  * Globals *
  ***********/
 
-const char *FONT_FILE = "res/VerilySerifMono.otf";
+char const * const FONT_FILE = "res/VerilySerifMono.otf";
 
-const int FONT_RESOLUTION = 72;
+int const FONT_RESOLUTION = 72;
 
 float OVERLAY_WIDTH = 1.0;
 float OVERLAY_HEIGHT = 1.0;
@@ -126,7 +126,12 @@ void cleanup_ui(void) {
   free(TXT);
 }
 
-void render_string(const char *string, float size, float left, float bot) {
+void render_string(
+  char const * const string,
+  float size,
+  float left,
+  float bot
+) {
   glMatrixMode( GL_MODELVIEW );
   glPushMatrix();
   glLoadIdentity();

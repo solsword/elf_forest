@@ -13,7 +13,7 @@ MAKEFLAGS+=--assume-old=$(TEST_DIR)
 
 # Compiler & Flags:
 CC=gcc
-DEBUG_FLAGS=-g -O0 -DDEBUG
+DEBUG_FLAGS=-g -O1 -DDEBUG
 OPT_FLAGS=-O3
 INCLUDE_FLAGS=-I/usr/include/freetype2 -I$(SRC_DIR)
 CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(DEBUG_FLAGS)
@@ -29,7 +29,7 @@ LFLAGS=-lm $(LIBS)
 
 # Objects:
 CORE_OBJECTS=$(OBJ_DIR)/world.o \
-             $(OBJ_DIR)/exposure.o \
+             $(OBJ_DIR)/chunk_data.o \
              $(OBJ_DIR)/render.o \
              $(OBJ_DIR)/gfx.o \
              $(OBJ_DIR)/display.o \
@@ -53,6 +53,9 @@ MAIN_OBJECTS=$(OBJ_DIR)/main.o
 
 TEST_OBJECTS=$(OBJ_DIR)/test.o
 
+UNIT_TEST_OBJECTS=$(OBJ_DIR)/test_suite.o \
+						      $(OBJ_DIR)/unit_tests.o
+
 # Noise test objects:
 NTOBJECTS=$(OBJ_DIR)/noise.o \
           $(OBJ_DIR)/test_noise.o
@@ -60,15 +63,16 @@ NTOBJECTS=$(OBJ_DIR)/noise.o \
 # The default goal:
 .DEFAULT_GOAL := game
 
-.PHONY: all clean game test test_noise checkgl
+.PHONY: all clean game test unit_tests test_noise checkgl
 
-all: game test test_noise
+all: game test unit_tests test_noise
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(BIN_DIR)
 	rm -rf $(OUT_DIR)
 game: $(BIN_DIR)/elf_forest
 test: $(BIN_DIR)/test
+unit_tests: $(BIN_DIR)/test_units
 test_noise: $(TEST_DIR)/noise_test_2D.ppm $(TEST_DIR)/noise_test_3D.ppm \
             $(TEST_DIR)/noise_test_2D_F.ppm $(TEST_DIR)/noise_test_3D_F.ppm \
             $(TEST_DIR)/noise_test_ex.ppm
@@ -117,6 +121,9 @@ $(BIN_DIR)/elf_forest: $(CORE_OBJECTS) $(MAIN_OBJECTS) $(BIN_DIR)
 
 $(BIN_DIR)/test: $(CORE_OBJECTS) $(TEST_OBJECTS) $(BIN_DIR)
 	$(CC) $(CORE_OBJECTS) $(TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/test
+
+$(BIN_DIR)/test_units: $(CORE_OBJECTS) $(UNIT_TEST_OBJECTS) $(BIN_DIR)
+	$(CC) $(CORE_OBJECTS) $(UNIT_TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/test_units
 
 $(BIN_DIR)/test_noise: $(NTOBJECTS) $(BIN_DIR)
 	$(CC) $(NTOBJECTS) $(LFLAGS) -o $(BIN_DIR)/test_noise

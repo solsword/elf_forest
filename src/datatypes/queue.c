@@ -24,11 +24,11 @@
  ***********/
 
 // We're more worried about mallocs than about saving space:
-const size_t QUEUE_CHUNK_SIZE = 256;
-const size_t QUEUE_EXPAND_RATIO = 2;
-const size_t QUEUE_SHRINK_THRESHOLD = 8;
-const size_t QUEUE_SHRINK_RATIO = 4;
-const size_t QUEUE_MIN_CHUNKS = 2;
+size_t const QUEUE_CHUNK_SIZE = 256;
+size_t const QUEUE_EXPAND_RATIO = 2;
+size_t const QUEUE_SHRINK_THRESHOLD = 8;
+size_t const QUEUE_SHRINK_RATIO = 4;
+size_t const QUEUE_MIN_CHUNKS = 2;
 
 /*************************
  * Structure Definitions *
@@ -63,7 +63,7 @@ static inline void grow_if_necessary(queue *q) {
       for (i = 0; i < QIDX(q, q->count); ++i) {
         // Note no wrapping of the index is necessary here because we doubled
         // the size of the memory block:
-        q->elements[q->tail + q->count + i] = q->elements[i];
+        q->elements[(q->size * QUEUE_CHUNK_SIZE) + i] = q->elements[i];
       }
     }
     // Only update our size after using the old size above to unwrap stuff:
@@ -115,6 +115,7 @@ static inline void shrink_if_necessary(queue *q) {
     }
     q->elements = new_elements;
     q->size /= QUEUE_SHRINK_RATIO;
+    q->tail = 0;
   }
 }
 
@@ -194,6 +195,9 @@ void q_push_element(queue *q, void *element) {
 void * q_pop_element(queue *q) {
   void *result = NULL;
   if (q->count == 0) {
+#ifdef DEBUG
+    fprintf(stderr, "Warning: Pop from empty queue.\n");
+#endif
     return NULL;
   }
   result = q->elements[q->tail];
@@ -261,14 +265,14 @@ int q_destroy_all_elements(queue *q, void *element) {
 void q_foreach(queue *q, void (*f)(void *)) {
   size_t i;
   for (i = 0; i < q->count; ++i) {
-    f(q->elements[QIDX(q, i)]);
+    (*f)(q->elements[QIDX(q, i)]);
   }
 }
 
 void * q_find_element(queue *q, int (*match)(void *)) {
   size_t i;
   for (i = 0; i < q->count; ++i) {
-    if (match(q->elements[QIDX(q, i)])) {
+    if ((*match)(q->elements[QIDX(q, i)])) {
       return q->elements[QIDX(q, i)];
     }
   }
