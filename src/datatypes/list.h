@@ -46,17 +46,31 @@ void destroy_list(list *l);
 
 
 // Tests whether the given list is empty.
-int l_is_empty(list *l);
+inline int l_is_empty(list *l);
+
+// Returns the length of the given list.
+inline size_t l_get_length(list *l);
 
 // Test whether the given list contains the given element (uses address
 // comparison).
 int l_contains(list *l, void *element);
 
-// Returns the length of the given list.
-size_t l_get_length(list *l);
-
 // Returns the ith element of the given list, or NULL if i is out of range.
-void * l_get_element(list *l, size_t i);
+void * l_get_item(list *l, size_t i);
+
+// Replaces the element at index i with the given element, returning the
+// replaced value. If i is out-of-range, it does nothing and returns NULL.
+void * l_remove_item(list *l, size_t i);
+
+// Removes the given number of items starting at the given index. The delete
+// version frees the items before removing them. If any part of the range is
+// out-of-bounds, it does nothing.
+void l_remove_range(list *l, size_t i, size_t n);
+void l_delete_range(list *l, size_t i, size_t n);
+
+// Replaces the element at index i with the given element, returning the
+// replaced value. If i is out-of-range, it does nothing and returns NULL.
+void * l_replace_item(list *l, size_t i, void *element);
 
 // Adds the given element to the end of the given list. Allocates new memory to
 // expand the list as necessary.
@@ -72,11 +86,8 @@ void * l_pop_element(list *l);
 void * l_remove_element(list *l, void *element);
 
 // Removes all copies of the given element from the given list (uses address
-// comparison). If the destroy version is used free() is called on each element
-// as it is removed from the list. Both versions return the number of elements
-// removed.
+// comparison). Returns the number of elements removed.
 int l_remove_all_elements(list *l, void *element);
-int l_destroy_all_elements(list *l, void *element);
 
 // Reverses the given list. Doesn't allocate or free any memory.
 void l_reverse(list *l);

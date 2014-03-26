@@ -105,8 +105,12 @@ void destroy_list(list *l) {
 }
 
 
-int l_is_empty(list *l) {
+inline int l_is_empty(list *l) {
   return (l->count == 0);
+}
+
+inline size_t l_get_length(list *l) {
+  return l->count;
 }
 
 int l_contains(list *l, void *element) {
@@ -121,18 +125,76 @@ int l_contains(list *l, void *element) {
   return result;
 }
 
-size_t l_get_length(list *l) {
-  return l->count;
-}
-
-void * l_get_element(list *l, size_t i) {
+void * l_get_item(list *l, size_t i) {
   if (i >= l->count) {
 #ifdef DEBUG
-    fprintf(stderr, "Warning: Accessing element beyond end of list.\n");
+    fprintf(stderr, "Warning: l_get_item on item beyond end of list.\n");
 #endif
     return NULL;
   }
   return l->elements[i];
+}
+
+void * l_remove_item(list *l, size_t i) {
+  if (i >= l->count) {
+#ifdef DEBUG
+    fprintf(stderr, "Warning: l_remove_item on item beyond end of list.\n");
+#endif
+    return NULL;
+  }
+  size_t j;
+  void *result = l->elements[i];
+  for (j = i; j < (l->count - 1); ++j) {
+    l->elements[j] = l->elements[j+1];
+  }
+  l->count -= 1;
+  shrink_if_necessary(l);
+  return result;
+}
+
+void l_remove_range(list *l, size_t i, size_t n) {
+  size_t j;
+  if (i + n > l->count) {
+#ifdef DEBUG
+    fprintf(stderr, "Warning: l_remove_range extends beyond end of list.\n");
+#endif
+    return;
+  }
+  for (j = i; j < (l->count - n); ++j) {
+    l->elements[j] = l->elements[j+n];
+  }
+  l->count -= n;
+  shrink_if_necessary(l);
+}
+
+void l_delete_range(list *l, size_t i, size_t n) {
+  size_t j;
+  if (i + n > l->count) {
+#ifdef DEBUG
+    fprintf(stderr, "Warning: l_delete_range extends beyond end of list.\n");
+#endif
+    return;
+  }
+  for (j = i; j < (l->count - n); ++j) {
+    if (j - i < n - 1) {
+      free(l->elements[j]);
+    }
+    l->elements[j] = l->elements[j+n];
+  }
+  l->count -= n;
+  shrink_if_necessary(l);
+}
+
+void * l_replace_item(list *l, size_t i, void *element) {
+  if (i >= l->count) {
+#ifdef DEBUG
+    fprintf(stderr, "Warning: l_replace_item on item beyond end of list.\n");
+#endif
+    return NULL;
+  }
+  void *tmp = l->elements[i];
+  l->elements[i] = element;
+  return tmp;
 }
 
 void l_append_element(list *l, void *element) {
@@ -178,26 +240,6 @@ int l_remove_all_elements(list *l, void *element) {
   size_t skip = 0;
   for (i = 0; i < l->count; ++i) {
     while (l->elements[i + skip] == element) {
-      skip += 1;
-      removed += 1;
-      l->count -= 1;
-    }
-    if (skip > 0 && i < l->count) {
-      l->elements[i] = l->elements[i + skip];
-    }
-  }
-  shrink_if_necessary(l);
-  return removed;
-}
-
-// Same code as remove_all but with an extra free()
-int l_destroy_all_elements(list *l, void *element) {
-  size_t i;
-  size_t removed = 0;
-  size_t skip = 0;
-  for (i = 0; i < l->count; ++i) {
-    while (l->elements[i + skip] == element) {
-      free(element);
       skip += 1;
       removed += 1;
       l->count -= 1;

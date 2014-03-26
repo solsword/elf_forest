@@ -43,6 +43,7 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/vector.o \
              $(OBJ_DIR)/list.o \
              $(OBJ_DIR)/queue.o \
+             $(OBJ_DIR)/map.o \
              $(OBJ_DIR)/octree.o \
              $(OBJ_DIR)/terrain.o \
              $(OBJ_DIR)/data.o \

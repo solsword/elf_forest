@@ -159,8 +159,12 @@ void destroy_queue(queue *q) {
 }
 
 
-int q_is_empty(queue *q) {
+inline int q_is_empty(queue *q) {
   return (q->count == 0);
+}
+
+inline size_t q_get_length(queue *q) {
+  return q->count;
 }
 
 int q_contains(queue *q, void *element) {
@@ -175,11 +179,7 @@ int q_contains(queue *q, void *element) {
   return result;
 }
 
-size_t q_get_length(queue *q) {
-  return q->count;
-}
-
-void * q_get_element(queue *q, size_t i) {
+void * q_get_item(queue *q, size_t i) {
   if (i >= q->count) {
     return NULL;
   }
@@ -230,26 +230,6 @@ int q_remove_all_elements(queue *q, void *element) {
   size_t skip = 0;
   for (i = 0; i < q->count; ++i) {
     while (q->elements[QIDX(q, i + skip)] == element) {
-      skip += 1;
-      removed += 1;
-      q->count -= 1;
-    }
-    if (skip > 0 && i < q->count) {
-      q->elements[QIDX(q, i)] = q->elements[QIDX(q, i + skip)];
-    }
-  }
-  shrink_if_necessary(q);
-  return removed;
-}
-
-// Same code as remove_all but with an extra free()
-int q_destroy_all_elements(queue *q, void *element) {
-  size_t i;
-  size_t removed = 0;
-  size_t skip = 0;
-  for (i = 0; i < q->count; ++i) {
-    while (q->elements[QIDX(q, i + skip)] == element) {
-      free(element);
       skip += 1;
       removed += 1;
       q->count -= 1;

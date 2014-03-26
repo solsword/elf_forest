@@ -50,6 +50,8 @@
 DEFINE_IMPORTED_BUILDER
 #include "suites/test_queue.h"
 DEFINE_IMPORTED_BUILDER
+#include "suites/test_map.h"
+DEFINE_IMPORTED_BUILDER
 
 /***********
  * Globals *
@@ -71,13 +73,16 @@ void setup_unit_tests(void) {
   #include "suites/test_queue.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
+  #include "suites/test_map.h"
+  ts = INVOKE_IMPORTED_BUILDER;
+  l_append_element(ALL_TEST_SUITES, ts);
 }
 
 void cleanup_unit_tests(void) {
   int i = 0;
   test_suite *ts = NULL;
   for (i = 0; i < l_get_length(ALL_TEST_SUITES); ++i) {
-    ts = (test_suite *) l_get_element(ALL_TEST_SUITES, i);
+    ts = (test_suite *) l_get_item(ALL_TEST_SUITES, i);
     cleanup_test_suite(ts);
   }
   cleanup_list(ALL_TEST_SUITES);
@@ -87,7 +92,7 @@ void run_all_tests(void) {
   int i = 0;
   test_suite *ts = NULL;
   for (i = 0; i < l_get_length(ALL_TEST_SUITES); ++i) {
-    ts = (test_suite *) l_get_element(ALL_TEST_SUITES, i);
+    ts = (test_suite *) l_get_item(ALL_TEST_SUITES, i);
     ts_run_tests(ts);
   }
 }
@@ -96,7 +101,7 @@ void print_all_results(void) {
   int i = 0;
   test_suite *ts = NULL;
   for (i = 0; i < l_get_length(ALL_TEST_SUITES); ++i) {
-    ts = (test_suite *) l_get_element(ALL_TEST_SUITES, i);
+    ts = (test_suite *) l_get_item(ALL_TEST_SUITES, i);
     ts_print_results(ts);
   }
 }
@@ -105,7 +110,7 @@ int all_tests_passed(void) {
   int i = 0;
   test_suite *ts = NULL;
   for (i = 0; i < l_get_length(ALL_TEST_SUITES); ++i) {
-    ts = (test_suite *) l_get_element(ALL_TEST_SUITES, i);
+    ts = (test_suite *) l_get_item(ALL_TEST_SUITES, i);
     if (!ts_passed(ts)) {
       return 0;
     }

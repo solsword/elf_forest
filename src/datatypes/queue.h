@@ -59,17 +59,17 @@ void destroy_queue(queue *q);
 
 
 // Tests whether the given queue is empty.
-int q_is_empty(queue *q);
+inline int q_is_empty(queue *q);
+
+// Returns the length of the given queue.
+inline size_t q_get_length(queue *q);
 
 // Test whether the given queue contains the given element (uses address
 // comparison).
 int q_contains(queue *q, void *element);
 
-// Returns the length of the given queue.
-size_t q_get_length(queue *q);
-
 // Returns the ith element of the given queue, or NULL if i is out of range.
-void * q_get_element(queue *q, size_t i);
+void * q_get_item(queue *q, size_t i);
 
 // Adds the given element to the end of the given queue. Allocates new memory
 // to expand the queue if necessary.
@@ -85,11 +85,8 @@ void * q_pop_element(queue *q);
 void * q_remove_element(queue *q, void *element);
 
 // Removes all copies of the given element from the given queue (uses address
-// comparison). If the destroy version is used free() is called on each element
-// as it is removed from the queue. Both versions return the number of elements
-// removed.
+// comparison). Returns the number of elements removed.
 int q_remove_all_elements(queue *q, void *element);
-int q_destroy_all_elements(queue *q, void *element);
 
 // Runs the given function sequentially on each element in the queue.
 void q_foreach(queue *q, void (*f)(void *));

@@ -13,6 +13,7 @@
 
 #include "datatypes/vector.h"
 #include "datatypes/list.h"
+#include "datatypes/map.h"
 #include "datatypes/octree.h"
 #include "graphics/vbo.h"
 
@@ -32,6 +33,11 @@ typedef enum {
  * Structures *
  **************/
 
+// Defines the size of a region in blocks:
+typedef uint64_t r_pos_t;
+// Defines the size of a region in chunks. Must be <= the size of r_pos_t:
+typedef uint32_t r_cpos_t;
+
 // Block position within a region:
 struct region_pos_s;
 typedef struct region_pos_s region_pos;
@@ -47,6 +53,12 @@ typedef uint16_t chunk_flag;
 struct chunk_s;
 typedef struct chunk_s chunk;
 
+// Macros and types for the size of a chunk:
+#define CHUNK_BITS 4
+#define CHUNK_SIZE (1 << CHUNK_BITS)
+#define CH_MASK (CHUNK_SIZE - 1) // Chunk mask
+typedef uint8_t ch_idx_t; // Needs to be big enough to hold CHUNK_BITS bits.
+
 // Picks out a block within a chunk:
 struct chunk_index_s;
 typedef struct chunk_index_s chunk_index;
@@ -54,6 +66,17 @@ typedef struct chunk_index_s chunk_index;
 // An NxNxN-chunk frame:
 struct frame_s;
 typedef struct frame_s frame;
+
+// Macros and types for the size of a frame:
+#define FRAME_BITS 4
+#define FRAME_SIZE (1 << FRAME_BITS)
+#define FULL_FRAME (CHUNK_SIZE*FRAME_SIZE)
+#define HALF_FRAME (FULL_FRAME >> 1)
+#define FR_MASK (FRAME_SIZE - 1) // Frame mask
+#define FC_MASK (CHUNK_SIZE*FRAME_SIZE - 1) // Frame block position mask
+typedef uint32_t fr_idx_t; // Needs to hold FRAME_BITS * CHUNK_BITS bits.
+typedef uint8_t fr_cidx_t; // Needs to hold FRAME_BITS bits.
+typedef uint8_t fr_pos_t; // Needs to hold FRAME_BITS bits.
 
 // Picks out a chunk within a frame:
 struct frame_chunk_index_s;
@@ -78,16 +101,6 @@ extern frame MAIN_FRAME;
  * Constants *
  *************/
 
-#define CHUNK_BITS 4
-#define CHUNK_SIZE (1 << CHUNK_BITS)
-#define FRAME_BITS 4
-#define FRAME_SIZE (1 << FRAME_BITS)
-#define FULL_FRAME (CHUNK_SIZE*FRAME_SIZE)
-#define HALF_FRAME (FULL_FRAME >> 1)
-#define CH_MASK (CHUNK_SIZE - 1) // Chunk mask
-#define FR_MASK (FRAME_SIZE - 1) // Frame mask
-#define FC_MASK (CHUNK_SIZE*FRAME_SIZE - 1) // Frame coordinate mask
-
 static chunk_flag const           CF_LOADED = 0x0001;
 static chunk_flag const     CF_NEEDS_RELOAD = 0x0002;
 static chunk_flag const  CF_NEEDS_RECOMIPLE = 0x0004;
@@ -97,15 +110,15 @@ static chunk_flag const  CF_NEEDS_RECOMIPLE = 0x0004;
  *************************/
 
 struct region_pos_s {
-  long int x, y, z;
+  r_pos_t x, y, z;
 };
 
 struct region_chunk_pos_s {
-  int x, y, z;
+  r_cpos_t x, y, z;
 };
 
 struct chunk_index_s {
-  unsigned int x, y, z;
+  ch_idx_t x, y, z;
 };
 
 // (16 * 16 * 16) * 16 = 65536 = 8 KB
@@ -121,15 +134,15 @@ struct chunk_s {
 };
 
 struct frame_index_s {
-  unsigned int x, y, z;
+  fr_idx_t x, y, z;
 };
 
 struct frame_chunk_index_s {
-  unsigned int x, y, z;
+  fr_cidx_t x, y, z;
 };
 
 struct frame_pos_s {
-  int x, y, z;
+  fr_pos_t x, y, z;
 };
 
 // (16 * 16 * 16) * 65536 = 32 MB
@@ -155,9 +168,9 @@ static inline void rcpos__rpos(
   region_chunk_pos *rcpos,
   region_pos *rpos
 ) {
-  rpos->x = ((long int) rcpos->x) << CHUNK_BITS;
-  rpos->y = ((long int) rcpos->y) << CHUNK_BITS;
-  rpos->z = ((long int) rcpos->z) << CHUNK_BITS;
+  rpos->x = ((r_pos_t) rcpos->x) << CHUNK_BITS;
+  rpos->y = ((r_pos_t) rcpos->y) << CHUNK_BITS;
+  rpos->z = ((r_pos_t) rcpos->z) << CHUNK_BITS;
 }
 
 static inline void rpos__rcpos(

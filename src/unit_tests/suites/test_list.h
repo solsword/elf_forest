@@ -38,17 +38,17 @@ int test_list_growth(void) {
 int test_list_append_get_pop(void) {
   list *l = create_list();
   l_append_element(l, (void *) 17);
-  if (l_get_element(l, 0) != (void *) 17) { return 0; }
+  if (l_get_item(l, 0) != (void *) 17) { return 0; }
   if (l_pop_element(l) != (void *) 17) { return 0; }
   if (l_pop_element(l) != NULL) { return 0; }
   if (l_pop_element(l) != NULL) { return 0; }
   l_append_element(l, (void *) 8);
   l_append_element(l, (void *) 9);
   l_append_element(l, (void *) 10);
-  if (l_get_element(l, 0) != (void *) 8) { return 0; }
-  if (l_get_element(l, 1) != (void *) 9) { return 0; }
-  if (l_get_element(l, 2) != (void *) 10) { return 0; }
-  if (l_get_element(l, l_get_length(l) - 1) != (void *) 10) { return 0; }
+  if (l_get_item(l, 0) != (void *) 8) { return 0; }
+  if (l_get_item(l, 1) != (void *) 9) { return 0; }
+  if (l_get_item(l, 2) != (void *) 10) { return 0; }
+  if (l_get_item(l, l_get_length(l) - 1) != (void *) 10) { return 0; }
   if (l_pop_element(l) != (void *) 10) { return 0; }
   if (l_pop_element(l) != (void *) 9) { return 0; }
   if (l_pop_element(l) != (void *) 8) { return 0; }

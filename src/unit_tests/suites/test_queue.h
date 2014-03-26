@@ -37,17 +37,17 @@ int test_queue_growth(void) {
 int test_queue_push_pop(void) {
   queue *q = create_queue();
   q_push_element(q, (void *) 17);
-  if (q_get_element(q, 0) != (void *) 17) { return 0; }
+  if (q_get_item(q, 0) != (void *) 17) { return 0; }
   if (q_pop_element(q) != (void *) 17) { return 0; }
   if (q_pop_element(q) != NULL) { return 0; }
   if (q_pop_element(q) != NULL) { return 0; }
   q_push_element(q, (void *) 8);
   q_push_element(q, (void *) 9);
   q_push_element(q, (void *) 10);
-  if (q_get_element(q, 0) != (void *) 8) { return 0; }
-  if (q_get_element(q, 1) != (void *) 9) { return 0; }
-  if (q_get_element(q, 2) != (void *) 10) { return 0; }
-  if (q_get_element(q, q_get_length(q) - 1) != (void *) 10) { return 0; }
+  if (q_get_item(q, 0) != (void *) 8) { return 0; }
+  if (q_get_item(q, 1) != (void *) 9) { return 0; }
+  if (q_get_item(q, 2) != (void *) 10) { return 0; }
+  if (q_get_item(q, q_get_length(q) - 1) != (void *) 10) { return 0; }
   if (q_pop_element(q) != (void *) 8) { return 0; }
   if (q_pop_element(q) != (void *) 9) { return 0; }
   if (q_pop_element(q) != (void *) 10) { return 0; }
@@ -64,8 +64,8 @@ int test_queue_push_pop_lots(void) {
   for (i = 0; i < batch_size; ++i) {
     q_push_element(q, (void *) 17);
   }
-  if (q_get_element(q, 0) != (void *) 17) { return 0; }
-  if (q_get_element(q, batch_size - 1) != (void *) 17) { return 0; }
+  if (q_get_item(q, 0) != (void *) 17) { return 0; }
+  if (q_get_item(q, batch_size - 1) != (void *) 17) { return 0; }
 
   for (i = 0; i < small_batch_size; ++i) {
     if (q_pop_element(q) != (void *) 17) { return 0; }
@@ -73,8 +73,8 @@ int test_queue_push_pop_lots(void) {
   for (i = 0; i < batch_size; ++i) {
     q_push_element(q, (void *) 35);
   }
-  if (q_get_element(q, 0) != (void *) 17) { return 0; }
-  if (q_get_element(q, q_get_length(q) - 1) != (void *) 35) { return 0; }
+  if (q_get_item(q, 0) != (void *) 17) { return 0; }
+  if (q_get_item(q, q_get_length(q) - 1) != (void *) 35) { return 0; }
   cleanup_queue(q);
   return 1;
 }

@@ -55,7 +55,7 @@ void ts_run_tests(test_suite *ts) {
   ts->passed = 0;
   ts->failed = 0;
   for (i = 0; i < l_get_length(ts->tests); ++i) {
-    test = (unit_test) l_get_element(ts->tests, i);
+    test = (unit_test) l_get_item(ts->tests, i);
     if ((*test)()) {
       ts->passed += 1;
     } else {
