@@ -14,9 +14,11 @@ MAKEFLAGS+=--assume-old=$(TEST_DIR)
 # Compiler & Flags:
 CC=gcc
 DEBUG_FLAGS=-g -O1 -DDEBUG
+#PROFILE_FLAGS=-pg
+PROFILE_FLAGS=
 OPT_FLAGS=-O3
 INCLUDE_FLAGS=-I/usr/include/freetype2 -I$(SRC_DIR)
-CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(DEBUG_FLAGS)
+CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(DEBUG_FLAGS) $(PROFILE_FLAGS)
 
 LIBS_OPENGL=-lGLee -lGL -lGLU
 LIBS_GLFW=-lglfw -lrt -lXrandr -lXi -lXxf86vm -lXrender -lXext -lX11 \
@@ -25,7 +27,7 @@ LIBS_FTGL=-lftgl
 LIBS_PNG=-lpng
 LIBS=$(LIBS_OPENGL) $(LIBS_GLFW) $(LIBS_FTGL) $(LIBS_PNG)
 
-LFLAGS=-lm $(LIBS)
+LFLAGS=-lm $(LIBS) $(PROFILE_FLAGS)
 
 # Objects:
 CORE_OBJECTS=$(OBJ_DIR)/world.o \
@@ -73,7 +75,7 @@ clean:
 	rm -rf $(OUT_DIR)
 game: $(BIN_DIR)/elf_forest
 test: $(BIN_DIR)/test
-unit_tests: $(BIN_DIR)/test_units
+unit_tests: $(BIN_DIR)/unit_tests
 test_noise: $(TEST_DIR)/noise_test_2D.ppm $(TEST_DIR)/noise_test_3D.ppm \
             $(TEST_DIR)/noise_test_2D_F.ppm $(TEST_DIR)/noise_test_3D_F.ppm \
             $(TEST_DIR)/noise_test_ex.ppm
@@ -123,8 +125,8 @@ $(BIN_DIR)/elf_forest: $(CORE_OBJECTS) $(MAIN_OBJECTS) $(BIN_DIR)
 $(BIN_DIR)/test: $(CORE_OBJECTS) $(TEST_OBJECTS) $(BIN_DIR)
 	$(CC) $(CORE_OBJECTS) $(TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/test
 
-$(BIN_DIR)/test_units: $(CORE_OBJECTS) $(UNIT_TEST_OBJECTS) $(BIN_DIR)
-	$(CC) $(CORE_OBJECTS) $(UNIT_TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/test_units
+$(BIN_DIR)/unit_tests: $(CORE_OBJECTS) $(UNIT_TEST_OBJECTS) $(BIN_DIR)
+	$(CC) $(CORE_OBJECTS) $(UNIT_TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/unit_tests
 
 $(BIN_DIR)/test_noise: $(NTOBJECTS) $(BIN_DIR)
 	$(CC) $(NTOBJECTS) $(LFLAGS) -o $(BIN_DIR)/test_noise

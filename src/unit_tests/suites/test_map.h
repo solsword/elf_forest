@@ -202,13 +202,21 @@ size_t test_map_collision(void) {
   }
   if (
     m_get_value(m, (map_key_t) 0, (map_key_t) 0, (map_key_t) 0) != (void *) 17
-  ) { return 1; }
+  ) { return 5; }
   if (
     m_get_value(m, (map_key_t) 0, (map_key_t) 0, (map_key_t) 1) != (void *) 17
-  ) { return 2; }
+  ) { return 10; }
   if (
     m_get_value(m, (map_key_t) 1, (map_key_t) 1, (map_key_t) 1) != (void *) 17
-  ) { return 3; }
+  ) { return 15; }
+  if (
+    !m_contains_key(
+      m,
+      (map_key_t) 1,
+      (map_key_t) (batch_size - 1),
+      (map_key_t) (batch_size - 1)
+    )
+  ) { return 20; }
   if (
     m_get_value(
       m,
@@ -216,7 +224,15 @@ size_t test_map_collision(void) {
       (map_key_t) (batch_size - 1),
       (map_key_t) (batch_size - 1)
     ) != (void *) 17
-  ) { return 4; }
+  ) { return 25; }
+  if (
+    m_contains_key(
+      m,
+      (map_key_t) 0,
+      (map_key_t) 0,
+      (map_key_t) batch_size
+    )
+  ) { return 30; }
   if (
     m_get_value(
       m,
@@ -224,7 +240,10 @@ size_t test_map_collision(void) {
       (map_key_t) 0,
       (map_key_t) batch_size
     ) != NULL
-  ) { return 5; }
+  ) { return 35; }
+  if ( !m_contains_key(m, (map_key_t) 7, (map_key_t) 96, (map_key_t) 12)) {
+    return 40;
+  }
   if (
     m_get_value(
       m,
@@ -232,8 +251,7 @@ size_t test_map_collision(void) {
       (map_key_t) 96,
       (map_key_t) 12
     ) != (void *) 17
-  ) { return 6; }
-  //) { return 1 + m_get_value(m, (map_key_t) 7, (map_key_t) 96, (map_key_t) 12); }
+  ) { return 45; }
   if (
     m_get_value(
       m,
@@ -241,7 +259,7 @@ size_t test_map_collision(void) {
       (map_key_t) batch_size - 1,
       (map_key_t) batch_size - 1
     ) != (void *) 17
-  ) { return 7; }
+  ) { return 50; }
 
   for (x = 0; x < small_batch_size; ++x) {
     for (y = 0; y < small_batch_size; ++y) {
@@ -253,7 +271,7 @@ size_t test_map_collision(void) {
             (map_key_t) y,
             (map_key_t) z
           ) != (void *) 17
-        ) { return 8; }
+        ) { return 55; }
       }
     }
   }
@@ -273,7 +291,7 @@ size_t test_map_collision(void) {
       (map_key_t) 0,
       (map_key_t) 0
     ) != (void *) 17
-  ) { return 9; }
+  ) { return 60; }
   if (
     m_get_value(
       m,
@@ -281,7 +299,7 @@ size_t test_map_collision(void) {
       (map_key_t) 2,
       (map_key_t) 4
     ) != (void *) 35
-  ) { return 10; }
+  ) { return 65; }
   if (
     m_get_value(
       m,
@@ -289,7 +307,7 @@ size_t test_map_collision(void) {
       (map_key_t) 0,
       (map_key_t) 0
     ) != NULL
-  ) { return 11; }
+  ) { return 70; }
   cleanup_map(m);
   return 0;
 }
