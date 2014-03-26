@@ -102,7 +102,13 @@ void print_all_results(void) {
   test_suite *ts = NULL;
   for (i = 0; i < l_get_length(ALL_TEST_SUITES); ++i) {
     ts = (test_suite *) l_get_item(ALL_TEST_SUITES, i);
-    ts_print_results(ts);
+    ts_print_short_results(ts);
+  }
+  for (i = 0; i < l_get_length(ALL_TEST_SUITES); ++i) {
+    ts = (test_suite *) l_get_item(ALL_TEST_SUITES, i);
+    if (!ts_passed(ts)) {
+      ts_print_detailed_results(ts);
+    }
   }
 }
 

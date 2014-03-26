@@ -10,7 +10,7 @@
  * Types *
  *********/
 
-typedef int (*unit_test)(void);
+typedef size_t (*unit_test)(void);
 
 /**************
  * Structures *
@@ -27,6 +27,7 @@ typedef struct test_suite_s test_suite;
 struct test_suite_s {
   char const * name;
   list *tests;
+  list *results;
   int passed;
   int failed;
 };
@@ -48,7 +49,10 @@ void ts_add_test(test_suite *ts, unit_test test);
 int ts_passed(test_suite *ts);
 
 // Prints a summary of the test suite results (doesn't run it).
-void ts_print_results(test_suite *ts);
+void ts_print_short_results(test_suite *ts);
+
+// Prints pass/fail results for each test (doesn't run them).
+void ts_print_detailed_results(test_suite *ts);
 
 // Runs the tests in the given test suite.
 void ts_run_tests(test_suite *ts);

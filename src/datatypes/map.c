@@ -157,13 +157,13 @@ int m_contains_key(map *m, ...) {
     i += m->key_arity + 1
   ) {
     hit = 1;
+    va_start(args, m);
     for (j = 0; j < m->key_arity; ++j) {
-      va_start(args, m);
       if (l_get_item(l, i + j) != va_arg(args, map_key_t)) {
         hit = 0;
       }
-      va_end(args);
     }
+    va_end(args);
     if (hit) {
       return 1;
     }
@@ -192,13 +192,13 @@ void * m_get_value(map *m, ...) {
   ) {
     hit = 1;
     // Check the keys for this entry against our varargs:
+    va_start(args, m);
     for (j = 0; j < m->key_arity; ++j) {
-      va_start(args, m);
       if (l_get_item(l, i + j) != va_arg(args, map_key_t)) {
         hit = 0;
       }
-      va_end(args);
     }
+    va_end(args);
     if (hit) {
       return l_get_item(l, i + m->key_arity);
     }
