@@ -14,8 +14,8 @@ MAKEFLAGS+=--assume-old=$(TEST_DIR)
 # Compiler & Flags:
 CC=gcc
 DEBUG_FLAGS=-g -O1 -DDEBUG
-#PROFILE_FLAGS=-pg
-PROFILE_FLAGS=
+PROFILE_FLAGS=-pg
+#PROFILE_FLAGS=
 OPT_FLAGS=-O3
 INCLUDE_FLAGS=-I/usr/include/freetype2 -I$(SRC_DIR)
 CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(DEBUG_FLAGS) $(PROFILE_FLAGS)

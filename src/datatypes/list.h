@@ -58,6 +58,12 @@ int l_contains(list *l, void *element);
 // Returns the ith element of the given list, or NULL if i is out of range.
 void * l_get_item(list *l, size_t i);
 
+// Returns a pointer to the ith element of the given list. This function should
+// normally be avoided and the pointers it returns aren't safe to use if the
+// list grows or shrinks. It also doesn't do any bounds checking. This is why
+// it has an extra underscore at the beginning of its name.
+void ** _l_get_pointer(list *l, size_t i);
+
 // Replaces the element at index i with the given element, returning the
 // replaced value. If i is out-of-range, it does nothing and returns NULL.
 void * l_remove_item(list *l, size_t i);

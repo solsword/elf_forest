@@ -30,7 +30,7 @@ size_t test_map_setup_cleanup(void) {
 size_t test_map_growth(void) {
   size_t i = 0;
   map *m = create_map(1);
-  for (i = 0; i < 1000; ++i) {
+  for (i = 0; i < 10000; ++i) {
     if (m_put_value(m, NULL, (map_key_t) i) != NULL) {
       return 1;
     }

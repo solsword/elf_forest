@@ -135,6 +135,10 @@ void * l_get_item(list *l, size_t i) {
   return l->elements[i];
 }
 
+void ** _l_get_pointer(list *l, size_t i) {
+  return &(l->elements[i]);
+}
+
 void * l_remove_item(list *l, size_t i) {
   if (i >= l->count) {
 #ifdef DEBUG
