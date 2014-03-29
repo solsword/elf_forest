@@ -52,9 +52,10 @@ void tick(int steps) {
   for (i = 0; i < steps; ++i) {
     TICK_COUNT = (TICK_COUNT + 1) % TICKS_PER_SECOND_I;
     tick_motion_controls();
-    tick_entities(&MAIN_FRAME);
-    warp_space(&MAIN_FRAME, PLAYER);
-    tick_blocks(&MAIN_FRAME);
+    tick_active_entities();
+    warp_space(ACTIVE_AREA, PLAYER);
+    // TODO: tick blocks
+    //tick_blocks(ACTIVE_AREA);
   }
   tick_data();
   clear_edge_triggers();

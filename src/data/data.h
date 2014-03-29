@@ -51,11 +51,11 @@ extern int const LOAD_AREA_TRIM_FRACTION;
  ***********/
 
 // The global loading and compiling queues:
-extern chunk_queue_set LOAD_QUEUES;
-extern chunk_queue_set COMPILE_QUEUES;
+extern chunk_queue_set *LOAD_QUEUES;
+extern chunk_queue_set *COMPILE_QUEUES;
 
 // The global chunk cache:
-extern chunk_cache CHUNK_CACHE;
+extern chunk_cache *CHUNK_CACHE;
 
 /*************************
  * Structure Definitions *
@@ -77,24 +77,28 @@ struct chunk_cache_s {
 // These functions return data for the chunk at the given position if it is
 // loaded, and return NULL otherwise.
 static inline chunk * get_chunk(region_chunk_pos *rcpos) {
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
   return (chunk *) m3_get_value(
     CHUNK_CACHE->levels[LOD_BASE],
-    rcpos->x,
-    rcpos->y,
-    rcpos->z
+    (map_key_t) rcpos->x,
+    (map_key_t) rcpos->y,
+    (map_key_t) rcpos->z
   );
+#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
 }
 
 static inline chunk_approximation * get_chunk_approx(
   region_chunk_pos *rcpos,
   lod detail
 ) {
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
   return (chunk_approximation *) m3_get_value(
     CHUNK_CACHE->levels[detail],
-    rcpos->x,
-    rcpos->y,
-    rcpos->z
+    (map_key_t) rcpos->x,
+    (map_key_t) rcpos->y,
+    (map_key_t) rcpos->z
   );
+#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
 }
 
 /******************************
@@ -162,8 +166,9 @@ void load_surroundings(region_chunk_pos *rcpos);
 // allowed and appropriate. Prioritizes more-detailed areas when loading data.
 void tick_data(void);
 
-// Loads data from disk for the given chunk. Uses the chunk's x/y/z coordinates
-// to determine what contents it should have.
-void load_chunk(chunk_neighborhood *c);
+// Loads data from disk for the given chunk/approximation. Uses the chunk's
+// x/y/z coordinates to determine what contents it should have.
+void load_chunk(chunk *c);
+void load_chunk_approx(chunk_approximation *ca);
 
 #endif // ifndef DATA_H

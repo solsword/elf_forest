@@ -43,27 +43,45 @@
 // body macros are defined in world.c).
 #define CA_GET_BLOCK_FN(SCALE) ca_get_block_ ## SCALE
 #define CA_GET_BLOCK_SIG(NAME) \
-  block NAME(chunk_approximation *ca, chunk_index *idx)
+  block NAME( \
+    chunk_approximation const * const ca, \
+    chunk_index const * const idx \
+  )
 
 #define CA_PUT_BLOCK_FN(SCALE) ca_put_block_ ## SCALE
 #define CA_PUT_BLOCK_SIG(NAME) \
- void NAME(chunk_approximation *ca, chunk_index *idx, block b)
+ void NAME(chunk_approximation *ca, chunk_index const * const idx, block b)
 
 #define CA_GET_FLAGS_FN(SCALE) ca_get_flags_ ## SCALE
 #define CA_GET_FLAGS_SIG(NAME) \
-  block_flag NAME(chunk_approximation *ca, chunk_index *idx)
+  block_flag NAME( \
+    chunk_approximation const * const ca, \
+    chunk_index const * const idx \
+  )
 
 #define CA_PUT_FLAGS_FN(SCALE) ca_put_flags_ ## SCALE
 #define CA_PUT_FLAGS_SIG(NAME) \
-  void NAME(chunk_approximation *ca, chunk_index *idx, block_flag flags)
+  void NAME( \
+    chunk_approximation *ca, \
+    chunk_index const * const idx, \
+    block_flag flags \
+  )
 
 #define CA_SET_FLAGS_FN(SCALE) ca_set_flags_ ## SCALE
 #define CA_SET_FLAGS_SIG(NAME) \
-  void NAME(chunk_approximation *ca, chunk_index *idx, block_flag flags)
+  void NAME( \
+    chunk_approximation *ca, \
+    chunk_index const * const idx, \
+    block_flag flags \
+  )
 
 #define CA_CLEAR_FLAGS_FN(SCALE) ca_clear_flags_ ## SCALE
 #define CA_CLEAR_FLAGS_SIG(NAME) \
-  void NAME(chunk_approximation *ca, chunk_index *idx, block_flag flags)
+  void NAME( \
+    chunk_approximation *ca, \
+    chunk_index const * const idx, \
+    block_flag flags \
+  )
 
 #define DECLARE_APPROX_FN_VARIANTS(SIG_MACRO,FN_MACRO) \
   typedef SIG_MACRO((*FN_MACRO(ptr))); \
@@ -71,6 +89,9 @@
   SIG_MACRO(FN_MACRO(2)); \
   SIG_MACRO(FN_MACRO(3)); \
   SIG_MACRO(FN_MACRO(4)); \
+  extern FN_MACRO(ptr) FN_MACRO(table)[N_LODS];
+
+#define DECLARE_APPROX_FN_VARIANTS_TABLE(SIG_MACRO,FN_MACRO) \
   /* Function pointer table (index by LOD): */ \
   FN_MACRO(ptr) FN_MACRO(table)[N_LODS] = { \
     NULL, \
@@ -192,14 +213,14 @@ typedef struct frame_index_s frame_index;
 // frame, with the edges at -HALF_FRAME and HALF_FRAME - 1.
 struct frame_pos_s;
 typedef struct frame_pos_s frame_pos;
+*/
 
 /***********
  * Globals *
  ***********/
 
-/* TODO: Get rid of this
-extern frame MAIN_FRAME;
-*/
+// TODO: Get rid of this
+//extern frame MAIN_FRAME;
 
 /*************
  * Constants *
@@ -251,7 +272,7 @@ struct chunk_approximation_s {
 struct chunk_or_approx_s {
   capprox_type type;
   void *ptr;
-}
+};
 
 APPROX_DATA_STRUCT(1);
 APPROX_DATA_STRUCT(2);
@@ -299,7 +320,7 @@ struct frame_s {
 // Note that these are hand-inlined in a few places for speed.
 
 static inline void rcpos__rpos(
-  region_chunk_pos *rcpos,
+  region_chunk_pos const * const rcpos,
   region_pos *rpos
 ) {
   rpos->x = ((r_pos_t) rcpos->x) << CHUNK_BITS;
@@ -308,7 +329,7 @@ static inline void rcpos__rpos(
 }
 
 static inline void rpos__rcpos(
-  region_pos *rpos,
+  region_pos const * const rpos,
   region_chunk_pos *rcpos
 ) {
   rcpos->x = rpos->x >> CHUNK_BITS;
@@ -316,32 +337,50 @@ static inline void rpos__rcpos(
   rcpos->z = rpos->z >> CHUNK_BITS;
 }
 
-static inline void cidx__rpos(chunk *c, chunk_index *idx, region_pos *pos) {
+static inline void cidx__rpos(
+  chunk const * const c,
+  chunk_index const * const idx,
+  region_pos *pos
+) {
   rcpos__rpos(&(c->rcpos), pos);
   pos->x += idx->x;
   pos->y += idx->y;
   pos->z += idx->z;
 }
 
-static inline void rpos__cidx(region_pos *rpos, chunk_index *idx) {
+static inline void caidx__rpos(
+  chunk_approximation const * const ca,
+  chunk_index const * const idx,
+  region_pos *pos
+) {
+  rcpos__rpos(&(ca->rcpos), pos);
+  pos->x += idx->x;
+  pos->y += idx->y;
+  pos->z += idx->z;
+}
+
+static inline void rpos__cidx(
+  region_pos const * const rpos,
+  chunk_index *idx
+) {
   idx->x = rpos->x & CH_MASK;
   idx->y = rpos->y & CH_MASK;
   idx->z = rpos->z & CH_MASK;
 }
 
 static inline void rpos__vec(
-  region_pos *origin,
-  region_pos *rpos,
+  region_pos const * const origin,
+  region_pos const * const rpos,
   vector *result
 ) {
-  result->x = (rpos->x - origin.x);
-  result->y = (rpos->y - origin.y);
-  result->z = (rpos->z - origin.z);
+  result->x = (rpos->x - origin->x);
+  result->y = (rpos->y - origin->y);
+  result->z = (rpos->z - origin->z);
 }
 
 static inline void vec__rpos(
-  region_pos *origin,
-  vector *v,
+  region_pos const * const origin,
+  vector const * const v,
   region_pos *result
 ) {
   result->x = origin->x + fastfloor(v->x);
@@ -401,7 +440,7 @@ static inline void fpos__vec(frame_pos *pos, vector *v) {
 // Copying, adding, and other pseudo-conversion functions:
 
 static inline void copy_rpos(
-  region_pos *source,
+  region_pos const * const source,
   region_pos *destination
 ) {
   destination->x = source->x;
@@ -410,7 +449,7 @@ static inline void copy_rpos(
 }
 
 static inline void copy_rcpos(
-  region_chunk_pos *source,
+  region_chunk_pos const * const source,
   region_chunk_pos *destination
 ) {
   destination->x = source->x;
@@ -434,7 +473,7 @@ static inline chunk* chunk_at(frame *f, frame_chunk_index idx) {
 */
 
 static inline block c_get_block(
-  chunk *c,
+  chunk const * const c,
   chunk_index idx
 ) {
   return (c->blocks)[
@@ -457,7 +496,7 @@ static inline void c_put_block(
 }
 
 static inline block_flag c_get_flags(
-  chunk *c,
+  chunk const * const c,
   chunk_index idx
 ) {
   return (c->block_flags)[
@@ -503,57 +542,6 @@ static inline void c_clear_flags(
   ] &= ~flags;
 }
 
-// Returns the block at the given region position according to the best
-// available currently-loaded data. Note that this will cache the chunk used
-// and re-use it when possible, subject to changes in the value of
-// BLOCK_AT_SALT, so refresh_block_at_cache should be called before any set of
-// calls to block_at to ensure that you don't use stale block data or worse, an
-// invalid chunk pointer.
-uint8_t BLOCK_AT_SALT = 0;
-static inline void refresh_block_at_cache(void) {
-  BLOCK_AT_SALT += 1; // overflow is fine
-}
-static inline block block_at(region_pos rpos) {
-  region_chunk_pos rcpos;
-  static region_chunk_pos last_rcpos = { .x = 0, .y = 0, .z = 0 };
-  chunk_or_approx coa;
-  static chunk_or_approx last_coa = { .type=CA_TYPE_NOT_LOADED, .ptr=NULL };
-  chunk_index cidx;
-  static uint8_t last_salt = 1;
-
-  rpos__rcpos(&rpos, &rcpos);
-  rpos__cidx(&rpos, &cidx);
-  if (
-    last_salt == BLOCK_AT_SALT
-  &&
-    last_coa.type != CA_TYPE_NOT_LOADED
-  &&
-    last_rcpos.x == rcpos.x
-  &&
-    last_rcpos.y == rcpos.y
-  &&
-    last_rcpos.z == rcpos.z
-  ) {
-    // We can use the cached chunk pointer!
-    coa.type = last_coa.type;
-    coa.ptr = last_coa.ptr;
-  } else {
-    // We need to recompute our chunk pointer.
-    get_best_data(&rcpos, &coa);
-    last_coa.type = coa.type;
-    last_coa.ptr = coa.ptr;
-  }
-  copy_rcpos(&rcpos, &last_rcpos);
-  last_salt = BLOCK_AT_SALT;
-  if (coa->type == CA_TYPE_CHUNK) {
-    return c_get_block((chunk *) (coa->ptr), &cidx);
-  } else if (coa->type == CA_TYPE_APPROXIMATION) {
-    return ca_get_block((chunk_approximation *) (coa->ptr), &cidx);
-  } else {
-    return B_VOID;
-  }
-}
-
 /* TODO: Get rid of this
 static inline void set_block(frame *f, frame_pos pos, block b) {
   chunk_index cidx;
@@ -578,50 +566,95 @@ static inline void set_block(frame *f, frame_pos pos, block b) {
 }
 */
 
-static inline block block_above(region_pos *rpos) {
-  region_pos above;
-  copy_rpos(rpos, &above);
-  above.z += 1;
-  return block_at(&above);
+/******************************
+ * Constructors & Destructors *
+ ******************************/
+
+/* TODO: Get rid of these
+// Initializes the given frame:
+void setup_frame(frame *f, region_chunk_pos *roff);
+
+// Cleans up memory allocated by the given frame.
+void cleanup_frame(frame *f);
+*/
+
+// Allocates and initializes a new chunk at the given position. Does not
+// initialize the chunk's block data or flags.
+chunk * create_chunk(region_chunk_pos *rcpos);
+
+// Cleans up memory allocated for the given chunk.
+void cleanup_chunk(chunk *c);
+
+// Allocates and initializes a new chunk approximation at the given position
+// with the given level of detail.
+chunk_approximation * create_chunk_approximation(
+  region_chunk_pos *rcpos,
+  lod detail
+);
+
+// Cleans up memory allocated for the given chunk approximation.
+void cleanup_chunk_approximation(chunk_approximation *ca);
+
+/*************
+ * Functions *
+ *************/
+
+// Getting/putting approximate blocks within a chunk approximation:
+DECLARE_APPROX_FN_VARIANTS(CA_GET_BLOCK_SIG, CA_GET_BLOCK_FN)
+DECLARE_APPROX_FN_VARIANTS(CA_PUT_BLOCK_SIG, CA_PUT_BLOCK_FN)
+
+// Getting/putting approximate flags within a chunk approximation:
+DECLARE_APPROX_FN_VARIANTS(CA_GET_FLAGS_SIG, CA_GET_FLAGS_FN)
+DECLARE_APPROX_FN_VARIANTS(CA_PUT_FLAGS_SIG, CA_PUT_FLAGS_FN)
+DECLARE_APPROX_FN_VARIANTS(CA_SET_FLAGS_SIG, CA_SET_FLAGS_FN)
+DECLARE_APPROX_FN_VARIANTS(CA_CLEAR_FLAGS_SIG, CA_CLEAR_FLAGS_FN)
+
+// Inline functions to shorten function table access to the function tables
+// defined by the macros above:
+static inline block ca_get_block(
+  chunk_approximation const * const ca,
+  chunk_index idx
+) {
+  return ca_get_block_table[ca->detail](ca, &idx);
+}
+static inline void ca_put_block(
+  chunk_approximation *ca,
+  chunk_index idx,
+  block b
+) {
+  return ca_put_block_table[ca->detail](ca, &idx, b);
 }
 
-static inline block block_below(region_pos *rpos) {
-  region_pos below;
-  copy_rpos(rpos, &below);
-  below.z -= 1;
-  return block_at(&below);
+static inline block_flag ca_get_flags(
+  chunk_approximation const * const ca,
+  chunk_index idx
+) {
+  return ca_get_flags_table[ca->detail](ca, &idx);
 }
-
-static inline block block_north(region_pos *rpos) {
-  region_pos north;
-  copy_rpos(rpos, &north);
-  north.y += 1;
-  return block_at(&north);
+static inline void ca_put_flags(
+  chunk_approximation *ca,
+  chunk_index idx,
+  block_flag f
+) {
+  return ca_put_flags_table[ca->detail](ca, &idx, f);
 }
-
-static inline block block_south(region_pos *rpos) {
-  region_pos south;
-  copy_rpos(rpos, &south);
-  south.y -= 1;
-  return block_at(&south);
+static inline void ca_set_flags(
+  chunk_approximation *ca,
+  chunk_index idx,
+  block_flag f
+) {
+  return ca_set_flags_table[ca->detail](ca, &idx, f);
 }
-
-static inline block block_east(region_pos *rpos) {
-  region_pos east;
-  copy_rpos(rpos, &east);
-  east.x += 1;
-  return block_at(&east);
-}
-
-static inline block block_west(region_pos *rpos) {
-  region_pos west;
-  copy_rpos(rpos, &west);
-  west.x -= 1;
-  return block_at(&west);
+static inline void ca_clear_flags(
+  chunk_approximation *ca,
+  chunk_index idx,
+  block_flag f
+) {
+  return ca_clear_flags_table[ca->detail](ca, &idx, f);
 }
 
 static inline void c_get_neighbors(
-  chunk *c,
+  chunk const * const c,
   chunk_index idx,
   block *ba, block *bb,
   block *bn, block *bs,
@@ -647,8 +680,9 @@ static inline void c_get_neighbors(
   *bw = (idx.x > 0) * c_get_block(c, nbr);
 }
 
+// This has to be declared after ca_get_block.
 static inline void ca_get_neighbors(
-  chunk_approximation *ca,
+  chunk_approximation const * const ca,
   chunk_index idx,
   block *ba, block *bb,
   block *bn, block *bs,
@@ -663,93 +697,74 @@ static inline void ca_get_neighbors(
   nbr.z = idx.z;
 
   nbr.z = (idx.z & mask) + step;
-  *ba = (idx.z < CHUNK_SIZE - step) * c_get_block(c, nbr);
+  *ba = (idx.z < CHUNK_SIZE - step) * ca_get_block(ca, nbr);
   nbr.z = (idx.z & mask) - step;
-  *bb = (idx.z > step - 1) * c_get_block(c, nbr);
+  *bb = (idx.z > step - 1) * ca_get_block(ca, nbr);
   nbr.z = (idx.z & mask);
   nbr.y = (idx.y & mask) + step;
-  *bn = (idx.y < CHUNK_SIZE - step) * c_get_block(c, nbr);
+  *bn = (idx.y < CHUNK_SIZE - step) * ca_get_block(ca, nbr);
   nbr.y = (idx.y & mask) - step;
-  *bs = (idx.y > step - 1) * c_get_block(c, nbr);
+  *bs = (idx.y > step - 1) * ca_get_block(ca, nbr);
   nbr.y = (idx.y & mask);
   nbr.x = (idx.x & mask) + step;
-  *be = (idx.x < CHUNK_SIZE - step) * c_get_block(c, nbr);
+  *be = (idx.x < CHUNK_SIZE - step) * ca_get_block(ca, nbr);
   nbr.x = (idx.x & mask) - step;
-  *bw = (idx.x > step - 1) * c_get_block(c, nbr);
+  *bw = (idx.x > step - 1) * ca_get_block(ca, nbr);
 }
 
-/******************************
- * Constructors & Destructors *
- ******************************/
-
-/* TODO: Get rid of these
-// Initializes the given frame:
-void setup_frame(frame *f, region_chunk_pos *roff);
-
-// Cleans up memory allocated by the given frame.
-void cleanup_frame(frame *f);
-*/
-
-// Allocates and initializes a new chunk at the given position. Does not
-// initialize the chunk's block data or flags.
-void create_chunk(region_chunk_pos *rcpos);
-
-// Cleans up memory allocated for the given chunk.
-void cleanup_chunk(chunk *c);
-
-// Allocates and initializes a new chunk approximation at the given position
-// with the given level of detail.
-void create_chunk_approximation(region_chunk_pos *rcpos, lod detail);
-
-// Cleans up memory allocated for the given chunk approximation.
-void cleanup_chunk_approximation(chunk_approximation *ca);
-
-/*************
- * Functions *
- *************/
-
-// Getting/putting approximate blocks within a chunk approximation:
-DECLARE_APPROX_FN_VARIANTS(CA_GET_BLOCK_SIG, CA_GET_BLOCK_FN)
-DECLARE_APPROX_FN_VARIANTS(CA_PUT_BLOCK_SIG, CA_PUT_BLOCK_FN)
-
-// Getting/putting approximate flags within a chunk approximation:
-DECLARE_APPROX_FN_VARIANTS(CA_GET_FLAGS_SIG, CA_GET_FLAGS_FN)
-DECLARE_APPROX_FN_VARIANTS(CA_PUT_FLAGS_SIG, CA_PUT_FLAGS_FN)
-DECLARE_APPROX_FN_VARIANTS(CA_SET_FLAGS_SIG, CA_SET_FLAGS_FN)
-DECLARE_APPROX_FN_VARIANTS(CA_CLEAR_FLAGS_SIG, CA_CLEAR_FLAGS_FN)
-
-// Inline functions to shorten function table access to the function tables
-// defined by the macros above:
-static inline ca_get_block(chunk_approximation *ca, chunk_index idx) {
-  return ca_get_block_table[ca->detail](ca, &idx);
+// block_at returns the block at the given region position according to the
+// best available currently-loaded data. Note that this will cache the chunk
+// used and re-use it when possible, subject to changes in the value of
+// BLOCK_AT_SALT, so refresh_block_at_cache should be called before any set of
+// calls to block_at to ensure that you don't use stale block data or worse, an
+// invalid chunk pointer.
+extern uint8_t BLOCK_AT_SALT;
+static inline void refresh_block_at_cache(void) {
+  BLOCK_AT_SALT += 1; // overflow is fine
 }
-static inline ca_put_block(chunk_approximation *ca, chunk_index idx, block b) {
-  return ca_put_block_table[ca->detail](ca, &idx, b);
+block block_at(region_pos const * const rpos);
+
+// These inline functions call block_at for neighboring blocks:
+static inline block block_above(region_pos const * const rpos) {
+  region_pos above;
+  copy_rpos(rpos, &above);
+  above.z += 1;
+  return block_at(&above);
 }
 
-static inline ca_get_flags(chunk_approximation *ca, chunk_index idx) {
-  return ca_get_flags_table[ca->detail](ca, &idx);
+static inline block block_below(region_pos const * const rpos) {
+  region_pos below;
+  copy_rpos(rpos, &below);
+  below.z -= 1;
+  return block_at(&below);
 }
-static inline ca_put_flags(
-  chunk_approximation *ca,
-  chunk_index idx,
-  block_flags f
-) {
-  return ca_put_flags_table[ca->detail](ca, &idx, f);
+
+static inline block block_north(region_pos const * const rpos) {
+  region_pos north;
+  copy_rpos(rpos, &north);
+  north.y += 1;
+  return block_at(&north);
 }
-static inline ca_set_flags(
-  chunk_approximation *ca,
-  chunk_index idx,
-  block_flags f
-) {
-  return ca_set_flags_table[ca->detail](ca, &idx, f);
+
+static inline block block_south(region_pos const * const rpos) {
+  region_pos south;
+  copy_rpos(rpos, &south);
+  south.y -= 1;
+  return block_at(&south);
 }
-static inline ca_clear_flags(
-  chunk_approximation *ca,
-  chunk_index idx,
-  block_flags f
-) {
-  return ca_clear_flags_table[ca->detail](ca, &idx, f);
+
+static inline block block_east(region_pos const * const rpos) {
+  region_pos east;
+  copy_rpos(rpos, &east);
+  east.x += 1;
+  return block_at(&east);
+}
+
+static inline block block_west(region_pos const * const rpos) {
+  region_pos west;
+  copy_rpos(rpos, &west);
+  west.x -= 1;
+  return block_at(&west);
 }
 
 // TODO: How to tick blocks?

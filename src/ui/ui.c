@@ -170,7 +170,7 @@ void render_ui(void) {
   // DEBUG: Draw geoform data:
   float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
   region_pos player_pos;
-  get_region_pos(PLAYER, &player_pos);
+  get_head_rpos(PLAYER, &player_pos);
   get_geoforms(
     fastfloor(player_pos.x), fastfloor(player_pos.y),
     &depths, &oceans, &plains, &hills, &mountains

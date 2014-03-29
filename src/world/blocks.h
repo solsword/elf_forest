@@ -274,7 +274,25 @@ static inline block full_block(block_id id) {
   return ((block) id) << 8;
 }
 
+// Comparisons:
+
+static inline block block_is(block b, block c) {
+  return just_id(b) == just_id(c);
+}
+
+static inline block shares_translucency(block b, block c) {
+  return (
+    (just_id(b) | 1) == (just_id(c) | 1)
+  &&
+    !block_is(b, B_LEAVES)
+  );
+}
+
 // Type checks:
+
+static inline block is_void(block b) {
+  return block_is(b, B_VOID);
+}
 
 static inline block is_translucent_liquid(block b) {
   return (
@@ -317,20 +335,6 @@ static inline block is_opaque(block b) {
     (b >= BL_MIN_O_LIQUID)
   &&
     (b < BL_MIN_TRANSPARENT)
-  );
-}
-
-// Comparisons:
-
-static inline block block_is(block b, block c) {
-  return just_id(b) == just_id(c);
-}
-
-static inline block shares_translucency(block b, block c) {
-  return (
-    (just_id(b) | 1) == (just_id(c) | 1)
-  &&
-    !block_is(b, B_LEAVES)
   );
 }
 

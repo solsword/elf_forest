@@ -14,6 +14,7 @@
 
 #include "ui/ui.h"
 #include "world/world.h"
+#include "world/entities.h"
 #include "tick/tick.h"
 #include "data/data.h"
 #include "control/ctl.h"
@@ -88,8 +89,8 @@ void minmaximize(GLFWwindow *window, int minimized) {
 
 void render(GLFWwindow *window) {
   vector head_pos;
-  get_head_pos(PLAYER, &head_pos);
-  render_area(&ACTIVE_AREA, &head_pos, PLAYER->yaw, PLAYER->pitch);
+  get_head_vec(PLAYER, &head_pos);
+  render_area(ACTIVE_AREA, &head_pos, PLAYER->yaw, PLAYER->pitch);
   render_ui();
   glfwSwapBuffers(window);
   glClear( GL_COLOR_BUFFER_BIT );

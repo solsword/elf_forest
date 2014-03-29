@@ -52,12 +52,12 @@ int main(int argc, char** argv) {
 
   setup_ui();
   setup_data();
-  setup_entities(origin);
+  setup_entities(&origin);
 
   printf("...done.\n");
 
   // Spawn the player:
-  test_spawn_player(&ACTIVE_AREA);
+  test_spawn_player(ACTIVE_AREA);
 
   // Start the main loop:
   loop();

@@ -10,6 +10,7 @@
 #include "chunk_data.h"
 
 #include "datatypes/list.h"
+#include "data/data.h"
 
 /********************
  * Inline Functions *
@@ -17,7 +18,7 @@
 
 static inline int occludes_face(block neighbor, block occluded) {
   return (
-    block_is(neighbor, B_VOID)
+    is_void(neighbor)
   ||
     is_opaque(neighbor)
   ||
@@ -31,7 +32,8 @@ static inline int occludes_face(block neighbor, block occluded) {
   );
 }
 
-// Macro-expanded face-checking functions:
+// Macro-expanded face-checking functions with and without void block checking:
+#ifdef DEBUG
 #define CHECK_ANY_FACE \
   static inline int FN_NAME( \
     chunk_index idx, \
@@ -39,17 +41,15 @@ static inline int occludes_face(block neighbor, block occluded) {
     block here, block there \
   ) { \
     if ( \
-      block_is(there, B_VOID) \
+      is_void(there) \
     && \
       (neighbor->type != CA_TYPE_NOT_LOADED) \
     ) { \
-#ifdef DEBUG \
       if (OOR_AXIS != OOR_RESET) { \
         fprintf(stderr, "Error: void block at non-edge!\n");\
         fprintf(stderr, "  OOR_AXIS = %d, edge = %d\n", OOR_AXIS, OOR_RESET);\
         exit(-1); \
       } \
-#endif \
       OOR_AXIS = OOR_REPLACE; \
       if (neighbor->type == CA_TYPE_CHUNK) { \
         there = c_get_block((chunk *) (neighbor->ptr), idx); \
@@ -59,7 +59,30 @@ static inline int occludes_face(block neighbor, block occluded) {
       } \
     } \
     return occludes_face(there, here); \
-  } \
+  }
+#else
+#define CHECK_ANY_FACE \
+  static inline int FN_NAME( \
+    chunk_index idx, \
+    chunk_or_approx *neighbor, \
+    block here, block there \
+  ) { \
+    if ( \
+      is_void(there) \
+    && \
+      (neighbor->type != CA_TYPE_NOT_LOADED) \
+    ) { \
+      OOR_AXIS = OOR_REPLACE; \
+      if (neighbor->type == CA_TYPE_CHUNK) { \
+        there = c_get_block((chunk *) (neighbor->ptr), idx); \
+      } else { \
+        chunk_approximation *ca = (chunk_approximation *) (neighbor->ptr); \
+        there = ca_get_block(ca, idx); \
+      } \
+    } \
+    return occludes_face(there, here); \
+  }
+#endif
 
 #define FN_NAME check_top_face
 #define OOR_AXIS idx.z
@@ -204,7 +227,6 @@ void compute_exposure(chunk_or_approx *coa) {
   block_flag flags_to_set = 0;
   block_flag flags_to_clear = 0;
   block ba = 0, bb = 0, bn = 0, bs = 0, be = 0, bw = 0;
-  region_chunk_pos base;
   region_chunk_pos rcpos;
   chunk *c;
   chunk_approximation *ca;
@@ -218,7 +240,7 @@ void compute_exposure(chunk_or_approx *coa) {
     rcpos.y = c->rcpos.y;
     rcpos.z = c->rcpos.z;
   } else if (coa->type == CA_TYPE_APPROXIMATION) {
-    c = NULL:
+    c = NULL;
     ca = (chunk_approximation*) (coa->ptr);
     rcpos.x = ca->rcpos.x;
     rcpos.y = ca->rcpos.y;

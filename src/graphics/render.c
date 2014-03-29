@@ -19,6 +19,7 @@
 #include "control/ctl.h"
 #include "world/world.h"
 #include "world/entities.h"
+#include "data/data.h"
 #include "util.h"
 
 /*************
@@ -136,12 +137,12 @@ void render_area(
   if (VIEW_MODE == VM_FIRST) {
     // Look from head_pos in the direction given by eye_vector:
     gluLookAt(
-      head_pos->x + HALF_FRAME, // look from
-        head_pos->y + HALF_FRAME,
-        head_pos->z + HALF_FRAME,
-      head_pos->x + HALF_FRAME + eye_vector.x, // look at
-        head_pos->y + HALF_FRAME + eye_vector.y,
-        head_pos->z + HALF_FRAME + eye_vector.z,
+      head_pos->x, // look from
+        head_pos->y,
+        head_pos->z,
+      head_pos->x + eye_vector.x, // look at
+        head_pos->y + eye_vector.y,
+        head_pos->z + eye_vector.z,
       up_vector.x, // up
         up_vector.y,
         up_vector.z
@@ -151,12 +152,12 @@ void render_area(
     // SECOND_PERSON_DISTANCE units away.
     vscale(&eye_vector, SECOND_PERSON_DISTANCE*ZOOM);
     gluLookAt(
-      head_pos->x + HALF_FRAME + eye_vector.x, // look from
-        head_pos->y + HALF_FRAME + eye_vector.y,
-        head_pos->z + HALF_FRAME + eye_vector.z,
-      head_pos->x + HALF_FRAME, // look at
-        head_pos->y + HALF_FRAME,
-        head_pos->z + HALF_FRAME,
+      head_pos->x + eye_vector.x, // look from
+        head_pos->y + eye_vector.y,
+        head_pos->z + eye_vector.z,
+      head_pos->x, // look at
+        head_pos->y,
+        head_pos->z,
       up_vector.x, // up
         up_vector.y,
         up_vector.z
@@ -166,12 +167,12 @@ void render_area(
     // THIRD_PERSON_DISTANCE units away.
     vscale(&eye_vector, THIRD_PERSON_DISTANCE*ZOOM);
     gluLookAt(
-      head_pos->x + HALF_FRAME - eye_vector.x, // look from
-        head_pos->y + HALF_FRAME - eye_vector.y,
-        head_pos->z + HALF_FRAME - eye_vector.z,
-      head_pos->x + HALF_FRAME, // look at
-        head_pos->y + HALF_FRAME,
-        head_pos->z + HALF_FRAME,
+      head_pos->x - eye_vector.x, // look from
+        head_pos->y - eye_vector.y,
+        head_pos->z - eye_vector.z,
+      head_pos->x, // look at
+        head_pos->y,
+        head_pos->z,
       up_vector.x, // up
         up_vector.y,
         up_vector.z
@@ -261,7 +262,7 @@ void render_area(
           dist_sq *= dist_sq;
           dist_sq += xydist_sq;
           get_best_data_limited(&rcpos, desired_detail(dist_sq), &coa);
-          render_chunk_layer(coa, &(area->origin), ly);
+          render_chunk_layer(&coa, &(area->origin), ly);
         }
       }
     }
@@ -323,24 +324,24 @@ void render_chunk_layer(
 ) {
   chunk *c = NULL;
   chunk_approximation *ca = NULL;
-  chunk_flags flags = 0;
+  chunk_flag flags = 0;
   vertex_buffer *vb;
-  region_pos *rpos;
+  region_pos rpos;
   if (coa->type == CA_TYPE_NOT_LOADED) { return; }
   // Assign the relevant variables depending on the chunk/approximation type:
   if (coa->type == CA_TYPE_CHUNK) {
     c = (chunk *) (coa->ptr);
     flags = c->chunk_flags;
-    vb = c->layers[ly];
-    rpos = &(c->rpos);
+    vb = &(c->layers[ly]);
+    rcpos__rpos(&(c->rcpos), &rpos);
   } else if (coa->type == CA_TYPE_APPROXIMATION) {
     ca = (chunk_approximation *) (coa->ptr);
     flags = ca->chunk_flags;
-    vb = ca->layers[ly];
-    rpos = &(ca->rpos);
+    vb = &(ca->layers[ly]);
+    rcpos__rpos(&(ca->rcpos), &rpos);
   }
   // Skip this chunk if it's out-of-date:
-  if (!(flags & CF_LOADED) || (!flags & CF_COMPILED)) {
+  if (!(flags & CF_LOADED) || !(flags & CF_COMPILED)) {
     return;
   }
 
@@ -355,9 +356,9 @@ void render_chunk_layer(
 
   // Translate to the chunk position:
   glTranslatef(
-    rpos->x - origin->x,
-    rpos->y - origin->y,
-    rpos->z - origin->z
+    rpos.x - origin->x,
+    rpos.y - origin->y,
+    rpos.z - origin->z
   );
 
   // Set our drawing color:
@@ -410,9 +411,9 @@ void iter_render_entity(void *thing) {
 
   // Translate to the entity's position:
   glTranslatef(
-    HALF_FRAME + e->pos.x,
-    HALF_FRAME + e->pos.y,
-    HALF_FRAME + e->pos.z
+    e->pos.x,
+    e->pos.y,
+    e->pos.z
   );
 
   // Rotate according to the entity's facing:

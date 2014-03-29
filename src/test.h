@@ -5,6 +5,7 @@
 // Testing functions.
 
 #include "world/world.h"
+#include "world/entities.h"
 
 /*************
  * Constants *

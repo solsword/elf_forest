@@ -94,7 +94,7 @@ struct active_entity_area_s {
   size_t size; // Total width, height, and length.
   list *list; // list for holding entities.
   octree *tree; // octree for holding entities.
-}
+};
 
 /********************
  * Inline Functions *
@@ -124,6 +124,20 @@ static inline void copy_entity_pos(entity *from, entity *to) {
   to->pos.z = from->pos.z;
   to->yaw = from->yaw;
   to->pitch = from->pitch;
+}
+
+// Recomputes the bounding box of the given entity based on its position and
+// size.
+static inline void compute_bb(entity *e) {
+  float s2 = e->size.x/2.0;
+  e->box.min.x = e->pos.x - s2;
+  e->box.max.x = e->pos.x + s2;
+  s2 = e->size.y/2.0;
+  e->box.min.y = e->pos.y - s2;
+  e->box.max.y = e->pos.y + s2;
+  s2 = e->size.z/2.0;
+  e->box.min.z = e->pos.z - s2;
+  e->box.max.z = e->pos.z + s2;
 }
 
 // Adds the given entity to the list of active entities. If it cannot (because
@@ -159,20 +173,6 @@ static inline void clear_kinetics(entity *e) {
   e->impulse.z = 0;
 }
 
-// Recomputes the bounding box of the given entity based on its position and
-// size.
-static inline void compute_bb(entity *e) {
-  float s2 = e->size.x/2.0;
-  e->box.min.x = e->pos.x - s2;
-  e->box.max.x = e->pos.x + s2;
-  s2 = e->size.y/2.0;
-  e->box.min.y = e->pos.y - s2;
-  e->box.max.y = e->pos.y + s2;
-  s2 = e->size.z/2.0;
-  e->box.min.z = e->pos.z - s2;
-  e->box.max.z = e->pos.z + s2;
-}
-
 static inline void get_head_vec(entity *e, vector *result) {
   vcopy(result, &(e->head_pos));
   //vyaw(result, e->yaw);
@@ -181,40 +181,47 @@ static inline void get_head_vec(entity *e, vector *result) {
   vadd(result, &(e->pos));
 }
 
-// Note: don't call this on entities who aren't in an area.
+// Note: if this is called on an entity that isn't in any area, it writes
+// (0, 0, 0) into the result argument.
 static inline void get_head_rpos(entity *e, region_pos *rpos) {
   vector hp;
   get_head_vec(e, &hp);
-  rpos__vec(&(e->area->origin), &hp, rpos);
+  if (e->area == NULL) {
+    rpos->x = 0;
+    rpos->y = 0;
+    rpos->z = 0;
+  } else {
+    vec__rpos(&(e->area->origin), &hp, rpos);
+  }
 }
 
 // Functions to quickly get rounded bounding box block coordinates:
-static inline rpos_t e_rp_min_x(entity *e) {
+static inline r_pos_t e_rp_min_x(entity *e) {
   return e->area->origin.x + fastfloor(e->box.min.x);
 }
-static inline rpos_t e_rp_max_x(entity *e) {
+static inline r_pos_t e_rp_max_x(entity *e) {
   return e->area->origin.x + fastfloor(e->box.max.x);
 }
-static inline rpos_t e_rp_min_y(entity *e) {
+static inline r_pos_t e_rp_min_y(entity *e) {
   return e->area->origin.y + fastfloor(e->box.min.y);
 }
-static inline rpos_t e_rp_max_y(entity *e) {
+static inline r_pos_t e_rp_max_y(entity *e) {
   return e->area->origin.y + fastfloor(e->box.max.y);
 }
-static inline rpos_t e_rp_min_z(entity *e) {
+static inline r_pos_t e_rp_min_z(entity *e) {
   return e->area->origin.z + fastfloor(e->box.min.z);
 }
-static inline rpos_t e_rp_max_z(entity *e) {
+static inline r_pos_t e_rp_max_z(entity *e) {
   return e->area->origin.z + fastfloor(e->box.max.z);
 }
 
-static inline e_min__rpos(entity *e, region_pos *rpos) {
+static inline void e_min__rpos(entity *e, region_pos *rpos) {
   rpos->x = e_rp_min_x(e);
   rpos->y = e_rp_min_y(e);
   rpos->z = e_rp_min_z(e);
 }
 
-static inline e_max__rpos(entity *e, region_pos *rpos) {
+static inline void e_max__rpos(entity *e, region_pos *rpos) {
   rpos->x = e_rp_max_x(e);
   rpos->y = e_rp_max_y(e);
   rpos->z = e_rp_max_z(e);
@@ -267,6 +274,14 @@ void tick_entity(void *thing);
 // Returns the block that the entity's head is in, which is B_VOID if the
 // entity isn't in a loaded chunk.
 block head_block(entity *e);
+
+// Warps space in the given active entity area such that the given entity is
+// somewhere in its central chunk. This updates the area's origin and all
+// entities in the space have their position vectors adjusted to be relative to
+// the new origin instead of the old one. This also causes the bounding boxes
+// of each entity to be recomputed and they're each re-inserted into the area's
+// octree.
+void warp_space(active_entity_area *area, entity *e);
 
 // Copies an entity from the types list, sets it up, and adds it to the given
 // active entity area at the given position. This involves allocating space for

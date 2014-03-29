@@ -22,7 +22,7 @@
 list *ENTITY_PROTOTYPES = NULL;
 
 // TODO: How big should this be?
-size_t const ACTIVE_AREA_SIZE = CHUNK_SIZE * LOAD_DISTANCES[LOD_BASE] * 2;
+size_t const ACTIVE_AREA_SIZE = CHUNK_SIZE * 16;
 active_entity_area *ACTIVE_AREA = NULL;
 
 /*********************
@@ -44,6 +44,13 @@ int scan_type(void *thing, void *ref) {
   return !strcmp(e->type, (char const *) ref);
 }
 
+// Function for handling entities that fall out of an active area by destroying
+// them.
+void handle_out_of_bounds_entity(active_entity_area *area, entity *e) {
+  // TODO: Something else here?
+  cleanup_entity(e);
+}
+
 // warp_space iteration function:
 static inline void warp_entity(void *thing) {
   entity *e = (entity *) thing;
@@ -55,13 +62,6 @@ static inline void warp_entity(void *thing) {
   if (!oct_insert(e->area->tree, (void *) e, &(e->box))) {
     handle_out_of_bounds_entity(e->area, e);
   }
-}
-
-// Function for handling entities that fall out of an active area by destroying
-// them.
-void handle_out_of_bounds_entity(active_entity_area *area, entity *e) {
-  // TODO: Something else here?
-  cleanup_entity(e);
 }
 
 /******************************
@@ -136,13 +136,13 @@ void cleanup_active_entity_area(active_entity_area *area) {
  *************/
 
 void add_entity_type(entity *e) {
-  e_copy *e = create_entity();
+  entity *e_copy = create_entity();
   copy_entity_data(e, e_copy);
   l_append_element(ENTITY_PROTOTYPES, (void *)e_copy);
 }
 
 void tick_active_entities() {
-  l_foreach(ACTIVE_ENTITIES, &tick_entity);
+  l_foreach(ACTIVE_AREA->list, &tick_entity);
 }
 
 void tick_entity(void *thing) {
@@ -156,15 +156,15 @@ block head_block(entity *e) {
   region_chunk_pos rcpos;
   chunk_index idx;
 
-  get_head_rpos(e, &rpos)
+  get_head_rpos(e, &rpos);
   rpos__rcpos(&rpos, &rcpos);
   rpos__cidx(&rpos, &idx);
 
   get_best_data(&rcpos, &coa);
-  if (coa->type == CA_TYPE_CHUNK) {
-    return c_get_block((chunk *) (coa->ptr), idx);
-  } else if (coa->type == CA_TYPE_APPROXIMATION) {
-    return ca_get_block((chunk_approximation *) (coa->ptr), idx);
+  if (coa.type == CA_TYPE_CHUNK) {
+    return c_get_block((chunk *) (coa.ptr), idx);
+  } else if (coa.type == CA_TYPE_APPROXIMATION) {
+    return ca_get_block((chunk_approximation *) (coa.ptr), idx);
   } else {
     return B_VOID;
   }

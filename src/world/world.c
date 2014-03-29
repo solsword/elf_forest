@@ -10,6 +10,7 @@
 #include "world.h"
 
 #include "datatypes/octree.h"
+#include "data/data.h"
 //#include "gen/terrain.h"
 
 /***********
@@ -119,13 +120,14 @@ void cleanup_frame(frame *f) {
 }
 */
 
-void create_chunk(region_chunk_pos *rcpos) {
+chunk * create_chunk(region_chunk_pos *rcpos) {
   chunk *c = (chunk *) malloc(sizeof(chunk));
   c->rcpos.x = rcpos->x;
   c->rcpos.y = rcpos->y;
   c->rcpos.z = rcpos->z;
   c->block_entities = create_list();
   c->chunk_flags = 0;
+  return c;
 }
 
 void cleanup_chunk(chunk *c) {
@@ -137,7 +139,10 @@ void cleanup_chunk(chunk *c) {
   free(c);
 }
 
-void create_chunk_approximation(region_chunk_pos *rcpos, lod detail) {
+chunk_approximation * create_chunk_approximation(
+  region_chunk_pos *rcpos,
+  lod detail
+) {
   chunk_approximation *ca = (chunk_approximation *) malloc(
     sizeof(chunk_approximation)
   );
@@ -155,6 +160,7 @@ void create_chunk_approximation(region_chunk_pos *rcpos, lod detail) {
   ca->rcpos.y = rcpos->y;
   ca->rcpos.z = rcpos->z;
   ca->chunk_flags = 0;
+  return ca;
 }
 
 void cleanup_chunk_approximation(chunk_approximation *ca) {
@@ -201,3 +207,54 @@ CA_CLEAR_FLAGS_DEF(1)
 CA_CLEAR_FLAGS_DEF(2)
 CA_CLEAR_FLAGS_DEF(3)
 CA_CLEAR_FLAGS_DEF(4)
+
+// Macro-based function table definitions for the above functions:
+DECLARE_APPROX_FN_VARIANTS_TABLE(CA_GET_BLOCK_SIG, CA_GET_BLOCK_FN)
+DECLARE_APPROX_FN_VARIANTS_TABLE(CA_PUT_BLOCK_SIG, CA_PUT_BLOCK_FN)
+
+DECLARE_APPROX_FN_VARIANTS_TABLE(CA_GET_FLAGS_SIG, CA_GET_FLAGS_FN)
+DECLARE_APPROX_FN_VARIANTS_TABLE(CA_PUT_FLAGS_SIG, CA_PUT_FLAGS_FN)
+DECLARE_APPROX_FN_VARIANTS_TABLE(CA_SET_FLAGS_SIG, CA_SET_FLAGS_FN)
+DECLARE_APPROX_FN_VARIANTS_TABLE(CA_CLEAR_FLAGS_SIG, CA_CLEAR_FLAGS_FN)
+
+
+uint8_t BLOCK_AT_SALT = 0;
+block block_at(region_pos const * const rpos) {
+  region_chunk_pos rcpos;
+  static region_chunk_pos last_rcpos = { .x = 0, .y = 0, .z = 0 };
+  chunk_or_approx coa;
+  static chunk_or_approx last_coa = { .type=CA_TYPE_NOT_LOADED, .ptr=NULL };
+  chunk_index cidx;
+  static uint8_t last_salt = 1;
+
+  rpos__rcpos(rpos, &rcpos);
+  rpos__cidx(rpos, &cidx);
+  if (
+    last_salt == BLOCK_AT_SALT
+  &&
+    last_coa.type != CA_TYPE_NOT_LOADED
+  &&
+    last_rcpos.x == rcpos.x
+  &&
+    last_rcpos.y == rcpos.y
+  &&
+    last_rcpos.z == rcpos.z
+  ) {
+    // We can use the cached chunk pointer!
+    coa.type = last_coa.type;
+    coa.ptr = last_coa.ptr;
+  } else {
+    // We need to recompute our chunk pointer.
+    get_best_data(&rcpos, &coa);
+    last_coa.type = coa.type;
+    last_coa.ptr = coa.ptr;
+  }
+  copy_rcpos(&rcpos, &last_rcpos);
+  last_salt = BLOCK_AT_SALT;
+  if (coa.type == CA_TYPE_CHUNK) {
+    return c_get_block((chunk *) (coa.ptr), cidx);
+  } else if (coa.type == CA_TYPE_APPROXIMATION) {
+    return ca_get_block((chunk_approximation *) (coa.ptr), cidx);
+  }
+  return B_VOID;
+}
