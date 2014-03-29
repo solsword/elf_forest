@@ -95,4 +95,10 @@ void q_foreach(queue *q, void (*f)(void *));
 // element that matched. Returns NULL if no match was found.
 void * q_find_element(queue *q, int (*match)(void *));
 
+// Scans the queue until the given function returns non-zero given the queue
+// element as its first argument and the given reference as its second
+// argument. Returns the element that matched. Returns NULL if no match was
+// found.
+void * q_scan_elements(queue *q, void *ref, int (*match)(void *, void *));
+
 #endif //ifndef QUEUE_H

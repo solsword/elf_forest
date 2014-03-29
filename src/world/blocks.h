@@ -228,7 +228,7 @@ static block_limit const  BL_MIN_TRANSPARENT =  0xfd00;
 // ----------
 
 // Invisible blocks:
-static block const        B_VOID = 0x0000;
+static block const        B_VOID = 0x0000; // used for invalid/missing blocks
 static block const         B_AIR = 0x0100;
 static block const       B_ETHER = 0x0200;
 

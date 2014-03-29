@@ -7,7 +7,8 @@
 #include "data.h"
 
 #include "datatypes/queue.h"
-//#include "datatypes/map.h"
+#include "datatypes/map.h"
+
 #include "graphics/display.h"
 #include "gen/terrain.h"
 #include "world/blocks.h"
@@ -22,80 +23,411 @@
 int const LOAD_CAP = 16;
 int const COMPILE_CAP = 1024;
 
+// TODO: Good values here
+//int const LOAD_DISTANCES[N_LODS] = { 6, 16, 50, 150, 500 };
+//int const LOAD_DISTANCES[N_LODS] = { 8, 16, 32, 64, 128 };
+int const LOAD_DISTANCES[N_LODS] = { 4, 8, 12, 16, 20 };
+
+int const VERTICAL_LOAD_BIAS = 2;
+
+int const LOAD_AREA_TRIM_FRACTION = 10;
+
 /***********
  * Globals *
  ***********/
 
-queue *CHUNKS_TO_RELOAD;
-queue *CHUNKS_TO_RECOMPILE;
+chunk_queue_set LOAD_QUEUES = NULL;
+chunk_queue_set COMPILE_QUEUES = NULL;
+
+chunk_cache *CHUNK_CACHE = NULL;
+
+/********************
+ * Search Functions *
+ ********************/
+
+int chunk_is_at_position(void *element, void *reference) {
+  chunk *c = (chunk *) element;
+  region_chunk_pos *rcpos = (region_chunk_pos *) reference;
+  return (
+    c->rcpos.x == rcpos.x
+  &&
+    c->rcpos.y == rcpos.y
+  &&
+    c->rcpos.z == rcpos.z
+  );
+}
+int chunk_approx_is_at_position(void *element, void *reference) {
+  chunk_approximation *ca = (chunk_approximation *) element;
+  region_chunk_pos *rcpos = (region_chunk_pos *) reference;
+  return (
+    ca->rcpos.x == rcpos.x
+  &&
+    ca->rcpos.y == rcpos.y
+  &&
+    ca->rcpos.z == rcpos.z
+  );
+}
+
+/****************************
+ * Private Inline Functions *
+ ****************************/
+
+static inline int is_loaded(region_chunk_pos *rcpos, lod detail) {
+  return m3_contains_key(
+    CHUNK_CACHE->levels[detail],
+    rcpos->x,
+    rcpos->y,
+    rcpos->z
+  );
+}
+
+static inline int is_loading(region_chunk_pos *rcpos, lod detail) {
+  if (detail == LOD_BASE) {
+    return q_scan_elements(
+      LOAD_QUEUES->levels[detail],
+      (void *) rcpos,
+      &chunk_is_at_position
+    ) != NULL;
+  } else {
+    return q_scan_elements(
+      LOAD_QUEUES->levels[detail],
+      (void *) rcpos,
+      &chunk_approx_is_at_position
+    ) != NULL;
+  }
+}
+
+/******************************
+ * Constructors & Destructors *
+ ******************************/
+
+void setup_data(void) {
+  LOAD_QUEUES = create_chunk_queue_set();
+  COMPILE_QUEUES = create_chunk_queue_set();
+  CHUNK_CACHE = create_chunk_cache();
+}
+
+void cleanup_data(void) {
+  destroy_chunk_queue_set(LOAD_QUEUES);
+  cleanup_chunk_queue_set(COMPILE_QUEUES);
+  cleanup_chunk_cache(CHUNK_CACHE);
+}
+
+chunk_queue_set *create_chunk_queue_set(void) {
+  chunk_queue_set *cqs = (chunk_queue_set *) malloc(sizeof(chunk_queue_set));
+  size_t i;
+  for (i = 0; i < N_LODS; ++i) {
+    cqs->levels[i] = create_queue();
+  }
+  return cqs;
+}
+
+void cleanup_chunk_queue_set(chunk_queue_set *cqs) {
+  size_t i;
+  for (i = 0; i < N_LODS; ++i) {
+    cleanup_queue(cqs->levels[i]);
+  }
+  free(cqs);
+}
+
+void destroy_chunk_queue_set(chunk_queue_set *cqs) {
+  size_t i;
+  for (i = 0; i < N_LODS; ++i) {
+    destroy_queue(cqs->levels[i]);
+  }
+  free(cqs);
+}
+
+chunk_cache *create_chunk_cache(void) {
+  chunk_cache *cc = (chunk_cache *) malloc(sizeof(chunk_cache));
+  size_t i;
+  for (i = 0; i < N_LODS; ++i) {
+    cc->levels[i] = create_map3();
+  }
+  return cc;
+}
+
+void cleanup_chunk_cache(chunk_cache *cc) {
+  size_t i;
+  for (i = 0; i < N_LODS; ++i) {
+    destroy_map3(cc->levels[i]);
+  }
+  free(cc);
+}
 
 /*************
  * Functions *
  *************/
 
-void setup_data(void) {
-  CHUNKS_TO_RELOAD = create_queue();
-  CHUNKS_TO_RECOMPILE = create_queue();
+void mark_for_loading(region_chunk_pos *rcpos, lod detail) {
+  if (is_loaded(rcpos, detail) || is_loading(rcpos, detail)) {
+    return;
+  }
+  if (detail == LOD_BASE) {
+    chunk *c = create_chunk(rcpos);
+    c->chunk_flags |= CF_QUEUED_TO_LOAD;
+    c->chunk_flags |= CF_COMPILE_ON_LOAD;
+    q_push_element(LOAD_QUEUES->levels[detail], (void *) c);
+  } else {
+    chunk_approximation *ca = create_chunk_approximation(rcpos, detail);
+    ca->chunk_flags |= CF_QUEUED_TO_LOAD;
+    ca->chunk_flags |= CF_COMPILE_ON_LOAD;
+    q_push_element(LOAD_QUEUES->levels[detail], (void *) ca);
+  }
 }
 
-void cleanup_data(void) {
-  destroy_queue(CHUNKS_TO_RELOAD);
-  destroy_queue(CHUNKS_TO_RECOMPILE);
+void mark_for_compilation(chunk_or_approx *coa) {
+  if (coa->type == CA_TYPE_CHUNK) {
+    chunk *c = (chunk *) coa->ptr;
+    if (c->chunk_flags & CF_QUEUED_TO_COMPILE) { return; }
+    c->chunk_flags |= CF_QUEUED_TO_COMPILE;
+    q_push_element(COMPILE_QUEUES->levels[LOD_BASE], (void *) c);
+  } else if (coa->type == CA_TYPE_APPROXIMATION) {
+    chunk_approximation *ca = (chunk_approximation *) coa->ptr;
+    if (ca->chunk_flags & CF_QUEUED_TO_COMPILE) { return; }
+    ca->chunk_flags |= CF_QUEUED_TO_COMPILE;
+    q_push_element(COMPILE_QUEUES->levels[ca->detail], (void *) ca);
+  } else {
+    fprintf(stderr, "Can't mark an unloaded chunk for compilation.\n");
+    exit(1);
+  }
 }
 
-void mark_for_reload(frame *f, frame_chunk_index fcidx) {
-  if (chunk_at(f, fcidx)->chunk_flags & CF_NEEDS_RELOAD) { return; }
-  chunk_neighborhood *cnb = get_neighborhood(f, fcidx);
-  cnb->c->chunk_flags |= CF_NEEDS_RELOAD;
-  q_push_element(CHUNKS_TO_RELOAD, (void *) cnb);
+void mark_neighbors_for_compilation(region_chunk_pos *center) {
+  chunk_or_approx coa;
+  region_chunk_pos rcpos;
+  rcpos.x = center->x;
+  rcpos.y = center->y;
+  rcpos.z = center->z;
+
+  rcpos.x += 1;
+  get_best_data(&rcpos, &coa);
+  if (coa->ptr != NULL) { mark_for_compilation(&coa); }
+
+  rcpos.x -= 2;
+  get_best_data(&rcpos, &coa);
+  if (coa->ptr != NULL) { mark_for_compilation(&coa); }
+
+  rcpos.x += 1;
+  rcpos.y += 1;
+  get_best_data(&rcpos, &coa);
+  if (coa->ptr != NULL) { mark_for_compilation(&coa); }
+
+  rcpos.y -= 2;
+  get_best_data(&rcpos, &coa);
+  if (coa->ptr != NULL) { mark_for_compilation(&coa); }
+
+  rcpos.y += 1;
+  rcpos.z += 1;
+  get_best_data(&rcpos, &coa);
+  if (coa->ptr != NULL) { mark_for_compilation(&coa); }
+
+  rcpos.z -= 2;
+  get_best_data(&rcpos, &coa);
+  if (coa->ptr != NULL) { mark_for_compilation(&coa); }
 }
 
-void mark_for_recompile(frame *f, frame_chunk_index fcidx) {
-  if (chunk_at(f, fcidx)->chunk_flags & CF_NEEDS_RECOMIPLE) { return; }
-  chunk_neighborhood *cnb = get_neighborhood(f, fcidx);
-  cnb->c->chunk_flags |= CF_NEEDS_RECOMIPLE;
-  q_push_element(CHUNKS_TO_RECOMPILE, (void *) cnb);
+lod get_best_loaded_level(region_chunk_pos *rcpos) {
+  lod detail = N_LODS; // level of detail being considered
+  for (detail = LOD_BASE; detail < N_LODS; ++detail) {
+    if (
+      m3_contains_key(
+        CHUNK_CACHE->layers[detail],
+        (map_key_t) rcpos->x,
+        (map_key_t) rcpos->y,
+        (map_key_t) rcpos->z
+      )
+    ) {
+      return detail;
+    }
+  }
+  return N_LODS;
+}
+
+void get_best_data(region_chunk_pos *rcpos, chunk_or_approx *coa) {
+  lod detail = LOD_BASE; // level of detail being considered
+  coa->type = CA_TYPE_CHUNK;
+  coa->ptr = m3_get_value(
+    CHUNK_CACHE->layers[LOD_BASE],
+    (map_key_t) rcpos->x,
+    (map_key_t) rcpos->y,
+    (map_key_t) rcpos->z
+  );
+  if (coa->ptr != NULL) {
+    return;
+  }
+  coa->type = CA_TYPE_APPROXIMATION;
+  for (detail = LOD_BASE + 1; detail < N_LODS; ++detail) {
+    coa->ptr = m3_get_value(
+      CHUNK_CACHE->layers[detail],
+      (map_key_t) rcpos->x,
+      (map_key_t) rcpos->y,
+      (map_key_t) rcpos->z
+    );
+    if (coa->ptr != NULL) {
+      return;
+    }
+  }
+  coa->type = CA_TYPE_NOT_LOADED;
+  return;
+}
+
+void load_surroundings(region_chunk_pos *center) {
+  lod detail = LOD_BASE; // level of detail being considered
+  region_chunk_pos rcpos = { .x=0, .y=0, .z=0 }; // current chunk
+  int d2 = 0; // squared Euclidean distance to current chunk
+  int edge = 0; // edge of the current LOD
+  // Max distance at which to load anything, trimmed a bit:
+  int max_distance = LOAD_DISTANCES[N_LODS - 1];
+  max_distance -= max_distance / LOAD_AREA_TRIM_FRACTION;
+  for (
+    rcpos.x = center->x - max_distance;
+    rcpos.x < center->x + max_distance;
+    ++rcpos.x
+  ) {
+    for (
+      rcpos.y = center->y - max_distance;
+      rcpos.y < center->y + max_distance;
+      ++rcpos.y
+    ) {
+      for (
+        rcpos.z = center->z - (max_distance / VERTICAL_LOAD_BIAS);
+        rcpos.z < center->z + (max_distance / VERTICAL_LOAD_BIAS);
+        ++rcpos.z
+      ) {
+        d2 = (
+          (rcpos.x - center.x) * (rcpos.x - center.x)
+        +
+          (rcpos.y - center.y) * (rcpos.y - center.y)
+        +
+          (
+            (rcpos.z - center.z) * (rcpos.z - center.z)
+          *
+            VERTICAL_LOAD_BIAS * VERTICAL_LOAD_BIAS
+          )
+        );
+        for (detail = LOD_BASE; detail < N_LODS; ++detail) {
+          edge = LOAD_DISTANCES[detail];
+          if (d2 <= edge * edge) {
+            mark_for_loading(rcpos, detail);
+            break;
+          }
+        }
+      }
+    }
+  }
 }
 
 void tick_data(void) {
   int n = 0;
   int skipped = 0;
-  chunk_neighborhood *cnb = NULL;
-  while (n < LOAD_CAP && q_get_length(CHUNKS_TO_RELOAD) > 0) {
-    cnb = (chunk_neighborhood *) q_pop_element(CHUNKS_TO_RELOAD);
-    load_chunk(cnb);
-    cnb->c->chunk_flags &= ~CF_NEEDS_RELOAD;
-    free(cnb);
+  chunk *c = NULL;
+  chunk_approximation *ca = NULL;
+  lod detail = LOD_BASE;
+  queue *q = LOAD_QUEUES->levels[LOD_BASE];
+  while (n < LOAD_CAP && q_get_length(q) > 0) {
+    c = (chunk *) q_pop_element(q);
+    load_chunk(c);
+    c->chunk_flags &= ~CF_QUEUED_TO_LOAD;
+    m3_put_value(
+      CHUNK_CACHE->levels[LOD_BASE],
+      (void *) c,
+      (map_key_t) c->rcpos.x,
+      (map_key_t) c->rcpos.y,
+      (map_key_t) c->rcpos.z
+    );
     n += 1;
   }
-  n = 0;
-  skipped = 0;
-  while (n < COMPILE_CAP && (q_get_length(CHUNKS_TO_RECOMPILE) - skipped) > 0) {
-    cnb = (chunk_neighborhood *) q_pop_element(CHUNKS_TO_RECOMPILE);
-    if (is_fully_loaded(cnb)) {
-      compute_exposure(cnb);
-      compile_chunk(cnb->c);
-      cnb->c->chunk_flags &= ~CF_NEEDS_RECOMIPLE;
-      free(cnb);
+  for (detail = LOD_BASE + 1; detail < N_LODS; ++detail) {
+    q = LOAD_QUEUES->levels[detail];
+    while (n < LOAD_CAP && q_get_length(q) > 0) {
+      ca = (chunk_approximation *) q_pop_element(q);
+      load_chunk_approx(ca);
+      ca->chunk_flags &= ~CF_QUEUED_TO_LOAD;
+      m3_put_value(
+        CHUNK_CACHE->levels[ca->detail],
+        (void *) ca,
+        (map_key_t) ca->rcpos.x,
+        (map_key_t) ca->rcpos.y,
+        (map_key_t) ca->rcpos.z
+      );
       n += 1;
-    } else {
-      q_push_element(CHUNKS_TO_RECOMPILE, (void *) cnb);
-      skipped += 1;
+    }
+  }
+  n = 0;
+  q = COMPILE_QUEUES->levels[LOD_BASE];
+  while (n < COMPILE_CAP && q_get_length(q) > 0) {
+    c = (chunk *) q_pop_element(q);
+    compute_exposure(c);
+    compile_chunk(c);
+    c->chunk_flags &= ~CF_QUEUED_TO_COMPILE;
+    n += 1;
+  }
+  for (detail = LOD_BASE + 1; detail < N_LODS; ++detail) {
+    q = COMPILE_QUEUES->levels[detail];
+    while (n < COMPILE_CAP && q_get_length(q) > 0) {
+      ca = (chunk_approximation *) q_pop_element(q);
+      compute_exposure_approx(ca);
+      compile_chunk_approx(ca);
+      ca->chunk_flags &= ~CF_QUEUED_TO_COMPILE;
+      n += 1;
     }
   }
 }
 
-void load_chunk(chunk_neighborhood *cnb) {
+void load_chunk(chunk *c) {
   // TODO: Data from disk!
   // TODO: Block entities!
   chunk_index idx;
   region_pos rpos;
+  region_chunk_pos rcpos;
+  chunk_or_approx coa;
   for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
-        cidx__rpos(cnb->c, &idx, &rpos);
-        c_put_block(cnb->c, idx, terrain_block(rpos));
+        cidx__rpos(c, &idx, &rpos);
+        c_put_block(c, idx, terrain_block(rpos));
       }
+    }
+  }
+  c->chunk_flags |= CF_LOADED;
+  if (c->chunk_flags & CF_COMPILE_ON_LOAD) {
+    c->chunk_flags &= ~CF_COMPILE_ON_LOAD;
+    coa.type = CA_TYPE_CHUNK;
+    coa.ptr = c;
+    mark_for_compilation(&coa);
+    mark_neighbors_for_compilation(&(c->rcpos));
+  }
+}
+
+void load_chunk_approx(chunk_approximation *ca) {
+  // TODO: Data from disk!
+  // TODO: Block entities!
+  ch_idx_t step = (1 << (ca->detail));
+  chunk_index idx;
+  region_pos rpos;
+  chunk_or_approx coa;
+  lod previous_detail;
+  // TODO: Better approximation?
+  for (idx.x = 0; idx.x < CHUNK_SIZE; idx.x += step) {
+    for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
+      for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
+        cidx__rpos(c, &idx, &rpos);
+        ca_put_block(ca, idx, terrain_block(rpos));
+      }
+    }
+  }
+  ca->chunk_flags |= CF_LOADED;
+  if (ca->chunk_flags & CF_COMPILE_ON_LOAD) {
+    ca->chunk_flags &= ~CF_COMPILE_ON_LOAD;
+    coa.type = CA_TYPE_APPROXIMATION;
+    coa.ptr = ca;
+    mark_for_compilation(&coa);
+    previous_detail = get_best_loaded_level(&(c->rcpos));
+    // Only recompile neighbors if the newly-loaded approximation is a step up
+    // (or at least sideways) from the previous approximation:
+    if (previous_detail >= ca->detail) {
+      mark_neighbors_for_compilation(&(ca->rcpos));
     }
   }
 }

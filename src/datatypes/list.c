@@ -282,3 +282,13 @@ void * l_find_element(list *l, int (*match)(void *)) {
   }
   return NULL;
 }
+
+void * l_scan_elements(list *l, void *ref, int (*match)(void *, void *)) {
+  size_t i;
+  for (i = 0; i < l->count; ++i) {
+    if ((*match)(l->elements[i], ref)) {
+      return l->elements[i];
+    }
+  }
+  return NULL;
+}

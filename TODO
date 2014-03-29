@@ -20,6 +20,7 @@ graphics
   use or disable texture mipmapping
   voxel mipmapping
   block lighting
+  ambient occlusion
   entity models & textures
 world
   plant growth

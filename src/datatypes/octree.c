@@ -21,7 +21,7 @@ int const OCTREE_MAX_DEPTH = 6; // ~~ 5MB (vs. ~~ 37MB at depth 7)
  * Helper Functions *
  ********************/
 
-octree * setup_octree_recursive(size_t size, vector *origin, int depth) {
+octree * create_octree_recursive(size_t size, vector *origin, int depth) {
   int i;
   vector subori;
   octree *result = (octree *) malloc(sizeof(octree));
@@ -41,7 +41,7 @@ octree * setup_octree_recursive(size_t size, vector *origin, int depth) {
       subori.y += ((size >> 1) * ((i & 2) >> 1));
       subori.z = origin->z - (size >> 2);
       subori.z += ((size >> 1) * ((i & 4) >> 2));
-      result->octants[i] = setup_octree_recursive(size >> 1, &subori, depth+1);
+      result->octants[i] = create_octree_recursive(size >> 1, &subori, depth+1);
     }
   } else {
     for (i = 0; i < 8; ++i) {
@@ -99,24 +99,27 @@ int oct_remove_recursive(octree *ot, void *object) {
  * Functions *
  *************/
 
-octree * setup_octree(size_t span) {
+octree * create_octree(size_t span) {
   vector origin;
   origin.x = 0;
   origin.y = 0;
   origin.z = 0;
-  return setup_octree_recursive(span, &origin, 0);
+  return create_octree_recursive(span, &origin, 0);
 }
 
 void cleanup_octree(octree *ot) {
   cleanup_octree_recursive(ot);
 }
 
-void oct_insert(octree *ot, void *object, bbox *box) {
+int oct_insert(octree *ot, void *object, bbox *box) {
   if (intersects(*box, ot->box)) {
     oct_insert_recursive(ot, object, box);
+    return 1;
+  } else {
+    return 0;
   }
 }
 
-int oct_remove(octree *ot, void *object) {
+size_t oct_remove(octree *ot, void *object) {
   return oct_remove_recursive(ot, object);
 }

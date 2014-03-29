@@ -19,7 +19,11 @@
  * Globals *
  ***********/
 
-list *ENTITY_PROTOTYPES;
+list *ENTITY_PROTOTYPES = NULL;
+
+// TODO: How big should this be?
+size_t const ACTIVE_AREA_SIZE = CHUNK_SIZE * LOAD_DISTANCES[LOD_BASE] * 2;
+active_entity_area *ACTIVE_AREA = NULL;
 
 /*********************
  * Private Variables *
@@ -32,13 +36,12 @@ int WARP_X, WARP_Y, WARP_Z;
  * Private Functions *
  *********************/
 
-// Function for searching a list of entities and finding the first of the given
-// type. Returns 1 if the entity pointer passed has type SEARCH_TYPE, and 0
-// otherwise.
-char const * SEARCH_TYPE = NULL;
-int scan_type(void *thing) {
+// Function for scanning a list of entities and finding the first of the given
+// type. Returns 1 if the type of the entity pointer passed matches the given
+// reference, and 0 otherwise.
+int scan_type(void *thing, void *ref) {
   entity *e = (entity *) thing;
-  return !strcmp(e->type, SEARCH_TYPE);
+  return !strcmp(e->type, (char const *) ref);
 }
 
 // warp_space iteration function:
@@ -47,21 +50,29 @@ static inline void warp_entity(void *thing) {
   e->pos.x -= WARP_X * CHUNK_SIZE;
   e->pos.y -= WARP_Y * CHUNK_SIZE;
   e->pos.z -= WARP_Z * CHUNK_SIZE;
+  oct_remove(e->area->tree, (void *) e);
   compute_bb(e);
+  if (!oct_insert(e->area->tree, (void *) e, &(e->box))) {
+    handle_out_of_bounds_entity(e->area, e);
+  }
 }
 
-/*************
- * Functions *
- *************/
-
-// Loads the data for the given entity type, populating the fields of the given
-// entity object. Make sure to call setup_entities() first.
-void add_entity_type(entity *e) {
-  l_append_element(ENTITY_PROTOTYPES, (void *)e);
+// Function for handling entities that fall out of an active area by destroying
+// them.
+void handle_out_of_bounds_entity(active_entity_area *aea, entity *e) {
+  // TODO: Something else here?
+  cleanup_entity(e);
 }
+
+/******************************
+ * Constructors & Destructors *
+ ******************************/
 
 void setup_entities(void) {
   ENTITY_PROTOTYPES = create_list();
+  region_pos origin = { .x = 0, .y = 0, .z = 0 };
+  ACTIVE_AREA = create_active_entity_area(origin, ACTIVE_AREA_SIZE);
+  // TODO: management of multiple active entity areas?
   int i;
   entity *e;
   for (i = 0; i < NUM_STATIC_ENTITY_TYPES; ++i) {
@@ -71,12 +82,67 @@ void setup_entities(void) {
 }
 
 void cleanup_entities(void) {
-  // TODO: Use destroy on one list and cleanup on another?
-  cleanup_list(ENTITY_PROTOTYPES);
+  cleanup_active_entity_area(ACTIVE_AREA);
+  destroy_list(ENTITY_PROTOTYPES);
 }
 
-void tick_entities(frame *f) {
-  l_foreach(f->entities, &tick_entity);
+// Allocates and returns a new raw entity:
+entity * create_entity(void) {
+  entity *e = (entity *) malloc(sizeof(entity));
+  if (e == NULL) {
+    perror("Failed to spawn entity.");
+    fail(errno);
+  }
+  e->area = NULL;
+  return e;
+}
+
+void cleanup_entity(entity *e) {
+  if (e->area != NULL) {
+    l_remove_element(e->area->list, (void *) e);
+    oct_remove(e->area->tree, (void *) e);
+  }
+  free(e);
+}
+
+active_entity_area * create_active_entity_area(
+  region_pos *origin,
+  size_t size
+) {
+  active_entity_area *aea = (active_entity_area *) malloc(
+    sizeof(active_entity_area)
+  );
+  if (aea == NULL) {
+    perror("Failed to create active entity area.");
+    fail(errno);
+  }
+  aea->origin.x = origin->x;
+  aea->origin.y = origin->y;
+  aea->origin.z = origin->z;
+  aea->size = size;
+  aea->list = create_list();
+  aea->tree = create_octree(size);
+  return aea;
+}
+
+void cleanup_active_entity_area(active_entity_area *aea) {
+  cleanup_octree(aea->tree);
+  destroy_list(aea->list);
+  free(aea);
+}
+
+/*************
+ * Functions *
+ *************/
+
+void add_entity_type(entity *e) {
+  e_copy *e = create_entity();
+  copy_entity_data(e, e_copy);
+  l_append_element(ENTITY_PROTOTYPES, (void *)e_copy);
+}
+
+void tick_active_entities() {
+  l_foreach(ACTIVE_ENTITIES, &tick_entity);
 }
 
 void tick_entity(void *thing) {
@@ -84,56 +150,50 @@ void tick_entity(void *thing) {
   tick_physics(e);
 }
 
-void warp_space(frame *f, entity *e) {
-  frame_chunk_index fcidx;
+block head_block(entity *e) {
+  chunk_or_approx coa;
+  region_pos rpos;
   region_chunk_pos rcpos;
-  chunk *c;
+  chunk_index idx;
+
+  get_head_rpos(e, &rpos)
+  rpos__rcpos(&rpos, &rcpos);
+  rpos__cidx(&rpos, &idx);
+
+  get_best_data(&rcpos, &coa);
+  if (coa->type == CA_TYPE_CHUNK) {
+    return c_get_block((chunk *) (coa->ptr), idx);
+  } else if (coa->type == CA_TYPE_APPROXIMATION) {
+    return ca_get_block((chunk_approximation *) (coa->ptr), idx);
+  } else {
+    return B_VOID;
+  }
+}
+
+void warp_space(active_entity_area *aea, entity *e) {
   // TODO: Handle loading and unloading entities
   // Warp offset coordiantes:
   WARP_X = fastfloor(e->pos.x / CHUNK_SIZE);
   WARP_Y = fastfloor(e->pos.y / CHUNK_SIZE);
   WARP_Z = fastfloor(e->pos.z / CHUNK_SIZE);
-  f->chunk_offset.x = (f->chunk_offset.x + WARP_X) % FRAME_SIZE;
-  f->chunk_offset.y = (f->chunk_offset.y + WARP_Y) % FRAME_SIZE;
-  f->chunk_offset.z = (f->chunk_offset.z + WARP_Z) % FRAME_SIZE;
-  f->region_offset.x += WARP_X;
-  f->region_offset.y += WARP_Y;
-  f->region_offset.z += WARP_Z;
   if (WARP_X || WARP_Y || WARP_Z) {
+    aea->origin.x += WARP_X * CHUNK_SIZE;
+    aea->origin.y += WARP_Y * CHUNK_SIZE;
+    aea->origin.z += WARP_Z * CHUNK_SIZE;
     // Warp entities if we changed offsets:
-    l_foreach(f->entities, &warp_entity);
-    // Also mark dirty chunks as necessary:
-    for (fcidx.x = 0; fcidx.x < FRAME_SIZE; ++fcidx.x) {
-      for (fcidx.y = 0; fcidx.y < FRAME_SIZE; ++fcidx.y) {
-        for (fcidx.z = 0; fcidx.z < FRAME_SIZE; ++fcidx.z) {
-          // Get the new intended region chunk position:
-          fcidx__rcpos(&fcidx, f, &rcpos);
-          c = chunk_at(f, fcidx);
-          if (
-            c->rpos.x != rcpos.x
-          ||
-            c->rpos.y != rcpos.y
-          ||
-            c->rpos.z != rcpos.z
-          ) {
-            c->rpos.x = rcpos.x;
-            c->rpos.y = rcpos.y;
-            c->rpos.z = rcpos.z;
-            mark_for_reload(f, fcidx);
-            mark_for_recompile(f, fcidx);
-          }
-        }
-      }
-    }
+    l_foreach(aea->list, &warp_entity);
   }
+  WARP_X = 0;
+  WARP_Y = 0;
+  WARP_Z = 0;
 }
 
-entity * spawn_entity(char const * const type, vector *pos, frame *f) {
-  entity *e = (entity *) malloc(sizeof(entity));
-  if (e == NULL) {
-    perror("Failed to spawn entity.");
-    fail(errno);
-  }
+entity * spawn_entity(
+  char const * const type,
+  vector *pos,
+  active_entity_area *aea
+) {
+  entity *e = create_entity();
   // Find the prototype that matches the given name:
   entity *prototype = find_by_type(type, ENTITY_PROTOTYPES);
   if (prototype == NULL) {
@@ -152,15 +212,12 @@ entity * spawn_entity(char const * const type, vector *pos, frame *f) {
   e->pitch = 0;
   // Zero out the velocity and impulse fields:
   clear_kinetics(e);
-  // Compute the bounding box:
-  compute_bb(e);
-  // Put the object into the given frame:
-  add_entity(f, e);
+  // Add the entity as an active entity:
+  add_active_entity(aea, e);
   // Return the entity:
   return e;
 }
 
 entity * find_by_type(char const * const type, list *l) {
-  SEARCH_TYPE = type;
-  return (entity *) l_find_element(l, &scan_type);
+  return (entity *) l_scan_elements(l, (void *) type, &scan_type);
 }

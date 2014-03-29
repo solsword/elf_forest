@@ -259,6 +259,16 @@ void * q_find_element(queue *q, int (*match)(void *)) {
   return NULL;
 }
 
+void * q_scan_elements(queue *q, void *ref, int (*match)(void *, void *)) {
+  size_t i;
+  for (i = 0; i < q->count; ++i) {
+    if ((*match)(q->elements[QIDX(q, i)], ref)) {
+      return q->elements[QIDX(q, i)];
+    }
+  }
+  return NULL;
+}
+
 /******************************
  * Undefines for Local Macros *
  ******************************/

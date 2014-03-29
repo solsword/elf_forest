@@ -18,9 +18,69 @@
 
 frame MAIN_FRAME;
 
-/*************
- * Functions *
- *************/
+/**********
+ * Macros *
+ **********/
+
+// Macros for defining a get/put_a_block/flag functions at different scales:
+#define CA_GET_BLOCK_DEF(BITS) \
+  CA_GET_BLOCK_SIG(CA_GET_BLOCK_FN(BITS)) { \
+    return ca->data->d ## BITS.blocks[ \
+      ((idx->x & CH_MASK) >> BITS) + \
+      (((idx->y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
+      (((idx->z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
+    ]; \
+  }
+
+#define CA_PUT_BLOCK_DEF(BITS) \
+  CA_PUT_BLOCK_SIG(CA_PUT_BLOCK_FN(BITS)) { \
+    ca->data->d ## BITS.blocks[ \
+      ((idx->x & CH_MASK) >> BITS) + \
+      (((idx->y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
+      (((idx->z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
+    ] = b; \
+  }
+
+#define CA_GET_FLAGS_DEF(BITS) \
+  CA_GET_FLAGS_SIG(CA_GET_FLAGS_FN(BITS)) { \
+    return ca->data->d ## BITS.block_flags[ \
+      ((idx->x & CH_MASK) >> BITS) + \
+      (((idx->y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
+      (((idx->z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
+    ]; \
+  }
+
+#define CA_PUT_FLAGS_DEF(BITS) \
+  CA_PUT_FLAGS_SIG(CA_PUT_FLAGS_FN(BITS)) { \
+    ca->data->d ## BITS.block_flags[ \
+      ((idx->x & CH_MASK) >> BITS) + \
+      (((idx->y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
+      (((idx->z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
+    ] = flags; \
+  }
+
+#define CA_SET_FLAGS_DEF(BITS) \
+  CA_SET_FLAGS_SIG(CA_SET_FLAGS_FN(BITS)) { \
+    ca->data->d ## BITS.block_flags[ \
+      ((idx->x & CH_MASK) >> BITS) + \
+      (((idx->y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
+      (((idx->z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
+    ] |= flags; \
+  }
+
+#define CA_CLEAR_FLAGS_DEF(BITS) \
+  CA_CLEAR_FLAGS_SIG(CA_CLEAR_FLAGS_FN(BITS)) { \
+    ca->data->d ## BITS.block_flags[ \
+      ((idx->x & CH_MASK) >> BITS) + \
+      (((idx->y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
+      (((idx->z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
+    ] &= ~flags; \
+  }
+
+
+/******************************
+ * Constructors & Destructors *
+ ******************************/
 
 void setup_frame(frame *f, region_chunk_pos *roff) {
   frame_chunk_index idx;
@@ -56,11 +116,12 @@ void cleanup_frame(frame *f) {
   cleanup_octree(f->oct);
 }
 
-void setup_chunk(chunk *c, region_chunk_pos *rpos) {
+void create_chunk(region_chunk_pos *rcpos) {
+  chunk *c = (chunk *) malloc(sizeof(chunk));
+  c->rcpos.x = rcpos->x;
+  c->rcpos.y = rcpos->y;
+  c->rcpos.z = rcpos->z;
   c->block_entities = create_list();
-  c->rpos.x = rpos->x;
-  c->rpos.y = rpos->y;
-  c->rpos.z = rpos->z;
   c->chunk_flags = 0;
 }
 
@@ -70,7 +131,73 @@ void cleanup_chunk(chunk *c) {
     cleanup_vertex_buffer(&(c->layers[ly]));
   }
   destroy_list(c->block_entities);
+  free(c);
 }
+
+void create_chunk_approximation(region_chunk_pos *rcpos, lod detail) {
+  chunk_approximation *ca = (chunk_approximation *) malloc(
+    sizeof(chunk_approximation)
+  );
+  ca->detail = detail;
+  if (detail == LOD_HALF) {
+    ca->data = (approx_data *) malloc(sizeof(APPROX_DATA_STRUCT(1)));
+  } else if (detail == LOD_QUARTER) {
+    ca->data = (approx_data *) malloc(sizeof(APPROX_DATA_STRUCT(2)));
+  } else if (detail == LOD_EIGHTH) {
+    ca->data = (approx_data *) malloc(sizeof(APPROX_DATA_STRUCT(3)));
+  } else if (detail == LOD_SIXTEENTH) {
+    ca->data = (approx_data *) malloc(sizeof(APPROX_DATA_STRUCT(4)));
+  }
+  ca->rcpos.x = rcpos->x;
+  ca->rcpos.y = rcpos->y;
+  ca->rcpos.z = rcpos->z;
+  ca->chunk_flags = 0;
+}
+
+void cleanup_chunk_approximation(chunk_approximation *ca) {
+  layer ly;
+  free(ca->data);
+  for (ly = 0; ly < N_LAYERS; ++ly) {
+    cleanup_vertex_buffer(&(ca->layers[ly]));
+  }
+  free(ca);
+}
+
+/*************
+ * Functions *
+ *************/
+
+// Macro-based definitions of the various approximate block manipulation
+// routines:
+CA_GET_BLOCK_DEF(1)
+CA_GET_BLOCK_DEF(2)
+CA_GET_BLOCK_DEF(3)
+CA_GET_BLOCK_DEF(4)
+
+CA_PUT_BLOCK_DEF(1)
+CA_PUT_BLOCK_DEF(2)
+CA_PUT_BLOCK_DEF(3)
+CA_PUT_BLOCK_DEF(4)
+
+CA_GET_FLAGS_DEF(1)
+CA_GET_FLAGS_DEF(2)
+CA_GET_FLAGS_DEF(3)
+CA_GET_FLAGS_DEF(4)
+
+CA_PUT_FLAGS_DEF(1)
+CA_PUT_FLAGS_DEF(2)
+CA_PUT_FLAGS_DEF(3)
+CA_PUT_FLAGS_DEF(4)
+
+CA_SET_FLAGS_DEF(1)
+CA_SET_FLAGS_DEF(2)
+CA_SET_FLAGS_DEF(3)
+CA_SET_FLAGS_DEF(4)
+
+CA_CLEAR_FLAGS_DEF(1)
+CA_CLEAR_FLAGS_DEF(2)
+CA_CLEAR_FLAGS_DEF(3)
+CA_CLEAR_FLAGS_DEF(4)
 
 void tick_blocks(frame *f) {
   // TODO: HERE

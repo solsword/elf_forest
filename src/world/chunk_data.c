@@ -17,7 +17,7 @@
 
 static inline int occludes_face(block neighbor, block occluded) {
   return (
-    block_is(neighbor, OUT_OF_RANGE)
+    block_is(neighbor, B_VOID)
   ||
     is_opaque(neighbor)
   ||
@@ -35,17 +35,28 @@ static inline int occludes_face(block neighbor, block occluded) {
 #define CHECK_ANY_FACE \
   static inline int FN_NAME( \
     chunk_index idx, \
-    chunk *neighbor, \
+    chunk_or_approx *neighbor, \
     block here, block there \
   ) { \
-    if (block_is(there, OUT_OF_RANGE) && neighbor) { \
+    if ( \
+      block_is(there, B_VOID) \
+    && \
+      (neighbor->type != CA_TYPE_NOT_LOADED) \
+    ) { \
+#ifdef DEBUG \
       if (OOR_AXIS != OOR_RESET) { \
-        fprintf(stderr, "Error: OUT_OF_RANGE at non-edge!\n");\
+        fprintf(stderr, "Error: void block at non-edge!\n");\
         fprintf(stderr, "  OOR_AXIS = %d, edge = %d\n", OOR_AXIS, OOR_RESET);\
         exit(-1); \
       } \
+#endif \
       OOR_AXIS = OOR_REPLACE; \
-      there = c_get_block(neighbor, idx); \
+      if (neighbor->type == CA_TYPE_CHUNK) { \
+        there = c_get_block((chunk *) (neighbor->ptr), idx); \
+      } else { \
+        chunk_approximation *ca = (chunk_approximation *) (neighbor->ptr); \
+        there = ca_get_block(ca, idx); \
+      } \
     } \
     return occludes_face(there, here); \
   } \
@@ -185,49 +196,111 @@ int is_fully_loaded(chunk_neighborhood *cnb) {
   );
 }
 
-void compute_exposure(chunk_neighborhood *cnb) {
+void compute_exposure(chunk_or_approx *coa) {
   chunk_index idx;
   block b = 0;
-  block_flag flags = 0;
+  block_flag flags_to_set = 0;
+  block_flag flags_to_clear = 0;
   block ba = 0, bb = 0, bn = 0, bs = 0, be = 0, bw = 0;
-  if (!is_fully_loaded(cnb)) {
-    fprintf(stderr, "Error: compute_exposure on non-fully-loaded chunk!\n");
-    fprintf(
-      stderr,
-      "  rpos = (%d, %d, %d)\n",
-      cnb->c->rpos.x,
-      cnb->c->rpos.y,
-      cnb->c->rpos.z
-    );
-    exit(-1);
+  region_chunk_pos base;
+  region_chunk_pos rcpos;
+  chunk *c;
+  chunk_approximation *ca;
+  chunk_or_approx above, below, north, south, east, west;
+  ch_idx_t step = 1;
+
+  if (coa->type == CA_TYPE_CHUNK) {
+    c = (chunk*) (coa->ptr);
+    ca = NULL;
+    rcpos.x = c->rcpos.x;
+    rcpos.y = c->rcpos.y;
+    rcpos.z = c->rcpos.z;
+  } else if (coa->type == CA_TYPE_APPROXIMATION) {
+    c = NULL:
+    ca = (chunk_approximation*) (coa->ptr);
+    rcpos.x = ca->rcpos.x;
+    rcpos.y = ca->rcpos.y;
+    rcpos.z = ca->rcpos.z;
+  } else {
+    fprintf(stderr, "Attempted to compute exposure of unloaded chunk.\n");
+    exit(1);
   }
-  for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
-    for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
-      for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
+
+  // Get neighbor data, returning 0 if it's not available:
+  rcpos.x += 1;
+  get_best_data(&rcpos, &east);
+  rcpos.x -= 2;
+  get_best_data(&rcpos, &west);
+  rcpos.x += 1;
+
+  rcpos.y += 1;
+  get_best_data(&rcpos, &north);
+  rcpos.y -= 2;
+  get_best_data(&rcpos, &south);
+  rcpos.y += 1;
+
+  rcpos.z += 1;
+  get_best_data(&rcpos, &above);
+  rcpos.z -= 2;
+  get_best_data(&rcpos, &below);
+
+  if (coa->type == CA_TYPE_CHUNK) {
+    step = 1;
+  } else {
+    step = 1 << (ca->detail);
+  }
+  for (idx.x = 0; idx.x < CHUNK_SIZE; idx.x += step) {
+    for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
+      for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
         // get main block and neighbors:
-        b = c_get_block(cnb->c, idx);
-        c_get_neighbors(cnb->c, idx, &ba, &bb, &bn, &bs, &be, &bw);
-        flags = 0;
-        if (!check_top_face(idx, cnb->above, b, ba)) {
-          flags |= BF_EXPOSED_ABOVE;
+        if (coa->type == CA_TYPE_CHUNK) {
+          b = c_get_block(c, idx);
+          c_get_neighbors(c, idx, &ba, &bb, &bn, &bs, &be, &bw);
+        } else {
+          b = ca_get_block(ca, idx);
+          ca_get_neighbors(ca, idx, &ba, &bb, &bn, &bs, &be, &bw);
         }
-        if (!check_bot_face(idx, cnb->below, b, bb)) {
-          flags |= BF_EXPOSED_BELOW;
+        // Check exposure:
+        flags_to_set = 0;
+        flags_to_clear = 0;
+        if (!check_top_face(idx, &above, b, ba)) {
+          flags_to_set |= BF_EXPOSED_ABOVE;
+        } else {
+          flags_to_clear |= BF_EXPOSED_ABOVE;
         }
-        if (!check_north_face(idx, cnb->north, b, bn)) {
-          flags |= BF_EXPOSED_NORTH;
+        if (!check_bot_face(idx, &below, b, bb)) {
+          flags_to_set |= BF_EXPOSED_BELOW;
+        } else {
+          flags_to_clear |= BF_EXPOSED_BELOW;
         }
-        if (!check_south_face(idx, cnb->south, b, bs)) {
-          flags |= BF_EXPOSED_SOUTH;
+        if (!check_north_face(idx, &north, b, bn)) {
+          flags_to_set |= BF_EXPOSED_NORTH;
+        } else {
+          flags_to_clear |= BF_EXPOSED_NORTH;
         }
-        if (!check_east_face(idx, cnb->east, b, be)) {
-          flags |= BF_EXPOSED_EAST;
+        if (!check_south_face(idx, &south, b, bs)) {
+          flags_to_set |= BF_EXPOSED_SOUTH;
+        } else {
+          flags_to_clear |= BF_EXPOSED_SOUTH;
         }
-        if (!check_west_face(idx, cnb->west, b, bw)) {
-          flags |= BF_EXPOSED_WEST;
+        if (!check_east_face(idx, &east, b, be)) {
+          flags_to_set |= BF_EXPOSED_EAST;
+        } else {
+          flags_to_clear |= BF_EXPOSED_EAST;
         }
-        // Set the computed exposure flags:
-        c_put_flags(cnb->c, idx, flags);
+        if (!check_west_face(idx, &west, b, bw)) {
+          flags_to_set |= BF_EXPOSED_WEST;
+        } else {
+          flags_to_clear |= BF_EXPOSED_WEST;
+        }
+        // Set/clear the computed exposure flags:
+        if (coa->type == CA_TYPE_CHUNK) {
+          c_set_flags(c, idx, flags_to_set);
+          c_clear_flags(c, idx, flags_to_clear);
+        } else {
+          ca_set_flags(ca, idx, flags_to_set);
+          ca_clear_flags(ca, idx, flags_to_clear);
+        }
       }
     }
   }

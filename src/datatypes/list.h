@@ -105,4 +105,9 @@ void l_foreach(list *l, void (*f)(void *));
 // element that matched. Returns NULL if no match was found.
 void * l_find_element(list *l, int (*match)(void *));
 
+// Scans the list until the given function returns non-zero given the list
+// element as its first argument and the reference as its second argument.
+// Returns the element that matched. Returns NULL if no match was found.
+void * l_scan_elements(list *l, void *ref, int (*match)(void *, void *));
+
 #endif //ifndef LIST_H

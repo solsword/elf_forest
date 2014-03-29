@@ -60,19 +60,19 @@ static inline void resolve_entity_collisions(entity *e) {
 
 static inline void update_position_x (
   entity *e,
-  frame_pos *min,
-  frame_pos *max,
+  region_pos *min,
+  region_pos *max,
   vector *increment
 ) {
   int next_block;
-  frame_pos pos;
+  region_pos pos;
   if (increment->x > 0) {
-    next_block = fastfloor(e->box.max.x + increment->x);
+    next_block = e->area->origin.x + fastfloor(e->box.max.x + increment->x);
     if (next_block != max->x) {
       pos.x = next_block;
       for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
-          if (is_solid(block_at(e->fr, pos))) {
+          if (is_solid(block_at(pos))) {
             e->vel.x = 0;
             increment->x = 0;
             e->pos.x = next_block - (BOUNCE_DISTANCE + e->size.x / 2.0);
@@ -83,12 +83,12 @@ static inline void update_position_x (
       max->x = next_block;
     }
   } else {
-    next_block = fastfloor(e->box.min.x + increment->x);
+    next_block = e->area->origin.x + fastfloor(e->box.min.x + increment->x);
     if (next_block != min->x) {
       pos.x = next_block;
       for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
-          if (is_solid(block_at(e->fr, pos))) {
+          if (is_solid(block_at(pos))) {
             e->vel.x = 0;
             increment->x = 0;
             e->pos.x = next_block + 1 + BOUNCE_DISTANCE + e->size.x / 2.0;
@@ -105,19 +105,19 @@ done_x:
 
 static inline void update_position_y(
   entity *e,
-  frame_pos *min,
-  frame_pos *max,
+  region_pos *min,
+  region_pos *max,
   vector *increment
 ) {
   int next_block;
-  frame_pos pos;
+  region_pos pos;
   if (increment->y > 0) {
-    next_block = fastfloor(e->box.max.y + increment->y);
+    next_block = e->area->origin.y + fastfloor(e->box.max.y + increment->y);
     if (next_block != max->y) {
       pos.y = next_block;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
-          if (is_solid(block_at(e->fr, pos))) {
+          if (is_solid(block_at(pos))) {
             e->vel.y = 0;
             increment->y = 0;
             e->pos.y = next_block - (BOUNCE_DISTANCE + e->size.y / 2.0);
@@ -128,12 +128,12 @@ static inline void update_position_y(
       max->y = next_block;
     }
   } else {
-    next_block = fastfloor(e->box.min.y + increment->y);
+    next_block = e->area->origin.y + fastfloor(e->box.min.y + increment->y);
     if (next_block != min->y) {
       pos.y = next_block;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
-          if (is_solid(block_at(e->fr, pos))) {
+          if (is_solid(block_at(pos))) {
             e->vel.y = 0;
             increment->y = 0;
             e->pos.y = next_block + 1 + BOUNCE_DISTANCE + e->size.y / 2.0;
@@ -150,19 +150,19 @@ done_y:
 
 static inline void update_position_z(
   entity *e,
-  frame_pos *min,
-  frame_pos *max,
+  region_pos *min,
+  region_pos *max,
   vector *increment
 ) {
   int next_block;
-  frame_pos pos;
+  region_pos pos;
   if (increment->z > 0) {
-    next_block = fastfloor(e->box.max.z + increment->z);
+    next_block = e->area->origin.z + fastfloor(e->box.max.z + increment->z);
     if (next_block != max->z) {
       pos.z = next_block;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
-          if (is_solid(block_at(e->fr, pos))) {
+          if (is_solid(block_at(pos))) {
             e->vel.z = 0;
             increment->z = 0;
             e->pos.z = next_block - (BOUNCE_DISTANCE + e->size.z / 2.0);
@@ -173,12 +173,12 @@ static inline void update_position_z(
       max->z = next_block;
     }
   } else {
-    next_block = fastfloor(e->box.min.z + increment->z);
+    next_block = e->area->origin.z + fastfloor(e->box.min.z + increment->z);
     if (next_block != min->z) {
       pos.z = next_block;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
-          if (is_solid(block_at(e->fr, pos))) {
+          if (is_solid(block_at(pos))) {
             e->vel.z = 0;
             increment->z = 0;
             e->pos.z = min->z + BOUNCE_DISTANCE + e->size.z / 2.0;
@@ -215,8 +215,8 @@ static inline void integrate_control_inputs(entity *e) {
   vzero(&v);
   backup = (
     (e->control.y < 0) * BACKUP_COEFFICIENT +
-    (1 - e->control.y >= 0)
-  );
+    ((1 - e->control.y) >= 0)
+  ); // TODO: is this a bug? backup = 0 if e->control.y > 1
   vadd_scaled(&v, &forward, e->control.y * backup);
   vadd_scaled(&v, &right, e->control.x * STRAFE_COEFFICIENT);
   vadd_scaled(&v, &V_UP, e->control.z);
@@ -226,15 +226,16 @@ static inline void integrate_control_inputs(entity *e) {
 
 // Updates an entity's position while respecting solid blocks.
 static inline void update_position_collide_blocks(entity *e) {
-  frame_pos min, max; // min/max block positions
+  region_pos min, max; // min/max block positions
   vector increment; // the increment vector
   // fill in min/max coords
-  min.x = b_i_min_x(e->box); max.x = b_i_max_x(e->box);
-  min.y = b_i_min_y(e->box); max.y = b_i_max_y(e->box);
-  min.z = b_i_min_z(e->box); max.z = b_i_max_z(e->box);
+  e_min__rpos(e, &min);
+  e_max__rpos(e, &max);
   // compute increment
   vcopy(&increment, &(e->vel));
   vscale(&increment, SUB_DT);
+  // Make sure we're getting up-to-date block data from block_at:
+  refresh_block_at_cache();
   // Update x/y axes according to the magnitude of their increments:
   if (increment.y > increment.x) {
     update_position_y(e, &min, &max, &increment);
@@ -245,25 +246,29 @@ static inline void update_position_collide_blocks(entity *e) {
   }
   // Update z last:
   update_position_z(e, &min, &max, &increment);
+  // Try to avoid poisoning anyone else who might use block_at:
+  refresh_block_at_cache();
 }
 
 static inline void check_move_flags(entity *e) {
-  frame_pos pos;
+  region_pos pos;
+  // Avoid getting stale block data:
+  refresh_block_at_cache();
   // MF_ON_GROUND
   clear_on_ground(e);
   if (e->vel.z <= 0) {
-    pos.z = fastfloor(e->box.min.z - BOUNCE_DISTANCE*2.0);
+    pos.z = e->area->origin.z + fastfloor(e->box.min.z - BOUNCE_DISTANCE*2.0);
     for (
-      pos.x = b_i_min_x(e->box);
-      pos.x <= b_i_max_x(e->box) && !on_ground(e);
+      pos.x = e_rp_min_x(e);
+      pos.x <= e_rp_max_x(e) && !on_ground(e);
       ++pos.x
     ) {
       for (
-        pos.y = b_i_min_y(e->box);
-        pos.y <= b_i_max_y(e->box) && !on_ground(e);
+        pos.y = e_rp_min_y(e);
+        pos.y <= e_rp_max_y(e) && !on_ground(e);
         ++pos.y
       ) {
-        if (is_solid(block_at(e->fr, pos))) {
+        if (is_solid(block_at(pos))) {
           set_on_ground(e);
         }
       }
@@ -272,27 +277,29 @@ static inline void check_move_flags(entity *e) {
   // MF_IN_LIQUID
   clear_in_liquid(e);
   for (
-    pos.x = b_i_min_x(e->box);
-    pos.x <= b_i_max_x(e->box) && !in_liquid(e);
+    pos.x = e_rp_min_x(e);
+    pos.x <= e_rp_max_x(e) && !in_liquid(e);
     ++pos.x
   ) {
     for (
-      pos.y = b_i_min_y(e->box);
-      pos.y <= b_i_max_y(e->box) && !in_liquid(e);
+      pos.y = e_rp_min_y(e);
+      pos.y <= e_rp_max_y(e) && !in_liquid(e);
       ++pos.y
     ) {
       for (
-        pos.z = b_i_min_z(e->box);
-        pos.z <= b_i_max_z(e->box) && !in_liquid(e);
+        pos.z = e_rp_min_z(e);
+        pos.z <= e_rp_max_z(e) && !in_liquid(e);
         ++pos.z
       ) {
-        if (is_liquid(block_at(e->fr, pos))) {
+        if (is_liquid(block_at(pos))) {
           set_in_liquid(e);
         }
       }
     }
   }
   // MF_CROUCHING handled in ctl.c
+  // Avoid letting others get stale block data:
+  refresh_block_at_cache();
 }
 
 /*************
@@ -300,7 +307,7 @@ static inline void check_move_flags(entity *e) {
  *************/
 
 void adjust_physics_resolution(void) {
-  SUBSTEPS = (int) (DT / TARGET_RESOLUTION) & 1;
+  SUBSTEPS = (int) (DT / TARGET_RESOLUTION) & 1; // TODO: is this a bug?!?
   SUB_DT = DT / SUBSTEPS;
 }
 
