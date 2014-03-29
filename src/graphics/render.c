@@ -17,6 +17,7 @@
 
 #include "datatypes/vector.h"
 #include "control/ctl.h"
+#include "world/world.h"
 #include "world/entities.h"
 #include "util.h"
 
@@ -26,6 +27,11 @@
 
 float const AIR_FOG_DENSITY = 0.005; // TODO: adjust these.
 float const WATER_FOG_DENSITY = 0.05;
+
+// TODO: Good values here (match data.c!)
+//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 20, 60, 175, 550 };
+//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 18, 34, 66, 130 };
+r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 5, 9, 14, 18, 22 };
 
 /***********
  * Globals *
@@ -38,12 +44,57 @@ float THIRD_PERSON_DISTANCE = 3.2;
 
 float FOG_DENSITY = 0.01;
 
+/*********************
+ * Private Functions *
+ *********************/
+
+// Takes a squared distance value and returns the highest level of detail
+// desired at that distance.
+static inline lod desired_detail(r_cpos_t dist_sq) {
+  lod result = LOD_BASE;
+  r_cpos_t mrd_sq = 0;
+  for (result = LOD_BASE; result < N_LODS; ++result) {
+    mrd_sq = MAX_RENDER_DISTANCES[result];
+    mrd_sq *= mrd_sq;
+    if (dist_sq <= mrd_sq) {
+      break;
+    }
+  }
+  return result;
+}
+
+/* TODO: Get rid of these
+void iter_render_opaque_layer(void * coa_ptr, void *area_ptr) {
+  chunk_or_approx *coa = (chunk_or_approx *) coa_ptr;
+  active_entity_area *area = (active_entity_area *) area_ptr;
+  if (within_render_range(coa, area)) {
+    render_chunk_layer(coa, &(area->origin), L_OPAQUE);
+  }
+}
+
+void iter_render_transparent_layer(void * coa_ptr, void *area_ptr) {
+  chunk_or_approx *coa = (chunk_or_approx *) coa_ptr;
+  active_entity_area *area = (active_entity_area *) area_ptr;
+  if (within_render_range(coa, area)) {
+    render_chunk_layer(coa, &(area->origin), L_TRANSPARENT);
+  }
+}
+
+void iter_render_translucent_layer(void * coa_ptr, void *area_ptr) {
+  chunk_or_approx *coa = (chunk_or_approx *) coa_ptr;
+  active_entity_area *area = (active_entity_area *) area_ptr;
+  if (within_render_range(coa, area)) {
+    render_chunk_layer(coa, &(area->origin), L_TRANSLUCENT);
+  }
+}
+*/
+
 /*************
  * Functions *
  *************/
 
-void render_frame(
-  frame *f,
+void render_area(
+  active_entity_area *area,
   vector *head_pos,
   float yaw,
   float pitch
@@ -151,55 +202,147 @@ void render_frame(
   glEnd();
   // */
 
-  // Render the opaque parts of each chunk:
-  frame_chunk_index idx;
-  for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
-    for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
-      for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
-        render_chunk_layer(f, idx, L_OPAQUE);
+  // Render all chunks within the max render distance, starting with their
+  // opaque layer, then rendering entities, then rendering their transparent
+  // layer and finally rendering their translucent layer with appropriate
+  // settings.
+
+  // First, some loop variables:
+  chunk_or_approx coa;
+  region_chunk_pos origin;
+  region_chunk_pos rcpos;
+  layer ly;
+
+  rpos__rcpos(&(area->origin), &origin);
+
+  // Iterate over chunk positions in a sphere:
+  r_cpos_t farthest_render_distance = MAX_RENDER_DISTANCES[N_LODS - 1];
+  r_cpos_t skipy = 0, skipz = 0, xdist_sq = 0, xydist_sq = 0, dist_sq = 0;
+  for (ly = L_OPAQUE; ly <= L_TRANSLUCENT; ++ly) {
+    if (ly == L_TRANSPARENT) {
+      // Before rendering the transparent layer render all entities:
+      l_foreach(area->list, &iter_render_entity);
+    } else if (ly == L_TRANSLUCENT) {
+      // Disable face culling and set the depth mask to read-only for the
+      // translucent layer:
+      glDisable( GL_CULL_FACE );
+      glDepthMask( GL_FALSE );
+    }
+    // The main loop: loop over a spherical region out to the farthest render
+    // distance, getting the best data for each chunk (subject to render
+    // distance constraints) and rendering it:
+    for (
+      rcpos.x = origin.x - farthest_render_distance;
+      rcpos.x < origin.x + farthest_render_distance + 1;
+      ++rcpos.x
+    ) {
+      xdist_sq = rcpos.x - origin.x;
+      xdist_sq *= xdist_sq;
+      skipy = farthest_render_distance - fastceil(
+        sqrt(farthest_render_distance*farthest_render_distance - xdist_sq)
+      );
+      for (
+        rcpos.y = origin.y - farthest_render_distance + skipy;
+        rcpos.y < origin.y + farthest_render_distance + 1 - skipy;
+        ++rcpos.y
+      ) { 
+        xydist_sq = (rcpos.y - origin.y);
+        xydist_sq *= xydist_sq;
+        xydist_sq += xdist_sq;
+        skipz = farthest_render_distance - fastceil(
+          sqrt(farthest_render_distance*farthest_render_distance - xydist_sq)
+        );
+        for (
+          rcpos.z = origin.z - farthest_render_distance + skipz;
+          rcpos.z < origin.z + farthest_render_distance + 1 - skipz;
+          ++rcpos.z
+        ) { 
+          dist_sq = (rcpos.z - origin.z);
+          dist_sq *= dist_sq;
+          dist_sq += xydist_sq;
+          get_best_data_limited(&rcpos, desired_detail(dist_sq), &coa);
+          render_chunk_layer(coa, &(area->origin), ly);
+        }
       }
+    }
+    if (ly == L_TRANSLUCENT) {
+      // Re-enable depth masking and face culling if necessary:
+      glDepthMask( GL_TRUE );
+      glEnable( GL_CULL_FACE );
     }
   }
 
+  /* TODO: Get rid of me
+  coa.type = CA_TYPE_CHUNK;
+  m3_witheach(
+    CHUNK_CACHE->levels[detail],
+    (void *) area,
+    &iter_render_opaque_layer
+  );
+  for (detail = LOD_BASE + 1; detail < N_LODS; ++detail) {
+    m3_witheach(
+      CHUNK_CACHE->levels[detail],
+      (void *) area,
+      &iter_render_opaque_layer
+    );
+  }
+
   // Now render all of our entities:
-  l_foreach(f->entities, &render_entity);
+  l_foreach(area->list, &iter_render_entity);
 
   // Now render the (partially) transparent parts
-  for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
-    for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
-      for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
-        render_chunk_layer(f, idx, L_TRANSPARENT);
-      }
-    }
+  for (detail = LOD_BASE; detail < N_LODS; ++detail) {
+    m3_witheach(
+      cc->levels[detail],
+      (void *) area,
+      &iter_render_transparent_layer
+    );
   }
 
   // Finally the translucent parts (without face-culling and using a read-only
   // depth buffer):
   glDisable( GL_CULL_FACE );
   glDepthMask( GL_FALSE );
-  for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
-    for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
-      for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
-        render_chunk_layer(f, idx, L_TRANSLUCENT);
-      }
-    }
+  for (detail = LOD_BASE; detail < N_LODS; ++detail) {
+    m3_witheach(
+      cc->levels[detail],
+      (void *) area,
+      &iter_render_translucent_layer
+    );
   }
   glDepthMask( GL_TRUE );
   glEnable( GL_CULL_FACE );
+  */
 }
 
 // This function renders one layer of the given chunk.
 void render_chunk_layer(
-  frame *f,
-  frame_chunk_index idx,
+  chunk_or_approx *coa,
+  region_pos *origin,
   layer ly
 ) {
-  chunk *c = chunk_at(f, idx);
+  chunk *c = NULL;
+  chunk_approximation *ca = NULL;
+  chunk_flags flags = 0;
+  vertex_buffer *vb;
+  region_pos *rpos;
+  if (coa->type == CA_TYPE_NOT_LOADED) { return; }
+  // Assign the relevant variables depending on the chunk/approximation type:
+  if (coa->type == CA_TYPE_CHUNK) {
+    c = (chunk *) (coa->ptr);
+    flags = c->chunk_flags;
+    vb = c->layers[ly];
+    rpos = &(c->rpos);
+  } else if (coa->type == CA_TYPE_APPROXIMATION) {
+    ca = (chunk_approximation *) (coa->ptr);
+    flags = ca->chunk_flags;
+    vb = ca->layers[ly];
+    rpos = &(ca->rpos);
+  }
   // Skip this chunk if it's out-of-date:
-  if (c->chunk_flags & CF_NEEDS_RELOAD) {
+  if (!(flags & CF_LOADED) || (!flags & CF_COMPILED)) {
     return;
   }
-  vertex_buffer *vb = &(c->layers[ly]);
 
   // Skip this layer quickly if it's empty:
   if (vb->vertices == 0 || vb->indices == 0) {
@@ -211,7 +354,11 @@ void render_chunk_layer(
   glPushMatrix();
 
   // Translate to the chunk position:
-  glTranslatef(idx.x*CHUNK_SIZE, idx.y*CHUNK_SIZE, idx.z*CHUNK_SIZE);
+  glTranslatef(
+    rpos->x - origin->x,
+    rpos->y - origin->y,
+    rpos->z - origin->z
+  );
 
   // Set our drawing color:
   glColor4ub(255, 255, 255, 255); // 100% white
@@ -256,7 +403,7 @@ void render_chunk_layer(
   glPopMatrix();
 }
 
-void render_entity(void *thing) {
+void iter_render_entity(void *thing) {
   entity *e = (entity*) thing;
   glMatrixMode( GL_MODELVIEW );
   glPushMatrix();

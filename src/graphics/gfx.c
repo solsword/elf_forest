@@ -89,7 +89,7 @@ void minmaximize(GLFWwindow *window, int minimized) {
 void render(GLFWwindow *window) {
   vector head_pos;
   get_head_pos(PLAYER, &head_pos);
-  render_frame(&MAIN_FRAME, &head_pos, PLAYER->yaw, PLAYER->pitch);
+  render_area(&ACTIVE_AREA, &head_pos, PLAYER->yaw, PLAYER->pitch);
   render_ui();
   glfwSwapBuffers(window);
   glClear( GL_COLOR_BUFFER_BIT );
@@ -182,7 +182,6 @@ void prepare(
 }
 
 void cleanup(void) {
-  cleanup_frame(&MAIN_FRAME);
   cleanup_entities();
   cleanup_data();
   cleanup_ui();

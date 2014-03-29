@@ -125,6 +125,7 @@ CHECK_ANY_FACE
  * Functions *
  *************/
 
+/* TODO: Get rid of these
 chunk_neighborhood * get_neighborhood(frame *f, frame_chunk_index fcidx) {
   chunk_neighborhood *result =
     (chunk_neighborhood *) malloc(sizeof(chunk_neighborhood));
@@ -195,6 +196,7 @@ int is_fully_loaded(chunk_neighborhood *cnb) {
     (cnb->west != NULL && !(cnb->west->chunk_flags & CF_NEEDS_RELOAD))
   );
 }
+*/
 
 void compute_exposure(chunk_or_approx *coa) {
   chunk_index idx;

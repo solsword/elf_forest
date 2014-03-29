@@ -73,8 +73,9 @@ static inline void disable_cursor(void) {
  * Functions *
  *************/
 
-// Sets up the control callbacks and other control configuration.
-void setup_control(void);
+// Initialize the control callbacks and other control configuration. No cleanup
+// necessary.
+void init_control(void);
 
 // Reads the control state and updates state.
 void tick_general_controls(void);

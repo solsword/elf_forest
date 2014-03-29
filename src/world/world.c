@@ -16,7 +16,8 @@
  * Globals *
  ***********/
 
-frame MAIN_FRAME;
+// TODO: Get rid of this
+//frame MAIN_FRAME;
 
 /**********
  * Macros *
@@ -82,6 +83,7 @@ frame MAIN_FRAME;
  * Constructors & Destructors *
  ******************************/
 
+/* TODO: Get rid of this
 void setup_frame(frame *f, region_chunk_pos *roff) {
   frame_chunk_index idx;
   region_chunk_pos rpos;
@@ -115,6 +117,7 @@ void cleanup_frame(frame *f) {
   destroy_list(f->entities);
   cleanup_octree(f->oct);
 }
+*/
 
 void create_chunk(region_chunk_pos *rcpos) {
   chunk *c = (chunk *) malloc(sizeof(chunk));
@@ -198,7 +201,3 @@ CA_CLEAR_FLAGS_DEF(1)
 CA_CLEAR_FLAGS_DEF(2)
 CA_CLEAR_FLAGS_DEF(3)
 CA_CLEAR_FLAGS_DEF(4)
-
-void tick_blocks(frame *f) {
-  // TODO: HERE
-}

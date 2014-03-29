@@ -91,6 +91,10 @@ int q_remove_all_elements(queue *q, void *element);
 // Runs the given function sequentially on each element in the queue.
 void q_foreach(queue *q, void (*f)(void *));
 
+// Runs the given function sequentially on each element in the list with the
+// given extra argument as its second argument.
+void q_witheach(queue *q, void *arg, void (*f)(void *, void *));
+
 // Scans the queue until the given function returns non-zero, and returns the
 // element that matched. Returns NULL if no match was found.
 void * q_find_element(queue *q, int (*match)(void *));

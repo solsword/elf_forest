@@ -101,6 +101,10 @@ void l_reverse(list *l);
 // Runs the given function sequentially on each element in the list.
 void l_foreach(list *l, void (*f)(void *));
 
+// Runs the given function sequentially on each element in the list with the
+// given extra argument as its second argument.
+void l_witheach(list *l, void *arg, void (*f)(void *, void *));
+
 // Scans the list until the given function returns non-zero, and returns the
 // element that matched. Returns NULL if no match was found.
 void * l_find_element(list *l, int (*match)(void *));

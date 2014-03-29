@@ -21,33 +21,47 @@
 #include "data/data.h"
 #include "ui/ui.h"
 
+/*************
+ * Constants *
+ *************/
+
+// TODO: test for oddness near the origin.
+region_chunk_pos const CHUNK_ORIGIN = { .x = -117, .y = 57, .z = 0 };
+
 /********
  * Main *
  ********/
 
 int main(int argc, char** argv) {
+  // Compute detailed starting location:
+  region_pos origin;
+  rcpos__rpos(&CHUNK_ORIGIN, &origin);
+
+  // Seed the random number generator:
   srand(545438);
+
   // Prepare the window context:
   prepare_default(&argc, argv);
-  // Set up controls:
-  setup_control();
-  // Set up textures:
-  setup_textures();
+
+  // Initialize controls and textures:
+  init_control();
+  init_textures();
+
   // Set up the test world:
   printf("Loading test world...\n");
+
   setup_ui();
-  setup_entities();
   setup_data();
-  region_chunk_pos roff = {.x=-117, .y=57, .z=0};
-  setup_frame(&MAIN_FRAME, &roff);
-  test_compile_frame(&MAIN_FRAME);
+  setup_entities(origin);
+
   printf("...done.\n");
-  test_spawn_player(&MAIN_FRAME);
+
+  // Spawn the player:
+  test_spawn_player(&ACTIVE_AREA);
+
   // Start the main loop:
   loop();
-  cleanup_frame(&MAIN_FRAME);
-  cleanup_entities();
-  cleanup_data();
+
   return 0;
 }
 
@@ -55,6 +69,7 @@ int main(int argc, char** argv) {
  * Functions *
  *************/
 
+/* TODO: Get rid of me
 void test_compile_frame(frame *f) {
   frame_chunk_index idx;
   chunk_neighborhood *cnb;
@@ -82,9 +97,10 @@ void test_compile_frame(frame *f) {
   }
   printf("\n  ...done.\n");
 }
+*/
 
-void test_spawn_player(frame *f) {
+void test_spawn_player(active_entity_area *area) {
   vector pos = { .x=2.0, .y=2.0, .z=50.0 };
-  PLAYER = spawn_entity("tester", &pos, &MAIN_FRAME);
-  //PLAYER = spawn_entity("elf", &pos, &MAIN_FRAME);
+  PLAYER = spawn_entity("tester", &pos, area);
+  //PLAYER = spawn_entity("elf", &pos, area);
 }

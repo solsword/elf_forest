@@ -273,6 +273,13 @@ void l_foreach(list *l, void (*f)(void *)) {
   }
 }
 
+void l_witheach(list *l, void *arg, void (*f)(void *, void *)) {
+  size_t i;
+  for (i = 0; i < l->count; ++i) {
+    (*f)(l->elements[i], arg);
+  }
+}
+
 void * l_find_element(list *l, int (*match)(void *)) {
   size_t i;
   for (i = 0; i < l->count; ++i) {

@@ -24,9 +24,9 @@ int const LOAD_CAP = 16;
 int const COMPILE_CAP = 1024;
 
 // TODO: Good values here
-//int const LOAD_DISTANCES[N_LODS] = { 6, 16, 50, 150, 500 };
-//int const LOAD_DISTANCES[N_LODS] = { 8, 16, 32, 64, 128 };
-int const LOAD_DISTANCES[N_LODS] = { 4, 8, 12, 16, 20 };
+//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 6, 16, 50, 150, 500 };
+//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 8, 16, 32, 64, 128 };
+r_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 8, 12, 16, 20 };
 
 int const VERTICAL_LOAD_BIAS = 2;
 
@@ -97,6 +97,14 @@ static inline int is_loading(region_chunk_pos *rcpos, lod detail) {
   }
 }
 
+void iter_cleanup_chunk(void * ptr) {
+  cleanup_chunk((chunk *) ptr);
+}
+
+void iter_cleanup_chunk_approx(void * ptr) {
+  cleanup_chunk_approximation((chunk_approximation *) ptr);
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -116,7 +124,7 @@ void cleanup_data(void) {
 chunk_queue_set *create_chunk_queue_set(void) {
   chunk_queue_set *cqs = (chunk_queue_set *) malloc(sizeof(chunk_queue_set));
   size_t i;
-  for (i = 0; i < N_LODS; ++i) {
+  for (i = LOD_BASE; i < N_LODS; ++i) {
     cqs->levels[i] = create_queue();
   }
   return cqs;
@@ -124,7 +132,7 @@ chunk_queue_set *create_chunk_queue_set(void) {
 
 void cleanup_chunk_queue_set(chunk_queue_set *cqs) {
   size_t i;
-  for (i = 0; i < N_LODS; ++i) {
+  for (i = LOD_BASE; i < N_LODS; ++i) {
     cleanup_queue(cqs->levels[i]);
   }
   free(cqs);
@@ -132,8 +140,11 @@ void cleanup_chunk_queue_set(chunk_queue_set *cqs) {
 
 void destroy_chunk_queue_set(chunk_queue_set *cqs) {
   size_t i;
-  for (i = 0; i < N_LODS; ++i) {
-    destroy_queue(cqs->levels[i]);
+  q_foreach(cqs->levels[LOD_BASE], &iter_cleanup_chunk);
+  cleanup_queue(cqs->levels[LOD_BASE]);
+  for (i = LOD_BASE + 1; i < N_LODS; ++i) {
+    q_foreach(cqs->levels[i], &iter_cleanup_chunk_approx);
+    cleanup_queue(cqs->levels[i]);
   }
   free(cqs);
 }
@@ -141,7 +152,7 @@ void destroy_chunk_queue_set(chunk_queue_set *cqs) {
 chunk_cache *create_chunk_cache(void) {
   chunk_cache *cc = (chunk_cache *) malloc(sizeof(chunk_cache));
   size_t i;
-  for (i = 0; i < N_LODS; ++i) {
+  for (i = LOD_BASE; i < N_LODS; ++i) {
     cc->levels[i] = create_map3();
   }
   return cc;
@@ -149,8 +160,11 @@ chunk_cache *create_chunk_cache(void) {
 
 void cleanup_chunk_cache(chunk_cache *cc) {
   size_t i;
-  for (i = 0; i < N_LODS; ++i) {
-    destroy_map3(cc->levels[i]);
+  m3_foreach(cc->levels[LOD_BASE], &iter_cleanup_chunk);
+  cleanup_map3(cc->levels[LOD_BASE]);
+  for (i = LOD_BASE + 1; i < N_LODS; ++i) {
+    m3_foreach(cc->levels[i], &iter_cleanup_chunk_approx);
+    cleanup_map3(cc->levels[i]);
   }
   free(cc);
 }
@@ -165,11 +179,15 @@ void mark_for_loading(region_chunk_pos *rcpos, lod detail) {
   }
   if (detail == LOD_BASE) {
     chunk *c = create_chunk(rcpos);
+    c->chunk_flags &= ~CF_LOADED;
+    c->chunk_flags &= ~CF_COMPILED;
     c->chunk_flags |= CF_QUEUED_TO_LOAD;
     c->chunk_flags |= CF_COMPILE_ON_LOAD;
     q_push_element(LOAD_QUEUES->levels[detail], (void *) c);
   } else {
     chunk_approximation *ca = create_chunk_approximation(rcpos, detail);
+    ca->chunk_flags &= ~CF_LOADED;
+    ca->chunk_flags &= ~CF_COMPILED;
     ca->chunk_flags |= CF_QUEUED_TO_LOAD;
     ca->chunk_flags |= CF_COMPILE_ON_LOAD;
     q_push_element(LOAD_QUEUES->levels[detail], (void *) ca);
@@ -180,11 +198,13 @@ void mark_for_compilation(chunk_or_approx *coa) {
   if (coa->type == CA_TYPE_CHUNK) {
     chunk *c = (chunk *) coa->ptr;
     if (c->chunk_flags & CF_QUEUED_TO_COMPILE) { return; }
+    c->chunk_flags &= ~CF_COMPILED;
     c->chunk_flags |= CF_QUEUED_TO_COMPILE;
     q_push_element(COMPILE_QUEUES->levels[LOD_BASE], (void *) c);
   } else if (coa->type == CA_TYPE_APPROXIMATION) {
     chunk_approximation *ca = (chunk_approximation *) coa->ptr;
     if (ca->chunk_flags & CF_QUEUED_TO_COMPILE) { return; }
+    ca->chunk_flags &= ~CF_COMPILED;
     ca->chunk_flags |= CF_QUEUED_TO_COMPILE;
     q_push_element(COMPILE_QUEUES->levels[ca->detail], (void *) ca);
   } else {
@@ -245,19 +265,30 @@ lod get_best_loaded_level(region_chunk_pos *rcpos) {
 }
 
 void get_best_data(region_chunk_pos *rcpos, chunk_or_approx *coa) {
+  get_best_data_limited(rcpos, LOD_BASE, coa);
+}
+
+void get_best_data_limited(
+  region_chunk_pos *rcpos,
+  lod limit,
+  chunk_or_approx *coa
+) {
   lod detail = LOD_BASE; // level of detail being considered
-  coa->type = CA_TYPE_CHUNK;
-  coa->ptr = m3_get_value(
-    CHUNK_CACHE->layers[LOD_BASE],
-    (map_key_t) rcpos->x,
-    (map_key_t) rcpos->y,
-    (map_key_t) rcpos->z
-  );
-  if (coa->ptr != NULL) {
-    return;
+  if (limit <= LOD_BASE) {
+    coa->type = CA_TYPE_CHUNK;
+    coa->ptr = m3_get_value(
+      CHUNK_CACHE->layers[LOD_BASE],
+      (map_key_t) rcpos->x,
+      (map_key_t) rcpos->y,
+      (map_key_t) rcpos->z
+    );
+    if (coa->ptr != NULL) {
+      return;
+    }
+    limit = LOD_BASE + 1; // Increase our limit so that the for loop works.
   }
   coa->type = CA_TYPE_APPROXIMATION;
-  for (detail = LOD_BASE + 1; detail < N_LODS; ++detail) {
+  for (detail = limit; detail < N_LODS; ++detail) {
     coa->ptr = m3_get_value(
       CHUNK_CACHE->layers[detail],
       (map_key_t) rcpos->x,
@@ -275,11 +306,12 @@ void get_best_data(region_chunk_pos *rcpos, chunk_or_approx *coa) {
 void load_surroundings(region_chunk_pos *center) {
   lod detail = LOD_BASE; // level of detail being considered
   region_chunk_pos rcpos = { .x=0, .y=0, .z=0 }; // current chunk
-  int d2 = 0; // squared Euclidean distance to current chunk
-  int edge = 0; // edge of the current LOD
+  r_cpos_t d2 = 0; // squared Euclidean distance to current chunk
+  r_cpos_t edge = 0; // edge of the current LOD
   // Max distance at which to load anything, trimmed a bit:
-  int max_distance = LOAD_DISTANCES[N_LODS - 1];
+  r_cpos_t max_distance = LOAD_DISTANCES[N_LODS - 1];
   max_distance -= max_distance / LOAD_AREA_TRIM_FRACTION;
+  // TODO: spherical iteration here?
   for (
     rcpos.x = center->x - max_distance;
     rcpos.x < center->x + max_distance;

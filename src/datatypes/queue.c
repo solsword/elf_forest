@@ -249,6 +249,13 @@ void q_foreach(queue *q, void (*f)(void *)) {
   }
 }
 
+void q_witheach(queue *q, void *arg, void (*f)(void *, void *)) {
+  size_t i;
+  for (i = 0; i < q->count; ++i) {
+    (*f)(q->elements[QIDX(q, i)], arg);
+  }
+}
+
 void * q_find_element(queue *q, int (*match)(void *)) {
   size_t i;
   for (i = 0; i < q->count; ++i) {

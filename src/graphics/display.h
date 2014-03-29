@@ -24,7 +24,8 @@ static inline layer block_layer(block b) {
  * Functions *
  *************/
 
-// Allocates and fills in display lists for the given chunk.
+// Allocate and fill in display lists for the given chunk/approximation.
 void compile_chunk(chunk *c);
+void compile_chunk_approx(chunk_approximation *ca);
 
 #endif // ifndef DISPLAY_H

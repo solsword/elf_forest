@@ -238,6 +238,7 @@ void compile_chunk(chunk *c) {
     for (i = 0; i < N_LAYERS; ++i) {
       cleanup_vertex_buffer(&(c->layers[i]));
     }
+    c->chunk_flags |= CF_COMPILED;
     return;
   }
 
@@ -250,7 +251,8 @@ void compile_chunk(chunk *c) {
   // 16 bytes/vertex * 24 vertices/cube = 384 bytes/cube
   // 4 bytes/index * 36 indices/cube = 144 bytes/cube
   //   384+144 = 528 bytes/cube
-  // For a frame where an entire plane is visible, there might be total of
+  // For a place where an entire 32 * 32 plane of chunks is visible, there
+  // might be total of
   //   32 * 32 * 16 * 16 = 262144 cubes
   // This makes a total of 528*262144 = 138412032 bytes, or 144 MB across all
   // active vertex arrays. Of course, hills and valleys might increase this,
@@ -364,4 +366,11 @@ void compile_chunk(chunk *c) {
       cleanup_vertex_buffer(&(c->layers[i]));
     }
   }
+  // Mark the chunk as compiled:
+  c->chunk_flags |= CF_COMPILED;
+}
+
+void compile_chunk_approx(chunk_approximation *ca) {
+  // TODO: HERE!
+  //ca->chunk_flags |= CF_COMPILED;
 }

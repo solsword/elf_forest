@@ -528,3 +528,42 @@ void m3_foreach(map3 *m, void (*f)(void *)) {
     }
   }
 }
+
+void m_witheach(map *m, void *arg, void (*f)(void *, void *)) {
+  size_t i = 0, j = 0, length = 0;
+  list *l = NULL;
+  // Iterate through each list in the table:
+  for (i = 0; i < MAP_TABLE_SIZE; ++i) {
+    l = m->table[i];
+    // If there's no table entry here, keep scanning the table:
+    if (l == NULL) {
+      continue;
+    }
+
+    // Iterate through each item in the list:
+    j = 0;
+    length = l_get_length(l);
+    for (j = m->key_arity; j < length; j += m->key_arity + 1) {
+      f(l_get_item(l, j), arg);
+    }
+  }
+}
+void m3_witheach(map3 *m, void *arg, void (*f)(void *, void *)) {
+  size_t i = 0, j = 0, length = 0;
+  list *l = NULL;
+  // Iterate through each list in the table:
+  for (i = 0; i < MAP_TABLE_SIZE; ++i) {
+    l = m->table[i];
+    // If there's no table entry here, keep scanning the table:
+    if (l == NULL) {
+      continue;
+    }
+
+    // Iterate through each item in the list:
+    j = 0;
+    length = l_get_length(l);
+    for (j = 3; j < length; j += 4) {
+      f(l_get_item(l, j), arg);
+    }
+  }
+}

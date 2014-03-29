@@ -62,7 +62,7 @@ struct entity_s {
   vector size; // Dimensions.
   vector head_pos; // Head position relative to overall position.
   GLuint texture; // OpenGL texture.
-  vertex_buffer model; // Model.
+  vertex_buffer *model; // Model.
 
   float mass; // Mass.
   float walk; // Walk speed.
@@ -128,23 +128,23 @@ static inline void copy_entity_pos(entity *from, entity *to) {
 
 // Adds the given entity to the list of active entities. If it cannot (because
 // the entity isn't within the area) it returns 0, otherwise it returns 1.
-static inline int add_active_entity(active_entity_area *aea, entity *e) {
+static inline int add_active_entity(active_entity_area *area, entity *e) {
   compute_bb(e); // (Re)compute the bounding box for the given entity.
-  if (!oct_insert(aea->tree, (void *) e, &(e->box))) {
+  if (!oct_insert(area->tree, (void *) e, &(e->box))) {
     return 0;
   }
-  l_append_element(aea->list, (void *)e);
-  e->area = aea;
+  l_append_element(area->list, (void *)e);
+  e->area = area;
   return 1;
 }
 
 // Removes the given entity from the given active entity area, returning 1 if
 // it succeeds and 0 if the given entity wasn't present.
-static inline int remove_active_entity(active_entity_area *aea, entity *e) {
-  if (!oct_remove(aea->tree, (void *) e)) {
+static inline int remove_active_entity(active_entity_area *area, entity *e) {
+  if (!oct_remove(area->tree, (void *) e)) {
     return 0;
   }
-  l_remove_element(aea->list, (void *) e);
+  l_remove_element(area->list, (void *) e);
   e->area = NULL;
   return 1;
 }
@@ -185,7 +185,7 @@ static inline void get_head_vec(entity *e, vector *result) {
 static inline void get_head_rpos(entity *e, region_pos *rpos) {
   vector hp;
   get_head_vec(e, &hp);
-  rpos_plus_vec(&(e->area->origin), &hp, rpos);
+  rpos__vec(&(e->area->origin), &hp, rpos);
 }
 
 // Functions to quickly get rounded bounding box block coordinates:
@@ -224,8 +224,9 @@ static inline e_max__rpos(entity *e, region_pos *rpos) {
  * Constructors & Destructors *
  ******************************/
 
-// Sets up the entities system, which defines the ENTITY_PROTOTYPES list.
-void setup_entities(void);
+// Sets up the entities system, which defines the ENTITY_PROTOTYPES list and
+// sets up the main active entity area (which gets the given origin).
+void setup_entities(region_pos *origin);
 
 // Cleans up the memory used for the entities system.
 void cleanup_entities(void);
@@ -244,7 +245,7 @@ active_entity_area * create_active_entity_area(region_pos *origin, size_t size);
 // Cleans up the memory used by an active entity area, also freeing memory used
 // by  all entities within the area. Remove the entities first if you don't
 // want them to be destroyed.
-void cleanup_active_entity_area(active_entity_area *aea);
+void cleanup_active_entity_area(active_entity_area *area);
 
 /*************
  * Functions *
@@ -273,7 +274,7 @@ block head_block(entity *e);
 entity * spawn_entity(
   char const * const type,
   vector *pos,
-  active_entity_area *aea
+  active_entity_area *area
 );
 
 // Scans the given list of entities and returns the first one with the given

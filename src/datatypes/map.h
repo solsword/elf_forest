@@ -100,4 +100,9 @@ size_t m3_remove_all_values(map3 *m, void *value);
 void m_foreach(map *m, void (*f)(void *));
 void m3_foreach(map3 *m, void (*f)(void *));
 
+// Runs the given function sequentially on each value in the map with the given
+// extra argument as its second argument.
+void m_witheach(map *m, void *arg, void (*f)(void *, void *));
+void m3_witheach(map3 *m, void *arg, void (*f)(void *, void *));
+
 #endif //ifndef MAP_H

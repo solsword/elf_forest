@@ -64,13 +64,13 @@ static uint16_t FACE_TC_MAP_OFF[8] = {
 };
 
 // Computes the texture s coordinate for the given index into the texture
-// atlas. Won't work if setup_textures hasn't been called.
+// atlas. Won't work if init_textures hasn't been called.
 static inline uint16_t block_tc_s(uint16_t i) {
   return i % BLOCK_ATLAS_WIDTH;
 }
 
 // Computes the texture t coordinate for the given index into the texture
-// atlas. Won't work if setup_textures hasn't been called.
+// atlas. Won't work if init_textures hasn't been called.
 static inline uint16_t block_tc_t(uint16_t i) {
   return (i / BLOCK_ATLAS_WIDTH) % BLOCK_ATLAS_HEIGHT;
 }
@@ -94,8 +94,9 @@ static inline void compute_face_tc(block b, block_data face, tcoords *result) {
  * Functions *
  *************/
 
-// Sets up the standard textures.
-void setup_textures(void);
+// Sets up the standard textures, loading data into OpenGL but then freeing the
+// CPU's copy. No cleanup necessary.
+void init_textures(void);
 
 // Loads a PNG file into an OpenGL texture and returns the texture handle.
 // Takes care of freeing the texture info struct and associated data once it's

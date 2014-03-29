@@ -163,6 +163,7 @@ typedef uint8_t ch_idx_t; // Needs to be big enough to hold CHUNK_BITS bits.
 struct chunk_index_s;
 typedef struct chunk_index_s chunk_index;
 
+/* TODO: get rid of these
 // An NxNxN-chunk frame:
 // TODO: get rid of this!
 struct frame_s;
@@ -196,15 +197,19 @@ typedef struct frame_pos_s frame_pos;
  * Globals *
  ***********/
 
+/* TODO: Get rid of this
 extern frame MAIN_FRAME;
+*/
 
 /*************
  * Constants *
  *************/
 
 static chunk_flag const              CF_LOADED = 0x0001;
-static chunk_flag const      CF_QUEUED_TO_LOAD = 0x0002;
-static chunk_flag const   CF_QUEUED_TO_COMPILE = 0x0004;
+static chunk_flag const            CF_COMPILED = 0x0002;
+static chunk_flag const     CF_COMPILE_ON_LOAD = 0x0004;
+static chunk_flag const      CF_QUEUED_TO_LOAD = 0x0008;
+static chunk_flag const   CF_QUEUED_TO_COMPILE = 0x0010;
 
 /*************************
  * Structure Definitions *
@@ -260,6 +265,7 @@ union approx_data_u {
   APPROX_DATA_TN(4) d4;
 };
 
+/* TODO: Get rid of these
 struct frame_index_s {
   fr_idx_t x, y, z;
 };
@@ -283,6 +289,7 @@ struct frame_s {
   list *entities; // active entities
   octree *oct; // An octree for the frame
 };
+*/
 
 /********************
  * Inline Functions *
@@ -320,6 +327,26 @@ static inline void rpos__cidx(region_pos *rpos, chunk_index *idx) {
   idx->x = rpos->x & CH_MASK;
   idx->y = rpos->y & CH_MASK;
   idx->z = rpos->z & CH_MASK;
+}
+
+static inline void rpos__vec(
+  region_pos *origin,
+  region_pos *rpos,
+  vector *result
+) {
+  result->x = (rpos->x - origin.x);
+  result->y = (rpos->y - origin.y);
+  result->z = (rpos->z - origin.z);
+}
+
+static inline void vec__rpos(
+  region_pos *origin,
+  vector *v,
+  region_pos *result
+) {
+  result->x = origin->x + fastfloor(v->x);
+  result->y = origin->y + fastfloor(v->y);
+  result->z = origin->z + fastfloor(v->z);
 }
 
 /* TODO: Remove this
@@ -391,19 +418,10 @@ static inline void copy_rcpos(
   destination->z = source->z;
 }
 
-static inline void rpos_plus_vec(
-  region_pos *base,
-  vector *v,
-  region_pos *result
-) {
-  result->x = base->x + fastfloor(v->x);
-  result->y = base->y + fastfloor(v->y);
-  result->z = base->z + fastfloor(v->z);
-}
-
 // Indexing functions:
 // These must be super-fast 'cause they crop up in all sorts of inner loops.
 
+/* TODO: Get rid of this
 static inline chunk* chunk_at(frame *f, frame_chunk_index idx) {
   return &(
     (f->chunks)[
@@ -413,6 +431,7 @@ static inline chunk* chunk_at(frame *f, frame_chunk_index idx) {
     ]
   );
 }
+*/
 
 static inline block c_get_block(
   chunk *c,
@@ -535,6 +554,7 @@ static inline block block_at(region_pos rpos) {
   }
 }
 
+/* TODO: Get rid of this
 static inline void set_block(frame *f, frame_pos pos, block b) {
   chunk_index cidx;
   frame_chunk_index fcidx;
@@ -556,6 +576,7 @@ static inline void set_block(frame *f, frame_pos pos, block b) {
     b
   );
 }
+*/
 
 static inline block block_above(region_pos *rpos) {
   region_pos above;
@@ -661,11 +682,13 @@ static inline void ca_get_neighbors(
  * Constructors & Destructors *
  ******************************/
 
+/* TODO: Get rid of these
 // Initializes the given frame:
 void setup_frame(frame *f, region_chunk_pos *roff);
 
 // Cleans up memory allocated by the given frame.
 void cleanup_frame(frame *f);
+*/
 
 // Allocates and initializes a new chunk at the given position. Does not
 // initialize the chunk's block data or flags.
@@ -729,7 +752,6 @@ static inline ca_clear_flags(
   return ca_clear_flags_table[ca->detail](ca, &idx, f);
 }
 
-// Ticks all blocks attached to the given frame:
-void tick_blocks(frame *f);
+// TODO: How to tick blocks?
 
 #endif // ifndef WORLD_H

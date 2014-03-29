@@ -101,7 +101,7 @@ static void activate_ctl_callbacks(void) {
   glfwSetMouseButtonCallback( WINDOW, mouse );
 }
 
-void setup_control(void) {
+void init_control(void) {
   disable_cursor();
   glfwSetCursorPos(WINDOW, WINDOW_WIDTH/2.0, WINDOW_HEIGHT/2.0);
   activate_ctl_callbacks();

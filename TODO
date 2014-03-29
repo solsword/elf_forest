@@ -32,3 +32,4 @@ gameplay
 bugs/testing
   fix chunk edge holes!
   fix shaved & naked trees
+  test for bugs near the region origin

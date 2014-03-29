@@ -35,7 +35,7 @@ extern int const COMPILE_CAP;
 
 // Distances at which to load chunks at different levels of detail, expressed
 // in chunks.
-extern int const LOAD_DISTANCES[N_LODS];
+extern r_cpos_t const LOAD_DISTANCES[N_LODS];
 
 // Vertical bias for load distances: in loading calculations the z-axis
 // distance is multiplied by this amount.
@@ -145,8 +145,14 @@ lod get_best_loaded_level(region_chunk_pos *rcpos);
 // Fills in the given chunk_or_approx struct with a pointer to the best
 // available data for the given chunk, or NULL if there is no loaded data for
 // that chunk. If there isn't any data, it will return a chunk_or_approx with
-// type CA_TYPE_NOT_LOADED.
+// type CA_TYPE_NOT_LOADED. The limited version accepts an upper bound on the
+// resolution of data to return.
 void get_best_data(region_chunk_pos *rcpos, chunk_or_approx *coa);
+void get_best_data_limited(
+  region_chunk_pos *rcpos,
+  lod limit,
+  chunk_or_approx *coa
+);
 
 // Marks for loading all chunks near the given chunk, as defined by the
 // LOAD_DISTANCES array.

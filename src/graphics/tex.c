@@ -288,7 +288,7 @@ uint16_t const BLOCK_TEXTURE_MAP[1024] = {
  * Functions *
  *************/
 
-void setup_textures(void) {
+void init_textures(void) {
   txinfo* txi = loadPNG(BLOCK_TEXTURE_FILE);
   BLOCK_ATLAS = create_texture(txi);
   BLOCK_ATLAS_WIDTH = txi->width / BLOCK_TEXTURE_SIZE;

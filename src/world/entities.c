@@ -59,7 +59,7 @@ static inline void warp_entity(void *thing) {
 
 // Function for handling entities that fall out of an active area by destroying
 // them.
-void handle_out_of_bounds_entity(active_entity_area *aea, entity *e) {
+void handle_out_of_bounds_entity(active_entity_area *area, entity *e) {
   // TODO: Something else here?
   cleanup_entity(e);
 }
@@ -68,9 +68,8 @@ void handle_out_of_bounds_entity(active_entity_area *aea, entity *e) {
  * Constructors & Destructors *
  ******************************/
 
-void setup_entities(void) {
+void setup_entities(region_pos *origin) {
   ENTITY_PROTOTYPES = create_list();
-  region_pos origin = { .x = 0, .y = 0, .z = 0 };
   ACTIVE_AREA = create_active_entity_area(origin, ACTIVE_AREA_SIZE);
   // TODO: management of multiple active entity areas?
   int i;
@@ -93,6 +92,7 @@ entity * create_entity(void) {
     perror("Failed to spawn entity.");
     fail(errno);
   }
+  e->model = NULL;
   e->area = NULL;
   return e;
 }
@@ -109,26 +109,26 @@ active_entity_area * create_active_entity_area(
   region_pos *origin,
   size_t size
 ) {
-  active_entity_area *aea = (active_entity_area *) malloc(
+  active_entity_area *area = (active_entity_area *) malloc(
     sizeof(active_entity_area)
   );
-  if (aea == NULL) {
+  if (area == NULL) {
     perror("Failed to create active entity area.");
     fail(errno);
   }
-  aea->origin.x = origin->x;
-  aea->origin.y = origin->y;
-  aea->origin.z = origin->z;
-  aea->size = size;
-  aea->list = create_list();
-  aea->tree = create_octree(size);
-  return aea;
+  area->origin.x = origin->x;
+  area->origin.y = origin->y;
+  area->origin.z = origin->z;
+  area->size = size;
+  area->list = create_list();
+  area->tree = create_octree(size);
+  return area;
 }
 
-void cleanup_active_entity_area(active_entity_area *aea) {
-  cleanup_octree(aea->tree);
-  destroy_list(aea->list);
-  free(aea);
+void cleanup_active_entity_area(active_entity_area *area) {
+  cleanup_octree(area->tree);
+  destroy_list(area->list);
+  free(area);
 }
 
 /*************
@@ -170,18 +170,18 @@ block head_block(entity *e) {
   }
 }
 
-void warp_space(active_entity_area *aea, entity *e) {
+void warp_space(active_entity_area *area, entity *e) {
   // TODO: Handle loading and unloading entities
   // Warp offset coordiantes:
   WARP_X = fastfloor(e->pos.x / CHUNK_SIZE);
   WARP_Y = fastfloor(e->pos.y / CHUNK_SIZE);
   WARP_Z = fastfloor(e->pos.z / CHUNK_SIZE);
   if (WARP_X || WARP_Y || WARP_Z) {
-    aea->origin.x += WARP_X * CHUNK_SIZE;
-    aea->origin.y += WARP_Y * CHUNK_SIZE;
-    aea->origin.z += WARP_Z * CHUNK_SIZE;
+    area->origin.x += WARP_X * CHUNK_SIZE;
+    area->origin.y += WARP_Y * CHUNK_SIZE;
+    area->origin.z += WARP_Z * CHUNK_SIZE;
     // Warp entities if we changed offsets:
-    l_foreach(aea->list, &warp_entity);
+    l_foreach(area->list, &warp_entity);
   }
   WARP_X = 0;
   WARP_Y = 0;
@@ -191,7 +191,7 @@ void warp_space(active_entity_area *aea, entity *e) {
 entity * spawn_entity(
   char const * const type,
   vector *pos,
-  active_entity_area *aea
+  active_entity_area *area
 ) {
   entity *e = create_entity();
   // Find the prototype that matches the given name:
@@ -213,7 +213,7 @@ entity * spawn_entity(
   // Zero out the velocity and impulse fields:
   clear_kinetics(e);
   // Add the entity as an active entity:
-  add_active_entity(aea, e);
+  add_active_entity(area, e);
   // Return the entity:
   return e;
 }

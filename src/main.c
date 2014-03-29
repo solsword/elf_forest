@@ -7,6 +7,7 @@
 #include "world/world.h"
 
 int main(int argc, char** argv) {
+  // TODO: copy functionality from test's main.
   srand(545438);
   // Prepare the window context:
   prepare_default(&argc, argv);
@@ -20,6 +21,5 @@ int main(int argc, char** argv) {
   printf("...done.\n");
   // Start the main loop:
   loop();
-  cleanup_frame(&MAIN_FRAME);
   return 0;
 }
