@@ -22,6 +22,8 @@ float const TARGET_RESOLUTION = 1.0/180.0;
 
 float const BOUNCE_DISTANCE = 0.0005;
 
+float const JUMP_DETECTION_THRESHOLD = 1.3;
+
 float const MIN_VELOCITY = 0.05;
 
 move_flag const MF_ON_GROUND = 0x01;
@@ -265,7 +267,7 @@ static inline void update_position_collide_blocks(entity *e) {
   +
     (new_pos.z - old_pos.z) * (new_pos.z - old_pos.z)
   );
-  if (dist > 1) {
+  if (dist > JUMP_DETECTION_THRESHOLD) {
     printf("position jumped! %f\n", dist);
     printf("increment: %f,  %f,  %f\n", increment.x, increment.y, increment.z);
   }

@@ -210,7 +210,7 @@ void render_area(
   // */
 
   // DEBUG: BLUE TRIANGLE
-  //*
+  /*
   //printf("hp: %.2f, %.2f, %.2f\n", head_pos->x, head_pos->y, head_pos->z);
 
   glColor4ub(0, 0, 255, 255);

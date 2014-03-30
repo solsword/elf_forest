@@ -57,10 +57,10 @@ static inline void warp_entity(void *thing) {
   e->pos.x -= WARP_X * CHUNK_SIZE;
   e->pos.y -= WARP_Y * CHUNK_SIZE;
   e->pos.z -= WARP_Z * CHUNK_SIZE;
-  printf("entity-warp: %0.2f, %0.2f, %0.2f\n", e->pos.x, e->pos.y, e->pos.z);
+  //printf("entity-warp: %0.2f, %0.2f, %0.2f\n", e->pos.x, e->pos.y, e->pos.z);
   oct_remove(e->area->tree, (void *) e);
   compute_bb(e);
-  printf("entity-warp minz: %0.2f\n", e->box.min.z);
+  //printf("entity-warp minz: %0.2f\n", e->box.min.z);
   if (!oct_insert(e->area->tree, (void *) e, &(e->box))) {
     handle_out_of_bounds_entity(e->area, e);
   }
@@ -180,7 +180,7 @@ void warp_space(active_entity_area *area, entity *e) {
   WARP_Z = fastfloor(e->pos.z / CHUNK_SIZE);
   if (WARP_X || WARP_Y || WARP_Z) {
     // DEBUG:
-    //*
+    /*
     printf("pre-warp pos: %0.2f, %0.2f, %0.2f\n", e->pos.x, e->pos.y, e->pos.z);
     printf("pre-warp: %d, %d, %d\n", WARP_X, WARP_Y, WARP_Z);
     // */
@@ -190,7 +190,7 @@ void warp_space(active_entity_area *area, entity *e) {
     // Warp entities if we changed offsets:
     l_foreach(area->list, &warp_entity);
     // DEBUG:
-    //*
+    /*
     WARP_X = fastfloor(e->pos.x / CHUNK_SIZE);
     WARP_Y = fastfloor(e->pos.y / CHUNK_SIZE);
     WARP_Z = fastfloor(e->pos.z / CHUNK_SIZE);

@@ -19,6 +19,10 @@ extern float const TARGET_RESOLUTION;
 // How far from a block an entity should be placed when sliding along it.
 extern float const BOUNCE_DISTANCE;
 
+// How far the player can move in one tick before the movement is considered an
+// aberrant "jump" (turn on DEBUG_DETECT_JUMPS to check for these).
+extern float const JUMP_DETECTION_THRESHOLD;
+
 // Minimum velocity: any nonzero velocity will be scaled to at least this
 // number.
 extern float const MIN_VELOCITY;
