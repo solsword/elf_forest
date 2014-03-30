@@ -25,7 +25,6 @@ static inline layer block_layer(block b) {
  *************/
 
 // Allocate and fill in display lists for the given chunk/approximation.
-void compile_chunk(chunk *c);
-void compile_chunk_approx(chunk_approximation *ca);
+void compile_chunk_or_approx(chunk_or_approx *coa);
 
 #endif // ifndef DISPLAY_H

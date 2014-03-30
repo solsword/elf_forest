@@ -77,7 +77,8 @@ void render_area(
   // roll is 0
 );
 
-void render_chunk_layer(
+// Renders the given layer of the given chunk.
+int render_chunk_layer(
   chunk_or_approx *coa, // the target chunk/approximation
   region_pos *origin, // a reference point for the origin of the scene
   layer ly // which layer to render

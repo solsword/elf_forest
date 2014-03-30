@@ -31,21 +31,22 @@
 static inline void push_top(
   vertex_buffer *vb,
   chunk_index idx,
+  ch_idx_t scale,
   tcoords st
 ) {
   vertex v;
   // bottom left
-  v.x = idx.x;        v.nx =  0;    v.s = st.s;
-  v.y = idx.y;        v.ny =  0;    v.t = st.t + 1;
-  v.z = idx.z + 1;    v.nz = P1;
+  v.x = idx.x;            v.nx =  0;    v.s = st.s;
+  v.y = idx.y;            v.ny =  0;    v.t = st.t + 1;
+  v.z = idx.z + scale;    v.nz = P1;
   add_vertex(&v, vb);
 
   // top left
-  v.y += 1;                        v.t -= 1;
+  v.y += scale;                         v.t -= 1;
   add_vertex(&v, vb);
 
   // top right
-  v.x += 1;                        v.s += 1;
+  v.x += scale;                         v.s += 1;
   add_vertex(&v, vb);
 
   reuse_vertex(-3, vb); // reuse bottom left
@@ -53,28 +54,29 @@ static inline void push_top(
   reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
-  v.y -= 1;                        v.t += 1;
+  v.y -= scale;                         v.t += 1;
   add_vertex(&v, vb);
 }
 
 static inline void push_bottom(
   vertex_buffer *vb,
   chunk_index idx,
+  ch_idx_t scale,
   tcoords st
 ) {
   vertex v;
   // bottom left
-  v.x = idx.x + 1;    v.nx =  0;    v.s = st.s;
-  v.y = idx.y;        v.ny =  0;    v.t = st.t + 1;
-  v.z = idx.z;        v.nz = N1;
+  v.x = idx.x + scale;    v.nx =  0;    v.s = st.s;
+  v.y = idx.y;            v.ny =  0;    v.t = st.t + 1;
+  v.z = idx.z;            v.nz = N1;
   add_vertex(&v, vb);
 
   // top left
-  v.y += 1;                        v.t -= 1;
+  v.y += scale;                         v.t -= 1;
   add_vertex(&v, vb);
 
   // top right
-  v.x -= 1;                        v.s += 1;
+  v.x -= scale;                         v.s += 1;
   add_vertex(&v, vb);
 
   reuse_vertex(-3, vb); // reuse bottom left
@@ -82,28 +84,29 @@ static inline void push_bottom(
   reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
-  v.y -= 1;                        v.t += 1;
+  v.y -= scale;                         v.t += 1;
   add_vertex(&v, vb);
 }
 
 static inline void push_north(
   vertex_buffer *vb,
   chunk_index idx,
+  ch_idx_t scale,
   tcoords st
 ) {
   vertex v;
   // bottom left
-  v.x = idx.x + 1;    v.nx =  0;    v.s = st.s;
-  v.y = idx.y + 1;    v.ny = P1;    v.t = st.t + 1;
-  v.z = idx.z;        v.nz =  0;
+  v.x = idx.x + scale;    v.nx =  0;    v.s = st.s;
+  v.y = idx.y + scale;    v.ny = P1;    v.t = st.t + 1;
+  v.z = idx.z;            v.nz =  0;
   add_vertex(&v, vb);
 
   // top left
-  v.z += 1;                        v.t -= 1;
+  v.z += scale;                         v.t -= 1;
   add_vertex(&v, vb);
 
   // top right
-  v.x -= 1;                        v.s += 1;
+  v.x -= scale;                         v.s += 1;
   add_vertex(&v, vb);
 
   reuse_vertex(-3, vb); // reuse bottom left
@@ -111,13 +114,14 @@ static inline void push_north(
   reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
-  v.z -= 1;                        v.t += 1;
+  v.z -= scale;                         v.t += 1;
   add_vertex(&v, vb);
 }
 
 static inline void push_south(
   vertex_buffer *vb,
   chunk_index idx,
+  ch_idx_t scale,
   tcoords st
 ) {
   vertex v;
@@ -128,11 +132,11 @@ static inline void push_south(
   add_vertex(&v, vb);
 
   // top left
-  v.z += 1;                        v.t -= 1;
+  v.z += scale;                 v.t -= 1;
   add_vertex(&v, vb);
 
   // top right
-  v.x += 1;                        v.s += 1;
+  v.x += scale;                 v.s += 1;
   add_vertex(&v, vb);
 
   reuse_vertex(-3, vb); // reuse bottom left
@@ -140,28 +144,29 @@ static inline void push_south(
   reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
-  v.z -= 1;                        v.t += 1;
+  v.z -= scale;                 v.t += 1;
   add_vertex(&v, vb);
 }
 
 static inline void push_east(
   vertex_buffer *vb,
   chunk_index idx,
+  ch_idx_t scale,
   tcoords st
 ) {
   vertex v;
   // bottom left
-  v.x = idx.x + 1;    v.nx = P1;    v.s = st.s;
-  v.y = idx.y;        v.ny =  0;    v.t = st.t + 1;
-  v.z = idx.z;        v.nz =  0;
+  v.x = idx.x + scale;    v.nx = P1;    v.s = st.s;
+  v.y = idx.y;            v.ny =  0;    v.t = st.t + 1;
+  v.z = idx.z;            v.nz =  0;
   add_vertex(&v, vb);
 
   // top left
-  v.z += 1;                        v.t -= 1;
+  v.z += scale;                         v.t -= 1;
   add_vertex(&v, vb);
 
   // top right
-  v.y += 1;                        v.s += 1;
+  v.y += scale;                         v.s += 1;
   add_vertex(&v, vb);
 
   reuse_vertex(-3, vb); // reuse bottom left
@@ -169,28 +174,29 @@ static inline void push_east(
   reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
-  v.z -= 1;                        v.t += 1;
+  v.z -= scale;                         v.t += 1;
   add_vertex(&v, vb);
 }
 
 static inline void push_west(
   vertex_buffer *vb,
   chunk_index idx,
+  ch_idx_t scale,
   tcoords st
 ) {
   vertex v;
   // bottom left
-  v.x = idx.x;        v.nx = N1;    v.s = st.s;
-  v.y = idx.y + 1;    v.ny =  0;    v.t = st.t + 1;
-  v.z = idx.z;        v.nz =  0;
+  v.x = idx.x;            v.nx = N1;    v.s = st.s;
+  v.y = idx.y + scale;    v.ny =  0;    v.t = st.t + 1;
+  v.z = idx.z;            v.nz =  0;
   add_vertex(&v, vb);
 
   // top left
-  v.z += 1;                        v.t -= 1;
+  v.z += scale;                         v.t -= 1;
   add_vertex(&v, vb);
 
   // top right
-  v.y -= 1;                        v.s += 1;
+  v.y -= scale;                         v.s += 1;
   add_vertex(&v, vb);
 
   reuse_vertex(-3, vb); // reuse bottom left
@@ -198,7 +204,7 @@ static inline void push_west(
   reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
-  v.z -= 1;                        v.t += 1;
+  v.z -= scale;                         v.t += 1;
   add_vertex(&v, vb);
 }
 // Clean up our short macro definitions:
@@ -209,10 +215,29 @@ static inline void push_west(
  * Functions *
  *************/
 
-void compile_chunk(chunk *c) {
+void compile_chunk_or_approx(chunk_or_approx *coa) {
   // Count the number of "active" blocks (those not surrounded by solid
   // blocks). We use the cached exposure data here (call compute_exposure
   // first!).
+  chunk *c;
+  chunk_approximation *ca;
+  ch_idx_t step = 1;
+ // A pointer to an array of vertex buffers:
+  vertex_buffer (*layers)[] = NULL;
+  if (coa->type == CA_TYPE_CHUNK) {
+    c = (chunk *) (coa->ptr);
+    ca = NULL;
+    step = 1;
+    layers = &(c->layers);
+  } else if (coa->type == CA_TYPE_APPROXIMATION) {
+    c = NULL;
+    ca = (chunk_approximation *) (coa->ptr);
+    step = 1 << (ca->detail);
+    layers = &(ca->layers);
+  } else {
+    // We can't deal with unloaded chunks
+    return;
+  }
   uint16_t counts[N_LAYERS];
   uint16_t total = 0;
   layer i;
@@ -222,11 +247,16 @@ void compile_chunk(chunk *c) {
   chunk_index idx;
   block here = 0;
   block_flag flags = 0;
-  for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
-    for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
-      for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
-        here = c_get_block(c, idx);
-        flags = c_get_flags(c, idx);
+  for (idx.x = 0; idx.x < CHUNK_SIZE; idx.x += step) {
+    for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
+      for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
+        if (coa->type == CA_TYPE_CHUNK) {
+          here = c_get_block(c, idx);
+          flags = c_get_flags(c, idx);
+        } else {
+          here = ca_get_block(ca, idx);
+          flags = ca_get_flags(ca, idx);
+        }
         if ((flags & BF_EXPOSED_ANY) && !is_invisible(here)) {
           total += 1;
           counts[block_layer(here)] += 1;
@@ -236,9 +266,13 @@ void compile_chunk(chunk *c) {
   }
   if (total == 0) {
     for (i = 0; i < N_LAYERS; ++i) {
-      cleanup_vertex_buffer(&(c->layers[i]));
+      cleanup_vertex_buffer(&((*layers)[i]));
     }
-    c->chunk_flags |= CF_COMPILED;
+    if (coa->type == CA_TYPE_CHUNK) {
+      c->chunk_flags |= CF_COMPILED;
+    } else {
+      ca->chunk_flags |= CF_COMPILED;
+    }
     return;
   }
 
@@ -266,7 +300,7 @@ void compile_chunk(chunk *c) {
     setup_cache(
       24*counts[i],
       36*counts[i],
-      &(c->layers[i])
+      &((*layers)[i])
     );
   }
 
@@ -305,57 +339,62 @@ void compile_chunk(chunk *c) {
     }
 #endif
 
-  for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
-    for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
-      for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
+  for (idx.x = 0; idx.x < CHUNK_SIZE; idx.x += step) {
+    for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
+      for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
         // get local block and neighbors:
-        here = c_get_block(c, idx);
+        if (coa->type == CA_TYPE_CHUNK) {
+          here = c_get_block(c, idx);
+          flags = c_get_flags(c, idx);
+        } else {
+          here = ca_get_block(ca, idx);
+          flags = ca_get_flags(ca, idx);
+        }
         if (is_invisible(here)) {
           continue;
         }
-        flags = c_get_flags(c, idx);
         ly = block_layer(here);
         if (flags & BF_EXPOSED_ABOVE) {
 #ifdef DEBUG
           CHECK_LAYER(ly)
 #endif
           compute_face_tc(here, BD_ORI_UP, &st);
-          push_top(&(c->layers[ly]), idx, st);
+          push_top(&((*layers)[ly]), idx, step, st);
         }
         if (flags & BF_EXPOSED_BELOW) {
 #ifdef DEBUG
           CHECK_LAYER(ly)
 #endif
           compute_face_tc(here, BD_ORI_DOWN, &st);
-          push_bottom(&(c->layers[ly]), idx, st);
+          push_bottom(&((*layers)[ly]), idx, step, st);
         }
         if (flags & BF_EXPOSED_NORTH) {
 #ifdef DEBUG
           CHECK_LAYER(ly)
 #endif
           compute_face_tc(here, BD_ORI_NORTH, &st);
-          push_north(&(c->layers[ly]), idx, st);
+          push_north(&((*layers)[ly]), idx, step, st);
         }
         if (flags & BF_EXPOSED_SOUTH) {
 #ifdef DEBUG
           CHECK_LAYER(ly)
 #endif
           compute_face_tc(here, BD_ORI_SOUTH, &st);
-          push_south(&(c->layers[ly]), idx, st);
+          push_south(&((*layers)[ly]), idx, step, st);
         }
         if (flags & BF_EXPOSED_EAST) {
 #ifdef DEBUG
           CHECK_LAYER(ly)
 #endif
           compute_face_tc(here, BD_ORI_EAST, &st);
-          push_east(&(c->layers[ly]), idx, st);
+          push_east(&((*layers)[ly]), idx, step, st);
         }
         if (flags & BF_EXPOSED_WEST) {
 #ifdef DEBUG
           CHECK_LAYER(ly)
 #endif
           compute_face_tc(here, BD_ORI_WEST, &st);
-          push_west(&(c->layers[ly]), idx, st);
+          push_west(&((*layers)[ly]), idx, step, st);
         }
       }
     }
@@ -363,16 +402,15 @@ void compile_chunk(chunk *c) {
   // Compile or cleanup each buffer:
   for (i = 0; i < N_LAYERS; ++i) {
     if (counts[i] > 0) {
-      compile_buffers(&(c->layers[i]));
+      compile_buffers(&((*layers)[i]));
     } else {
-      cleanup_vertex_buffer(&(c->layers[i]));
+      cleanup_vertex_buffer(&((*layers)[i]));
     }
   }
   // Mark the chunk as compiled:
-  c->chunk_flags |= CF_COMPILED;
-}
-
-void compile_chunk_approx(chunk_approximation *ca) {
-  // TODO: HERE!
-  //ca->chunk_flags |= CF_COMPILED;
+  if (coa->type == CA_TYPE_CHUNK) {
+    c->chunk_flags |= CF_COMPILED;
+  } else {
+    ca->chunk_flags |= CF_COMPILED;
+  }
 }

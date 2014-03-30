@@ -440,6 +440,16 @@ static inline void fpos__vec(frame_pos *pos, vector *v) {
 }
 */
 
+static inline void ch__coa(chunk *c, chunk_or_approx *coa) {
+  coa->type = CA_TYPE_CHUNK;
+  coa->ptr = (void *) c;
+}
+
+static inline void aprx__coa(chunk_approximation *ca, chunk_or_approx *coa) {
+  coa->type = CA_TYPE_APPROXIMATION;
+  coa->ptr = (void *) ca;
+}
+
 // Copying, adding, and other pseudo-conversion functions:
 
 static inline void copy_rpos(

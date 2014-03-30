@@ -161,16 +161,7 @@ static inline void draw_watermark(void) {
   );
 }
 
-static inline void draw_info(void) {
-  // Gather debug info:
-  float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
-  region_pos player_pos;
-  get_head_rpos(PLAYER, &player_pos);
-  get_geoforms(
-    fastfloor(player_pos.x), fastfloor(player_pos.y),
-    &depths, &oceans, &plains, &hills, &mountains
-  );
-
+static inline void draw_rates(void) {
   // Draw framerate:
   sprintf(
     TXT,
@@ -179,13 +170,24 @@ static inline void draw_info(void) {
   );
   render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 590, 570);
 
-  // Draw tick count:
+  // Draw tick rate:
   sprintf(
     TXT,
     "tick rate :: %.1f",
     TICKRATE.rate
   );
   render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 590, 545);
+}
+
+static inline void draw_pos_info(void) {
+  // Gather position info:
+  float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
+  region_pos player_pos;
+  get_head_rpos(PLAYER, &player_pos);
+  get_geoforms(
+    fastfloor(player_pos.x), fastfloor(player_pos.y),
+    &depths, &oceans, &plains, &hills, &mountains
+  );
 
   // Draw geoform data:
   sprintf(
@@ -211,6 +213,22 @@ static inline void draw_info(void) {
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 510);
 
+}
+
+static inline void draw_perf_info(void) {
+  sprintf(
+    TXT,
+    "chunk layers rendered :: %d ",
+    CHUNK_LAYERS_RENDERED.average
+  );
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 480);
+
+  sprintf(
+    TXT,
+    "chunks loaded :: %d chunks compiled :: %d",
+    CHUNKS_LOADED.average, CHUNKS_COMPILED.average
+  );
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 450);
 }
 
 /*************
@@ -256,7 +274,9 @@ void render_ui(void) {
   draw_watermark();
 
   // Debugging info:
-  draw_info();
+  draw_rates();
+  draw_pos_info();
+  draw_perf_info();
 
   // Reenable depth testing and face culling and pop back to the previous
   // model view matrix state:

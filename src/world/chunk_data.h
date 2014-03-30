@@ -47,18 +47,18 @@ int is_fully_loaded(chunk_neighborhood *cnb);
 // adjacent to unavailable neighbors are not exposed.
 void compute_exposure(chunk_or_approx *coa);
 
+/* TODO: Get rid of me
 static inline void compute_chunk_exposure(chunk *c) {
   chunk_or_approx coa;
-  coa.type = CA_TYPE_CHUNK;
-  coa.ptr = (void *) c;
+  ch__coa(c, &coa)
   compute_exposure(&coa);
 }
 
 static inline void compute_approx_exposure(chunk_approximation *ca) {
   chunk_or_approx coa;
-  coa.type = CA_TYPE_APPROXIMATION;
-  coa.ptr = (void *) ca;
+  aprx__coa(ca, &coa)
   compute_exposure(&coa);
 }
+*/
 
 #endif // ifndef CHUNK_DATA_H

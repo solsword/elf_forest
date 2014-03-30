@@ -16,6 +16,8 @@
 
 float TR_NOISE_OFFSET = 7300;
 
+float TR_TERRAIN_HEIGHT_AMP = 1.0;
+
 /*************
  * Functions *
  *************/
@@ -28,7 +30,7 @@ block terrain_block(region_pos pos) {
   static int cave_layer_1_b = 0, cave_layer_1_t = 0;
   static int cave_layer_2_b = 0, cave_layer_2_t = 0;
   static int cave_layer_3_b = 0, cave_layer_3_t = 0;
-  static float nlst = 0, nlow = 0, nmid = 0, nhig = 0, nhst = 0;
+  static float nlst = 0, nlwr = 0, nlow = 0, nmid = 0, nhig = 0, nhst = 0;
   static float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
   int tunnel = 0;
   int altitude = 0;
@@ -36,7 +38,7 @@ block terrain_block(region_pos pos) {
     xcache = pos.x; ycache = pos.y;
     // recompute everything:
     // generate some noise at each frequency (which we'll reuse several times):
-    get_noise(pos.x, pos.y, &nlst, &nlow, &nmid, &nhig, &nhst);
+    get_noise(pos.x, pos.y, &nlst, &nlwr, &nlow, &nmid, &nhig, &nhst);
     // compute geoform mixing factors:
     depths = 0;
     oceans = 0;
@@ -45,13 +47,13 @@ block terrain_block(region_pos pos) {
     mountains = 0;
     compute_geoforms(nlst, &depths, &oceans, &plains, &hills, &mountains);
     // compute terrain height:
-    terrain = get_terrain_height(
-      nlst, nlow, nmid, nhig, nhst,
+    terrain = fastfloor(get_terrain_height(
+      nlst, nlwr, nlow, nmid, nhig, nhst,
       depths, oceans, plains, hills, mountains
-    );
+    ) * TR_TERRAIN_HEIGHT_AMP);
     // compute cave layers:
     get_cave_layers(
-      nlst, nlow, nmid, nhig, nhst,
+      nlst, nlwr, nlow, nmid, nhig, nhst,
       depths, oceans, plains, hills, mountains,
       &cave_layer_1_b, &cave_layer_1_t,
       &cave_layer_2_b, &cave_layer_2_t,
@@ -64,8 +66,7 @@ block terrain_block(region_pos pos) {
     // compute a tree milieu:
     //compute_tree_milieu(pos.x, pos.y, &TREE_MILIEU);
     // sandiness:
-    sandy =
-      oceans * oceans > (TR_BEACH_THRESHOLD + (0.03 * terrain - TR_SEA_LEVEL));
+    sandy = oceans > (TR_BEACH_THRESHOLD + (0.03 * terrain - TR_SEA_LEVEL));
   }
   // Altitude measures height above/below the base terrain height:
   altitude = pos.z - terrain;
@@ -92,11 +93,11 @@ block terrain_block(region_pos pos) {
   }
   // */
   // /*
-  int surface = altitude == 0;
-  int underground = altitude < 0;
-  int topsoil = altitude > -dirt;
-  int underwater = pos.z <= TR_SEA_LEVEL;
-  int on_land = pos.z >= TR_SEA_LEVEL;
+  int surface = (altitude == 0);
+  int underground = (altitude < 0);
+  int topsoil = (altitude > -dirt);
+  int underwater = (pos.z <= TR_SEA_LEVEL);
+  int on_land = (pos.z >= TR_SEA_LEVEL);
   return (
     surface * (
         sandy * (
@@ -165,6 +166,6 @@ void get_geoforms(
   float *depths, float *oceans, float *plains, float *hills, float *mountains
 ) {
   float noise = 0, ignore = 0;
-  get_noise(x, y, &noise, &ignore, &ignore, &ignore, &ignore);
+  get_noise(x, y, &noise, &ignore, &ignore, &ignore, &ignore, &ignore);
   compute_geoforms(noise, depths, oceans, plains, hills, mountains);
 }

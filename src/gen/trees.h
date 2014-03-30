@@ -160,13 +160,13 @@ static inline block tree_growth(block existing, block grow) {
 }
 
 static inline int compute_tree_trunk(int tx, int ty, int radius, trunk *trk) {
-  float nlst = 0, nlow = 0, nmid = 0, nhig = 0, nhst = 0;
+  float nlst = 0, nlow = 0, nlwr = 0, nmid = 0, nhig = 0, nhst = 0;
   float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
   trk->radius = radius;
   trk->root.x = tx;
   trk->root.y = ty;
   // compute terrain at the trunk location:
-  get_noise(tx, ty, &nlst, &nlow, &nmid, &nhig, &nhst);
+  get_noise(tx, ty, &nlst, &nlwr, &nlow, &nmid, &nhig, &nhst);
   compute_geoforms(nlst, &depths, &oceans, &plains, &hills, &mountains);
   // fill in the trunk height (return 0 if the height is too low):
   trk->height = (
@@ -177,7 +177,7 @@ static inline int compute_tree_trunk(int tx, int ty, int radius, trunk *trk) {
     mountains * TREE_MOUNTAINS_HEIGHT
   );
   trk->root.z = get_terrain_height(
-    nlst, nlow, nmid, nhig, nhst,
+    nlst, nlwr, nlow, nmid, nhig, nhst,
     depths, oceans, plains, hills, mountains
   ) + 1;
   if (!valid_trunk_elevation(trk->root.z)) {

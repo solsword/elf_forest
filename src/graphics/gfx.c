@@ -47,7 +47,7 @@ float const DEFAULT_A = 1.0;
 double const FOV = M_PI/3.0;
 double const ASPECT = 4.0/3.0;
 double const NEAR = 0.15;
-double const FAR = 362.0; // 256x256 diagonal
+double const FAR = 1024.0;
 
 /*************
  * Functions *

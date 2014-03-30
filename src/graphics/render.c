@@ -20,6 +20,7 @@
 #include "world/world.h"
 #include "world/entities.h"
 #include "data/data.h"
+#include "tick/tick.h"
 #include "util.h"
 
 /*************
@@ -32,8 +33,9 @@ float const WATER_FOG_DENSITY = 0.05;
 // TODO: Good values here (match data.c!)
 //r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 20, 60, 175, 550 };
 //r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 18, 34, 66, 130 };
-//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 5, 9, 14, 18, 22 };
-r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 4, 4, 4, 4 };
+r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 20, 35, 38, 40 };
+//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, 25 };
+//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, 11 };
 
 /***********
  * Globals *
@@ -101,6 +103,8 @@ void render_area(
   float yaw,
   float pitch
 ) {
+  size_t count = 0; // A count of how many chunks we rendered
+
   // Clear the buffers:
   clear_color_buffer();
   clear_depth_buffer();
@@ -221,8 +225,8 @@ void render_area(
   glEnd();
   // */
 
-  //*
   // DEBUG: Render a bounding box:
+  /*
   glColor4ub(128, 128, 128, 255); // 50% grey
   float half_box = ((float) (area->size))/2.0;
 
@@ -279,7 +283,7 @@ void render_area(
       rcpos.x < origin.x + farthest_render_distance + 1;
       ++rcpos.x
     ) {
-      xdist_sq = rcpos.x - origin.x;
+      xdist_sq = (rcpos.x - origin.x);
       xdist_sq *= xdist_sq;
       skipy = farthest_render_distance - fastceil(
         sqrt(farthest_render_distance*farthest_render_distance - xdist_sq)
@@ -304,7 +308,9 @@ void render_area(
           dist_sq *= dist_sq;
           dist_sq += xydist_sq;
           get_best_data_limited(&rcpos, desired_detail(dist_sq), &coa);
-          render_chunk_layer(&coa, &(area->origin), ly);
+          if ( render_chunk_layer(&coa, &(area->origin), ly) ) {
+            count += 1;
+          }
         }
       }
     }
@@ -315,51 +321,14 @@ void render_area(
     }
   }
 
-  /* TODO: Get rid of me
-  coa.type = CA_TYPE_CHUNK;
-  m3_witheach(
-    CHUNK_CACHE->levels[detail],
-    (void *) area,
-    &iter_render_opaque_layer
-  );
-  for (detail = LOD_BASE + 1; detail < N_LODS; ++detail) {
-    m3_witheach(
-      CHUNK_CACHE->levels[detail],
-      (void *) area,
-      &iter_render_opaque_layer
-    );
-  }
-
-  // Now render all of our entities:
-  l_foreach(area->list, &iter_render_entity);
-
-  // Now render the (partially) transparent parts
-  for (detail = LOD_BASE; detail < N_LODS; ++detail) {
-    m3_witheach(
-      cc->levels[detail],
-      (void *) area,
-      &iter_render_transparent_layer
-    );
-  }
-
-  // Finally the translucent parts (without face-culling and using a read-only
-  // depth buffer):
-  glDisable( GL_CULL_FACE );
-  glDepthMask( GL_FALSE );
-  for (detail = LOD_BASE; detail < N_LODS; ++detail) {
-    m3_witheach(
-      cc->levels[detail],
-      (void *) area,
-      &iter_render_translucent_layer
-    );
-  }
-  glDepthMask( GL_TRUE );
-  glEnable( GL_CULL_FACE );
-  */
+  // Update the count of rendered layers:
+  update_count(&CHUNK_LAYERS_RENDERED, count);
 }
 
-// This function renders one layer of the given chunk.
-void render_chunk_layer(
+// This function renders one layer of the given chunk. It returns 1 if it
+// renders the layer and 0 if it skips it (due to missing data or an empty
+// layer).
+int render_chunk_layer(
   chunk_or_approx *coa,
   region_pos *origin,
   layer ly
@@ -369,7 +338,7 @@ void render_chunk_layer(
   chunk_flag flags = 0;
   vertex_buffer *vb;
   region_pos rpos;
-  if (coa->type == CA_TYPE_NOT_LOADED) { return; }
+  if (coa->type == CA_TYPE_NOT_LOADED) { return 0; }
   // Assign the relevant variables depending on the chunk/approximation type:
   if (coa->type == CA_TYPE_CHUNK) {
     c = (chunk *) (coa->ptr);
@@ -384,12 +353,12 @@ void render_chunk_layer(
   }
   // Skip this chunk if it's out-of-date:
   if (!(flags & CF_LOADED) || !(flags & CF_COMPILED)) {
-    return;
+    return 0;
   }
 
   // Skip this layer quickly if it's empty:
   if (vb->vertices == 0 || vb->indices == 0) {
-    return;
+    return 0;
   }
 
   // Push a model view matrix:
@@ -406,8 +375,8 @@ void render_chunk_layer(
   // Set our drawing color:
   glColor4ub(255, 255, 255, 255); // 100% white
 
-  //*
   // DEBUG: Draw a bounding box:
+  /*
   glBegin( GL_LINE_LOOP );
 
   glVertex3f(0, 0, 0);
@@ -444,6 +413,9 @@ void render_chunk_layer(
   // Reset the model view matrix:
   glMatrixMode( GL_MODELVIEW );
   glPopMatrix();
+
+  // We successfully rendered the layer:
+  return 1;
 }
 
 void iter_render_entity(void *thing) {

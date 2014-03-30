@@ -20,6 +20,9 @@ terrain
 graphics
   use or disable texture mipmapping
   voxel mipmapping
+    better block averaging
+    better edge behavior?
+    advanced sampling techniques?
   block lighting
   ambient occlusion
   entity models & textures

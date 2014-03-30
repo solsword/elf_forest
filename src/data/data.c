@@ -11,6 +11,7 @@
 
 #include "graphics/display.h"
 #include "gen/terrain.h"
+#include "tick/tick.h"
 #include "world/blocks.h"
 #include "world/world.h"
 #include "world/chunk_data.h"
@@ -31,7 +32,8 @@ int const COMPILE_CAP = 2048;
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 6, 16, 50, 150, 500 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 8, 16, 32, 64, 128 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 8, 12, 16, 20 };
-r_cpos_t const LOAD_DISTANCES[N_LODS] = { 3, 4, 5, 5, 5 };
+r_cpos_t const LOAD_DISTANCES[N_LODS] = { 5, 6, 7, 7, 7 };
+//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 3, 4, 5, 5, 5 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 1, 2, 2, 2, 2 };
 
 int const VERTICAL_LOAD_BIAS = 2;
@@ -403,12 +405,15 @@ void tick_data(void) {
       n += 1;
     }
   }
+  update_count(&CHUNKS_LOADED, n);
   n = 0;
   q = COMPILE_QUEUES->levels[LOD_BASE];
+  chunk_or_approx coa;
   while (n < COMPILE_CAP && q_get_length(q) > 0) {
     c = (chunk *) q_pop_element(q);
-    compute_chunk_exposure(c);
-    compile_chunk(c);
+    ch__coa(c, &coa);
+    compute_exposure(&coa);
+    compile_chunk_or_approx(&coa);
     c->chunk_flags &= ~CF_QUEUED_TO_COMPILE;
     n += 1;
   }
@@ -416,12 +421,14 @@ void tick_data(void) {
     q = COMPILE_QUEUES->levels[detail];
     while (n < COMPILE_CAP && q_get_length(q) > 0) {
       ca = (chunk_approximation *) q_pop_element(q);
-      compute_approx_exposure(ca);
-      compile_chunk_approx(ca);
+      aprx__coa(ca, &coa);
+      compute_exposure(&coa);
+      compile_chunk_or_approx(&coa);
       ca->chunk_flags &= ~CF_QUEUED_TO_COMPILE;
       n += 1;
     }
   }
+  update_count(&CHUNKS_COMPILED, n);
 }
 
 void load_chunk(chunk *c) {

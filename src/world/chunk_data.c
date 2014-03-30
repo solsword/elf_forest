@@ -32,118 +32,100 @@ static inline int occludes_face(block neighbor, block occluded) {
   );
 }
 
-// Macro-expanded face-checking functions with and without void block checking:
-#ifdef DEBUG
+// Macro-expanded face-checking functions:
 #define CHECK_ANY_FACE \
   static inline int FN_NAME( \
     chunk_index idx, \
+    ch_idx_t step, \
     chunk_or_approx *neighbor, \
     block here, block there \
   ) { \
-    if ( \
-      is_void(there) \
-    && \
-      (neighbor->type != CA_TYPE_NOT_LOADED) \
-    ) { \
-      /* \
-      if (OOR_AXIS != OOR_RESET) { \
-        fprintf(stderr, "Error: void block at non-edge!\n");\
-        fprintf(stderr, "  OOR_AXIS = %d, edge = %d\n", OOR_AXIS, OOR_RESET);\
-        exit(-1); \
-      } */ \
-      OOR_AXIS = OOR_REPLACE; \
-      if (neighbor->type == CA_TYPE_CHUNK) { \
-        there = c_get_block((chunk *) (neighbor->ptr), idx); \
-      } else { \
-        chunk_approximation *ca = (chunk_approximation *) (neighbor->ptr); \
-        there = ca_get_block(ca, idx); \
+    if ( is_void(there) && OOR_AXIS OOR_CMP OOR_LIMIT ) { \
+      if (step > 1) { \
+        return 0; \
+      } else if ( (neighbor->type != CA_TYPE_NOT_LOADED) ) { \
+        OOR_AXIS = OOR_REPLACE; \
+        if (neighbor->type == CA_TYPE_CHUNK) { \
+          there = c_get_block((chunk *) (neighbor->ptr), idx); \
+        } else { \
+          there = ca_get_block((chunk_approximation *) (neighbor->ptr), idx); \
+        } \
       } \
     } \
     return occludes_face(there, here); \
   }
-#else
-#define CHECK_ANY_FACE \
-  static inline int FN_NAME( \
-    chunk_index idx, \
-    chunk_or_approx *neighbor, \
-    block here, block there \
-  ) { \
-    if ( \
-      is_void(there) \
-    && \
-      (neighbor->type != CA_TYPE_NOT_LOADED) \
-    ) { \
-      OOR_AXIS = OOR_REPLACE; \
-      if (neighbor->type == CA_TYPE_CHUNK) { \
-        there = c_get_block((chunk *) (neighbor->ptr), idx); \
-      } else { \
-        chunk_approximation *ca = (chunk_approximation *) (neighbor->ptr); \
-        there = ca_get_block(ca, idx); \
-      } \
-    } \
-    return occludes_face(there, here); \
-  }
-#endif
 
 #define FN_NAME check_top_face
 #define OOR_AXIS idx.z
+#define OOR_CMP >=
+#define OOR_LIMIT (CHUNK_SIZE - step)
 #define OOR_REPLACE 0
-#define OOR_RESET (CHUNK_SIZE - 1)
 CHECK_ANY_FACE
 #undef FN_NAME
 #undef OOR_AXIS
+#undef OOR_CMP
+#undef OOR_LIMIT
 #undef OOR_REPLACE
-#undef OOR_RESET
 
 #define FN_NAME check_bot_face
 #define OOR_AXIS idx.z
+#define OOR_CMP <=
+#define OOR_LIMIT step
 #define OOR_REPLACE (CHUNK_SIZE - 1)
-#define OOR_RESET 0
 CHECK_ANY_FACE
 #undef FN_NAME
 #undef OOR_AXIS
+#undef OOR_CMP
+#undef OOR_LIMIT
 #undef OOR_REPLACE
-#undef OOR_RESET
 
 #define FN_NAME check_north_face
 #define OOR_AXIS idx.y
+#define OOR_CMP >=
+#define OOR_LIMIT (CHUNK_SIZE - step)
 #define OOR_REPLACE 0
-#define OOR_RESET (CHUNK_SIZE - 1)
 CHECK_ANY_FACE
 #undef FN_NAME
 #undef OOR_AXIS
+#undef OOR_CMP
+#undef OOR_LIMIT
 #undef OOR_REPLACE
-#undef OOR_RESET
 
 #define FN_NAME check_south_face
 #define OOR_AXIS idx.y
+#define OOR_CMP <=
+#define OOR_LIMIT step
 #define OOR_REPLACE (CHUNK_SIZE - 1)
-#define OOR_RESET 0
 CHECK_ANY_FACE
 #undef FN_NAME
 #undef OOR_AXIS
+#undef OOR_CMP
+#undef OOR_LIMIT
 #undef OOR_REPLACE
-#undef OOR_RESET
 
 #define FN_NAME check_east_face
 #define OOR_AXIS idx.x
+#define OOR_CMP >=
+#define OOR_LIMIT (CHUNK_SIZE - step)
 #define OOR_REPLACE 0
-#define OOR_RESET (CHUNK_SIZE - 1)
 CHECK_ANY_FACE
 #undef FN_NAME
 #undef OOR_AXIS
+#undef OOR_CMP
+#undef OOR_LIMIT
 #undef OOR_REPLACE
-#undef OOR_RESET
 
 #define FN_NAME check_west_face
 #define OOR_AXIS idx.x
+#define OOR_CMP <=
+#define OOR_LIMIT step
 #define OOR_REPLACE (CHUNK_SIZE - 1)
-#define OOR_RESET 0
 CHECK_ANY_FACE
 #undef FN_NAME
 #undef OOR_AXIS
+#undef OOR_CMP
+#undef OOR_LIMIT
 #undef OOR_REPLACE
-#undef OOR_RESET
 
 /*************
  * Functions *
@@ -288,32 +270,32 @@ void compute_exposure(chunk_or_approx *coa) {
         // Check exposure:
         flags_to_set = 0;
         flags_to_clear = 0;
-        if (!check_top_face(idx, &above, b, ba)) {
+        if (!check_top_face(idx, step, &above, b, ba)) {
           flags_to_set |= BF_EXPOSED_ABOVE;
         } else {
           flags_to_clear |= BF_EXPOSED_ABOVE;
         }
-        if (!check_bot_face(idx, &below, b, bb)) {
+        if (!check_bot_face(idx, step, &below, b, bb)) {
           flags_to_set |= BF_EXPOSED_BELOW;
         } else {
           flags_to_clear |= BF_EXPOSED_BELOW;
         }
-        if (!check_north_face(idx, &north, b, bn)) {
+        if (!check_north_face(idx, step, &north, b, bn)) {
           flags_to_set |= BF_EXPOSED_NORTH;
         } else {
           flags_to_clear |= BF_EXPOSED_NORTH;
         }
-        if (!check_south_face(idx, &south, b, bs)) {
+        if (!check_south_face(idx, step, &south, b, bs)) {
           flags_to_set |= BF_EXPOSED_SOUTH;
         } else {
           flags_to_clear |= BF_EXPOSED_SOUTH;
         }
-        if (!check_east_face(idx, &east, b, be)) {
+        if (!check_east_face(idx, step, &east, b, be)) {
           flags_to_set |= BF_EXPOSED_EAST;
         } else {
           flags_to_clear |= BF_EXPOSED_EAST;
         }
-        if (!check_west_face(idx, &west, b, bw)) {
+        if (!check_west_face(idx, step, &west, b, bw)) {
           flags_to_set |= BF_EXPOSED_WEST;
         } else {
           flags_to_clear |= BF_EXPOSED_WEST;
