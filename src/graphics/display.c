@@ -284,7 +284,8 @@ void compile_chunk(chunk *c) {
     vcounts[i] += 4; \
     icounts[i] += 6; \
     if (vcounts[i] > counts[i]*24) { \
-      printf( \
+      fprintf( \
+        stderr, \
         "Vertex count exceeded for layer %d: %d > %d\n", \
         i, \
         vcounts[i], \
@@ -293,7 +294,8 @@ void compile_chunk(chunk *c) {
       exit(-1); \
     } \
     if (icounts[i] > counts[i]*36) { \
-      printf( \
+      fprintf( \
+        stderr, \
         "Index count exceeded for layer %d: %d > %d\n", \
         i, \
         icounts[i], \

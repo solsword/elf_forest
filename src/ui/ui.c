@@ -11,10 +11,12 @@
 #include "graphics/tex.h"
 #include "graphics/gfx.h"
 #include "graphics/render.h"
-#include "ui/ui.h"
+#include "tick/tick.h"
 #include "control/ctl.h"
 #include "world/entities.h"
 #include "gen/terrain.h" // to draw geoform and other terrain data
+
+#include "ui/ui.h"
 
 /*******************
  * Local Variables *
@@ -22,7 +24,7 @@
 
 FTGLfont *FONT = NULL;
 
-char * TXT = NULL;
+char TXT[2048];
 
 /***********
  * Globals *
@@ -31,6 +33,20 @@ char * TXT = NULL;
 char const * const FONT_FILE = "res/VerilySerifMono.otf";
 
 int const FONT_RESOLUTION = 72;
+
+float CROSSHAIRS_SIZE = 1.5;
+color CROSSHAIRS_COLOR;
+
+color const WHITE = { .r=255, .g=255, .b=255, .a=255 };
+color const BLACK = { .r=0, .g=0, .b=0, .a=255 };
+color const ELF_FOREST_GREEN = { .r=17, .g=91, .b=27, .a=255 };
+color const BRIGHT_RED = { .r=255, .g=55, .b=45, .a=255 };
+color const COOL_BLUE = { .r=80, .g=95, .b=255, .a=255 };
+color const FRESH_CREAM = { .r=255, .g=240, .b=230, .a=255 };
+
+color const LIGHT_SHADOW = { .r=112, .g=112, .b=112, .a=144 };
+color const DARK_SHADOW = { .r=56, .g=56, .b=56, .a=160 };
+color const LEAF_SHADOW = { .r=34, .g=41, .b=38, .a=170 };
 
 float OVERLAY_WIDTH = 1.0;
 float OVERLAY_HEIGHT = 1.0;
@@ -61,10 +77,10 @@ static inline void render_vision_effects() {
     step_t = 0.5/BLOCK_ATLAS_WIDTH;
     FOG_DENSITY = 1.0;
   } else if (shares_translucency(hb, B_WATER)) {
-    glBlendColor(0.5, 0.5, 0.9, 1.0);
+    set_tint(0.5, 0.5, 0.9, 1.0);
     FOG_DENSITY = WATER_FOG_DENSITY;
   } else {
-    glBlendColor(1.0, 1.0, 1.0, 1.0);
+    no_tint();
     FOG_DENSITY = AIR_FOG_DENSITY*4;
   }
 
@@ -104,6 +120,97 @@ static inline void render_vision_effects() {
   } else {
     glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
   }
+  no_tint();
+}
+
+static inline void draw_hud(void) {
+  // Crosshairs:
+  set_color(CROSSHAIRS_COLOR);
+  float chsize = CROSSHAIRS_SIZE*OVERLAY_HEIGHT/200.0;
+  glBegin( GL_LINES );
+  glVertex3f( -chsize, 0, -1);
+  glVertex3f( chsize, 0, -1);
+  glVertex3f( 0, -chsize, -1);
+  glVertex3f( 0, chsize, -1);
+  glEnd();
+}
+
+static inline void draw_paused(void) {
+  if (PAUSED) {
+    render_string(
+      "PAUSED",
+      WHITE,
+      20,
+      368, 270
+    );
+  }
+}
+
+static inline void draw_watermark(void) {
+  render_string(
+    "Elf Forest",
+    WHITE,
+    45,
+    -2, 0
+  );
+  render_string(
+    "<alpha test>",
+    WHITE,
+    22,
+    620, 15
+  );
+}
+
+static inline void draw_info(void) {
+  // Gather debug info:
+  float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
+  region_pos player_pos;
+  get_head_rpos(PLAYER, &player_pos);
+  get_geoforms(
+    fastfloor(player_pos.x), fastfloor(player_pos.y),
+    &depths, &oceans, &plains, &hills, &mountains
+  );
+
+  // Draw framerate:
+  sprintf(
+    TXT,
+    "framerate :: %.1f",
+    FRAMERATE.rate
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 590, 570);
+
+  // Draw tick count:
+  sprintf(
+    TXT,
+    "tick rate :: %.1f",
+    TICKRATE.rate
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 590, 545);
+
+  // Draw geoform data:
+  sprintf(
+    TXT,
+    "d: %0.2f  o: %0.2f  p: %0.2f  h: %0.2f  m: %0.2f",
+    depths, oceans, plains, hills, mountains
+  );
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 570);
+
+  // Draw region position:
+  sprintf(
+    TXT,
+    "region :: %+4ld x    %+4ld y    %+4ld z",
+    player_pos.x, player_pos.y, player_pos.z
+  );
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 540);
+
+  // Draw active entity area position:
+  sprintf(
+    TXT,
+    "area :: %0.1f x    %0.1f y    %0.1f z",
+    PLAYER->pos.x, PLAYER->pos.y, PLAYER->pos.z
+  );
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 510);
+
 }
 
 /*************
@@ -111,6 +218,7 @@ static inline void render_vision_effects() {
  *************/
 
 void setup_ui(void) {
+  CROSSHAIRS_COLOR = DARK_SHADOW;
   // Load our font:
   FONT = ftglCreateTextureFont(FONT_FILE);
   if (!FONT) {
@@ -118,35 +226,10 @@ void setup_ui(void) {
     exit(-1);
   }
   ftglSetFontFaceSize(FONT, FONT_RESOLUTION, FONT_RESOLUTION);
-  TXT = (char *) malloc(sizeof(char)*2048);
 }
 
 void cleanup_ui(void) {
   ftglDestroyFont(FONT);
-  free(TXT);
-}
-
-void render_string(
-  char const * const string,
-  float size,
-  float left,
-  float bot
-) {
-  glMatrixMode( GL_MODELVIEW );
-  glPushMatrix();
-  glLoadIdentity();
-
-  glTranslatef(
-    (left / WINDOW_WIDTH) * OVERLAY_WIDTH - (OVERLAY_WIDTH / 2),
-    (bot / WINDOW_HEIGHT) * OVERLAY_HEIGHT - (OVERLAY_HEIGHT / 2),
-    -1
-  );
-  float scale = ((size / WINDOW_HEIGHT) * OVERLAY_HEIGHT) / FONT_RESOLUTION;
-  glScalef(scale, scale, 0);
-
-  ftglRenderFont(FONT, string, FTGL_RENDER_ALL);
-
-  glPopMatrix();
 }
 
 void render_ui(void) {
@@ -157,63 +240,56 @@ void render_ui(void) {
   glDisable( GL_DEPTH_TEST );
   glDisable( GL_CULL_FACE );
   glMatrixMode( GL_MODELVIEW );
+  glPushMatrix();
   glLoadIdentity();
 
   // Tinting/blinding:
   render_vision_effects();
 
-  // Draw a watermark:
-  render_string("Elf Forest", 45, -2, 0);
-  render_string("<alpha test>", 22, 620, 15);
-
-  //*
-  // DEBUG: Draw geoform data:
-  float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
-  region_pos player_pos;
-  get_head_rpos(PLAYER, &player_pos);
-  get_geoforms(
-    fastfloor(player_pos.x), fastfloor(player_pos.y),
-    &depths, &oceans, &plains, &hills, &mountains
-  );
-
-  sprintf(
-    TXT,
-    "d: %0.2f  o: %0.2f  p: %0.2f  h: %0.2f  m: %0.2f",
-    depths, oceans, plains, hills, mountains
-  );
-
-  glColor4ub(32, 32, 32, 255);
-  render_string(TXT, 20, 31, 569);
-  glColor4ub(255, 255, 255, 255);
-  render_string(TXT, 20, 30, 570);
-
-  sprintf(
-    TXT,
-    "%+4ld x    %+4ld y    %+4ld z",
-    player_pos.x, player_pos.y, player_pos.z
-  );
-
-  glColor4ub(32, 32, 32, 255);
-  render_string(TXT, 20, 31, 543);
-  glColor4ub(255, 255, 255, 255);
-  render_string(TXT, 20, 30, 544);
-
-  glPopMatrix();
-  // */
-
-  //glPopMatrix();
-
-  //glMatrixMode( GL_PROJECTION );
-
-  //glPopMatrix();
-
-  //glMatrixMode( GL_MODELVIEW );
-
   // HUD:
+  draw_hud();
 
-  // Crosshairs:
+  // Draw an indicator if the game is paused:
+  draw_paused();
 
-  // Reenable depth testing:
+  // Watermark:
+  draw_watermark();
+
+  // Debugging info:
+  draw_info();
+
+  // Reenable depth testing and face culling and pop back to the previous
+  // model view matrix state:
+  glPopMatrix();
   glEnable( GL_CULL_FACE );
   glEnable( GL_DEPTH_TEST );
+}
+
+void render_string(
+  char const * const string,
+  color text_color,
+  float size,
+  float left,
+  float bot
+) {
+  set_color(text_color);
+
+  glMatrixMode( GL_MODELVIEW );
+  glPushMatrix();
+  glLoadIdentity();
+  glAlphaFunc(GL_ALWAYS, 0); // Turn on full alpha blending
+
+  glTranslatef(
+    (left / WINDOW_WIDTH) * OVERLAY_WIDTH - (OVERLAY_WIDTH / 2),
+    (bot / WINDOW_HEIGHT) * OVERLAY_HEIGHT - (OVERLAY_HEIGHT / 2),
+    -1
+  );
+  float scale = ((size / WINDOW_HEIGHT) * OVERLAY_HEIGHT) / FONT_RESOLUTION;
+  glScalef(scale, scale, 0);
+
+  ftglRenderFont(FONT, string, FTGL_RENDER_ALL);
+  glBindTexture( GL_TEXTURE_2D, 0 ); // FTGL doesn't unbind the texture...
+
+  glAlphaFunc(GL_GREATER, 0.5); // Back to binary alpha for transparency
+  glPopMatrix();
 }

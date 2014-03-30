@@ -94,6 +94,7 @@ void render(GLFWwindow *window) {
   render_ui();
   glfwSwapBuffers(window);
   glClear( GL_COLOR_BUFFER_BIT );
+  update_rate(&FRAMERATE);
 }
 
 // Individual setup functions:
@@ -121,6 +122,7 @@ void glsettings() {
   glFrontFace( GL_CW );
   glEnable( GL_BLEND );
   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+  glAlphaFunc(GL_GREATER, 0.5);
   glBlendColor(1.0, 1.0, 1.0, 1.0);
   glEnable( GL_STENCIL_TEST ); // Do we need this?
   glEnable( GL_TEXTURE_2D );
@@ -131,7 +133,6 @@ void glsettings() {
   glDisable( GL_FOG );
   glHint( GL_FOG_HINT, GL_FASTEST );
   glFogi( GL_FOG_MODE, GL_EXP2 );
-  glAlphaFunc(GL_GREATER, 0.5);
   glEnable( GL_ALPHA_TEST );
 }
 
@@ -144,6 +145,29 @@ void glperspective() {
 }
 
 // Main interface functions:
+
+void quit(void) {
+  cleanup();
+  glfwTerminate();
+  exit(0);
+}
+
+void fail(int err) {
+  cleanup();
+  glfwTerminate();
+  exit(err);
+}
+
+void loop(void) {
+  while (!glfwWindowShouldClose(WINDOW)) {
+    if (RENDER) {
+      render(WINDOW);
+    }
+    glfwPollEvents();
+    tick(ticks_expected());
+  }
+  glfwTerminate();
+}
 
 void prepare_default(int* argc, char** argv) {
   prepare(
@@ -186,27 +210,4 @@ void cleanup(void) {
   cleanup_entities();
   cleanup_data();
   cleanup_ui();
-}
-
-void loop(void) {
-  while (!glfwWindowShouldClose(WINDOW)) {
-    if (RENDER) {
-      render(WINDOW);
-    }
-    glfwPollEvents();
-    tick(ticks_expected());
-  }
-  glfwTerminate();
-}
-
-void quit(void) {
-  cleanup();
-  glfwTerminate();
-  exit(0);
-}
-
-void fail(int err) {
-  cleanup();
-  glfwTerminate();
-  exit(err);
 }

@@ -32,7 +32,8 @@ float const WATER_FOG_DENSITY = 0.05;
 // TODO: Good values here (match data.c!)
 //r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 20, 60, 175, 550 };
 //r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 18, 34, 66, 130 };
-r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 5, 9, 14, 18, 22 };
+//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 5, 9, 14, 18, 22 };
+r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 4, 4, 4, 4 };
 
 /***********
  * Globals *
@@ -128,6 +129,17 @@ void render_area(
   }
   */
 
+  // DEBUG: RED TRIANGLE
+  /*
+  glBindTexture( GL_TEXTURE_2D, 0);
+  glColor4ub(255, 0, 0, 255);
+  glBegin( GL_TRIANGLES );
+  glVertex3f(0, 0, -1);
+  glVertex3f(0, 0.125, -1);
+  glVertex3f(0.125, 0.125, -1);
+  glEnd();
+  // */
+
   // Compute an eye vector:
   vector eye_vector, up_vector;
   vface(&eye_vector, yaw, pitch);
@@ -180,25 +192,55 @@ void render_area(
   }
   // */
 
+
+  // DEBUG: Specific look
   /*
+  glLoadIdentity();
+  gluLookAt(
+    head_pos->x, // look from
+      head_pos->y,
+      head_pos->z,
+    0, // look at
+      0,
+      0,
+    up_vector.x, // up
+      up_vector.y,
+      up_vector.z
+  );
+  // */
+
+  // DEBUG: BLUE TRIANGLE
+  //*
+  //printf("hp: %.2f, %.2f, %.2f\n", head_pos->x, head_pos->y, head_pos->z);
+
+  glColor4ub(0, 0, 255, 255);
+  glBegin( GL_TRIANGLES );
+  glVertex3f(0, 0, -1);
+  glVertex3f(0, 1, -1);
+  glVertex3f(1, 1, -1);
+  glEnd();
+  // */
+
+  //*
   // DEBUG: Render a bounding box:
-  glColor4ub(128, 128, 128, 128); // 50% 50% grey
+  glColor4ub(128, 128, 128, 255); // 50% grey
+  float half_box = ((float) (area->size))/2.0;
 
   glBegin( GL_LINE_LOOP );
 
-  glVertex3f(0, 0, 0);
-  glVertex3f(0, FULL_FRAME, 0);
-  glVertex3f(FULL_FRAME, FULL_FRAME, 0);
-  glVertex3f(FULL_FRAME, 0, 0);
+  glVertex3f(-half_box, -half_box, -half_box);
+  glVertex3f(-half_box, half_box, -half_box);
+  glVertex3f(half_box, half_box, -half_box);
+  glVertex3f(half_box, -half_box, -half_box);
 
   glEnd();
 
   glBegin( GL_LINE_LOOP );
 
-  glVertex3f(0, 0, FULL_FRAME);
-  glVertex3f(0, FULL_FRAME, FULL_FRAME);
-  glVertex3f(FULL_FRAME, FULL_FRAME, FULL_FRAME);
-  glVertex3f(FULL_FRAME, 0, FULL_FRAME);
+  glVertex3f(-half_box, -half_box, half_box);
+  glVertex3f(-half_box, half_box, half_box);
+  glVertex3f(half_box, half_box, half_box);
+  glVertex3f(half_box, -half_box, half_box);
 
   glEnd();
   // */
@@ -364,7 +406,7 @@ void render_chunk_layer(
   // Set our drawing color:
   glColor4ub(255, 255, 255, 255); // 100% white
 
-  /*
+  //*
   // DEBUG: Draw a bounding box:
   glBegin( GL_LINE_LOOP );
 

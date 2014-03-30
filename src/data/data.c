@@ -22,11 +22,15 @@
 // TODO: dynamic capping?
 int const LOAD_CAP = 16;
 int const COMPILE_CAP = 1024;
+//int const LOAD_CAP = 1;
+//int const COMPILE_CAP = 1;
 
 // TODO: Good values here
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 6, 16, 50, 150, 500 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 8, 16, 32, 64, 128 };
-r_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 8, 12, 16, 20 };
+//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 8, 12, 16, 20 };
+r_cpos_t const LOAD_DISTANCES[N_LODS] = { 3, 4, 5, 5, 5 };
+//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 1, 2, 2, 2, 2 };
 
 int const VERTICAL_LOAD_BIAS = 2;
 

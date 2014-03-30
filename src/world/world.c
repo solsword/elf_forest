@@ -122,15 +122,26 @@ void cleanup_frame(frame *f) {
 
 chunk * create_chunk(region_chunk_pos *rcpos) {
   chunk *c = (chunk *) malloc(sizeof(chunk));
+  c->type = CA_TYPE_CHUNK;
   c->rcpos.x = rcpos->x;
   c->rcpos.y = rcpos->y;
   c->rcpos.z = rcpos->z;
-  c->block_entities = create_list();
   c->chunk_flags = 0;
+  layer ly;
+  for (ly = 0; ly < N_LAYERS; ++ly) {
+    setup_vertex_buffer(&(c->layers[ly]));
+  }
+  c->block_entities = create_list();
   return c;
 }
 
 void cleanup_chunk(chunk *c) {
+#ifdef DEBUG
+  if (c->type != CA_TYPE_CHUNK) {
+    fprintf(stderr, "Error: bad chunk in cleanup_chunk.\n");
+    exit(1);
+  }
+#endif
   layer ly;
   for (ly = 0; ly < N_LAYERS; ++ly) {
     cleanup_vertex_buffer(&(c->layers[ly]));
@@ -146,6 +157,15 @@ chunk_approximation * create_chunk_approximation(
   chunk_approximation *ca = (chunk_approximation *) malloc(
     sizeof(chunk_approximation)
   );
+  ca->type = CA_TYPE_APPROXIMATION;
+  ca->rcpos.x = rcpos->x;
+  ca->rcpos.y = rcpos->y;
+  ca->rcpos.z = rcpos->z;
+  ca->chunk_flags = 0;
+  layer ly;
+  for (ly = 0; ly < N_LAYERS; ++ly) {
+    setup_vertex_buffer(&(ca->layers[ly]));
+  }
   ca->detail = detail;
   if (detail == LOD_HALF) {
     ca->data = (approx_data *) malloc(sizeof(APPROX_DATA_STRUCT(1)));
@@ -156,14 +176,16 @@ chunk_approximation * create_chunk_approximation(
   } else if (detail == LOD_SIXTEENTH) {
     ca->data = (approx_data *) malloc(sizeof(APPROX_DATA_STRUCT(4)));
   }
-  ca->rcpos.x = rcpos->x;
-  ca->rcpos.y = rcpos->y;
-  ca->rcpos.z = rcpos->z;
-  ca->chunk_flags = 0;
   return ca;
 }
 
 void cleanup_chunk_approximation(chunk_approximation *ca) {
+#ifdef DEBUG
+  if (ca->type != CA_TYPE_APPROXIMATION) {
+    fprintf(stderr, "Error: bad approx in cleanup_chunk_approximation.\n");
+    exit(1);
+  }
+#endif
   layer ly;
   free(ca->data);
   for (ly = 0; ly < N_LAYERS; ++ly) {

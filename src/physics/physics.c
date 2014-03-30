@@ -65,12 +65,12 @@ static inline void update_position_x (
   region_pos *max,
   vector *increment
 ) {
-  int next_block;
+  r_pos_t next_block;
   region_pos pos;
   if (increment->x > 0) {
-    next_block = e->area->origin.x + fastfloor(e->box.max.x + increment->x);
+    next_block = fastfloor(e->box.max.x + increment->x);
     if (next_block != max->x) {
-      pos.x = next_block;
+      pos.x = e->area->origin.x + next_block;
       for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
           if (is_solid(block_at(&pos))) {
@@ -81,12 +81,12 @@ static inline void update_position_x (
           }
         }
       }
-      max->x = next_block;
+      max->x = e->area->origin.x + next_block;
     }
   } else {
-    next_block = e->area->origin.x + fastfloor(e->box.min.x + increment->x);
+    next_block = fastfloor(e->box.min.x + increment->x);
     if (next_block != min->x) {
-      pos.x = next_block;
+      pos.x = e->area->origin.x + next_block;
       for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
           if (is_solid(block_at(&pos))) {
@@ -97,7 +97,7 @@ static inline void update_position_x (
           }
         }
       }
-      min->x = next_block;
+      min->x = e->area->origin.x + next_block;
     }
   }
 done_x:
@@ -110,12 +110,12 @@ static inline void update_position_y(
   region_pos *max,
   vector *increment
 ) {
-  int next_block;
+  r_pos_t next_block;
   region_pos pos;
   if (increment->y > 0) {
-    next_block = e->area->origin.y + fastfloor(e->box.max.y + increment->y);
+    next_block = fastfloor(e->box.max.y + increment->y);
     if (next_block != max->y) {
-      pos.y = next_block;
+      pos.y = e->area->origin.y + next_block;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
           if (is_solid(block_at(&pos))) {
@@ -126,12 +126,12 @@ static inline void update_position_y(
           }
         }
       }
-      max->y = next_block;
+      max->y = e->area->origin.y + next_block;
     }
   } else {
-    next_block = e->area->origin.y + fastfloor(e->box.min.y + increment->y);
+    next_block = fastfloor(e->box.min.y + increment->y);
     if (next_block != min->y) {
-      pos.y = next_block;
+      pos.y = e->area->origin.y + next_block;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
           if (is_solid(block_at(&pos))) {
@@ -142,7 +142,7 @@ static inline void update_position_y(
           }
         }
       }
-      min->y = next_block;
+      min->y = e->area->origin.y + next_block;
     }
   }
 done_y:
@@ -155,12 +155,12 @@ static inline void update_position_z(
   region_pos *max,
   vector *increment
 ) {
-  int next_block;
+  r_pos_t next_block;
   region_pos pos;
   if (increment->z > 0) {
-    next_block = e->area->origin.z + fastfloor(e->box.max.z + increment->z);
+    next_block = fastfloor(e->box.max.z + increment->z);
     if (next_block != max->z) {
-      pos.z = next_block;
+      pos.z = e->area->origin.z + next_block;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
           if (is_solid(block_at(&pos))) {
@@ -171,23 +171,23 @@ static inline void update_position_z(
           }
         }
       }
-      max->z = next_block;
+      max->z = e->area->origin.z + next_block;
     }
   } else {
-    next_block = e->area->origin.z + fastfloor(e->box.min.z + increment->z);
+    next_block = fastfloor(e->box.min.z + increment->z);
     if (next_block != min->z) {
-      pos.z = next_block;
+      pos.z = e->area->origin.z + next_block;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
           if (is_solid(block_at(&pos))) {
             e->vel.z = 0;
             increment->z = 0;
-            e->pos.z = min->z + BOUNCE_DISTANCE + e->size.z / 2.0;
+            e->pos.z = next_block + 1 + (BOUNCE_DISTANCE + e->size.z / 2.0);
             goto done_z;
           }
         }
       }
-      min->z = next_block;
+      min->z = e->area->origin.z + next_block;
     }
   }
 done_z:
@@ -237,6 +237,13 @@ static inline void update_position_collide_blocks(entity *e) {
   vscale(&increment, SUB_DT);
   // Make sure we're getting up-to-date block data from block_at:
   refresh_block_at_cache();
+
+  // DEBUG:
+#ifdef DEBUG_DETECT_JUMPS
+  vector old_pos, new_pos;
+  vcopy(&old_pos, &(e->pos));
+#endif
+
   // Update x/y axes according to the magnitude of their increments:
   if (increment.y > increment.x) {
     update_position_y(e, &min, &max, &increment);
@@ -247,6 +254,23 @@ static inline void update_position_collide_blocks(entity *e) {
   }
   // Update z last:
   update_position_z(e, &min, &max, &increment);
+
+#ifdef DEBUG_DETECT_JUMPS
+  // If enabled, check for massive position updates:
+  vcopy(&new_pos, &(e->pos));
+  double dist = sqrt(
+    (new_pos.x - old_pos.x) * (new_pos.x - old_pos.x)
+  +
+    (new_pos.y - old_pos.y) * (new_pos.y - old_pos.y)
+  +
+    (new_pos.z - old_pos.z) * (new_pos.z - old_pos.z)
+  );
+  if (dist > 1) {
+    printf("position jumped! %f\n", dist);
+    printf("increment: %f,  %f,  %f\n", increment.x, increment.y, increment.z);
+  }
+#endif
+
   // Try to avoid poisoning anyone else who might use block_at:
   refresh_block_at_cache();
 }

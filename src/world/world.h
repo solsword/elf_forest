@@ -107,10 +107,10 @@
 
 // Layers of a chunk:
 typedef enum {
-  L_TRANSLUCENT,
-  L_TRANSPARENT,
-  L_OPAQUE,
-  N_LAYERS
+  L_OPAQUE = 0,
+  L_TRANSPARENT = 1,
+  L_TRANSLUCENT = 2,
+  N_LAYERS = 3
 } layer;
 
 // The level-of-detail for a chunk:
@@ -251,22 +251,25 @@ struct chunk_index_s {
 // (16 * 16 * 16) * 16 = 65536 bits = 8 KB
 // (16 * 16 * 16) * 32 = 131072 bits = 16 KB
 struct chunk_s {
+  capprox_type type; // Always CA_TYPE_CHUNK
+  region_chunk_pos rcpos; // Absolute location within the region.
+  vertex_buffer layers[N_LAYERS]; // The vertex buffers.
+  chunk_flag chunk_flags; // Flags
+
+  list *block_entities; // Block entities.
   // TODO: merge these?
   block blocks[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE]; // Blocks.
   block_flag block_flags[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE]; // Block flags.
-  vertex_buffer layers[N_LAYERS]; // The vertex buffers.
-  region_chunk_pos rcpos; // Absolute location within the region.
-  list *block_entities; // Block entities.
-  chunk_flag chunk_flags; // Flags
 };
 
 struct chunk_approximation_s {
+  capprox_type type; // Always CA_TYPE_APPROXIMATION
+  region_chunk_pos rcpos; // Absolute location within the region.
+  vertex_buffer layers[N_LAYERS]; // Vertex buffers.
+  chunk_flag chunk_flags; // Flags
+
   lod detail; // The highest level of approximation contained here.
   approx_data *data; // Approximate block data.
-
-  vertex_buffer layers[N_LAYERS]; // Vertex buffers.
-  region_chunk_pos rcpos; // Absolute location within the region.
-  chunk_flag chunk_flags; // Flags
 };
 
 struct chunk_or_approx_s {

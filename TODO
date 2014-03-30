@@ -1,4 +1,5 @@
 performance
+  optimize the chunk load queue and load_surroundings
   optimize exposure computation by caching block results (27-element array)
   double-check octree performance
   time chunk loading

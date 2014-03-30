@@ -79,7 +79,7 @@ void oct_insert_recursive(octree *ot, void *object, bbox *box) {
   ot->count += 1;
 }
 
-int oct_remove_recursive(octree *ot, void *object) {
+size_t oct_remove_recursive(octree *ot, void *object) {
   int i;
   int removed = l_remove_all_elements(ot->contents, object);
   if (removed > 0) {

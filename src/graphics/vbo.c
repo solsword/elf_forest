@@ -111,6 +111,14 @@ void compile_buffers(vertex_buffer *vb) {
   vb->allocated = 0;
 }
 
+void setup_vertex_buffer(vertex_buffer *vb) {
+  vb->allocated = 0;
+  vb->vertices = 0;
+  vb->indices = 0;
+  vb->stored_vertex_count = 0;
+  vb->vertex_count = 0;
+}
+
 void cleanup_vertex_buffer(vertex_buffer *vb) {
   if (vb->allocated) {
     free(vb->vdata);

@@ -14,15 +14,29 @@
 #include "physics/physics.h"
 #include "data/data.h"
 
+/*************
+ * Constants *
+ *************/
+
+double const DEFAULT_TRACKING_INTERVAL = 0.25;
+
 /***********
  * Globals *
  ***********/
 
 int TICK_COUNT = 0;
 
+rate_data TICKRATE;
+rate_data FRAMERATE;
+
 /*************
  * Functions *
  *************/
+
+void init_tick(void) {
+  setup_rate_data(&TICKRATE, DEFAULT_TRACKING_INTERVAL);
+  setup_rate_data(&FRAMERATE, DEFAULT_TRACKING_INTERVAL);
+}
 
 int ticks_expected(void) {
   static int first = 1;
@@ -45,6 +59,7 @@ int ticks_expected(void) {
 void tick(int steps) {
   tick_general_controls();
   if (steps == 0 || PAUSED) {
+    clear_edge_triggers();
     return;
   }
   adjust_physics_resolution();
@@ -56,7 +71,38 @@ void tick(int steps) {
     warp_space(ACTIVE_AREA, PLAYER);
     // TODO: tick blocks
     //tick_blocks(ACTIVE_AREA);
+    update_rate(&TICKRATE);
   }
+  region_chunk_pos rcpos;
+  rpos__rcpos(&(ACTIVE_AREA->origin), &rcpos);
+  load_surroundings(&rcpos);
   tick_data();
   clear_edge_triggers();
+}
+
+void setup_rate_data(rate_data *rd, double interval) {
+  rd->count = 0;
+  rd->lasttime = glfwGetTime();
+  rd->elapsed = 0;
+  rd->rate = 0;
+  rd->interval = interval;
+}
+
+void update_rate(rate_data *rd) {
+  double curtime;
+
+  // Count this occurrence:
+  rd->count += 1;
+
+  // Compute elapsed time since the last occurrence:
+  curtime = glfwGetTime();
+  rd->elapsed += curtime - rd->lasttime;
+  rd->lasttime = curtime;
+
+  // Update the rate about every interval seconds:
+  if (rd->elapsed >= rd->interval) {
+    rd->rate = rd->count / rd->elapsed;
+    rd->count = 0;
+    rd->elapsed = 0;
+  }
 }

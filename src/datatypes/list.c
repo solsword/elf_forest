@@ -242,16 +242,16 @@ int l_remove_all_elements(list *l, void *element) {
   size_t i;
   size_t removed = 0;
   size_t skip = 0;
-  for (i = 0; i < l->count; ++i) {
+  for (i = 0; i + skip < l->count; ++i) {
     while (l->elements[i + skip] == element) {
       skip += 1;
       removed += 1;
-      l->count -= 1;
     }
-    if (skip > 0 && i < l->count) {
+    if (skip > 0 && i + skip < l->count) {
       l->elements[i] = l->elements[i + skip];
     }
   }
+  l->count -= removed;
   shrink_if_necessary(l);
   return removed;
 }

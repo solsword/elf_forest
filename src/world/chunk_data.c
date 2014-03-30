@@ -45,11 +45,12 @@ static inline int occludes_face(block neighbor, block occluded) {
     && \
       (neighbor->type != CA_TYPE_NOT_LOADED) \
     ) { \
+      /* \
       if (OOR_AXIS != OOR_RESET) { \
         fprintf(stderr, "Error: void block at non-edge!\n");\
         fprintf(stderr, "  OOR_AXIS = %d, edge = %d\n", OOR_AXIS, OOR_RESET);\
         exit(-1); \
-      } \
+      } */ \
       OOR_AXIS = OOR_REPLACE; \
       if (neighbor->type == CA_TYPE_CHUNK) { \
         there = c_get_block((chunk *) (neighbor->ptr), idx); \

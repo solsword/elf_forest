@@ -72,6 +72,9 @@ void reuse_vertex(int i, vertex_buffer *buf);
 // array(s) associated with it, these will be deleted first.
 void compile_buffers(vertex_buffer *buf);
 
+// Sets up the given vertex buffer, but just does minimal initialization.
+void setup_vertex_buffer(vertex_buffer *vb);
+
 // Frees memory and deletes OpenGL array objects associated with the given
 // vertex buffer.
 void cleanup_vertex_buffer(vertex_buffer *vb);

@@ -19,6 +19,7 @@
 #include "control/ctl.h"
 #include "gen/terrain.h"
 #include "data/data.h"
+#include "tick/tick.h"
 #include "ui/ui.h"
 
 /*************
@@ -43,13 +44,15 @@ int main(int argc, char** argv) {
   // Prepare the window context:
   prepare_default(&argc, argv);
 
-  // Initialize controls and textures:
+  // Initialize stateless subsystems:
   init_control();
   init_textures();
+  init_tick();
 
   // Set up the test world:
   printf("Loading test world...\n");
 
+  // Setup stateful subsystems:
   setup_ui();
   setup_data();
   setup_entities(&origin);

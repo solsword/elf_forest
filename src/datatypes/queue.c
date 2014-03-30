@@ -228,16 +228,16 @@ int q_remove_all_elements(queue *q, void *element) {
   size_t i;
   size_t removed = 0;
   size_t skip = 0;
-  for (i = 0; i < q->count; ++i) {
+  for (i = 0; i + skip < q->count; ++i) {
     while (q->elements[QIDX(q, i + skip)] == element) {
       skip += 1;
       removed += 1;
-      q->count -= 1;
     }
-    if (skip > 0 && i < q->count) {
+    if (skip > 0 && i + skip < q->count) {
       q->elements[QIDX(q, i)] = q->elements[QIDX(q, i + skip)];
     }
   }
+  q->count -= removed;
   shrink_if_necessary(q);
   return removed;
 }
