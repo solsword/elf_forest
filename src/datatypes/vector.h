@@ -39,14 +39,46 @@ struct vector_s {
  * Inline Functions *
  ********************/
 
+// Returns the magnitude of the given vector.
 static inline float vmag(vector const * const v) {
   return sqrtf(v->x*v->x + v->y*v->y + v->z*v->z);
 }
 
+// Returns the squared magnitude of the given vector.
 static inline float vmag2(vector const * const v) {
   return v->x*v->x + v->y*v->y + v->z*v->z;
 }
 
+// Returns the dot product of first and second.
+static inline float vdot(
+  vector const * const first,
+  vector const * const second
+) {
+  return (
+    (first->x * second->x) +
+    (first->y * second->y) +
+    (first->z * second->z)
+  );
+}
+
+// Returns the scalar projection of vec onto onto.
+static inline float vprojection(
+  vector const * const vec,
+  vector const * const onto
+) {
+  return vdot(vec, onto) / vmag(onto);
+}
+
+// Returns the scalar projection of vec onto onto, expressed in terms of the
+// magnitude of onto.
+static inline float vnormproj(
+  vector const * const vec,
+  vector const * const onto
+) {
+  return vdot(vec, onto) / vmag2(onto);
+}
+
+// Scales the given vector by the given scalar.
 static inline void vscale(vector *v, float scale) {
   v->x *= scale;
   v->y *= scale;
@@ -87,18 +119,24 @@ static inline void vface(vector *v, float yaw, float pitch) {
   v->z = sinf(pitch);
 }
 
+// Normalizes the given vector so that its magnitude is 1 (or as close as
+// possible given floating point math).
 static inline void vnorm(vector *v) {
   float m = vmag(v);
   m += (m == 0);
   vscale(v, 1.0/m);
 }
 
+// Adds the given value vector to the target vector, storing the result in the
+// target vector.
 static inline void vadd(vector * const target, vector const * const value) {
   target->x += value->x;
   target->y += value->y;
   target->z += value->z;
 }
 
+// Adds the given value vector scaled by the given scalar to the target vector,
+// storing the result in the target vector.
 static inline void vadd_scaled(
   vector * const target,
   vector const * const value,
@@ -109,24 +147,61 @@ static inline void vadd_scaled(
   target->z += value->z * scale;
 }
 
+// Subtracts the given value vector from the target vector, storing the result
+// in the target vector.
 static inline void vsub(vector * const target, vector const * const value) {
   target->x -= value->x;
   target->y -= value->y;
   target->z -= value->z;
 }
 
+// Copies the given value vector into the given target vector.
 static inline void vcopy(vector * const target, vector const * const value) {
   target->x = value->x;
   target->y = value->y;
   target->z = value->z;
 }
 
-static inline int vdot(vector const * const first, vector const * const second){
-  return (
-    (first->x * second->x) +
-    (first->y * second->y) +
-    (first->z * second->z)
-  );
+// Projects the given vector onto the given 'onto' vector, storing the result
+// in the given vector.
+static inline void vproject(
+  vector * const vec,
+  vector const * const onto
+) {
+  float projscale = vnormproj(vec, onto);
+  vcopy(vec, onto);
+  vscale(vec, projscale);
+}
+
+// Computes the cross product of the given vectors A and B and stores the
+// result in the given result vector.
+static inline void vcross(
+  vector * const result,
+  vector const * const A,
+  vector const * const B
+) {
+  result->x =   (A->y * B->z) - (B->y * A->z);
+  result->y = -((A->x * B->z) - (B->x * A->z));
+  result->z =   (A->x * B->y) - (B->x * A->y);
+}
+
+// Takes an input vector 'vec' and three basis vectors i, j, and k and rewrites
+// the given input vector so that its components are expressed in terms of the
+// given basis vectors. After this operation, (i*vec.x + j*vec.y + k*vec.z) is
+// equal to the old vector.
+static inline void vintermsof(
+  vector * const vec,
+  vector const * const i,
+  vector const * const j,
+  vector const * const k
+) {
+  float tx, ty, tz;
+  tx = vnormproj(vec, i);
+  ty = vnormproj(vec, j);
+  tz = vnormproj(vec, k);
+  vec->x = tx;
+  vec->y = ty;
+  vec->z = tz;
 }
 
 /*************

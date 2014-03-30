@@ -14,6 +14,7 @@ physics
   entity collision detection
 terrain
   forests
+    simplex object noise
   caves
   erosion
   block support

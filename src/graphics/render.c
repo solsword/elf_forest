@@ -21,6 +21,7 @@
 #include "world/entities.h"
 #include "data/data.h"
 #include "tick/tick.h"
+#include "ui/ui.h"
 #include "util.h"
 
 /*************
@@ -48,6 +49,12 @@ float THIRD_PERSON_DISTANCE = 3.2;
 
 float FOG_DENSITY = 0.01;
 
+float const MIN_CULL_DIST = 5 * CHUNK_SIZE;
+float const RENDER_ANGLE_ALLOWANCE = M_PI/8.0;
+// DEBUG:
+//float const MIN_CULL_DIST = 0;
+//float const RENDER_ANGLE_ALLOWANCE = -M_PI/8.0;
+
 /*********************
  * Private Functions *
  *********************/
@@ -67,31 +74,77 @@ static inline lod desired_detail(r_cpos_t dist_sq) {
   return result;
 }
 
-/* TODO: Get rid of these
-void iter_render_opaque_layer(void * coa_ptr, void *area_ptr) {
-  chunk_or_approx *coa = (chunk_or_approx *) coa_ptr;
-  active_entity_area *area = (active_entity_area *) area_ptr;
-  if (within_render_range(coa, area)) {
-    render_chunk_layer(coa, &(area->origin), L_OPAQUE);
-  }
+static inline void compute_hv_angles(
+  vector const * const obs, // the vector from the eye to the observed object
+  vector const * const eye_fwd, // three basis vectors for the eye-space
+    vector const * const eye_side,
+    vector const * const eye_up,
+  float * xangle, float * yangle // outputs
+) {
+  vector tmp;
+  vcopy(&tmp, obs);
+  // 1: transform the observation vector into eye-space:
+  vintermsof(
+    &tmp,
+    eye_side, // x becomes the sideways direction
+    eye_fwd, // y becomes the forwards direction
+    eye_up // z is still the upwards direction
+  );
+
+  // 3: compute horizontal and vertical angles:
+  *xangle = atan2(tmp.x, tmp.y);
+  *yangle = atan2(tmp.z, tmp.y);
 }
 
-void iter_render_transparent_layer(void * coa_ptr, void *area_ptr) {
-  chunk_or_approx *coa = (chunk_or_approx *) coa_ptr;
-  active_entity_area *area = (active_entity_area *) area_ptr;
-  if (within_render_range(coa, area)) {
-    render_chunk_layer(coa, &(area->origin), L_TRANSPARENT);
-  }
-}
+// DEBUG: draw a set of basis vectors at the given location:
+static inline void draw_basis_vectors(
+  vector const * const view_origin,
+  vector const * const view_vector,
+  vector const * const vx,
+  vector const * const vy,
+  vector const * const vz
+) {
+  vector where;
+  vcopy(&where, view_origin);
+  vadd(&where, view_vector);
+  glColor4ub(255, 0, 0, 255);
+  glBegin( GL_LINES );
+  glVertex3f( where.x, where.y, where.z );
+  glVertex3f(
+    where.x + vx->x,
+    where.y + vx->y,
+    where.z + vx->z
+  );
+  glEnd();
 
-void iter_render_translucent_layer(void * coa_ptr, void *area_ptr) {
-  chunk_or_approx *coa = (chunk_or_approx *) coa_ptr;
-  active_entity_area *area = (active_entity_area *) area_ptr;
-  if (within_render_range(coa, area)) {
-    render_chunk_layer(coa, &(area->origin), L_TRANSLUCENT);
-  }
+  glColor4ub(255, 255, 0, 255);
+  glBegin( GL_LINES );
+  glVertex3f( where.x, where.y, where.z );
+  glVertex3f(
+    where.x + vy->x,
+    where.y + vy->y,
+    where.z + vy->z
+  );
+  glEnd();
+
+  glColor4ub(0, 0, 255, 255);
+  glBegin( GL_LINES );
+  glVertex3f( where.x, where.y, where.z );
+  glVertex3f(
+    where.x + vz->x,
+    where.y + vz->y,
+    where.z + vz->z
+  );
+  glEnd();
+
+  char txt[2048];
+  sprintf(txt, "vx: %.2f, %.2f, %.2f :: %.2f", vx->x, vx->y, vx->z, vmag(vx));
+  render_string(txt, BRIGHT_RED, 18, 20, 400);
+  sprintf(txt, "vy: %.2f, %.2f, %.2f :: %.2f", vy->x, vy->y, vy->z, vmag(vy));
+  render_string(txt, BRIGHT_RED, 18, 20, 370);
+  sprintf(txt, "vz: %.2f, %.2f, %.2f :: %.2f", vz->x, vz->y, vz->z, vmag(vz));
+  render_string(txt, BRIGHT_RED, 18, 20, 340);
 }
-*/
 
 /*************
  * Functions *
@@ -101,9 +154,14 @@ void render_area(
   active_entity_area *area,
   vector *head_pos,
   float yaw,
-  float pitch
+  float pitch,
+  float fovx,
+  float fovy
 ) {
   size_t count = 0; // A count of how many chunks we rendered
+  float xangle = 0; // horizontal angle to chunk being rendered
+  float yangle = 0; // vertical angle to chunk being rendered
+  int cull = 0; // Whether to cull this chunk
 
   // Clear the buffers:
   clear_color_buffer();
@@ -144,73 +202,67 @@ void render_area(
   glEnd();
   // */
 
-  // Compute an eye vector:
-  vector eye_vector, up_vector;
+  // head_pos (the argument) is a vector from the origin to the head position
+  vector eye_vector; // vector pointing in the player's model's view direction
+  vector up_vector; // the up-vector: pi/2 above the eye vector
+
+  // The camera position and focus point. The view origin will be on the line
+  // defined by the head position and the eye vector, while the view vector is
+  // a multiple of the eye vector.
+  vector view_origin = { .x = 0, .y = 0, .z = 0 };
+  vector view_vector = { .x = 0, .y = 0, .z = 0 };
+
+  vector side_vector; // the cross product of the view and up vectors
+
+  // The vector from the viewing position to the chunk being rendered, both in 
+  // standard coordinates and in eye-space.
+  vector chunk_vector;
+
+  // Compute the eye, up, and side vectors:
   vface(&eye_vector, yaw, pitch);
   vface(&up_vector, yaw, pitch + M_PI_2);
 
   //*
   if (VIEW_MODE == VM_FIRST) {
     // Look from head_pos in the direction given by eye_vector:
-    gluLookAt(
-      head_pos->x, // look from
-        head_pos->y,
-        head_pos->z,
-      head_pos->x + eye_vector.x, // look at
-        head_pos->y + eye_vector.y,
-        head_pos->z + eye_vector.z,
-      up_vector.x, // up
-        up_vector.y,
-        up_vector.z
-    );
+    vcopy(&view_origin, head_pos);
+    vcopy(&view_vector, &eye_vector);
   } else if (VIEW_MODE == VM_SECOND) {
     // Look at head_pos in the opposite direction from eye_vector from
     // SECOND_PERSON_DISTANCE units away.
     vscale(&eye_vector, SECOND_PERSON_DISTANCE*ZOOM);
-    gluLookAt(
-      head_pos->x + eye_vector.x, // look from
-        head_pos->y + eye_vector.y,
-        head_pos->z + eye_vector.z,
-      head_pos->x, // look at
-        head_pos->y,
-        head_pos->z,
-      up_vector.x, // up
-        up_vector.y,
-        up_vector.z
-    );
+
+    vcopy(&view_origin, head_pos);
+    vadd(&view_origin, &eye_vector);
+
+    vcopy(&view_vector, &eye_vector);
+    vscale(&view_vector, -1);
   } else if (VIEW_MODE == VM_THIRD) {
     // Look at head_pos in the direction given by the eye_vector from
     // THIRD_PERSON_DISTANCE units away.
     vscale(&eye_vector, THIRD_PERSON_DISTANCE*ZOOM);
-    gluLookAt(
-      head_pos->x - eye_vector.x, // look from
-        head_pos->y - eye_vector.y,
-        head_pos->z - eye_vector.z,
-      head_pos->x, // look at
-        head_pos->y,
-        head_pos->z,
-      up_vector.x, // up
-        up_vector.y,
-        up_vector.z
-    );
+
+    vcopy(&view_origin, head_pos);
+    vsub(&view_origin, &eye_vector);
+
+    vcopy(&view_vector, &eye_vector);
   }
-  // */
-
-
-  // DEBUG: Specific look
-  /*
-  glLoadIdentity();
   gluLookAt(
-    head_pos->x, // look from
-      head_pos->y,
-      head_pos->z,
-    0, // look at
-      0,
-      0,
+    view_origin.x, // look from
+      view_origin.y,
+      view_origin.z,
+    view_origin.x + view_vector.x, // look at
+      view_origin.y + view_vector.y,
+      view_origin.z + view_vector.z,
     up_vector.x, // up
       up_vector.y,
       up_vector.z
   );
+  // Now that we've done our gluLookAt, we can normalize our view vector and
+  // compute the side vector, which together with the view vector and up vector
+  // completely defines our viewing coordinate space.
+  vnorm(&view_vector);
+  vcross(&side_vector, &view_vector, &up_vector);
   // */
 
   // DEBUG: BLUE TRIANGLE
@@ -277,12 +329,13 @@ void render_area(
     }
     // The main loop: loop over a spherical region out to the farthest render
     // distance, getting the best data for each chunk (subject to render
-    // distance constraints) and rendering it:
+    // distance constraints) and rendering one of its layers:
     for (
       rcpos.x = origin.x - farthest_render_distance;
       rcpos.x < origin.x + farthest_render_distance + 1;
       ++rcpos.x
     ) {
+      chunk_vector.x = (rcpos.x - origin.x) * CHUNK_SIZE - view_origin.x;
       xdist_sq = (rcpos.x - origin.x);
       xdist_sq *= xdist_sq;
       skipy = farthest_render_distance - fastceil(
@@ -293,6 +346,7 @@ void render_area(
         rcpos.y < origin.y + farthest_render_distance + 1 - skipy;
         ++rcpos.y
       ) { 
+        chunk_vector.y = (rcpos.y - origin.y) * CHUNK_SIZE - view_origin.y;
         xydist_sq = (rcpos.y - origin.y);
         xydist_sq *= xydist_sq;
         xydist_sq += xdist_sq;
@@ -304,11 +358,66 @@ void render_area(
           rcpos.z < origin.z + farthest_render_distance + 1 - skipz;
           ++rcpos.z
         ) { 
+          chunk_vector.z = (rcpos.z - origin.z) * CHUNK_SIZE - view_origin.z;
           dist_sq = (rcpos.z - origin.z);
           dist_sq *= dist_sq;
           dist_sq += xydist_sq;
           get_best_data_limited(&rcpos, desired_detail(dist_sq), &coa);
-          if ( render_chunk_layer(&coa, &(area->origin), ly) ) {
+          // Compute angle to chunk:
+          compute_hv_angles(
+            &chunk_vector,
+            &view_vector, &side_vector, &up_vector,
+            &xangle, &yangle
+          );
+          cull = ( // chunk is farther than the min cull distance
+            (
+              fabs(chunk_vector.x) +
+              fabs(chunk_vector.y) +
+              fabs(chunk_vector.z)
+            ) > MIN_CULL_DIST
+          &&
+            ( // and it fails the frustum test
+              fabs(xangle) > (fovx/2) + RENDER_ANGLE_ALLOWANCE
+            ||
+              fabs(yangle) > (fovy/2) + RENDER_ANGLE_ALLOWANCE
+            )
+          );
+
+          // DEBUG: Draw vectors to nearby chunks:
+          /*
+          if (
+            (
+              fabs(chunk_vector.x) +
+              fabs(chunk_vector.y) +
+              fabs(chunk_vector.z)
+            ) < CHUNK_SIZE * 3
+          ) {
+            glColor4ub(255, 255, 0, 255);
+            //glLineWidth(2);
+            glBegin( GL_LINES );
+            glVertex3f(
+              view_origin.x + view_vector.x,
+              view_origin.y + view_vector.y,
+              view_origin.z + view_vector.z
+            );
+            glVertex3f(
+              view_origin.x + chunk_vector.x,
+              view_origin.y + chunk_vector.y,
+              view_origin.z + chunk_vector.z
+            );
+            glEnd();
+            glColor4ub(255, 255, 128, 255);
+            glPointSize(10);
+            glBegin( GL_POINTS );
+            glVertex3f(
+              view_origin.x + chunk_vector.x,
+              view_origin.y + chunk_vector.y,
+              view_origin.z + chunk_vector.z
+            );
+            glEnd();
+          }
+          // */
+          if ( !cull && render_chunk_layer(&coa, &(area->origin), ly) ) {
             count += 1;
           }
         }
@@ -320,6 +429,17 @@ void render_area(
       glEnable( GL_CULL_FACE );
     }
   }
+
+  // DEBUG: Draw eye-space vectors:
+  /*
+  draw_basis_vectors(
+    &view_origin,
+    &view_vector,
+    &side_vector,
+    &view_vector,
+    &up_vector
+  );
+  // */
 
   // Update the count of rendered layers:
   update_count(&CHUNK_LAYERS_RENDERED, count);

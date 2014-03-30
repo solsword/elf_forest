@@ -90,7 +90,11 @@ void minmaximize(GLFWwindow *window, int minimized) {
 void render(GLFWwindow *window) {
   vector head_pos;
   get_head_vec(PLAYER, &head_pos);
-  render_area(ACTIVE_AREA, &head_pos, PLAYER->yaw, PLAYER->pitch);
+  render_area(
+    ACTIVE_AREA,
+    &head_pos, PLAYER->yaw, PLAYER->pitch,
+    FOV*ASPECT, FOV
+  );
   render_ui();
   glfwSwapBuffers(window);
   glClear( GL_COLOR_BUFFER_BIT );

@@ -38,6 +38,13 @@ extern float const WATER_FOG_DENSITY;
 // higher-quality data won't be.
 extern r_cpos_t const MAX_RENDER_DISTANCES[N_LODS];
 
+// The distance at which frustum culling applies (Manhattan distance blocks):
+extern float const MIN_CULL_DIST;
+
+// How many radians outside of the technical viewing area should be allowed
+// before frustum culling kicks in.
+extern float const RENDER_ANGLE_ALLOWANCE;
+
 /***********
  * Globals *
  ***********/
@@ -73,8 +80,10 @@ void render_area(
   active_entity_area *area, // area to render
   vector *head_pos, // eye position
   float yaw, // [0,2PI]; 0 => north
-  float pitch // [-PI,PI]; 0 => horizontal
+  float pitch, // [-PI,PI]; 0 => horizontal
   // roll is 0
+  float fovx, // horizontal field of view in radians
+  float fovy // vertical field of view in radians
 );
 
 // Renders the given layer of the given chunk.

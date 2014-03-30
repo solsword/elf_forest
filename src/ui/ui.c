@@ -294,6 +294,8 @@ void render_string(
 ) {
   set_color(text_color);
 
+  glDisable( GL_DEPTH_TEST );
+  glDisable( GL_CULL_FACE );
   glMatrixMode( GL_MODELVIEW );
   glPushMatrix();
   glLoadIdentity();
@@ -312,4 +314,6 @@ void render_string(
 
   glAlphaFunc(GL_GREATER, 0.5); // Back to binary alpha for transparency
   glPopMatrix();
+  glEnable( GL_CULL_FACE );
+  glEnable( GL_DEPTH_TEST );
 }
