@@ -37,6 +37,8 @@ gameplay
   songs
   plants
 bugs/testing
+  bad transparency layering (before/behind the player when in water with
+    abstract water below).
   fix chunk edge holes!
   fix shaved & naked trees
   test for bugs near the region origin

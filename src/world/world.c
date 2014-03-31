@@ -11,14 +11,6 @@
 
 #include "datatypes/octree.h"
 #include "data/data.h"
-//#include "gen/terrain.h"
-
-/***********
- * Globals *
- ***********/
-
-// TODO: Get rid of this
-//frame MAIN_FRAME;
 
 /**********
  * Macros *
@@ -83,42 +75,6 @@
 /******************************
  * Constructors & Destructors *
  ******************************/
-
-/* TODO: Get rid of this
-void setup_frame(frame *f, region_chunk_pos *roff) {
-  frame_chunk_index idx;
-  region_chunk_pos rpos;
-  f->chunk_offset.x = 0;
-  f->chunk_offset.y = 0;
-  f->chunk_offset.z = 0;
-  f->region_offset.x = roff->x;
-  f->region_offset.y = roff->y;
-  f->region_offset.z = roff->z;
-  for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
-    for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
-      for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
-        fcidx__rcpos(&idx, f, &rpos);
-        setup_chunk(chunk_at(f, idx), &rpos);
-      }
-    }
-  }
-  f->entities = create_list();
-  f->oct = setup_octree(FULL_FRAME);
-}
-
-void cleanup_frame(frame *f) {
-  frame_chunk_index idx;
-  for (idx.x = 0; idx.x < FRAME_SIZE; ++idx.x) {
-    for (idx.y = 0; idx.y < FRAME_SIZE; ++idx.y) {
-      for (idx.z = 0; idx.z < FRAME_SIZE; ++idx.z) {
-        cleanup_chunk(chunk_at(f, idx));
-      }
-    }
-  }
-  destroy_list(f->entities);
-  cleanup_octree(f->oct);
-}
-*/
 
 chunk * create_chunk(region_chunk_pos const * const rcpos) {
   chunk *c = (chunk *) malloc(sizeof(chunk));

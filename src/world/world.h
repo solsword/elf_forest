@@ -215,13 +215,6 @@ struct frame_pos_s;
 typedef struct frame_pos_s frame_pos;
 */
 
-/***********
- * Globals *
- ***********/
-
-// TODO: Get rid of this
-//extern frame MAIN_FRAME;
-
 /*************
  * Constants *
  *************/
@@ -288,32 +281,6 @@ union approx_data_u {
   APPROX_DATA_TN(3) d3;
   APPROX_DATA_TN(4) d4;
 };
-
-/* TODO: Get rid of these
-struct frame_index_s {
-  fr_idx_t x, y, z;
-};
-
-struct frame_chunk_index_s {
-  fr_cidx_t x, y, z;
-};
-
-struct frame_pos_s {
-  fr_pos_t x, y, z;
-};
-
-// (16 * 16 * 16) * 65536 = 32 MB
-// (16 * 16 * 16) * 131072 = 64 MB
-// (32 * 32 * 32) * 65536 = 256 MB
-struct frame_s {
-  chunk chunks[FRAME_SIZE*FRAME_SIZE*FRAME_SIZE]; // chunk data
-  region_chunk_pos region_offset; // location of frame origin within the region
-  frame_chunk_index chunk_offset; // data offset
-    // (to avoid having to shuffle data around within the array all the time)
-  list *entities; // active entities
-  octree *oct; // An octree for the frame
-};
-*/
 
 /********************
  * Inline Functions *
@@ -473,18 +440,6 @@ static inline void copy_rcpos(
 // Indexing functions:
 // These must be super-fast 'cause they crop up in all sorts of inner loops.
 
-/* TODO: Get rid of this
-static inline chunk* chunk_at(frame *f, frame_chunk_index idx) {
-  return &(
-    (f->chunks)[
-      ((idx.x + f->chunk_offset.x) & FR_MASK) +
-      (((idx.y + f->chunk_offset.y) & FR_MASK) << FRAME_BITS) +
-      (((idx.z + f->chunk_offset.z) & FR_MASK) << (FRAME_BITS*2))
-    ]
-  );
-}
-*/
-
 static inline block c_get_block(
   chunk const * const c,
   chunk_index idx
@@ -555,41 +510,9 @@ static inline void c_clear_flags(
   ] &= ~flags;
 }
 
-/* TODO: Get rid of this
-static inline void set_block(frame *f, frame_pos pos, block b) {
-  chunk_index cidx;
-  frame_chunk_index fcidx;
-  // Note: these values will be out-of-range, but they'll be clamped by the
-  // code in c_get_block and they won't overflow, so we're fine.
-  cidx.x = (pos.x + HALF_FRAME) & FC_MASK;
-  cidx.y = (pos.y + HALF_FRAME) & FC_MASK;
-  cidx.z = (pos.z + HALF_FRAME) & FC_MASK;
-  // These values will be correct:
-  fcidx.x = cidx.x >> CHUNK_BITS;
-  fcidx.y = cidx.y >> CHUNK_BITS;
-  fcidx.z = cidx.z >> CHUNK_BITS;
-  c_put_block(
-    chunk_at(
-      f,
-      fcidx
-    ),
-    cidx,
-    b
-  );
-}
-*/
-
 /******************************
  * Constructors & Destructors *
  ******************************/
-
-/* TODO: Get rid of these
-// Initializes the given frame:
-void setup_frame(frame *f, region_chunk_pos *roff);
-
-// Cleans up memory allocated by the given frame.
-void cleanup_frame(frame *f);
-*/
 
 // Allocates and initializes a new chunk at the given position. Does not
 // initialize the chunk's block data or flags.
