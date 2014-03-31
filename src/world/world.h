@@ -593,7 +593,7 @@ void cleanup_frame(frame *f);
 
 // Allocates and initializes a new chunk at the given position. Does not
 // initialize the chunk's block data or flags.
-chunk * create_chunk(region_chunk_pos *rcpos);
+chunk * create_chunk(region_chunk_pos const * const rcpos);
 
 // Cleans up memory allocated for the given chunk.
 void cleanup_chunk(chunk *c);

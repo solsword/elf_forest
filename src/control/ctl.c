@@ -141,6 +141,7 @@ void tick_general_controls(void) {
 }
 
 void tick_motion_controls(void) {
+  vector vup, vfwd; // intermediate jump vectors
   vzero(&(PLAYER->control));
   if (CONTROLS[C_FORWARD]) {
     vadd(&(PLAYER->control), &V_NORTH);
@@ -155,25 +156,34 @@ void tick_motion_controls(void) {
     vadd(&(PLAYER->control), &V_EAST);
   }
   // Note: unlike other control inputs, jump inputs are just impulses.
+  clear_do_jump(PLAYER);
+  clear_do_flap(PLAYER);
   if (DOWN[C_JUMP] || CONTROLS[C_JUMP]) {
     if (in_liquid(PLAYER)) {
       vadd(&(PLAYER->control), &V_UP);
-    } else if (on_ground(PLAYER)) {
-      vector v;
-      vcopy(&v, &V_UP);
-      vscale(&v, PLAYER->jump);
-      vadd(&(PLAYER->impulse), &v);
-      DOWN[C_JUMP] = 0; // we'll only jump once per frame max
+    } else {
+      // Up vector is just straight up:
+      vcopy(&vup, &V_UP);
+      // Forward vector is 0-1 in direction of player's control:
+      vcopy(&vfwd, &(PLAYER->control));
+      vfwd.z = 0;
+      if (vmag2(&vfwd) > 1) { vnorm(&vfwd); }
+      // Jump if we're on the ground, otherwise try to flap:
+      if (on_ground(PLAYER)) {
+        set_do_jump(PLAYER);
+      } else if (is_airborne(PLAYER) && PLAYER->flap != 0 && try_flap(PLAYER)) {
+        set_do_flap(PLAYER);
+      }
+      DOWN[C_JUMP] = 0; // we'll only jump/flap once per tick max
     }
   }
+  clear_crouching(PLAYER);
   if (CONTROLS[C_CROUCH]) {
     if (in_liquid(PLAYER)) {
       vadd(&(PLAYER->control), &V_DOWN);
     } else {
       set_crouching(PLAYER);
     }
-  } else {
-    clear_crouching(PLAYER);
   }
 }
 

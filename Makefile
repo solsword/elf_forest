@@ -50,31 +50,35 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/terrain.o \
              $(OBJ_DIR)/data.o \
              $(OBJ_DIR)/trees.o \
+             $(OBJ_DIR)/plants.o \
+             $(OBJ_DIR)/txgen.o \
              $(OBJ_DIR)/ui.o
 
 MAIN_OBJECTS=$(OBJ_DIR)/main.o
 
 TEST_OBJECTS=$(OBJ_DIR)/test.o
 
+VIEWER_OBJECTS=$(OBJ_DIR)/viewer.o
+
 UNIT_TEST_OBJECTS=$(OBJ_DIR)/test_suite.o \
 						      $(OBJ_DIR)/unit_tests.o
 
-# Noise test objects:
-NTOBJECTS=$(OBJ_DIR)/noise.o \
+NOISE_TEST_OBJECTS=$(OBJ_DIR)/noise.o \
           $(OBJ_DIR)/test_noise.o
 
 # The default goal:
 .DEFAULT_GOAL := game
 
-.PHONY: all clean game test unit_tests test_noise checkgl
+.PHONY: all clean game test viewer unit_tests test_noise checkgl
 
-all: game test unit_tests test_noise
+all: game test viewer unit_tests test_noise
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(BIN_DIR)
 	rm -rf $(OUT_DIR)
 game: $(BIN_DIR)/elf_forest
 test: $(BIN_DIR)/test
+viewer: $(BIN_DIR)/viewer
 unit_tests: $(BIN_DIR)/unit_tests
 test_noise: $(TEST_DIR)/noise_test_2D.ppm $(TEST_DIR)/noise_test_3D.ppm \
             $(TEST_DIR)/noise_test_2D_F.ppm $(TEST_DIR)/noise_test_3D_F.ppm \
@@ -125,11 +129,14 @@ $(BIN_DIR)/elf_forest: $(CORE_OBJECTS) $(MAIN_OBJECTS) $(BIN_DIR)
 $(BIN_DIR)/test: $(CORE_OBJECTS) $(TEST_OBJECTS) $(BIN_DIR)
 	$(CC) $(CORE_OBJECTS) $(TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/test
 
+$(BIN_DIR)/viewer: $(CORE_OBJECTS) $(VIEWER_OBJECTS) $(BIN_DIR)
+	$(CC) $(CORE_OBJECTS) $(VIEWER_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/viewer
+
 $(BIN_DIR)/unit_tests: $(CORE_OBJECTS) $(UNIT_TEST_OBJECTS) $(BIN_DIR)
 	$(CC) $(CORE_OBJECTS) $(UNIT_TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/unit_tests
 
-$(BIN_DIR)/test_noise: $(NTOBJECTS) $(BIN_DIR)
-	$(CC) $(NTOBJECTS) $(LFLAGS) -o $(BIN_DIR)/test_noise
+$(BIN_DIR)/test_noise: $(NOISE_TEST_OBJECTS) $(BIN_DIR)
+	$(CC) $(NOISE_TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/test_noise
 
 $(TEST_DIR)/noise_test%2D.ppm $(TEST_DIR)/noise_test%3D.ppm \
 $(TEST_DIR)/noise_test%2D_F.ppm $(TEST_DIR)/noise_test%3D_F.ppm \

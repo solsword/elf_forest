@@ -33,7 +33,8 @@ extern color const BRIGHT_RED;
 extern color const COOL_BLUE;
 extern color const FRESH_CREAM;
 
-extern color const SHADOW;
+extern color const LIGHT_SHADOW;
+extern color const DARK_SHADOW;
 extern color const LEAF_SHADOW;
 
 // The width/height of a surface that will fill the screen at z=-1 given an

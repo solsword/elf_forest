@@ -1,11 +1,12 @@
 // test.c
-// Testing functions.
+// A testing program quite similar to the main program.
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
 
 #include "test.h"
+#include "viewer.h"
 
 #include "noise/noise.h"
 
@@ -27,8 +28,10 @@
  *************/
 
 // TODO: test for oddness near the origin.
-// Hills:
+// 50% Hills:
 //region_chunk_pos const CHUNK_ORIGIN = { .x = 8935, .y = -11980, .z = 7 };
+// 70% Hills:
+//region_chunk_pos const CHUNK_ORIGIN = { .x = 71240, .y = 54567, .z = 10 };
 // Plains:
 //region_chunk_pos const CHUNK_ORIGIN = { .x = 10235, .y = -10980, .z = 2 };
 // Beach:
@@ -49,13 +52,13 @@ int main(int argc, char** argv) {
   // Prepare the window context:
   prepare_default(&argc, argv);
 
+  // Set up the test world:
+  printf("Setting up test world...\n");
+
   // Initialize stateless subsystems:
   init_control();
   init_textures();
-  init_tick();
-
-  // Set up the test world:
-  printf("Loading test world...\n");
+  init_tick(1);
 
   // Setup stateful subsystems:
   setup_ui();
@@ -109,6 +112,10 @@ void test_compile_frame(frame *f) {
 
 void test_spawn_player(active_entity_area *area) {
   vector pos = { .x=2.0, .y=2.0, .z=50.0 };
+  //PLAYER = spawn_entity("tern", &pos, area);
+  //PLAYER = spawn_entity("sparrow", &pos, area);
   PLAYER = spawn_entity("tester", &pos, area);
   //PLAYER = spawn_entity("elf", &pos, area);
+  //PLAYER = spawn_entity("human", &pos, area);
+  //PLAYER = spawn_entity("dwarf", &pos, area);
 }

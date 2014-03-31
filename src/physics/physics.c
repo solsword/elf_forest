@@ -18,7 +18,9 @@
  * Constants *
  *************/
 
-float const TARGET_RESOLUTION = 1.0/180.0;
+float const PHYS_TARGET_RESOLUTION = 1.0/180.0;
+
+float const IMPULSE_WIDTH = 1.0/30.0;
 
 float const BOUNCE_DISTANCE = 0.0005;
 
@@ -30,26 +32,44 @@ move_flag const MF_ON_GROUND = 0x01;
 move_flag const MF_IN_LIQUID = 0x02;
 move_flag const   MF_IN_VOID = 0x04;
 move_flag const MF_CROUCHING = 0x08;
+move_flag const   MF_DO_JUMP = 0x10;
+move_flag const   MF_DO_FLAP = 0x20;
 
 /***********
  * Globals *
  ***********/
 
-float GRAVITY = 40.0;
+// TODO: Good value for this?
+//float GRAVITY = 40.0;
+float GRAVITY = 60.0;
 
+// TODO: Good values for these?
+/* Values at SUB_DT=1/60.0
 float AIR_DRAG = 0.985;
 float GROUND_DRAG = 0.90;
 float LIQUID_DRAG = 0.87;
+// */
+float AIR_DRAG = 0.995;
+float GROUND_DRAG = 0.965;
+float LIQUID_DRAG = 0.92;
+
+float NEUTRAL_CONTROL_DAMPING = 0.9;
 
 float CROUCH_COEFFICIENT = 0.3;
 float STRAFE_COEFFICIENT = 0.7;
 float BACKUP_COEFFICIENT = 0.4;
 
-// Initially we're at 1:1 time.
-float DT = SECONDS_PER_TICK;
-float SUB_DT = 0;
+float LEAP_BACK_RATIO = 3.0;
+float LEAP_CUTOFF_SPEED_SQ = 36.0;
 
-int SUBSTEPS = 2;
+// Initially we're at 1:1 time.
+float PHYS_DT = SECONDS_PER_TICK;
+float PHYS_SUB_DT = 0;
+
+int PHYS_SUBSTEPS = 1;
+
+physics_callback PHYS_SUBSTEP_START_CALLBACK = NULL;
+physics_callback PHYS_SUBSTEP_END_CALLBACK = NULL;
 
 /********************
  * Inline Functions *
@@ -202,9 +222,17 @@ done_z:
 static inline void integrate_control_inputs(entity *e) {
   float base = e->walk;
   float backup = 1.0;
-  vector forward, right, v;
+  float leapscale = 1.0;
+  vector forward, right, cdir;
+  vector v = { .x = 0, .y = 0, .z = 0 };
+  vector vjump = { .x = 0, .y = 0, .z = 0 };
+  vector vleap = { .x = 0, .y = 0, .z = 0 };
+
+  // Normal control inputs that accumulate every frame:
   vface(&forward, e->yaw, 0);
   vface(&right, e->yaw - M_PI_2, 0);
+  vcopy(&cdir, &(e->control));
+  vnorm(&cdir);
   if (in_liquid(e)) {
     base = e->swim;
   } else {
@@ -216,15 +244,52 @@ static inline void integrate_control_inputs(entity *e) {
     }
   }
   vzero(&v);
-  backup = (
-    (e->control.y < 0) * BACKUP_COEFFICIENT +
-    ((1 - e->control.y) >= 0)
-  ); // TODO: is this a bug? backup = 0 if e->control.y > 1
+  backup = (e->control.y < 0) * BACKUP_COEFFICIENT + (e->control.y >= 0);
   vadd_scaled(&v, &forward, e->control.y * backup);
   vadd_scaled(&v, &right, e->control.x * STRAFE_COEFFICIENT);
   vadd_scaled(&v, &V_UP, e->control.z);
-  vnorm(&v);
-  vadd_scaled(&(e->impulse), &v, base);
+  if (vmag2(&v) > 1) { vnorm(&v); }
+
+  // Event control inputs that happen once in a while:
+  vcopy(&vjump, &V_UP);
+  vcopy(&vleap, &v);
+  vleap.z = 0;
+  // Jump or flap as appropriate:
+  if (do_jump(e)) {
+    vscale(&vjump, e->jump);
+    vscale(&vleap, e->leap);
+    clear_do_jump(e);
+  } else if (do_flap(e)) {
+    vscale(&vjump, e->flap);
+    vscale(&vleap, e->flap);
+    clear_do_flap(e);
+  } else {
+    vscale(&vjump, 0);
+    vscale(&vleap, 0);
+  }
+  // If trying to leap backwards, leap farther to compensate for the backup
+  // coefficient:
+  if (e->control.y < 0) {
+    leapscale = vdot(&cdir, &V_SOUTH);
+    leapscale *= leapscale;
+    leapscale *= leapscale;
+    vscale(&vleap, leapscale * LEAP_BACK_RATIO);
+  }
+  // If our velocity is too high, don't apply the leap impulse:
+  if (do_jump(e) && vmag2(&(e->vel)) > LEAP_CUTOFF_SPEED_SQ) {
+    vscale(&vleap, 0);
+  }
+
+  // Scale our control vector and add impulses:
+  if (vmag2(&v) == 0 && on_ground(e)) {
+    e->vel.x *= NEUTRAL_CONTROL_DAMPING;
+    e->vel.y *= NEUTRAL_CONTROL_DAMPING;
+  } else {
+    vscale(&v, base);
+  }
+  add_impulse(e, &v);
+  add_impulse(e, &vleap);
+  add_impulse(e, &vjump);
 }
 
 // Updates an entity's position while respecting solid blocks.
@@ -236,7 +301,7 @@ static inline void update_position_collide_blocks(entity *e) {
   e_max__rpos(e, &max);
   // compute increment
   vcopy(&increment, &(e->vel));
-  vscale(&increment, SUB_DT);
+  vscale(&increment, PHYS_SUB_DT);
   // Make sure we're getting up-to-date block data from block_at:
   refresh_block_at_cache();
 
@@ -330,7 +395,7 @@ static inline void check_move_flags(entity *e) {
   if (is_void(block_at(&pos))) {
     set_in_void(e);
   }
-  // MF_CROUCHING handled in ctl.c
+  // MF_CROUCHING, MF_DO_JUMP, and MF_DO_FLAP handled in ctl.c
   // Avoid letting others get stale block data:
   refresh_block_at_cache();
 }
@@ -340,8 +405,8 @@ static inline void check_move_flags(entity *e) {
  *************/
 
 void adjust_physics_resolution(void) {
-  SUBSTEPS = (int) (DT / TARGET_RESOLUTION) & 1; // TODO: is this a bug?!?
-  SUB_DT = DT / SUBSTEPS;
+  PHYS_SUBSTEPS = (int) (PHYS_DT / PHYS_TARGET_RESOLUTION);
+  PHYS_SUB_DT = PHYS_DT / PHYS_SUBSTEPS;
 }
 
 void tick_physics(entity *e) {
@@ -349,11 +414,18 @@ void tick_physics(entity *e) {
   vector acceleration;
   // Recompute our movement flags:
   check_move_flags(e);
+  // Call the start callback after checking move flags so it can mess with
+  // them:
+  if (PHYS_SUBSTEP_START_CALLBACK != NULL) {
+    (*PHYS_SUBSTEP_START_CALLBACK)(e);
+  }
   // If we're in a void, don't move at all:
+  /*
   if (in_void(e)) {
     vzero(&(e->impulse));
     return;
   }
+  // */
   // Get control impulse:
   integrate_control_inputs(e);
   // Integrate kinetics:
@@ -362,13 +434,15 @@ void tick_physics(entity *e) {
   acceleration.z = e->impulse.z / e->mass;
   if (in_liquid(e)) {
     acceleration.z -= GRAVITY * (1 - e->buoyancy);
+  } else if (is_airborne(e) && !is_crouching(e)) {
+    acceleration.z -= GRAVITY * (1 - e->lift);
   } else {
     acceleration.z -= GRAVITY;
   }
   // Resolve entity collisions:
   resolve_entity_collisions(e);
   // Integrate acceleration into velocity:
-  vadd_scaled(&(e->vel), &acceleration, SUB_DT);
+  vadd_scaled(&(e->vel), &acceleration, PHYS_SUB_DT);
   // Drag:
   if (in_liquid(e)) {
     drag = LIQUID_DRAG;
@@ -394,4 +468,7 @@ void tick_physics(entity *e) {
   compute_bb(e);
   // Reset impulse:
   vzero(&(e->impulse));
+  if (PHYS_SUBSTEP_END_CALLBACK != NULL) {
+    (*PHYS_SUBSTEP_END_CALLBACK)(e);
+  }
 }

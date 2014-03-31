@@ -12,6 +12,7 @@ loading
   separate loading/compiling of chunks
 physics
   entity collision detection
+  swimming upwards when pressing against a wall vs. not
 terrain
   forests
     simplex object noise
@@ -27,6 +28,7 @@ graphics
   block lighting
   ambient occlusion
   entity models & textures
+  initial player facing due to initial mouse movement
 world
   plant growth
   water flow

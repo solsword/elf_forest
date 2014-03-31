@@ -41,6 +41,9 @@ extern double const DEFAULT_TRACKING_INTERVAL;
 // The number of ticks since the start of this second:
 extern int TICK_COUNT;
 
+// Whether or not automatic data loading should be performed every tick:
+extern int TICK_AUTOLOAD;
+
 // Rate trackers:
 extern rate_data TICKRATE;
 extern rate_data FRAMERATE;
@@ -76,8 +79,9 @@ struct count_data_s {
  * Functions *
  *************/
 
-// Sets up the tick system, in particular initializing the tick rate tracker.
-void init_tick(void);
+// Sets up the tick system, in particular initializing the tick rate tracker
+// and setting the TICK_AUTOLOAD variable.
+void init_tick(int autoload);
 
 // Computes how many ticks should happen based on how much time has elapsed
 // since the last call to ticks_expected().

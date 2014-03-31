@@ -30,6 +30,9 @@ GLFWwindow * WINDOW;
 // Should we render to the screen or not?
 int RENDER = 1;
 
+// Callback to call before each render call.
+render_callback PRE_RENDER_CALLBACK = NULL;
+
 // The current width/height of the window.
 int WINDOW_WIDTH = 0;
 int WINDOW_HEIGHT = 0;
@@ -89,15 +92,42 @@ void minmaximize(GLFWwindow *window, int minimized) {
 
 void render(GLFWwindow *window) {
   vector head_pos;
+  // Get the player's head position:
   get_head_vec(PLAYER, &head_pos);
+
+  // Clear the buffers:
+  //clear_color_buffer();
+  //clear_depth_buffer();
+
+  // Set up a fresh model view:
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+
+  // Call the pre-render callback if it exists:
+  if (PRE_RENDER_CALLBACK != NULL) {
+    (*PRE_RENDER_CALLBACK)();
+  }
+
+  // Render the active area:
   render_area(
     ACTIVE_AREA,
     &head_pos, PLAYER->yaw, PLAYER->pitch,
     FOV*ASPECT, FOV
   );
+
+  // Render the UI:
   render_ui();
+
+  // Pop our matrix:
+  glPopMatrix();
+
+  // Swap buffers and then clear the fresh ones:
   glfwSwapBuffers(window);
-  glClear( GL_COLOR_BUFFER_BIT );
+  clear_color_buffer();
+  clear_depth_buffer();
+
+  // Update the framerate counter:
   update_rate(&FRAMERATE);
 }
 

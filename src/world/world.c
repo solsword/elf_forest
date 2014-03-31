@@ -120,7 +120,7 @@ void cleanup_frame(frame *f) {
 }
 */
 
-chunk * create_chunk(region_chunk_pos *rcpos) {
+chunk * create_chunk(region_chunk_pos const * const rcpos) {
   chunk *c = (chunk *) malloc(sizeof(chunk));
   c->type = CA_TYPE_CHUNK;
   c->rcpos.x = rcpos->x;

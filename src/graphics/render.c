@@ -38,6 +38,12 @@ r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 20, 35, 38, 40 };
 //r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, 25 };
 //r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, 11 };
 
+float const MIN_CULL_DIST = 5 * CHUNK_SIZE;
+float const RENDER_ANGLE_ALLOWANCE = M_PI/8.0;
+// DEBUG:
+//float const MIN_CULL_DIST = 0;
+//float const RENDER_ANGLE_ALLOWANCE = -M_PI/8.0;
+
 /***********
  * Globals *
  ***********/
@@ -49,11 +55,7 @@ float THIRD_PERSON_DISTANCE = 3.2;
 
 float FOG_DENSITY = 0.01;
 
-float const MIN_CULL_DIST = 5 * CHUNK_SIZE;
-float const RENDER_ANGLE_ALLOWANCE = M_PI/8.0;
-// DEBUG:
-//float const MIN_CULL_DIST = 0;
-//float const RENDER_ANGLE_ALLOWANCE = -M_PI/8.0;
+area_render_callback AREA_PRE_RENDER_CALLBACK = NULL;
 
 /*********************
  * Private Functions *
@@ -163,14 +165,6 @@ void render_area(
   float yangle = 0; // vertical angle to chunk being rendered
   int cull = 0; // Whether to cull this chunk
 
-  // Clear the buffers:
-  clear_color_buffer();
-  clear_depth_buffer();
-
-  // Set up a fresh model view:
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-
   // Set the fog density:
   set_fog_density(FOG_DENSITY);
 
@@ -247,6 +241,8 @@ void render_area(
 
     vcopy(&view_vector, &eye_vector);
   }
+
+  // Call gluLookAt with the computed view origin and vector:
   gluLookAt(
     view_origin.x, // look from
       view_origin.y,
@@ -264,6 +260,12 @@ void render_area(
   vnorm(&view_vector);
   vcross(&side_vector, &view_vector, &up_vector);
   // */
+
+  // Take this opportunity to call the AREA_PRE_RENDER_CALLBACK now that our
+  // model view matrix is set up:
+  if (AREA_PRE_RENDER_CALLBACK != NULL) {
+    (*AREA_PRE_RENDER_CALLBACK)(area);
+  }
 
   // DEBUG: BLUE TRIANGLE
   /*

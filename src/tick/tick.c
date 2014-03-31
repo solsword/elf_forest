@@ -26,6 +26,8 @@ double const DEFAULT_TRACKING_INTERVAL = 0.25;
 
 int TICK_COUNT = 0;
 
+int TICK_AUTOLOAD = 1;
+
 rate_data TICKRATE;
 rate_data FRAMERATE;
 
@@ -37,7 +39,8 @@ count_data CHUNKS_COMPILED;
  * Functions *
  *************/
 
-void init_tick(void) {
+void init_tick(int autoload) {
+  TICK_AUTOLOAD = autoload;
   setup_rate_data(&TICKRATE, DEFAULT_TRACKING_INTERVAL);
   setup_rate_data(&FRAMERATE, DEFAULT_TRACKING_INTERVAL);
   setup_count_data(&CHUNK_LAYERS_RENDERED, DEFAULT_TRACKING_INTERVAL);
@@ -70,11 +73,13 @@ void tick(int steps) {
     return;
   }
   adjust_physics_resolution();
-  int i;
+  size_t i, j;
   for (i = 0; i < steps; ++i) {
     TICK_COUNT = (TICK_COUNT + 1) % TICKS_PER_SECOND_I;
     tick_motion_controls();
-    tick_active_entities();
+    for (j = 0; j < PHYS_SUBSTEPS; ++j) {
+      tick_active_entities();
+    }
     warp_space(ACTIVE_AREA, PLAYER);
     // TODO: tick blocks
     //tick_blocks(ACTIVE_AREA);
@@ -82,8 +87,10 @@ void tick(int steps) {
   }
   region_chunk_pos rcpos;
   rpos__rcpos(&(ACTIVE_AREA->origin), &rcpos);
-  load_surroundings(&rcpos);
-  tick_data();
+  if (TICK_AUTOLOAD) {
+    load_surroundings(&rcpos);
+    tick_data();
+  }
   clear_edge_triggers();
 }
 

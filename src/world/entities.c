@@ -96,6 +96,7 @@ entity * create_entity(void) {
   }
   e->model = NULL;
   e->area = NULL;
+  e->last_flap = 0;
   return e;
 }
 

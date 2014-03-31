@@ -59,6 +59,11 @@ extern float THIRD_PERSON_DISTANCE;
 // The fog distance:
 extern float FOG_DENSITY;
 
+// A callback to call after the model view matrix is set up but before anything
+// is rendered in render_area:
+typedef void (*area_render_callback)(active_entity_area *);
+extern area_render_callback AREA_PRE_RENDER_CALLBACK;
+
 /********************
  * Inline Functions *
  ********************/

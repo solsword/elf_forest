@@ -18,6 +18,10 @@ extern GLFWwindow * WINDOW;
 // Should we render to the screen or not?
 extern int RENDER;
 
+// Callback to call before each render call.
+typedef void (*render_callback)(void);
+extern render_callback PRE_RENDER_CALLBACK;
+
 // The current width/height of the window.
 extern int WINDOW_WIDTH;
 extern int WINDOW_HEIGHT;

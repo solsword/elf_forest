@@ -9,6 +9,8 @@
 
 #include <GL/gl.h>
 
+#include <GLFW/glfw3.h> // glfwGetTime
+
 #include "world.h"
 
 #include "datatypes/list.h"
@@ -66,11 +68,16 @@ struct entity_s {
 
   float mass; // Mass.
   float walk; // Walk speed.
-  float swim; // Swim speed.
+    float jump; // Upward jump impulse.
+    float leap; // Forwards jump impulse.
+  float swim; // Swim speed (double-swimming is not allowed).
+    float buoyancy; // Buoyancy in liquids.
   float fly; // Fly speed.
-  float jump; // Jump impulse.
+    float flap; // Flap impulse.
+    float lift; // Buoyancy in air.
+    double flap_duration; // Minimum time between flaps.
 
-  float buoyancy; // Buoyancy.
+  double last_flap; // Last time this entity flapped.
 
   vector pos; // Position relative to the origin of this entity's active area.
   float yaw, pitch; // Facing.
@@ -112,10 +119,14 @@ static inline void copy_entity_data(entity *from, entity *to) {
   to->model = from->model;
   to->mass = from->mass;
   to->walk = from->walk;
+    to->jump = from->jump;
+    to->leap = from->leap;
   to->swim = from->swim;
+    to->buoyancy = from->buoyancy;
   to->fly = from->fly;
-  to->buoyancy = from->buoyancy;
-  to->jump = from->jump;
+    to->flap = from->flap;
+    to->lift = from->lift;
+    to->flap_duration = from->flap_duration;
 }
 
 static inline void copy_entity_pos(entity *from, entity *to) {
@@ -225,6 +236,17 @@ static inline void e_max__rpos(entity *e, region_pos *rpos) {
   rpos->x = e_rp_max_x(e);
   rpos->y = e_rp_max_y(e);
   rpos->z = e_rp_max_z(e);
+}
+
+// Movement functions:
+static inline int try_flap(entity *e) {
+  double t = glfwGetTime();
+  if (t - e->last_flap > e->flap_duration) {
+    e->last_flap = t;
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 /******************************

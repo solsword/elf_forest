@@ -2,7 +2,7 @@
 #define TEST_H
 
 // test.h
-// Testing functions.
+// A testing program quite similar to the main program.
 
 #include "world/world.h"
 #include "world/entities.h"
