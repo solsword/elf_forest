@@ -369,7 +369,9 @@ void load_surroundings(region_chunk_pos *center) {
 void tick_data(void) {
   int n = 0;
   chunk *c = NULL;
+  chunk *old_chunk = NULL;
   chunk_approximation *ca = NULL;
+  chunk_approximation *old_approx = NULL;
   lod detail = LOD_BASE;
   queue *q = LOAD_QUEUES->levels[LOD_BASE];
   while (n < LOAD_CAP && q_get_length(q) > 0) {
@@ -377,7 +379,7 @@ void tick_data(void) {
     load_chunk(c);
     c->chunk_flags &= ~CF_QUEUED_TO_LOAD;
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-    m3_put_value(
+    old_chunk = (chunk *) m3_put_value(
       CHUNK_CACHE->levels[LOD_BASE],
       (void *) c,
       (map_key_t) c->rcpos.x,
@@ -385,6 +387,9 @@ void tick_data(void) {
       (map_key_t) c->rcpos.z
     );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+    if (old_chunk != NULL) {
+      cleanup_chunk(old_chunk);
+    }
     n += 1;
   }
   for (detail = LOD_BASE + 1; detail < N_LODS; ++detail) {
@@ -394,13 +399,16 @@ void tick_data(void) {
       load_chunk_approx(ca);
       ca->chunk_flags &= ~CF_QUEUED_TO_LOAD;
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-      m3_put_value(
+      old_approx = (chunk_approximation *) m3_put_value(
         CHUNK_CACHE->levels[ca->detail],
         (void *) ca,
         (map_key_t) ca->rcpos.x,
         (map_key_t) ca->rcpos.y,
         (map_key_t) ca->rcpos.z
       );
+      if (old_approx != NULL) {
+        cleanup_chunk_approximation(old_approx);
+      }
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
       n += 1;
     }

@@ -243,7 +243,7 @@ int l_remove_all_elements(list *l, void *element) {
   size_t removed = 0;
   size_t skip = 0;
   for (i = 0; i + skip < l->count; ++i) {
-    while (l->elements[i + skip] == element) {
+    while (i + skip < l->count && l->elements[i + skip] == element) {
       skip += 1;
       removed += 1;
     }

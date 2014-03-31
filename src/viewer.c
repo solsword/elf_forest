@@ -9,6 +9,7 @@
 
 #include "graphics/gfx.h"
 
+#include "world/blocks.h"
 #include "world/world.h"
 #include "world/entities.h"
 #include "world/chunk_data.h"
@@ -65,6 +66,10 @@ int main(int argc, char** argv) {
 
   // load a single chunk:
   view_chunk_from_world(&INTERESTING_CHUNK);
+  // TODO: Why doesn't this work with an empty chunk?!?
+  //view_empty_chunk();
+
+  set_center_block(B_LEAVES);
 
   // Spawn the player:
   spawn_viewer();
@@ -76,6 +81,45 @@ int main(int argc, char** argv) {
   loop();
 
   return 0;
+}
+
+/*********************
+ * Private Functions *
+ *********************/
+
+void stage_chunk(chunk *c) {
+  chunk *old_chunk;
+  chunk_or_approx coa;
+
+  coa.type = CA_TYPE_CHUNK;
+  coa.ptr = (void *) c;
+
+  // Set up initial flags:
+  c->chunk_flags &= ~CF_COMPILED;
+
+  // Compile the chunk:
+  compute_exposure(&coa);
+  compile_chunk_or_approx(&coa);
+
+  // Overwrite the chunk's position information and stick it in the chunk cache
+  // at the correct position:
+  c->rcpos.x = OBSERVED_CHUNK.x;
+  c->rcpos.y = OBSERVED_CHUNK.y;
+  c->rcpos.z = OBSERVED_CHUNK.z;
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+  old_chunk = (chunk *) m3_put_value(
+    CHUNK_CACHE->levels[LOD_BASE],
+    (void *) c,
+    (map_key_t) c->rcpos.x,
+    (map_key_t) c->rcpos.y,
+    (map_key_t) c->rcpos.z
+  );
+#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+
+  // Clean up the previous chunk:
+  if (old_chunk != NULL && old_chunk != c) {
+    cleanup_chunk(old_chunk);
+  }
 }
 
 /*************
@@ -124,6 +168,65 @@ void constrain_player_position(entity *e) {
       e->vel.z = 0;
     }
   }
+}
+
+void view_chunk_from_world(region_chunk_pos const * const rcpos) {
+  chunk *c = create_chunk(rcpos);
+
+  // Set flags so that the chunk won't be automatically marked for compilation
+  // (stage_chunk compiles chunks manually and the data subsystem isn't even
+  // running):
+  c->chunk_flags &= ~CF_COMPILE_ON_LOAD;
+  c->chunk_flags &= ~CF_LOADED;
+
+  // Load the chunk:
+  load_chunk(c);
+
+  // Put the chunk in the viewing area:
+  stage_chunk(c);
+}
+
+void view_empty_chunk() {
+  chunk *c = create_chunk(&OBSERVED_CHUNK);
+  c_fill_with_block(c, B_WATER); // Fill the chunk with air
+  stage_chunk(c);
+}
+
+chunk *get_observed_chunk() {
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+  return (chunk *) m3_get_value(
+    CHUNK_CACHE->levels[LOD_BASE],
+    (map_key_t) OBSERVED_CHUNK.x,
+    (map_key_t) OBSERVED_CHUNK.y,
+    (map_key_t) OBSERVED_CHUNK.z
+  );
+#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+}
+
+void set_center_block(block b) {
+  chunk *c = get_observed_chunk();
+  chunk_index idx;
+  idx.x = CHUNK_SIZE/2;
+  idx.y = CHUNK_SIZE/2;
+  idx.z = CHUNK_SIZE/2;
+  c_put_block(c, idx, b);
+
+  //*
+  chunk_or_approx coa;
+
+  coa.type = CA_TYPE_CHUNK;
+  coa.ptr = (void *) c;
+
+  // Set up initial flags:
+  c->chunk_flags &= ~CF_COMPILED;
+
+  // Compile the chunk:
+  compute_exposure(&coa);
+  compile_chunk_or_approx(&coa);
+  // */
+
+  // Re-stage the chunk which will recompile it:
+  //stage_chunk(c);
 }
 
 void draw_viewing_area(active_entity_area *area) {
@@ -312,38 +415,4 @@ void draw_viewing_area(active_entity_area *area) {
   glEnable( GL_CULL_FACE );
 
   glPopMatrix();
-}
-
-void view_chunk_from_world(region_chunk_pos const * const rcpos) {
-  chunk *c = create_chunk(rcpos);
-  chunk_or_approx coa;
-  coa.type = CA_TYPE_CHUNK;
-  coa.ptr = (void *) c;
-
-  // Set up initial flags:
-  c->chunk_flags &= ~CF_COMPILE_ON_LOAD;
-  c->chunk_flags &= ~CF_LOADED;
-  c->chunk_flags &= ~CF_COMPILED;
-
-  // Load the chunk:
-  load_chunk(c);
-
-  // Compile the chunk:
-  compute_exposure(&coa);
-  compile_chunk_or_approx(&coa);
-
-  // Overwrite the chunk's position information and stick it in the chunk cache
-  // at the correct position:
-  c->rcpos.x = OBSERVED_CHUNK.x;
-  c->rcpos.y = OBSERVED_CHUNK.y;
-  c->rcpos.z = OBSERVED_CHUNK.z;
-#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-  m3_put_value(
-    CHUNK_CACHE->levels[LOD_BASE],
-    (void *) c,
-    (map_key_t) c->rcpos.x,
-    (map_key_t) c->rcpos.y,
-    (map_key_t) c->rcpos.z
-  );
-#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
 }

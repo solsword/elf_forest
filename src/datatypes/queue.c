@@ -229,7 +229,7 @@ int q_remove_all_elements(queue *q, void *element) {
   size_t removed = 0;
   size_t skip = 0;
   for (i = 0; i + skip < q->count; ++i) {
-    while (q->elements[QIDX(q, i + skip)] == element) {
+    while (i + skip < q->count && q->elements[QIDX(q, i + skip)] == element) {
       skip += 1;
       removed += 1;
     }

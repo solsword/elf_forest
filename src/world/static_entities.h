@@ -26,7 +26,7 @@ entity STATIC_ENTITY_TYPES[NUM_STATIC_ENTITY_TYPES] = {
   },
   {
     .type="viewer",
-    .size={.x=0.2,.y=0.2,.z=0.2},
+    .size={.x=0.5,.y=0.5,.z=0.5},
     .head_pos={.x=0.0,.y=0.0,.z=0.0},
     .mass=1,
     .walk=0,

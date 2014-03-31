@@ -137,7 +137,7 @@ static block_data const  BD_FACE_OUTSIDE = 0x0007;
 #define M_BD_FACE_OUTSIDE 0x0007
 
 // A table for combining orientations. Index the table by the block facing and
-// then the face index). For example, if you want to know what face is on top
+// then the face index. For example, if you want to know what face is on top
 // of an orientable block facing down, you'd get ROTATE_FACE[BD_ORI_DOWN,
 // BD_ORI_TOP] and get BD_ORI_BACK. Note that the extra "IN" and "OUT" faces
 // don't rotate, and rotating to face them does nothing.

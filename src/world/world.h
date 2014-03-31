@@ -5,6 +5,7 @@
 // Structures and functions for representing the world.
 
 #include <stdint.h>
+#include <string.h>
 #include <math.h>
 
 #include <GL/gl.h>
@@ -358,55 +359,6 @@ static inline void vec__rpos(
   result->z = origin->z + fastfloor(v->z);
 }
 
-/* TODO: Remove this
-static inline void fpos__fidx(frame_pos *pos, frame_index *idx) {
-  idx->x = (pos->x + HALF_FRAME) & FC_MASK;
-  idx->y = (pos->y + HALF_FRAME) & FC_MASK;
-  idx->z = (pos->z + HALF_FRAME) & FC_MASK;
-}
-static inline void fpos__cidx(frame_pos *pos, chunk_index *idx) {
-  idx->x = (pos->x + HALF_FRAME) & CH_MASK;
-  idx->y = (pos->y + HALF_FRAME) & CH_MASK;
-  idx->z = (pos->z + HALF_FRAME) & CH_MASK;
-}
-
-static inline void fidx__cidx(frame_index *fidx, chunk_index *cidx) {
-  cidx->x = fidx->x & CH_MASK;
-  cidx->y = fidx->y & CH_MASK;
-  cidx->z = fidx->z & CH_MASK;
-}
-
-static inline void fidx__fpos(frame_index *idx, frame_pos *pos) {
-  pos->x = (idx->x - HALF_FRAME);
-  pos->y = (idx->y - HALF_FRAME);
-  pos->z = (idx->z - HALF_FRAME);
-}
-
-static inline void fcidx__rcpos(
-  frame_chunk_index *idx,
-  frame *f,
-  region_chunk_pos *pos
-) {
-  pos->x = f->region_offset.x + idx->x - (FRAME_SIZE / 2);
-  pos->y = f->region_offset.y + idx->y - (FRAME_SIZE / 2);
-  pos->z = f->region_offset.z + idx->z - (FRAME_SIZE / 2);
-}
-*/
-
-/* TODO: remove these
-static inline void vec__fpos(vector *v, frame_pos *pos) {
-  pos->x = fastfloor(v->x);
-  pos->y = fastfloor(v->y);
-  pos->z = fastfloor(v->z);
-}
-
-static inline void fpos__vec(frame_pos *pos, vector *v) {
-  v->x = (float) pos->x;
-  v->y = (float) pos->y;
-  v->z = (float) pos->z;
-}
-*/
-
 static inline void ch__coa(chunk *c, chunk_or_approx *coa) {
   coa->type = CA_TYPE_CHUNK;
   coa->ptr = (void *) c;
@@ -508,6 +460,41 @@ static inline void c_clear_flags(
     ((idx.y & CH_MASK) << CHUNK_BITS) +
     ((idx.z & CH_MASK) << (CHUNK_BITS*2))
   ] &= ~flags;
+}
+
+// General utility functions:
+
+static inline void c_erase_block_data(chunk *c) {
+  memset(
+    c->blocks,
+    0,
+    CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE * sizeof(block)
+  );
+  memset(
+    c->block_flags,
+    0,
+    CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE * sizeof(block_flag)
+  );
+}
+
+static inline void c_clear_all_block_flags(chunk *c) {
+  memset(
+    c->block_flags,
+    0,
+    CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE * sizeof(block_flag)
+  );
+}
+
+static inline void c_fill_with_block(chunk *c, block b) {
+  chunk_index idx = { .x = 0, .y = 0, .z = 0 };
+  c_clear_all_block_flags(c);
+  for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
+    for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
+      for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
+        c_put_block(c, idx, b);
+      }
+    }
+  }
 }
 
 /******************************

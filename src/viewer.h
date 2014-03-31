@@ -46,10 +46,19 @@ void fake_player_floating(entity *e);
 // Constrains the position of the given entity to the viewing area:
 void constrain_player_position(entity *e);
 
-// Draws the bounding box of the viewing area:
-void draw_viewing_area(active_entity_area *ignore);
-
 // Loads a chunk from the world into the viewing area:
 void view_chunk_from_world(region_chunk_pos const * const rcpos);
+
+// Loads an empty chunk into the viewing area.
+void view_empty_chunk();
+
+// Returns a pointer to the chunk that the viewer is viewing.
+chunk *get_observed_chunk();
+
+// Sets the center block of the loaded chunk to the given block.
+void set_center_block(block b);
+
+// Draws the bounding box of the viewing area:
+void draw_viewing_area(active_entity_area *ignore);
 
 #endif // ifndef VIEWER_H
