@@ -22,7 +22,7 @@
 int KEYMAP[N_CONTROLS] = {
   GLFW_KEY_Q, // quit
   GLFW_KEY_P, // pause
-  GLFW_KEY_SPACE, GLFW_KEY_LEFT_SHIFT, // jump, crouch
+  GLFW_KEY_SPACE, GLFW_KEY_Z, GLFW_KEY_LEFT_SHIFT, // jump, dive, crouch
   GLFW_KEY_A, GLFW_KEY_D, GLFW_KEY_W, GLFW_KEY_S, // movement
   GLFW_KEY_V, // swap views
   GLFW_KEY_KP_ADD, GLFW_KEY_KP_SUBTRACT, // zoom in/out
@@ -143,6 +143,12 @@ void tick_general_controls(void) {
 void tick_motion_controls(void) {
   vector vup, vfwd; // intermediate jump vectors
   vzero(&(PLAYER->control));
+  // Reset and recompute the crouching flag:
+  clear_crouching(PLAYER);
+  if (CONTROLS[C_CROUCH]) {
+    set_crouching(PLAYER);
+  }
+  // Add directional inputs to our control vector:
   if (CONTROLS[C_FORWARD]) {
     vadd(&(PLAYER->control), &V_NORTH);
   }
@@ -155,11 +161,15 @@ void tick_motion_controls(void) {
   if (CONTROLS[C_RIGHT]) {
     vadd(&(PLAYER->control), &V_EAST);
   }
-  // Note: unlike other control inputs, jump inputs are just impulses.
+  if (CONTROLS[C_DIVE]) {
+    vadd(&(PLAYER->control), &V_DOWN);
+  }
+  // Set the do_jump or do_flap flag if the jump key is pressed (or add to
+  // control if we're in water)
   clear_do_jump(PLAYER);
   clear_do_flap(PLAYER);
   if (DOWN[C_JUMP] || CONTROLS[C_JUMP]) {
-    if (in_liquid(PLAYER)) {
+    if (in_liquid(PLAYER) || is_airborne(PLAYER)) {
       vadd(&(PLAYER->control), &V_UP);
     } else {
       // Up vector is just straight up:
@@ -175,14 +185,6 @@ void tick_motion_controls(void) {
         set_do_flap(PLAYER);
       }
       DOWN[C_JUMP] = 0; // we'll only jump/flap once per tick max
-    }
-  }
-  clear_crouching(PLAYER);
-  if (CONTROLS[C_CROUCH]) {
-    if (in_liquid(PLAYER)) {
-      vadd(&(PLAYER->control), &V_DOWN);
-    } else {
-      set_crouching(PLAYER);
     }
   }
 }

@@ -338,4 +338,10 @@ static inline block is_opaque(block b) {
   );
 }
 
+// Utilities:
+
+static inline block next_block(block b) {
+  return full_block((just_id(b) + 1) % BLOCK_TYPE_COUNT);
+}
+
 #endif // ifndef BLOCKS_H

@@ -220,7 +220,7 @@ done_z:
 // constrain result velocity in two dimensions. Also note that a lack of
 // control inputs translates to active velocity damping.
 static inline void integrate_control_inputs(entity *e) {
-  float base = e->walk;
+  float base;
   float backup = 1.0;
   float leapscale = 1.0;
   vector forward, right, cdir;
@@ -233,15 +233,14 @@ static inline void integrate_control_inputs(entity *e) {
   vface(&right, e->yaw - M_PI_2, 0);
   vcopy(&cdir, &(e->control));
   vnorm(&cdir);
+  base = e->walk;
   if (in_liquid(e)) {
     base = e->swim;
-  } else {
-    if (!on_ground(e)) {
-      base = e->fly;
-    }
-    if (is_crouching(e)) {
-      base *= CROUCH_COEFFICIENT;
-    }
+  } else if (is_airborne(e)) {
+    base = e->fly;
+  }
+  if (is_crouching(e)) {
+    base *= CROUCH_COEFFICIENT;
   }
   vzero(&v);
   backup = (e->control.y < 0) * BACKUP_COEFFICIENT + (e->control.y >= 0);

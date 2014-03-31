@@ -65,9 +65,9 @@ int main(int argc, char** argv) {
   printf("...done.\n");
 
   // load a single chunk:
-  view_chunk_from_world(&INTERESTING_CHUNK);
+  //view_chunk_from_world(&INTERESTING_CHUNK);
   // TODO: Why doesn't this work with an empty chunk?!?
-  //view_empty_chunk();
+  view_empty_chunk();
 
   set_center_block(B_LEAVES);
 
@@ -95,6 +95,7 @@ void stage_chunk(chunk *c) {
   coa.ptr = (void *) c;
 
   // Set up initial flags:
+  c->chunk_flags |= CF_LOADED;
   c->chunk_flags &= ~CF_COMPILED;
 
   // Compile the chunk:
@@ -188,7 +189,7 @@ void view_chunk_from_world(region_chunk_pos const * const rcpos) {
 
 void view_empty_chunk() {
   chunk *c = create_chunk(&OBSERVED_CHUNK);
-  c_fill_with_block(c, B_WATER); // Fill the chunk with air
+  c_fill_with_block(c, B_AIR); // Fill the chunk with air
   stage_chunk(c);
 }
 
@@ -211,22 +212,17 @@ void set_center_block(block b) {
   idx.z = CHUNK_SIZE/2;
   c_put_block(c, idx, b);
 
-  //*
-  chunk_or_approx coa;
+  // Re-staging the chunk which will recompile it:
+  stage_chunk(c);
+}
 
-  coa.type = CA_TYPE_CHUNK;
-  coa.ptr = (void *) c;
-
-  // Set up initial flags:
-  c->chunk_flags &= ~CF_COMPILED;
-
-  // Compile the chunk:
-  compute_exposure(&coa);
-  compile_chunk_or_approx(&coa);
-  // */
-
-  // Re-stage the chunk which will recompile it:
-  //stage_chunk(c);
+block get_center_block() {
+  chunk *c = get_observed_chunk();
+  chunk_index idx;
+  idx.x = CHUNK_SIZE/2;
+  idx.y = CHUNK_SIZE/2;
+  idx.z = CHUNK_SIZE/2;
+  return c_get_block(c, idx);
 }
 
 void draw_viewing_area(active_entity_area *area) {
@@ -238,6 +234,14 @@ void draw_viewing_area(active_entity_area *area) {
           south_center[3],
           east_center[3],
           west_center[3];
+
+  // TODO: Put this under user control!
+  static size_t block_swap_tick = 0;
+  block_swap_tick = (block_swap_tick + 1) % 4;
+  if (block_swap_tick == 0) {
+    set_center_block(next_block(get_center_block()));
+  }
+
   top_vs[ 0] = VB_MIN - 1 - area->origin.x;
   top_vs[ 1] = VB_MIN - 1 - area->origin.y;
   top_vs[ 2] = VB_MAX + 1 - area->origin.z;
