@@ -49,12 +49,12 @@ float const DEFAULT_A = 1.0;
 // Camera parameters
 double const FOV = M_PI/3.0;
 double const ASPECT = 4.0/3.0;
-double const NEAR = 0.15;
+double const NEAR = 0.05;
 double const FAR = 1024.0;
 
-/*************
- * Functions *
- *************/
+/***************************
+ * GLFW Callback Functions *
+ ***************************/
 
 // GLFW callback functions:
 
@@ -70,15 +70,18 @@ void resize(GLFWwindow *window, int w, int h) {
   WINDOW_HEIGHT = h;
 }
 
-static void set_active(GLFWwindow *window, int active) {
+void set_active(GLFWwindow *window, int active) {
   if (active) {
     // Start rendering if we had stopped:
     RENDER = 1;
   } else {
-    // Pause and stop rendering:
-    RENDER = 0;
+    // Pause and stop rendering, but re-draw once to put up the "PAUSED"
+    // message:
     PAUSED = 1;
     PHYSICS_PAUSED = 1;
+    RENDER = 0;
+
+    render(window);
   }
 }
 
@@ -131,16 +134,17 @@ void render(GLFWwindow *window) {
   update_rate(&FRAMERATE);
 }
 
-// Individual setup functions:
+/************************
+ * GLFW Setup Functions *
+ ************************/
 
-// Initialize the GLFW context:
-static void init_context(int* argc, char** argv) {
+void init_context(int* argc, char** argv) {
   if (!glfwInit()) {
     exit(-1);
   }
 }
 
-static void activate_gfx_callbacks(void) {
+void activate_gfx_callbacks(void) {
   // Setup the callback functions:
   glfwSetWindowRefreshCallback(WINDOW, &render);
   // We don't care about window resize events as long as they don't affect our
@@ -151,7 +155,7 @@ static void activate_gfx_callbacks(void) {
 }
 
 // Sets various OpenGL settings:
-void glsettings() {
+void glsettings(void) {
   glEnable( GL_CULL_FACE );
   glFrontFace( GL_CW );
   glEnable( GL_BLEND );
@@ -171,14 +175,16 @@ void glsettings() {
 }
 
 // Sets up the OpenGL perspective:
-void glperspective() {
+void glperspective(void) {
   glMatrixMode( GL_PROJECTION );
   glLoadIdentity();
   gluPerspective(FOV*R2D, ASPECT, NEAR, FAR);
   glMatrixMode( GL_MODELVIEW );
 }
 
-// Main interface functions:
+/*************
+ * Functions *
+ *************/
 
 void quit(void) {
   cleanup();
@@ -197,6 +203,7 @@ void loop(void) {
     if (RENDER) {
       render(WINDOW);
     }
+    // TODO: don't busy-wait while paused?
     glfwPollEvents();
     tick(ticks_expected());
   }

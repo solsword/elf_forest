@@ -87,6 +87,39 @@ static inline void set_fog_density(float density) {
   glFogf( GL_FOG_DENSITY, density );
 }
 
+/***************************
+ * GLFW Callback Functions *
+ ***************************/
+
+// The resize callback for when the window size changes:
+void resize(GLFWwindow *window, int w, int h);
+
+// Callback for when the window changes activity states (e.g., is minimized).
+void set_active(GLFWwindow *window, int active);
+
+// The focus and minmaximize callbacks which just call set_active:
+void focus(GLFWwindow *window, int focus);
+void minmaximize(GLFWwindow *window, int minimized);
+
+// The main render callback:
+void render(GLFWwindow *window);
+
+/************************
+ * GLFW Setup Functions *
+ ************************/
+
+// Initializes the GLFW context:
+void init_context(int* argc, char** argv);
+
+// Activates the callbacks defined above:
+void activate_gfx_callbacks(void);
+
+// Sets a bundle of OpenGL settings:
+void glsettings(void);
+
+// Sets up a standard perspective projection matrix:
+void glperspective(void);
+
 /*************
  * Functions *
  *************/

@@ -239,6 +239,10 @@ static inline void e_max__rpos(entity *e, region_pos *rpos) {
 }
 
 // Movement functions:
+
+// Try to flap. Returns 1 if flapping is okay, and 0 if not (because our
+// previous flap was too recent). If it returns 1, it also automatically
+// records the current time as the last flap time.
 static inline int try_flap(entity *e) {
   double t = glfwGetTime();
   if (t - e->last_flap > e->flap_duration) {
@@ -247,6 +251,11 @@ static inline int try_flap(entity *e) {
   } else {
     return 0;
   }
+}
+
+// Fake a flap: set the "last flap time" to now.
+static inline void fake_flap(entity *e) {
+  e->last_flap = glfwGetTime();
 }
 
 /******************************

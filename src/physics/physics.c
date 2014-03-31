@@ -260,7 +260,7 @@ static inline void integrate_control_inputs(entity *e) {
     clear_do_jump(e);
   } else if (do_flap(e)) {
     vscale(&vjump, e->flap);
-    vscale(&vleap, e->flap);
+    vscale(&vleap, e->leap);
     clear_do_flap(e);
   } else {
     vscale(&vjump, 0);

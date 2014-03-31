@@ -83,8 +83,8 @@ int main(int argc, char** argv) {
 void test_spawn_player(active_entity_area *area) {
   vector pos = { .x=2.0, .y=2.0, .z=50.0 };
   //PLAYER = spawn_entity("tern", &pos, area);
-  //PLAYER = spawn_entity("sparrow", &pos, area);
-  PLAYER = spawn_entity("tester", &pos, area);
+  PLAYER = spawn_entity("sparrow", &pos, area);
+  //PLAYER = spawn_entity("tester", &pos, area);
   //PLAYER = spawn_entity("elf", &pos, area);
   //PLAYER = spawn_entity("human", &pos, area);
   //PLAYER = spawn_entity("dwarf", &pos, area);
