@@ -154,10 +154,10 @@ static inline void draw_watermark(void) {
     -2, 0
   );
   render_string(
-    "<alpha test>",
+    "<Bird's-Eye View Demo>",
     WHITE,
     22,
-    620, 15
+    500, 15
   );
 }
 
