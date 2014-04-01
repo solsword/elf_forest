@@ -15,7 +15,7 @@
  * Global variables *
  ********************/
 
-char const * const BLOCK_TEXTURE_FILE = "res/textures.png";
+char const * const BLOCK_TEXTURE_FILE = "res/textures/blocks.png";
 
 GLuint BLOCK_ATLAS = 0;
 uint16_t BLOCK_ATLAS_WIDTH = 1;

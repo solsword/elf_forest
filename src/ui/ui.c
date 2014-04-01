@@ -40,13 +40,14 @@ color CROSSHAIRS_COLOR;
 color const WHITE = { .r=255, .g=255, .b=255, .a=255 };
 color const BLACK = { .r=0, .g=0, .b=0, .a=255 };
 color const ELF_FOREST_GREEN = { .r=17, .g=91, .b=27, .a=255 };
-color const BRIGHT_RED = { .r=255, .g=55, .b=45, .a=255 };
+color const BRIGHT_RED = { .r=255, .g=45, .b=35, .a=255 };
+color const SUN_YELLOW = { .r=255, .g=255, .b=96, .a=255 };
 color const COOL_BLUE = { .r=80, .g=95, .b=255, .a=255 };
-color const FRESH_CREAM = { .r=255, .g=240, .b=230, .a=255 };
+color const FRESH_CREAM = { .r=250, .g=255, .b=215, .a=255 };
 
 color const LIGHT_SHADOW = { .r=112, .g=112, .b=112, .a=144 };
 color const DARK_SHADOW = { .r=56, .g=56, .b=56, .a=160 };
-color const LEAF_SHADOW = { .r=34, .g=41, .b=38, .a=170 };
+color const LEAF_SHADOW = { .r=32, .g=45, .b=41, .a=170 };
 
 float OVERLAY_WIDTH = 1.0;
 float OVERLAY_HEIGHT = 1.0;
