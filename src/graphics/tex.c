@@ -284,28 +284,36 @@ uint16_t const BLOCK_TEXTURE_MAP[1024] = {
    0x0fe, 0x0fe, 0x0fe, 0x0fe,         0x0ff, 0x0ff, 0x0ff, 0x0ff,
 };
 
+/******************************
+ * Constructors & Destructors *
+ ******************************/
+
+texture *create_texture(size_t width, size_t height) {
+  texture * tx = (texture *) malloc(sizeof(texture));
+  tx->width = width;
+  tx->height = height;
+  tx->pixels = (pixel *) calloc(width * height, sizeof(pixel));
+  return tx;
+}
+
+void cleanup_texture(texture *tx) {
+  free(tx->pixels);
+  free(tx);
+}
+
 /*************
  * Functions *
  *************/
 
 void init_textures(void) {
-  txinfo* txi = loadPNG(BLOCK_TEXTURE_FILE);
-  BLOCK_ATLAS = create_texture(txi);
-  BLOCK_ATLAS_WIDTH = txi->width / BLOCK_TEXTURE_SIZE;
-  BLOCK_ATLAS_HEIGHT = txi->height / BLOCK_TEXTURE_SIZE;
-  free(txi->data);
-  free(txi);
+  texture* tx = load_texture_from_png(BLOCK_TEXTURE_FILE);
+  BLOCK_ATLAS = upload_texture(tx);
+  BLOCK_ATLAS_WIDTH = tx->width / BLOCK_TEXTURE_SIZE;
+  BLOCK_ATLAS_HEIGHT = tx->height / BLOCK_TEXTURE_SIZE;
+  cleanup_texture(tx);
 }
 
-GLuint load_texture(char const * const filename) {
-  txinfo* txi = loadPNG(filename);
-  GLuint result = create_texture(txi);
-  free(txi->data);
-  free(txi);
-  return result;
-}
-
-txinfo* loadPNG(char const * const filename) {
+texture* load_texture_from_png(char const * const filename) {
   FILE *fp;
 
   fp = fopen(filename, "rb");
@@ -348,8 +356,8 @@ txinfo* loadPNG(char const * const filename) {
     NULL
   );
 
-  // Create our result info structure:
-  txinfo *result = (txinfo*) malloc(sizeof(txinfo));
+  // Create our result texture:
+  texture *result = (texture*) malloc(sizeof(texture));
   if (result == NULL) {
     png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
     perror("Couldn't allocate space for texture info.");
@@ -368,12 +376,26 @@ txinfo* loadPNG(char const * const filename) {
   // Find out the number of bytes/row:
   uint32_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
 
-  // Malloc our data array:
-  result->data = (GLvoid*) malloc(row_bytes * result->height);
-  if (result->data == NULL) {
+  // Malloc our pixels array:
+#ifdef DEBUG
+  if (row_bytes != sizeof(pixel)*result->width) {
+    fprintf(
+      stderr,
+      "Error: PNG row size doesn't match width (non-RGBA-32 pixel format?).\n"
+      "Fatal error loading file '%s'.\n",
+      filename
+    );
+    png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+    exit(1);
+  }
+#endif
+  result->pixels = (pixel*) malloc(
+    result->width * result->height * sizeof(pixel)
+  );
+  if (result->pixels == NULL) {
     png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
     free(result);
-    perror("Couldn't allocate space for texture data.");
+    perror("Couldn't allocate space for texture pixels.");
     exit(errno);
   }
 
@@ -383,9 +405,9 @@ txinfo* loadPNG(char const * const filename) {
   int i;
   for (i = 0; i < result->height; ++i) {
     memcpy(
-      (result->data) + (row_bytes * i),
+      &(result->pixels[result->width * i]),
       row_pointers[i],
-      row_bytes
+      result->width * sizeof(pixel)
     );
   }
 
@@ -396,7 +418,7 @@ txinfo* loadPNG(char const * const filename) {
   return result;
 }
 
-GLuint create_texture(txinfo* info) {
+GLuint upload_texture(texture* source) {
   GLuint result = 0;
   // Generate and bind a texture:
   glGenTextures(1, &result);
@@ -420,15 +442,116 @@ GLuint create_texture(txinfo* info) {
     GL_TEXTURE_2D, // target
     0, // level
     GL_RGBA8, // internal format
-    info->width, info->height, // dimensions
+    source->width, source->height, // dimensions
     0, // border
     GL_RGBA, // incoming data ordering
     GL_UNSIGNED_BYTE, // incoming data size
-    info->data // texture data
+    source->pixels // texture data
   );
 
   // Generate mipmaps:
   glGenerateMipmap( GL_TEXTURE_2D );
 
   return result;
+}
+
+GLuint upload_png(char const * const filename) {
+  texture* tx = load_texture_from_png(filename);
+  GLuint result = upload_texture(tx);
+  free(tx->pixels);
+  free(tx);
+  return result;
+}
+
+void tx_copy_region(
+  texture *dst,
+  texture const * const src,
+  size_t dst_left,
+    size_t dst_top,
+  size_t src_left,
+    size_t src_top,
+    size_t region_width,
+    size_t region_height
+) {
+  size_t row;
+#ifdef DEBUG
+  // Some bounds checking:
+  if (dst_left + region_width >= dst->width) {
+    fprintf(stderr, "Error: region overruns destination width.\n");
+    exit(1);
+  }
+  if (dst_top + region_height >= dst->height) {
+    fprintf(stderr, "Error: region overruns destination height.\n");
+    exit(1);
+  }
+  if (src_left + region_width >= src->width) {
+    fprintf(stderr, "Error: region exceeds source width.\n");
+    exit(1);
+  }
+  if (src_top + region_height >= src->height) {
+    fprintf(stderr, "Error: region exceeds source height.\n");
+    exit(1);
+  }
+#endif
+  for (row = 0; row < region_height; ++row) {
+    memcpy(
+      (void *) tx_get_addr(dst, dst_left, dst_top + row), // dst
+      (void *) tx_get_addr(src, src_left, src_top + row), // src
+      (region_width)*sizeof(pixel) // bytes
+    );
+  }
+}
+
+void tx_draw_region(
+  texture *dst,
+  texture const * const src,
+  size_t dst_left,
+    size_t dst_top,
+  size_t src_left,
+    size_t src_top,
+    size_t region_width,
+    size_t region_height
+) {
+  size_t row, column;
+  pixel src_px, dst_px;
+  float alpha;
+#ifdef DEBUG
+  // Some bounds checking:
+  if (dst_left + region_width >= dst->width) {
+    fprintf(stderr, "Error: region overruns destination width.\n");
+    exit(1);
+  }
+  if (dst_top + region_height >= dst->height) {
+    fprintf(stderr, "Error: region overruns destination height.\n");
+    exit(1);
+  }
+  if (src_left + region_width >= src->width) {
+    fprintf(stderr, "Error: region exceeds source width.\n");
+    exit(1);
+  }
+  if (src_top + region_height >= src->height) {
+    fprintf(stderr, "Error: region exceeds source height.\n");
+    exit(1);
+  }
+#endif
+  for (row = 0; row < region_height; ++row) {
+    for (column = 0; column < region_width; ++column) {
+      src_px = tx_get_px(src, src_left + column, src_top + row);
+      dst_px = tx_get_px(dst, dst_left + column, dst_top + row);
+      alpha = px_alpha(src_px) / ((float) CHANNEL_MAX);
+      px_set_red(
+        &dst_px,
+        (px_red(src_px) * alpha) + (px_red(dst_px) * (1 - alpha))
+      );
+      px_set_green(
+        &dst_px,
+        (px_green(src_px) * alpha) + (px_green(dst_px) * (1 - alpha))
+      );
+      px_set_blue(
+        &dst_px,
+        (px_blue(src_px) * alpha) + (px_blue(dst_px) * (1 - alpha))
+      );
+      tx_set_px(dst, dst_px, dst_left + column, dst_top + row);
+    }
+  }
 }

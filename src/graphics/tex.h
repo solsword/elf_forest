@@ -4,13 +4,30 @@
 // tex.h
 // Texture loading and management.
 
+#include <GL/gl.h>
+
 #include "world/blocks.h"
 
 /**************
  * Structures *
  **************/
 
-typedef struct txinfo_s txinfo; // Texture dimensions & data (used for loading)
+typedef uint32_t pixel; // Pixel data packed into 32 bits
+typedef uint8_t channel; // A single channel from pixel data
+
+#define CHANNEL_MAX umaxof(channel)
+
+#define RED_SHIFT 24
+#define GREEN_SHIFT 16
+#define BLUE_SHIFT 8
+#define ALPHA_SHIFT 0
+
+#define RED_MASK (0xff << RED_SHIFT)
+#define BLUE_MASK (0xff << BLUE_SHIFT)
+#define GREEN_MASK (0xff << GREEN_SHIFT)
+#define ALPHA_MASK (0xff << ALPHA_SHIFT)
+
+typedef struct texture_s texture; // Texture dimensions and a data array
 typedef struct tcoords_s tcoords; // A pair of texture coordinates
 
 /*************
@@ -45,9 +62,13 @@ extern uint16_t const BLOCK_TEXTURE_MAP[];
  * Structure Definitions *
  *************************/
 
-struct txinfo_s {
+struct pixel_s {
+  channel r, g, b, a;
+};
+
+struct texture_s {
   GLsizei width, height;
-  GLvoid *data;
+  pixel *pixels;
 };
 
 struct tcoords_s {
@@ -57,6 +78,74 @@ struct tcoords_s {
 /********************
  * Inline Functions *
  ********************/
+
+// Pixel manipulation functions:
+
+static inline channel px_red(pixel p) {
+  return ((p & RED_MASK) >> RED_SHIFT);
+}
+
+static inline channel px_green(pixel p) {
+  return ((p & GREEN_MASK) >> GREEN_SHIFT);
+}
+
+static inline channel px_blue(pixel p) {
+  return ((p & BLUE_MASK) >> BLUE_SHIFT);
+}
+
+static inline channel px_alpha(pixel p) {
+  return ((p & ALPHA_MASK) >> ALPHA_SHIFT);
+}
+
+
+static inline void px_set_red(pixel *p, channel r) {
+  *p &= ~RED_MASK;
+  *p &= ((pixel) r) << RED_SHIFT;
+}
+
+static inline void px_set_green(pixel *p, channel g) {
+  *p &= ~GREEN_MASK;
+  *p &= ((pixel) g) << GREEN_SHIFT;
+}
+
+static inline void px_set_blue(pixel *p, channel b) {
+  *p &= ~BLUE_MASK;
+  *p &= ((pixel) b) << BLUE_SHIFT;
+}
+
+static inline void px_set_alpha(pixel *p, channel a) {
+  *p &= ~ALPHA_MASK;
+  *p &= ((pixel) a) << ALPHA_SHIFT;
+}
+
+// Pixel-level texture access:
+
+static inline pixel tx_get_px(
+  texture const * const tx,
+  size_t left,
+  size_t top
+) {
+  return tx->pixels[left + tx->width * top];
+}
+
+static inline pixel * tx_get_addr(
+  texture const * const tx,
+  size_t left,
+  size_t top
+) {
+  return &(tx->pixels[left + tx->width * top]);
+}
+
+static inline void tx_set_px(
+  texture * const tx,
+  pixel p,
+  size_t left,
+  size_t top
+) {
+  tx->pixels[left + tx->width * top] = p;
+}
+
+// Texture coordinate computation routines:
 
 // Stores the offset into the BLOCK_TEXTURE_MAP for the given face:
 static uint16_t FACE_TC_MAP_OFF[8] = {
@@ -90,6 +179,16 @@ static inline void compute_face_tc(block b, block_data face, tcoords *result) {
   result->t = block_tc_t(i);
 }
 
+/******************************
+ * Constructors & Destructors *
+ ******************************/
+
+// Allocates an empty texture (filled with 0 data).
+texture * create_texture();
+
+// Frees the data allocated for the given texture.
+void cleanup_texture(texture *tx);
+
 /*************
  * Functions *
  *************/
@@ -98,15 +197,72 @@ static inline void compute_face_tc(block b, block_data face, tcoords *result) {
 // CPU's copy. No cleanup necessary.
 void init_textures(void);
 
-// Loads a PNG file into an OpenGL texture and returns the texture handle.
-// Takes care of freeing the texture info struct and associated data once it's
-// been loaded into OpenGL.
-GLuint load_texture(char const * const filename);
+// Loads a PNG file and returns a newly-allocated texture pointer.
+texture * load_texture_from_png(char const * const filename);
 
-// Loads a PNG file and returns a newly-allocated txinfo pointer.
-txinfo* loadPNG(char const * const filename);
+// Returns an OpenGL texture handle created using the given texture:
+GLuint upload_texture(texture* tx);
 
-// Returns an OpenGL texture handle created using the given texture info:
-GLuint create_texture(txinfo* info);
+// Loads a PNG file directly into an OpenGL texture and returns the texture
+// handle. Takes care of freeing the texture struct and associated data once
+// it's been loaded into OpenGL.
+GLuint upload_png(char const * const filename);
+
+// Copies a rectangle of pixels from one texture to another:
+void tx_paste_region(
+  texture *dst,
+  texture const * const src,
+  size_t dst_left,
+    size_t dst_top,
+  size_t src_left,
+    size_t src_top,
+    size_t region_width,
+    size_t region_height
+);
+
+// Alias for tx_paste_region that uses the entire source.
+static inline void tx_paste(
+  texture *dst,
+  texture const * const src,
+  size_t left,
+  size_t top
+) {
+  tx_paste_region(
+    dst,
+    src,
+    left, top,
+    0, 0,
+    src->width, src->height
+  );
+}
+
+// Draws a rectangle of pixels from one texture to another, using alpha
+// blending:
+void tx_draw_region(
+  texture *dst,
+  texture const * const src,
+  size_t dst_left,
+    size_t dst_top,
+  size_t src_left,
+    size_t src_top,
+    size_t region_width,
+    size_t region_height
+);
+
+// Alias for tx_draw_region that uses the entire source.
+static inline void tx_draw(
+  texture *dst,
+  texture const * const src,
+  size_t left,
+  size_t top
+) {
+  tx_draw_region(
+    dst,
+    src,
+    left, top,
+    0, 0,
+    src->width, src->height
+  );
+}
 
 #endif //ifndef TEXTURE_H

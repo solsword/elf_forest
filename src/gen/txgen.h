@@ -4,14 +4,13 @@
 // txgen.h
 // Texture generation.
 
-#include "noise/noise.h"
+#include <stdint.h>
 
-/**************
- * Structures *
- **************/
+#include "graphics/tex.h"
 
-struct txunit_s;
-typedef struct txunit_s txunit;
+/************************
+ * Types and Structures *
+ ************************/
 
 /*************************
  * Structure Definitions *
@@ -20,6 +19,10 @@ typedef struct txunit_s txunit;
 /********************
  * Inline Functions *
  ********************/
+
+/******************************
+ * Constructors & Destructors *
+ ******************************/
 
 /*************
  * Functions *
