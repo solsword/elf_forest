@@ -32,6 +32,10 @@ typedef struct tx_grammar_disjunction_s tx_grammar_disjunction;
 
 typedef void (*texture_filter)(texture *, void *);
 
+// A structure for remembering where we want to do a grammar expansion:
+struct tx_grammar_expansion_site_s;
+typedef struct tx_grammar_expansion_site_s tx_grammar_expansion_site;
+
 // A structure for holding arguments to the scatter texture filter:
 // x-frequency, y-frequency, and color.
 struct scatter_filter_args_s;
@@ -69,6 +73,11 @@ struct tx_grammar_disjunction_s {
   tx_grammar_disjunction *next;
   tx_grammar_literal *literal;
   float weight;
+};
+
+struct tx_grammar_expansion_site_s {
+  size_t col, row;
+  tx_grammar_literal *literal;
 };
 
 struct scatter_filter_args_s {
@@ -111,6 +120,12 @@ struct scatter_filter_args_s {
 // and any of its children. Leaves the grammar literal itself untouched, as
 // they are generally not allocated on the heap.
 void cleanup_grammar(tx_grammar_literal *lit);
+
+// Allocates and returns a new grammar expansion site:
+tx_grammar_expansion_site * create_expansion_site(void);
+
+// Cleans up a grammar expansion site:
+void cleanup_expansion_site(tx_grammar_expansion_site *ges);
 
 /*************
  * Functions *

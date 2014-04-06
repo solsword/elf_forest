@@ -27,9 +27,29 @@ TX_ANY_ENTRY(moss_clump, 3, &TX_ANY(moss_clump, 4), 1);
 TX_ANY_ENTRY(moss_clump, 2, &TX_ANY(moss_clump, 3), 1);
 TX_ANY_ENTRY(moss_clump, 1, &TX_ANY(moss_clump, 2), 1);
 
-// Moss based on the template-1.png template:
-tx_grammar_literal template_moss = {
-  .filename = "res/textures/plants/mosses/template-1.png",
+// Moss based on the template-pairs.png template:
+tx_grammar_literal template_pairs_moss = {
+  .filename = "res/textures/plants/mosses/template-pairs.png",
+  .anchor_x = 0,
+  .anchor_y = 0,
+  .preprocess = NULL,
+    .preargs = NULL,
+  .postprocess = NULL,
+    .postargs = NULL,
+  .children = {
+    &any_moss_clump_1,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+  },
+  .result = NULL
+};
+
+// Moss based on the template-sparse.png template:
+tx_grammar_literal template_sparse_moss = {
+  .filename = "res/textures/plants/mosses/template-sparse.png",
   .anchor_x = 0,
   .anchor_y = 0,
   .preprocess = NULL,

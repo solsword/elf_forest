@@ -25,10 +25,10 @@ size_t test_txgen_scatter_filter_moss(void) {
 }
 
 size_t test_txgen_template_moss(void) {
-  run_grammar(&template_moss);
-  write_texture_to_png(template_moss.result, "out/test/tmoss.png");
-  write_texture_to_ppm(template_moss.result, "out/test/tmoss.ppm");
-  cleanup_grammar(&template_moss);
+  run_grammar(&template_sparse_moss);
+  write_texture_to_png(template_sparse_moss.result, "out/test/tmoss.png");
+  write_texture_to_ppm(template_sparse_moss.result, "out/test/tmoss.ppm");
+  cleanup_grammar(&template_sparse_moss);
   texture *doublecheck = load_texture_from_png("out/test/tmoss.png");
   if (tx_get_px(doublecheck, 0, 0) != 0xff00b40f) { return 1; }
   if (tx_get_px(doublecheck, 0, 1) != 0xbf10870d) { return 2; }

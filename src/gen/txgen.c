@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+#include "datatypes/list.h"
 #include "noise/noise.h"
 #include "graphics/tex.h"
 
@@ -60,6 +62,22 @@ static inline tx_grammar_literal *choose_child(
 #endif
 }
 
+/*********************
+ * Private Functions *
+ *********************/
+
+void expand_literal_into(void *element, void *arg) {
+  tx_grammar_expansion_site *ges = (tx_grammar_expansion_site *) element;
+  tx_grammar_literal *lit = (tx_grammar_literal *) arg;
+  int left = (int) (ges->col) - (int) (ges->literal->anchor_x);
+  int top = (int) (ges->row) - (int) (ges->literal->anchor_y);
+  while (left < 0) { left += lit->result->width; }
+  while (top < 0) { top += lit->result->height; }
+  left %= lit->result->width;
+  top %= lit->result->height;
+  tx_draw_wrapped(lit->result, ges->literal->result, left, top);
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -80,18 +98,31 @@ void cleanup_grammar(tx_grammar_literal *lit) {
   }
 }
 
+tx_grammar_expansion_site * create_expansion_site(void) {
+  tx_grammar_expansion_site *ges = (tx_grammar_expansion_site *) malloc(
+    sizeof(tx_grammar_expansion_site)
+  );
+  ges->literal = NULL;
+  return ges;
+}
+
+// Cleans up a grammar expansion site:
+void cleanup_expansion_site(tx_grammar_expansion_site *ges) {
+  free(ges);
+}
+
 /*************
  * Functions *
  *************/
-
-// DEBUG:
-extern tx_grammar_literal moss_clump_10;
 
 void run_grammar(tx_grammar_literal *lit) {
   size_t i;
   int row, col;
   pixel px;
   tx_grammar_literal *chosen = NULL;
+  tx_grammar_expansion_site *ges = NULL;
+  // Create a list of expansion sites:
+  list *expansion_sites = create_list();
   // Start by loading our source file into our result texture and calling our
   // pre-processing filter if we have one:
   if (lit->filename == NULL) {
@@ -132,16 +163,19 @@ void run_grammar(tx_grammar_literal *lit) {
           if (chosen->result == NULL) {
             run_grammar(chosen);
           }
-          tx_draw_wrapped(
-            lit->result,
-            chosen->result,
-            (col - chosen->anchor_x) % (lit->result->width),
-            (row - chosen->anchor_y) % (lit->result->height)
-          );
+          ges = create_expansion_site();
+          ges->col = col;
+          ges->row = row;
+          ges->literal = chosen;
+          l_append_element(expansion_sites, ges);
+          ges = NULL; // destroy_list later on takes care of the memory used.
         }
       }
     }
   }
+  l_witheach(expansion_sites, (void *) lit, expand_literal_into);
+  // Clean up our list of expansion sites:
+  destroy_list(expansion_sites);
   // Before wrapping up call our post-processing function if it exists:
   if (lit->postprocess != NULL) {
     (*(lit->postprocess))(lit->result, lit->postargs);

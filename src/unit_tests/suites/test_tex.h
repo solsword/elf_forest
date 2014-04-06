@@ -40,7 +40,7 @@ size_t test_texture_pixels(void) {
 
 size_t test_load_png(void) {
   texture *tx = load_texture_from_png(
-    "res/textures/plants/mosses/template-1.png"
+    "res/textures/plants/mosses/template-sparse.png"
   );
   pixel p;
   p = tx_get_px(tx, 0, 0);
