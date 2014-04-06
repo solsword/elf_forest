@@ -313,7 +313,7 @@ size_t test_map3_put_pop_2(void) {
   ) { return 15; }
   if (m3_get_count(m) != 0) { return 16; }
   if (!m3_is_empty(m)) { return 17; }
-
+  cleanup_map3(m);
   return 0;
 }
 

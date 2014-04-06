@@ -20,6 +20,7 @@ terrain
   erosion
   block support
 graphics
+  fix png vs. ppm 90-degree rotation
   use or disable texture mipmapping
   voxel mipmapping
     better block averaging

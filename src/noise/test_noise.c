@@ -75,9 +75,16 @@ float example_noise(float x, float y) {
   );
 }
 
-void write_ppm(float (*noisefunc)(float, float), char const * const filename) {
+void write_noise_ppm(
+  float (*noisefunc)(float, float),
+  char const * const filename
+) {
   FILE *fp;
   fp = fopen(filename, "w");
+  if (!fp) {
+    fprintf(stderr, "Error: couldn't open destination file '%s'.\n", filename);
+    exit(1);
+  }
   fprintf(fp, "P3\n");
   fprintf(fp, "# noise test ppm\n");
   fprintf(fp, "# Auto-generated test of simplex noise function in noise.c.\n");
@@ -112,10 +119,10 @@ void write_ppm(float (*noisefunc)(float, float), char const * const filename) {
 }
 
 int main(int argc, char** argv) {
-  write_ppm(&sxnoise_2d, "noise_test_2D.ppm");
-  write_ppm(&slice_3d_noise, "noise_test_3D.ppm");
-  write_ppm(&fractal_2d_noise, "noise_test_2D_F.ppm");
-  write_ppm(&slice_fractal_3d_noise, "noise_test_3D_F.ppm");
-  write_ppm(&example_noise, "noise_test_ex.ppm");
+  write_noise_ppm(&sxnoise_2d, "noise_test_2D.ppm");
+  write_noise_ppm(&slice_3d_noise, "noise_test_3D.ppm");
+  write_noise_ppm(&fractal_2d_noise, "noise_test_2D_F.ppm");
+  write_noise_ppm(&slice_fractal_3d_noise, "noise_test_3D_F.ppm");
+  write_noise_ppm(&example_noise, "noise_test_ex.ppm");
   return 0;
 }

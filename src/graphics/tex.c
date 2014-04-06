@@ -296,6 +296,19 @@ texture *create_texture(size_t width, size_t height) {
   return tx;
 }
 
+texture *duplicate_texture(texture *original) {
+  texture * tx = (texture *) malloc(sizeof(texture));
+  tx->width = original->width;
+  tx->height = original->height;
+  tx->pixels = (pixel *) calloc(tx->width * tx->height, sizeof(pixel));
+  memcpy(
+    tx->pixels,
+    original->pixels,
+    tx->width * tx->height * sizeof(pixel)
+  );
+  return tx;
+}
+
 void cleanup_texture(texture *tx) {
   free(tx->pixels);
   free(tx);
@@ -352,7 +365,9 @@ texture* load_texture_from_png(char const * const filename) {
   png_read_png(
     png_ptr,
     info_ptr,
-    PNG_TRANSFORM_STRIP_16 | PNG_TRANSFORM_PACKING | PNG_TRANSFORM_EXPAND,
+    PNG_TRANSFORM_SCALE_16 \
+    | PNG_TRANSFORM_PACKING \
+    | PNG_TRANSFORM_EXPAND,
     NULL
   );
 
@@ -416,6 +431,88 @@ texture* load_texture_from_png(char const * const filename) {
   fclose(fp);
 
   return result;
+}
+
+void write_texture_to_ppm(texture *tx, char const * const filename) {
+  FILE *fp;
+  pixel px;
+  int i, j;
+  fp = fopen(filename, "w");
+  if (!fp) {
+    fprintf(stderr, "Error: couldn't open destination file '%s'.\n", filename);
+    exit(1);
+  }
+  fprintf(fp, "P3\n");
+  fprintf(fp, "# texture ppm\n");
+  fprintf(fp, "# Generated from a texture by code in graphics/tex.c.\n");
+  fprintf(fp, "%d %d\n", tx->width, tx->height);
+  fprintf(fp, "255\n");
+  for (i = 0; i < tx->width; ++i) {
+    for (j = 0; j < tx->height; ++j) {
+      px = tx_get_px(tx, i, j);
+      fprintf(
+        fp,
+        "%3d %3d %3d ",
+        px_red(px),
+        px_green(px),
+        px_blue(px)
+      );
+    }
+    fprintf(fp, "\n");
+  }
+  fprintf(fp, "\n");
+  fclose(fp);
+}
+
+void write_texture_to_png(texture *tx, char const * const filename) {
+  FILE *fp;
+  int i;
+  png_structp png_ptr;
+  png_infop info_ptr;
+  // Get various file and/or PNG struct pointers:
+  fp = fopen(filename, "wb");
+  if (!fp) {
+    fprintf(stderr, "Error: couldn't open destination file '%s'.\n", filename);
+    exit(1);
+  }
+  png_ptr = png_create_write_struct(
+    PNG_LIBPNG_VER_STRING,
+    NULL, NULL, NULL // We won't worry about PNG errors for now.
+  );
+  if (!png_ptr) {
+    fprintf(stderr, "Error: couldn't create png write struct.\n");
+    exit(-1);
+  }
+  info_ptr = png_create_info_struct(png_ptr);
+  if (!info_ptr) {
+    png_destroy_write_struct(&png_ptr, (png_infopp) NULL);
+    fprintf(stderr, "Error: couldn't create png write struct.\n");
+    exit(-1);
+  }
+  // Setup the IO process:
+  png_init_io(png_ptr, fp);
+  // Set the PNG header info:
+  png_set_IHDR(
+    png_ptr, info_ptr,
+    tx->width, tx->height,
+    CHANNEL_BITS, PNG_COLOR_TYPE_RGB_ALPHA,
+    PNG_INTERLACE_NONE,
+    PNG_COMPRESSION_TYPE_DEFAULT,
+    PNG_FILTER_TYPE_DEFAULT
+  );
+  // Build an array of row pointers:
+  png_bytepp row_pointers = (png_bytepp) malloc(tx->width * sizeof(png_bytep));
+  for (i = 0; i < tx->height; ++i) {
+    row_pointers[i] = ((png_bytep) tx->pixels) + tx->width*sizeof(pixel) * i;
+  }
+  // Feed libpng the image data:
+  png_set_rows(png_ptr, info_ptr, row_pointers);
+  // Write out the PNG file:
+  png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+  // Clean up the writing apparatus and return:
+  png_destroy_write_struct(&png_ptr, &info_ptr);
+  free(row_pointers);
+  fclose(fp);
 }
 
 GLuint upload_texture(texture* source) {
@@ -552,6 +649,55 @@ void tx_draw_region(
         (px_blue(src_px) * alpha) + (px_blue(dst_px) * (1 - alpha))
       );
       tx_set_px(dst, dst_px, dst_left + column, dst_top + row);
+    }
+  }
+}
+
+void tx_draw_region_wrapped(
+  texture *dst,
+  texture const * const src,
+  size_t dst_left,
+    size_t dst_top,
+  size_t src_left,
+    size_t src_top,
+    size_t region_width,
+    size_t region_height
+) {
+  size_t row, column, dr, dc;
+  pixel src_px, dst_px;
+  float alpha;
+  for (row = 0; row < region_height; ++row) {
+    for (column = 0; column < region_width; ++column) {
+      src_px = tx_get_px(
+        src,
+        (src_left + column) % src->width,
+        (src_top + row) % src->height
+      );
+      dr = (dst_top + row) % dst->height;
+      dc = (dst_left + column) % dst->width;
+      dst_px = tx_get_px(dst, dc, dr);
+      alpha = (
+        px_alpha(src_px) / ((float) CHANNEL_MAX)
+      +
+        (1 - (px_alpha(dst_px) / ((float) CHANNEL_MAX)))
+      );
+      if (alpha > 1) { alpha = 1; }
+      px_set_red(
+        &dst_px,
+        (px_red(src_px) * alpha) + (px_red(dst_px) * (1 - alpha))
+      );
+      px_set_green(
+        &dst_px,
+        (px_green(src_px) * alpha) + (px_green(dst_px) * (1 - alpha))
+      );
+      px_set_blue(
+        &dst_px,
+        (px_blue(src_px) * alpha) + (px_blue(dst_px) * (1 - alpha))
+      );
+      alpha = px_alpha(src_px) / ((float) CHANNEL_MAX) + px_alpha(dst_px);
+      if (alpha > 1) { alpha = 1; }
+      px_set_alpha(&dst_px, alpha * CHANNEL_MAX);
+      tx_set_px(dst, dst_px, dc, dr);
     }
   }
 }

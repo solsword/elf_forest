@@ -179,6 +179,7 @@ size_t test_map_multikey(void) {
   if (m_get_count(m) != 0) { return 16; }
   if (!m_is_empty(m)) { return 17; }
 
+  cleanup_map(m);
   return 0;
 }
 

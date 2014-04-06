@@ -15,12 +15,13 @@
 typedef uint32_t pixel; // Pixel data packed into 32 bits
 typedef uint8_t channel; // A single channel from pixel data
 
+#define CHANNEL_BITS 8
 #define CHANNEL_MAX umaxof(channel)
 
-#define RED_SHIFT 24
-#define GREEN_SHIFT 16
-#define BLUE_SHIFT 8
-#define ALPHA_SHIFT 0
+#define RED_SHIFT 0
+#define GREEN_SHIFT 8
+#define BLUE_SHIFT 16
+#define ALPHA_SHIFT 24
 
 #define RED_MASK (0xff << RED_SHIFT)
 #define BLUE_MASK (0xff << BLUE_SHIFT)
@@ -100,22 +101,22 @@ static inline channel px_alpha(pixel p) {
 
 static inline void px_set_red(pixel *p, channel r) {
   *p &= ~RED_MASK;
-  *p &= ((pixel) r) << RED_SHIFT;
+  *p |= ((pixel) r) << RED_SHIFT;
 }
 
 static inline void px_set_green(pixel *p, channel g) {
   *p &= ~GREEN_MASK;
-  *p &= ((pixel) g) << GREEN_SHIFT;
+  *p |= ((pixel) g) << GREEN_SHIFT;
 }
 
 static inline void px_set_blue(pixel *p, channel b) {
   *p &= ~BLUE_MASK;
-  *p &= ((pixel) b) << BLUE_SHIFT;
+  *p |= ((pixel) b) << BLUE_SHIFT;
 }
 
 static inline void px_set_alpha(pixel *p, channel a) {
   *p &= ~ALPHA_MASK;
-  *p &= ((pixel) a) << ALPHA_SHIFT;
+  *p |= ((pixel) a) << ALPHA_SHIFT;
 }
 
 // Pixel-level texture access:
@@ -184,7 +185,11 @@ static inline void compute_face_tc(block b, block_data face, tcoords *result) {
  ******************************/
 
 // Allocates an empty texture (filled with 0 data).
-texture * create_texture();
+texture * create_texture(size_t width, size_t height);
+
+// Allocates a new texture and copies the data from the given original into it,
+// returning a pointer to the copied texture.
+texture *duplicate_texture(texture *original);
 
 // Frees the data allocated for the given texture.
 void cleanup_texture(texture *tx);
@@ -199,6 +204,12 @@ void init_textures(void);
 
 // Loads a PNG file and returns a newly-allocated texture pointer.
 texture * load_texture_from_png(char const * const filename);
+
+// Writes the given texture in .ppm format to the given file.
+void write_texture_to_ppm(texture *tx, char const * const filename);
+
+// Writes the given texture in .png format to the given file using libpng.
+void write_texture_to_png(texture *tx, char const * const filename);
 
 // Returns an OpenGL texture handle created using the given texture:
 GLuint upload_texture(texture* tx);
@@ -257,6 +268,35 @@ static inline void tx_draw(
   size_t top
 ) {
   tx_draw_region(
+    dst,
+    src,
+    left, top,
+    0, 0,
+    src->width, src->height
+  );
+}
+
+// Draws a rectangle of pixels from one texture to another, using alpha
+// blending and wrapping within both textures as necessary:
+void tx_draw_region_wrapped(
+  texture *dst,
+  texture const * const src,
+  size_t dst_left,
+    size_t dst_top,
+  size_t src_left,
+    size_t src_top,
+    size_t region_width,
+    size_t region_height
+);
+
+// Alias for tx_draw_region_wrapped that uses the entire source.
+static inline void tx_draw_wrapped(
+  texture *dst,
+  texture const * const src,
+  size_t left,
+  size_t top
+) {
+  tx_draw_region_wrapped(
     dst,
     src,
     left, top,

@@ -105,6 +105,9 @@ extern float const SURFLET_SQ_RADIUS_2D;
 // The numbers 0-255 shuffled and then copied twice two copies reduces the
 // amount of %ing you have to do to keep indices within range.
 static int const HASH_MASK = 0xff;
+static int const HASH_BITS = 8;
+#define HASH_OF(x) (((size_t) x) & HASH_MASK)
+#define UPPER_HASH_OF(x) ((((size_t) x) >> 2) & HASH_MASK)
 static int const HASH[512] = {
   248, 244, 209,  63, 108,  81,  67, 202,
   240, 140, 196, 217, 194,  48, 213, 234,

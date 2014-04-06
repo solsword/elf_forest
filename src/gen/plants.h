@@ -16,7 +16,7 @@
  * Globals *
  ***********/
 
-extern char const * const LEAF_TYPES[];
+//extern char const * const LEAF_TYPES[];
 
 /**************
  * Structures *
