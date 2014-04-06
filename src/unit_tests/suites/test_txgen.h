@@ -3,6 +3,7 @@
 #define TEST_SUITE_NAME txgen
 #define TEST_SUITE_TESTS { \
     &test_txgen_template_moss, \
+    &test_txgen_scatter_filter_moss, \
     NULL, \
   }
 

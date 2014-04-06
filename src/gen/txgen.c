@@ -76,12 +76,16 @@ void cleanup_grammar(tx_grammar_literal *lit) {
   }
   if (lit->result != NULL) {
     cleanup_texture(lit->result);
+    lit->result = NULL;
   }
 }
 
 /*************
  * Functions *
  *************/
+
+// DEBUG:
+extern tx_grammar_literal moss_clump_10;
 
 void run_grammar(tx_grammar_literal *lit) {
   size_t i;
@@ -110,8 +114,8 @@ void run_grammar(tx_grammar_literal *lit) {
   // resolution of the pseudo-random process, any item with a weight of less
   // than 1/65536th of the total weight of all items in a disjunction will
   // never be picked.
-  for (col = 0; col < lit->result->height; ++col) {
-    for (row = 0; row < lit->result->width; ++row) {
+  for (col = 0; col < lit->result->width; ++col) {
+    for (row = 0; row < lit->result->height; ++row) {
       px = tx_get_px(lit->result, col, row);
       for (i = 0; i < N_GRAMMAR_KEYS; ++i) {
         if (px == GRAMMAR_KEYS[i] && lit->children[i] != NULL) {
@@ -151,12 +155,16 @@ void run_grammar(tx_grammar_literal *lit) {
 void fltr_scatter(texture *tx, void *args) {
   int row, col;
   scatter_filter_args *sfargs = (scatter_filter_args *) args;
-  int max_dist_x = sfargs->x_freq/3;
-  int max_dist_y = sfargs->y_freq/3;
+  int max_dist_x = sfargs->x_freq / 3;
+  int max_dist_y = sfargs->y_freq / 3;
   int dx, dy;
   int starting_col = UPPER_HASH_OF(tx) % (sfargs->x_freq/2);
   int starting_row = UPPER_HASH_OF(sfargs) % (sfargs->y_freq/2);
-  for (col = starting_col % tx->width; col < tx->width; col += sfargs->x_freq) {
+  for (
+    col = starting_col % tx->width;
+    col < tx->width;
+    col += sfargs->x_freq
+  ) {
     for (
       row = starting_row % tx->height;
       row < tx->height;
@@ -177,8 +185,8 @@ void fltr_scatter(texture *tx, void *args) {
       tx_set_px(
         tx,
         sfargs->color,
-        (size_t) ((col + dx) % tx->width),
-        (size_t) ((row + dy) % tx->height)
+        (size_t) ((col + dx + tx->width) % tx->width),
+        (size_t) ((row + dy + tx->height) % tx->height)
       );
     }
   }
