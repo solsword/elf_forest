@@ -11,7 +11,7 @@
 #include "graphics/tex.h"
 #include "graphics/gfx.h"
 #include "graphics/render.h"
-#include "tick/tick.h"
+#include "prof/ptime.h"
 #include "control/ctl.h"
 #include "world/entities.h"
 #include "gen/terrain.h" // to draw geoform and other terrain data

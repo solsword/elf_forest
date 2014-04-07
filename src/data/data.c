@@ -11,7 +11,7 @@
 
 #include "graphics/display.h"
 #include "gen/terrain.h"
-#include "tick/tick.h"
+#include "prof/ptime.h"
 #include "world/blocks.h"
 #include "world/world.h"
 #include "world/chunk_data.h"

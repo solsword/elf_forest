@@ -12,27 +12,47 @@
  * Typedefs *
  ************/
 
+/*
 typedef uint16_t block;
 typedef uint8_t block_id;
-typedef uint16_t block_count;
-typedef uint16_t block_range;
 typedef uint8_t block_flag;
 typedef uint16_t block_data;
+typedef uint16_t block_count;
+typedef uint16_t block_range;
 typedef uint16_t block_limit;
+// */
+//*
+typedef uint64_t block;
+typedef uint32_t block_id;
+typedef uint16_t block_flag;
+typedef uint16_t block_data;
+
+typedef uint64_t block_count;
+typedef uint64_t block_range;
+typedef uint64_t block_limit;
+// */
 
 /*************
  * Constants *
  *************/
 
-static block_count const BLOCK_TYPE_COUNT = 256;
+//static block_count const BLOCK_TYPE_COUNT = 256;
+static block_count const BLOCK_TYPE_COUNT = 1 << 31;
 
 /**********
  * Ranges *
  **********/
 
+/*
 static block_range const  BR_FLAGS = 0x00c0;
 static block_range const   BR_DATA = 0x003f;
 static block_range const     BR_ID = 0xff00;
+// */
+//*
+static block_range const  BR_FLAGS = 0x00000000ffff0000;
+static block_range const   BR_DATA = 0x000000000000ffff;
+static block_range const     BR_ID = 0xffffffff00000000;
+// */
 
 /*********
  * Flags *

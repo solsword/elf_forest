@@ -20,7 +20,7 @@
 #include "world/world.h"
 #include "world/entities.h"
 #include "data/data.h"
-#include "tick/tick.h"
+#include "prof/ptime.h"
 #include "ui/ui.h"
 #include "util.h"
 

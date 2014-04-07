@@ -52,6 +52,8 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/trees.o \
              $(OBJ_DIR)/plants.o \
              $(OBJ_DIR)/txgen.o \
+             $(OBJ_DIR)/ptime.o \
+             $(OBJ_DIR)/pmem.o \
              $(OBJ_DIR)/ui.o
 
 MAIN_OBJECTS=$(OBJ_DIR)/main.o

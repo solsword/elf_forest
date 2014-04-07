@@ -7,7 +7,6 @@
 
 #include <math.h>
 
-//#include "vbo.h"
 #include "render.h"
 #include "display.h"
 #include "gfx.h"
@@ -16,6 +15,7 @@
 #include "world/world.h"
 #include "world/entities.h"
 #include "tick/tick.h"
+#include "prof/ptime.h"
 #include "data/data.h"
 #include "control/ctl.h"
 #include "util.h"
