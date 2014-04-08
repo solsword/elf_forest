@@ -185,37 +185,6 @@ typedef uint8_t ch_idx_t; // Needs to be big enough to hold CHUNK_BITS bits.
 struct chunk_index_s;
 typedef struct chunk_index_s chunk_index;
 
-/* TODO: get rid of these
-// An NxNxN-chunk frame:
-// TODO: get rid of this!
-struct frame_s;
-typedef struct frame_s frame;
-
-// Macros and types for the size of a frame:
-#define FRAME_BITS 4
-#define FRAME_SIZE (1 << FRAME_BITS)
-#define FULL_FRAME (CHUNK_SIZE*FRAME_SIZE)
-#define HALF_FRAME (FULL_FRAME >> 1)
-#define FR_MASK (FRAME_SIZE - 1) // Frame mask
-#define FC_MASK (CHUNK_SIZE*FRAME_SIZE - 1) // Frame block position mask
-typedef uint32_t fr_idx_t; // Needs to hold FRAME_BITS * CHUNK_BITS bits.
-typedef uint8_t fr_cidx_t; // Needs to hold FRAME_BITS bits.
-typedef uint8_t fr_pos_t; // Needs to hold FRAME_BITS bits.
-
-// Picks out a chunk within a frame:
-struct frame_chunk_index_s;
-typedef struct frame_chunk_index_s frame_chunk_index;
-
-// Picks out a block within a frame:
-struct frame_index_s;
-typedef struct frame_index_s frame_index;
-
-// Frame-coordinate integer block position. 0, 0, 0 is at the center of the
-// frame, with the edges at -HALF_FRAME and HALF_FRAME - 1.
-struct frame_pos_s;
-typedef struct frame_pos_s frame_pos;
-*/
-
 /*************
  * Constants *
  *************/
@@ -689,6 +658,17 @@ static inline block block_west(region_pos const * const rpos) {
   west.x -= 1;
   return block_at(&west);
 }
+
+// These functions compute and return the number of bytes used by a
+// chunk/approximation for direct data storage (block data only), overhead (all
+// other data in RAM) and rendering (data stored on the GPU).
+size_t chunk_data_size(chunk *c);
+size_t chunk_overhead_size(chunk *c);
+size_t chunk_gpu_size(chunk *c);
+
+size_t chunk_approx_data_size(chunk_approximation *ca);
+size_t chunk_approx_overhead_size(chunk_approximation *ca);
+size_t chunk_approx_gpu_size(chunk_approximation *ca);
 
 // TODO: How to tick blocks?
 

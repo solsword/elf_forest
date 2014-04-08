@@ -105,4 +105,8 @@ void * q_find_element(queue *q, int (*match)(void *));
 // found.
 void * q_scan_elements(queue *q, void *ref, int (*match)(void *, void *));
 
+// Counts the number of bytes of data/overhead used by the given queue.
+size_t q_data_size(queue *q);
+size_t q_overhead_size(queue *q);
+
 #endif //ifndef QUEUE_H

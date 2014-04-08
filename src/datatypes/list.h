@@ -114,4 +114,8 @@ void * l_find_element(list *l, int (*match)(void *));
 // Returns the element that matched. Returns NULL if no match was found.
 void * l_scan_elements(list *l, void *ref, int (*match)(void *, void *));
 
+// Counts the number of bytes of data/overhead used by the given list.
+size_t l_data_size(list *l);
+size_t l_overhead_size(list *l);
+
 #endif //ifndef LIST_H

@@ -276,6 +276,14 @@ void * q_scan_elements(queue *q, void *ref, int (*match)(void *, void *)) {
   return NULL;
 }
 
+size_t q_data_size(queue *q) {
+  return q->count * sizeof(void *);
+}
+
+size_t q_overhead_size(queue *q) {
+  return sizeof(q) + (q->size * QUEUE_CHUNK_SIZE - q->count) * sizeof(void *);
+}
+
 /******************************
  * Undefines for Local Macros *
  ******************************/

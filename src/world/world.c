@@ -236,3 +236,52 @@ block block_at(region_pos const * const rpos) {
   }
   return B_VOID;
 }
+
+size_t chunk_data_size(chunk *c) {
+  return (
+    sizeof(block) * CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
+  +
+    sizeof(block_flag) * CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
+  );
+}
+
+size_t chunk_overhead_size(chunk *c) {
+  return sizeof(chunk) - chunk_data_size(c);
+}
+
+size_t chunk_gpu_size(chunk *c) {
+  // TODO: HERE!
+  return 0;
+}
+
+size_t chunk_approx_data_size(chunk_approximation *ca) {
+  if (ca->detail == LOD_BASE) {
+    fprintf(stderr, "Error: found approx with base LOD.\n");
+    exit(1);
+  } else if (ca->detail == LOD_HALF) {
+    return sizeof(approx_data_1);
+  } else if (ca->detail == LOD_QUARTER) {
+    return sizeof(approx_data_2);
+  } else if (ca->detail == LOD_EIGHTH) {
+    return sizeof(approx_data_3);
+  } else if (ca->detail == LOD_SIXTEENTH) {
+    return sizeof(approx_data_4);
+  } else {
+    fprintf(
+      stderr,
+      "Error: found approx with bad detail level: %d.\n",
+      ca->detail
+    );
+    exit(1);
+  }
+}
+
+size_t chunk_approx_overhead_size(chunk_approximation *ca) {
+  return sizeof(chunk_approximation);
+}
+
+size_t chunk_approx_gpu_size(chunk_approximation *ca) {
+  // TODO: HERE!
+  return 0;
+}
+

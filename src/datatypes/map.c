@@ -567,3 +567,45 @@ void m3_witheach(map3 *m, void *arg, void (*f)(void *, void *)) {
     }
   }
 }
+
+size_t m_data_size(map *m) {
+  size_t i, result;
+  list *l = NULL;
+  for (i = 0; i < MAP_TABLE_SIZE; ++i) {
+    l = m->table[i];
+    if (l != NULL) { result += l_data_size(l); }
+  }
+  return result;
+}
+
+size_t m3_data_size(map3 *m) {
+  size_t i, result;
+  list *l = NULL;
+  for (i = 0; i < MAP_TABLE_SIZE; ++i) {
+    l = m->table[i];
+    if (l != NULL) { result += l_data_size(l); }
+  }
+  return result;
+}
+
+size_t m_overhead_size(map *m) {
+  size_t i, result;
+  list *l = NULL;
+  for (i = 0; i < MAP_TABLE_SIZE; ++i) {
+    l = m->table[i];
+    if (l != NULL) { result += l_overhead_size(l); }
+  }
+  result += sizeof(map);
+  return result;
+}
+
+size_t m3_overhead_size(map3 *m) {
+  size_t i, result;
+  list *l = NULL;
+  for (i = 0; i < MAP_TABLE_SIZE; ++i) {
+    l = m->table[i];
+    if (l != NULL) { result += l_overhead_size(l); }
+  }
+  result += sizeof(map);
+  return result;
+}

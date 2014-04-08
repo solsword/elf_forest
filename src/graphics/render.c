@@ -28,12 +28,13 @@
  * Constants *
  *************/
 
-float const AIR_FOG_DENSITY = 0.005; // TODO: adjust these.
-float const WATER_FOG_DENSITY = 0.05;
+float const AIR_FOG_DENSITY = 0.0005; // TODO: adjust these.
+float const WATER_FOG_DENSITY = 0.01;
 
 // TODO: Good values here (match data.c!)
 //r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 20, 60, 175, 550 };
 //r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 18, 34, 66, 130 };
+//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 20, 35, 38, 60 };
 r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 20, 35, 38, 40 };
 //r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, 25 };
 //r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, 11 };

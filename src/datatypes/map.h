@@ -105,4 +105,12 @@ void m3_foreach(map3 *m, void (*f)(void *));
 void m_witheach(map *m, void *arg, void (*f)(void *, void *));
 void m3_witheach(map3 *m, void *arg, void (*f)(void *, void *));
 
+// Counts the number of bytes of data/overhead used by the given map. For a
+// map, the data size is the space devoted to storing keys and values, while
+// the overhead is all other space.
+size_t m_data_size(map *m);
+size_t m3_data_size(map3 *m);
+size_t m_overhead_size(map *m);
+size_t m3_overhead_size(map3 *m);
+
 #endif //ifndef MAP_H

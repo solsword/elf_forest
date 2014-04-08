@@ -18,6 +18,7 @@
 #include "world/entities.h"
 
 #include "control/ctl.h"
+#include "prof/ptime.h"
 #include "gen/terrain.h"
 #include "data/data.h"
 #include "tick/tick.h"
@@ -59,6 +60,7 @@ int main(int argc, char** argv) {
   init_control();
   init_textures();
   init_tick(1);
+  init_ptime();
 
   // Setup stateful subsystems:
   setup_ui();

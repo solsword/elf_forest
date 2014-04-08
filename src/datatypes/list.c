@@ -299,3 +299,11 @@ void * l_scan_elements(list *l, void *ref, int (*match)(void *, void *)) {
   }
   return NULL;
 }
+
+size_t l_data_size(list *l) {
+  return l->count * sizeof(void *);
+}
+
+size_t l_overhead_size(list *l) {
+  return sizeof(list) + (l->size * LIST_CHUNK_SIZE - l->count) * sizeof(void *);
+}

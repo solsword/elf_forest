@@ -12,6 +12,7 @@
 #include "graphics/gfx.h"
 #include "graphics/render.h"
 #include "prof/ptime.h"
+#include "prof/pmem.h"
 #include "control/ctl.h"
 #include "world/entities.h"
 #include "gen/terrain.h" // to draw geoform and other terrain data
@@ -82,7 +83,7 @@ static inline void render_vision_effects() {
     FOG_DENSITY = WATER_FOG_DENSITY;
   } else {
     no_tint();
-    FOG_DENSITY = AIR_FOG_DENSITY*4;
+    FOG_DENSITY = AIR_FOG_DENSITY;
   }
 
   // Bind our texture atlas or set the blend function appropriately:
@@ -178,6 +179,24 @@ static inline void draw_rates(void) {
     TICKRATE.rate
   );
   render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 590, 545);
+}
+
+static inline void draw_mem(void) {
+  // First compute memory info:
+  compute_chunk_cache_mem();
+  // Draw memory info:
+  sprintf(
+    TXT,
+    "chunk cache size :: %.2f MB",
+    CHUNK_CACHE_RAM_USAGE.data / (1024.0 * 1024.0)
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 490, 520);
+  sprintf(
+    TXT,
+    "chunk cache overhead :: %.2f MB",
+    CHUNK_CACHE_RAM_USAGE.overhead / (1024.0 * 1024.0)
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, 495);
 }
 
 static inline void draw_pos_info(void) {
@@ -276,6 +295,7 @@ void render_ui(void) {
 
   // Debugging info:
   draw_rates();
+  draw_mem();
   draw_pos_info();
   draw_perf_info();
 
