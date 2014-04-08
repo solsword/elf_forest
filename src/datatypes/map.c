@@ -29,6 +29,7 @@ struct map_s {
   list * table[MAP_TABLE_SIZE];
 };
 
+// TODO: Dynamic (or at least customizable) table sizes!
 struct map3_s {
   size_t count; // Measured in key/value pairs.
   list * table[MAP_TABLE_SIZE];
@@ -569,7 +570,7 @@ void m3_witheach(map3 *m, void *arg, void (*f)(void *, void *)) {
 }
 
 size_t m_data_size(map *m) {
-  size_t i, result;
+  size_t i, result = 0;
   list *l = NULL;
   for (i = 0; i < MAP_TABLE_SIZE; ++i) {
     l = m->table[i];
@@ -579,7 +580,7 @@ size_t m_data_size(map *m) {
 }
 
 size_t m3_data_size(map3 *m) {
-  size_t i, result;
+  size_t i, result = 0;
   list *l = NULL;
   for (i = 0; i < MAP_TABLE_SIZE; ++i) {
     l = m->table[i];
@@ -589,7 +590,7 @@ size_t m3_data_size(map3 *m) {
 }
 
 size_t m_overhead_size(map *m) {
-  size_t i, result;
+  size_t i, result = 0;
   list *l = NULL;
   for (i = 0; i < MAP_TABLE_SIZE; ++i) {
     l = m->table[i];
@@ -600,7 +601,7 @@ size_t m_overhead_size(map *m) {
 }
 
 size_t m3_overhead_size(map3 *m) {
-  size_t i, result;
+  size_t i, result = 0;
   list *l = NULL;
   for (i = 0; i < MAP_TABLE_SIZE; ++i) {
     l = m->table[i];

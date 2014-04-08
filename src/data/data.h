@@ -63,6 +63,7 @@ extern chunk_cache *CHUNK_CACHE;
 
 struct chunk_queue_set_s {
   queue *levels[N_LODS];
+  map3 *maps[N_LODS];
 };
 
 struct chunk_cache_s {
@@ -129,6 +130,10 @@ void cleanup_chunk_cache(chunk_cache *cc);
 /*************
  * Functions *
  *************/
+
+// Adds the given chunk/approx to the queue set at the base level of detail.
+void enqueue_chunk(chunk_queue_set *cqs, chunk *c);
+void enqueue_chunk_approximation(chunk_queue_set *cqs, chunk_approximation *ca);
 
 // Creates a new chunk at the given position and level of detail and marks it
 // for loading. Does nothing if a chunk with the same coordinates and level of

@@ -76,7 +76,7 @@ list *create_list(void) {
     perror("Failed to create list.");
     exit(errno);
   }
-  l->elements = (void **) malloc(sizeof(void *)*LIST_CHUNK_SIZE);
+  l->elements = (void **) malloc(sizeof(void *) * LIST_CHUNK_SIZE);
   if (l->elements == NULL) {
     perror("Failed to create initial list chunk.");
     exit(errno);
