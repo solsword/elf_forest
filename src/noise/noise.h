@@ -234,8 +234,11 @@ float sxnoise_2d(float x, float y);
 // 3D simplex noise:
 float sxnoise_3d(float x, float y, float z);
 
-// 2D Worley noise (on a simplex grid):
+// 2D Worley noise:
 float wrnoise_2d(float x, float y);
+
+// 2D Worley noise in a torus:
+float wrnoise_2d_wrapped(float x, float y, ptrdiff_t width, ptrdiff_t height);
 
 // Multiple octaves of 2D simplex noise combined using the given number of
 // octaves, frequency ratio, persistence, and offset values.

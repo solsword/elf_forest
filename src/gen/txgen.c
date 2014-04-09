@@ -234,15 +234,32 @@ void fltr_apply_gradient_map(texture *tx, void *fargs) {
 
 void fltr_worley(texture *tx, void *fargs) {
   int row, col;
+  float noise;
   worley_filter_args *wfargs = (worley_filter_args *) fargs;
   for (col = 0; col < tx->width; col += 1) {
     for (row = 0; row < tx->height; row += 1) {
+      //noise = wrnoise_2d(col * wfargs->freq, row * wfargs->freq);
+      //*
+      noise = wrnoise_2d_wrapped(
+        //col * wfargs->freq,
+        //row * wfargs->freq,
+        col / 8.0,
+        row / 8.0,
+        4, 4
+      );
+      // */
+      /*
+      noise = 0.5*sqrtf(
+        2*wrnoise_2d_wrapped(
+          col * wfargs->freq, row * wfargs->freq,
+          32*wfargs->freq, 32*wfargs->freq
+        )
+      );
+      // */
+      //noise = 0.5*sqrtf(2*wrnoise_2d(col * wfargs->freq, row * wfargs->freq));
       tx_set_px(
         tx,
-        gradient_result(
-          wfargs->grmap,
-          0.5*sqrtf(2*wrnoise_2d(col * wfargs->freq, row * wfargs->freq))
-        ),
+        gradient_result(wfargs->grmap, noise*noise),
         col,
         row
       );

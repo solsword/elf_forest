@@ -354,10 +354,44 @@ static inline void compute_worley_grid_point_2d(
   size_t idx
 ) {
   wrn->x[idx] = (float) i + (
-    hash_2d(MIXED_HASH_OF(i), MIXED_HASH_OF(j)) / ((float) HASH_MASK)
+    hash_2d(
+      MIXED_HASH_OF(i),
+      MIXED_HASH_OF(j)
+    ) / ((float) HASH_MASK)
   );
   wrn->y[idx] = (float) j + (
-    hash_2d(MIXED_HASH_OF(j), MIXED_HASH_OF(i)) / ((float) HASH_MASK)
+    hash_3d(
+      MIXED_HASH_OF(i),
+      MIXED_HASH_OF(j),
+      MIXED_HASH_OF(i)
+    ) / ((float) HASH_MASK)
+  );
+}
+
+static inline ptrdiff_t posmod(ptrdiff_t n, ptrdiff_t modulus) {
+  return ((n % modulus) + modulus) % modulus;
+}
+
+static inline void compute_worley_grid_point_2d_wrapped(
+  worley_neighborhood_2d *wrn,
+  ptrdiff_t i,
+  ptrdiff_t j,
+  ptrdiff_t width,
+  ptrdiff_t height,
+  size_t idx
+) {
+  wrn->x[idx] = (float) i + (
+    hash_2d(
+      MIXED_HASH_OF(posmod(i, width)),
+      MIXED_HASH_OF(posmod(j, height))
+    ) / ((float) HASH_MASK)
+  );
+  wrn->y[idx] = (float) j + (
+    hash_3d(
+      MIXED_HASH_OF(posmod(i, width)),
+      MIXED_HASH_OF(posmod(j, height)),
+      MIXED_HASH_OF(posmod(i, width))
+    ) / ((float) HASH_MASK)
   );
 }
 
@@ -613,6 +647,46 @@ float wrnoise_2d(float x, float y) {
   // Find the closest:
   for (i = 0; i < 9; ++i) {
     d2 = (wrn.x[i] - x) * (wrn.x[i] - x) + (wrn.y[i] - y) * (wrn.y[i] - y);
+    if (d2 < best) {
+      best = d2;
+    }
+  }
+
+  // Return the scaled distance mapped quadratically to [0, 1]:
+  return (MAX_SQ_WORLEY_DISTANCE_2D - best) / MAX_SQ_WORLEY_DISTANCE_2D;
+}
+
+// 2D worley noise in a torus:
+float wrnoise_2d_wrapped(float x, float y, ptrdiff_t width, ptrdiff_t height) {
+  worley_neighborhood_2d wrn = {
+    .i = 0, .j = 0,
+    .x = { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    .y = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+  };
+  ptrdiff_t i, j;
+  float dx, dy, d2 = 0, best = 2*MAX_SQ_WORLEY_DISTANCE_2D;
+
+  wrn.i = fastfloor(x);
+  wrn.j = fastfloor(y);
+
+  // Point locations:
+  for (i = 0; i < 3; ++i) {
+    for (j = 0; j < 3; ++j) {
+      compute_worley_grid_point_2d_wrapped(
+        &wrn,
+        wrn.i + i - 1,
+        wrn.j + j - 1,
+        width, height,
+        i + j*3
+      );
+    }
+  }
+
+  // Find the closest:
+  for (i = 0; i < 9; ++i) {
+    dx = wrn.x[i] - x;
+    dy = wrn.y[i] - y;
+    d2 = dx * dx + dy * dy;
     if (d2 < best) {
       best = d2;
     }
