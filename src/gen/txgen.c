@@ -41,7 +41,11 @@ static inline tx_grammar_literal *choose_child(
     dis = dis->next;
   }
   rnd = (float) w_total;
-  rnd *= (float) (((seed & HASH_MASK) << HASH_BITS) + UPPER_HASH_OF(head));
+  rnd *= (float) (
+    ((seed & HASH_MASK) << HASH_BITS)
+  +
+    downmix((ptrdiff_t) head)
+  );
   rnd /= (float) ((HASH_MASK << HASH_BITS) + HASH_MASK);
   dis = head;
   while (dis != NULL) {
@@ -152,13 +156,7 @@ void run_grammar(tx_grammar_literal *lit) {
         if (px == GRAMMAR_KEYS[i] && lit->children[i] != NULL) {
           chosen = choose_child(
             lit->children[i],
-            HASH[
-              HASH[
-                HASH[
-                  UPPER_HASH_OF(lit) + HASH_OF(i)
-                ] + HASH_OF(col)
-              ] + HASH_OF(row)
-            ]
+            hash_3d(hash_2d(downmix((ptrdiff_t) lit), i), col, row)
           );
           if (chosen->result == NULL) {
             run_grammar(chosen);
@@ -186,14 +184,14 @@ void run_grammar(tx_grammar_literal *lit) {
  * Filter Functions *
  ********************/
 
-void fltr_scatter(texture *tx, void *args) {
+void fltr_scatter(texture *tx, void *fargs) {
   int row, col;
-  scatter_filter_args *sfargs = (scatter_filter_args *) args;
+  scatter_filter_args *sfargs = (scatter_filter_args *) fargs;
   int max_dist_x = sfargs->x_freq / 3;
   int max_dist_y = sfargs->y_freq / 3;
   int dx, dy;
-  int starting_col = UPPER_HASH_OF(tx) % (sfargs->x_freq/2);
-  int starting_row = UPPER_HASH_OF(sfargs) % (sfargs->y_freq/2);
+  int starting_col = downmix((ptrdiff_t) tx) % (sfargs->x_freq/2);
+  int starting_row = downmix((ptrdiff_t) sfargs) % (sfargs->y_freq/2);
   for (
     col = starting_col % tx->width;
     col < tx->width;
@@ -204,15 +202,11 @@ void fltr_scatter(texture *tx, void *args) {
       row < tx->height;
       row += sfargs->y_freq
     ) {
-      dx = UPPER_HASH_OF(tx);
-      dx = HASH[dx + (col & HASH_MASK)];
-      dx = HASH[dx + (row & HASH_MASK)];
+      dx = hash_3d(downmix((ptrdiff_t) tx), col, row);
       dx %= (2*max_dist_x + 1);
       dx -= max_dist_x;
 
-      dy = UPPER_HASH_OF(tx);
-      dy = HASH[dy + (row & HASH_MASK)];
-      dy = HASH[dy + (col & HASH_MASK)];
+      dy = hash_3d(downmix((ptrdiff_t) tx), row, col);
       dy %= (2*max_dist_y + 1);
       dy -= max_dist_y;
 
@@ -221,6 +215,36 @@ void fltr_scatter(texture *tx, void *args) {
         sfargs->color,
         (size_t) ((col + dx + tx->width) % tx->width),
         (size_t) ((row + dy + tx->height) % tx->height)
+      );
+    }
+  }
+}
+
+void fltr_apply_gradient_map(texture *tx, void *fargs) {
+  int row, col;
+  pixel p;
+  gradient_map *grmap = (gradient_map *) fargs;
+  for (col = 0; col < tx->width; col += 1) {
+    for (row = 0; row < tx->height; row += 1) {
+      p = tx_get_px(tx, col, row);
+      tx_set_px(tx, gradient_result(grmap, p), col, row);
+    }
+  }
+}
+
+void fltr_worley(texture *tx, void *fargs) {
+  int row, col;
+  worley_filter_args *wfargs = (worley_filter_args *) fargs;
+  for (col = 0; col < tx->width; col += 1) {
+    for (row = 0; row < tx->height; row += 1) {
+      tx_set_px(
+        tx,
+        gradient_result(
+          wfargs->grmap,
+          wrnoise_2d(col * wfargs->freq, row * wfargs->freq)
+        ),
+        col,
+        row
       );
     }
   }

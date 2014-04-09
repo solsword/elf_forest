@@ -2,9 +2,20 @@
 #define NOISE_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 // noise.h
 // Noise functions (mainly simplex noise).
+
+/**************
+ * Structures *
+ **************/
+
+// A 2D Worley neighborhood holds both integer indexes and floating point
+// locations for each of the nine cells surrounding the cell containing the
+// point in question.
+struct worley_neighborhood_2d_s;
+typedef struct worley_neighborhood_2d_s worley_neighborhood_2d;
 
 /*********
  * Flags *
@@ -98,17 +109,27 @@ extern float const SURFLET_SQ_RADIUS_2D;
 extern float const SURFLET_RADIUS_2D;
 extern float const SURFLET_SQ_RADIUS_2D;
 
+// The maximum distance in two dimensions that an arbitrary point might be from
+// a random point within one of the nine nearest grid cells is the diagonal of
+// a grid cell, which for unit cells is just sqrt(2). Because this is achieved
+// when the sample point is at the corner of a cell and all four points in
+// cells adjacent to that corner happen to be at extreme diagonals from it,
+// this maximum distance is valid when searching for up to the 5th-nearest
+// point.
+extern float const MAX_WORLEY_DISTANCE_2D;
+extern float const MAX_SQ_WORLEY_DISTANCE_2D;
+
 /********
  * Data *
  ********/
 
 // The numbers 0-255 shuffled and then copied twice two copies reduces the
 // amount of %ing you have to do to keep indices within range.
-static int const HASH_MASK = 0xff;
-static int const HASH_BITS = 8;
-#define HASH_OF(x) (((size_t) x) & HASH_MASK)
-#define UPPER_HASH_OF(x) ((((size_t) x) >> 2) & HASH_MASK)
-static int const HASH[512] = {
+static ptrdiff_t const HASH_MASK = 0xff;
+static ptrdiff_t const HASH_BITS = 8;
+#define HASH_OF(x) (((ptrdiff_t) x) & HASH_MASK)
+#define UPPER_HASH_OF(x) ((((ptrdiff_t) x) >> 2) & HASH_MASK)
+static ptrdiff_t const HASH[512] = {
   248, 244, 209,  63, 108,  81,  67, 202,
   240, 140, 196, 217, 194,  48, 213, 234,
   216,  94, 160,  72, 200, 190, 126,  15,
@@ -176,6 +197,33 @@ static int const HASH[512] = {
   164,  69, 152, 125, 172, 142, 237,  13
 };
 
+/*************************
+ * Structure Definitions *
+ *************************/
+
+struct worley_neighborhood_2d_s {
+  ptrdiff_t i, j;
+  float x[9];
+  float y[9];
+};
+
+/********************
+ * Inline Functions *
+ ********************/
+
+// Mixes upper bits with lower bits to improve hash quality:
+static inline ptrdiff_t downmix(ptrdiff_t i) {
+  return (i ^ (i >> HASH_BITS));
+}
+
+// hash functions using the hash table:
+static inline ptrdiff_t hash_2d(ptrdiff_t i, ptrdiff_t j) {
+  return HASH[(i & HASH_MASK) + HASH[(j & HASH_MASK)]];
+}
+static inline ptrdiff_t hash_3d(ptrdiff_t i, ptrdiff_t j, ptrdiff_t k) {
+  return HASH[(i & HASH_MASK) + HASH[(j & HASH_MASK) + HASH[k & HASH_MASK]]];
+}
+
 /*************
  * Functions *
  *************/
@@ -185,6 +233,9 @@ float sxnoise_2d(float x, float y);
 
 // 3D simplex noise:
 float sxnoise_3d(float x, float y, float z);
+
+// 2D Worley noise (on a simplex grid):
+float wrnoise_2d(float x, float y);
 
 // Multiple octaves of 2D simplex noise combined using the given number of
 // octaves, frequency ratio, persistence, and offset values.

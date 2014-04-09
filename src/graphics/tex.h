@@ -98,6 +98,85 @@ static inline channel px_alpha(pixel p) {
   return ((p & ALPHA_MASK) >> ALPHA_SHIFT);
 }
 
+static inline float px_chroma(pixel p) {
+  float r = px_red(p) / CHANNEL_MAX;
+  float g = px_green(p) / CHANNEL_MAX;
+  float b = px_blue(p) / CHANNEL_MAX;
+  float max = 0, min = CHANNEL_MAX;
+  if (r > max) { max = r; }
+  if (g > max) { max = g; }
+  if (b > max) { max = b; }
+  if (r < min) { min = r; }
+  if (g < min) { min = g; }
+  if (b < min) { min = b; }
+  return max - min;
+}
+
+static inline float px_hue(pixel p) {
+  float r = px_red(p) / CHANNEL_MAX;
+  float g = px_green(p) / CHANNEL_MAX;
+  float b = px_blue(p) / CHANNEL_MAX;
+  float max = 0, min = CHANNEL_MAX;
+  float chroma = 0;
+  if (r > max) { max = r; }
+  if (g > max) { max = g; }
+  if (b > max) { max = b; }
+  if (r < min) { min = r; }
+  if (g < min) { min = g; }
+  if (b < min) { min = b; }
+  chroma = max - min;
+  if (max == r) {
+    return (1/6.0) * (g - b) / chroma + (b > g ? 1 : 0);
+  } else if (max == g) {
+    return (1/6.0) * (b - r) / chroma + (1/3.0);
+  } else if (max == b) {
+    return (1/6.0) * (r - g) / chroma + (2/3.0);
+  } else {
+    return 0;
+  }
+}
+
+static inline float px_intensity(pixel p) {
+  float r = px_red(p) / CHANNEL_MAX;
+  float g = px_green(p) / CHANNEL_MAX;
+  float b = px_blue(p) / CHANNEL_MAX;
+  return (r + g + b) / 3.0;
+}
+
+static inline float px_value(pixel p) {
+  float r = px_red(p) / CHANNEL_MAX;
+  float g = px_green(p) / CHANNEL_MAX;
+  float b = px_blue(p) / CHANNEL_MAX;
+  if (r >= g && r >= b) {
+    return r;
+  } else if (g >= b) {
+    return g;
+  } else {
+    return b;
+  }
+}
+
+static inline float px_lightness(pixel p) {
+  float r = px_red(p) / CHANNEL_MAX;
+  float g = px_green(p) / CHANNEL_MAX;
+  float b = px_blue(p) / CHANNEL_MAX;
+  float max = 0, min = CHANNEL_MAX;
+  if (r > max) { max = r; }
+  if (g > max) { max = g; }
+  if (b > max) { max = b; }
+  if (r < min) { min = r; }
+  if (g < min) { min = g; }
+  if (b < min) { min = b; }
+  return (max + min) / 2.0;
+}
+
+static inline float px_luma(pixel p) {
+  float r = px_red(p) / CHANNEL_MAX;
+  float g = px_green(p) / CHANNEL_MAX;
+  float b = px_blue(p) / CHANNEL_MAX;
+  return 0.30 * r + 0.59 * g + 0.11 * b;
+}
+
 
 static inline void px_set_red(pixel *p, channel r) {
   *p &= ~RED_MASK;
@@ -117,6 +196,13 @@ static inline void px_set_blue(pixel *p, channel b) {
 static inline void px_set_alpha(pixel *p, channel a) {
   *p &= ~ALPHA_MASK;
   *p |= ((pixel) a) << ALPHA_SHIFT;
+}
+
+static inline void px_set_gray(pixel *p, channel gray) {
+  *p &= ALPHA_MASK;
+  *p |= ((pixel) gray) << RED_SHIFT;
+  *p |= ((pixel) gray) << GREEN_SHIFT;
+  *p |= ((pixel) gray) << BLUE_SHIFT;
 }
 
 // Pixel-level texture access:

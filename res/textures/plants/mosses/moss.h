@@ -73,6 +73,32 @@ scatter_filter_args moss_scatter_args = {
   .color = GRAMMAR_KEY_0
 };
 
+gradient_map worley_test_map = {
+  .colors = {
+    0x00000000, // transparent
+    0xff007799, // lighter brown
+    0xff004466, // darker brown
+    0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0
+  },
+  .thresholds = {
+    0.0,
+    0.0,
+    1.0,
+    0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0
+  }
+};
+
+worley_filter_args worley_test_args = {
+  .freq = 8,
+  .grmap = &(worley_test_map)
+};
+
 // Moss based a 6x6 scatter grid (specified by the args struct above):
 tx_grammar_literal scattered_moss = {
   .filename = NULL,
@@ -84,6 +110,27 @@ tx_grammar_literal scattered_moss = {
     .postargs = NULL,
   .children = {
     &any_moss_clump_1,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+  },
+  .result = NULL
+};
+
+// TODO: remove this
+// A Worley noise test:
+tx_grammar_literal worley_test = {
+  .filename = NULL,
+  .anchor_x = 32,
+  .anchor_y = 32,
+  .preprocess = &fltr_worley,
+    .preargs = (void *) (&worley_test_args),
+  .postprocess = NULL,
+    .postargs = NULL,
+  .children = {
+    NULL,
     NULL,
     NULL,
     NULL,

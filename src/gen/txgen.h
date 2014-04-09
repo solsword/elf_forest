@@ -36,10 +36,25 @@ typedef void (*texture_filter)(texture *, void *);
 struct tx_grammar_expansion_site_s;
 typedef struct tx_grammar_expansion_site_s tx_grammar_expansion_site;
 
+// A gradient map is a series of up to GRADIENT_MAP_MAX_SIZE colors, each with
+// its own cutoff point. It can be applied to an image, transforming each pixel
+// into one of the gradient colors based on its luma value.
+struct gradient_map_s;
+typedef struct gradient_map_s gradient_map;
+
+/******************************
+ * Filter Argument Structures *
+ ******************************/
+
 // A structure for holding arguments to the scatter texture filter:
 // x-frequency, y-frequency, and color.
 struct scatter_filter_args_s;
 typedef struct scatter_filter_args_s scatter_filter_args;
+
+// A structure for holding arguments to the worley texture filter:
+// frequency, and a color-map (which may be NULL).
+struct worley_filter_args_s;
+typedef struct worley_filter_args_s worley_filter_args;
 
 /*************
  * Constants *
@@ -55,6 +70,8 @@ extern pixel const GRAMMAR_KEYS[N_GRAMMAR_KEYS];
 #define GRAMMAR_KEY_3 0xff8080fe
 #define GRAMMAR_KEY_4 0xff80fffe
 #define GRAMMAR_KEY_5 0xfffe8080
+
+#define GRADIENT_MAP_MAX_SIZE 16
 
 /*************************
  * Structure Definitions *
@@ -80,9 +97,19 @@ struct tx_grammar_expansion_site_s {
   tx_grammar_literal *literal;
 };
 
+struct gradient_map_s {
+  pixel colors[GRADIENT_MAP_MAX_SIZE];
+  float thresholds[GRADIENT_MAP_MAX_SIZE];
+};
+
 struct scatter_filter_args_s {
   size_t x_freq, y_freq;
   pixel color;
+};
+
+struct worley_filter_args_s {
+  float freq;
+  gradient_map *grmap;
 };
 
 /**********
@@ -112,6 +139,20 @@ struct scatter_filter_args_s {
  * Inline Functions *
  ********************/
 
+static inline pixel gradient_result(gradient_map *grmap, float in) {
+  size_t i = 0;
+  for (i = 0; i < GRADIENT_MAP_MAX_SIZE - 1; ++i) {
+    if (in <= grmap->thresholds[i]) {
+      return grmap->colors[i];
+    }
+  }
+  return grmap->colors[i];
+}
+
+static inline pixel px_gradient_result(gradient_map *grmap, pixel in) {
+  return gradient_result(grmap, px_luma(in));
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -135,6 +176,10 @@ void cleanup_expansion_site(tx_grammar_expansion_site *ges);
 // running them before allocating and computing a result texture.
 void run_grammar(tx_grammar_literal *lit);
 
+/************************
+ * Generation Functions *
+ ************************/
+
 /********************
  * Filter Functions *
  ********************/
@@ -144,5 +189,11 @@ void run_grammar(tx_grammar_literal *lit);
 // It can be used to scatter a grammar key color in a preprocessing filter,
 // effectively scattering copies of that key's expansion.
 void fltr_scatter(texture *tx, void *args);
+
+// Applies the given gradient map to the texture.
+void fltr_apply_gradient_map(texture *tx, void *args);
+
+// Generates Worley noise across the entire texture.
+void fltr_worley(texture *tx, void *args);
 
 #endif // ifndef TXGEN_H

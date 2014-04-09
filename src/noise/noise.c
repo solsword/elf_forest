@@ -124,7 +124,7 @@ uint32_t EX_TERRAIN_F[9] = {
 // component to the noise).
 static float const GRLEN_2D = 25.0;
 static float const GRDIV_2D = 1.0/25.0;
-static int const GRADIENTS_2D[128] = {
+static ptrdiff_t const GRADIENTS_2D[128] = {
 // Three 20-entry columns -> 60 1x2 vectors (120 ints):
    25,   0,       20,   0,       16,   0,
    24,   7,       19,   5,       15,   4,
@@ -162,7 +162,7 @@ static int const GRADIENTS_2D[128] = {
 // that would force us to compute a real dot product.
 static float const GRLEN_3D = M_SQRT2;
 static float const GRDIV_3D = 1.0/M_SQRT2;
-static int const GRADIENTS_3D[256] = {
+static ptrdiff_t const GRADIENTS_3D[256] = {
 // 12 1x3 vectors plus an extra padding column of zeroes to align the vectors.
 // We repeat this 5 times to make 60 4-int entries, and then duplicate 4
 // semi-symmetric entries to make 64 (this adds a slight bias since we'd need
@@ -245,11 +245,11 @@ static int const GRADIENTS_3D[256] = {
  *************/
 
 #define RT3 1.7320508075688772
-#define RT3_TWO (RT3 / 2.0)
-#define TWO_RT3 (2.0 / RT3)
+#define RT3__TWO (RT3 / 2.0)
+#define TWO__RT3 (2.0 / RT3)
 
 // sqrt(3)/2 squared is 3/4:
-float const SURFLET_RADIUS_2D = RT3_TWO;
+float const SURFLET_RADIUS_2D = RT3__TWO;
 float const SURFLET_SQ_RADIUS_2D = 0.75;
 
 // The 3D simplices aren't quite regular (regular tetrahedrons don't tile
@@ -257,6 +257,9 @@ float const SURFLET_SQ_RADIUS_2D = 0.75;
 // would have height 0.81, but we'll assume that our distorted tetrahedra will only have maximum allowable radius ~.75. Squaring that will yield 0.5625.
 float const SURFLET_RADIUS_3D = 0.75;
 float const SURFLET_SQ_RADIUS_3D = 0.5625;
+
+float const MAX_WORLEY_DISTANCE_2D = M_SQRT2;
+float const MAX_SQ_WORLEY_DISTANCE_2D = 2.0;
 
 // These scaling values are chosen based on trial-and-error.
 // Because of this it might be possible for a value outside [-1,1] to be
@@ -266,7 +269,7 @@ static float SCALE_3D = 7.0; // Mostly falls within [-0.9,0.9]
 // Note that the 2D noise seems to have a slight positive bias (this is a
 // bug?) with an average of ~50.5 over 65536 samples normalized to integers on
 // [0,99] (expected average is 49.5).
-// Note also that both the noise min/max values over a large area will contract
+// Note also that the noise min/max values over a large area will contract
 // noticeably when the sampling grid approaches the size of the simplices.
 // Ideally use at least 4 samples/simplex when values from the full range are
 // desired.
@@ -276,14 +279,14 @@ static float SCALE_3D = 7.0; // Mostly falls within [-0.9,0.9]
  ********************/
 
 // Lookup the value for 2D gradient i at (x, y):
-static inline float grad_2d(int i, float x, float y) {
-  int g = (i & 0x3f) << 1;
+static inline float grad_2d(ptrdiff_t i, float x, float y) {
+  ptrdiff_t g = (i & 0x3f) << 1;
   return (GRADIENTS_2D[g]*x + GRADIENTS_2D[g + 1]*y)*GRDIV_2D;
 }
 
 // Lookup the value for 3D gradient i at (x, y, z):
-static inline float grad_3d(int i, float x, float y, float z) {
-  int g = (i & 0x3f) << 2;
+static inline float grad_3d(ptrdiff_t i, float x, float y, float z) {
+  ptrdiff_t g = (i & 0x3f) << 2;
   return (
     x * GRADIENTS_3D[g] +
     y * GRADIENTS_3D[g + 1] +
@@ -292,25 +295,15 @@ static inline float grad_3d(int i, float x, float y, float z) {
 }
 
 // Faster floor function (mostly 'cause we're ignoring IEEE error stuff):
-static inline int fastfloor(float x) {
-  int ix = (int) x;
+static inline ptrdiff_t fastfloor(float x) {
+  ptrdiff_t ix = (ptrdiff_t) x;
   return ix - (ix > x);
-}
-
-// 2D hash function using the hash table:
-static inline int hash_2d(int i, int j) {
-  return HASH[(i & HASH_MASK) + HASH[(j & HASH_MASK)]];
-}
-
-// 3D hash function using the hash table:
-static inline int hash_3d(int i, int j, int k) {
-  return HASH[(i & HASH_MASK) + HASH[(j & HASH_MASK) + HASH[k & HASH_MASK]]];
 }
 
 // Given surflet indices i and j, a surflet center position (sx, sy), and a
 // target position (x, y), compute the surflet influence at the target position.
 static inline float compute_surflet_value_2d(
-  int i, int j,
+  ptrdiff_t i, ptrdiff_t j,
   float sx, float sy,
   float x, float y
 ) {
@@ -322,8 +315,8 @@ static inline float compute_surflet_value_2d(
     return 0.0;
   } else {
     atten *= atten;
-    //return atten * ((hash_2d(i, j) & 0x2) - 1);
-    return atten * grad_2d(hash_2d(i, j), dx, dy);
+    //return atten * ((hash_2d(downmix(i), downmix(j)) & 0x2) - 1);
+    return atten * grad_2d(hash_2d(downmix(i), downmix(j)), dx, dy);
   }
 }
 
@@ -331,7 +324,7 @@ static inline float compute_surflet_value_2d(
 // and a target position (x, y, z), compute the surflet influence at the target
 // position.
 static inline float compute_surflet_value_3d(
-  int i, int j, int k,
+  ptrdiff_t i, ptrdiff_t j, ptrdiff_t k,
   float sx, float sy, float sz,
   float x, float y, float z
 ) {
@@ -344,8 +337,21 @@ static inline float compute_surflet_value_3d(
     return 0.0;
   } else {
     atten *= atten;
-    return atten * grad_3d(hash_3d(i, j, k), dx, dy, dz);
+    return atten * grad_3d(
+      hash_3d(downmix(i), downmix(j), downmix(k)),
+      dx, dy, dz
+    );
   }
+}
+
+static inline void compute_worley_grid_point_2d(
+  worley_neighborhood_2d wrn,
+  ptrdiff_t i,
+  ptrdiff_t j,
+  size_t idx
+) {
+  wrn.x[idx] = i + (hash_2d(downmix(i), downmix(j)) / ((float) HASH_MASK));
+  wrn.y[idx] = j + (hash_2d(downmix(j), downmix(i)) / ((float) HASH_MASK));
 }
 
 /*************
@@ -371,13 +377,13 @@ float sxnoise_2d(float x, float y) {
 
   // Each equilateral triangle is sqrt(3)/2 tall, so we want to divide y by
   // sqrt(3)/2 and then subtract 1/2 from x for each unit of the new y.
-  float sy = y * TWO_RT3;
+  float sy = y * TWO__RT3;
   float sx = x - sy * 0.5;
 
   // Now we can get the integer coords of the bottom-left corner of the simplex
   // pair we're in:
-  int i = fastfloor(sx);
-  int j = fastfloor(sy);
+  ptrdiff_t i = fastfloor(sx);
+  ptrdiff_t j = fastfloor(sy);
 
   // And the fractional components in square-grid-space that will disambiguate
   // between the upper and lower simplices within this square:
@@ -386,7 +392,7 @@ float sxnoise_2d(float x, float y) {
 
   // Having found our simplex, we can compute the simplex corner indices,
   // the unskewed corner locations, and the surflet values:
-  int upper = (fx > (1 - fy));
+  ptrdiff_t upper = (fx > (1 - fy));
 
   // Corner indices (without branching):
   //
@@ -404,27 +410,27 @@ float sxnoise_2d(float x, float y) {
   // (i, j)           (i+1, j)
   //
   // If upper, then indices are:
-  // (i+1, j); (i, j+1); (i+1, j+1)
+  // (i, j+1); (i+1, j); (i+1, j+1)
   //   otherwise:
-  // (i, j); (i, j+1); (i+1, j)
-  int i0 = i + upper;
-  int j0 = j;
+  // (i, j); (i+1, j); (i, j+1)
+  ptrdiff_t i0 = i;
+  ptrdiff_t j0 = j + upper;
 
-  int i1 = i;
-  int j1 = j + 1;
+  ptrdiff_t i1 = i + 1;
+  ptrdiff_t j1 = j;
 
-  int i2 = i + 1;
-  int j2 = j + upper;
+  ptrdiff_t i2 = i + upper;
+  ptrdiff_t j2 = j + 1;
 
   // Unskewed corner locations:
   float cx0 = i0 + j0 * 0.5;
-  float cy0 = j0 * RT3_TWO;
+  float cy0 = j0 * RT3__TWO;
 
   float cx1 = i1 + j1 * 0.5;
-  float cy1 = j1 * RT3_TWO;
+  float cy1 = j1 * RT3__TWO;
 
   float cx2 = i2 + j2 * 0.5;
-  float cy2 = j2 * RT3_TWO;
+  float cy2 = j2 * RT3__TWO;
 
   // Surflet values:
   float srf0 = compute_surflet_value_2d(i0, j0, cx0, cy0, x, y);
@@ -456,9 +462,9 @@ float sxnoise_3d(float x, float y, float z) {
 
   // Now we can get the integer coords of the bottom-left corner of the simplex
   // sextuple we're in:
-  int i = fastfloor(sx);
-  int j = fastfloor(sy);
-  int k = fastfloor(sz);
+  ptrdiff_t i = fastfloor(sx);
+  ptrdiff_t j = fastfloor(sy);
+  ptrdiff_t k = fastfloor(sz);
 
   // And the fractional components in cubic-grid-space that will disambiguate
   // between the six simplices within this cube:
@@ -481,9 +487,9 @@ float sxnoise_3d(float x, float y, float z) {
   // we know we're in the south-east half of the cube, so we know that whatever
   // path we choose, it will have to traverse an x=0 -> x=1 edge before it
   // traverses a y=0 -> y=1 edge.
-  int x_before_y = (fx > fy);
-  int x_before_z = (fx > fz);
-  int y_before_z = (fy > fz);
+  ptrdiff_t x_before_y = (fx > fy);
+  ptrdiff_t x_before_z = (fx > fz);
+  ptrdiff_t y_before_z = (fy > fz);
 
   // Corner indices (without branching):
   // For the various tetrahedra, the corners are:
@@ -505,7 +511,7 @@ float sxnoise_3d(float x, float y, float z) {
   //   1  1  1                    1  1  1     1  1  1
   //
   //
-  // Since we don't care about ordering, we can reordered some of the simplexes
+  // Since we don't care about ordering, we can reorder some of the simplexes
   // to avoid using conditionals when computing their integer vertices:
   //
   //                     x_before_y
@@ -524,21 +530,21 @@ float sxnoise_3d(float x, float y, float z) {
   //   1  1  0                    0  1  0     0  0  1
   //   1  1  1                    1  1  1     1  1  1
 
-  int i0 = i;
-  int j0 = j;
-  int k0 = k;
+  ptrdiff_t i0 = i;
+  ptrdiff_t j0 = j;
+  ptrdiff_t k0 = k;
 
-  int i1 = i + x_before_y;
-  int j1 = j + 1 - x_before_y;
-  int k1 = k + 1 - x_before_z;
+  ptrdiff_t i1 = i + x_before_y;
+  ptrdiff_t j1 = j + 1 - x_before_y;
+  ptrdiff_t k1 = k + 1 - x_before_z;
 
-  int i2 = i + x_before_z;
-  int j2 = j + y_before_z;
-  int k2 = k + 1 - y_before_z;
+  ptrdiff_t i2 = i + x_before_z;
+  ptrdiff_t j2 = j + y_before_z;
+  ptrdiff_t k2 = k + 1 - y_before_z;
 
-  int i3 = i + 1;
-  int j3 = j + 1;
-  int k3 = k + 1;
+  ptrdiff_t i3 = i + 1;
+  ptrdiff_t j3 = j + 1;
+  ptrdiff_t k3 = k + 1;
 
   // Unskewed corner locations:
   float unsk = unskew * (i0 + j0 + k0);
@@ -570,6 +576,43 @@ float sxnoise_3d(float x, float y, float z) {
 
   // Return the scaled sum:
   return SCALE_3D * (srf0 + srf1 + srf2 + srf3);
+}
+
+// 2D worley noise:
+float wrnoise_2d(float x, float y) {
+  worley_neighborhood_2d wrn = {
+    .i = 0, .j = 0,
+    .x = { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    .y = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+  };
+  ptrdiff_t i, j;
+  float d2 = 0, best = 0;
+
+  wrn.i = fastfloor(x);
+  wrn.j = fastfloor(y);
+
+  // Point locations:
+  for (i = 0; i < 3; ++i) {
+    for (j = 0; j < 3; ++j) {
+      compute_worley_grid_point_2d(
+        wrn,
+        wrn.i + i - 1,
+        wrn.j + j - 1,
+        i + j*3
+      );
+    }
+  }
+
+  // Find the closest:
+  for (i = 0; i < 9; ++i) {
+    d2 = (wrn.x[i] - x) * (wrn.x[i] - x) + (wrn.y[i] - y) * (wrn.y[i] - y);
+    if (d2 < best) {
+      best = d2;
+    }
+  }
+
+  // Return the scaled distance mapped quadratically to [0, 1]:
+  return MAX_SQ_WORLEY_DISTANCE_2D - best;
 }
 
 // Fractal noise:
