@@ -44,7 +44,7 @@ static inline tx_grammar_literal *choose_child(
   rnd *= (float) (
     ((seed & HASH_MASK) << HASH_BITS)
   +
-    downmix((ptrdiff_t) head)
+    UPPER_HASH_OF(head)
   );
   rnd /= (float) ((HASH_MASK << HASH_BITS) + HASH_MASK);
   dis = head;
@@ -156,7 +156,7 @@ void run_grammar(tx_grammar_literal *lit) {
         if (px == GRAMMAR_KEYS[i] && lit->children[i] != NULL) {
           chosen = choose_child(
             lit->children[i],
-            hash_3d(hash_2d(downmix((ptrdiff_t) lit), i), col, row)
+            hash_3d(hash_2d(UPPER_HASH_OF(lit), i), col, row)
           );
           if (chosen->result == NULL) {
             run_grammar(chosen);
@@ -190,8 +190,8 @@ void fltr_scatter(texture *tx, void *fargs) {
   int max_dist_x = sfargs->x_freq / 3;
   int max_dist_y = sfargs->y_freq / 3;
   int dx, dy;
-  int starting_col = downmix((ptrdiff_t) tx) % (sfargs->x_freq/2);
-  int starting_row = downmix((ptrdiff_t) sfargs) % (sfargs->y_freq/2);
+  int starting_col = UPPER_HASH_OF(tx) % (sfargs->x_freq/2);
+  int starting_row = UPPER_HASH_OF(sfargs) % (sfargs->y_freq/2);
   for (
     col = starting_col % tx->width;
     col < tx->width;
@@ -202,11 +202,11 @@ void fltr_scatter(texture *tx, void *fargs) {
       row < tx->height;
       row += sfargs->y_freq
     ) {
-      dx = hash_3d(downmix((ptrdiff_t) tx), col, row);
+      dx = hash_3d(UPPER_HASH_OF(tx), col, row);
       dx %= (2*max_dist_x + 1);
       dx -= max_dist_x;
 
-      dy = hash_3d(downmix((ptrdiff_t) tx), row, col);
+      dy = hash_3d(UPPER_HASH_OF(tx), row, col);
       dy %= (2*max_dist_y + 1);
       dy -= max_dist_y;
 
@@ -241,7 +241,7 @@ void fltr_worley(texture *tx, void *fargs) {
         tx,
         gradient_result(
           wfargs->grmap,
-          wrnoise_2d(col * wfargs->freq, row * wfargs->freq)
+          0.5*sqrtf(2*wrnoise_2d(col * wfargs->freq, row * wfargs->freq))
         ),
         col,
         row

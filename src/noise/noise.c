@@ -4,6 +4,9 @@
 #include <math.h>
 #include <stdlib.h>
 
+// DEBUG:
+#include <stdio.h>
+
 #include "noise.h"
 
 /************
@@ -315,8 +318,8 @@ static inline float compute_surflet_value_2d(
     return 0.0;
   } else {
     atten *= atten;
-    //return atten * ((hash_2d(downmix(i), downmix(j)) & 0x2) - 1);
-    return atten * grad_2d(hash_2d(downmix(i), downmix(j)), dx, dy);
+    //return atten * ((hash_2d(MIXED_HASH_OF(i), MIXED_HASH_OF(j)) & 0x2) - 1);
+    return atten * grad_2d(hash_2d(MIXED_HASH_OF(i), MIXED_HASH_OF(j)), dx, dy);
   }
 }
 
@@ -338,20 +341,24 @@ static inline float compute_surflet_value_3d(
   } else {
     atten *= atten;
     return atten * grad_3d(
-      hash_3d(downmix(i), downmix(j), downmix(k)),
+      hash_3d(MIXED_HASH_OF(i), MIXED_HASH_OF(j), MIXED_HASH_OF(k)),
       dx, dy, dz
     );
   }
 }
 
 static inline void compute_worley_grid_point_2d(
-  worley_neighborhood_2d wrn,
+  worley_neighborhood_2d *wrn,
   ptrdiff_t i,
   ptrdiff_t j,
   size_t idx
 ) {
-  wrn.x[idx] = i + (hash_2d(downmix(i), downmix(j)) / ((float) HASH_MASK));
-  wrn.y[idx] = j + (hash_2d(downmix(j), downmix(i)) / ((float) HASH_MASK));
+  wrn->x[idx] = (float) i + (
+    hash_2d(MIXED_HASH_OF(i), MIXED_HASH_OF(j)) / ((float) HASH_MASK)
+  );
+  wrn->y[idx] = (float) j + (
+    hash_2d(MIXED_HASH_OF(j), MIXED_HASH_OF(i)) / ((float) HASH_MASK)
+  );
 }
 
 /*************
@@ -586,7 +593,7 @@ float wrnoise_2d(float x, float y) {
     .y = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
   };
   ptrdiff_t i, j;
-  float d2 = 0, best = 0;
+  float d2 = 0, best = 2*MAX_SQ_WORLEY_DISTANCE_2D;
 
   wrn.i = fastfloor(x);
   wrn.j = fastfloor(y);
@@ -595,7 +602,7 @@ float wrnoise_2d(float x, float y) {
   for (i = 0; i < 3; ++i) {
     for (j = 0; j < 3; ++j) {
       compute_worley_grid_point_2d(
-        wrn,
+        &wrn,
         wrn.i + i - 1,
         wrn.j + j - 1,
         i + j*3
@@ -612,7 +619,7 @@ float wrnoise_2d(float x, float y) {
   }
 
   // Return the scaled distance mapped quadratically to [0, 1]:
-  return MAX_SQ_WORLEY_DISTANCE_2D - best;
+  return (MAX_SQ_WORLEY_DISTANCE_2D - best) / MAX_SQ_WORLEY_DISTANCE_2D;
 }
 
 // Fractal noise:

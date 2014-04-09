@@ -24,7 +24,7 @@ size_t test_txgen_template_moss(void) {
   cleanup_grammar(&template_sparse_moss);
   texture *doublecheck = load_texture_from_png("out/test/tmoss.png");
   if (tx_get_px(doublecheck, 0, 0) != 0xff00b40f) { return 1; }
-  if (tx_get_px(doublecheck, 0, 1) != 0xbf10870d) { return 2; }
+  if (tx_get_px(doublecheck, 1, 0) != 0xbf10870d) { return 2; }
   cleanup_texture(doublecheck);
   return 0;
 }

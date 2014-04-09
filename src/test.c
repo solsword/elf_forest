@@ -30,13 +30,13 @@
 
 // TODO: test for oddness near the origin.
 // 50% Hills:
-//region_chunk_pos const CHUNK_ORIGIN = { .x = 8935, .y = -11980, .z = 7 };
+//region_chunk_pos const CHUNK_ORIGIN = { .x = 70240, .y = 54567, .z = 10 };
 // 70% Hills:
 //region_chunk_pos const CHUNK_ORIGIN = { .x = 71240, .y = 54567, .z = 10 };
 // Plains:
-//region_chunk_pos const CHUNK_ORIGIN = { .x = 10235, .y = -10980, .z = 2 };
+//region_chunk_pos const CHUNK_ORIGIN = { .x = 69240, .y = 54067, .z = 10 };
 // Beach:
-region_chunk_pos const CHUNK_ORIGIN = { .x = 0, .y = 4500, .z = 0 };
+region_chunk_pos const CHUNK_ORIGIN = { .x = 10229, .y = -10966, .z = 0 };
 
 /********
  * Main *

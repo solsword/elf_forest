@@ -129,6 +129,11 @@ static ptrdiff_t const HASH_MASK = 0xff;
 static ptrdiff_t const HASH_BITS = 8;
 #define HASH_OF(x) (((ptrdiff_t) x) & HASH_MASK)
 #define UPPER_HASH_OF(x) ((((ptrdiff_t) x) >> 2) & HASH_MASK)
+#define MIXED_HASH_OF(x) ( \
+  ( \
+    ((ptrdiff_t) x) ^ ((ptrdiff_t) x) >> HASH_BITS \
+  ) & HASH_MASK \
+)
 static ptrdiff_t const HASH[512] = {
   248, 244, 209,  63, 108,  81,  67, 202,
   240, 140, 196, 217, 194,  48, 213, 234,
@@ -210,11 +215,6 @@ struct worley_neighborhood_2d_s {
 /********************
  * Inline Functions *
  ********************/
-
-// Mixes upper bits with lower bits to improve hash quality:
-static inline ptrdiff_t downmix(ptrdiff_t i) {
-  return (i ^ (i >> HASH_BITS));
-}
 
 // hash functions using the hash table:
 static inline ptrdiff_t hash_2d(ptrdiff_t i, ptrdiff_t j) {

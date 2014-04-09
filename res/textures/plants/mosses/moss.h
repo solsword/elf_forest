@@ -73,30 +73,46 @@ scatter_filter_args moss_scatter_args = {
   .color = GRAMMAR_KEY_0
 };
 
-gradient_map worley_test_map = {
+gradient_map worley_branch_map = {
   .colors = {
+    0xff001133, // dark brown
+    0xff004466, // mid brown
+    0xff007799, // light brown
     0x00000000, // transparent
-    0xff007799, // lighter brown
-    0xff004466, // darker brown
-    0,
     0, 0, 0, 0,
     0, 0, 0, 0,
     0, 0, 0, 0
   },
   .thresholds = {
-    0.0,
-    0.0,
+    0.63,
+    0.67,
+    0.69,
     1.0,
-    0,
     0, 0, 0, 0,
     0, 0, 0, 0,
     0, 0, 0, 0
   }
 };
 
+gradient_map worley_test_map = {
+  .colors = {
+    0xff000000, 0xff111111, 0xff222222, 0xff333333,
+    0xff444444, 0xff555555, 0xff666666, 0xff777777,
+    0xff888888, 0xff999999, 0xffaaaaaa, 0xffbbbbbb,
+    0xffcccccc, 0xffdddddd, 0xffeeeeee, 0xffffffff,
+  },
+  .thresholds = {
+    1/16.0, 2/16.0, 3/16.0, 4/16.0,
+    5/16.0, 6/16.0, 7/16.0, 8/16.0,
+    9/16.0, 10/16.0, 11/16.0, 12/16.0,
+    13/16.0, 14/16.0, 15/16.0, 16/16.0
+  }
+};
+
 worley_filter_args worley_test_args = {
-  .freq = 8,
-  .grmap = &(worley_test_map)
+  .freq = 1/8.0,
+  .grmap = &(worley_branch_map)
+  //.grmap = &(worley_test_map)
 };
 
 // Moss based a 6x6 scatter grid (specified by the args struct above):
