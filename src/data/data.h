@@ -29,6 +29,10 @@ typedef struct chunk_cache_s chunk_cache;
  * Constants *
  *************/
 
+// The map table sizes for the chunk queue set maps and for the chunk cache map.
+extern size_t const CHUNK_QUEUE_SET_MAP_SIZE;
+extern size_t const CHUNK_CACHE_MAP_SIZE;
+
 // Max chunks to load or compile per tick:
 extern int const LOAD_CAP;
 extern int const COMPILE_CAP;
@@ -63,11 +67,11 @@ extern chunk_cache *CHUNK_CACHE;
 
 struct chunk_queue_set_s {
   queue *levels[N_LODS];
-  map3 *maps[N_LODS];
+  map *maps[N_LODS];
 };
 
 struct chunk_cache_s {
-  map3 *levels[N_LODS];
+  map *levels[N_LODS];
 };
 
 /********************

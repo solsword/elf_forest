@@ -20,6 +20,9 @@
  * Constants *
  *************/
 
+size_t const CHUNK_QUEUE_SET_MAP_SIZE = 2048;
+size_t const CHUNK_CACHE_MAP_SIZE = 16384;
+
 // TODO: dynamic capping?
 int const LOAD_CAP = 128;
 int const COMPILE_CAP = 2048;
@@ -131,7 +134,7 @@ chunk_queue_set *create_chunk_queue_set(void) {
   size_t i;
   for (i = LOD_BASE; i < N_LODS; ++i) {
     cqs->levels[i] = create_queue();
-    cqs->maps[i] = create_map3();
+    cqs->maps[i] = create_map(3, CHUNK_QUEUE_SET_MAP_SIZE);
   }
   return cqs;
 }
@@ -140,7 +143,7 @@ void cleanup_chunk_queue_set(chunk_queue_set *cqs) {
   size_t i;
   for (i = LOD_BASE; i < N_LODS; ++i) {
     cleanup_queue(cqs->levels[i]);
-    cleanup_map3(cqs->maps[i]);
+    cleanup_map(cqs->maps[i]);
   }
   free(cqs);
 }
@@ -152,7 +155,7 @@ void destroy_chunk_queue_set(chunk_queue_set *cqs) {
   for (i = LOD_BASE + 1; i < N_LODS; ++i) {
     q_foreach(cqs->levels[i], &iter_cleanup_chunk_approx);
     cleanup_queue(cqs->levels[i]);
-    cleanup_map3(cqs->maps[i]);
+    cleanup_map(cqs->maps[i]);
   }
   free(cqs);
 }
@@ -161,18 +164,18 @@ chunk_cache *create_chunk_cache(void) {
   chunk_cache *cc = (chunk_cache *) malloc(sizeof(chunk_cache));
   size_t i;
   for (i = LOD_BASE; i < N_LODS; ++i) {
-    cc->levels[i] = create_map3();
+    cc->levels[i] = create_map(3, CHUNK_CACHE_MAP_SIZE);
   }
   return cc;
 }
 
 void cleanup_chunk_cache(chunk_cache *cc) {
   size_t i;
-  m3_foreach(cc->levels[LOD_BASE], &iter_cleanup_chunk);
-  cleanup_map3(cc->levels[LOD_BASE]);
+  m_foreach(cc->levels[LOD_BASE], &iter_cleanup_chunk);
+  cleanup_map(cc->levels[LOD_BASE]);
   for (i = LOD_BASE + 1; i < N_LODS; ++i) {
-    m3_foreach(cc->levels[i], &iter_cleanup_chunk_approx);
-    cleanup_map3(cc->levels[i]);
+    m_foreach(cc->levels[i], &iter_cleanup_chunk_approx);
+    cleanup_map(cc->levels[i]);
   }
   free(cc);
 }
@@ -398,7 +401,7 @@ void tick_data(void) {
   chunk_approximation *old_approx = NULL;
   lod detail = LOD_BASE;
   queue *q = LOAD_QUEUES->levels[LOD_BASE];
-  map3 *m = LOAD_QUEUES->maps[LOD_BASE];
+  map *m = LOAD_QUEUES->maps[LOD_BASE];
   while (n < LOAD_CAP && q_get_length(q) > 0) {
     c = (chunk *) q_pop_element(q);
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"

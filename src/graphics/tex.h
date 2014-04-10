@@ -6,6 +6,8 @@
 
 #include <GL/gl.h>
 
+#include "datatypes/map.h"
+
 #include "world/blocks.h"
 
 /**************
@@ -28,15 +30,27 @@ typedef uint8_t channel; // A single channel from pixel data
 #define GREEN_MASK (0xff << GREEN_SHIFT)
 #define ALPHA_MASK (0xff << ALPHA_SHIFT)
 
-typedef struct texture_s texture; // Texture dimensions and a data array
-typedef struct tcoords_s tcoords; // A pair of texture coordinates
+// Texture dimensions and a data array
+struct texture_s;
+typedef struct texture_s texture;
+
+// A pair of OpenGL texture coordinates
+struct tcoords_s;
+typedef struct tcoords_s tcoords;
+
+// A texture atlas that dynamically stores 32x32 textures. It contains a map
+// that maps block ids to texture coordinates, as well as a texture that holds
+// an atlas of all stored sub-textures and a handle for an OpenGL texture that
+// is a copy of the CPU-side texture.
+struct dynamic_texture_atlas_s;
+typedef struct dynamic_texture_atlas_s dynamic_texture_atlas;
 
 /*************
  * Constants *
  *************/
 
 // Pixel dimension of each block texture:
-static uint8_t const BLOCK_TEXTURE_SIZE = 16;
+static uint8_t const BLOCK_TEXTURE_SIZE = 32;
 
 /********************
  * Global variables *
@@ -63,10 +77,6 @@ extern uint16_t const BLOCK_TEXTURE_MAP[];
  * Structure Definitions *
  *************************/
 
-struct pixel_s {
-  channel r, g, b, a;
-};
-
 struct texture_s {
   GLsizei width, height;
   pixel *pixels;
@@ -74,6 +84,12 @@ struct texture_s {
 
 struct tcoords_s {
   uint16_t s, t;
+};
+
+struct dynamic_texture_atlas_s {
+  texture *atlas; // CPU-side texture data
+  GLuint handle; // Handle for GPU-side texture data
+  map *tcmap; // block id -> texture coords
 };
 
 /********************
