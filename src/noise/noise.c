@@ -627,7 +627,10 @@ float wrnoise_2d(float x, float y) {
     .y = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
   };
   ptrdiff_t i, j;
-  float d2 = 0, best = 2*MAX_SQ_WORLEY_DISTANCE_2D;
+  float dx, dy;
+  float d2 = 0;
+  float best = MAX_SQ_WORLEY_DISTANCE_2D;
+  float nextbest= MAX_SQ_WORLEY_DISTANCE_2D;
 
   wrn.i = fastfloor(x);
   wrn.j = fastfloor(y);
@@ -646,14 +649,21 @@ float wrnoise_2d(float x, float y) {
 
   // Find the closest:
   for (i = 0; i < 9; ++i) {
-    d2 = (wrn.x[i] - x) * (wrn.x[i] - x) + (wrn.y[i] - y) * (wrn.y[i] - y);
+    dx = wrn.x[i] - x;
+    dy = wrn.y[i] - y;
+    d2 = dx * dx + dy * dy;
     if (d2 < best) {
+      nextbest = best;
       best = d2;
+    } else if (d2 < nextbest) {
+      nextbest = d2;
     }
   }
 
   // Return the scaled distance mapped quadratically to [0, 1]:
-  return (MAX_SQ_WORLEY_DISTANCE_2D - best) / MAX_SQ_WORLEY_DISTANCE_2D;
+  d2 = best - nextbest;
+  d2 /= MAX_SQ_WORLEY_DISTANCE_2D;
+  return d2 * d2;
 }
 
 // 2D worley noise in a torus:
@@ -664,7 +674,10 @@ float wrnoise_2d_wrapped(float x, float y, ptrdiff_t width, ptrdiff_t height) {
     .y = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
   };
   ptrdiff_t i, j;
-  float dx, dy, d2 = 0, best = 2*MAX_SQ_WORLEY_DISTANCE_2D;
+  float dx, dy;
+  float d2 = 0;
+  float best = MAX_SQ_WORLEY_DISTANCE_2D;
+  float nextbest= MAX_SQ_WORLEY_DISTANCE_2D;
 
   wrn.i = fastfloor(x);
   wrn.j = fastfloor(y);
@@ -688,12 +701,21 @@ float wrnoise_2d_wrapped(float x, float y, ptrdiff_t width, ptrdiff_t height) {
     dy = wrn.y[i] - y;
     d2 = dx * dx + dy * dy;
     if (d2 < best) {
+      nextbest = best;
       best = d2;
+    } else if (d2 < nextbest) {
+      nextbest = d2;
     }
   }
 
+  d2 = best / MAX_SQ_WORLEY_DISTANCE_2D;
+  d2 = 1 - d2;
+  return 1 - (d2 * d2 * d2);
+
   // Return the scaled distance mapped quadratically to [0, 1]:
-  return (MAX_SQ_WORLEY_DISTANCE_2D - best) / MAX_SQ_WORLEY_DISTANCE_2D;
+  d2 = fabs(best - nextbest) / MAX_SQ_WORLEY_DISTANCE_2D;
+  d2 = 1 - d2;
+  return d2 * d2 * d2;
 }
 
 // Fractal noise:

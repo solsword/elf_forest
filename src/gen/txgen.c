@@ -243,7 +243,7 @@ void fltr_worley(texture *tx, void *fargs) {
       noise = wrnoise_2d_wrapped(
         //col * wfargs->freq,
         //row * wfargs->freq,
-        col / 8.0,
+        3 + col / 8.0,
         row / 8.0,
         4, 4
       );

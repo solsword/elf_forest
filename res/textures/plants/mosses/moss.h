@@ -111,8 +111,8 @@ gradient_map worley_test_map = {
 
 worley_filter_args worley_test_args = {
   .freq = 1/8.0,
-  .grmap = &(worley_branch_map)
-  //.grmap = &(worley_test_map)
+  //.grmap = &(worley_branch_map)
+  .grmap = &(worley_test_map)
 };
 
 // Moss based a 6x6 scatter grid (specified by the args struct above):
