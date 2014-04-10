@@ -46,15 +46,20 @@ typedef struct gradient_map_s gradient_map;
  * Filter Argument Structures *
  ******************************/
 
-// A structure for holding arguments to the scatter texture filter:
+// Arguments to the scatter texture filter:
 // x-frequency, y-frequency, and color.
 struct scatter_filter_args_s;
 typedef struct scatter_filter_args_s scatter_filter_args;
 
-// A structure for holding arguments to the worley texture filter:
+// Arguments to the worley texture filter:
 // frequency, and a color-map (which may be NULL).
 struct worley_filter_args_s;
 typedef struct worley_filter_args_s worley_filter_args;
+
+// Arguments to the branch texture filter:
+// roughness flag, scale, width, distortion, and center, mid, and outer colors.
+struct branch_filter_args_s;
+typedef struct branch_filter_args_s branch_filter_args;
 
 /*************
  * Constants *
@@ -112,6 +117,14 @@ struct worley_filter_args_s {
   gradient_map *grmap;
 };
 
+struct branch_filter_args_s {
+  int rough; // 0 or 1
+  float scale; // ~0.125
+  float width; // [0.5, 1.5]
+  float distortion; // [0, 3]
+  pixel center_color, mid_color, outer_color;
+};
+
 /**********
  * Macros *
  **********/
@@ -157,10 +170,38 @@ static inline pixel px_gradient_result(gradient_map *grmap, pixel in) {
  * Constructors & Destructors *
  ******************************/
 
+// Allocates and returns a new grammar literal. Note that this constructor only
+// allows the specification of two children: if a literal needs more children
+// it should specify them manually after creation.
+tx_grammar_literal * create_grammar_literal(
+  char const * const fn,
+  size_t ax, size_t ay,
+  texture_filter prp, void *prargs,
+  texture_filter psp, void *psargs,
+  tx_grammar_disjunction *child0,
+  tx_grammar_disjunction *child1
+);
+
+// Cleans up the data associated with the given literal, including recursively
+// calling cleanup for its children. It does not free the filename or the pre-
+// or post- args, as these are assumed to be non-heap data.
+void cleanup_grammar_literal(tx_grammar_literal *lit);
+
+// Allocates and returns a new grammar disjunction.
+tx_grammar_disjunction * create_grammar_disjunction(
+  tx_grammar_disjunction *nxt,
+  tx_grammar_literal *lit,
+  float w
+);
+
+// Cleans up all data associated with the given disjunction, including calling
+// cleanup on its associated literal and the next disjunction in its chain.
+void cleanup_grammar_disjunction(tx_grammar_disjunction *dis);
+
 // Cleans up any allocated result textures associated with the given grammar
 // and any of its children. Leaves the grammar literal itself untouched, as
 // they are generally not allocated on the heap.
-void cleanup_grammar(tx_grammar_literal *lit);
+void cleanup_grammar_results(tx_grammar_literal *lit);
 
 // Allocates and returns a new grammar expansion site:
 tx_grammar_expansion_site * create_expansion_site(void);
@@ -176,10 +217,6 @@ void cleanup_expansion_site(tx_grammar_expansion_site *ges);
 // running them before allocating and computing a result texture.
 void run_grammar(tx_grammar_literal *lit);
 
-/************************
- * Generation Functions *
- ************************/
-
 /********************
  * Filter Functions *
  ********************/
@@ -193,7 +230,42 @@ void fltr_scatter(texture *tx, void *args);
 // Applies the given gradient map to the texture.
 void fltr_apply_gradient_map(texture *tx, void *args);
 
-// Generates Worley noise across the entire texture.
+// Generates wrapped Worley noise across the entire texture.
 void fltr_worley(texture *tx, void *args);
+
+// Generates branch-like textures.
+void fltr_branches(texture *tx, void *args);
+
+/*******************
+ * Remix Functions *
+ *******************/
+
+static inline tx_grammar_literal * create_terminal_grammar_literal(
+  char const * const fn,
+  size_t ax, size_t ay
+) {
+  return create_grammar_literal(
+    fn,
+    ax, ay,
+    NULL, NULL,
+    NULL, NULL,
+    NULL,
+    NULL
+  );
+}
+
+static inline tx_grammar_literal * create_filter_grammar_literal(
+  size_t ax, size_t ay,
+  texture_filter filter, void *fargs
+) {
+  return create_grammar_literal(
+    NULL,
+    ax, ay,
+    filter, fargs,
+    NULL, NULL,
+    NULL,
+    NULL
+  );
+}
 
 #endif // ifndef TXGEN_H

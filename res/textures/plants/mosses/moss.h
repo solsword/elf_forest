@@ -73,27 +73,6 @@ scatter_filter_args moss_scatter_args = {
   .color = GRAMMAR_KEY_0
 };
 
-gradient_map worley_branch_map = {
-  .colors = {
-    0xff001133, // dark brown
-    0xff004466, // mid brown
-    0xff007799, // light brown
-    0x00000000, // transparent
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0
-  },
-  .thresholds = {
-    0.53,
-    0.75,
-    0.88,
-    1.0,
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-    0, 0, 0, 0
-  }
-};
-
 gradient_map worley_test_map = {
   .colors = {
     0xff000000, 0xff111111, 0xff222222, 0xff333333,
@@ -111,8 +90,17 @@ gradient_map worley_test_map = {
 
 worley_filter_args worley_test_args = {
   .freq = 1/8.0,
-  //.grmap = &(worley_branch_map)
   .grmap = &(worley_test_map)
+};
+
+branch_filter_args branch_test_args = {
+  .rough = 0,
+  .scale = 0.125,
+  .width = 1.0,
+  .distortion = 0.0,
+  .center_color = 0xff001133, // dark brown
+  .mid_color = 0xff004466, // mid brown
+  .outer_color = 0xff007799 // light brown
 };
 
 // Moss based a 6x6 scatter grid (specified by the args struct above):
@@ -143,6 +131,27 @@ tx_grammar_literal worley_test = {
   .anchor_y = 32,
   .preprocess = &fltr_worley,
     .preargs = (void *) (&worley_test_args),
+  .postprocess = NULL,
+    .postargs = NULL,
+  .children = {
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+  },
+  .result = NULL
+};
+
+// TODO: move this
+// A branch filter test:
+tx_grammar_literal branch_filter_test = {
+  .filename = NULL,
+  .anchor_x = 32,
+  .anchor_y = 32,
+  .preprocess = &fltr_branches,
+    .preargs = (void *) (&branch_test_args),
   .postprocess = NULL,
     .postargs = NULL,
   .children = {

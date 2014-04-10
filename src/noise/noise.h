@@ -11,15 +11,26 @@
  * Structures *
  **************/
 
-// A 2D Worley neighborhood holds both integer indexes and floating point
+// A 2D grid neighborhood holds both integer indexes and floating point
 // locations for each of the nine cells surrounding the cell containing the
 // point in question.
-struct worley_neighborhood_2d_s;
-typedef struct worley_neighborhood_2d_s worley_neighborhood_2d;
+struct grid_neighborhood_2d_s;
+typedef struct grid_neighborhood_2d_s grid_neighborhood_2d;
 
 /*********
  * Flags *
  *********/
+
+// Flags to control the algorithm used by Worley noise:
+
+// Don't use the distance to the nearest point as part of the base result.
+#define WORLEY_FLAG_IGNORE_NEAREST 0x00000001
+// Subtract the distance to the second-nearest point from the result and invert
+// it. If WORLEY_FLAG_IGNORE_NEAREST is given, the result will be the distance
+// to the second-nearest point.
+#define WORLEY_FLAG_INCLUDE_NEXTBEST 0x00000002
+// Disables normalization of the result.
+#define WORLEY_FLAG_DONT_NORMALIZE 0x0000004
 
 // These flags control the noise generation when given to the table form of
 // the fractal sum noise generators (see fractal_sxnoise_*d_table).
@@ -206,10 +217,10 @@ static ptrdiff_t const HASH[512] = {
  * Structure Definitions *
  *************************/
 
-struct worley_neighborhood_2d_s {
-  ptrdiff_t i, j;
-  float x[9];
-  float y[9];
+struct grid_neighborhood_2d_s {
+  ptrdiff_t i, j; // index of the center cell
+  float x[9]; // x-coordinates of the 9 grid points in the neighborhood
+  float y[9]; // y-coordinates of the same
 };
 
 /********************
@@ -235,10 +246,11 @@ float sxnoise_2d(float x, float y);
 float sxnoise_3d(float x, float y, float z);
 
 // 2D Worley noise:
-float wrnoise_2d(float x, float y);
-
-// 2D Worley noise in a torus:
-float wrnoise_2d_wrapped(float x, float y, ptrdiff_t width, ptrdiff_t height);
+float wrnoise_2d(
+  float x, float y,
+  ptrdiff_t wrapx, ptrdiff_t wrapy,
+  uint32_t flags
+);
 
 // Multiple octaves of 2D simplex noise combined using the given number of
 // octaves, frequency ratio, persistence, and offset values.
@@ -281,4 +293,11 @@ float fractal_sxnoise_3d_table(
   uint32_t *flags
 );
 
+/*******************
+ * Remix Functions *
+ *******************/
+
+static inline float wrnoise_2d_default(float x, float y) {
+  return wrnoise_2d(x, y, 0, 0, 0);
+}
 #endif // ifndef NOISE_H

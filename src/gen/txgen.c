@@ -86,13 +86,76 @@ void expand_literal_into(void *element, void *arg) {
  * Constructors & Destructors *
  ******************************/
 
-void cleanup_grammar(tx_grammar_literal *lit) {
+tx_grammar_literal * create_grammar_literal(
+  char const * const fn,
+  size_t ax, size_t ay,
+  texture_filter prp, void *prargs,
+  texture_filter psp, void *psargs,
+  tx_grammar_disjunction *child0,
+  tx_grammar_disjunction *child1
+) {
+  size_t i;
+  tx_grammar_literal *lit = (tx_grammar_literal *) malloc(
+    sizeof(tx_grammar_literal)
+  );
+  lit->filename = fn;
+  lit->anchor_x = ax;
+  lit->anchor_y = ay;
+  lit->preprocess = prp;
+  lit->postprocess = psp;
+  lit->preargs = prargs;
+  lit->postargs = psargs;
+  for (i = 0; i < N_GRAMMAR_KEYS; ++i) {
+    lit->children[i] = NULL;
+  }
+  lit->children[0] = child0;
+  lit->children[1] = child1;
+  lit->result = NULL;
+  return lit;
+}
+
+void cleanup_grammar_literal(tx_grammar_literal *lit) {
+  size_t i;
+  tx_grammar_disjunction *dis = NULL;
+  for (i = 0; i < N_GRAMMAR_KEYS; ++i) {
+    dis = lit->children[i];
+    if (dis != NULL) {
+      cleanup_grammar_disjunction(dis);
+    }
+  }
+  if (lit->result != NULL) {
+    cleanup_texture(lit->result);
+  }
+  free(lit);
+}
+
+tx_grammar_disjunction * create_grammar_disjunction(
+  tx_grammar_disjunction *nxt,
+  tx_grammar_literal *lit,
+  float w
+) {
+  tx_grammar_disjunction * dis = (tx_grammar_disjunction *) malloc(
+    sizeof(tx_grammar_disjunction)
+  );
+  dis->next = nxt;
+  dis->literal = lit;
+  dis->weight = w;
+  return dis;
+}
+
+void cleanup_grammar_disjunction(tx_grammar_disjunction *dis) {
+  if (dis->next != NULL) { cleanup_grammar_disjunction(dis->next); }
+  cleanup_grammar_literal(dis->literal);
+  free(dis);
+}
+
+void cleanup_grammar_results(tx_grammar_literal *lit) {
   size_t i;
   tx_grammar_disjunction *dis = NULL;
   for (i = 0; i < N_GRAMMAR_KEYS; ++i) {
     dis = lit->children[i];
     while (dis != NULL) {
-      cleanup_grammar(dis->literal);
+      cleanup_grammar_results(dis->literal);
       dis = dis->next;
     }
   }
@@ -238,28 +301,65 @@ void fltr_worley(texture *tx, void *fargs) {
   worley_filter_args *wfargs = (worley_filter_args *) fargs;
   for (col = 0; col < tx->width; col += 1) {
     for (row = 0; row < tx->height; row += 1) {
-      //noise = wrnoise_2d(col * wfargs->freq, row * wfargs->freq);
-      //*
-      noise = wrnoise_2d_wrapped(
-        //col * wfargs->freq,
-        //row * wfargs->freq,
-        3 + col / 8.0,
-        row / 8.0,
-        4, 4
+      noise = wrnoise_2d(
+        col * wfargs->freq, row * wfargs->freq,
+        32.0 * wfargs->freq, 32.0 * wfargs->freq,
+        0
       );
-      // */
-      /*
-      noise = 0.5*sqrtf(
-        2*wrnoise_2d_wrapped(
-          col * wfargs->freq, row * wfargs->freq,
-          32*wfargs->freq, 32*wfargs->freq
-        )
-      );
-      // */
-      //noise = 0.5*sqrtf(2*wrnoise_2d(col * wfargs->freq, row * wfargs->freq));
       tx_set_px(
         tx,
-        gradient_result(wfargs->grmap, noise*noise),
+        gradient_result(wfargs->grmap, noise),
+        col,
+        row
+      );
+    }
+  }
+}
+
+void fltr_branches(texture *tx, void *fargs) {
+  int row, col;
+  float noise, dsx, dsy;
+  gradient_map grmap;
+  branch_filter_args *bfargs = (branch_filter_args *) fargs;
+  grmap.colors[0] = bfargs->center_color;
+  grmap.colors[1] = bfargs->mid_color;
+  grmap.colors[2] = bfargs->outer_color;
+  grmap.colors[3] = 0x00000000;
+  if (bfargs->rough) {
+    grmap.thresholds[0] = 0.43;
+    grmap.thresholds[1] = 0.61;
+    grmap.thresholds[2] = 0.72;
+  } else {
+    grmap.thresholds[0] = 0.06;
+    grmap.thresholds[1] = 0.14;
+    grmap.thresholds[2] = 0.2;
+  }
+  grmap.thresholds[3] = 1.0;
+#ifdef DEBUG
+  // Use orange for out-of-range noise results:
+  grmap.colors[4] = 0xff0088ff;
+  grmap.thresholds[4] = 1000.0;
+#endif
+  for (col = 0; col < tx->width; col += 1) {
+    for (row = 0; row < tx->height; row += 1) {
+      // TODO: property wrapped simplex noise.
+      dsx = sxnoise_2d(col * bfargs->scale / 2.0, row * bfargs->scale / 2.0);
+      dsy = sxnoise_2d(col * bfargs->scale / 2.0, row * bfargs->scale / 2.0);
+      noise = wrnoise_2d(
+        (col + dsx * bfargs->distortion) * bfargs->scale,
+        (row + dsy * bfargs->distortion) * bfargs->scale,
+        32.0 * bfargs->scale, 32.0 * bfargs->scale,
+        (!bfargs->rough) * WORLEY_FLAG_INCLUDE_NEXTBEST
+      );
+      if (bfargs->rough) {
+        noise = 1 - noise;
+        // TODO: a sigmoid for organizing branches
+      }
+      noise *= (2 - bfargs->width);
+      if (noise > 1) { noise = 1; }
+      tx_set_px(
+        tx,
+        gradient_result(&grmap, noise),
         col,
         row
       );

@@ -347,19 +347,19 @@ static inline float compute_surflet_value_3d(
   }
 }
 
-static inline void compute_worley_grid_point_2d(
-  worley_neighborhood_2d *wrn,
+static inline void compute_offset_grid_point_2d(
+  grid_neighborhood_2d *grn,
   ptrdiff_t i,
   ptrdiff_t j,
   size_t idx
 ) {
-  wrn->x[idx] = (float) i + (
+  grn->x[idx] = (float) i + (
     hash_2d(
       MIXED_HASH_OF(i),
       MIXED_HASH_OF(j)
     ) / ((float) HASH_MASK)
   );
-  wrn->y[idx] = (float) j + (
+  grn->y[idx] = (float) j + (
     hash_3d(
       MIXED_HASH_OF(i),
       MIXED_HASH_OF(j),
@@ -372,25 +372,28 @@ static inline ptrdiff_t posmod(ptrdiff_t n, ptrdiff_t modulus) {
   return ((n % modulus) + modulus) % modulus;
 }
 
-static inline void compute_worley_grid_point_2d_wrapped(
-  worley_neighborhood_2d *wrn,
+static inline void compute_offset_grid_point_2d_wrapped(
+  grid_neighborhood_2d *grn,
   ptrdiff_t i,
   ptrdiff_t j,
   ptrdiff_t width,
   ptrdiff_t height,
   size_t idx
 ) {
-  wrn->x[idx] = (float) i + (
+  ptrdiff_t iw = i, jw = j;
+  if (width > 0) { iw = posmod(iw, width); }
+  if (height > 0) { jw = posmod(jw, height); }
+  grn->x[idx] = (float) i + (
     hash_2d(
-      MIXED_HASH_OF(posmod(i, width)),
-      MIXED_HASH_OF(posmod(j, height))
+      MIXED_HASH_OF(iw),
+      MIXED_HASH_OF(jw)
     ) / ((float) HASH_MASK)
   );
-  wrn->y[idx] = (float) j + (
+  grn->y[idx] = (float) j + (
     hash_3d(
-      MIXED_HASH_OF(posmod(i, width)),
-      MIXED_HASH_OF(posmod(j, height)),
-      MIXED_HASH_OF(posmod(i, width))
+      MIXED_HASH_OF(jw),
+      MIXED_HASH_OF(iw),
+      MIXED_HASH_OF(iw)
     ) / ((float) HASH_MASK)
   );
 }
@@ -620,102 +623,65 @@ float sxnoise_3d(float x, float y, float z) {
 }
 
 // 2D worley noise:
-float wrnoise_2d(float x, float y) {
-  worley_neighborhood_2d wrn = {
+float wrnoise_2d(
+  float x, float y,
+  ptrdiff_t wrapx, ptrdiff_t wrapy,
+  uint32_t flags
+) {
+  grid_neighborhood_2d grn = {
     .i = 0, .j = 0,
     .x = { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
     .y = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
   };
   ptrdiff_t i, j;
   float dx, dy;
-  float d2 = 0;
+  float d = 0;
+  float result;
   float best = MAX_SQ_WORLEY_DISTANCE_2D;
   float nextbest= MAX_SQ_WORLEY_DISTANCE_2D;
 
-  wrn.i = fastfloor(x);
-  wrn.j = fastfloor(y);
+  grn.i = fastfloor(x);
+  grn.j = fastfloor(y);
 
   // Point locations:
   for (i = 0; i < 3; ++i) {
     for (j = 0; j < 3; ++j) {
-      compute_worley_grid_point_2d(
-        &wrn,
-        wrn.i + i - 1,
-        wrn.j + j - 1,
+      compute_offset_grid_point_2d_wrapped(
+        &grn,
+        grn.i + i - 1,
+        grn.j + j - 1,
+        wrapx, wrapy,
         i + j*3
       );
     }
   }
 
-  // Find the closest:
+  // Find the two closest points:
   for (i = 0; i < 9; ++i) {
-    dx = wrn.x[i] - x;
-    dy = wrn.y[i] - y;
-    d2 = dx * dx + dy * dy;
-    if (d2 < best) {
+    dx = grn.x[i] - x;
+    dy = grn.y[i] - y;
+    d = sqrtf(dx * dx + dy * dy);
+    if (d < best) {
       nextbest = best;
-      best = d2;
-    } else if (d2 < nextbest) {
-      nextbest = d2;
+      best = d;
+    } else if (d < nextbest) {
+      nextbest = d;
     }
   }
 
   // Return the scaled distance mapped quadratically to [0, 1]:
-  d2 = best - nextbest;
-  d2 /= MAX_SQ_WORLEY_DISTANCE_2D;
-  return d2 * d2;
-}
-
-// 2D worley noise in a torus:
-float wrnoise_2d_wrapped(float x, float y, ptrdiff_t width, ptrdiff_t height) {
-  worley_neighborhood_2d wrn = {
-    .i = 0, .j = 0,
-    .x = { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    .y = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
-  };
-  ptrdiff_t i, j;
-  float dx, dy;
-  float d2 = 0;
-  float best = MAX_SQ_WORLEY_DISTANCE_2D;
-  float nextbest= MAX_SQ_WORLEY_DISTANCE_2D;
-
-  wrn.i = fastfloor(x);
-  wrn.j = fastfloor(y);
-
-  // Point locations:
-  for (i = 0; i < 3; ++i) {
-    for (j = 0; j < 3; ++j) {
-      compute_worley_grid_point_2d_wrapped(
-        &wrn,
-        wrn.i + i - 1,
-        wrn.j + j - 1,
-        width, height,
-        i + j*3
-      );
-    }
+  result = 0;
+  if (!(flags & WORLEY_FLAG_IGNORE_NEAREST)) {
+    result += best;
   }
-
-  // Find the closest:
-  for (i = 0; i < 9; ++i) {
-    dx = wrn.x[i] - x;
-    dy = wrn.y[i] - y;
-    d2 = dx * dx + dy * dy;
-    if (d2 < best) {
-      nextbest = best;
-      best = d2;
-    } else if (d2 < nextbest) {
-      nextbest = d2;
-    }
+  if (flags & WORLEY_FLAG_INCLUDE_NEXTBEST) {
+    result -= nextbest;
+    result *= -1;
   }
-
-  d2 = best / MAX_SQ_WORLEY_DISTANCE_2D;
-  d2 = 1 - d2;
-  return 1 - (d2 * d2 * d2);
-
-  // Return the scaled distance mapped quadratically to [0, 1]:
-  d2 = fabs(best - nextbest) / MAX_SQ_WORLEY_DISTANCE_2D;
-  d2 = 1 - d2;
-  return d2 * d2 * d2;
+  if (!(flags & WORLEY_FLAG_DONT_NORMALIZE)) {
+    result /= MAX_WORLEY_DISTANCE_2D;
+  }
+  return result;
 }
 
 // Fractal noise:

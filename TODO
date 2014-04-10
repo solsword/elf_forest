@@ -27,9 +27,10 @@ graphics
     better edge behavior?
     advanced sampling techniques?
   block lighting
-  ambient occlusion
+    ambient occlusion
   entity models & textures
   initial player facing due to initial mouse movement
+  implement wrapped simplex noise
 world
   plant growth
   water flow

@@ -5,6 +5,7 @@
     &test_txgen_template_moss, \
     &test_txgen_scatter_filter_moss, \
     &test_worley_noise, \
+    &test_branch_filter, \
     NULL, \
   }
 
@@ -21,7 +22,7 @@ size_t test_txgen_template_moss(void) {
   run_grammar(&template_sparse_moss);
   write_texture_to_png(template_sparse_moss.result, "out/test/tmoss.png");
   write_texture_to_ppm(template_sparse_moss.result, "out/test/tmoss.ppm");
-  cleanup_grammar(&template_sparse_moss);
+  cleanup_grammar_results(&template_sparse_moss);
   texture *doublecheck = load_texture_from_png("out/test/tmoss.png");
   if (tx_get_px(doublecheck, 0, 0) != 0xff00b40f) { return 1; }
   if (tx_get_px(doublecheck, 1, 0) != 0xbf10870d) { return 2; }
@@ -33,15 +34,21 @@ size_t test_txgen_scatter_filter_moss(void) {
   run_grammar(&scattered_moss);
   write_texture_to_png(scattered_moss.result, "out/test/smoss.png");
   write_texture_to_ppm(scattered_moss.result, "out/test/smoss.ppm");
-  cleanup_grammar(&scattered_moss);
+  cleanup_grammar_results(&scattered_moss);
   return 0;
 }
 
 size_t test_worley_noise(void) {
   run_grammar(&worley_test);
   write_texture_to_png(worley_test.result, "out/test/wtest.png");
-  write_texture_to_ppm(worley_test.result, "out/test/wtest.ppm");
-  cleanup_grammar(&worley_test);
+  cleanup_grammar_results(&worley_test);
+  return 0;
+}
+
+size_t test_branch_filter(void) {
+  run_grammar(&branch_filter_test);
+  write_texture_to_png(branch_filter_test.result, "out/test/brtest.png");
+  cleanup_grammar_results(&branch_filter_test);
   return 0;
 }
 
