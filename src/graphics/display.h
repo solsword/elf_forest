@@ -11,9 +11,9 @@
  ********************/
 
 static inline layer block_layer(block b) {
-  if (is_transparent(b)) {
+  if (b_transparent(b)) {
     return L_TRANSPARENT;
-  } else if (is_translucent(b)) {
+  } else if (b_translucent(b)) {
     return L_TRANSLUCENT;
   } else {
     return L_OPAQUE;

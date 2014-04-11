@@ -257,7 +257,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
           here = ca_get_block(ca, idx);
           flags = ca_get_flags(ca, idx);
         }
-        if ((flags & BF_EXPOSED_ANY) && !is_invisible(here)) {
+        if ((flags & BF_EXPOSED_ANY) && !b_is_invisible(here)) {
           total += 1;
           counts[block_layer(here)] += 1;
         }
@@ -350,7 +350,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
           here = ca_get_block(ca, idx);
           flags = ca_get_flags(ca, idx);
         }
-        if (is_invisible(here)) {
+        if (b_is_invisible(here)) {
           continue;
         }
         ly = block_layer(here);

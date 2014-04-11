@@ -314,6 +314,33 @@ void cleanup_texture(texture *tx) {
   free(tx);
 }
 
+bitmap create_bitmap(size_t size) {
+  bitmap bm = (bitmap) malloc(size * size / 8);
+}
+
+dynamic_texture_atlas *create_dynamic_atlas(size_t size) {
+  dynamic_texture_atlas *dta = (dynamic_texture_atlas *) malloc(
+    sizeof(dynamic_texture_atlas)
+  );
+  dta->size = size;
+  dta->vacancies = (bitmap) malloc(sizeof(uint32_t) * size * size / 32);
+  dta->tcmap = create_map(1, size*size*4);
+  dta->atlas = create_texture(
+    BLOCK_TEXTURE_SIZE * size,
+    BLOCK_TEXTURE_SIZE * size
+  );
+  dta->handle = 0;
+  return dta;
+}
+
+void cleanup_dynamic_atlas(dynamic_texture_atlas *dta) {
+  free(dta->vacancies);
+  cleanup_map(dta->tcmap);
+  cleanup_texture(dta->atlas);
+  // TODO: Destroy the OpenGL texture!
+  free(dta);
+}
+
 /*************
  * Functions *
  *************/
@@ -558,6 +585,22 @@ GLuint upload_png(char const * const filename) {
   free(tx->pixels);
   free(tx);
   return result;
+}
+
+void dta_add_block(
+  dynamic_texture_atlas *dta,
+  block b,
+  texture *front,
+  texture *top,
+  texture *bot,
+  texture *sides
+) {
+  size_t spots_needed = 4;
+  size_t index;
+  if (b_is_omnidirectional(b)) {
+    spots_needed = 1;
+  }
+  index = scan_bitmap(dta->vacancies, spots_needed);
 }
 
 void tx_copy_region(

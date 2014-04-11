@@ -18,16 +18,16 @@
 
 static inline int occludes_face(block neighbor, block occluded) {
   return (
-    is_void(neighbor)
+    b_is_void(neighbor)
   ||
-    is_opaque(neighbor)
+    b_is_opaque(neighbor)
   ||
     (
-      is_translucent(neighbor)
+      b_is_translucent(neighbor)
     &&
-      is_translucent(occluded)
+      b_is_translucent(occluded)
     &&
-      shares_translucency(neighbor, occluded)
+      b_shares_translucency(neighbor, occluded)
     )
   );
 }
@@ -40,7 +40,7 @@ static inline int occludes_face(block neighbor, block occluded) {
     chunk_or_approx *neighbor, \
     block here, block there \
   ) { \
-    if ( is_void(there) && OOR_AXIS OOR_CMP OOR_LIMIT ) { \
+    if ( b_is_void(there) && OOR_AXIS OOR_CMP OOR_LIMIT ) { \
       if (step > 1) { \
         return 0; \
       } else if ( (neighbor->type != CA_TYPE_NOT_LOADED) ) { \

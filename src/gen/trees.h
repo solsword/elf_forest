@@ -152,9 +152,9 @@ static inline int valid_trunk_elevation(int root) {
 
 static inline block tree_growth(block existing, block grow) {
   int can_grow = (
-    (block_is(existing, B_AIR) || block_is(existing, B_LEAVES))
+    (b_is(existing, B_AIR) || b_is(existing, B_LEAVES))
       || 
-    (block_is(existing, B_BRANCHES) && block_is(grow, B_TRUNK))
+    (b_is(existing, B_BRANCHES) && b_is(grow, B_TRUNK))
   );
   return can_grow * grow + (!can_grow) * existing;
 }

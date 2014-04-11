@@ -30,6 +30,10 @@ typedef uint8_t channel; // A single channel from pixel data
 #define GREEN_MASK (0xff << GREEN_SHIFT)
 #define ALPHA_MASK (0xff << ALPHA_SHIFT)
 
+typedef uint32_t* bitmap;
+
+#define BITMAP_ROW_WIDTH 32
+
 // Texture dimensions and a data array
 struct texture_s;
 typedef struct texture_s texture;
@@ -87,9 +91,11 @@ struct tcoords_s {
 };
 
 struct dynamic_texture_atlas_s {
+  size_t size; // How many block texture to accommodate (size*size total)
+  bitmap vacancies; // A bitmap of vacancies
+  map *tcmap; // block id -> texture index (wrap into size*size)
   texture *atlas; // CPU-side texture data
   GLuint handle; // Handle for GPU-side texture data
-  map *tcmap; // block id -> texture coords
 };
 
 /********************
@@ -255,8 +261,8 @@ static uint16_t FACE_TC_MAP_OFF[8] = {
   0, 1, 2, 3, 3, 3, 3, 3
 };
 
-// Computes the texture s coordinate for the given index into the texture
-// atlas. Won't work if init_textures hasn't been called.
+// Computes the texture s coordinate for the given index into the static
+// texture atlas. Won't work if init_textures hasn't been called.
 static inline uint16_t block_tc_s(uint16_t i) {
   return i % BLOCK_ATLAS_WIDTH;
 }
@@ -267,19 +273,44 @@ static inline uint16_t block_tc_t(uint16_t i) {
   return (i / BLOCK_ATLAS_WIDTH) % BLOCK_ATLAS_HEIGHT;
 }
 
+// Takes a block and a face and computes the actual face accounting for the
+// block's orientation.
+static_inline block_data actual_face(block b, block_data face) {
+  if (b_is_orientable(b)) {
+    return ROTATE_FACE[b_orientation(b)][face];
+  } else {
+    return face;
+  }
+}
+
 // Uses block_tc_[s|t] to compute texture coordinates but accounts for rotation
 // and facing first.
 static inline void compute_face_tc(block b, block_data face, tcoords *result) {
-  uint16_t orientable = (b & BF_ORIENTABLE) >> BFS_ORIENTABLE_SHIFT;
-  // Duplicate out to 3 bits:
-  orientable &= (orientable << 1) & (orientable << 2);
-  face = 
-    ((~orientable) & face) +
-    (orientable & ROTATE_FACE[(b & BR_DATA)][face]);
-  uint16_t i = BLOCK_TEXTURE_MAP[(just_id(b) << 2) + FACE_TC_MAP_OFF[face]];
-  //uint16_t i = BLOCK_TEXTURE_MAP[(just_id(b) << 2)];
+  face = actual_face(b, face);
+  uint16_t i = BLOCK_TEXTURE_MAP[(b_id(b) << 2) + FACE_TC_MAP_OFF[face]];
   result->s = block_tc_s(i);
   result->t = block_tc_t(i);
+}
+
+static inline void compute_dynamic_face_tc(
+  dynamic_texture_atlas *dta,
+  block b,
+  block_data face,
+  tcoords *result
+) {
+  if (b_is_orientable(b)) {
+    face = ROTATE_FACE[b_orientation(b)][face];
+  } else if (b_is_omnidirectional(b)) {
+    face = 0;
+  }
+  uint16_t i = (uint16_t) map1_get_value(dta->tcmap, b_id(b));
+  i += FACE_TC_MAP_OFF[face];
+  result->s = i % dta->size;
+  result->t = (i / dta->size) % dta->size;
+}
+
+static inline size_t scan_bitmap(
+) {
 }
 
 /******************************
@@ -295,6 +326,12 @@ texture *duplicate_texture(texture *original);
 
 // Frees the data allocated for the given texture.
 void cleanup_texture(texture *tx);
+
+// Allocates and returns a new dynamic texture atlas of the given size.
+dynamic_texture_atlas *create_dynamic_atlas(size_t size);
+
+// Frees the data allocated for the given dynamic texture atlas.
+void cleanup_dynamic_atlas(dynamic_texture_atlas *dta);
 
 /*************
  * Functions *
@@ -320,6 +357,18 @@ GLuint upload_texture(texture* tx);
 // handle. Takes care of freeing the texture struct and associated data once
 // it's been loaded into OpenGL.
 GLuint upload_png(char const * const filename);
+
+// Adds a block to the given dynamic texture atlas, updating the GPU texture
+// after importing the given textures into the atlas. If the block is
+// omnidirectional, only the front texture will be used.
+void dta_add_block(
+  dynamic_texture_atlas *dta,
+  block b,
+  texture *front,
+  texture *top,
+  texture *bot,
+  texture *sides
+);
 
 // Copies a rectangle of pixels from one texture to another:
 void tx_paste_region(
