@@ -323,7 +323,7 @@ dynamic_texture_atlas *create_dynamic_atlas(size_t size) {
     sizeof(dynamic_texture_atlas)
   );
   dta->size = size;
-  dta->vacancies = (bitmap) malloc(sizeof(uint32_t) * size * size / 32);
+  dta->vacancies = create_bitmap(size*size);
   dta->tcmap = create_map(1, size*size*4);
   dta->atlas = create_texture(
     BLOCK_TEXTURE_SIZE * size,
@@ -334,11 +334,24 @@ dynamic_texture_atlas *create_dynamic_atlas(size_t size) {
 }
 
 void cleanup_dynamic_atlas(dynamic_texture_atlas *dta) {
-  free(dta->vacancies);
+  cleanup_bitmap(dta->vacancies);
   cleanup_map(dta->tcmap);
   cleanup_texture(dta->atlas);
   // TODO: Destroy the OpenGL texture!
   free(dta);
+}
+
+bitmap *create_bitmap(size_t bits) {
+  bitmap *bm = (bitmap *) malloc(sizeof(bitmap));
+  bm->size = bits;
+  bm->rows = (bits / BITMAP_ROW_WIDTH) + (bits % BITMAP_ROW_WIDTH > 0);
+  bm->data = (bitmap_row *) malloc(sizeof(bitmap_row) * bm->rows);
+  return bm;
+}
+
+void cleanup_bitmap(bitmap *bm) {
+  free(bm->data);
+  free(bm);
 }
 
 /*************
@@ -600,7 +613,10 @@ void dta_add_block(
   if (b_is_omnidirectional(b)) {
     spots_needed = 1;
   }
-  index = scan_bitmap(dta->vacancies, spots_needed);
+  index = bm_find_space(dta->vacancies, spots_needed);
+  if (index == -1) {
+    // TODO: What here?
+  }
 }
 
 void tx_copy_region(

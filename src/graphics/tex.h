@@ -30,9 +30,6 @@ typedef uint8_t channel; // A single channel from pixel data
 #define GREEN_MASK (0xff << GREEN_SHIFT)
 #define ALPHA_MASK (0xff << ALPHA_SHIFT)
 
-typedef uint32_t* bitmap;
-
-#define BITMAP_ROW_WIDTH 32
 
 // Texture dimensions and a data array
 struct texture_s;
@@ -48,6 +45,12 @@ typedef struct tcoords_s tcoords;
 // is a copy of the CPU-side texture.
 struct dynamic_texture_atlas_s;
 typedef struct dynamic_texture_atlas_s dynamic_texture_atlas;
+
+// A bitmap holding boolean info for a bunch of things.
+typedef uint64_t bitmap_row;
+#define BITMAP_ROW_WIDTH 64
+struct bitmap_s;
+typedef struct bitmap_s bitmap;
 
 /*************
  * Constants *
@@ -96,6 +99,12 @@ struct dynamic_texture_atlas_s {
   map *tcmap; // block id -> texture index (wrap into size*size)
   texture *atlas; // CPU-side texture data
   GLuint handle; // Handle for GPU-side texture data
+};
+
+struct bitmap_s {
+  size_t size; // how many entries are in this bitmap
+  size_t rows; // how many rows there are
+  bitmap_row *data; // the bits
 };
 
 /********************
@@ -309,8 +318,51 @@ static inline void compute_dynamic_face_tc(
   result->t = (i / dta->size) % dta->size;
 }
 
-static inline size_t scan_bitmap(
+static inline ptrdiff_t bm_find_space(bitmap *bm, size_t required) {
+  size_t i, j;
+  size_t mask = 1;
+  for (i = 1; i < required; ++i) {
+    mask |= mask << 1;
+  }
+  for (i = 0; i < bm->rows; ++i) {
+    bitmap_row r = bm->data[i];
+    for (j = 0; j < BITMAP_ROW_WIDTH; ++j) {
+      if (!(r & (mask << j))) {
+        return i*BITMAP_ROW_WIDTH + j;
+      }
+    }
+  }
+  return -1;
+}
+
+static inline void bm_set_bits(
+  bitmap *bm,
+  size_t index,
+  size_t size,
+  int turn_on
 ) {
+  size_t i;
+  ptrdiff_t rmin, rmax;
+  size_t mask = 1;
+  for (i = 1; i < size; ++i) {
+    mask |= mask << 1;
+  }
+  rmin = index / BITMAP_ROW_WIDTH;
+  rmax = (index + size) / BITMAP_ROW_WIDTH;
+  bitmap_row r = bm->data[rmin];
+  if (turn_on) {
+    r |= mask << (index - rmin * BITMAP_ROW_WIDTH);
+  } else {
+    r &= ~(mask << (index - rmin * BITMAP_ROW_WIDTH));
+  }
+  if (rmin != rmax) {
+    r = bm->data[rmax];
+    if (turn_on) {
+      r |= mask >> (-(((ptrdiff_t) index) - rmax * BITMAP_ROW_WIDTH));
+    } else {
+      r &= ~(mask >> (-(((ptrdiff_t) index) - rmax * BITMAP_ROW_WIDTH)));
+    }
+  }
 }
 
 /******************************
@@ -332,6 +384,12 @@ dynamic_texture_atlas *create_dynamic_atlas(size_t size);
 
 // Frees the data allocated for the given dynamic texture atlas.
 void cleanup_dynamic_atlas(dynamic_texture_atlas *dta);
+
+// Allocates and returns a new bitmap.
+bitmap *create_bitmap(size_t bits);
+
+// Frees the data allocated for the given bitmap.
+void cleanup_bitmap(bitmap *bm);
 
 /*************
  * Functions *
