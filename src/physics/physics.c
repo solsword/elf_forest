@@ -95,7 +95,7 @@ static inline void update_position_x (
       pos.x = e->area->origin.x + next_block;
       for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
-          if (is_solid(block_at(&pos))) {
+          if (b_is_solid(block_at(&pos))) {
             e->vel.x = 0;
             increment->x = 0;
             e->pos.x = next_block - (BOUNCE_DISTANCE + e->size.x / 2.0);
@@ -111,7 +111,7 @@ static inline void update_position_x (
       pos.x = e->area->origin.x + next_block;
       for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
-          if (is_solid(block_at(&pos))) {
+          if (b_is_solid(block_at(&pos))) {
             e->vel.x = 0;
             increment->x = 0;
             e->pos.x = next_block + 1 + BOUNCE_DISTANCE + e->size.x / 2.0;
@@ -140,7 +140,7 @@ static inline void update_position_y(
       pos.y = e->area->origin.y + next_block;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
-          if (is_solid(block_at(&pos))) {
+          if (b_is_solid(block_at(&pos))) {
             e->vel.y = 0;
             increment->y = 0;
             e->pos.y = next_block - (BOUNCE_DISTANCE + e->size.y / 2.0);
@@ -156,7 +156,7 @@ static inline void update_position_y(
       pos.y = e->area->origin.y + next_block;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
-          if (is_solid(block_at(&pos))) {
+          if (b_is_solid(block_at(&pos))) {
             e->vel.y = 0;
             increment->y = 0;
             e->pos.y = next_block + 1 + BOUNCE_DISTANCE + e->size.y / 2.0;
@@ -185,7 +185,7 @@ static inline void update_position_z(
       pos.z = e->area->origin.z + next_block;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
-          if (is_solid(block_at(&pos))) {
+          if (b_is_solid(block_at(&pos))) {
             e->vel.z = 0;
             increment->z = 0;
             e->pos.z = next_block - (BOUNCE_DISTANCE + e->size.z / 2.0);
@@ -201,7 +201,7 @@ static inline void update_position_z(
       pos.z = e->area->origin.z + next_block;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
-          if (is_solid(block_at(&pos))) {
+          if (b_is_solid(block_at(&pos))) {
             e->vel.z = 0;
             increment->z = 0;
             e->pos.z = next_block + 1 + (BOUNCE_DISTANCE + e->size.z / 2.0);
@@ -359,7 +359,7 @@ static inline void check_move_flags(entity *e) {
         pos.y <= e_rp_max_y(e) && !on_ground(e);
         ++pos.y
       ) {
-        if (is_solid(block_at(&pos))) {
+        if (b_is_solid(block_at(&pos))) {
           set_on_ground(e);
         }
       }
@@ -382,7 +382,7 @@ static inline void check_move_flags(entity *e) {
         pos.z <= e_rp_max_z(e) && !in_liquid(e);
         ++pos.z
       ) {
-        if (is_liquid(block_at(&pos))) {
+        if (b_is_liquid(block_at(&pos))) {
           set_in_liquid(e);
         }
       }
@@ -391,7 +391,7 @@ static inline void check_move_flags(entity *e) {
   // MF_IN_VOID
   clear_in_void(e);
   get_head_rpos(e, &pos);
-  if (is_void(block_at(&pos))) {
+  if (b_is_void(block_at(&pos))) {
     set_in_void(e);
   }
   // MF_CROUCHING, MF_DO_JUMP, and MF_DO_FLAP handled in ctl.c

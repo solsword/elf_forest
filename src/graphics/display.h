@@ -5,15 +5,16 @@
 // Functions for setting up display information.
 
 #include "world/world.h"
+#include "world/blocks.h"
 
 /********************
  * Inline Functions *
  ********************/
 
 static inline layer block_layer(block b) {
-  if (b_transparent(b)) {
+  if (b_is_transparent(b)) {
     return L_TRANSPARENT;
-  } else if (b_translucent(b)) {
+  } else if (b_is_translucent(b)) {
     return L_TRANSLUCENT;
   } else {
     return L_OPAQUE;

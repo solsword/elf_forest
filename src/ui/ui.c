@@ -69,7 +69,7 @@ static inline void render_vision_effects() {
   block hb = head_block(PLAYER);
   tcoords st = { .s=0, .t=0 };
   // Figure out the tint color (and set the fog distance):
-  if (is_opaque(hb)) {
+  if (b_is_opaque(hb)) {
     blind = 1;
     // compute texture coordinates
     compute_face_tc(hb, BD_FACE_BOT, &st);
@@ -78,7 +78,7 @@ static inline void render_vision_effects() {
     step_s = 1.0/BLOCK_ATLAS_WIDTH;
     step_t = 0.5/BLOCK_ATLAS_WIDTH;
     FOG_DENSITY = 1.0;
-  } else if (shares_translucency(hb, B_WATER)) {
+  } else if (b_shares_translucency(hb, B_WATER)) {
     set_tint(0.5, 0.5, 0.9, 1.0);
     FOG_DENSITY = WATER_FOG_DENSITY;
   } else {

@@ -11,6 +11,11 @@
 
 #include "tex.h"
 
+#include "datatypes/bitmap.h"
+#include "datatypes/map.h"
+
+#include "world/blocks.h"
+
 /********************
  * Global variables *
  ********************/
@@ -314,10 +319,6 @@ void cleanup_texture(texture *tx) {
   free(tx);
 }
 
-bitmap create_bitmap(size_t size) {
-  bitmap bm = (bitmap) malloc(size * size / 8);
-}
-
 dynamic_texture_atlas *create_dynamic_atlas(size_t size) {
   dynamic_texture_atlas *dta = (dynamic_texture_atlas *) malloc(
     sizeof(dynamic_texture_atlas)
@@ -339,19 +340,6 @@ void cleanup_dynamic_atlas(dynamic_texture_atlas *dta) {
   cleanup_texture(dta->atlas);
   // TODO: Destroy the OpenGL texture!
   free(dta);
-}
-
-bitmap *create_bitmap(size_t bits) {
-  bitmap *bm = (bitmap *) malloc(sizeof(bitmap));
-  bm->size = bits;
-  bm->rows = (bits / BITMAP_ROW_WIDTH) + (bits % BITMAP_ROW_WIDTH > 0);
-  bm->data = (bitmap_row *) malloc(sizeof(bitmap_row) * bm->rows);
-  return bm;
-}
-
-void cleanup_bitmap(bitmap *bm) {
-  free(bm->data);
-  free(bm);
 }
 
 /*************
