@@ -8,8 +8,8 @@
 // Bits are:
 //  1-2: Visibility (visible, invisible, transparent, translucent)
 //  3-4: Substance (solid, liquid, empty, obstructed)
-//  5-8: Geometry (full, half, liquid, stairs, fence, door, pane, grass, etc.)
-//  9: Directional (different textures for different faces)
+//  5-8: Geometry (full, half, liquid, grass, etc.)
+//  9: Anisotropic (different textures for different faces)
 //  10: Orientable (can be placed facing multiple directions)
 
 block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
@@ -46,21 +46,21 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x03f
 //  MUSHROOM:         MUSHROOM_STALK:   MUSHROOM_CAP:     MOSS:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x0000004a,       0x00000300,       0x00000300,       0x0000005a,
 //  GRASS:            GRASS_ROOTS:      VINE:             VINE_FRUIT:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x0000003a,       0x0000006a,       0x0000005e,       0x0000005e,
 //  HERB:             HERB_ROOTS:       BUSH_BRANCHES:    BUSH_LEAVES:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x0000004a,       0x0000006a,       0x0000000e,       0x0000000e,
 //  BUSH_FRUIT:       BUSH_ROOTS:       SHRUB_BRANCHES:   SHRUB_LEAVES:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x04f
-//  SHRUB_FRUIT:      SHRUB_ROOTS:      TREE_BRANCHES:    TREE_LEAVES:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  TREE_FRUIT:       TREE_TRUNK:       TREE_ROOTS:       TREE_HEART_ROOTS:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  AQUATIC_GRASS:    AQ_GRASS_ROOTS:   AQ_PLANT_LEAVES:  AQ_PLANT_STEMS:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  AQ_PLANT_ROOTS:   CORAL:            ____:             ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x05f
+    0x0000000e,       0x0000006e,       0x00000006,       0x0000000e, // 0x04f
+//  SHRUB_FRUIT:      SHRUB_ROOTS:      TREE_BRANCHES:    TREE_INT_BRANCHES:
+    0x0000000e,       0x0000006e,       0x00000006,       0x0000000e,
+//  TREE_LEAVES:      TREE_FRUIT:       TREE_TRUNK:       TREE_ROOTS:
+    0x0000000e,       0x0000000e,       0x00000300,       0x0000006e,
+//  TREE_HEART_ROOTS: AQUATIC_GRASS:    AQ_PLANT_LEAVES:  AQ_PLANT_STEMS:
+    0x00000006,       0x0000003a,       0x0000000e,       0x0000000e,
+//  AQ_PLANT_ANCHORS: CORAL_FROND:      CORAL_BODY:       ____:
+    0x00000000,       0x0000000e,       0x00000000,       0x00000000, // 0x05f
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
@@ -70,7 +70,7 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x06f
 //  SMOOTHED_ROCK:    HEWN_ROCK_STEPS:  SM_ROCK_STEPS:    HEWN_ROCK_GRATE:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x00000000,       0x00000270,       0x00000270,       0x000002b2,
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
@@ -78,19 +78,19 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x07f
 //  BALE:             THATCH:           WATTLE:           WOODEN_PLANK:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x00000300,       0x00000300,       0x00000282,       0x00000000,
 //  WOODEN_BEAM:      WOODEN_PANEL:     WOODEN_PILLAR:    CORDWOOD:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x00000092,       0x000002b0,       0x000003c0,       0x00000300,
 //  COB:              RAMMED_EARTH:     STACKED_STONE:    FITTED_STONE:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x00000000,       0x00000100,       0x00000100,       0x00000000,
 //  MORTARED_STONE:   METAL_BARS:       STONE_POST:       STONE_PILLAR:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x08f
+    0x00000000,       0x000002b2,       0x00000092,       0x000003c0, // 0x08f
 //  MUD_BRICK:        CLAY_BRICK:       STONE_BRICK:      STONE_TILE:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x00000000,       0x00000000,       0x00000000,       0x000002b0,
 //  CERAMIC_TILE:     WOODEN_SHINGLE:   WOODEN_GRATE:     STONE_GRATE:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x000002b0,       0x000002b0,       0x000002b2,       0x000002b2,
 //  METAL_GRATE:      GLASS_BLOCK:      GLASS_PANE:       FRAMED_GLASS:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x000002b2,       0x00000003,       0x000002b3,       0x000002b3,
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x09f
 //  ____:             ____:             ____:             ____:
@@ -102,9 +102,9 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x0af
 //  WOODEN_GATE:      METAL_GATE:       WD_PLANK_DOOR:    WOODEN_PANEL_DOOR:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x000002a2,       0x000002a2,       0x000003a2,       0x000003a2,
 //  STONE_DOOR:       METAL_DOOR:       ____:             ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x000003a0,       0x000003a0,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
@@ -118,11 +118,11 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x0cf
 //  PLASTER:          STUCCO:           PAINT:            BANNER:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x000000d8,       0x000000d8,       0x000000d8,       0x000002ba,
 //  TAPESTRY:         PAINTING:         ENGRAVING:        CARPET:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x000002ba,       0x000002b0,       0x0000030a,       0x000002ba,
 //  RUG:              CLOTH_MAT:        STEM_MAT:         ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x000002ba,       0x000002ba,       0x000002ba,       0x00000000,
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x0df
 //  ____:             ____:             ____:             ____:

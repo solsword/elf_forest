@@ -16,61 +16,21 @@
  * Macros *
  **********/
 
-// Macros for defining a get/put_a_block/flag functions at different scales:
-#define CA_GET_BLOCK_DEF(BITS) \
-  CA_GET_BLOCK_SIG(CA_GET_BLOCK_FN(BITS)) { \
-    return ca->data->d ## BITS.blocks[ \
+// Macros for defining a get/paste_cell functions at different scales:
+#define CA_CELL_DEF(BITS) \
+  CA_CELL_SIG(CA_CELL_FN(BITS)) { \
+    return &(ca->data->d ## BITS.cells[ \
       ((idx->x & CH_MASK) >> BITS) + \
       (((idx->y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
       (((idx->z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
-    ]; \
+    ]); \
   }
 
-#define CA_PUT_BLOCK_DEF(BITS) \
-  CA_PUT_BLOCK_SIG(CA_PUT_BLOCK_FN(BITS)) { \
-    ca->data->d ## BITS.blocks[ \
-      ((idx->x & CH_MASK) >> BITS) + \
-      (((idx->y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
-      (((idx->z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
-    ] = b; \
+#define CA_PASTE_CELL_DEF(BITS) \
+  CA_PASTE_CELL_SIG(CA_PASTE_CELL_FN(BITS)) { \
+    cell *dst = CA_CELL_FN(BITS)(ca, idx); \
+    copy_cell(cl, dst); \
   }
-
-#define CA_GET_FLAGS_DEF(BITS) \
-  CA_GET_FLAGS_SIG(CA_GET_FLAGS_FN(BITS)) { \
-    return ca->data->d ## BITS.block_flags[ \
-      ((idx->x & CH_MASK) >> BITS) + \
-      (((idx->y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
-      (((idx->z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
-    ]; \
-  }
-
-#define CA_PUT_FLAGS_DEF(BITS) \
-  CA_PUT_FLAGS_SIG(CA_PUT_FLAGS_FN(BITS)) { \
-    ca->data->d ## BITS.block_flags[ \
-      ((idx->x & CH_MASK) >> BITS) + \
-      (((idx->y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
-      (((idx->z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
-    ] = flags; \
-  }
-
-#define CA_SET_FLAGS_DEF(BITS) \
-  CA_SET_FLAGS_SIG(CA_SET_FLAGS_FN(BITS)) { \
-    ca->data->d ## BITS.block_flags[ \
-      ((idx->x & CH_MASK) >> BITS) + \
-      (((idx->y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
-      (((idx->z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
-    ] |= flags; \
-  }
-
-#define CA_CLEAR_FLAGS_DEF(BITS) \
-  CA_CLEAR_FLAGS_SIG(CA_CLEAR_FLAGS_FN(BITS)) { \
-    ca->data->d ## BITS.block_flags[ \
-      ((idx->x & CH_MASK) >> BITS) + \
-      (((idx->y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
-      (((idx->z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
-    ] &= ~flags; \
-  }
-
 
 /******************************
  * Constructors & Destructors *
@@ -87,7 +47,7 @@ chunk * create_chunk(region_chunk_pos const * const rcpos) {
   for (ly = 0; ly < N_LAYERS; ++ly) {
     setup_vertex_buffer(&(c->layers[ly]));
   }
-  c->block_entities = create_list();
+  c->cell_entities = create_list();
   return c;
 }
 
@@ -102,7 +62,7 @@ void cleanup_chunk(chunk *c) {
   for (ly = 0; ly < N_LAYERS; ++ly) {
     cleanup_vertex_buffer(&(c->layers[ly]));
   }
-  destroy_list(c->block_entities);
+  destroy_list(c->cell_entities);
   free(c);
 }
 
@@ -154,50 +114,25 @@ void cleanup_chunk_approximation(chunk_approximation *ca) {
  * Functions *
  *************/
 
-// Macro-based definitions of the various approximate block manipulation
+// Macro-based definitions of the various approximate cell manipulation
 // routines:
-CA_GET_BLOCK_DEF(1)
-CA_GET_BLOCK_DEF(2)
-CA_GET_BLOCK_DEF(3)
-CA_GET_BLOCK_DEF(4)
+CA_CELL_DEF(1)
+CA_CELL_DEF(2)
+CA_CELL_DEF(3)
+CA_CELL_DEF(4)
 
-CA_PUT_BLOCK_DEF(1)
-CA_PUT_BLOCK_DEF(2)
-CA_PUT_BLOCK_DEF(3)
-CA_PUT_BLOCK_DEF(4)
-
-CA_GET_FLAGS_DEF(1)
-CA_GET_FLAGS_DEF(2)
-CA_GET_FLAGS_DEF(3)
-CA_GET_FLAGS_DEF(4)
-
-CA_PUT_FLAGS_DEF(1)
-CA_PUT_FLAGS_DEF(2)
-CA_PUT_FLAGS_DEF(3)
-CA_PUT_FLAGS_DEF(4)
-
-CA_SET_FLAGS_DEF(1)
-CA_SET_FLAGS_DEF(2)
-CA_SET_FLAGS_DEF(3)
-CA_SET_FLAGS_DEF(4)
-
-CA_CLEAR_FLAGS_DEF(1)
-CA_CLEAR_FLAGS_DEF(2)
-CA_CLEAR_FLAGS_DEF(3)
-CA_CLEAR_FLAGS_DEF(4)
+CA_PASTE_CELL_DEF(1)
+CA_PASTE_CELL_DEF(2)
+CA_PASTE_CELL_DEF(3)
+CA_PASTE_CELL_DEF(4)
 
 // Macro-based function table definitions for the above functions:
-DECLARE_APPROX_FN_VARIANTS_TABLE(CA_GET_BLOCK_SIG, CA_GET_BLOCK_FN)
-DECLARE_APPROX_FN_VARIANTS_TABLE(CA_PUT_BLOCK_SIG, CA_PUT_BLOCK_FN)
-
-DECLARE_APPROX_FN_VARIANTS_TABLE(CA_GET_FLAGS_SIG, CA_GET_FLAGS_FN)
-DECLARE_APPROX_FN_VARIANTS_TABLE(CA_PUT_FLAGS_SIG, CA_PUT_FLAGS_FN)
-DECLARE_APPROX_FN_VARIANTS_TABLE(CA_SET_FLAGS_SIG, CA_SET_FLAGS_FN)
-DECLARE_APPROX_FN_VARIANTS_TABLE(CA_CLEAR_FLAGS_SIG, CA_CLEAR_FLAGS_FN)
+DECLARE_APPROX_FN_VARIANTS_TABLE(CA_CELL_SIG, CA_CELL_FN)
+DECLARE_APPROX_FN_VARIANTS_TABLE(CA_PASTE_CELL_SIG, CA_PASTE_CELL_FN)
 
 
-uint8_t BLOCK_AT_SALT = 0;
-block block_at(region_pos const * const rpos) {
+uint8_t CELL_AT_SALT = 0;
+cell* cell_at(region_pos const * const rpos) {
   region_chunk_pos rcpos;
   static region_chunk_pos last_rcpos = { .x = 0, .y = 0, .z = 0 };
   chunk_or_approx coa;
@@ -208,7 +143,7 @@ block block_at(region_pos const * const rpos) {
   rpos__rcpos(rpos, &rcpos);
   rpos__cidx(rpos, &cidx);
   if (
-    last_salt == BLOCK_AT_SALT
+    last_salt == CELL_AT_SALT
   &&
     last_coa.type != CA_TYPE_NOT_LOADED
   &&
@@ -228,21 +163,17 @@ block block_at(region_pos const * const rpos) {
     last_coa.ptr = coa.ptr;
   }
   copy_rcpos(&rcpos, &last_rcpos);
-  last_salt = BLOCK_AT_SALT;
+  last_salt = CELL_AT_SALT;
   if (coa.type == CA_TYPE_CHUNK) {
-    return c_get_block((chunk *) (coa.ptr), cidx);
+    return c_cell((chunk *) (coa.ptr), cidx);
   } else if (coa.type == CA_TYPE_APPROXIMATION) {
-    return ca_get_block((chunk_approximation *) (coa.ptr), cidx);
+    return ca_cell((chunk_approximation *) (coa.ptr), cidx);
   }
   return B_VOID;
 }
 
 size_t chunk_data_size(chunk *c) {
-  return (
-    sizeof(block) * CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
-  +
-    sizeof(block_flags) * CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
-  );
+  return sizeof(cell) * CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 }
 
 size_t chunk_overhead_size(chunk *c) {

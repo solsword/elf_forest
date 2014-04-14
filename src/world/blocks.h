@@ -43,6 +43,11 @@ struct cell_s {
 #define BLOCK_ORI_BITS 3;
 #define BLOCK_EXP_BITS 6;
 
+#define BS_ID (BLOCK_VAR_BITS + BLOCK_ORI_BITS + BLOCK_EXP_BITS)
+#define BS_VAR (BLOCK_ORI_BITS + BLOCK_EXP_BITS)
+#define BS_ORI BLOCK_ORI_BITS
+#define BS_EXP 0
+
 #define TOTAL_BLOCK_TYPES = (1 << BLOCK_ID_BITS)
 #define TOTAL_BLOCK_VARIANTS = (1 << (BLOCK_ID_BITS + BLOCK_VAR_BITS))
 #define VARIANTS_PER_BLOCK = (1 << BLOCK_VAR_BITS)
@@ -77,9 +82,9 @@ static block const   BF_EXPOSED_WEST = 1 << BFS_EXPOSED_WEST_SHIFT;
 // Masks:
 // ------
 
-static block const    BM_EXPOSURE = 0x3f;
-static block const BM_ORIENTATION = 0x7 << BLOCK_EXP_BITS;
-static block const     BM_VARIANT = 0x3fff << (BLOCK_EXP_BITS + BLOCK_ORI_BITS);
+static block const    BM_EXPOSURE = 0x3f << BS_EXP;
+static block const BM_ORIENTATION = 0x7 << BS_ORI;
+static block const     BM_VARIANT = 0x3fff << BS_VAR;
 
 // Info Masks:
 // -----------
@@ -95,10 +100,10 @@ static block_info const    BIM_GEOMETRY = 0x0f << BIMS_SUBSTANCE;
 // Info Flags:
 // -----------
 
-#define  BIFS_DIRECTIONAL 8
+#define  BIFS_ANISOTROPIC 8
 #define   BIFS_ORIENTABLE 9
 
-static block_info const  BIF_DIRECTIONAL = 1 << BIFS_DIRECTIONAL;
+static block_info const  BIF_ANISOTROPIC = 1 << BIFS_ANISOTROPIC;
 static block_info const   BIF_ORIENTABLE = 1 << BIFS_ORIENTABLE;
 
 /********
@@ -108,7 +113,7 @@ static block_info const   BIF_ORIENTABLE = 1 << BIFS_ORIENTABLE;
 // Note: these are defined unshifted.
 
 // Visibility:
-static block_info const       BI_VIS_VISIBLE = 0x00;
+static block_info const        BI_VIS_OPAQUE = 0x00;
 static block_info const     BI_VIS_INVISIBLE = 0x01;
 static block_info const   BI_VIS_TRANSPARENT = 0x02;
 static block_info const   BI_VIS_TRANSLUCENT = 0x03;
@@ -123,13 +128,17 @@ static block_info const   BI_SBST_OBSTRUCTED = 0x03;
 static block_info const   BI_GEOM_FULL_BLOCK = 0x00;
 static block_info const   BI_GEOM_HALF_BLOCK = 0x01;
 static block_info const       BI_GEOM_LIQUID = 0x02;
-static block_info const       BI_GEOM_STAIRS = 0x03;
-static block_info const        BI_GEOM_FENCE = 0x04;
-static block_info const         BI_GEOM_DOOR = 0x05;
-static block_info const         BI_GEOM_PANE = 0x06;
-static block_info const        BI_GEOM_GRASS = 0x07;
-static block_info const         BI_GEOM_VINE = 0x08;
-static block_info const       BI_GEOM_COLUMN = 0x09;
+static block_info const        BI_GEOM_GRASS = 0x03;
+static block_info const         BI_GEOM_HERB = 0x04;
+static block_info const         BI_GEOM_VINE = 0x05;
+static block_info const         BI_GEOM_ROOT = 0x06;
+static block_info const       BI_GEOM_STAIRS = 0x07;
+static block_info const        BI_GEOM_FENCE = 0x08;
+static block_info const         BI_GEOM_BEAM = 0x09;
+static block_info const         BI_GEOM_DOOR = 0x0a;
+static block_info const        BI_GEOM_PANEL = 0x0b;
+static block_info const       BI_GEOM_COLUMN = 0x0c;
+static block_info const         BI_GEOM_FILM = 0x0d;
 
 /********
  * Data *
@@ -311,20 +320,21 @@ static block const             B_SHRUB_FRUIT = 0x050;
 static block const             B_SHRUB_ROOTS = 0x051;
 
 static block const           B_TREE_BRANCHES = 0x052;
-static block const             B_TREE_LEAVES = 0x053;
-static block const              B_TREE_FRUIT = 0x054;
-static block const              B_TREE_TRUNK = 0x055;
-static block const              B_TREE_ROOTS = 0x056;
-static block const        B_TREE_HEART_ROOTS = 0x057;
+static block const  B_TREE_INTERIOR_BRANCHES = 0x053;
+static block const             B_TREE_LEAVES = 0x054;
+static block const              B_TREE_FRUIT = 0x055;
+static block const              B_TREE_TRUNK = 0x056;
+static block const              B_TREE_ROOTS = 0x057;
+static block const        B_TREE_HEART_ROOTS = 0x058;
 
-static block const           B_AQUATIC_GRASS = 0x058;
-static block const     B_AQUATIC_GRASS_ROOTS = 0x059;
+static block const           B_AQUATIC_GRASS = 0x059;
 
 static block const    B_AQUATIC_PLANT_LEAVES = 0x05a;
 static block const     B_AQUATIC_PLANT_STEMS = 0x05b;
-static block const     B_AQUATIC_PLANT_ROOTS = 0x05c;
+static block const   B_AQUATIC_PLANT_ANCHORS = 0x05c;
 
-static block const                   B_CORAL = 0x05d;
+static block const             B_CORAL_FROND = 0x05d;
+static block const              B_CORAL_BODY = 0x05e;
 
 // Hewn Blocks:
 static block const           B_SMOOTHED_ROCK = 0x070;
@@ -397,97 +407,100 @@ static block const                B_STEM_MAT = 0x0da;
  * Inline Functions *
  ********************/
 
-// Conversions:
+// Properties:
 
-static inline block_id b_id(block b) {
-  return (block_id) (b >> 8);
+// Per-block properties:
+static inline block b_id(block b) { return b >> BS_ID; }
+static inline block b_var(block b) { return (b & BM_VARIANT) >> BS_VAR; }
+static inline block b_ori(block b) { return (b & BM_ORIENTATION) >> BS_ORI; }
+static inline block b_exp(block b) { return (b & BM_EXPOSURE) >> BS_EXP; }
+
+// Per-block-type properties:
+static inline block b_vis(block b) {
+  return (BLOCK_INFO[b_id(b)] & BIM_VISIBILITY) >> BIMS_VISIBILITY;
+}
+static inline block b_sbst(block b) {
+  return (BLOCK_INFO[b_id(b)] & BIM_SUBSTANCE) >> BIMS_SUBSTANCE;
+}
+static inline block b_geom(block b) {
+  return (BLOCK_INFO[b_id(b)] & BIM_GEOMETRY) >> BIMS_GEOMETRY;
+}
+static inline block b_anis(block b) {
+  return (BLOCK_INFO[b_id(b)] & BIF_ANISOTROPIC) >> BIFS_ANISOTROPIC;
+}
+static inline block b_oabl(block b) {
+  return (BLOCK_INFO[b_id(b)] & BIF_ORIENTABLE) >> BIFS_ORIENTABLE;
 }
 
-static inline block b_full(block_id id) {
-  return ((block) id) << 8;
+// Constructors:
+
+// Turn an ID into a block with default variant, exposure, and orientation:
+static inline block b_make_block(block id) {
+  return id << BS_ID;
 }
 
-static inline block_data b_orientation(block b) {
-  return b & BR_ORIENTATION;
+// Combine an id and variant into a block with default exposure and orientation:
+static inline block b_make_variant(block id, block variant) {
+  return (id << BS_ID) + (variant << BS_VAR)
 }
 
 // Comparisons:
 
+// Compare block IDs and variants:
 static inline block b_is(block b, block c) {
+  return b >> BS_VAR == c >> BS_VAR;
+}
+
+// Compare just block IDs:
+static inline block b_is_var_of(block b, block c) {
   return b_id(b) == b_id(c);
 }
 
-static inline block b_shares_translucency(block b, block c) {
-  return (
-    (b_id(b) | 1) == (b_id(c) | 1)
-  &&
-    !b_is(b, B_LEAVES)
-  );
+// Compare all but the lowest bit of IDs:
+static inline block b_same_liquid(block b, block c) {
+  return (b_id(b) | 1) == (b_id(c) | 1);
 }
 
 // Type checks:
 
-static inline block b_is_void(block b) {
-  return b_is(b, B_VOID);
-}
+static inline block b_is_void(block b) { return b_is(b, B_VOID); }
+static inline block b_is_boundary(block b) { return b_is(b, B_BOUNDARY); }
 
-// TODO: Implement static block-properties table!
-static inline block b_is_orientable(block b) {
-  return b & BF_ORIENTABLE;
-}
-
-static inline block b_is_omnidirectional(block b) {
-  return b & BF_OMNIDIRECTIONAL;
-}
-
-static inline block b_is_translucent_liquid(block b) {
-  return (
-    (b > BL_MAX_INVISIBLE)
-  &&
-    (b <= BL_MAX_T_LIQUID)
-  );
-}
-
-static inline block b_is_opaque_liquid(block b) {
-  return (
-    (b >= BL_MIN_O_LIQUID)
-  &&
-    (b < BL_MIN_SOLID)
-  );
-}
-
-static inline block b_is_liquid(block b) {
-  return b_is_translucent_liquid(b) || b_is_opaque_liquid(b);
-}
-
-static inline block b_is_solid(block b) {
-  return b >= BL_MIN_SOLID;
-}
-
+static inline block b_is_opaque(block b) { return b_vis(b) == BI_VIS_OPAQUE; }
 static inline block b_is_invisible(block b) {
-  return b <= BL_MAX_INVISIBLE;
+  return b_vis(b) == BI_VIS_INVISIBLE;
 }
-
-static inline block b_is_translucent(block b) {
-  return b_is_translucent_liquid(b);
-}
-
 static inline block b_is_transparent(block b) {
-  return b >= BL_MIN_TRANSPARENT;
+  return b_vis(b) == BI_VIS_TRANSPARENT;
+}
+static inline block b_is_translucent(block b) {
+  return b_vis(b) == BI_VIS_TRANSLUCENT;
 }
 
-static inline block b_is_opaque(block b) {
-  return (
-    (b >= BL_MIN_O_LIQUID)
-  &&
-    (b < BL_MIN_TRANSPARENT)
-  );
+static inline block b_is_solid(block b) { return b_sub(b) == BI_SBST_SOLID; }
+static inline block b_is_liquid(block b) { return b_sub(b) == BI_SBST_LIQUID; }
+static inline block b_is_empty(block b) { return b_sub(b) == BI_SBST_EMPTY; }
+static inline block b_is_obstructed(block b) {
+  return b_sub(b) == BI_SBST_OBSTRUCTED;
 }
+
+// Other flags can be checked manually...
 
 // Utilities:
 
 static inline block next_block(block b) {
-  return b_full((b_id(b) + 1) % BLOCK_TYPE_COUNT);
+  return b_make_block((b_id(b) + 1) % TOTAL_BLOCK_TYPES);
+}
+
+static inline block next_variant(block b) {
+  return (((b >> BS_VAR) + 1) % TOTAL_BLOCK_VARIANTS) << BS_VAR;
+}
+
+static inline void copy_cell(cell const * const src, cell * dst) {
+  dst->primary = src->primary;
+  dst->secondary = src->secondary;
+  dst->p_data = src->p_data;
+  dst->s_data = src->s_data;
 }
 
 #endif // ifndef BLOCKS_H

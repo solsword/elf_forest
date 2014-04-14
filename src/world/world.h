@@ -28,60 +28,28 @@
 #define APPROX_DATA_SN(N) approx_data_ ## N ## _s
 #define APPROX_DATA_STRUCT(N) \
   struct APPROX_DATA_SN(N) { \
-    block blocks[ \
-      (1 << (CHUNK_BITS - N)) * \
-      (1 << (CHUNK_BITS - N)) * \
-      (1 << (CHUNK_BITS - N)) \
-    ]; \
-    block_flags block_flags[ \
+    cell cells[ \
       (1 << (CHUNK_BITS - N)) * \
       (1 << (CHUNK_BITS - N)) * \
       (1 << (CHUNK_BITS - N)) \
     ]; \
   }
 
-// The function names for approximate block getting/putting routines (function
+// The function names for approximate cell getting/putting routines (function
 // body macros are defined in world.c).
-#define CA_GET_BLOCK_FN(SCALE) ca_get_block_ ## SCALE
-#define CA_GET_BLOCK_SIG(NAME) \
-  block NAME( \
+#define CA_CELL_FN(SCALE) ca_cell_ ## SCALE
+#define CA_CELL_SIG(NAME) \
+  cell * NAME( \
     chunk_approximation const * const ca, \
     chunk_index const * const idx \
   )
 
-#define CA_PUT_BLOCK_FN(SCALE) ca_put_block_ ## SCALE
-#define CA_PUT_BLOCK_SIG(NAME) \
- void NAME(chunk_approximation *ca, chunk_index const * const idx, block b)
-
-#define CA_GET_FLAGS_FN(SCALE) ca_get_flags_ ## SCALE
-#define CA_GET_FLAGS_SIG(NAME) \
-  block_flags NAME( \
+#define CA_PASTE_CELL_FN(SCALE) ca_paste_cell_ ## SCALE
+#define CA_PASTE_CELL_SIG(NAME) \
+  void NAME( \
     chunk_approximation const * const ca, \
-    chunk_index const * const idx \
-  )
-
-#define CA_PUT_FLAGS_FN(SCALE) ca_put_flags_ ## SCALE
-#define CA_PUT_FLAGS_SIG(NAME) \
-  void NAME( \
-    chunk_approximation *ca, \
     chunk_index const * const idx, \
-    block_flags flags \
-  )
-
-#define CA_SET_FLAGS_FN(SCALE) ca_set_flags_ ## SCALE
-#define CA_SET_FLAGS_SIG(NAME) \
-  void NAME( \
-    chunk_approximation *ca, \
-    chunk_index const * const idx, \
-    block_flags flags \
-  )
-
-#define CA_CLEAR_FLAGS_FN(SCALE) ca_clear_flags_ ## SCALE
-#define CA_CLEAR_FLAGS_SIG(NAME) \
-  void NAME( \
-    chunk_approximation *ca, \
-    chunk_index const * const idx, \
-    block_flags flags \
+    cell *cl \
   )
 
 #define DECLARE_APPROX_FN_VARIANTS(SIG_MACRO,FN_MACRO) \
@@ -135,7 +103,7 @@ typedef enum {
  * Structures *
  **************/
 
-// Defines the size of a region in blocks:
+// Defines the size of a region in cells:
 typedef int64_t r_pos_t;
 // Defines the size of a region in chunks. Must be < the size of r_pos_t:
 typedef int32_t r_cpos_t;
@@ -164,7 +132,7 @@ typedef struct chunk_approximation_s chunk_approximation;
 struct chunk_or_approx_s;
 typedef struct chunk_or_approx_s chunk_or_approx;
 
-// Holds approximate block data at one of several scales:
+// Holds approximate cell data at one of several scales:
 union approx_data_u;
 typedef union approx_data_u approx_data;
 
@@ -181,7 +149,7 @@ struct APPROX_DATA_SN(4); typedef struct APPROX_DATA_SN(4) APPROX_DATA_TN(4);
 #define CH_MASK (CHUNK_SIZE - 1) // Chunk mask
 typedef uint8_t ch_idx_t; // Needs to be big enough to hold CHUNK_BITS bits.
 
-// Picks out a block within a chunk:
+// Picks out a cell within a chunk:
 struct chunk_index_s;
 typedef struct chunk_index_s chunk_index;
 
@@ -219,10 +187,9 @@ struct chunk_s {
   vertex_buffer layers[N_LAYERS]; // The vertex buffers.
   chunk_flag chunk_flags; // Flags
 
-  list *block_entities; // Block entities.
+  list *cell_entities; // Cell entities.
   // TODO: merge these?
-  block blocks[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE]; // Blocks.
-  block_flags block_flags[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE]; // Block flags.
+  cell cells[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE]; // Cells.
 };
 
 struct chunk_approximation_s {
@@ -232,7 +199,7 @@ struct chunk_approximation_s {
   chunk_flag chunk_flags; // Flags
 
   lod detail; // The highest level of approximation contained here.
-  approx_data *data; // Approximate block data.
+  approx_data *data; // Approximate cell data.
 };
 
 struct chunk_or_approx_s {
@@ -361,106 +328,71 @@ static inline void copy_rcpos(
 // Indexing functions:
 // These must be super-fast 'cause they crop up in all sorts of inner loops.
 
-static inline block c_get_block(
+static inline cell *c_cell(
   chunk const * const c,
   chunk_index idx
 ) {
-  return (c->blocks)[
+  return &(c->cells[
     (idx.x & CH_MASK) +
     ((idx.y & CH_MASK) << CHUNK_BITS) +
     ((idx.z & CH_MASK) << (CHUNK_BITS*2))
-  ];
+  ]);
 }
 
-static inline void c_put_block(
+static inline void c_paste_cell(
   chunk *c,
   chunk_index idx,
-  block b
+  cell *cl
 ) {
-  (c->blocks)[
-    (idx.x & CH_MASK) +
-    ((idx.y & CH_MASK) << CHUNK_BITS) +
-    ((idx.z & CH_MASK) << (CHUNK_BITS*2))
-  ] = b;
+  cell *dst = c_cell(c, idx);
+  copy_cell(cl, dst);
 }
 
-static inline block_flags c_get_flags(
-  chunk const * const c,
-  chunk_index idx
-) {
-  return (c->block_flags)[
-    (idx.x & CH_MASK) +
-    ((idx.y & CH_MASK) << CHUNK_BITS) +
-    ((idx.z & CH_MASK) << (CHUNK_BITS*2))
-  ];
+static inline block cl_get_exposure(cell *cl) { return b_exp(cl.primary); }
+
+static inline void cl_set_exposure(cell *cl, block exposure) {
+#ifdef DEBUG:
+  if (exposure & (~BM_EXPOSURE)) {
+    fprintf(
+      stderr,
+      "Warning: cl_set_exposure will corrupt block: 0x%x.\n",
+      exposure
+    );
+  }
+#endif
+  cl->primary |= (exposure << BS_EXP);
 }
 
-static inline void c_put_flags(
-  chunk *c,
-  chunk_index idx,
-  block_flags flags
-) {
-  (c->block_flags)[
-    (idx.x & CH_MASK) +
-    ((idx.y & CH_MASK) << CHUNK_BITS) +
-    ((idx.z & CH_MASK) << (CHUNK_BITS*2))
-  ] = flags;
-}
-
-static inline void c_set_flags(
-  chunk *c,
-  chunk_index idx,
-  block_flags flags
-) {
-  (c->block_flags)[
-    (idx.x & CH_MASK) +
-    ((idx.y & CH_MASK) << CHUNK_BITS) +
-    ((idx.z & CH_MASK) << (CHUNK_BITS*2))
-  ] |= flags;
-}
-
-static inline void c_clear_flags(
-  chunk *c,
-  chunk_index idx,
-  block_flags flags
-) {
-  (c->block_flags)[
-    (idx.x & CH_MASK) +
-    ((idx.y & CH_MASK) << CHUNK_BITS) +
-    ((idx.z & CH_MASK) << (CHUNK_BITS*2))
-  ] &= ~flags;
+static inline void cl_clear_exposure(cell *cl, block exposure) {
+#ifdef DEBUG:
+  if (exposure & (~BM_EXPOSURE)) {
+    fprintf(
+      stderr,
+      "Warning: cl_clear_exposure will corrupt block: 0x%x.\n",
+      exposure
+    );
+  }
+#endif
+  cl->primary &= ~(exposure << BS_EXP);
 }
 
 // General utility functions:
 
-static inline void c_erase_block_data(chunk *c) {
+static inline void c_erase_cell_data(chunk *c) {
   memset(
-    c->blocks,
+    c->cells,
     0,
-    CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE * sizeof(block)
-  );
-  memset(
-    c->block_flags,
-    0,
-    CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE * sizeof(block_flags)
-  );
-}
-
-static inline void c_clear_all_block_flags(chunk *c) {
-  memset(
-    c->block_flags,
-    0,
-    CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE * sizeof(block_flags)
+    CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE * sizeof(cell)
   );
 }
 
 static inline void c_fill_with_block(chunk *c, block b) {
   chunk_index idx = { .x = 0, .y = 0, .z = 0 };
-  c_clear_all_block_flags(c);
+  c_erase_cell_data(c);
   for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
-        c_put_block(c, idx, b);
+        c_cell(c, idx)->primary = b;
       }
     }
   }
@@ -470,8 +402,8 @@ static inline void c_fill_with_block(chunk *c, block b) {
  * Constructors & Destructors *
  ******************************/
 
-// Allocates and initializes a new chunk at the given position. Does not
-// initialize the chunk's block data or flags.
+// Allocates and initializes a new chunk at the given position. Allocates but
+// does not initialize the chunk's cell data.
 chunk * create_chunk(region_chunk_pos const * const rcpos);
 
 // Cleans up memory allocated for the given chunk.
@@ -491,94 +423,53 @@ void cleanup_chunk_approximation(chunk_approximation *ca);
  * Functions *
  *************/
 
-// Getting/putting approximate blocks within a chunk approximation:
-DECLARE_APPROX_FN_VARIANTS(CA_GET_BLOCK_SIG, CA_GET_BLOCK_FN)
-DECLARE_APPROX_FN_VARIANTS(CA_PUT_BLOCK_SIG, CA_PUT_BLOCK_FN)
-
-// Getting/putting approximate flags within a chunk approximation:
-DECLARE_APPROX_FN_VARIANTS(CA_GET_FLAGS_SIG, CA_GET_FLAGS_FN)
-DECLARE_APPROX_FN_VARIANTS(CA_PUT_FLAGS_SIG, CA_PUT_FLAGS_FN)
-DECLARE_APPROX_FN_VARIANTS(CA_SET_FLAGS_SIG, CA_SET_FLAGS_FN)
-DECLARE_APPROX_FN_VARIANTS(CA_CLEAR_FLAGS_SIG, CA_CLEAR_FLAGS_FN)
+// Getting/putting approximate cells within a chunk approximation:
+DECLARE_APPROX_FN_VARIANTS(CA_CELL_SIG, CA_CELL_FN)
+DECLARE_APPROX_FN_VARIANTS(CA_PASTE_CELL_SIG, CA_PASTE_CELL_FN)
 
 // Inline functions to shorten function table access to the function tables
 // defined by the macros above:
-static inline block ca_get_block(
+static inline cell* ca_cell(
   chunk_approximation const * const ca,
   chunk_index idx
 ) {
-  return ca_get_block_table[ca->detail](ca, &idx);
-}
-static inline void ca_put_block(
-  chunk_approximation *ca,
-  chunk_index idx,
-  block b
-) {
-  return ca_put_block_table[ca->detail](ca, &idx, b);
-}
-
-static inline block_flags ca_get_flags(
-  chunk_approximation const * const ca,
-  chunk_index idx
-) {
-  return ca_get_flags_table[ca->detail](ca, &idx);
-}
-static inline void ca_put_flags(
-  chunk_approximation *ca,
-  chunk_index idx,
-  block_flags f
-) {
-  return ca_put_flags_table[ca->detail](ca, &idx, f);
-}
-static inline void ca_set_flags(
-  chunk_approximation *ca,
-  chunk_index idx,
-  block_flags f
-) {
-  return ca_set_flags_table[ca->detail](ca, &idx, f);
-}
-static inline void ca_clear_flags(
-  chunk_approximation *ca,
-  chunk_index idx,
-  block_flags f
-) {
-  return ca_clear_flags_table[ca->detail](ca, &idx, f);
+  return ca_cell_table[ca->detail](ca, &idx);
 }
 
 static inline void c_get_neighbors(
   chunk const * const c,
   chunk_index idx,
-  block *ba, block *bb,
-  block *bn, block *bs,
-  block *be, block *bw
+  cell *ca, cell *cb,
+  cell *cn, cell *cs,
+  cell *ce, cell *cw
 ) {
   // note that even underflow should wrap correctly here
   chunk_index nbr;
   nbr.x = idx.x;
   nbr.y = idx.y;
   nbr.z = idx.z + 1;
-  *ba = (idx.z < CHUNK_SIZE - 1) * c_get_block(c, nbr);
+  *ca = (idx.z < CHUNK_SIZE - 1) * c_cell(c, nbr);
   nbr.z = idx.z - 1;
-  *bb = (idx.z > 0) *c_get_block(c, nbr);
+  *cb = (idx.z > 0) *c_cell(c, nbr);
   nbr.z = idx.z;
   nbr.y = idx.y + 1;
-  *bn = (idx.y < CHUNK_SIZE - 1) * c_get_block(c, nbr);
+  *cn = (idx.y < CHUNK_SIZE - 1) * c_cell(c, nbr);
   nbr.y = idx.y - 1;
-  *bs = (idx.y > 0) * c_get_block(c, nbr);
+  *cs = (idx.y > 0) * c_cell(c, nbr);
   nbr.y = idx.y;
   nbr.x = idx.x + 1;
-  *be = (idx.x < CHUNK_SIZE - 1) * c_get_block(c, nbr);
+  *ce = (idx.x < CHUNK_SIZE - 1) * c_cell(c, nbr);
   nbr.x = idx.x - 1;
-  *bw = (idx.x > 0) * c_get_block(c, nbr);
+  *cw = (idx.x > 0) * c_cell(c, nbr);
 }
 
-// This has to be declared after ca_get_block.
+// This has to be declared after ca_cell.
 static inline void ca_get_neighbors(
   chunk_approximation const * const ca,
   chunk_index idx,
-  block *ba, block *bb,
-  block *bn, block *bs,
-  block *be, block *bw
+  cell *ca, cell *cb,
+  cell *cn, cell *cs,
+  cell *ce, cell *cw
 ) {
   // note that even underflow should wrap correctly here
   ch_idx_t step = 1 << (ca->detail);
@@ -589,78 +480,78 @@ static inline void ca_get_neighbors(
   nbr.z = idx.z;
 
   nbr.z = (idx.z & mask) + step;
-  *ba = (idx.z < CHUNK_SIZE - step) * ca_get_block(ca, nbr);
+  *ca = (idx.z < CHUNK_SIZE - step) * ca_cell(ca, nbr);
   nbr.z = (idx.z & mask) - step;
-  *bb = (idx.z > step - 1) * ca_get_block(ca, nbr);
+  *cb = (idx.z > step - 1) * ca_cell(ca, nbr);
   nbr.z = (idx.z & mask);
   nbr.y = (idx.y & mask) + step;
-  *bn = (idx.y < CHUNK_SIZE - step) * ca_get_block(ca, nbr);
+  *cn = (idx.y < CHUNK_SIZE - step) * ca_cell(ca, nbr);
   nbr.y = (idx.y & mask) - step;
-  *bs = (idx.y > step - 1) * ca_get_block(ca, nbr);
+  *cs = (idx.y > step - 1) * ca_cell(ca, nbr);
   nbr.y = (idx.y & mask);
   nbr.x = (idx.x & mask) + step;
-  *be = (idx.x < CHUNK_SIZE - step) * ca_get_block(ca, nbr);
+  *ce = (idx.x < CHUNK_SIZE - step) * ca_cell(ca, nbr);
   nbr.x = (idx.x & mask) - step;
-  *bw = (idx.x > step - 1) * ca_get_block(ca, nbr);
+  *cw = (idx.x > step - 1) * ca_cell(ca, nbr);
 }
 
-// block_at returns the block at the given region position according to the
-// best available currently-loaded data. Note that this will cache the chunk
-// used and re-use it when possible, subject to changes in the value of
-// BLOCK_AT_SALT, so refresh_block_at_cache should be called before any set of
-// calls to block_at to ensure that you don't use stale block data or worse, an
+// cell_at returns the cell at the given region position according to the best
+// available currently-loaded data. Note that this will cache the chunk used
+// and re-use it when possible, subject to changes in the value of
+// CELL_AT_SALT, so refresh_cell_at_cache should be called before any set of
+// calls to cell_at to ensure that you don't use stale cell data or worse, an
 // invalid chunk pointer.
-extern uint8_t BLOCK_AT_SALT;
-static inline void refresh_block_at_cache(void) {
-  BLOCK_AT_SALT += 1; // overflow is fine
+extern uint8_t CELL_AT_SALT;
+static inline void refresh_cell_at_cache(void) {
+  CELL_AT_SALT += 1; // overflow is fine
 }
-block block_at(region_pos const * const rpos);
+cell* cell_at(region_pos const * const rpos);
 
-// These inline functions call block_at for neighboring blocks:
-static inline block block_above(region_pos const * const rpos) {
+// These inline functions call cell_at for neighboring cells:
+static inline cell* cell_above(region_pos const * const rpos) {
   region_pos above;
   copy_rpos(rpos, &above);
   above.z += 1;
-  return block_at(&above);
+  return cell_at(&above);
 }
 
-static inline block block_below(region_pos const * const rpos) {
+static inline cell* cell_below(region_pos const * const rpos) {
   region_pos below;
   copy_rpos(rpos, &below);
   below.z -= 1;
-  return block_at(&below);
+  return cell_at(&below);
 }
 
-static inline block block_north(region_pos const * const rpos) {
+static inline cell* cell_north(region_pos const * const rpos) {
   region_pos north;
   copy_rpos(rpos, &north);
   north.y += 1;
-  return block_at(&north);
+  return cell_at(&north);
 }
 
-static inline block block_south(region_pos const * const rpos) {
+static inline cell* cell_south(region_pos const * const rpos) {
   region_pos south;
   copy_rpos(rpos, &south);
   south.y -= 1;
-  return block_at(&south);
+  return cell_at(&south);
 }
 
-static inline block block_east(region_pos const * const rpos) {
+static inline cell* cell_east(region_pos const * const rpos) {
   region_pos east;
   copy_rpos(rpos, &east);
   east.x += 1;
-  return block_at(&east);
+  return cell_at(&east);
 }
 
-static inline block block_west(region_pos const * const rpos) {
+static inline cell* cell_west(region_pos const * const rpos) {
   region_pos west;
   copy_rpos(rpos, &west);
   west.x -= 1;
-  return block_at(&west);
+  return cell_at(&west);
 }
 
 // These functions compute and return the number of bytes used by a
-// chunk/approximation for direct data storage (block data only), overhead (all
+// chunk/approximation for direct data storage (cell data only), overhead (all
 // other data in RAM) and rendering (data stored on the GPU).
 size_t chunk_data_size(chunk *c);
 size_t chunk_overhead_size(chunk *c);
@@ -670,6 +561,6 @@ size_t chunk_approx_data_size(chunk_approximation *ca);
 size_t chunk_approx_overhead_size(chunk_approximation *ca);
 size_t chunk_approx_gpu_size(chunk_approximation *ca);
 
-// TODO: How to tick blocks?
+// TODO: How to tick cells?
 
 #endif // ifndef WORLD_H
