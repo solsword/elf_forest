@@ -96,7 +96,7 @@ static inline void update_position_x (
       for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
           // TODO: FIX THIS!
-          if (b_is_solid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
             e->vel.x = 0;
             increment->x = 0;
             e->pos.x = next_cell - (BOUNCE_DISTANCE + e->size.x / 2.0);
@@ -113,7 +113,7 @@ static inline void update_position_x (
       for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
           // TODO: FIX THIS!
-          if (b_is_solid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
             e->vel.x = 0;
             increment->x = 0;
             e->pos.x = next_cell + 1 + BOUNCE_DISTANCE + e->size.x / 2.0;
@@ -143,7 +143,7 @@ static inline void update_position_y(
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
           // TODO: FIX THIS
-          if (b_is_solid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
             e->vel.y = 0;
             increment->y = 0;
             e->pos.y = next_cell - (BOUNCE_DISTANCE + e->size.y / 2.0);
@@ -160,7 +160,7 @@ static inline void update_position_y(
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
           // TODO: FIX THIS
-          if (b_is_solid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
             e->vel.y = 0;
             increment->y = 0;
             e->pos.y = next_cell + 1 + BOUNCE_DISTANCE + e->size.y / 2.0;
@@ -190,7 +190,7 @@ static inline void update_position_z(
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
           // TODO: FIX THIS
-          if (b_is_solid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
             e->vel.z = 0;
             increment->z = 0;
             e->pos.z = next_cell - (BOUNCE_DISTANCE + e->size.z / 2.0);
@@ -207,7 +207,7 @@ static inline void update_position_z(
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
           // TODO: FIX THIS
-          if (b_is_solid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
             e->vel.z = 0;
             increment->z = 0;
             e->pos.z = next_cell + 1 + (BOUNCE_DISTANCE + e->size.z / 2.0);
@@ -358,6 +358,8 @@ static inline void check_move_flags(entity *e) {
   // TODO: FIX THIS
   if (cell_at(&pos) == NULL || b_is_void(cell_at(&pos)->primary)) {
     set_in_void(e);
+    clear_in_liquid(e);
+    clear_on_ground(e);
   } else { // Don't try to update move flags when in a void...
     // MF_ON_GROUND
     clear_on_ground(e);

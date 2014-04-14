@@ -48,12 +48,14 @@ static inline int occludes_face(block neighbor, block occluded) {
         OOR_AXIS = OOR_REPLACE; \
         if (neighbor->type == CA_TYPE_CHUNK) { \
           there = c_cell((chunk *) (neighbor->ptr), idx)->primary; \
-        } else { \
+        } else if (neighbor->type == CA_TYPE_APPROXIMATION) { \
           there = ca_cell( \
             (chunk_approximation *) (neighbor->ptr), \
             idx \
           )->primary; \
-        } \
+        } else { \
+          there = b_make_block(B_VOID); \
+        }\
       } \
     } \
     return occludes_face(there, here); \

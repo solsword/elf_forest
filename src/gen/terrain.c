@@ -101,12 +101,15 @@ void terrain_cell(region_pos pos, cell *result) {
   int on_shore = (pos.z == TR_SEA_LEVEL);
 
   // Set the block types and data of the result cell:
+  result->primary = b_make_block(B_VOID);
   result->secondary = b_make_block(B_VOID);
   result->p_data = 0;
   result->s_data = 0;
   if ((on_land || on_shore) && surface) {
     if (on_land && !sandy) {
       result->primary = b_make_block(B_GRASS);
+    } else {
+      result->primary = b_make_block(B_AIR);
     }
   } else if (topsoil) {
     if (sandy) {

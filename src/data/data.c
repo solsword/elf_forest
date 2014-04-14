@@ -152,6 +152,7 @@ void destroy_chunk_queue_set(chunk_queue_set *cqs) {
   size_t i;
   q_foreach(cqs->levels[LOD_BASE], &iter_cleanup_chunk);
   cleanup_queue(cqs->levels[LOD_BASE]);
+  cleanup_map(cqs->maps[LOD_BASE]);
   for (i = LOD_BASE + 1; i < N_LODS; ++i) {
     q_foreach(cqs->levels[i], &iter_cleanup_chunk_approx);
     cleanup_queue(cqs->levels[i]);
