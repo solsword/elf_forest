@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
   // TODO: Why doesn't this work with an empty chunk?!?
   view_empty_chunk();
 
-  set_center_block(B_LEAVES);
+  set_center_block(b_make_block(B_WATER));
 
   // Spawn the player:
   spawn_viewer();
@@ -210,7 +210,8 @@ void set_center_block(block b) {
   idx.x = CHUNK_SIZE/2;
   idx.y = CHUNK_SIZE/2;
   idx.z = CHUNK_SIZE/2;
-  c_put_block(c, idx, b);
+  cell *cl = c_cell(c, idx);
+  cl->primary = b;
 
   // Re-staging the chunk which will recompile it:
   stage_chunk(c);

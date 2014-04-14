@@ -15,7 +15,7 @@
  * Functions *
  *************/
 
-// Computes block exposure for the given chunk/approximation, assuming faces
+// Computes cell exposure for the given chunk/approximation, assuming faces
 // adjacent to unavailable neighbors are not exposed.
 void compute_exposure(chunk_or_approx *coa);
 

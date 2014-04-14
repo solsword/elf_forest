@@ -15,6 +15,7 @@
 #include "prof/pmem.h"
 #include "control/ctl.h"
 #include "world/entities.h"
+#include "world/blocks.h"
 #include "gen/terrain.h" // to draw geoform and other terrain data
 
 #include "ui/ui.h"
@@ -66,19 +67,27 @@ static inline void render_vision_effects() {
   int blind = 0; // whether our head is inside an opaque block or not
   float s = 0, t = 0, step_s = 1, step_t = 1; // texture coords
 
-  block hb = head_block(PLAYER);
+  cell *hc = head_cell(PLAYER);
   tcoords st = { .s=0, .t=0 };
   // Figure out the tint color (and set the fog distance):
-  if (b_is_opaque(hb)) {
+  if (hc == NULL) {
+    no_tint();
+    FOG_DENSITY = AIR_FOG_DENSITY;
+  } else if (b_is_opaque(hc->primary)) {
     blind = 1;
     // compute texture coordinates
-    compute_face_tc(hb, BD_FACE_BOT, &st);
-    s = st.s / ((float) BLOCK_ATLAS_WIDTH);
-    t = st.t / ((float) BLOCK_ATLAS_HEIGHT);
-    step_s = 1.0/BLOCK_ATLAS_WIDTH;
-    step_t = 0.5/BLOCK_ATLAS_WIDTH;
+    compute_dynamic_face_tc(
+      LAYER_ATLASES[L_OPAQUE],
+      hc->primary,
+      BD_FACE_BOT,
+      &st
+    );
+    s = st.s / ((float) LAYER_ATLASES[L_OPAQUE]->size);
+    t = st.t / ((float) LAYER_ATLASES[L_OPAQUE]->size);
+    step_s = 1.0/LAYER_ATLASES[L_OPAQUE]->size;
+    step_t = 0.5/LAYER_ATLASES[L_OPAQUE]->size;
     FOG_DENSITY = 1.0;
-  } else if (b_shares_translucency(hb, B_WATER)) {
+  } else if (b_same_liquid(hc->primary, b_make_block(B_WATER))) {
     set_tint(0.5, 0.5, 0.9, 1.0);
     FOG_DENSITY = WATER_FOG_DENSITY;
   } else {
@@ -88,7 +97,7 @@ static inline void render_vision_effects() {
 
   // Bind our texture atlas or set the blend function appropriately:
   if (blind) {
-    glBindTexture( GL_TEXTURE_2D, BLOCK_ATLAS );
+    glBindTexture( GL_TEXTURE_2D, LAYER_ATLASES[L_OPAQUE]->handle );
   } else {
     glBlendFunc( GL_ZERO, GL_CONSTANT_COLOR );
   }

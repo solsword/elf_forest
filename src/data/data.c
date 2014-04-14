@@ -486,7 +486,7 @@ void tick_data(void) {
 
 void load_chunk(chunk *c) {
   // TODO: Data from disk!
-  // TODO: Block entities!
+  // TODO: Cell entities!
   chunk_index idx;
   region_pos rpos;
   chunk_or_approx coa;
@@ -494,7 +494,7 @@ void load_chunk(chunk *c) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
         cidx__rpos(c, &idx, &rpos);
-        c_put_block(c, idx, terrain_block(rpos));
+        terrain_cell(rpos, c_cell(c, idx));
       }
     }
   }
@@ -510,7 +510,7 @@ void load_chunk(chunk *c) {
 
 void load_chunk_approx(chunk_approximation *ca) {
   // TODO: Data from disk!
-  // TODO: Block entities!
+  // TODO: Cell entities!
   ch_idx_t step = (1 << (ca->detail));
   chunk_index idx;
   region_pos rpos;
@@ -521,7 +521,7 @@ void load_chunk_approx(chunk_approximation *ca) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
         caidx__rpos(ca, &idx, &rpos);
-        ca_put_block(ca, idx, terrain_block(rpos));
+        terrain_cell(rpos, ca_cell(ca, idx));
       }
     }
   }

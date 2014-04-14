@@ -64,8 +64,8 @@ void tick(int steps) {
       tick_active_entities();
     }
     warp_space(ACTIVE_AREA, PLAYER);
-    // TODO: tick blocks
-    //tick_blocks(ACTIVE_AREA);
+    // TODO: tick cells
+    //tick_cells(ACTIVE_AREA);
     update_rate(&TICKRATE);
   }
   region_chunk_pos rcpos;

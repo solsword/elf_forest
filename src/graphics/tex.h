@@ -10,6 +10,7 @@
 #include "datatypes/bitmap.h"
 
 #include "world/blocks.h"
+#include "world/world.h"
 
 /**************
  * Structures *
@@ -54,26 +55,20 @@ typedef struct dynamic_texture_atlas_s dynamic_texture_atlas;
 // Pixel dimension of each block texture:
 static uint8_t const BLOCK_TEXTURE_SIZE = 32;
 
+// The size (side, not total) of the dynamic texture atlases. This gives a
+// total texture capacity of 1024 32x32 textures, while itself being a
+// 1024x1024 texel texture.
+static size_t const DYNAMIC_ATLAS_SIZE = 32;
+
 /********************
  * Global variables *
  ********************/
 
-// The file to load block textures from:
-extern char const * const BLOCK_TEXTURE_FILE;
+// The directory to load static block textures from:
+extern char const * const BLOCK_TEXTURE_DIR;
 
-// The OpenGL texture ID for the blocks texture atlas:
-extern GLuint BLOCK_ATLAS;
-// The size of the blocks atlas in terms of # of textures:
-extern uint16_t BLOCK_ATLAS_WIDTH;
-extern uint16_t BLOCK_ATLAS_HEIGHT;
-
-/********
- * Data *
- ********/
-
-// Contains top, front, sides, and bottom atlas indices for each texture ID,
-// running from index [id << 2] to index [(id << 2) + 3].
-extern uint16_t const BLOCK_TEXTURE_MAP[];
+// The array of dynamic texture atlases for each rendering layer:
+extern dynamic_texture_atlas *LAYER_ATLASES[N_LAYERS];
 
 /*************************
  * Structure Definitions *
@@ -260,50 +255,29 @@ static uint16_t FACE_TC_MAP_OFF[8] = {
   0, 3, 3, 3, 1, 2, 3, 3
 };
 
-// Computes the texture s coordinate for the given index into the static
-// texture atlas. Won't work if init_textures hasn't been called.
-static inline uint16_t block_tc_s(uint16_t i) {
-  return i % BLOCK_ATLAS_WIDTH;
-}
-
-// Computes the texture t coordinate for the given index into the texture
-// atlas. Won't work if init_textures hasn't been called.
-static inline uint16_t block_tc_t(uint16_t i) {
-  return (i / BLOCK_ATLAS_WIDTH) % BLOCK_ATLAS_HEIGHT;
-}
-
 // Takes a block and a face and computes the actual face accounting for the
 // block's orientation.
 static inline block_data actual_face(
-  block_id b,
-  block_orientation ori,
-  block_orientation face
+  block b,
+  block ori,
+  block face
 ) {
-  if (b_is_orientable(b)) {
+  if (b_oabl(b)) {
     return ROTATE_FACE[ori][face];
   } else {
     return face;
   }
 }
 
-// Uses block_tc_[s|t] to compute texture coordinates but accounts for rotation
-// and facing first.
-static inline void compute_face_tc(block b, block_data face, tcoords *result) {
-  face = actual_face(b, face);
-  uint16_t i = BLOCK_TEXTURE_MAP[(b_id(b) << 2) + FACE_TC_MAP_OFF[face]];
-  result->s = block_tc_s(i);
-  result->t = block_tc_t(i);
-}
-
 static inline void compute_dynamic_face_tc(
   dynamic_texture_atlas *dta,
-  block_id b,
-  block_data face,
+  block b,
+  block face,
   tcoords *result
 ) {
-  if (b_is_orientable(b)) {
-    face = ROTATE_FACE[b_orientation(b)][face];
-  } else if (b_is_omnidirectional(b)) {
+  if (b_oabl(b)) {
+    face = ROTATE_FACE[b_ori(b)][face];
+  } else if (!b_anis(b)) {
     face = 0;
   }
   size_t i = (size_t) m1_get_value(dta->tcmap, (map_key_t) ((size_t) b_id(b)));
@@ -336,9 +310,11 @@ void cleanup_dynamic_atlas(dynamic_texture_atlas *dta);
  * Functions *
  *************/
 
-// Sets up the standard textures, loading data into OpenGL but then freeing the
-// CPU's copy. No cleanup necessary.
-void init_textures(void);
+// Sets up the standard dynamic texture atlases.
+void setup_textures(void);
+
+// Cleans up the texture subsystem.
+void cleanup_textures(void);
 
 // Loads a PNG file and returns a newly-allocated texture pointer.
 texture * load_texture_from_png(char const * const filename);

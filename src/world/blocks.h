@@ -38,19 +38,19 @@ struct cell_s {
  * Constants and Data *
  **********************/
 
-#define BLOCK_ID_BITS 9;
-#define BLOCK_VAR_BITS 14;
-#define BLOCK_ORI_BITS 3;
-#define BLOCK_EXP_BITS 6;
+#define BLOCK_ID_BITS 9
+#define BLOCK_VAR_BITS 14
+#define BLOCK_ORI_BITS 3
+#define BLOCK_EXP_BITS 6
 
 #define BS_ID (BLOCK_VAR_BITS + BLOCK_ORI_BITS + BLOCK_EXP_BITS)
 #define BS_VAR (BLOCK_ORI_BITS + BLOCK_EXP_BITS)
 #define BS_ORI BLOCK_ORI_BITS
 #define BS_EXP 0
 
-#define TOTAL_BLOCK_TYPES = (1 << BLOCK_ID_BITS)
-#define TOTAL_BLOCK_VARIANTS = (1 << (BLOCK_ID_BITS + BLOCK_VAR_BITS))
-#define VARIANTS_PER_BLOCK = (1 << BLOCK_VAR_BITS)
+#define TOTAL_BLOCK_TYPES (1 << BLOCK_ID_BITS)
+#define TOTAL_BLOCK_VARIANTS (1 << (BLOCK_ID_BITS + BLOCK_VAR_BITS))
+#define VARIANTS_PER_BLOCK (1 << BLOCK_VAR_BITS)
 
 extern block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES];
 
@@ -78,6 +78,10 @@ static block const  BF_EXPOSED_NORTH = 1 << BFS_EXPOSED_NORTH_SHIFT;
 static block const  BF_EXPOSED_SOUTH = 1 << BFS_EXPOSED_SOUTH_SHIFT;
 static block const   BF_EXPOSED_EAST = 1 << BFS_EXPOSED_EAST_SHIFT;
 static block const   BF_EXPOSED_WEST = 1 << BFS_EXPOSED_WEST_SHIFT;
+
+#define BF_EXPOSED_ANY (BF_EXPOSED_ABOVE | BF_EXPOSED_BELOW \
+                      | BF_EXPOSED_NORTH | BF_EXPOSED_SOUTH \
+                      | BF_EXPOSED_EAST | BF_EXPOSED_WEST)
 
 // Masks:
 // ------
@@ -412,6 +416,7 @@ static block const                B_STEM_MAT = 0x0da;
 // Per-block properties:
 static inline block b_id(block b) { return b >> BS_ID; }
 static inline block b_var(block b) { return (b & BM_VARIANT) >> BS_VAR; }
+static inline block b_idvar(block b) { return b >> BS_VAR; }
 static inline block b_ori(block b) { return (b & BM_ORIENTATION) >> BS_ORI; }
 static inline block b_exp(block b) { return (b & BM_EXPOSURE) >> BS_EXP; }
 
@@ -441,7 +446,7 @@ static inline block b_make_block(block id) {
 
 // Combine an id and variant into a block with default exposure and orientation:
 static inline block b_make_variant(block id, block variant) {
-  return (id << BS_ID) + (variant << BS_VAR)
+  return (id << BS_ID) + (variant << BS_VAR);
 }
 
 // Comparisons:
@@ -477,11 +482,11 @@ static inline block b_is_translucent(block b) {
   return b_vis(b) == BI_VIS_TRANSLUCENT;
 }
 
-static inline block b_is_solid(block b) { return b_sub(b) == BI_SBST_SOLID; }
-static inline block b_is_liquid(block b) { return b_sub(b) == BI_SBST_LIQUID; }
-static inline block b_is_empty(block b) { return b_sub(b) == BI_SBST_EMPTY; }
+static inline block b_is_solid(block b) { return b_sbst(b) == BI_SBST_SOLID; }
+static inline block b_is_liquid(block b) { return b_sbst(b) == BI_SBST_LIQUID; }
+static inline block b_is_empty(block b) { return b_sbst(b) == BI_SBST_EMPTY; }
 static inline block b_is_obstructed(block b) {
-  return b_sub(b) == BI_SBST_OBSTRUCTED;
+  return b_sbst(b) == BI_SBST_OBSTRUCTED;
 }
 
 // Other flags can be checked manually...

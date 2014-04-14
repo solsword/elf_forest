@@ -216,7 +216,7 @@ static inline void push_west(
  *************/
 
 void compile_chunk_or_approx(chunk_or_approx *coa) {
-  // Count the number of "active" blocks (those not surrounded by solid
+  // Count the number of "active" cells (those not surrounded by solid
   // blocks). We use the cached exposure data here (call compute_exposure
   // first!).
   chunk *c;
@@ -245,21 +245,21 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
     counts[i] = 0;
   }
   chunk_index idx;
-  block here = 0;
-  block_flags flags = 0;
+  cell *here = NULL;
+  block exposure = 0;
   for (idx.x = 0; idx.x < CHUNK_SIZE; idx.x += step) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
         if (coa->type == CA_TYPE_CHUNK) {
-          here = c_get_block(c, idx);
-          flags = c_get_flags(c, idx);
+          here = c_cell(c, idx);
         } else {
-          here = ca_get_block(ca, idx);
-          flags = ca_get_flags(ca, idx);
+          here = ca_cell(ca, idx);
         }
-        if ((flags & BF_EXPOSED_ANY) && !b_is_invisible(here)) {
+        exposure = cl_get_exposure(here);
+        if ((exposure & BF_EXPOSED_ANY) && !b_is_invisible(here->primary)) {
           total += 1;
-          counts[block_layer(here)] += 1;
+          // TODO: Shader-based rendering instead!
+          counts[block_layer(here->primary)] += 1;
         }
       }
     }
@@ -342,58 +342,87 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   for (idx.x = 0; idx.x < CHUNK_SIZE; idx.x += step) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
-        // get local block and neighbors:
+        // get local cell and neighbors:
         if (coa->type == CA_TYPE_CHUNK) {
-          here = c_get_block(c, idx);
-          flags = c_get_flags(c, idx);
+          here = c_cell(c, idx);
         } else {
-          here = ca_get_block(ca, idx);
-          flags = ca_get_flags(ca, idx);
+          here = ca_cell(ca, idx);
         }
-        if (b_is_invisible(here)) {
+        exposure = cl_get_exposure(here);
+        if (b_is_invisible(here->primary)) {
           continue;
         }
-        ly = block_layer(here);
-        if (flags & BF_EXPOSED_ABOVE) {
+        ly = block_layer(here->primary);
+        if (exposure & BF_EXPOSED_ABOVE) {
 #ifdef DEBUG
           CHECK_LAYER(ly)
 #endif
-          compute_face_tc(here, BD_ORI_UP, &st);
+          compute_dynamic_face_tc(
+            LAYER_ATLASES[ly],
+            here->primary,
+            BD_ORI_UP,
+            &st
+          );
           push_top(&((*layers)[ly]), idx, step, st);
         }
-        if (flags & BF_EXPOSED_BELOW) {
+        if (exposure & BF_EXPOSED_BELOW) {
 #ifdef DEBUG
           CHECK_LAYER(ly)
 #endif
-          compute_face_tc(here, BD_ORI_DOWN, &st);
+          compute_dynamic_face_tc(
+            LAYER_ATLASES[ly],
+            here->primary,
+            BD_ORI_DOWN,
+            &st
+          );
           push_bottom(&((*layers)[ly]), idx, step, st);
         }
-        if (flags & BF_EXPOSED_NORTH) {
+        if (exposure & BF_EXPOSED_NORTH) {
 #ifdef DEBUG
           CHECK_LAYER(ly)
 #endif
-          compute_face_tc(here, BD_ORI_NORTH, &st);
+          compute_dynamic_face_tc(
+            LAYER_ATLASES[ly],
+            here->primary,
+            BD_ORI_NORTH,
+            &st
+          );
           push_north(&((*layers)[ly]), idx, step, st);
         }
-        if (flags & BF_EXPOSED_SOUTH) {
+        if (exposure & BF_EXPOSED_SOUTH) {
 #ifdef DEBUG
           CHECK_LAYER(ly)
 #endif
-          compute_face_tc(here, BD_ORI_SOUTH, &st);
+          compute_dynamic_face_tc(
+            LAYER_ATLASES[ly],
+            here->primary,
+            BD_ORI_SOUTH,
+            &st
+          );
           push_south(&((*layers)[ly]), idx, step, st);
         }
-        if (flags & BF_EXPOSED_EAST) {
+        if (exposure & BF_EXPOSED_EAST) {
 #ifdef DEBUG
           CHECK_LAYER(ly)
 #endif
-          compute_face_tc(here, BD_ORI_EAST, &st);
+          compute_dynamic_face_tc(
+            LAYER_ATLASES[ly],
+            here->primary,
+            BD_ORI_EAST,
+            &st
+          );
           push_east(&((*layers)[ly]), idx, step, st);
         }
-        if (flags & BF_EXPOSED_WEST) {
+        if (exposure & BF_EXPOSED_WEST) {
 #ifdef DEBUG
           CHECK_LAYER(ly)
 #endif
-          compute_face_tc(here, BD_ORI_WEST, &st);
+          compute_dynamic_face_tc(
+            LAYER_ATLASES[ly],
+            here->primary,
+            BD_ORI_WEST,
+            &st
+          );
           push_west(&((*layers)[ly]), idx, step, st);
         }
       }

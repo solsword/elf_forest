@@ -250,4 +250,5 @@ void cleanup(void) {
   cleanup_entities();
   cleanup_data();
   cleanup_ui();
+  cleanup_textures();
 }

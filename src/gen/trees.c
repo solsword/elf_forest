@@ -35,12 +35,12 @@ block trunk_block(region_pos pos, trunk const * const trk) {
       if (
         dz < trk->height - fastceil(trk->height * TREE_CROWN_FRACTION)
       ) {
-        return B_TRUNK;
+        return B_TREE_TRUNK;
       } else {
-        return B_BRANCHES;
+        return B_TREE_BRANCHES;
       }
     } else {
-      return B_BRANCHES;
+      return B_TREE_BRANCHES;
     }
   } else if (dz > 1) {
     radius = trk->radius + 0.6;
@@ -56,7 +56,7 @@ block trunk_block(region_pos pos, trunk const * const trk) {
     );
     assert(dz >= trk->height || radius > 0);
     if (dx*dx + dy*dy <= radius*radius) {
-      return B_LEAVES;
+      return B_TREE_LEAVES;
     } else {
       return B_AIR;
     }

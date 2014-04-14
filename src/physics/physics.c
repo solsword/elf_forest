@@ -87,39 +87,41 @@ static inline void update_position_x (
   region_pos *max,
   vector *increment
 ) {
-  r_pos_t next_block;
+  r_pos_t next_cell;
   region_pos pos;
   if (increment->x > 0) {
-    next_block = fastfloor(e->box.max.x + increment->x);
-    if (next_block != max->x) {
-      pos.x = e->area->origin.x + next_block;
+    next_cell = fastfloor(e->box.max.x + increment->x);
+    if (next_cell != max->x) {
+      pos.x = e->area->origin.x + next_cell;
       for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
-          if (b_is_solid(block_at(&pos))) {
+          // TODO: FIX THIS!
+          if (b_is_solid(cell_at(&pos)->primary)) {
             e->vel.x = 0;
             increment->x = 0;
-            e->pos.x = next_block - (BOUNCE_DISTANCE + e->size.x / 2.0);
+            e->pos.x = next_cell - (BOUNCE_DISTANCE + e->size.x / 2.0);
             goto done_x;
           }
         }
       }
-      max->x = e->area->origin.x + next_block;
+      max->x = e->area->origin.x + next_cell;
     }
   } else {
-    next_block = fastfloor(e->box.min.x + increment->x);
-    if (next_block != min->x) {
-      pos.x = e->area->origin.x + next_block;
+    next_cell = fastfloor(e->box.min.x + increment->x);
+    if (next_cell != min->x) {
+      pos.x = e->area->origin.x + next_cell;
       for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
-          if (b_is_solid(block_at(&pos))) {
+          // TODO: FIX THIS!
+          if (b_is_solid(cell_at(&pos)->primary)) {
             e->vel.x = 0;
             increment->x = 0;
-            e->pos.x = next_block + 1 + BOUNCE_DISTANCE + e->size.x / 2.0;
+            e->pos.x = next_cell + 1 + BOUNCE_DISTANCE + e->size.x / 2.0;
             goto done_x;
           }
         }
       }
-      min->x = e->area->origin.x + next_block;
+      min->x = e->area->origin.x + next_cell;
     }
   }
 done_x:
@@ -132,39 +134,41 @@ static inline void update_position_y(
   region_pos *max,
   vector *increment
 ) {
-  r_pos_t next_block;
+  r_pos_t next_cell;
   region_pos pos;
   if (increment->y > 0) {
-    next_block = fastfloor(e->box.max.y + increment->y);
-    if (next_block != max->y) {
-      pos.y = e->area->origin.y + next_block;
+    next_cell = fastfloor(e->box.max.y + increment->y);
+    if (next_cell != max->y) {
+      pos.y = e->area->origin.y + next_cell;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
-          if (b_is_solid(block_at(&pos))) {
+          // TODO: FIX THIS
+          if (b_is_solid(cell_at(&pos)->primary)) {
             e->vel.y = 0;
             increment->y = 0;
-            e->pos.y = next_block - (BOUNCE_DISTANCE + e->size.y / 2.0);
+            e->pos.y = next_cell - (BOUNCE_DISTANCE + e->size.y / 2.0);
             goto done_y;
           }
         }
       }
-      max->y = e->area->origin.y + next_block;
+      max->y = e->area->origin.y + next_cell;
     }
   } else {
-    next_block = fastfloor(e->box.min.y + increment->y);
-    if (next_block != min->y) {
-      pos.y = e->area->origin.y + next_block;
+    next_cell = fastfloor(e->box.min.y + increment->y);
+    if (next_cell != min->y) {
+      pos.y = e->area->origin.y + next_cell;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
-          if (b_is_solid(block_at(&pos))) {
+          // TODO: FIX THIS
+          if (b_is_solid(cell_at(&pos)->primary)) {
             e->vel.y = 0;
             increment->y = 0;
-            e->pos.y = next_block + 1 + BOUNCE_DISTANCE + e->size.y / 2.0;
+            e->pos.y = next_cell + 1 + BOUNCE_DISTANCE + e->size.y / 2.0;
             goto done_y;
           }
         }
       }
-      min->y = e->area->origin.y + next_block;
+      min->y = e->area->origin.y + next_cell;
     }
   }
 done_y:
@@ -177,39 +181,41 @@ static inline void update_position_z(
   region_pos *max,
   vector *increment
 ) {
-  r_pos_t next_block;
+  r_pos_t next_cell;
   region_pos pos;
   if (increment->z > 0) {
-    next_block = fastfloor(e->box.max.z + increment->z);
-    if (next_block != max->z) {
-      pos.z = e->area->origin.z + next_block;
+    next_cell = fastfloor(e->box.max.z + increment->z);
+    if (next_cell != max->z) {
+      pos.z = e->area->origin.z + next_cell;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
-          if (b_is_solid(block_at(&pos))) {
+          // TODO: FIX THIS
+          if (b_is_solid(cell_at(&pos)->primary)) {
             e->vel.z = 0;
             increment->z = 0;
-            e->pos.z = next_block - (BOUNCE_DISTANCE + e->size.z / 2.0);
+            e->pos.z = next_cell - (BOUNCE_DISTANCE + e->size.z / 2.0);
             goto done_z;
           }
         }
       }
-      max->z = e->area->origin.z + next_block;
+      max->z = e->area->origin.z + next_cell;
     }
   } else {
-    next_block = fastfloor(e->box.min.z + increment->z);
-    if (next_block != min->z) {
-      pos.z = e->area->origin.z + next_block;
+    next_cell = fastfloor(e->box.min.z + increment->z);
+    if (next_cell != min->z) {
+      pos.z = e->area->origin.z + next_cell;
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
-          if (b_is_solid(block_at(&pos))) {
+          // TODO: FIX THIS
+          if (b_is_solid(cell_at(&pos)->primary)) {
             e->vel.z = 0;
             increment->z = 0;
-            e->pos.z = next_block + 1 + (BOUNCE_DISTANCE + e->size.z / 2.0);
+            e->pos.z = next_cell + 1 + (BOUNCE_DISTANCE + e->size.z / 2.0);
             goto done_z;
           }
         }
       }
-      min->z = e->area->origin.z + next_block;
+      min->z = e->area->origin.z + next_cell;
     }
   }
 done_z:
@@ -293,7 +299,7 @@ static inline void integrate_control_inputs(entity *e) {
 
 // Updates an entity's position while respecting solid blocks.
 static inline void update_position_collide_blocks(entity *e) {
-  region_pos min, max; // min/max block positions
+  region_pos min, max; // min/max cell positions
   vector increment; // the increment vector
   // fill in min/max coords
   e_min__rpos(e, &min);
@@ -301,8 +307,8 @@ static inline void update_position_collide_blocks(entity *e) {
   // compute increment
   vcopy(&increment, &(e->vel));
   vscale(&increment, PHYS_SUB_DT);
-  // Make sure we're getting up-to-date block data from block_at:
-  refresh_block_at_cache();
+  // Make sure we're getting up-to-date cell data from cell_at:
+  refresh_cell_at_cache();
 
   // DEBUG:
 #ifdef DEBUG_DETECT_JUMPS
@@ -337,66 +343,71 @@ static inline void update_position_collide_blocks(entity *e) {
   }
 #endif
 
-  // Try to avoid poisoning anyone else who might use block_at:
-  refresh_block_at_cache();
+  // Try to avoid poisoning anyone else who might use cell_at:
+  refresh_cell_at_cache();
 }
 
 static inline void check_move_flags(entity *e) {
   region_pos pos;
-  // Avoid getting stale block data:
-  refresh_block_at_cache();
-  // MF_ON_GROUND
-  clear_on_ground(e);
-  if (e->vel.z <= 0) {
-    pos.z = e->area->origin.z + fastfloor(e->box.min.z - BOUNCE_DISTANCE*2.0);
+  // Avoid getting stale cell data:
+  // TODO: this less often (esp. considering multiple entities)
+  refresh_cell_at_cache();
+  // MF_IN_VOID
+  clear_in_void(e);
+  get_head_rpos(e, &pos);
+  // TODO: FIX THIS
+  if (cell_at(&pos) == NULL || b_is_void(cell_at(&pos)->primary)) {
+    set_in_void(e);
+  } else { // Don't try to update move flags when in a void...
+    // MF_ON_GROUND
+    clear_on_ground(e);
+    if (e->vel.z <= 0) {
+      pos.z = e->area->origin.z + fastfloor(e->box.min.z - BOUNCE_DISTANCE*2.0);
+      for (
+        pos.x = e_rp_min_x(e);
+        pos.x <= e_rp_max_x(e) && !on_ground(e);
+        ++pos.x
+      ) {
+        for (
+          pos.y = e_rp_min_y(e);
+          pos.y <= e_rp_max_y(e) && !on_ground(e);
+          ++pos.y
+        ) {
+          // TODO: FIX THIS!
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
+            set_on_ground(e);
+          }
+        }
+      }
+    }
+    // MF_IN_LIQUID
+    clear_in_liquid(e);
     for (
       pos.x = e_rp_min_x(e);
-      pos.x <= e_rp_max_x(e) && !on_ground(e);
+      pos.x <= e_rp_max_x(e) && !in_liquid(e);
       ++pos.x
     ) {
       for (
         pos.y = e_rp_min_y(e);
-        pos.y <= e_rp_max_y(e) && !on_ground(e);
+        pos.y <= e_rp_max_y(e) && !in_liquid(e);
         ++pos.y
       ) {
-        if (b_is_solid(block_at(&pos))) {
-          set_on_ground(e);
+        for (
+          pos.z = e_rp_min_z(e);
+          pos.z <= e_rp_max_z(e) && !in_liquid(e);
+          ++pos.z
+        ) {
+          // TODO: FIX THIS!
+          if (cell_at(&pos) != NULL && b_is_liquid(cell_at(&pos)->primary)) {
+            set_in_liquid(e);
+          }
         }
       }
     }
-  }
-  // MF_IN_LIQUID
-  clear_in_liquid(e);
-  for (
-    pos.x = e_rp_min_x(e);
-    pos.x <= e_rp_max_x(e) && !in_liquid(e);
-    ++pos.x
-  ) {
-    for (
-      pos.y = e_rp_min_y(e);
-      pos.y <= e_rp_max_y(e) && !in_liquid(e);
-      ++pos.y
-    ) {
-      for (
-        pos.z = e_rp_min_z(e);
-        pos.z <= e_rp_max_z(e) && !in_liquid(e);
-        ++pos.z
-      ) {
-        if (b_is_liquid(block_at(&pos))) {
-          set_in_liquid(e);
-        }
-      }
-    }
-  }
-  // MF_IN_VOID
-  clear_in_void(e);
-  get_head_rpos(e, &pos);
-  if (b_is_void(block_at(&pos))) {
-    set_in_void(e);
   }
   // MF_CROUCHING, MF_DO_JUMP, and MF_DO_FLAP handled in ctl.c
-  // Avoid letting others get stale block data:
-  refresh_block_at_cache();
+  // Avoid letting others get stale cell data:
+  refresh_cell_at_cache();
 }
 
 /*************

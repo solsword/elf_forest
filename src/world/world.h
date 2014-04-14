@@ -4,6 +4,10 @@
 // world.h
 // Structures and functions for representing the world.
 
+#ifdef DEBUG
+  #include <stdio.h>
+#endif
+
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
@@ -108,7 +112,7 @@ typedef int64_t r_pos_t;
 // Defines the size of a region in chunks. Must be < the size of r_pos_t:
 typedef int32_t r_cpos_t;
 
-// Block position within a region:
+// Cell position within a region:
 struct region_pos_s;
 typedef struct region_pos_s region_pos;
 
@@ -136,7 +140,7 @@ typedef struct chunk_or_approx_s chunk_or_approx;
 union approx_data_u;
 typedef union approx_data_u approx_data;
 
-// Block data structures for approximate chunks at various scales (1/2^N):
+// Cell data structures for approximate chunks at various scales (1/2^N):
 // (see the macros above)
 struct APPROX_DATA_SN(1); typedef struct APPROX_DATA_SN(1) APPROX_DATA_TN(1);
 struct APPROX_DATA_SN(2); typedef struct APPROX_DATA_SN(2) APPROX_DATA_TN(2);
@@ -329,7 +333,7 @@ static inline void copy_rcpos(
 // These must be super-fast 'cause they crop up in all sorts of inner loops.
 
 static inline cell *c_cell(
-  chunk const * const c,
+  chunk *c,
   chunk_index idx
 ) {
   return &(c->cells[
@@ -348,10 +352,10 @@ static inline void c_paste_cell(
   copy_cell(cl, dst);
 }
 
-static inline block cl_get_exposure(cell *cl) { return b_exp(cl.primary); }
+static inline block cl_get_exposure(cell *cl) { return b_exp(cl->primary); }
 
 static inline void cl_set_exposure(cell *cl, block exposure) {
-#ifdef DEBUG:
+#ifdef DEBUG
   if (exposure & (~BM_EXPOSURE)) {
     fprintf(
       stderr,
@@ -364,7 +368,7 @@ static inline void cl_set_exposure(cell *cl, block exposure) {
 }
 
 static inline void cl_clear_exposure(cell *cl, block exposure) {
-#ifdef DEBUG:
+#ifdef DEBUG
   if (exposure & (~BM_EXPOSURE)) {
     fprintf(
       stderr,
@@ -436,40 +440,40 @@ static inline cell* ca_cell(
   return ca_cell_table[ca->detail](ca, &idx);
 }
 
-static inline void c_get_neighbors(
-  chunk const * const c,
+static inline void c_get_primary_neighbors(
+  chunk *c,
   chunk_index idx,
-  cell *ca, cell *cb,
-  cell *cn, cell *cs,
-  cell *ce, cell *cw
+  block *ba, block *bb,
+  block *bn, block *cs,
+  block *be, block *bw
 ) {
   // note that even underflow should wrap correctly here
   chunk_index nbr;
   nbr.x = idx.x;
   nbr.y = idx.y;
   nbr.z = idx.z + 1;
-  *ca = (idx.z < CHUNK_SIZE - 1) * c_cell(c, nbr);
+  *ba = (idx.z < CHUNK_SIZE - 1) * c_cell(c, nbr)->primary;
   nbr.z = idx.z - 1;
-  *cb = (idx.z > 0) *c_cell(c, nbr);
+  *bb = (idx.z > 0) *c_cell(c, nbr)->primary;
   nbr.z = idx.z;
   nbr.y = idx.y + 1;
-  *cn = (idx.y < CHUNK_SIZE - 1) * c_cell(c, nbr);
+  *bn = (idx.y < CHUNK_SIZE - 1) * c_cell(c, nbr)->primary;
   nbr.y = idx.y - 1;
-  *cs = (idx.y > 0) * c_cell(c, nbr);
+  *cs = (idx.y > 0) * c_cell(c, nbr)->primary;
   nbr.y = idx.y;
   nbr.x = idx.x + 1;
-  *ce = (idx.x < CHUNK_SIZE - 1) * c_cell(c, nbr);
+  *be = (idx.x < CHUNK_SIZE - 1) * c_cell(c, nbr)->primary;
   nbr.x = idx.x - 1;
-  *cw = (idx.x > 0) * c_cell(c, nbr);
+  *bw = (idx.x > 0) * c_cell(c, nbr)->primary;
 }
 
 // This has to be declared after ca_cell.
-static inline void ca_get_neighbors(
-  chunk_approximation const * const ca,
+static inline void ca_get_primary_neighbors(
+  chunk_approximation *ca,
   chunk_index idx,
-  cell *ca, cell *cb,
-  cell *cn, cell *cs,
-  cell *ce, cell *cw
+  block *ba, block *bb,
+  block *bn, block *cs,
+  block *be, block *bw
 ) {
   // note that even underflow should wrap correctly here
   ch_idx_t step = 1 << (ca->detail);
@@ -480,27 +484,28 @@ static inline void ca_get_neighbors(
   nbr.z = idx.z;
 
   nbr.z = (idx.z & mask) + step;
-  *ca = (idx.z < CHUNK_SIZE - step) * ca_cell(ca, nbr);
+  *ba = (idx.z < CHUNK_SIZE - step) * ca_cell(ca, nbr)->primary;
   nbr.z = (idx.z & mask) - step;
-  *cb = (idx.z > step - 1) * ca_cell(ca, nbr);
+  *bb = (idx.z > step - 1) * ca_cell(ca, nbr)->primary;
   nbr.z = (idx.z & mask);
   nbr.y = (idx.y & mask) + step;
-  *cn = (idx.y < CHUNK_SIZE - step) * ca_cell(ca, nbr);
+  *bn = (idx.y < CHUNK_SIZE - step) * ca_cell(ca, nbr)->primary;
   nbr.y = (idx.y & mask) - step;
-  *cs = (idx.y > step - 1) * ca_cell(ca, nbr);
+  *cs = (idx.y > step - 1) * ca_cell(ca, nbr)->primary;
   nbr.y = (idx.y & mask);
   nbr.x = (idx.x & mask) + step;
-  *ce = (idx.x < CHUNK_SIZE - step) * ca_cell(ca, nbr);
+  *be = (idx.x < CHUNK_SIZE - step) * ca_cell(ca, nbr)->primary;
   nbr.x = (idx.x & mask) - step;
-  *cw = (idx.x > step - 1) * ca_cell(ca, nbr);
+  *bw = (idx.x > step - 1) * ca_cell(ca, nbr)->primary;
 }
 
 // cell_at returns the cell at the given region position according to the best
-// available currently-loaded data. Note that this will cache the chunk used
-// and re-use it when possible, subject to changes in the value of
-// CELL_AT_SALT, so refresh_cell_at_cache should be called before any set of
-// calls to cell_at to ensure that you don't use stale cell data or worse, an
-// invalid chunk pointer.
+// available currently-loaded data, returning NULL if there is no data loaded
+// for that position. Note that this will cache the chunk used and re-use it
+// when possible, subject to changes in the value of CELL_AT_SALT, so
+// refresh_cell_at_cache should be called before any set of calls to cell_at to
+// ensure that you don't use stale cell data or worse, an invalid chunk
+// pointer.
 extern uint8_t CELL_AT_SALT;
 static inline void refresh_cell_at_cache(void) {
   CELL_AT_SALT += 1; // overflow is fine

@@ -169,7 +169,7 @@ cell* cell_at(region_pos const * const rpos) {
   } else if (coa.type == CA_TYPE_APPROXIMATION) {
     return ca_cell((chunk_approximation *) (coa.ptr), cidx);
   }
-  return B_VOID;
+  return NULL;
 }
 
 size_t chunk_data_size(chunk *c) {

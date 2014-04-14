@@ -8,6 +8,7 @@
 
 #include "physics/physics.h"
 #include "world/world.h"
+#include "tex.h"
 
 /*********
  * Enums *
@@ -38,7 +39,7 @@ extern float const WATER_FOG_DENSITY;
 // higher-quality data won't be.
 extern r_cpos_t const MAX_RENDER_DISTANCES[N_LODS];
 
-// The distance at which frustum culling applies (Manhattan distance blocks):
+// The distance at which frustum culling applies (Manhattan distance cells):
 extern float const MIN_CULL_DIST;
 
 // How many radians outside of the technical viewing area should be allowed
@@ -93,6 +94,7 @@ void render_area(
 
 // Renders the given layer of the given chunk.
 int render_chunk_layer(
+  dynamic_texture_atlas **atlases, // texture atlases for each layer
   chunk_or_approx *coa, // the target chunk/approximation
   region_pos *origin, // a reference point for the origin of the scene
   layer ly // which layer to render

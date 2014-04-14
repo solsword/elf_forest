@@ -22,7 +22,7 @@ float TR_TERRAIN_HEIGHT_AMP = 1.0;
  * Functions *
  *************/
 
-block terrain_block(region_pos pos) {
+void terrain_cell(region_pos pos, cell *result) {
   static int xcache = 3, ycache = 7;
   static int terrain = 0;
   static int dirt = 1;
@@ -92,73 +92,51 @@ block terrain_block(region_pos pos) {
     return B_AIR;
   }
   // */
-  // /*
-  int surface = (altitude == 0);
-  int underground = (altitude < 0);
-  int topsoil = (altitude > -dirt);
+  int aboveground = (altitude > 0);
+  int surface = (altitude == 1);
+  int topsoil = (altitude == 0 && dirt > 0);
+  int soil = (altitude > -dirt);
   int underwater = (pos.z <= TR_SEA_LEVEL);
-  int on_land = (pos.z >= TR_SEA_LEVEL);
-  return (
-    surface * (
-        sandy * (
-          B_SAND
-        ) + (1 - sandy) * (
-          on_land * (
-            B_GRASS
-          ) + (1 - on_land) * (
-            B_DIRT
-          )
-        )
-    ) + (1 - surface) * (
-      underground * (
-        topsoil * (
-          sandy * (
-            B_SAND
-          ) + (1 - sandy) * (
-            B_DIRT
-          )
-        ) + (1 - topsoil) * (
-          B_STONE
-        )
-      ) + (1 - underground) * (
-        underwater * (
-          B_WATER
-        ) + (1 - underwater) * (
-          B_AIR
-        )
-      )
-    )
-  );
-  // */
-  /*
-  if (altitude == 0) {
+  int on_land = (pos.z > TR_SEA_LEVEL);
+  int on_shore = (pos.z == TR_SEA_LEVEL);
+
+  // Set the block types and data of the result cell:
+  result->secondary = b_make_block(B_VOID);
+  result->p_data = 0;
+  result->s_data = 0;
+  if ((on_land || on_shore) && surface) {
+    if (on_land && !sandy) {
+      result->primary = b_make_block(B_GRASS);
+    }
+  } else if (topsoil) {
     if (sandy) {
-      return B_SAND;
-    } else if (pos.z >= TR_SEA_LEVEL) {
-      return B_GRASS;
+      result->primary = b_make_block(B_SAND);
     } else {
-      return B_DIRT;
-    }
-  } else if (altitude > 0) {
-    if (pos.z <= TR_SEA_LEVEL) {
-      //if (altitude <= TREE_MAX_CANOPY_HEIGHT) {
-        //return tree_block(pos, &TREE_MILIEU);
-      //}
-      return B_WATER;
-    } else {
-      return B_AIR;
-    }
-  } else {
-    if (altitude > -dirt) {
-      if (sandy) {
-        return B_SAND;
-      } else {
-        return B_DIRT;
+      result->primary = b_make_block(B_DIRT);
+      if (on_land || on_shore) {
+        result->secondary = b_make_block(B_GRASS_ROOTS);
       }
     }
-    return B_STONE;
+  } else if (aboveground) {
+    if (underwater) {
+      result->primary = b_make_block(B_WATER);
+    } else {
+      //if (altitude <= TREE_MAX_CANOPY_HEIGHT) {
+        //result->primary = tree_block(pos, &TREE_MILIEU);
+      //}
+      result->primary = b_make_block(B_AIR);
+    }
+  } else {
+    if (soil) {
+      if (sandy) {
+        result->primary = b_make_block(B_SAND);
+      } else {
+        result->primary = b_make_block(B_DIRT);
+      }
+    } else {
+      result->primary = b_make_block(B_STONE);
+    }
   }
-  // */
 }
 
 void get_geoforms(

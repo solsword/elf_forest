@@ -1,6 +1,8 @@
 // blocks.c
 // Defines block types.
 
+#include "blocks.h"
+
 /**********************
  * Constants and Data *
  **********************/

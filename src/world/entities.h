@@ -32,12 +32,11 @@ typedef uint8_t move_flag;
 struct entity_s;
 typedef struct entity_s entity;
 
-// A block entity is basically extra data associated with a block. Every block
-// of a given ID should either have a block entity or not; but because blocks
-// with block entities are relatively rare, it's more efficient to store their
-// data separately than to make each block store extra data.
-struct block_entity_s;
-typedef struct block_entity_s block_entity;
+// A cell entity is basically extra data associated with a cell. Because cells
+// with cell entities are relatively rare, it's more efficient to store their
+// data separately than to make each cell store more data.
+struct cell_entity_s;
+typedef struct cell_entity_s cell_entity;
 
 // An active entity area is a cubic region within which entities can be active.
 // It is specified by a base region position and a dimension.
@@ -91,12 +90,12 @@ struct entity_s {
   active_entity_area *area; // Area within which this entity can move.
 };
 
-struct block_entity_s {
+struct cell_entity_s {
   ch_idx_t x, y, z; // Position within a chunk.
 };
 
 struct active_entity_area_s {
-  // Origin position within a region (bottom-south-west corner of this block):
+  // Origin position within a region (bottom-south-west corner of this cell):
   region_pos origin;
   size_t size; // Total width, height, and length.
   list *list; // list for holding entities.
@@ -206,7 +205,7 @@ static inline void get_head_rpos(entity *e, region_pos *rpos) {
   }
 }
 
-// Functions to quickly get rounded bounding box block coordinates:
+// Functions to quickly get rounded bounding box cell coordinates:
 static inline r_pos_t e_rp_min_x(entity *e) {
   return e->area->origin.x + fastfloor(e->box.min.x);
 }
@@ -302,9 +301,9 @@ void tick_active_entities();
 // Ticks the given entity (it's assumed to be an entity):
 void tick_entity(void *thing);
 
-// Returns the block that the entity's head is in, which is B_VOID if the
-// entity isn't in a loaded chunk.
-block head_block(entity *e);
+// Returns the cell that the entity's head is in, which is NULL if the entity
+// isn't in a loaded chunk.
+cell* head_cell(entity *e);
 
 // Warps space in the given active entity area such that the given entity is
 // somewhere in its central chunk. This updates the area's origin and all

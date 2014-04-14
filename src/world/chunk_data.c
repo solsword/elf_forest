@@ -27,7 +27,8 @@ static inline int occludes_face(block neighbor, block occluded) {
     &&
       b_is_translucent(occluded)
     &&
-      b_shares_translucency(neighbor, occluded)
+      // TODO: Fix this!
+      b_same_liquid(neighbor, occluded)
     )
   );
 }
@@ -46,9 +47,12 @@ static inline int occludes_face(block neighbor, block occluded) {
       } else if ( (neighbor->type != CA_TYPE_NOT_LOADED) ) { \
         OOR_AXIS = OOR_REPLACE; \
         if (neighbor->type == CA_TYPE_CHUNK) { \
-          there = c_get_block((chunk *) (neighbor->ptr), idx); \
+          there = c_cell((chunk *) (neighbor->ptr), idx)->primary; \
         } else { \
-          there = ca_get_block((chunk_approximation *) (neighbor->ptr), idx); \
+          there = ca_cell( \
+            (chunk_approximation *) (neighbor->ptr), \
+            idx \
+          )->primary; \
         } \
       } \
     } \
@@ -134,8 +138,8 @@ CHECK_ANY_FACE
 void compute_exposure(chunk_or_approx *coa) {
   chunk_index idx;
   block b = 0;
-  block_flags flags_to_set = 0;
-  block_flags flags_to_clear = 0;
+  block flags_to_set = 0;
+  block flags_to_clear = 0;
   block ba = 0, bb = 0, bn = 0, bs = 0, be = 0, bw = 0;
   region_chunk_pos rcpos;
   chunk *c;
@@ -188,11 +192,11 @@ void compute_exposure(chunk_or_approx *coa) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
         // get main block and neighbors:
         if (coa->type == CA_TYPE_CHUNK) {
-          b = c_get_block(c, idx);
-          c_get_neighbors(c, idx, &ba, &bb, &bn, &bs, &be, &bw);
+          b = c_cell(c, idx)->primary;
+          c_get_primary_neighbors(c, idx, &ba, &bb, &bn, &bs, &be, &bw);
         } else {
-          b = ca_get_block(ca, idx);
-          ca_get_neighbors(ca, idx, &ba, &bb, &bn, &bs, &be, &bw);
+          b = ca_cell(ca, idx)->primary;
+          ca_get_primary_neighbors(ca, idx, &ba, &bb, &bn, &bs, &be, &bw);
         }
         // Check exposure:
         flags_to_set = 0;
@@ -229,11 +233,11 @@ void compute_exposure(chunk_or_approx *coa) {
         }
         // Set/clear the computed exposure flags:
         if (coa->type == CA_TYPE_CHUNK) {
-          c_set_flags(c, idx, flags_to_set);
-          c_clear_flags(c, idx, flags_to_clear);
+          cl_set_exposure(c_cell(c, idx), flags_to_set);
+          cl_clear_exposure(c_cell(c, idx), flags_to_clear);
         } else {
-          ca_set_flags(ca, idx, flags_to_set);
-          ca_clear_flags(ca, idx, flags_to_clear);
+          cl_set_exposure(ca_cell(ca, idx), flags_to_set);
+          cl_clear_exposure(ca_cell(ca, idx), flags_to_clear);
         }
       }
     }

@@ -19,7 +19,7 @@ extern float const PHYS_TARGET_RESOLUTION;
 // The width of an "impulse" in seconds (very approximately used).
 extern float const IMPULSE_WIDTH;
 
-// How far from a block an entity should be placed when sliding along it.
+// How far from a cell an entity should be placed when sliding along it.
 extern float const BOUNCE_DISTANCE;
 
 // How far the player can move in one tick before the movement is considered an

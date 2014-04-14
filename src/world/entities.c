@@ -153,7 +153,7 @@ void tick_entity(void *thing) {
   tick_physics(e);
 }
 
-block head_block(entity *e) {
+cell * head_cell(entity *e) {
   chunk_or_approx coa;
   region_pos rpos;
   region_chunk_pos rcpos;
@@ -165,11 +165,11 @@ block head_block(entity *e) {
 
   get_best_data(&rcpos, &coa);
   if (coa.type == CA_TYPE_CHUNK) {
-    return c_get_block((chunk *) (coa.ptr), idx);
+    return c_cell((chunk *) (coa.ptr), idx);
   } else if (coa.type == CA_TYPE_APPROXIMATION) {
-    return ca_get_block((chunk_approximation *) (coa.ptr), idx);
+    return ca_cell((chunk_approximation *) (coa.ptr), idx);
   } else {
-    return B_VOID;
+    return NULL;
   }
 }
 

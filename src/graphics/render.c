@@ -420,7 +420,11 @@ void render_area(
             glEnd();
           }
           // */
-          if ( !cull && render_chunk_layer(&coa, &(area->origin), ly) ) {
+          if (
+            !cull
+          &&
+            render_chunk_layer(LAYER_ATLASES, &coa, &(area->origin), ly)
+          ) {
             count += 1;
           }
         }
@@ -452,6 +456,7 @@ void render_area(
 // renders the layer and 0 if it skips it (due to missing data or an empty
 // layer).
 int render_chunk_layer(
+  dynamic_texture_atlas **atlases,
   chunk_or_approx *coa,
   region_pos *origin,
   layer ly
@@ -459,6 +464,7 @@ int render_chunk_layer(
   chunk *c = NULL;
   chunk_approximation *ca = NULL;
   chunk_flag flags = 0;
+  dynamic_texture_atlas *dta = atlases[ly];
   vertex_buffer *vb;
   region_pos rpos;
   if (coa->type == CA_TYPE_NOT_LOADED) { return 0; }
@@ -523,11 +529,11 @@ int render_chunk_layer(
   glMatrixMode( GL_TEXTURE );
   glPushMatrix();
   glLoadIdentity();
-  glScalef(1/(float)BLOCK_ATLAS_WIDTH, 1/(float)BLOCK_ATLAS_HEIGHT, 1);
+  glScalef(1/(float)(dta->size), 1/(float)(dta->size), 1);
   glMatrixMode( GL_MODELVIEW );
 
   // Draw the appropriate vertex buffer:
-  draw_vertex_buffer(vb, BLOCK_ATLAS);
+  draw_vertex_buffer(vb, dta->handle);
 
   // Reset the texture matrix:
   glMatrixMode( GL_TEXTURE );

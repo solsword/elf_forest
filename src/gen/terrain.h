@@ -25,8 +25,8 @@
 #define TR_FREQUENCY_LOWER 0.0005 // 125-chunk features
 #define TR_FREQUENCY_LOW 0.003 // ~20-chunk features
 #define TR_FREQUENCY_MID 0.01 // ~6-chunk features
-#define TR_FREQUENCY_HIGH 0.05 // ~20-block features
-#define TR_FREQUENCY_HIGHEST 0.25 // ~4-block variance
+#define TR_FREQUENCY_HIGH 0.05 // ~20-cell features
+#define TR_FREQUENCY_HIGHEST 0.25 // ~4-cell variance
 
 // Geoform parameters:
 
@@ -305,13 +305,13 @@ static inline int get_tunnel(
  * Functions *
  *************/
 
-// Returns the block ID for the block at the given position:
-block terrain_block(region_pos pos);
+// Creates a cell for the given position:
+void terrain_cell(region_pos pos, cell *result);
 
 // Computes geoform weights at the given location. Note that this isn't used
 // internally because the noise values that it generates are reused elsewhere
-// in terrain_block, but it should produce exactly the same geoform values as
-// terrain_block uses.
+// in terrain_cell, but it should produce exactly the same geoform values as
+// terrain_cell uses.
 void get_geoforms(
   int x, int y,
   float *depths, float *oceans, float *plains, float *hills, float *mountains

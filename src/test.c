@@ -58,11 +58,11 @@ int main(int argc, char** argv) {
 
   // Initialize stateless subsystems:
   init_control();
-  init_textures();
   init_tick(1);
   init_ptime();
 
   // Setup stateful subsystems:
+  setup_textures();
   setup_ui();
   setup_data();
   setup_entities(&origin);
