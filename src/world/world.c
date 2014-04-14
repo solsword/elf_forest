@@ -241,7 +241,7 @@ size_t chunk_data_size(chunk *c) {
   return (
     sizeof(block) * CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
   +
-    sizeof(block_flag) * CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
+    sizeof(block_flags) * CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE
   );
 }
 

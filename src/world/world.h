@@ -33,7 +33,7 @@
       (1 << (CHUNK_BITS - N)) * \
       (1 << (CHUNK_BITS - N)) \
     ]; \
-    block_flag block_flags[ \
+    block_flags block_flags[ \
       (1 << (CHUNK_BITS - N)) * \
       (1 << (CHUNK_BITS - N)) * \
       (1 << (CHUNK_BITS - N)) \
@@ -55,7 +55,7 @@
 
 #define CA_GET_FLAGS_FN(SCALE) ca_get_flags_ ## SCALE
 #define CA_GET_FLAGS_SIG(NAME) \
-  block_flag NAME( \
+  block_flags NAME( \
     chunk_approximation const * const ca, \
     chunk_index const * const idx \
   )
@@ -65,7 +65,7 @@
   void NAME( \
     chunk_approximation *ca, \
     chunk_index const * const idx, \
-    block_flag flags \
+    block_flags flags \
   )
 
 #define CA_SET_FLAGS_FN(SCALE) ca_set_flags_ ## SCALE
@@ -73,7 +73,7 @@
   void NAME( \
     chunk_approximation *ca, \
     chunk_index const * const idx, \
-    block_flag flags \
+    block_flags flags \
   )
 
 #define CA_CLEAR_FLAGS_FN(SCALE) ca_clear_flags_ ## SCALE
@@ -81,7 +81,7 @@
   void NAME( \
     chunk_approximation *ca, \
     chunk_index const * const idx, \
-    block_flag flags \
+    block_flags flags \
   )
 
 #define DECLARE_APPROX_FN_VARIANTS(SIG_MACRO,FN_MACRO) \
@@ -222,7 +222,7 @@ struct chunk_s {
   list *block_entities; // Block entities.
   // TODO: merge these?
   block blocks[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE]; // Blocks.
-  block_flag block_flags[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE]; // Block flags.
+  block_flags block_flags[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE]; // Block flags.
 };
 
 struct chunk_approximation_s {
@@ -384,7 +384,7 @@ static inline void c_put_block(
   ] = b;
 }
 
-static inline block_flag c_get_flags(
+static inline block_flags c_get_flags(
   chunk const * const c,
   chunk_index idx
 ) {
@@ -398,7 +398,7 @@ static inline block_flag c_get_flags(
 static inline void c_put_flags(
   chunk *c,
   chunk_index idx,
-  block_flag flags
+  block_flags flags
 ) {
   (c->block_flags)[
     (idx.x & CH_MASK) +
@@ -410,7 +410,7 @@ static inline void c_put_flags(
 static inline void c_set_flags(
   chunk *c,
   chunk_index idx,
-  block_flag flags
+  block_flags flags
 ) {
   (c->block_flags)[
     (idx.x & CH_MASK) +
@@ -422,7 +422,7 @@ static inline void c_set_flags(
 static inline void c_clear_flags(
   chunk *c,
   chunk_index idx,
-  block_flag flags
+  block_flags flags
 ) {
   (c->block_flags)[
     (idx.x & CH_MASK) +
@@ -442,7 +442,7 @@ static inline void c_erase_block_data(chunk *c) {
   memset(
     c->block_flags,
     0,
-    CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE * sizeof(block_flag)
+    CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE * sizeof(block_flags)
   );
 }
 
@@ -450,7 +450,7 @@ static inline void c_clear_all_block_flags(chunk *c) {
   memset(
     c->block_flags,
     0,
-    CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE * sizeof(block_flag)
+    CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE * sizeof(block_flags)
   );
 }
 
@@ -517,7 +517,7 @@ static inline void ca_put_block(
   return ca_put_block_table[ca->detail](ca, &idx, b);
 }
 
-static inline block_flag ca_get_flags(
+static inline block_flags ca_get_flags(
   chunk_approximation const * const ca,
   chunk_index idx
 ) {
@@ -526,21 +526,21 @@ static inline block_flag ca_get_flags(
 static inline void ca_put_flags(
   chunk_approximation *ca,
   chunk_index idx,
-  block_flag f
+  block_flags f
 ) {
   return ca_put_flags_table[ca->detail](ca, &idx, f);
 }
 static inline void ca_set_flags(
   chunk_approximation *ca,
   chunk_index idx,
-  block_flag f
+  block_flags f
 ) {
   return ca_set_flags_table[ca->detail](ca, &idx, f);
 }
 static inline void ca_clear_flags(
   chunk_approximation *ca,
   chunk_index idx,
-  block_flag f
+  block_flags f
 ) {
   return ca_clear_flags_table[ca->detail](ca, &idx, f);
 }

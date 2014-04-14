@@ -87,7 +87,7 @@ void cleanup_bitmap(bitmap *bm) {
 ptrdiff_t bm_find_space(bitmap *bm, size_t required) {
   size_t i, j;
   int hit = 0;
-  for (i = 0; i < bm->size - required;) {
+  for (i = 0; i <= bm->size - required;) {
     hit = 1;
     for (j = i; j < i + required; ++j) {
       if (bm_get_bit(bm, j)) {

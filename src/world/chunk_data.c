@@ -134,8 +134,8 @@ CHECK_ANY_FACE
 void compute_exposure(chunk_or_approx *coa) {
   chunk_index idx;
   block b = 0;
-  block_flag flags_to_set = 0;
-  block_flag flags_to_clear = 0;
+  block_flags flags_to_set = 0;
+  block_flags flags_to_clear = 0;
   block ba = 0, bb = 0, bn = 0, bs = 0, be = 0, bw = 0;
   region_chunk_pos rcpos;
   chunk *c;

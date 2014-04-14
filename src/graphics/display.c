@@ -246,7 +246,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   }
   chunk_index idx;
   block here = 0;
-  block_flag flags = 0;
+  block_flags flags = 0;
   for (idx.x = 0; idx.x < CHUNK_SIZE; idx.x += step) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {

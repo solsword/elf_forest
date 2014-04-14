@@ -31,6 +31,7 @@ LFLAGS=-lm $(LIBS) $(PROFILE_FLAGS)
 
 # Objects:
 CORE_OBJECTS=$(OBJ_DIR)/world.o \
+             $(OBJ_DIR)/blocks.o \
              $(OBJ_DIR)/chunk_data.o \
              $(OBJ_DIR)/render.o \
              $(OBJ_DIR)/gfx.o \

@@ -588,7 +588,7 @@ GLuint upload_png(char const * const filename) {
   return result;
 }
 
-void dta_add_block(
+ptrdiff_t dta_add_block(
   dynamic_texture_atlas *dta,
   block b,
   texture *front,
@@ -603,11 +603,51 @@ void dta_add_block(
   }
   index = bm_find_space(dta->vacancies, spots_needed);
   if (index == -1) {
-    // TODO: What here?
+#ifdef DEBUG
+    fprintf(
+      stderr,
+      "Warning: failed to add block to dynamic texture atlas: no space.\n"
+    );
+#endif
+    // TODO: Something else here?
+    return -1;
   }
+  // Mark the vacant space as filled:
+  bm_set_bits(dta->vacancies, index, spots_needed);
+  // Add to our block id -> index mapping:
+  m1_put_value(dta->tcmap, (void *) index, (map_key_t) ((size_t) b_id(b)));
+  // Copy the relevant textures into our texture atlas:
+  tx_paste(
+    dta->atlas,
+    front,
+    BLOCK_TEXTURE_SIZE * (index % dta->size),
+    BLOCK_TEXTURE_SIZE * (index / dta->size)
+  );
+  if (!b_is_omnidirectional(b)) {
+    tx_paste(
+      dta->atlas,
+      top,
+      BLOCK_TEXTURE_SIZE * ((index + 1) % dta->size),
+      BLOCK_TEXTURE_SIZE * ((index + 1) / dta->size)
+    );
+    tx_paste(
+      dta->atlas,
+      bot,
+      BLOCK_TEXTURE_SIZE * ((index + 2) % dta->size),
+      BLOCK_TEXTURE_SIZE * ((index + 2) / dta->size)
+    );
+    tx_paste(
+      dta->atlas,
+      sides,
+      BLOCK_TEXTURE_SIZE * ((index + 3) % dta->size),
+      BLOCK_TEXTURE_SIZE * ((index + 3) / dta->size)
+    );
+  }
+  // Return the index used:
+  return index;
 }
 
-void tx_copy_region(
+void tx_paste_region(
   texture *dst,
   texture const * const src,
   size_t dst_left,

@@ -254,9 +254,10 @@ static inline void tx_set_px(
 
 // Texture coordinate computation routines:
 
-// Stores the offset into the BLOCK_TEXTURE_MAP for the given face:
+// Stores the additional offset for each specific face (corresponding to the
+// places block textures are pasted in dta_add_block).
 static uint16_t FACE_TC_MAP_OFF[8] = {
-  0, 1, 2, 3, 3, 3, 3, 3
+  0, 3, 3, 3, 1, 2, 3, 3
 };
 
 // Computes the texture s coordinate for the given index into the static
@@ -273,9 +274,13 @@ static inline uint16_t block_tc_t(uint16_t i) {
 
 // Takes a block and a face and computes the actual face accounting for the
 // block's orientation.
-static inline block_data actual_face(block b, block_data face) {
+static inline block_data actual_face(
+  block_id b,
+  block_orientation ori,
+  block_orientation face
+) {
   if (b_is_orientable(b)) {
-    return ROTATE_FACE[b_orientation(b)][face];
+    return ROTATE_FACE[ori][face];
   } else {
     return face;
   }
@@ -292,7 +297,7 @@ static inline void compute_face_tc(block b, block_data face, tcoords *result) {
 
 static inline void compute_dynamic_face_tc(
   dynamic_texture_atlas *dta,
-  block b,
+  block_id b,
   block_data face,
   tcoords *result
 ) {
@@ -301,9 +306,7 @@ static inline void compute_dynamic_face_tc(
   } else if (b_is_omnidirectional(b)) {
     face = 0;
   }
-#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-  size_t i = (size_t) m1_get_value(dta->tcmap, (map_key_t) b_id(b));
-#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+  size_t i = (size_t) m1_get_value(dta->tcmap, (map_key_t) ((size_t) b_id(b)));
   i += FACE_TC_MAP_OFF[face];
   result->s = i % dta->size;
   result->t = (i / dta->size) % dta->size;
@@ -356,8 +359,9 @@ GLuint upload_png(char const * const filename);
 
 // Adds a block to the given dynamic texture atlas, updating the GPU texture
 // after importing the given textures into the atlas. If the block is
-// omnidirectional, only the front texture will be used.
-void dta_add_block(
+// omnidirectional, only the front texture will be used. Returns the index of
+// the block within the texture atlas, or -1 if it fails.
+ptrdiff_t dta_add_block(
   dynamic_texture_atlas *dta,
   block b,
   texture *front,
