@@ -532,6 +532,9 @@ int render_chunk_layer(
   glScalef(1/(float)(dta->size), 1/(float)(dta->size), 1);
   glMatrixMode( GL_MODELVIEW );
 
+  // Bind our texture:
+  glBindTexture( GL_TEXTURE_2D, dta->handle);
+
   // Draw the appropriate vertex buffer:
   draw_vertex_buffer(vb, dta->handle);
 

@@ -59,6 +59,10 @@ void init_shaders() {
     MAIN_PIPELINE.frag
   );
   glUseProgram(MAIN_PIPELINE.program);
+  // Set up the "texture" uniform to use texture unit 0.
+  GLint txloc = glGetUniformLocation(MAIN_PIPELINE.program, "texture");
+  glUniform1i(txloc, 0);
+  glActiveTexture( GL_TEXTURE0 );
 }
 
 GLuint load_shader(GLenum type, const char * const filename) {

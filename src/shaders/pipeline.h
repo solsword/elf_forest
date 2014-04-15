@@ -54,4 +54,5 @@ GLuint link_program(
   GLuint geometry_shader,
   GLuint fragment_shader
 );
+
 #endif //ifndef PIPELINE_H
