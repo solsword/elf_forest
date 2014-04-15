@@ -36,6 +36,7 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/render.o \
              $(OBJ_DIR)/gfx.o \
              $(OBJ_DIR)/display.o \
+             $(OBJ_DIR)/pipeline.o \
              $(OBJ_DIR)/ctl.o \
              $(OBJ_DIR)/tex.o \
              $(OBJ_DIR)/noise.o \
@@ -88,7 +89,7 @@ test_noise: $(TEST_DIR)/noise_test_2D.ppm $(TEST_DIR)/noise_test_3D.ppm \
             $(TEST_DIR)/noise_test_2D_F.ppm $(TEST_DIR)/noise_test_3D_F.ppm \
             $(TEST_DIR)/noise_test_ex.ppm
 checkgl:
-	$(CC) -E check_gl_version.h | tail -n 8
+	$(CC) -E $(SRC_DIR)/check_gl_version.h | tail -n 9
 
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)

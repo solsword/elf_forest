@@ -5,6 +5,7 @@
 // Various small utilities.
 
 #include <math.h>
+#include <stdio.h>
 
 /**********
  * MACROS *
@@ -60,6 +61,37 @@ static inline void norm_angle(float *angle) {
     while (*angle < -M_PI) {
       *angle += M_PI*2;
     }
+}
+
+// Reads a file and returns a malloc'd char *:
+static inline char * load_file(char const * const filename, size_t *size) {
+  char * buffer = NULL;
+  FILE * f = fopen(filename, "rb");
+
+  if (f == NULL) {
+    fprintf(
+      stderr,
+      "Error: unable to open file '%s'.\n",
+      filename
+    );
+    exit(1);
+  }
+  fseek (f, 0, SEEK_END);
+  *size = ftell(f);
+  fseek (f, 0, SEEK_SET);
+  buffer = malloc(*size);
+  if (buffer == NULL) {
+    fprintf(
+      stderr,
+      "Error: unable to allocate memory to read file '%s'.\n",
+      filename
+    );
+    fclose(f);
+    exit(1);
+  }
+  fread(buffer, 1, *size, f);
+  fclose(f);
+  return buffer;
 }
 
 #endif // ifndef UTIL_H
