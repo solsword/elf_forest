@@ -275,15 +275,23 @@ static inline void compute_dynamic_face_tc(
   block face,
   tcoords *result
 ) {
+  result->s = 0;
+  result->t = 0;
+  return;
   if (b_oabl(b)) {
     face = ROTATE_FACE[b_ori(b)][face];
   } else if (!b_anis(b)) {
     face = 0;
   }
   size_t i = (size_t) m1_get_value(dta->tcmap, (map_key_t) ((size_t) b_id(b)));
-  i += FACE_TC_MAP_OFF[face];
-  result->s = i % dta->size;
-  result->t = (i / dta->size) % dta->size;
+  if (i == 0) {
+    result->s = 0;
+    result->t = 0;
+  } else {
+    i += FACE_TC_MAP_OFF[face];
+    result->s = i % dta->size;
+    result->t = (i / dta->size) % dta->size;
+  }
 }
 
 /******************************
@@ -325,13 +333,28 @@ void write_texture_to_ppm(texture *tx, char const * const filename);
 // Writes the given texture in .png format to the given file using libpng.
 void write_texture_to_png(texture *tx, char const * const filename);
 
+// Uploads the given texture to the given texture handle (which must already
+// have been created). Overwrites any data that may have been stored at that
+// handle.
+void upload_texture_to(texture* tx, GLuint handle);
+
 // Returns an OpenGL texture handle created using the given texture:
-GLuint upload_texture(texture* tx);
+static inline GLuint upload_texture(texture* tx) {
+  GLuint result = 0;
+  // Generate a new texture handle:
+  glGenTextures(1, &result);
+  upload_texture_to(tx, result);
+  return result;
+}
 
 // Loads a PNG file directly into an OpenGL texture and returns the texture
 // handle. Takes care of freeing the texture struct and associated data once
 // it's been loaded into OpenGL.
 GLuint upload_png(char const * const filename);
+
+// Instructs the given dynamic texture atlas to (re)upload its texture data to
+// the GPU, committing any changes made using dta_add/free_block.
+void dta_update_texture(dynamic_texture_atlas *dta);
 
 // Adds a block to the given dynamic texture atlas, updating the GPU texture
 // after importing the given textures into the atlas. If the block is
@@ -345,6 +368,9 @@ ptrdiff_t dta_add_block(
   texture *bot,
   texture *sides
 );
+
+// TODO: this function!
+ptrdiff_t dta_free_block(dynamic_texture_atlas *dta, block b);
 
 // Copies a rectangle of pixels from one texture to another:
 void tx_paste_region(

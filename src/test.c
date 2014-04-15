@@ -14,6 +14,8 @@
 #include "graphics/tex.h"
 #include "graphics/gfx.h"
 
+#include "shaders/pipeline.h"
+
 #include "world/world.h"
 #include "world/entities.h"
 

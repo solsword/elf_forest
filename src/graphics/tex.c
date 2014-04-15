@@ -70,6 +70,26 @@ dynamic_texture_atlas *create_dynamic_atlas(size_t size) {
     BLOCK_TEXTURE_SIZE * size
   );
   dta->handle = 0;
+
+  // Reserve index 0 as an 'invalid' texture so that failed map lookups (which
+  // return NULL) won't be ambiguous.
+  texture *invalid = load_texture_from_png("res/textures/invalid.png");
+  // Mark 0 as used:
+  bm_set_bits(dta->vacancies, 0, 1);
+  // Add B_VOID -> 0 to our block id/variant -> index mapping:
+  m1_put_value(
+    dta->tcmap,
+    (void *) 0,
+    (map_key_t) ((size_t) b_make_block(B_VOID))
+  );
+  // Copy the invalid texture into our texture atlas:
+  tx_paste(dta->atlas, invalid, 0, 0);
+  // Clean up the loaded texture as it's no longer needed:
+  cleanup_texture(invalid);
+
+  // Initialize the OpenGL texture:
+  dta_update_texture(dta);
+
   return dta;
 }
 
@@ -289,11 +309,8 @@ void write_texture_to_png(texture *tx, char const * const filename) {
   fclose(fp);
 }
 
-GLuint upload_texture(texture* source) {
-  GLuint result = 0;
-  // Generate and bind a texture:
-  glGenTextures(1, &result);
-  glBindTexture( GL_TEXTURE_2D, result);
+void upload_texture_to(texture* source, GLuint handle) {
+  glBindTexture( GL_TEXTURE_2D, handle);
 
   // Set parameters:
   glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
@@ -321,9 +338,8 @@ GLuint upload_texture(texture* source) {
   );
 
   // Generate mipmaps:
-  glGenerateMipmap( GL_TEXTURE_2D );
-
-  return result;
+  // TODO: use this?
+  //glGenerateMipmap( GL_TEXTURE_2D );
 }
 
 GLuint upload_png(char const * const filename) {
@@ -332,6 +348,14 @@ GLuint upload_png(char const * const filename) {
   free(tx->pixels);
   free(tx);
   return result;
+}
+
+void dta_update_texture(dynamic_texture_atlas *dta) {
+  if (dta->handle == 0) {
+    dta->handle = upload_texture(dta->atlas);
+  } else {
+    upload_texture_to(dta->atlas, dta->handle);
+  }
 }
 
 ptrdiff_t dta_add_block(
@@ -406,20 +430,36 @@ void tx_paste_region(
   size_t row;
 #ifdef DEBUG
   // Some bounds checking:
-  if (dst_left + region_width >= dst->width) {
-    fprintf(stderr, "Error: region overruns destination width.\n");
+  if (dst_left + region_width > dst->width) {
+    fprintf(
+      stderr,
+      "Error: region overruns destination width: %zu + %zu > %d\n",
+      dst_left, region_width, dst->width
+    );
     exit(1);
   }
-  if (dst_top + region_height >= dst->height) {
-    fprintf(stderr, "Error: region overruns destination height.\n");
+  if (dst_top + region_height > dst->height) {
+    fprintf(
+      stderr,
+      "Error: region overruns destination height: %zu + %zu > %d\n",
+      dst_top, region_height, dst->height
+    );
     exit(1);
   }
-  if (src_left + region_width >= src->width) {
-    fprintf(stderr, "Error: region exceeds source width.\n");
+  if (src_left + region_width > src->width) {
+    fprintf(
+      stderr,
+      "Error: region exceeds source width: %zu + %zu > %d\n",
+      src_left, region_width, src->width
+    );
     exit(1);
   }
-  if (src_top + region_height >= src->height) {
-    fprintf(stderr, "Error: region exceeds source height.\n");
+  if (src_top + region_height > src->height) {
+    fprintf(
+      stderr,
+      "Error: region exceeds source height: %zu + %zu > %d\n",
+      src_top, region_height, src->height
+    );
     exit(1);
   }
 #endif
