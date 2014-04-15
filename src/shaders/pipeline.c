@@ -16,7 +16,23 @@
  * Global variables *
  ********************/
 
-pipeline MAIN_PIPELINE;
+pipeline RAW_PIPELINE = {
+  .vfile = "res/shaders/vert.default.glsl",
+  .gfile = "res/shaders/geom.pass.glsl",
+  .ffile = "res/shaders/frag.rawcolor.glsl"
+};
+
+pipeline CELL_PIPELINE = {
+  .vfile = "res/shaders/vert.default.glsl",
+  .gfile = "res/shaders/geom.pass.glsl",
+  .ffile = "res/shaders/frag.textured.glsl"
+};
+
+pipeline TEXT_PIPELINE = {
+  .vfile = "res/shaders/vert.default.glsl",
+  .gfile = "res/shaders/geom.pass.glsl",
+  .ffile = "res/shaders/frag.txalpha.glsl"
+};
 
 /*********************
  * Private Functions *
@@ -42,27 +58,65 @@ static inline void show_program_log(GLuint object) {
   free(log);
 }
 
+/***************************
+ * Setup/Cleanup Functions *
+ ***************************/
+
+void setup_shaders() {
+  setup_pipeline(&RAW_PIPELINE);
+  setup_pipeline(&CELL_PIPELINE);
+  setup_pipeline(&TEXT_PIPELINE);
+}
+
+void cleanup_shaders() {
+  cleanup_pipeline(&RAW_PIPELINE);
+  cleanup_pipeline(&CELL_PIPELINE);
+  cleanup_pipeline(&TEXT_PIPELINE);
+}
+
+void setup_pipeline(pipeline *p) {
+  p->vert = load_shader(GL_VERTEX_SHADER, p->vfile);
+  if (p->gfile != NULL) {
+    p->geom = load_shader(GL_GEOMETRY_SHADER_ARB, p->gfile);
+  } else {
+    p->geom = 0;
+  }
+  p->frag = load_shader(GL_FRAGMENT_SHADER, p->ffile);
+
+  p->program = glCreateProgram();
+
+  glAttachShader(p->program, p->vert);
+  if (p->geom) {
+    glAttachShader(p->program, p->geom);
+  }
+  glAttachShader(p->program, p->frag);
+
+  glLinkProgram(p->program);
+
+  check_program(p->program);
+
+  // If the "texture" uniform exists, set it up to use texture unit 0.
+  GLint txloc = glGetUniformLocation(p->program, "texture");
+  if (txloc != -1) {
+    glUniform1i(txloc, 0);
+    // Set the OpenGL active texture to 0.
+    glActiveTexture( GL_TEXTURE0 );
+  }
+}
+
+void cleanup_pipeline(pipeline *p) {
+  glDeleteProgram(p->program);
+  glDeleteShader(p->vert);
+  glDeleteShader(p->geom);
+  glDeleteShader(p->frag);
+}
+
 /*************
  * Functions *
  *************/
 
-void init_shaders() {
-  MAIN_PIPELINE.vert = load_shader(GL_VERTEX_SHADER, "res/shaders/vert.glsl");
-  MAIN_PIPELINE.geom = load_shader(
-    GL_GEOMETRY_SHADER_ARB,
-    "res/shaders/geom.glsl"
-  );
-  MAIN_PIPELINE.frag = load_shader(GL_FRAGMENT_SHADER, "res/shaders/frag.glsl");
-  MAIN_PIPELINE.program = link_program(
-    MAIN_PIPELINE.vert,
-    MAIN_PIPELINE.geom,
-    MAIN_PIPELINE.frag
-  );
-  glUseProgram(MAIN_PIPELINE.program);
-  // Set up the "texture" uniform to use texture unit 0.
-  GLint txloc = glGetUniformLocation(MAIN_PIPELINE.program, "texture");
-  glUniform1i(txloc, 0);
-  glActiveTexture( GL_TEXTURE0 );
+void use_pipeline(pipeline *p) {
+  glUseProgram(p->program);
 }
 
 GLuint load_shader(GLenum type, const char * const filename) {
@@ -87,28 +141,13 @@ GLuint load_shader(GLenum type, const char * const filename) {
       fprintf(stderr, "Failed to compile shader '%s':\n", filename);
       show_shader_log(shader);
       glDeleteShader(shader);
-      return 0;
+      exit(1);
   }
   return shader;
 }
 
-GLuint link_program(
-  GLuint geometry_shader,
-  GLuint vertex_shader,
-  GLuint fragment_shader
-) {
+void check_program(GLuint program) {
   GLint program_ok;
-
-  GLuint program = glCreateProgram();
-
-  glAttachShader(program, vertex_shader);
-  glAttachShader(program, geometry_shader);
-  glAttachShader(program, fragment_shader);
-
-  //glProgramParameteri(program, GL_GEOMETRY_INPUT_TYPE, GL_POINTS);
-  //glProgramParameteri(program, GL_GEOMETRY_OUTPUT_TYPE, GL_TRIANGLES);
-
-  glLinkProgram(program);
 
   glGetProgramiv(program, GL_LINK_STATUS, &program_ok);
   if (!program_ok) {
@@ -117,5 +156,4 @@ GLuint link_program(
       glDeleteProgram(program);
       exit(1);
   }
-  return program;
 }

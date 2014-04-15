@@ -59,12 +59,12 @@ int main(int argc, char** argv) {
   printf("Setting up test world...\n");
 
   // Initialize stateless subsystems:
-  init_shaders();
   init_control();
   init_tick(1);
   init_ptime();
 
   // Setup stateful subsystems:
+  setup_shaders();
   setup_textures();
   setup_ui();
   setup_data();

@@ -11,6 +11,8 @@
 #include "display.h"
 #include "gfx.h"
 
+#include "shaders/pipeline.h"
+
 #include "ui/ui.h"
 #include "world/world.h"
 #include "world/entities.h"
@@ -251,4 +253,5 @@ void cleanup(void) {
   cleanup_data();
   cleanup_ui();
   cleanup_textures();
+  cleanup_shaders();
 }

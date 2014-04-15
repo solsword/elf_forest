@@ -15,6 +15,8 @@
 
 #include "render.h"
 
+#include "shaders/pipeline.h"
+
 #include "datatypes/vector.h"
 #include "control/ctl.h"
 #include "world/world.h"
@@ -110,6 +112,9 @@ static inline void draw_basis_vectors(
   vector where;
   vcopy(&where, view_origin);
   vadd(&where, view_vector);
+
+  use_pipeline(&RAW_PIPELINE);
+
   glColor4ub(255, 0, 0, 255);
   glBegin( GL_LINES );
   glVertex3f( where.x, where.y, where.z );
@@ -139,6 +144,8 @@ static inline void draw_basis_vectors(
     where.z + vz->z
   );
   glEnd();
+
+  use_pipeline(&TEXT_PIPELINE);
 
   char txt[2048];
   sprintf(txt, "vx: %.2f, %.2f, %.2f :: %.2f", vx->x, vx->y, vx->z, vmag(vx));
@@ -272,6 +279,8 @@ void render_area(
   /*
   //printf("hp: %.2f, %.2f, %.2f\n", head_pos->x, head_pos->y, head_pos->z);
 
+  use_pipeline(&RAW_PIPELINE);
+
   glColor4ub(0, 0, 255, 255);
   glBegin( GL_TRIANGLES );
   glVertex3f(0, 0, -1);
@@ -282,6 +291,9 @@ void render_area(
 
   // DEBUG: Render a bounding box:
   /*
+
+  use_pipeline(&RAW_PIPELINE);
+
   glColor4ub(128, 128, 128, 255); // 50% grey
   float half_box = ((float) (area->size))/2.0;
 
@@ -320,6 +332,8 @@ void render_area(
   // Iterate over chunk positions in a sphere:
   r_cpos_t farthest_render_distance = MAX_RENDER_DISTANCES[N_LODS - 1];
   r_cpos_t skipy = 0, skipz = 0, xdist_sq = 0, xydist_sq = 0, dist_sq = 0;
+  // TODO: per-layer pipelines...
+  use_pipeline(&CELL_PIPELINE);
   for (ly = L_OPAQUE; ly <= L_TRANSLUCENT; ++ly) {
     if (ly == L_TRANSPARENT) {
       // Before rendering the transparent layer render all entities:
@@ -388,6 +402,7 @@ void render_area(
 
           // DEBUG: Draw vectors to nearby chunks:
           /*
+          use_pipeline(&RAW_PIPELINE);
           if (
             (
               fabs(chunk_vector.x) +
@@ -567,8 +582,6 @@ void iter_render_entity(void *thing) {
 
   // DEBUG: Render bounding box:
   //*
-  glColor4ub(255, 255, 255, 255); // white
-
   float hx, hy, hz;
   hx = e->size.x*0.5;
   hy = e->size.y*0.5;

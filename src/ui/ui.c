@@ -11,6 +11,7 @@
 #include "graphics/tex.h"
 #include "graphics/gfx.h"
 #include "graphics/render.h"
+#include "shaders/pipeline.h"
 #include "prof/ptime.h"
 #include "prof/pmem.h"
 #include "control/ctl.h"
@@ -294,7 +295,10 @@ void render_ui(void) {
   render_vision_effects();
 
   // HUD:
+  use_pipeline(&RAW_PIPELINE);
   draw_hud();
+
+  use_pipeline(&TEXT_PIPELINE);
 
   // Draw an indicator if the game is paused:
   draw_paused();

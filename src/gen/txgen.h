@@ -30,6 +30,8 @@ typedef struct tx_grammar_literal_s tx_grammar_literal;
 struct tx_grammar_disjunction_s;
 typedef struct tx_grammar_disjunction_s tx_grammar_disjunction;
 
+// A texture filter takes a texture and an additional argument and filters the
+// texture somehow (one hopes).
 typedef void (*texture_filter)(texture *, void *);
 
 // A structure for remembering where we want to do a grammar expansion:
