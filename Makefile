@@ -36,6 +36,7 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/render.o \
              $(OBJ_DIR)/gfx.o \
              $(OBJ_DIR)/display.o \
+             $(OBJ_DIR)/dta.o \
              $(OBJ_DIR)/pipeline.o \
              $(OBJ_DIR)/ctl.o \
              $(OBJ_DIR)/tex.o \

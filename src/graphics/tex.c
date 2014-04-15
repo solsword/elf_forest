@@ -11,6 +11,8 @@
 
 #include "tex.h"
 
+#include "dta.h"
+
 #include "datatypes/bitmap.h"
 #include "datatypes/map.h"
 
@@ -20,13 +22,7 @@
  * Global variables *
  ********************/
 
-char const * const BLOCK_TEXTURE_DIR = "res/textures";
-
-dynamic_texture_atlas *LAYER_ATLASES[N_LAYERS] = {
-  NULL,
-  NULL,
-  NULL
-};
+char const * const BLOCK_TEXTURE_DIR = "res/textures/static";
 
 /******************************
  * Constructors & Destructors *
@@ -56,49 +52,6 @@ texture *duplicate_texture(texture *original) {
 void cleanup_texture(texture *tx) {
   free(tx->pixels);
   free(tx);
-}
-
-dynamic_texture_atlas *create_dynamic_atlas(size_t size) {
-  dynamic_texture_atlas *dta = (dynamic_texture_atlas *) malloc(
-    sizeof(dynamic_texture_atlas)
-  );
-  dta->size = size;
-  dta->vacancies = create_bitmap(size*size);
-  dta->tcmap = create_map(1, size*size*4);
-  dta->atlas = create_texture(
-    BLOCK_TEXTURE_SIZE * size,
-    BLOCK_TEXTURE_SIZE * size
-  );
-  dta->handle = 0;
-
-  // Reserve index 0 as an 'invalid' texture so that failed map lookups (which
-  // return NULL) won't be ambiguous.
-  texture *invalid = load_texture_from_png("res/textures/invalid.png");
-  // Mark 0 as used:
-  bm_set_bits(dta->vacancies, 0, 1);
-  // Add B_VOID -> 0 to our block id/variant -> index mapping:
-  m1_put_value(
-    dta->tcmap,
-    (void *) 0,
-    (map_key_t) ((size_t) b_make_block(B_VOID))
-  );
-  // Copy the invalid texture into our texture atlas:
-  tx_paste(dta->atlas, invalid, 0, 0);
-  // Clean up the loaded texture as it's no longer needed:
-  cleanup_texture(invalid);
-
-  // Initialize the OpenGL texture:
-  dta_update_texture(dta);
-
-  return dta;
-}
-
-void cleanup_dynamic_atlas(dynamic_texture_atlas *dta) {
-  cleanup_bitmap(dta->vacancies);
-  cleanup_map(dta->tcmap);
-  cleanup_texture(dta->atlas);
-  // TODO: Destroy the OpenGL texture!
-  free(dta);
 }
 
 /*************
@@ -348,73 +301,6 @@ GLuint upload_png(char const * const filename) {
   free(tx->pixels);
   free(tx);
   return result;
-}
-
-void dta_update_texture(dynamic_texture_atlas *dta) {
-  if (dta->handle == 0) {
-    dta->handle = upload_texture(dta->atlas);
-  } else {
-    upload_texture_to(dta->atlas, dta->handle);
-  }
-}
-
-ptrdiff_t dta_add_block(
-  dynamic_texture_atlas *dta,
-  block b,
-  texture *front,
-  texture *top,
-  texture *bot,
-  texture *sides
-) {
-  size_t spots_needed = 4;
-  size_t index;
-  if (!b_anis(b)) {
-    spots_needed = 1;
-  }
-  index = bm_find_space(dta->vacancies, spots_needed);
-  if (index == -1) {
-#ifdef DEBUG
-    fprintf(
-      stderr,
-      "Warning: failed to add block to dynamic texture atlas: no space.\n"
-    );
-#endif
-    // TODO: Something else here?
-    return -1;
-  }
-  // Mark the vacant space as filled:
-  bm_set_bits(dta->vacancies, index, spots_needed);
-  // Add to our block id/variant -> index mapping:
-  m1_put_value(dta->tcmap, (void *) index, (map_key_t) ((size_t) b_idvar(b)));
-  // Copy the relevant textures into our texture atlas:
-  tx_paste(
-    dta->atlas,
-    front,
-    BLOCK_TEXTURE_SIZE * (index % dta->size),
-    BLOCK_TEXTURE_SIZE * (index / dta->size)
-  );
-  if (b_anis(b)) {
-    tx_paste(
-      dta->atlas,
-      top,
-      BLOCK_TEXTURE_SIZE * ((index + 1) % dta->size),
-      BLOCK_TEXTURE_SIZE * ((index + 1) / dta->size)
-    );
-    tx_paste(
-      dta->atlas,
-      bot,
-      BLOCK_TEXTURE_SIZE * ((index + 2) % dta->size),
-      BLOCK_TEXTURE_SIZE * ((index + 2) / dta->size)
-    );
-    tx_paste(
-      dta->atlas,
-      sides,
-      BLOCK_TEXTURE_SIZE * ((index + 3) % dta->size),
-      BLOCK_TEXTURE_SIZE * ((index + 3) / dta->size)
-    );
-  }
-  // Return the index used:
-  return index;
 }
 
 void tx_paste_region(

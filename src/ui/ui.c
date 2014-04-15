@@ -78,7 +78,6 @@ static inline void render_vision_effects() {
     blind = 1;
     // compute texture coordinates
     compute_dynamic_face_tc(
-      LAYER_ATLASES[L_OPAQUE],
       hc->primary,
       BD_FACE_BOT,
       &st

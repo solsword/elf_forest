@@ -8,7 +8,9 @@
 
 #include "physics/physics.h"
 #include "world/world.h"
+
 #include "tex.h"
+#include "dta.h"
 
 /*********
  * Enums *

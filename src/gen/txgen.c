@@ -4,11 +4,13 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 
 #include "datatypes/list.h"
 #include "noise/noise.h"
 #include "graphics/tex.h"
+#include "world/blocks.h"
 
 #include "txgen.h"
 
@@ -181,6 +183,33 @@ void cleanup_expansion_site(tx_grammar_expansion_site *ges) {
 /*************
  * Functions *
  *************/
+
+texture* get_block_texture(block b) {
+  char filename[1024];
+  block id = b_id(b);
+  texture *tx;
+  switch (id) {
+    /*
+    case B_GRASS:
+      // TODO: Fix me!
+      tx = NULL;
+      break;
+    */
+    default:
+      sprintf(
+        filename, 
+        "%s/%s.png",
+        BLOCK_TEXTURE_DIR,
+        BLOCK_NAMES[id]
+      );
+      if (access(filename, R_OK) != -1) {
+        tx = load_texture_from_png(filename);
+      } else {
+        tx = NULL;
+      }
+  }
+  return tx;
+}
 
 void run_grammar(tx_grammar_literal *lit) {
   size_t i;

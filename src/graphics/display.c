@@ -11,6 +11,7 @@
 #include <GLee.h> // glBindBuffer etc.
 
 #include "tex.h"
+#include "dta.h"
 #include "display.h"
 
 #include "world/blocks.h"
@@ -255,6 +256,8 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
         } else {
           here = ca_cell(ca, idx);
         }
+        ensure_mapped(here->primary);
+        ensure_mapped(here->secondary);
         exposure = cl_get_exposure(here);
         if ((exposure & BF_EXPOSED_ANY) && !b_is_invisible(here->primary)) {
           total += 1;
@@ -358,7 +361,6 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
           CHECK_LAYER(ly)
 #endif
           compute_dynamic_face_tc(
-            LAYER_ATLASES[ly],
             here->primary,
             BD_ORI_UP,
             &st
@@ -370,7 +372,6 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
           CHECK_LAYER(ly)
 #endif
           compute_dynamic_face_tc(
-            LAYER_ATLASES[ly],
             here->primary,
             BD_ORI_DOWN,
             &st
@@ -382,7 +383,6 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
           CHECK_LAYER(ly)
 #endif
           compute_dynamic_face_tc(
-            LAYER_ATLASES[ly],
             here->primary,
             BD_ORI_NORTH,
             &st
@@ -394,7 +394,6 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
           CHECK_LAYER(ly)
 #endif
           compute_dynamic_face_tc(
-            LAYER_ATLASES[ly],
             here->primary,
             BD_ORI_SOUTH,
             &st
@@ -406,7 +405,6 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
           CHECK_LAYER(ly)
 #endif
           compute_dynamic_face_tc(
-            LAYER_ATLASES[ly],
             here->primary,
             BD_ORI_EAST,
             &st
@@ -418,7 +416,6 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
           CHECK_LAYER(ly)
 #endif
           compute_dynamic_face_tc(
-            LAYER_ATLASES[ly],
             here->primary,
             BD_ORI_WEST,
             &st

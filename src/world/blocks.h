@@ -54,6 +54,10 @@ struct cell_s {
 
 extern block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES];
 
+#define MAX_BLOCK_NAME_LENGTH 17
+
+extern char const * const BLOCK_NAMES[TOTAL_BLOCK_TYPES];
+
 /*******************
  * Flags and Masks *
  *******************/
@@ -256,156 +260,156 @@ static block const ROTATE_FACE[8][8] = {
 // Note that these are given as block IDs, ignoring the info bits.
 
 // Special blocks:
-static block const                    B_VOID = 0x000; // for invalid/missing
-static block const                B_BOUNDARY = 0x001; // for sealing areas 
+#define                    B_VOID 0x000 // for invalid/missing blocks
+#define                B_BOUNDARY 0x001 // for sealing areas 
 
 // Invisible blocks:
-static block const                     B_AIR = 0x002;
-static block const                   B_ETHER = 0x003;
+#define                     B_AIR 0x002
+#define                   B_ETHER 0x003
 
 // Translucent liquid blocks:
-static block const                   B_WATER = 0x004;
-static block const              B_WATER_FLOW = 0x005;
+#define                   B_WATER 0x004
+#define              B_WATER_FLOW 0x005
 
-static block const                   B_SLIME = 0x006;
-static block const              B_SLIME_FLOW = 0x007;
+#define                   B_SLIME 0x006
+#define              B_SLIME_FLOW 0x007
 
-static block const                    B_ACID = 0x008;
-static block const               B_ACID_FLOW = 0x009;
+#define                    B_ACID 0x008
+#define               B_ACID_FLOW 0x009
 
 // Opaque liquid blocks:
-static block const               B_QUICKSAND = 0x014;
+#define               B_QUICKSAND 0x014
 
-static block const                    B_LAVA = 0x016;
-static block const               B_LAVA_FLOW = 0x017;
+#define                    B_LAVA 0x016
+#define               B_LAVA_FLOW 0x017
 
 // Translucent non-solid blocks:
-static block const                   B_SMOKE = 0x021;
-static block const                  B_MIASMA = 0x022;
+#define                   B_SMOKE 0x021
+#define                  B_MIASMA 0x022
 
 // Opaque non-solid blocks:
-static block const             B_BLACK_SMOKE = 0x028;
+#define             B_BLACK_SMOKE 0x028
 
 // Mineral blocks:
-static block const                    B_DIRT = 0x030;
-static block const                     B_MUD = 0x031;
-static block const                    B_CLAY = 0x032;
-static block const                    B_SAND = 0x033;
-static block const                  B_GRAVEL = 0x034;
-static block const                   B_SCREE = 0x035;
-static block const                   B_STONE = 0x036;
-static block const               B_METAL_ORE = 0x037;
-static block const            B_NATIVE_METAL = 0x038;
+#define                    B_DIRT 0x030
+#define                     B_MUD 0x031
+#define                    B_CLAY 0x032
+#define                    B_SAND 0x033
+#define                  B_GRAVEL 0x034
+#define                   B_SCREE 0x035
+#define                   B_STONE 0x036
+#define               B_METAL_ORE 0x037
+#define            B_NATIVE_METAL 0x038
 
 // Plant blocks:
-static block const                B_MUSHROOM = 0x040;
-static block const          B_MUSHROOM_STALK = 0x041;
-static block const            B_MUSHROOM_CAP = 0x042;
+#define                B_MUSHROOM 0x040
+#define          B_MUSHROOM_STALK 0x041
+#define            B_MUSHROOM_CAP 0x042
 
-static block const                    B_MOSS = 0x043;
+#define                    B_MOSS 0x043
 
-static block const                   B_GRASS = 0x044;
-static block const             B_GRASS_ROOTS = 0x045;
+#define                   B_GRASS 0x044
+#define             B_GRASS_ROOTS 0x045
 
-static block const                    B_VINE = 0x046;
-static block const              B_VINE_FRUIT = 0x047;
+#define                    B_VINE 0x046
+#define              B_VINE_FRUIT 0x047
 
-static block const                    B_HERB = 0x048;
-static block const              B_HERB_ROOTS = 0x049;
+#define                    B_HERB 0x048
+#define              B_HERB_ROOTS 0x049
 
-static block const           B_BUSH_BRANCHES = 0x04a;
-static block const             B_BUSH_LEAVES = 0x04b;
-static block const              B_BUSH_FRUIT = 0x04c;
-static block const              B_BUSH_ROOTS = 0x04d;
+#define           B_BUSH_BRANCHES 0x04a
+#define             B_BUSH_LEAVES 0x04b
+#define              B_BUSH_FRUIT 0x04c
+#define              B_BUSH_ROOTS 0x04d
 
-static block const          B_SHRUB_BRANCHES = 0x04e;
-static block const            B_SHRUB_LEAVES = 0x04f;
-static block const             B_SHRUB_FRUIT = 0x050;
-static block const             B_SHRUB_ROOTS = 0x051;
+#define          B_SHRUB_BRANCHES 0x04e
+#define            B_SHRUB_LEAVES 0x04f
+#define             B_SHRUB_FRUIT 0x050
+#define             B_SHRUB_ROOTS 0x051
 
-static block const           B_TREE_BRANCHES = 0x052;
-static block const  B_TREE_INTERIOR_BRANCHES = 0x053;
-static block const             B_TREE_LEAVES = 0x054;
-static block const              B_TREE_FRUIT = 0x055;
-static block const              B_TREE_TRUNK = 0x056;
-static block const              B_TREE_ROOTS = 0x057;
-static block const        B_TREE_HEART_ROOTS = 0x058;
+#define           B_TREE_BRANCHES 0x052
+#define  B_TREE_INTERIOR_BRANCHES 0x053
+#define             B_TREE_LEAVES 0x054
+#define              B_TREE_FRUIT 0x055
+#define              B_TREE_TRUNK 0x056
+#define              B_TREE_ROOTS 0x057
+#define        B_TREE_HEART_ROOTS 0x058
 
-static block const           B_AQUATIC_GRASS = 0x059;
+#define           B_AQUATIC_GRASS 0x059
 
-static block const    B_AQUATIC_PLANT_LEAVES = 0x05a;
-static block const     B_AQUATIC_PLANT_STEMS = 0x05b;
-static block const   B_AQUATIC_PLANT_ANCHORS = 0x05c;
+#define    B_AQUATIC_PLANT_LEAVES 0x05a
+#define     B_AQUATIC_PLANT_STEMS 0x05b
+#define   B_AQUATIC_PLANT_ANCHORS 0x05c
 
-static block const             B_CORAL_FROND = 0x05d;
-static block const              B_CORAL_BODY = 0x05e;
+#define             B_CORAL_FROND 0x05d
+#define              B_CORAL_BODY 0x05e
 
 // Hewn Blocks:
-static block const           B_SMOOTHED_ROCK = 0x070;
-static block const         B_HEWN_ROCK_STEPS = 0x072;
-static block const     B_SMOOTHED_ROCK_STEPS = 0x073;
-static block const         B_HEWN_ROCK_GRATE = 0x074;
+#define           B_SMOOTHED_ROCK 0x070
+#define         B_HEWN_ROCK_STEPS 0x072
+#define     B_SMOOTHED_ROCK_STEPS 0x073
+#define         B_HEWN_ROCK_GRATE 0x074
 
 // Construction Materials:
-static block const                    B_BALE = 0x080;
-static block const                  B_THATCH = 0x081;
-static block const                  B_WATTLE = 0x082;
+#define                    B_BALE 0x080
+#define                  B_THATCH 0x081
+#define                  B_WATTLE 0x082
 
-static block const            B_WOODEN_PLANK = 0x083;
-static block const             B_WOODEN_BEAM = 0x084;
-static block const            B_WOODEN_PANEL = 0x085;
-static block const           B_WOODEN_PILLAR = 0x086;
+#define            B_WOODEN_PLANK 0x083
+#define             B_WOODEN_BEAM 0x084
+#define            B_WOODEN_PANEL 0x085
+#define           B_WOODEN_PILLAR 0x086
 
-static block const                B_CORDWOOD = 0x087;
-static block const                     B_COB = 0x088;
-static block const            B_RAMMED_EARTH = 0x089;
-static block const           B_STACKED_STONE = 0x08a;
-static block const            B_FITTED_STONE = 0x08b;
-static block const          B_MORTARED_STONE = 0x08c;
-static block const              B_METAL_BARS = 0x08d;
+#define                B_CORDWOOD 0x087
+#define                     B_COB 0x088
+#define            B_RAMMED_EARTH 0x089
+#define           B_STACKED_STONE 0x08a
+#define            B_FITTED_STONE 0x08b
+#define          B_MORTARED_STONE 0x08c
+#define              B_METAL_BARS 0x08d
 
-static block const              B_STONE_POST = 0x08e;
-static block const            B_STONE_PILLAR = 0x08f;
+#define              B_STONE_POST 0x08e
+#define            B_STONE_PILLAR 0x08f
 
-static block const               B_MUD_BRICK = 0x090;
-static block const              B_CLAY_BRICK = 0x091;
-static block const             B_STONE_BRICK = 0x092;
+#define               B_MUD_BRICK 0x090
+#define              B_CLAY_BRICK 0x091
+#define             B_STONE_BRICK 0x092
 
-static block const              B_STONE_TILE = 0x093;
-static block const            B_CERAMIC_TILE = 0x094;
-static block const          B_WOODEN_SHINGLE = 0x095;
+#define              B_STONE_TILE 0x093
+#define            B_CERAMIC_TILE 0x094
+#define          B_WOODEN_SHINGLE 0x095
 
-static block const            B_WOODEN_GRATE = 0x096;
-static block const             B_STONE_GRATE = 0x097;
-static block const             B_METAL_GRATE = 0x098;
+#define            B_WOODEN_GRATE 0x096
+#define             B_STONE_GRATE 0x097
+#define             B_METAL_GRATE 0x098
 
-static block const             B_GLASS_BLOCK = 0x099;
-static block const              B_GLASS_PANE = 0x09a;
-static block const            B_FRAMED_GLASS = 0x09b;
+#define             B_GLASS_BLOCK 0x099
+#define              B_GLASS_PANE 0x09a
+#define            B_FRAMED_GLASS 0x09b
 
 // Interactive blocks:
 
-static block const             B_WOODEN_GATE = 0x0b0;
-static block const              B_METAL_GATE = 0x0b1;
-static block const       B_WOODEN_PLANK_DOOR = 0x0b2;
-static block const       B_WOODEN_PANEL_DOOR = 0x0b3;
-static block const              B_STONE_DOOR = 0x0b4;
-static block const              B_METAL_DOOR = 0x0b5;
+#define             B_WOODEN_GATE 0x0b0
+#define              B_METAL_GATE 0x0b1
+#define       B_WOODEN_PLANK_DOOR 0x0b2
+#define       B_WOODEN_PANEL_DOOR 0x0b3
+#define              B_STONE_DOOR 0x0b4
+#define              B_METAL_DOOR 0x0b5
 
 // Decorative blocks:
-static block const                 B_PLASTER = 0x0d0;
-static block const                  B_STUCCO = 0x0d1;
-static block const                   B_PAINT = 0x0d2;
+#define                 B_PLASTER 0x0d0
+#define                  B_STUCCO 0x0d1
+#define                   B_PAINT 0x0d2
 
-static block const                  B_BANNER = 0x0d3;
-static block const                B_TAPESTRY = 0x0d4;
-static block const                B_PAINTING = 0x0d5;
-static block const               B_ENGRAVING = 0x0d6;
+#define                  B_BANNER 0x0d3
+#define                B_TAPESTRY 0x0d4
+#define                B_PAINTING 0x0d5
+#define               B_ENGRAVING 0x0d6
 
-static block const                  B_CARPET = 0x0d7;
-static block const                     B_RUG = 0x0d8;
-static block const               B_CLOTH_MAT = 0x0d9;
-static block const                B_STEM_MAT = 0x0da;
+#define                  B_CARPET 0x0d7
+#define                     B_RUG 0x0d8
+#define               B_CLOTH_MAT 0x0d9
+#define                B_STEM_MAT 0x0da
 
 /********************
  * Inline Functions *

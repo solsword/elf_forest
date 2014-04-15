@@ -108,6 +108,8 @@ void terrain_cell(region_pos pos, cell *result) {
   if ((on_land || on_shore) && surface) {
     if (on_land && !sandy) {
       result->primary = b_make_block(B_GRASS);
+    } else if (on_shore) {
+      result->primary = b_make_block(B_WATER_FLOW);
     } else {
       result->primary = b_make_block(B_AIR);
     }

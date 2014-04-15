@@ -10,7 +10,6 @@
 #include "datatypes/bitmap.h"
 
 #include "world/blocks.h"
-#include "world/world.h"
 
 /**************
  * Structures *
@@ -41,13 +40,6 @@ typedef struct texture_s texture;
 struct tcoords_s;
 typedef struct tcoords_s tcoords;
 
-// A texture atlas that dynamically stores 32x32 textures. It contains a map
-// that maps block ids to texture coordinates, as well as a texture that holds
-// an atlas of all stored sub-textures and a handle for an OpenGL texture that
-// is a copy of the CPU-side texture.
-struct dynamic_texture_atlas_s;
-typedef struct dynamic_texture_atlas_s dynamic_texture_atlas;
-
 /*************
  * Constants *
  *************/
@@ -55,20 +47,12 @@ typedef struct dynamic_texture_atlas_s dynamic_texture_atlas;
 // Pixel dimension of each block texture:
 static uint8_t const BLOCK_TEXTURE_SIZE = 32;
 
-// The size (side, not total) of the dynamic texture atlases. This gives a
-// total texture capacity of 1024 32x32 textures, while itself being a
-// 1024x1024 texel texture.
-static size_t const DYNAMIC_ATLAS_SIZE = 32;
-
 /********************
  * Global variables *
  ********************/
 
 // The directory to load static block textures from:
 extern char const * const BLOCK_TEXTURE_DIR;
-
-// The array of dynamic texture atlases for each rendering layer:
-extern dynamic_texture_atlas *LAYER_ATLASES[N_LAYERS];
 
 /*************************
  * Structure Definitions *
@@ -81,14 +65,6 @@ struct texture_s {
 
 struct tcoords_s {
   uint16_t s, t;
-};
-
-struct dynamic_texture_atlas_s {
-  size_t size; // How many block texture to accommodate (size*size total)
-  bitmap *vacancies; // A bitmap of vacancies
-  map *tcmap; // block id -> texture index (wrap into size*size)
-  texture *atlas; // CPU-side texture data
-  GLuint handle; // Handle for GPU-side texture data
 };
 
 /********************
@@ -247,53 +223,6 @@ static inline void tx_set_px(
   tx->pixels[left + tx->width * top] = p;
 }
 
-// Texture coordinate computation routines:
-
-// Stores the additional offset for each specific face (corresponding to the
-// places block textures are pasted in dta_add_block).
-static uint16_t FACE_TC_MAP_OFF[8] = {
-  0, 3, 3, 3, 1, 2, 3, 3
-};
-
-// Takes a block and a face and computes the actual face accounting for the
-// block's orientation.
-static inline block_data actual_face(
-  block b,
-  block ori,
-  block face
-) {
-  if (b_oabl(b)) {
-    return ROTATE_FACE[ori][face];
-  } else {
-    return face;
-  }
-}
-
-static inline void compute_dynamic_face_tc(
-  dynamic_texture_atlas *dta,
-  block b,
-  block face,
-  tcoords *result
-) {
-  result->s = 0;
-  result->t = 0;
-  return;
-  if (b_oabl(b)) {
-    face = ROTATE_FACE[b_ori(b)][face];
-  } else if (!b_anis(b)) {
-    face = 0;
-  }
-  size_t i = (size_t) m1_get_value(dta->tcmap, (map_key_t) ((size_t) b_id(b)));
-  if (i == 0) {
-    result->s = 0;
-    result->t = 0;
-  } else {
-    i += FACE_TC_MAP_OFF[face];
-    result->s = i % dta->size;
-    result->t = (i / dta->size) % dta->size;
-  }
-}
-
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -307,12 +236,6 @@ texture *duplicate_texture(texture *original);
 
 // Frees the data allocated for the given texture.
 void cleanup_texture(texture *tx);
-
-// Allocates and returns a new dynamic texture atlas of the given size.
-dynamic_texture_atlas *create_dynamic_atlas(size_t size);
-
-// Frees the data allocated for the given dynamic texture atlas.
-void cleanup_dynamic_atlas(dynamic_texture_atlas *dta);
 
 /*************
  * Functions *
@@ -351,26 +274,6 @@ static inline GLuint upload_texture(texture* tx) {
 // handle. Takes care of freeing the texture struct and associated data once
 // it's been loaded into OpenGL.
 GLuint upload_png(char const * const filename);
-
-// Instructs the given dynamic texture atlas to (re)upload its texture data to
-// the GPU, committing any changes made using dta_add/free_block.
-void dta_update_texture(dynamic_texture_atlas *dta);
-
-// Adds a block to the given dynamic texture atlas, updating the GPU texture
-// after importing the given textures into the atlas. If the block is
-// omnidirectional, only the front texture will be used. Returns the index of
-// the block within the texture atlas, or -1 if it fails.
-ptrdiff_t dta_add_block(
-  dynamic_texture_atlas *dta,
-  block b,
-  texture *front,
-  texture *top,
-  texture *bot,
-  texture *sides
-);
-
-// TODO: this function!
-ptrdiff_t dta_free_block(dynamic_texture_atlas *dta, block b);
 
 // Copies a rectangle of pixels from one texture to another:
 void tx_paste_region(
