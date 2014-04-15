@@ -1,4 +1,5 @@
 #version 130
+// vim:syn=c
 
 uniform sampler2D texture;
 

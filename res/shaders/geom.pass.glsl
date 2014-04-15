@@ -1,4 +1,5 @@
 #version 130
+// vim:syn=c
 
 layout (triangles) in;
 layout (triangles, max_vertices=3) out;
