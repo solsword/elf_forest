@@ -24,17 +24,17 @@
 
 size_t test_map3_setup_cleanup(void) {
   int i;
-  map3 *m;
+  map *m;
   for (i = 0; i < 1000; ++i) {
-    m = create_map3();
-    cleanup_map3(m);
+    m = create_map(3, 1024);
+    cleanup_map(m);
   }
   return 0;
 }
 
 size_t test_map3_growth(void) {
   size_t i = 0;
-  map3 *m = create_map3();
+  map *m = create_map(3, 1024);
   for (i = 0; i < 10000; ++i) {
     if (
       m3_put_value(
@@ -46,12 +46,12 @@ size_t test_map3_growth(void) {
       ) != NULL
     ) { return 1; }
   }
-  cleanup_map3(m);
+  cleanup_map(m);
   return 0;
 }
 
 size_t test_map3_put_pop(void) {
-  map3 *m = create_map3();
+  map *m = create_map(3, 1024);
   if (
     m3_put_value(
       m,
@@ -193,13 +193,13 @@ size_t test_map3_put_pop(void) {
       (map_key_t) 3
     ) != NULL
   ) { return 17; }
-  cleanup_map3(m);
+  cleanup_map(m);
   return 0;
 }
 
 size_t test_map3_put_pop_2(void) {
   size_t x = 0, y = 0, z = 0;
-  map3 *m = create_map3(3);
+  map *m = create_map(3, 1024);
   if (
     m3_put_value(
       m,
@@ -231,7 +231,7 @@ size_t test_map3_put_pop_2(void) {
       (map_key_t) z
     ) != NULL
   ) { return 3; }
-  if (m3_get_count(m) != 3) { return 4; }
+  if (m_get_count(m) != 3) { return 4; }
 
   if (
     m3_get_value(
@@ -257,7 +257,7 @@ size_t test_map3_put_pop_2(void) {
       (map_key_t) z
     ) != NULL
   ) { return 7; }
-  if (m3_get_count(m) != 2) { return 8; }
+  if (m_get_count(m) != 2) { return 8; }
 
   x = 1; y = 0; z = 0;
   if (
@@ -284,7 +284,7 @@ size_t test_map3_put_pop_2(void) {
       (map_key_t) z
     ) != NULL
   ) { return 11; }
-  if (m3_get_count(m) != 1) { return 12; }
+  if (m_get_count(m) != 1) { return 12; }
 
   x = 0; y = 0; z = 0;
   if (
@@ -311,9 +311,9 @@ size_t test_map3_put_pop_2(void) {
       (map_key_t) z
     ) != NULL
   ) { return 15; }
-  if (m3_get_count(m) != 0) { return 16; }
-  if (!m3_is_empty(m)) { return 17; }
-  cleanup_map3(m);
+  if (m_get_count(m) != 0) { return 16; }
+  if (!m_is_empty(m)) { return 17; }
+  cleanup_map(m);
   return 0;
 }
 
@@ -321,7 +321,7 @@ size_t test_map3_collision(void) {
   static size_t const batch_size = 100;
   static size_t const small_batch_size = 73;
   size_t x = 0, y = 0, z = 0;
-  map3 *m = create_map3(3);
+  map *m = create_map(3, 1024);
   for (x = 0; x < batch_size; ++x) {
     for (y = 0; y < batch_size; ++y) {
       for (z = 0; z < batch_size; ++z) {
@@ -443,7 +443,7 @@ size_t test_map3_collision(void) {
       (map_key_t) 0
     ) != NULL
   ) { return 70; }
-  cleanup_map3(m);
+  cleanup_map(m);
   return 0;
 }
 

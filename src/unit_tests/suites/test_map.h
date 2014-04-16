@@ -21,7 +21,7 @@ size_t test_map_setup_cleanup(void) {
   int i;
   map *m;
   for (i = 0; i < 1000; ++i) {
-    m = create_map(i + 1);
+    m = create_map(i + 1, 1024);
     cleanup_map(m);
   }
   return 0;
@@ -29,7 +29,7 @@ size_t test_map_setup_cleanup(void) {
 
 size_t test_map_growth(void) {
   size_t i = 0;
-  map *m = create_map(1);
+  map *m = create_map(1, 512);
   for (i = 0; i < 10000; ++i) {
     if (m_put_value(m, NULL, (map_key_t) i) != NULL) {
       return 1;
@@ -40,7 +40,7 @@ size_t test_map_growth(void) {
 }
 
 size_t test_map_put_pop(void) {
-  map *m = create_map(1);
+  map *m = create_map(1, 1024);
   if (m_put_value(m, (void *) 17, (map_key_t) 3) != NULL) { return 1; }
   if (m_get_value(m, (map_key_t) 3) != (void *) 17) { return 2; }
   if (m_pop_value(m, (map_key_t) 3) != (void *) 17) { return 3; }
@@ -64,7 +64,7 @@ size_t test_map_put_pop(void) {
 
 size_t test_map_multikey(void) {
   size_t x = 0, y = 0, z = 0;
-  map *m = create_map(3);
+  map *m = create_map(3, 1024);
   if (
     m_put_value(
       m,
@@ -187,7 +187,7 @@ size_t test_map_collision(void) {
   static size_t const batch_size = 100;
   static size_t const small_batch_size = 73;
   size_t x = 0, y = 0, z = 0;
-  map *m = create_map(3);
+  map *m = create_map(3, 4096);
   for (x = 0; x < batch_size; ++x) {
     for (y = 0; y < batch_size; ++y) {
       for (z = 0; z < batch_size; ++z) {
