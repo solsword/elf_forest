@@ -28,12 +28,14 @@ float const JUMP_DETECTION_THRESHOLD = 1.3;
 
 float const MIN_VELOCITY = 0.05;
 
-move_flag const MF_ON_GROUND = 0x01;
-move_flag const MF_IN_LIQUID = 0x02;
-move_flag const   MF_IN_VOID = 0x04;
-move_flag const MF_CROUCHING = 0x08;
-move_flag const   MF_DO_JUMP = 0x10;
-move_flag const   MF_DO_FLAP = 0x20;
+move_flag const      MF_ON_GROUND = 0x0001;
+move_flag const      MF_IN_LIQUID = 0x0002;
+move_flag const        MF_IN_VOID = 0x0004;
+move_flag const      MF_CROUCHING = 0x0008;
+move_flag const        MF_DO_JUMP = 0x0010;
+move_flag const        MF_DO_FLAP = 0x0020;
+move_flag const      MF_NEAR_WALL = 0x0040;
+move_flag const   MF_NEAR_CEILING = 0x0080;
 
 /***********
  * Globals *
@@ -52,6 +54,8 @@ float LIQUID_DRAG = 0.87;
 float AIR_DRAG = 0.995;
 float GROUND_DRAG = 0.965;
 float LIQUID_DRAG = 0.92;
+
+float STEP_DRAG = 0.1;
 
 float NEUTRAL_CONTROL_DAMPING = 0.9;
 
@@ -81,6 +85,28 @@ static inline void resolve_entity_collisions(entity *e) {
   // TODO: This function.
 }
 
+static inline void step_up(
+  entity *e,
+  region_pos *min,
+  region_pos *max,
+  int blocks_to_step
+) {
+  if (blocks_to_step > 0) {
+    min->z += blocks_to_step;
+    max->z += blocks_to_step;
+    e->pos.z = (
+      min->z - e->area->origin.z
+    ) + (
+      BOUNCE_DISTANCE + e->size.z / 2.0
+    );
+    e->box.min.z = e->pos.z - e->size.z / 2.0;
+    e->box.max.z = e->pos.z + e->size.z / 2.0;
+    e->vel.x *= STEP_DRAG;
+    e->vel.y *= STEP_DRAG;
+    // TODO: Disallow double-stepping at precise corners?
+  }
+}
+
 static inline void update_position_x (
   entity *e,
   region_pos *min,
@@ -89,38 +115,60 @@ static inline void update_position_x (
 ) {
   r_pos_t next_cell;
   region_pos pos;
+  int blocks_to_step = 0;
   if (increment->x > 0) {
     next_cell = fastfloor(e->box.max.x + increment->x);
     if (next_cell != max->x) {
       pos.x = e->area->origin.x + next_cell;
-      for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
-        for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
+      for (pos.z = min->z; pos.z <= max->z + blocks_to_step; ++pos.z) {
+        for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
           // TODO: FIX THIS!
           if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
-            e->vel.x = 0;
-            increment->x = 0;
-            e->pos.x = next_cell - (BOUNCE_DISTANCE + e->size.x / 2.0);
-            goto done_x;
+            /*
+            printf(
+              "step? %d - %d < %d? %d\n",
+              pos.z,
+              min->z,
+              e->step_height,
+              blocks_to_step
+            );
+            // */
+            if (pos.z - min->z < e->step_height) {
+              blocks_to_step = (pos.z - min->z) + 1;
+              break; // continue to next z value
+            } else {
+              e->vel.x = 0;
+              increment->x = 0;
+              e->pos.x = next_cell - (BOUNCE_DISTANCE + e->size.x / 2.0);
+              goto done_x;
+            }
           }
         }
       }
+      step_up(e, min, max, blocks_to_step);
       max->x = e->area->origin.x + next_cell;
     }
   } else {
     next_cell = fastfloor(e->box.min.x + increment->x);
     if (next_cell != min->x) {
       pos.x = e->area->origin.x + next_cell;
-      for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
-        for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
+      for (pos.z = min->z; pos.z <= max->z + blocks_to_step; ++pos.z) {
+        for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
           // TODO: FIX THIS!
           if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
-            e->vel.x = 0;
-            increment->x = 0;
-            e->pos.x = next_cell + 1 + BOUNCE_DISTANCE + e->size.x / 2.0;
-            goto done_x;
+            if (pos.z - min->z < e->step_height) {
+              blocks_to_step = (pos.z - min->z) + 1;
+              break; // continue to next z value
+            } else {
+              e->vel.x = 0;
+              increment->x = 0;
+              e->pos.x = next_cell + 1 + BOUNCE_DISTANCE + e->size.x / 2.0;
+              goto done_x;
+            }
           }
         }
       }
+      step_up(e, min, max, blocks_to_step);
       min->x = e->area->origin.x + next_cell;
     }
   }
@@ -136,38 +184,51 @@ static inline void update_position_y(
 ) {
   r_pos_t next_cell;
   region_pos pos;
+  int blocks_to_step = 0;
   if (increment->y > 0) {
     next_cell = fastfloor(e->box.max.y + increment->y);
     if (next_cell != max->y) {
       pos.y = e->area->origin.y + next_cell;
-      for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
-        for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
+      for (pos.z = min->z; pos.z <= max->z + blocks_to_step; ++pos.z) {
+        for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
           // TODO: FIX THIS
           if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
-            e->vel.y = 0;
-            increment->y = 0;
-            e->pos.y = next_cell - (BOUNCE_DISTANCE + e->size.y / 2.0);
-            goto done_y;
+            if (pos.z - min->z < e->step_height) {
+              blocks_to_step = (pos.z - min->z) + 1;
+              break; // continue to next z value
+            } else {
+              e->vel.y = 0;
+              increment->y = 0;
+              e->pos.y = next_cell - (BOUNCE_DISTANCE + e->size.y / 2.0);
+              goto done_y;
+            }
           }
         }
       }
+      step_up(e, min, max, blocks_to_step);
       max->y = e->area->origin.y + next_cell;
     }
   } else {
     next_cell = fastfloor(e->box.min.y + increment->y);
     if (next_cell != min->y) {
       pos.y = e->area->origin.y + next_cell;
-      for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
-        for (pos.z = min->z; pos.z <= max->z; ++pos.z) {
+      for (pos.z = min->z; pos.z <= max->z + blocks_to_step; ++pos.z) {
+        for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
           // TODO: FIX THIS
           if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
-            e->vel.y = 0;
-            increment->y = 0;
-            e->pos.y = next_cell + 1 + BOUNCE_DISTANCE + e->size.y / 2.0;
-            goto done_y;
+            if (pos.z - min->z < e->step_height) {
+              blocks_to_step = (pos.z - min->z) + 1;
+              break; // continue to next z value
+            } else {
+              e->vel.y = 0;
+              increment->y = 0;
+              e->pos.y = next_cell + 1 + BOUNCE_DISTANCE + e->size.y / 2.0;
+              goto done_y;
+            }
           }
         }
       }
+      step_up(e, min, max, blocks_to_step);
       min->y = e->area->origin.y + next_cell;
     }
   }
@@ -222,8 +283,7 @@ done_z:
   e->pos.z += increment->z;
 }
 
-// Edits the entity's velocity according to control inputs. Note that we only
-// constrain result velocity in two dimensions. Also note that a lack of
+// Edits the entity's velocity according to control inputs. Note that a lack of
 // control inputs translates to active velocity damping.
 static inline void integrate_control_inputs(entity *e) {
   float base;
@@ -439,6 +499,7 @@ void tick_physics(entity *e) {
   }
   // */
   // Get control impulse:
+  // TODO: Do this only once per pick instead of once per physics substep?
   integrate_control_inputs(e);
   // Integrate kinetics:
   acceleration.x = e->impulse.x / e->mass;

@@ -37,6 +37,9 @@ extern move_flag const MF_IN_VOID;
 extern move_flag const MF_CROUCHING;
 extern move_flag const MF_DO_JUMP;
 extern move_flag const MF_DO_FLAP;
+// TODO: Implement these, along with climbing!
+extern move_flag const MF_NEAR_WALL;
+extern move_flag const MF_NEAR_CEILING;
 
 /***********
  * Globals *
@@ -48,6 +51,9 @@ extern float GRAVITY;
 extern float AIR_DRAG;
 extern float GROUND_DRAG;
 extern float LIQUID_DRAG;
+
+// Drag effect from stepping up a step:
+extern float STEP_DRAG;
 
 // Damping to apply when no control inputs are detected:
 extern float NEUTRAL_CONTROL_DAMPING;
@@ -109,6 +115,20 @@ static inline void clear_do_jump(entity *e) {e->move_flags &= ~MF_DO_JUMP;}
 static inline int do_flap(entity *e) {return e->move_flags & MF_DO_FLAP;}
 static inline void set_do_flap(entity *e) {e->move_flags |= MF_DO_FLAP;}
 static inline void clear_do_flap(entity *e) {e->move_flags &= ~MF_DO_FLAP;}
+
+static inline int near_wall(entity *e) {return e->move_flags & MF_NEAR_WALL;}
+static inline void set_near_wall(entity *e) {e->move_flags |= MF_NEAR_WALL;}
+static inline void clear_near_wall(entity *e) {e->move_flags &= ~MF_NEAR_WALL;}
+
+static inline int near_ceiling(entity *e) {
+  return e->move_flags & MF_NEAR_CEILING;
+}
+static inline void set_near_ceiling(entity *e) {
+  e->move_flags |= MF_NEAR_CEILING;
+}
+static inline void clear_near_ceiling(entity *e) {
+  e->move_flags &= ~MF_NEAR_CEILING;
+}
 
 static inline int is_airborne(entity *e) {
   return !on_ground(e) && !in_liquid(e);

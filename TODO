@@ -41,6 +41,6 @@ gameplay
 bugs/testing
   bad transparency layering (before/behind the player when in water with
     abstract water below).
-  fix chunk edge holes!
-  fix shaved & naked trees
+  fix abstracted chunk adjacency+transparency
   test for bugs near the region origin
+  double-stepping when traversing a corner precisely

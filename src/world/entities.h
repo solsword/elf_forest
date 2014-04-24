@@ -22,7 +22,7 @@
  * Types *
  *********/
 
-typedef uint8_t move_flag;
+typedef uint16_t move_flag;
 
 /**************
  * Structures *
@@ -67,8 +67,11 @@ struct entity_s {
 
   float mass; // Mass.
   float walk; // Walk speed.
+    uint8_t step_height; // How many blocks the entity can step up.
     float jump; // Upward jump impulse.
     float leap; // Forwards jump impulse.
+  float climb; // Climb speed.
+    float grip; // Grip ability: determines what can be climbed (0-1).
   float swim; // Swim speed (double-swimming is not allowed).
     float buoyancy; // Buoyancy in liquids.
   float fly; // Fly speed.
@@ -118,8 +121,11 @@ static inline void copy_entity_data(entity *from, entity *to) {
   to->model = from->model;
   to->mass = from->mass;
   to->walk = from->walk;
+    to->step_height = from->step_height;
     to->jump = from->jump;
     to->leap = from->leap;
+  to->climb = from->climb;
+    to->grip = from->grip;
   to->swim = from->swim;
     to->buoyancy = from->buoyancy;
   to->fly = from->fly;
