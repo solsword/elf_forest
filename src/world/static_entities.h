@@ -11,9 +11,8 @@
 entity STATIC_ENTITY_TYPES[NUM_STATIC_ENTITY_TYPES] = {
   {
     .type="tester",
-//    .size={.x=0.7,.y=0.7,.z=1.8},
-    .size={.x=1.4,.y=1.4,.z=3.6},
-    .head_pos={.x=0.0,.y=0.0,.z=0.7},
+    .size={.x=1.3,.y=1.3,.z=3.2},
+    .head_pos={.x=0.0,.y=0.0,.z=1.2},
     .mass=45,
     .walk=600,
       .step_height=1,
@@ -48,8 +47,8 @@ entity STATIC_ENTITY_TYPES[NUM_STATIC_ENTITY_TYPES] = {
   },
   {
     .type="elf",
-    .size={.x=0.7,.y=0.7,.z=1.8},
-    .head_pos={.x=0.0,.y=0.0,.z=0.7},
+    .size={.x=1.2,.y=1.2,.z=3.4},
+    .head_pos={.x=0.0,.y=0.0,.z=1.3},
     .mass=45,
     .walk=260,
       .step_height=1,
@@ -66,8 +65,8 @@ entity STATIC_ENTITY_TYPES[NUM_STATIC_ENTITY_TYPES] = {
   },
   {
     .type="dwarf",
-    .size={.x=0.8,.y=0.8,.z=1.3},
-    .head_pos={.x=0.0,.y=0.0,.z=0.45},
+    .size={.x=1.2,.y=1.2,.z=2.4},
+    .head_pos={.x=0.0,.y=0.0,.z=0.9},
     .mass=90,
     .walk=200,
       .step_height=1,
@@ -84,8 +83,8 @@ entity STATIC_ENTITY_TYPES[NUM_STATIC_ENTITY_TYPES] = {
   },
   {
     .type="human",
-    .size={.x=0.8,.y=0.8,.z=1.6},
-    .head_pos={.x=0.0,.y=0.0,.z=0.6},
+    .size={.x=1.3,.y=1.3,.z=3.2},
+    .head_pos={.x=0.0,.y=0.0,.z=1.2},
     .mass=70,
     .walk=220,
       .step_height=1,
@@ -102,7 +101,7 @@ entity STATIC_ENTITY_TYPES[NUM_STATIC_ENTITY_TYPES] = {
   },
   {
     .type="tern",
-    .size={.x=0.3,.y=0.3,.z=0.3},
+    .size={.x=0.5,.y=0.5,.z=0.5},
     .head_pos={.x=0.0,.y=0.0,.z=0.0},
     .mass=0.09,
     .walk=0.3,
@@ -120,7 +119,7 @@ entity STATIC_ENTITY_TYPES[NUM_STATIC_ENTITY_TYPES] = {
   },
   {
     .type="sparrow",
-    .size={.x=0.2,.y=0.2,.z=0.2},
+    .size={.x=0.35,.y=0.35,.z=0.35},
     .head_pos={.x=0.0,.y=0.0,.z=0.0},
     .mass=0.03,
     .walk=0.04,
