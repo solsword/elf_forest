@@ -59,7 +59,8 @@ struct worley_filter_args_s;
 typedef struct worley_filter_args_s worley_filter_args;
 
 // Arguments to the branch texture filter:
-// roughness flag, scale, width, distortion, and center, mid, and outer colors.
+// roughness flag, scale, width, distortion scale, distortion, squash, and
+// center, mid, and outer colors.
 struct branch_filter_args_s;
 typedef struct branch_filter_args_s branch_filter_args;
 
@@ -120,11 +121,15 @@ struct worley_filter_args_s {
 };
 
 struct branch_filter_args_s {
-  int rough; // 0 or 1
-  float scale; // ~0.125
-  float width; // [0.5, 1.5]
-  float distortion; // [0, 3]
-  pixel center_color, mid_color, outer_color;
+  int rough; // whether to generate rough- or smooth-type branches (0 or 1)
+  float scale; // scale of the worley noise (~0.125)
+  float width; // branch width [0.5, 1.5]
+  float dscale; // scale of distortion noise (~0.125)
+  float distortion; // amount of distortion ([0, 3] pixels)
+  float squash;
+  // how much to squash the result in x or y (>1 means squash x, <1 means
+  // squash y; ~[0.6, 1.7])
+  pixel center_color, mid_color, outer_color; // Colors.
 };
 
 /**********

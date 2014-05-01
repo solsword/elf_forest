@@ -113,7 +113,7 @@ ptrdiff_t dta_add_block(
 ) {
   size_t spots_needed = 4;
   size_t index;
-  if (!b_anis(b)) {
+  if (!bi_anis(b)) {
     spots_needed = 1;
   }
   index = bm_find_space(dta->vacancies, spots_needed);
@@ -146,7 +146,7 @@ ptrdiff_t dta_add_block(
     BLOCK_TEXTURE_SIZE, // region width/height
       BLOCK_TEXTURE_SIZE
   );
-  if (b_anis(b)) {
+  if (bi_anis(b)) {
     size_t i;
     for (i = 1; i < 4; ++i) {
       tx_paste_region(

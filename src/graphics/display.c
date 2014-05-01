@@ -222,6 +222,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   // first!).
   chunk *c;
   chunk_approximation *ca;
+  block_info geom;
   ch_idx_t step = 1;
  // A pointer to an array of vertex buffers:
   vertex_buffer (*layers)[] = NULL;
@@ -259,9 +260,10 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
         ensure_mapped(here->primary);
         ensure_mapped(here->secondary);
         exposure = cl_get_exposure(here);
+        geom = bi_geom(here->primary);
+        // TODO: HERE!
         if ((exposure & BF_EXPOSED_ANY) && !b_is_invisible(here->primary)) {
           total += 1;
-          // TODO: Shader-based rendering instead!
           counts[block_layer(here->primary)] += 1;
         }
       }

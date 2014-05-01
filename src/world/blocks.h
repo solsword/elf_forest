@@ -133,9 +133,9 @@ static block_info const        BI_SBST_EMPTY = 0x02;
 static block_info const   BI_SBST_OBSTRUCTED = 0x03;
 
 // Geometry:
-static block_info const   BI_GEOM_FULL_BLOCK = 0x00;
-static block_info const   BI_GEOM_HALF_BLOCK = 0x01;
-static block_info const       BI_GEOM_LIQUID = 0x02;
+static block_info const        BI_GEOM_SOLID = 0x00;
+static block_info const       BI_GEOM_LIQUID = 0x01;
+static block_info const         BI_GEOM_FILM = 0x02;
 static block_info const        BI_GEOM_GRASS = 0x03;
 static block_info const         BI_GEOM_HERB = 0x04;
 static block_info const         BI_GEOM_VINE = 0x05;
@@ -146,7 +146,6 @@ static block_info const         BI_GEOM_BEAM = 0x09;
 static block_info const         BI_GEOM_DOOR = 0x0a;
 static block_info const        BI_GEOM_PANEL = 0x0b;
 static block_info const       BI_GEOM_COLUMN = 0x0c;
-static block_info const         BI_GEOM_FILM = 0x0d;
 
 /********
  * Data *
@@ -425,19 +424,19 @@ static inline block b_ori(block b) { return (b & BM_ORIENTATION) >> BS_ORI; }
 static inline block b_exp(block b) { return (b & BM_EXPOSURE) >> BS_EXP; }
 
 // Per-block-type properties:
-static inline block b_vis(block b) {
+static inline block_info bi_vis(block b) {
   return (BLOCK_INFO[b_id(b)] & BIM_VISIBILITY) >> BIMS_VISIBILITY;
 }
-static inline block b_sbst(block b) {
+static inline block_info bi_sbst(block b) {
   return (BLOCK_INFO[b_id(b)] & BIM_SUBSTANCE) >> BIMS_SUBSTANCE;
 }
-static inline block b_geom(block b) {
+static inline block_info bi_geom(block b) {
   return (BLOCK_INFO[b_id(b)] & BIM_GEOMETRY) >> BIMS_GEOMETRY;
 }
-static inline block b_anis(block b) {
+static inline block_info bi_anis(block b) {
   return (BLOCK_INFO[b_id(b)] & BIF_ANISOTROPIC) >> BIFS_ANISOTROPIC;
 }
-static inline block b_oabl(block b) {
+static inline block_info bi_oabl(block b) {
   return (BLOCK_INFO[b_id(b)] & BIF_ORIENTABLE) >> BIFS_ORIENTABLE;
 }
 
@@ -475,22 +474,22 @@ static inline block b_same_liquid(block b, block c) {
 static inline block b_is_void(block b) { return b_is(b, B_VOID); }
 static inline block b_is_boundary(block b) { return b_is(b, B_BOUNDARY); }
 
-static inline block b_is_opaque(block b) { return b_vis(b) == BI_VIS_OPAQUE; }
+static inline block b_is_opaque(block b) { return bi_vis(b) == BI_VIS_OPAQUE; }
 static inline block b_is_invisible(block b) {
-  return b_vis(b) == BI_VIS_INVISIBLE;
+  return bi_vis(b) == BI_VIS_INVISIBLE;
 }
 static inline block b_is_transparent(block b) {
-  return b_vis(b) == BI_VIS_TRANSPARENT;
+  return bi_vis(b) == BI_VIS_TRANSPARENT;
 }
 static inline block b_is_translucent(block b) {
-  return b_vis(b) == BI_VIS_TRANSLUCENT;
+  return bi_vis(b) == BI_VIS_TRANSLUCENT;
 }
 
-static inline block b_is_solid(block b) { return b_sbst(b) == BI_SBST_SOLID; }
-static inline block b_is_liquid(block b) { return b_sbst(b) == BI_SBST_LIQUID; }
-static inline block b_is_empty(block b) { return b_sbst(b) == BI_SBST_EMPTY; }
+static inline block b_is_solid(block b) { return bi_sbst(b) == BI_SBST_SOLID; }
+static inline block b_is_liquid(block b) { return bi_sbst(b) == BI_SBST_LIQUID;}
+static inline block b_is_empty(block b) { return bi_sbst(b) == BI_SBST_EMPTY; }
 static inline block b_is_obstructed(block b) {
-  return b_sbst(b) == BI_SBST_OBSTRUCTED;
+  return bi_sbst(b) == BI_SBST_OBSTRUCTED;
 }
 
 // Other flags can be checked manually...

@@ -345,9 +345,24 @@ void fltr_worley(texture *tx, void *fargs) {
   }
 }
 
+gradient_map test_test = {
+  .colors = {
+    0xff000000, 0xff111111, 0xff222222, 0xff333333,
+    0xff444444, 0xff555555, 0xff666666, 0xff777777,
+    0xff888888, 0xff999999, 0xffaaaaaa, 0xffbbbbbb,
+    0xffcccccc, 0xffdddddd, 0xffeeeeee, 0xffffffff,
+  },
+  .thresholds = {
+    1/16.0, 2/16.0, 3/16.0, 4/16.0,
+    5/16.0, 6/16.0, 7/16.0, 8/16.0,
+    9/16.0, 10/16.0, 11/16.0, 12/16.0,
+    13/16.0, 14/16.0, 15/16.0, 16/16.0
+  }
+};
+
 void fltr_branches(texture *tx, void *fargs) {
   int row, col;
-  float noise, dsx, dsy;
+  float noise, ds;
   gradient_map grmap;
   branch_filter_args *bfargs = (branch_filter_args *) fargs;
   grmap.colors[0] = bfargs->center_color;
@@ -372,11 +387,11 @@ void fltr_branches(texture *tx, void *fargs) {
   for (col = 0; col < tx->width; col += 1) {
     for (row = 0; row < tx->height; row += 1) {
       // TODO: property wrapped simplex noise.
-      dsx = sxnoise_2d(col * bfargs->scale / 2.0, row * bfargs->scale / 2.0);
-      dsy = sxnoise_2d(col * bfargs->scale / 2.0, row * bfargs->scale / 2.0);
+      ds = sxnoise_2d(col * bfargs->dscale, row * bfargs->dscale);
       noise = wrnoise_2d(
-        (col + dsx * bfargs->distortion) * bfargs->scale,
-        (row + dsy * bfargs->distortion) * bfargs->scale,
+        (col * bfargs->squash + ds * bfargs->distortion) * bfargs->scale,
+        (row / bfargs->squash + ds * bfargs->distortion) * bfargs->scale,
+        // TODO: non-hard-coded texture size here.
         32.0 * bfargs->scale, 32.0 * bfargs->scale,
         (!bfargs->rough) * WORLEY_FLAG_INCLUDE_NEXTBEST
       );

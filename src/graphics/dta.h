@@ -71,7 +71,7 @@ static inline block actual_face(
   block ori,
   block face
 ) {
-  if (b_oabl(b)) {
+  if (bi_oabl(b)) {
     return ROTATE_FACE[ori][face];
   } else {
     return face;
@@ -107,9 +107,9 @@ static inline void compute_dynamic_face_tc(
 ) {
   dynamic_texture_atlas *dta = LAYER_ATLASES[block_layer(b)];
   size_t i = dta_get_index(dta, b);
-  if (b_oabl(b)) {
+  if (bi_oabl(b)) {
     face = ROTATE_FACE[b_ori(b)][face];
-  } else if (!b_anis(b)) {
+  } else if (!bi_anis(b)) {
     face = 0;
   }
   if (i == 0) {
