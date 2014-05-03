@@ -7,6 +7,13 @@
 #include "world/world.h"
 #include "world/blocks.h"
 
+/*************
+ * Constants *
+ *************/
+
+// How far to push things to prevent z-fighting:
+extern float const Z_RECONCILIATION_OFFSET;
+
 /********************
  * Inline Functions *
  ********************/

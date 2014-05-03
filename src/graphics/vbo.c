@@ -159,31 +159,31 @@ void draw_vertex_buffer(vertex_buffer *vb, GLuint txid) {
   // Set the vertex/normal/texture data strides & offsets:
   glVertexPointer(
     3,
-    GL_SHORT,
+    GL_FLOAT,
     sizeof(vertex),
     (GLvoid const *)0
+  );
+  glTexCoordPointer(
+    2,
+    GL_FLOAT,
+    sizeof(vertex),
+    (GLvoid const *) (3*sizeof(GLfloat))
   );
   //*
   glNormalPointer(
     GL_SHORT,
     sizeof(vertex),
-    (GLvoid const *) (3*sizeof(GLshort))
+    (GLvoid const *) (5*sizeof(GLfloat))
   );
   // */
   // DEBUG!
   //glNormal3f(0.0, 0.0, 1.0);
-  glTexCoordPointer(
-    2,
-    GL_SHORT,
-    sizeof(vertex),
-    (GLvoid const *) (6*sizeof(GLshort))
-  );
 
   // Bind the buffer object holding index data:
   glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, vb->indices );
 
   // Draw the entire index array as triangles:
-  glDrawElements( GL_TRIANGLES, vb->vertex_count, GL_UNSIGNED_INT, 0 );
+  glDrawElements( GL_TRIANGLES, vb->vertex_count, GL_UNSIGNED_SHORT, 0 );
 
   // Unbind the buffers:
   glBindBuffer( GL_ARRAY_BUFFER, 0 );

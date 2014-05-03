@@ -103,7 +103,7 @@ static block const     BM_VARIANT = 0x3fff << BS_VAR;
 
 static block_info const  BIM_VISIBILITY = 0x03 << BIMS_VISIBILITY;
 static block_info const   BIM_SUBSTANCE = 0x03 << BIMS_SUBSTANCE;
-static block_info const    BIM_GEOMETRY = 0x0f << BIMS_SUBSTANCE;
+static block_info const    BIM_GEOMETRY = 0x0f << BIMS_GEOMETRY;
 
 // Info Flags:
 // -----------

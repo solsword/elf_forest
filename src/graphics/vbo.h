@@ -13,7 +13,7 @@
  **********************/
 
 // An index into a vertex buffer.
-typedef uint32_t vb_index;
+typedef GLshort vb_index;
 
 // All of the data needed to define a vertex: 3D position, 3D normal, and s and
 // t texture coordinates, each stored as a 16-bit unsigned int.
@@ -30,9 +30,9 @@ typedef struct vertex_buffer_s vertex_buffer;
  *************************/
 
 struct vertex_s {
-  GLshort x, y, z;
+  GLfloat x, y, z;
+  GLfloat s, t;
   GLshort nx, ny, nz;
-  GLshort s, t;
 };
 
 struct vertex_buffer_s {

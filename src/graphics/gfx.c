@@ -173,6 +173,7 @@ void glsettings(void) {
   glHint( GL_FOG_HINT, GL_FASTEST );
   glFogi( GL_FOG_MODE, GL_EXP2 );
   glEnable( GL_ALPHA_TEST );
+  glEnable( GL_POLYGON_OFFSET_FILL );
 }
 
 // Sets up the OpenGL perspective:

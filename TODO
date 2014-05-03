@@ -30,7 +30,9 @@ graphics
     ambient occlusion
   entity models & textures
   initial player facing due to initial mouse movement
-  implement wrapped simplex noise
+  implement wrapped simplex noise (optional)
+  check for z reconciliation problems (esp. at corners of secondary solid
+    blocks)
 world
   plant growth
   water flow
