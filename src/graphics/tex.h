@@ -47,6 +47,9 @@ typedef struct tcoords_s tcoords;
 // Pixel dimension of each block texture:
 static uint8_t const BLOCK_TEXTURE_SIZE = 32;
 
+// An empty (completely transparent) pixel value:
+static pixel const PX_EMPTY = 0x00000000;
+
 /********************
  * Global variables *
  ********************/

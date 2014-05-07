@@ -58,12 +58,6 @@ typedef struct scatter_filter_args_s scatter_filter_args;
 struct worley_filter_args_s;
 typedef struct worley_filter_args_s worley_filter_args;
 
-// Arguments to the branch texture filter:
-// roughness flag, scale, width, distortion scale, distortion, squash, and
-// center, mid, and outer colors.
-struct branch_filter_args_s;
-typedef struct branch_filter_args_s branch_filter_args;
-
 /*************
  * Constants *
  *************/
@@ -118,18 +112,6 @@ struct scatter_filter_args_s {
 struct worley_filter_args_s {
   float freq;
   gradient_map *grmap;
-};
-
-struct branch_filter_args_s {
-  int rough; // whether to generate rough- or smooth-type branches (0 or 1)
-  float scale; // scale of the worley noise (~0.125)
-  float width; // branch width [0.5, 1.5]
-  float dscale; // scale of distortion noise (~0.125)
-  float distortion; // amount of distortion ([0, 3] pixels)
-  float squash;
-  // how much to squash the result in x or y (>1 means squash x, <1 means
-  // squash y; ~[0.6, 1.7])
-  pixel center_color, mid_color, outer_color; // Colors.
 };
 
 /**********
@@ -242,9 +224,6 @@ void fltr_apply_gradient_map(texture *tx, void *args);
 
 // Generates wrapped Worley noise across the entire texture.
 void fltr_worley(texture *tx, void *args);
-
-// Generates branch-like textures.
-void fltr_branches(texture *tx, void *args);
 
 /*******************
  * Remix Functions *

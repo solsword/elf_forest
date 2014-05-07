@@ -94,6 +94,7 @@ worley_filter_args worley_test_args = {
 };
 
 branch_filter_args branch_test_args = {
+  .seed = 17,
   .rough = 0,
   .scale = 0.125,
   .width = 1.0,

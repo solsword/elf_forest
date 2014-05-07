@@ -46,7 +46,7 @@ static inline tx_grammar_literal *choose_child(
   rnd *= (float) (
     ((seed & HASH_MASK) << HASH_BITS)
   +
-    UPPER_HASH_OF(head)
+    mixed_hash_1d((ptrdiff_t) head)
   );
   rnd /= (float) ((HASH_MASK << HASH_BITS) + HASH_MASK);
   dis = head;
@@ -248,7 +248,7 @@ void run_grammar(tx_grammar_literal *lit) {
         if (px == GRAMMAR_KEYS[i] && lit->children[i] != NULL) {
           chosen = choose_child(
             lit->children[i],
-            hash_3d(hash_2d(UPPER_HASH_OF(lit), i), col, row)
+            hash_3d(hash_2d(mixed_hash_1d((ptrdiff_t) lit), i), col, row)
           );
           if (chosen->result == NULL) {
             run_grammar(chosen);
@@ -282,8 +282,8 @@ void fltr_scatter(texture *tx, void *fargs) {
   int max_dist_x = sfargs->x_freq / 3;
   int max_dist_y = sfargs->y_freq / 3;
   int dx, dy;
-  int starting_col = UPPER_HASH_OF(tx) % (sfargs->x_freq/2);
-  int starting_row = UPPER_HASH_OF(sfargs) % (sfargs->y_freq/2);
+  int starting_col = mixed_hash_1d((ptrdiff_t) tx) % (sfargs->x_freq/2);
+  int starting_row = mixed_hash_1d((ptrdiff_t) sfargs) % (sfargs->y_freq/2);
   for (
     col = starting_col % tx->width;
     col < tx->width;
@@ -294,11 +294,11 @@ void fltr_scatter(texture *tx, void *fargs) {
       row < tx->height;
       row += sfargs->y_freq
     ) {
-      dx = hash_3d(UPPER_HASH_OF(tx), col, row);
+      dx = hash_3d(mixed_hash_1d((ptrdiff_t) tx), col, row);
       dx %= (2*max_dist_x + 1);
       dx -= max_dist_x;
 
-      dy = hash_3d(UPPER_HASH_OF(tx), row, col);
+      dy = hash_3d(mixed_hash_1d((ptrdiff_t) tx), row, col);
       dy %= (2*max_dist_y + 1);
       dy -= max_dist_y;
 
@@ -359,54 +359,3 @@ gradient_map test_test = {
     13/16.0, 14/16.0, 15/16.0, 16/16.0
   }
 };
-
-void fltr_branches(texture *tx, void *fargs) {
-  int row, col;
-  float noise, ds;
-  gradient_map grmap;
-  branch_filter_args *bfargs = (branch_filter_args *) fargs;
-  grmap.colors[0] = bfargs->center_color;
-  grmap.colors[1] = bfargs->mid_color;
-  grmap.colors[2] = bfargs->outer_color;
-  grmap.colors[3] = 0x00000000;
-  if (bfargs->rough) {
-    grmap.thresholds[0] = 0.43;
-    grmap.thresholds[1] = 0.61;
-    grmap.thresholds[2] = 0.72;
-  } else {
-    grmap.thresholds[0] = 0.06;
-    grmap.thresholds[1] = 0.14;
-    grmap.thresholds[2] = 0.2;
-  }
-  grmap.thresholds[3] = 1.0;
-#ifdef DEBUG
-  // Use orange for out-of-range noise results:
-  grmap.colors[4] = 0xff0088ff;
-  grmap.thresholds[4] = 1000.0;
-#endif
-  for (col = 0; col < tx->width; col += 1) {
-    for (row = 0; row < tx->height; row += 1) {
-      // TODO: property wrapped simplex noise.
-      ds = sxnoise_2d(col * bfargs->dscale, row * bfargs->dscale);
-      noise = wrnoise_2d(
-        (col * bfargs->squash + ds * bfargs->distortion) * bfargs->scale,
-        (row / bfargs->squash + ds * bfargs->distortion) * bfargs->scale,
-        // TODO: non-hard-coded texture size here.
-        32.0 * bfargs->scale, 32.0 * bfargs->scale,
-        (!bfargs->rough) * WORLEY_FLAG_INCLUDE_NEXTBEST
-      );
-      if (bfargs->rough) {
-        noise = 1 - noise;
-        // TODO: a sigmoid for organizing branches
-      }
-      noise *= (2 - bfargs->width);
-      if (noise > 1) { noise = 1; }
-      tx_set_px(
-        tx,
-        gradient_result(&grmap, noise),
-        col,
-        row
-      );
-    }
-  }
-}

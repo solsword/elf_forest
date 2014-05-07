@@ -204,6 +204,16 @@ static inline void vintermsof(
   vec->z = tz;
 }
 
+// Performs linear interpolation between vectors a and b according to parameter
+// t (0 <= t <= 1 should hold, otherwise it's extrapolation). Puts the result
+// into the given result vector.
+static inline void lerp(vector *a, vector *b, float t, vector *result) {
+  float ti = 1 - t;
+  result->x = a->x * ti + b->x * t;
+  result->y = a->y * ti + b->y * t;
+  result->z = a->z * ti + b->z * t;
+}
+
 /*************
  * Functions *
  *************/

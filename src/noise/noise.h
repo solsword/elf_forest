@@ -138,13 +138,7 @@ extern float const MAX_SQ_WORLEY_DISTANCE_2D;
 // amount of %ing you have to do to keep indices within range.
 static ptrdiff_t const HASH_MASK = 0xff;
 static ptrdiff_t const HASH_BITS = 8;
-#define HASH_OF(x) (((ptrdiff_t) x) & HASH_MASK)
-#define UPPER_HASH_OF(x) ((((ptrdiff_t) x) >> 2) & HASH_MASK)
-#define MIXED_HASH_OF(x) ( \
-  ( \
-    ((ptrdiff_t) x) ^ ((ptrdiff_t) x) >> HASH_BITS \
-  ) & HASH_MASK \
-)
+
 static ptrdiff_t const HASH[512] = {
   248, 244, 209,  63, 108,  81,  67, 202,
   240, 140, 196, 217, 194,  48, 213, 234,
@@ -227,12 +221,55 @@ struct grid_neighborhood_2d_s {
  * Inline Functions *
  ********************/
 
-// hash functions using the hash table:
-static inline ptrdiff_t hash_2d(ptrdiff_t i, ptrdiff_t j) {
-  return HASH[(i & HASH_MASK) + HASH[(j & HASH_MASK)]];
+// Hash functions using the hash table:
+
+// Basic hash of a single value, using only the first HASH_BITS bits:
+static inline ptrdiff_t hash_1d(ptrdiff_t x) {
+  return HASH[x & HASH_MASK];
 }
-static inline ptrdiff_t hash_3d(ptrdiff_t i, ptrdiff_t j, ptrdiff_t k) {
-  return HASH[(i & HASH_MASK) + HASH[(j & HASH_MASK) + HASH[k & HASH_MASK]]];
+
+// Hash that uses 4x as many bits of the input as the default hash to achieve a
+// much larger period (given sufficient seed bits). It is of course much slower
+// as a result.
+static inline ptrdiff_t mixed_hash_1d(ptrdiff_t x) {
+  return HASH[
+    (x & HASH_MASK) +
+    HASH[
+      ((x >> HASH_BITS) & HASH_MASK) +
+      HASH[
+        ((x >> HASH_BITS*2) & HASH_MASK) +
+        HASH[
+          (x >> HASH_BITS*3) & HASH_MASK
+        ]
+      ]
+    ]
+  ];
+}
+
+// A similar approach to mixed_hash_1d, but returns a 4x wide output instead of
+// just a normal hash with HASH_BITS bits.
+static inline ptrdiff_t expanded_hash_1d(ptrdiff_t x) {
+#define HOM(x,y) ((x >> HASH_BITS*y) & HASH_MASK)
+  ptrdiff_t h1 = HASH[HOM(x,0) + HASH[HOM(x,1)]];
+  ptrdiff_t h2 = HASH[HOM(x,1) + HASH[HOM(x,3)]];
+  ptrdiff_t h3 = HASH[HOM(x,2) + HASH[HOM(x,0)]];
+  ptrdiff_t h4 = HASH[HOM(x,3) + HASH[HOM(x,2)]];
+#undef HOM
+  return (
+    (h4 << (HASH_BITS*3)) +
+    (h2 << (HASH_BITS*2)) +
+    (h1 << (HASH_BITS*1)) +
+    h3
+  );
+}
+
+// Simple 2d and 3d hashing, using only the first HASH_BITS bits of each. Call
+// mixed_hash_1d on the arguments before passing them in to use more bits.
+static inline ptrdiff_t hash_2d(ptrdiff_t x, ptrdiff_t y) {
+  return HASH[(x & HASH_MASK) + HASH[(y & HASH_MASK)]];
+}
+static inline ptrdiff_t hash_3d(ptrdiff_t x, ptrdiff_t y, ptrdiff_t z) {
+  return HASH[(x & HASH_MASK) + HASH[(y & HASH_MASK) + HASH[z & HASH_MASK]]];
 }
 
 /*************

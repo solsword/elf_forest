@@ -318,8 +318,8 @@ static inline float compute_surflet_value_2d(
     return 0.0;
   } else {
     atten *= atten;
-    //return atten * ((hash_2d(MIXED_HASH_OF(i), MIXED_HASH_OF(j)) & 0x2) - 1);
-    return atten * grad_2d(hash_2d(MIXED_HASH_OF(i), MIXED_HASH_OF(j)), dx, dy);
+    //return atten * ((hash_2d(mixed_hash_1d(i), mixed_hash_1d(j)) & 0x2) - 1);
+    return atten * grad_2d(hash_2d(mixed_hash_1d(i), mixed_hash_1d(j)), dx, dy);
   }
 }
 
@@ -341,7 +341,7 @@ static inline float compute_surflet_value_3d(
   } else {
     atten *= atten;
     return atten * grad_3d(
-      hash_3d(MIXED_HASH_OF(i), MIXED_HASH_OF(j), MIXED_HASH_OF(k)),
+      hash_3d(mixed_hash_1d(i), mixed_hash_1d(j), mixed_hash_1d(k)),
       dx, dy, dz
     );
   }
@@ -355,15 +355,15 @@ static inline void compute_offset_grid_point_2d(
 ) {
   grn->x[idx] = (float) i + (
     hash_2d(
-      MIXED_HASH_OF(i),
-      MIXED_HASH_OF(j)
+      mixed_hash_1d(i),
+      mixed_hash_1d(j)
     ) / ((float) HASH_MASK)
   );
   grn->y[idx] = (float) j + (
     hash_3d(
-      MIXED_HASH_OF(i),
-      MIXED_HASH_OF(j),
-      MIXED_HASH_OF(i)
+      mixed_hash_1d(i),
+      mixed_hash_1d(j),
+      mixed_hash_1d(i)
     ) / ((float) HASH_MASK)
   );
 }
@@ -385,15 +385,15 @@ static inline void compute_offset_grid_point_2d_wrapped(
   if (height > 0) { jw = posmod(jw, height); }
   grn->x[idx] = (float) i + (
     hash_2d(
-      MIXED_HASH_OF(iw),
-      MIXED_HASH_OF(jw)
+      mixed_hash_1d(iw),
+      mixed_hash_1d(jw)
     ) / ((float) HASH_MASK)
   );
   grn->y[idx] = (float) j + (
     hash_3d(
-      MIXED_HASH_OF(jw),
-      MIXED_HASH_OF(iw),
-      MIXED_HASH_OF(iw)
+      mixed_hash_1d(jw),
+      mixed_hash_1d(iw),
+      mixed_hash_1d(iw)
     ) / ((float) HASH_MASK)
   );
 }
