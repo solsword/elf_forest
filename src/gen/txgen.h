@@ -105,6 +105,7 @@ struct gradient_map_s {
 };
 
 struct scatter_filter_args_s {
+  size_t seed;
   size_t x_freq, y_freq;
   pixel color;
 };
@@ -208,6 +209,19 @@ texture* get_block_texture(block b);
 // Takes a grammar literal and runs it, recursively picking children and
 // running them before allocating and computing a result texture.
 void run_grammar(tx_grammar_literal *lit);
+
+// Calls the given function for every point on a jittered grid.
+void ateach_scattered(
+  size_t seed,
+  size_t x_scale, // the basic spacing of the points in x/y
+  size_t y_scale,
+  int x_strength, // maximum offset of each point in x/y
+  int y_strength,
+  ptrdiff_t x_min, ptrdiff_t x_max, // bounding box of the area to iterate over
+  ptrdiff_t y_min, ptrdiff_t y_max, // (min is inclusive, max is exclusive)
+  void *arg, // extra argument to the function
+  void (*f)(int, int, void *) // iteration function
+);
 
 /********************
  * Filter Functions *

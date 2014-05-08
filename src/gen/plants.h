@@ -13,6 +13,11 @@
  *************/
 
 extern int const SMALL_LEAF_MAX_HEIGHT;
+extern int const SMALL_LEAF_MAX_WIDTH;
+
+extern float const CURVE_DRAWING_RESOLUTION;
+
+extern float const MAX_BULB_SPREAD;
 
 /*********
  * Enums *
@@ -50,7 +55,7 @@ typedef struct leaf_filter_args_s leaf_filter_args;
  *************************/
 
 struct branch_filter_args_s {
-  uint32_t seed; // integer seed
+  size_t seed; // integer seed
   int rough; // whether to generate rough- or smooth-type branches (0 or 1)
   float scale; // scale of the worley noise (~0.125)
   float width; // branch width [0.5, 1.5]
@@ -64,11 +69,17 @@ struct branch_filter_args_s {
 };
 
 struct leaf_filter_args_s {
-  uint32_t seed; // integer seed
+  size_t seed; // integer seed
   leaf_type type; // which algorithm to use
-  leaf_size size; // LS_SMALL -> 4x4 leaf; LS_LARGE -> 8x8 leaf
+  leaf_size size; // LS_SMALL -> 8x8 leaf; LS_LARGE -> 16x16 leaf
   pixel main_color, vein_color, dark_color; // Colors for the main leaf
   // surface, the leaf veins (if any) and the shadow details.
+};
+
+struct leaves_filter_args_s {
+  size_t seed; // integer seed
+  leaf_filter_args leaf_args;
+  int spacing; // leaf spacing
 };
 
 /****************************
@@ -79,6 +90,8 @@ extern branch_filter_args const example_branch_args;
 
 extern leaf_filter_args const example_leaf_args;
 
+extern leaves_filter_args const example_leaves_args;
+
 /********************
  * Inline Functions *
  ********************/
@@ -87,14 +100,25 @@ extern leaf_filter_args const example_leaf_args;
  * Functions *
  *************/
 
+void draw_bulb_leaf(
+  texture *tx,
+  float frx, float fry,
+  float twx, float twy,
+  float gtx, float gty,
+  float tox, float toy
+);
+
 /********************
  * Filter Functions *
  ********************/
 
 // Generates branch-like textures.
-void fltr_branches(texture *tx, void *args);
+void fltr_branches(texture *tx, void *fargs);
 
-// Generates a leaf texture (either 4x4 or 8x8 depending on the args).
+// Generates a leaf texture (either 8x8 or 16x16 depending on the args).
 void fltr_leaf(texture *tx, void *fargs);
+
+// Generates a 32x32 leaves texture by scattering several leaves over the area.
+void fltr_leaves(texture *tx, void *fargs);
 
 #endif // ifndef PLANTS_H

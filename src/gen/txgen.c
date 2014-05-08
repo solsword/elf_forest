@@ -272,44 +272,68 @@ void run_grammar(tx_grammar_literal *lit) {
   }
 }
 
+void ateach_scattered(
+  size_t seed,
+  size_t x_scale,
+  size_t y_scale,
+  int x_strength,
+  int y_strength,
+  ptrdiff_t x_min, ptrdiff_t x_max,
+  ptrdiff_t y_min, ptrdiff_t y_max,
+  void *arg,
+  void (*f)(int, int, void *)
+) {
+  int x, y;
+  int xi, yi; // grid indices
+  for (xi = x_min/x_scale; xi < x_max/x_scale; xi += 1) {
+    x = xi*x_scale + (expanded_hash_1d(seed*xi) % (2*x_strength)) - x_strength;
+    for (yi = y_min/y_scale; yi < y_max/y_scale; yi += 1) {
+      y = yi*y_scale + (eypanded_hash_1d(seed*yi) % (2*y_strength))- y_strength;
+      if (x >= x_min && x < x_max && y >= x_min && y < y_max) {
+        f(x, y, arg);
+      }
+    }
+  }
+}
+
+/******************
+ * Filter Helpers *
+ ******************/
+
+// private helper function for fltr_scatter w/ its own argument structure
+struct scatter_helper_args_s {
+  texture *tx;
+  pixel color;
+};
+void fltr_scatter_helper(int x, int y, void *arg) {
+  struct scatter_helper_args_s *shargs = (struct scatter_helper_args_s *) arg;
+  tx_set_px(
+    shargs->tx,
+    shargs->color,
+    (size_t) ((x + tx->width) % tx->width),
+    (size_t) ((y + tx->height) % tx->height)
+  );
+}
+
 /********************
  * Filter Functions *
  ********************/
 
 void fltr_scatter(texture *tx, void *fargs) {
   int row, col;
+  struct scatter_helper_args_s shargs;
   scatter_filter_args *sfargs = (scatter_filter_args *) fargs;
-  int max_dist_x = sfargs->x_freq / 3;
-  int max_dist_y = sfargs->y_freq / 3;
-  int dx, dy;
-  int starting_col = mixed_hash_1d((ptrdiff_t) tx) % (sfargs->x_freq/2);
-  int starting_row = mixed_hash_1d((ptrdiff_t) sfargs) % (sfargs->y_freq/2);
-  for (
-    col = starting_col % tx->width;
-    col < tx->width;
-    col += sfargs->x_freq
-  ) {
-    for (
-      row = starting_row % tx->height;
-      row < tx->height;
-      row += sfargs->y_freq
-    ) {
-      dx = hash_3d(mixed_hash_1d((ptrdiff_t) tx), col, row);
-      dx %= (2*max_dist_x + 1);
-      dx -= max_dist_x;
-
-      dy = hash_3d(mixed_hash_1d((ptrdiff_t) tx), row, col);
-      dy %= (2*max_dist_y + 1);
-      dy -= max_dist_y;
-
-      tx_set_px(
-        tx,
-        sfargs->color,
-        (size_t) ((col + dx + tx->width) % tx->width),
-        (size_t) ((row + dy + tx->height) % tx->height)
-      );
-    }
-  }
+  shargs.tx = tx;
+  shargs.color = sfargs->color;
+  ateach_scattered(
+    sfargs->seed,
+    sfargs->x_freq, sfargs->y_freq,
+    sfargs->x_freq/3, sfargs->y_freq/3,
+    0, BLOCK_TEXTURE_SIZE,
+    0, BLOCK_TEXTURE_SIZE,
+    &shargs,
+    &fltr_scatter_helper
+  );
 }
 
 void fltr_apply_gradient_map(texture *tx, void *fargs) {

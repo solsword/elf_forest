@@ -246,6 +246,12 @@ static inline ptrdiff_t mixed_hash_1d(ptrdiff_t x) {
   ];
 }
 
+// Returns a floating point value in [0, 1] rather than an integer in
+// [0, HASH_MASK]. Uses mixed_hash_1d as the underlying hash function.
+static inline float float_hash_1d(ptrdiff_t x) {
+  return (float) mixed_hash_1d(x) / (float) HASH_MASK;
+}
+
 // A similar approach to mixed_hash_1d, but returns a 4x wide output instead of
 // just a normal hash with HASH_BITS bits.
 static inline ptrdiff_t expanded_hash_1d(ptrdiff_t x) {

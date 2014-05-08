@@ -226,6 +226,15 @@ static inline void tx_set_px(
   tx->pixels[left + tx->width * top] = p;
 }
 
+// Clears the given texture, setting all of its pixels to black with 0 alpha.
+static inline void tx_clear(texture *tx) {
+  memset(
+    tx->pixels,
+    0,
+    tx->height * tx->width * sizeof(pixel)
+  );
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/

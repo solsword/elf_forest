@@ -14,8 +14,12 @@
  * Constants *
  *************/
 
-extern int const SMALL_LEAF_MAX_HEIGHT = 4;
-extern int const SMALL_LEAF_MAX_WIDTH = 4;
+int const SMALL_LEAF_MAX_HEIGHT = 7;
+int const SMALL_LEAF_MAX_WIDTH = 5;
+
+float const CURVE_DRAWING_RESOLUTION = 0.05;
+
+float const MAX_BULB_SPREAD = 0.9;
 
 /****************************
  * Example filter arguments *
@@ -46,6 +50,42 @@ leaf_filter_args const example_leaf_args = {
 /*************
  * Functions *
  *************/
+
+void draw_bulb_leaf(
+  texture *tx,
+  float frx, float fry,
+  float twx, float twy,
+  float cfx, float cfy,
+  float tox, float toy
+) {
+  curve c;
+  c.from.x = frx; c.from.y = fry; c.from.z = 0;
+  c.go_towards.x = twx; c.go_towards.y = twy; c.go_towards.z = 0;
+  c.come_from.x = cfx; c.come_from.y = cfy; c.come_from.z = 0;
+  c.to.x = tox; c.to.y = toy; c.to.z = 0;
+  // TODO: HERE!
+  curve_witheach(&c, CURVE_DRAWING_RESOLUTION, arg, fn);
+}
+
+/******************
+ * Filter Helpers *
+ ******************/
+
+// private helper function for fltr_leaves w/ its own argument structure
+struct leaves_helper_args_s {
+  texture *tx;
+  texture *leaf;
+  leaf_filter_args *lfargs;
+};
+void fltr_leaves_helper(int x, int y, void *arg) {
+  struct leaves_helper_args_s *lhargs = (struct leaves_helper_args_s *) arg;
+  // Scramble the leaf filter seed:
+  lhargs->lfargs->seed = expanded_hash_1d(lhargs->lfargs->seed * x * y);
+  // Render a single randomized leaf into the leaf texture:
+  fltr_leaf(lhargs->leaf, lhargs->lfargs);
+  // Draw the fresh leaf onto the main texture at the given position:
+  tx_draw_wrapped(lhargs->tx, lhargs->leaf, x, y);
+}
 
 /********************
  * Filter Functions *
@@ -122,11 +162,7 @@ void fltr_leaf(texture *tx, void *fargs) {
       int height = hash_2d(mxhash, 4) % SMALL_LEAF_MAX_HEIGHT;
       int width = hash_2d(mxhash, 5) % SMALL_LEAF_MAX_WIDTH;
       int x, y;
-      for (x = 0; x < tx->width; ++x) {
-        for (y = 0; y < tx->height; ++y) {
-          tx_set_px(tx, PX_EMPTY, x, y);
-        }
-      }
+      tx_clear(tx);
       for (x = 0; x < width; ++x) {
         for (y = 0; y < height; ++y) {
           if (
@@ -192,4 +228,62 @@ void fltr_leaf(texture *tx, void *fargs) {
 #endif
 }
 
-void fltr_leaf(texture *tx, void *fargs);
+void fltr_leaves(texture *tx, void *fargs) {
+  leaves_filter_args *lfargs = (leaves_filter_args *) fargs;
+  // Manually set up a texture on the stack to generate leaves into:
+  pixel pixels[16*16];
+  texture one_leaf;
+  one_leaf.width = 16;
+  one_leaf.height = 16;
+  one_leaf.pixels = pixels;
+
+  // Set up arguments for our helper function:
+  struct leaves_helper_args_s lhargs;
+  lhargs.tx = tx;
+  lhargs.leaf = &one_leaf;
+  lhargs.lfargs = lfargs;
+
+  ateach_scattered(
+    sfargs->seed,
+    sfargs->x_freq, sfargs->y_freq,
+    sfargs->x_freq/3, sfargs->y_freq/3,
+    0, BLOCK_TEXTURE_SIZE,
+    0, BLOCK_TEXTURE_SIZE,
+    &lhargs,
+    &fltr_leaves_helper
+  );
+}
+
+void fltr_bulb_leaves(texture *tx, void *fargs) {
+  bulb_leaves_filter_args *blfargs = (bulb_leaves_filter_args *) fargs;
+  ptrdiff_t mxhash = mixed_hash_1d(blfargs->seed);
+  int i = 0;
+  float noise = 0.8 + 0.4 * float_hash_1d(mxhash); // [0.8, 1.2]
+  int nstalks = (int) (i * noise);
+  float x = 0, xo = 0;
+  float y = BLOCK_TEXTURE_SIZE, yo = 0;
+  float mid = (BLOCK_TEXTURE_SIZE / 2);
+  noise = 0.75 + 0.5 * float_hash_1d(mxhash); // [0.75, 1.25]
+  float spread = blfargs->spread * noise;
+  if (spread > MAX_BULB_SPREAD) {
+    spread = MAX_BULB_SPREAD;
+  }
+  spread *= BLOCK_TEXTURE_SIZE / 2.0;
+  for (i; i < nstalks; ++i) {
+    // generate x in [mid - spread, mid + spread]
+    x = mid - spread + spread * float_hash_1d(spread * mxhash);
+    noise = 1.0 - 2 * float_hash_1d(x * noise * mxhash); // [-1, 1]
+    xo = blfargs->bend * noise;
+    noise = 1.0 - 2 * float_hash_1d(x * noise * mxhash); // [-1, 1]
+    yo = blfargs->bend * noise;
+    draw_bulb_leaf(
+      tx,
+      x, y,
+      x, y,
+      x, y - mid + 0.5 * blfargs->bend,
+      x + xo, y - mid + yo,
+    );
+    noise = 0.75 + 0.5 * float_hash_1d(x * noise * mxhash); // [0.75, 1.25]
+    step = blfargs->step * noise;
+  }
+}

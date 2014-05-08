@@ -115,9 +115,10 @@ float est_curve_length(curve *c) {
  *************/
 
 // Calls the given function at each step along the curve, where steps are
-// approximately the given distance apart. The function gets a position vector
-// and a direction vector as arguments.
-void curve_foreach(curve *c, float spacing, void (*f)(vector *, vector *));
+// approximately the given distance apart. The function gets a parameterization
+// variable between 0.0 and 1.0, a position vector, and a direction vector as
+// arguments.
+void curve_foreach(curve *c, float spacing, void (*f)(float, vector*, vector*));
 
 // Works like curve_foreach, but passes an extra argument to each invocation of
 // the iteration function.
@@ -125,7 +126,7 @@ void curve_witheach(
   curve *c,
   float spacing,
   void *arg,
-  void (*f)(vector *, vector *, void *)
+  void (*f)(float, vector *, vector *, void *)
 );
 
 #endif // ifndef CURVE_H

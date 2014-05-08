@@ -13,7 +13,7 @@
  * Functions *
  *************/
 
-void curve_foreach(curve *c, float spacing, void (*f)(vector *, vector *)) {
+void curve_foreach(curve *c, float spacing, void (*f)(float, vector*,vector*)) {
   vector p, dir;
   float inc = spacing / est_curve_length(c);
   float t = 0;
@@ -28,7 +28,7 @@ void curve_foreach(curve *c, float spacing, void (*f)(vector *, vector *)) {
   for (t = 0; t <= 1.0; t += inc) {
     point_on_curve(c, t, &p);
     direction_on_curve(c, t, &dir);
-    f(&p, &dir);
+    f(t, &p, &dir);
   }
 }
 
@@ -36,7 +36,7 @@ void curve_witheach(
   curve *c,
   float spacing,
   void *arg,
-  void (*f)(vector *, vector *, void *)
+  void (*f)(float, vector *, vector *, void *)
 ) {
   vector p, dir;
   float inc = spacing / est_curve_length(c);
@@ -52,6 +52,6 @@ void curve_witheach(
   for (t = 0; t <= 1.0; t += inc) {
     point_on_curve(c, t, &p);
     direction_on_curve(c, t, &dir);
-    f(&p, &dir, arg);
+    f(t, &p, &dir, arg);
   }
 }
