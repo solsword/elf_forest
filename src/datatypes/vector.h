@@ -214,6 +214,14 @@ static inline void lerp(vector *a, vector *b, float t, vector *result) {
   result->z = a->z * ti + b->z * t;
 }
 
+// Rotates the given vector by the given amount around the positive z axis.
+static inline void vrotz(vector *v, float radians) {
+  float tx;
+  tx = v->x * cosf(radians) - v->y * sinf(radians);
+  v->y = v->x * sinf(radians) + v->y * cosf(radians);
+  v->x = tx;
+}
+
 /*************
  * Functions *
  *************/

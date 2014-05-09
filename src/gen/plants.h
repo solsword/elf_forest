@@ -15,8 +15,6 @@
 extern int const SMALL_LEAF_MAX_HEIGHT;
 extern int const SMALL_LEAF_MAX_WIDTH;
 
-extern float const CURVE_DRAWING_RESOLUTION;
-
 extern float const MAX_BULB_SPREAD;
 
 /*********
@@ -50,6 +48,12 @@ typedef struct branch_filter_args_s branch_filter_args;
 struct leaf_filter_args_s;
 typedef struct leaf_filter_args_s leaf_filter_args;
 
+struct leaves_filter_args_s;
+typedef struct leaves_filter_args_s leaves_filter_args;
+
+struct bulb_leaves_filter_args_s;
+typedef struct bulb_leaves_filter_args_s bulb_leaves_filter_args;
+
 /*************************
  * Structure Definitions *
  *************************/
@@ -78,8 +82,18 @@ struct leaf_filter_args_s {
 
 struct leaves_filter_args_s {
   size_t seed; // integer seed
-  leaf_filter_args leaf_args;
-  int spacing; // leaf spacing
+  size_t x_spacing, y_spacing; // leaf spacing
+  leaf_filter_args leaf_args; // arguments for the individual leaves
+};
+
+struct bulb_leaves_filter_args_s {
+  size_t seed;
+  size_t count; // approximate stalk count
+  float spread; // [0, 1] how spread out are the bases of the stalks?
+  float bend; // how far do the stalks bend (upper limit in pixels)?
+  float width; // how wide the stalks should be (at their bases)
+  pixel main_color, vein_color, dark_color; // Colors for the main leaf
+  // surface, the leaf veins, and the leaf shadows.
 };
 
 /****************************
@@ -87,21 +101,30 @@ struct leaves_filter_args_s {
  ****************************/
 
 extern branch_filter_args const example_branch_args;
-
 extern leaf_filter_args const example_leaf_args;
-
 extern leaves_filter_args const example_leaves_args;
+extern bulb_leaves_filter_args const example_bulb_leaves_args;
 
-/********************
- * Inline Functions *
- ********************/
+/****************************
+ * Example Grammar Elements *
+ ****************************/
+
+extern tx_grammar_literal example_branches_literal;
 
 /*************
  * Functions *
  *************/
 
+// Function for the width of a bulb leaf as a function of t
+float bulb_width_func(float t, void *arg);
+
+// Function for drawing a bulb leaf:
 void draw_bulb_leaf(
   texture *tx,
+  size_t base_width,
+  pixel main_color,
+  pixel vein_color,
+  pixel shade_color,
   float frx, float fry,
   float twx, float twy,
   float gtx, float gty,
@@ -118,7 +141,10 @@ void fltr_branches(texture *tx, void *fargs);
 // Generates a leaf texture (either 8x8 or 16x16 depending on the args).
 void fltr_leaf(texture *tx, void *fargs);
 
-// Generates a 32x32 leaves texture by scattering several leaves over the area.
+// Generates a block leaves texture by scattering several leaves over the area.
 void fltr_leaves(texture *tx, void *fargs);
+
+// Generates a block leaves texture by drawing leaves sprouting from the bottom.
+void fltr_bulb_leaves(texture *tx, void *fargs);
 
 #endif // ifndef PLANTS_H

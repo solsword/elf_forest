@@ -119,6 +119,7 @@ struct worley_filter_args_s {
  * Macros *
  **********/
 
+// A literal that just reads from a file:
 #define SIMPLE_TX_LITERAL(FILENAME, ANCHOR_X, ANCHOR_Y) \
   { \
     .filename = FILENAME, \
@@ -130,6 +131,28 @@ struct worley_filter_args_s {
     .result = NULL \
   }
 
+// A literal that just runs a filter:
+#define FILTER_TX_LITERAL(FILTER, ARGS, SIZE_X, SIZE_Y) \
+  { \
+    .filename = NULL, \
+    .anchor_x = SIZE_X, \
+    .anchor_y = SIZE_Y, \
+    .preprocess = &FILTER, \
+      .preargs = (void *) (&ARGS), \
+    .postprocess = NULL, \
+      .postargs = NULL, \
+    .children = { \
+      NULL, \
+      NULL, \
+      NULL, \
+      NULL, \
+      NULL, \
+      NULL, \
+    }, \
+    .result = NULL \
+  }
+
+// A choice between a set of literals:
 #define TX_ANY(LITERAL, N) any_ ## LITERAL ## _ ## N
 #define TX_ANY_ENTRY(LITERAL, N, NXT, WEIGHT) \
   tx_grammar_disjunction TX_ANY(LITERAL, N) = { \

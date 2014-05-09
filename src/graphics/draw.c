@@ -1,0 +1,105 @@
+// draw.c
+// 2D drawing functions.
+
+#include "datatypes/vector.h"
+#include "noise/noise.h"
+
+#include "tex.h"
+#include "curve.h"
+
+#include "draw.h"
+
+/*************
+ * Constants *
+ *************/
+
+float const CURVE_DRAWING_RESOLUTION = 0.05;
+
+/***********************
+ * Iteration Functions *
+ ***********************/
+
+void draw_curve_point(float t, vector *pos, vector *dir, void *args) {
+  draw_curve_point_args *dcpargs = (draw_curve_point_args*) args;
+  tx_set_px(
+    dcpargs->tx,
+    dcpargs->color,
+    (size_t) pos->x,
+    (size_t) pos->y
+  );
+}
+
+void draw_thick_curve_segment(float t, vector *pos, vector *dir, void *args) {
+  draw_thick_curve_segment_args *dtcsargs=(draw_thick_curve_segment_args*) args;
+  // Compute a vector from the point pos to the edge of the current segment:
+  vector toedge;
+  vcopy(&toedge, dir);
+  vrotz(&toedge, M_PI_2);
+  vnorm(&toedge);
+  float width = (*(dtcsargs->width_func))(t, dtcsargs->width_param);
+  vscale(&toedge, width);
+
+  curve segment; // actually just a straight line...
+
+  segment.from.x = pos->x - toedge.x; // from one edge
+  segment.from.y = pos->y - toedge.y;
+  segment.come_from.x = pos->x - toedge.x;
+  segment.come_from.y = pos->y - toedge.y;
+
+  segment.go_towards.x = pos->x + toedge.x; // to the other
+  segment.go_towards.y = pos->y + toedge.y;
+  segment.to.x = pos->x + toedge.x;
+  segment.to.y = pos->y + toedge.y;
+
+  // Draw our segment:
+  draw_curve(
+    dtcsargs->tx,
+    &segment,
+    dtcsargs->color
+  );
+
+  // Draw the shade pixel:
+  tx_set_px(
+    dtcsargs->tx,
+    dtcsargs->shade_color,
+    (size_t) segment.from.x,
+    (size_t) segment.from.y
+  );
+}
+
+/*************
+ * Functions *
+ *************/
+
+void draw_curve(
+  texture *tx,
+  curve *c,
+  pixel color
+) {
+  draw_curve_point_args dcpargs;
+  dcpargs.tx = tx;
+  dcpargs.color = color;
+  curve_witheach(c, CURVE_DRAWING_RESOLUTION, &dcpargs, draw_curve_point);
+}
+
+void draw_thick_curve(
+  texture *tx,
+  curve *c,
+  pixel color,
+  pixel shade,
+  void *param,
+  float (*f)(float, void*)
+) {
+  draw_thick_curve_segment_args dtcsargs;
+  dtcsargs.tx = tx;
+  dtcsargs.color = color;
+  dtcsargs.shade_color = shade;
+  dtcsargs.width_func = f;
+  dtcsargs.width_param = param;
+  curve_witheach(
+    c,
+    CURVE_DRAWING_RESOLUTION,
+    &dtcsargs,
+    draw_thick_curve_segment
+  );
+}

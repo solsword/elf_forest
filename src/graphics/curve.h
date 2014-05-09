@@ -38,7 +38,7 @@ struct curve_s {
 
 // Computes a point on the given curve which is somewhere along its length as
 // given by the parameter t (0 <= t <= 1).
-void point_on_curve(curve *c, float t, vector *result) {
+static inline void point_on_curve(curve *c, float t, vector *result) {
   float ti = 1 - t;
   float ti3 = ti*ti*ti;
   float ttiti = t*ti*ti;
@@ -63,7 +63,7 @@ void point_on_curve(curve *c, float t, vector *result) {
 
 // Works like point_on_curve, but computes the forward direction of the curve
 // as a vector instead. (Used equation for first derivative from Wikipedia).
-void direction_on_curve(curve *c, float t, vector *result) {
+static inline void direction_on_curve(curve *c, float t, vector *result) {
   float ti = 1 - t;
   float ti2 = ti*ti;
   float tti = t*ti;
@@ -87,7 +87,7 @@ void direction_on_curve(curve *c, float t, vector *result) {
 // that a better approximation would use the differance between the two
 // approximations averaged here to estimate the error and subdivide the curve
 // to get a guaranteed maximum error, but we don't do that here.
-float est_curve_length(curve *c) {
+static inline float est_curve_length(curve *c) {
   vector line, p1, p2, p3;
   float lest, pest;
 
