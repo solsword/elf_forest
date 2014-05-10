@@ -11,8 +11,9 @@
 #include "noise/noise.h"
 
 #include "graphics/display.h"
-#include "graphics/tex.h"
 #include "graphics/gfx.h"
+
+#include "tex/tex.h"
 
 #include "shaders/pipeline.h"
 

@@ -10,10 +10,11 @@
 
 #include "vbo.h"
 #include "gfx.h"
-#include "tex.h"
 #include "display.h"
 
 #include "render.h"
+
+#include "tex/tex.h"
 
 #include "shaders/pipeline.h"
 

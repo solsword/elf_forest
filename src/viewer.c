@@ -16,7 +16,7 @@
 
 #include "control/ctl.h"
 #include "gen/terrain.h"
-#include "graphics/tex.h"
+#include "tex/tex.h"
 #include "graphics/display.h"
 #include "graphics/render.h"
 #include "physics/physics.h"

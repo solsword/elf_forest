@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "graphics/tex.h"
+#include "tex/tex.h"
 #include "graphics/gfx.h"
 #include "control/ctl.h"
 #include "world/world.h"

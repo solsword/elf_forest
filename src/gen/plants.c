@@ -4,9 +4,9 @@
 #include "world/blocks.h"
 #include "world/world.h"
 #include "noise/noise.h"
-#include "graphics/tex.h"
-#include "graphics/curve.h"
-#include "graphics/draw.h"
+#include "tex/tex.h"
+#include "tex/curve.h"
+#include "tex/draw.h"
 
 #include "txgen.h"
 
@@ -322,11 +322,9 @@ void fltr_bulb_leaves(texture *tx, void const * const fargs) {
     spread = MAX_BULB_SPREAD;
   }
   spread *= BLOCK_TEXTURE_SIZE / 2.0;
-  printf("spread: %.3f\n", spread);
   for (i = 0; i < nstalks; ++i) {
     // generate x in [mid - spread, mid + spread]
     x = mid - spread + 2 * spread * float_hash_1d(spread * mxhash * x + i);
-    printf("x: %.3f\n", x);
     // pick an x offset
     noise = 1.0 - 2 * float_hash_1d(x * noise * mxhash); // [-1, 1]
     xo = blfargs->bend * noise;

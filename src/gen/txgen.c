@@ -9,7 +9,7 @@
 
 #include "datatypes/list.h"
 #include "noise/noise.h"
-#include "graphics/tex.h"
+#include "tex/tex.h"
 #include "world/blocks.h"
 
 #include "txgen.h"

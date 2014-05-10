@@ -5,10 +5,11 @@
 // Dynamic texture atlas functionality.
 
 #include "tex.h"
-#include "display.h"
 
 #include "datatypes/map.h"
 #include "datatypes/bitmap.h"
+
+#include "graphics/display.h"
 
 #include "world/blocks.h"
 #include "world/world.h"

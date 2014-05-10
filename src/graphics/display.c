@@ -10,9 +10,10 @@
 
 #include <GLee.h> // glBindBuffer etc.
 
-#include "tex.h"
-#include "dta.h"
 #include "display.h"
+
+#include "tex/tex.h"
+#include "tex/dta.h"
 
 #include "world/blocks.h"
 #include "world/world.h"

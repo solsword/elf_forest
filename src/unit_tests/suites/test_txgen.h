@@ -12,7 +12,7 @@
 #define TEST_TXGEN_H
 
 #include "gen/txgen.h"
-#include "graphics/tex.h"
+#include "tex/tex.h"
 
 #include "unit_tests/test_suite.h"
 

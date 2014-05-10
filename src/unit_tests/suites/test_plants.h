@@ -11,7 +11,7 @@
 #define TEST_PLANTS_H
 
 #include "gen/plants.h"
-#include "graphics/tex.h"
+#include "tex/tex.h"
 
 #include "unit_tests/test_suite.h"
 

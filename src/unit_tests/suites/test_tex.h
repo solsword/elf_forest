@@ -10,7 +10,7 @@
 #ifndef TEST_TEX_H
 #define TEST_TEX_H
 
-#include "graphics/tex.h"
+#include "tex/tex.h"
 
 #include "unit_tests/test_suite.h"
 

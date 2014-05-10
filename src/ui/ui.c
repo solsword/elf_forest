@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 
-#include "graphics/tex.h"
+#include "tex/tex.h"
 #include "graphics/gfx.h"
 #include "graphics/render.h"
 #include "shaders/pipeline.h"

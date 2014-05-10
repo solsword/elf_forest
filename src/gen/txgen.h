@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-#include "graphics/tex.h"
+#include "tex/tex.h"
 
 /************************
  * Types and Structures *
