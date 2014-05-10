@@ -136,15 +136,15 @@ void draw_bulb_leaf(
  ********************/
 
 // Generates branch-like textures.
-void fltr_branches(texture *tx, void *fargs);
+void fltr_branches(texture *tx, void const * const fargs);
 
 // Generates a leaf texture (either 8x8 or 16x16 depending on the args).
-void fltr_leaf(texture *tx, void *fargs);
+void fltr_leaf(texture *tx, void const * const fargs);
 
 // Generates a block leaves texture by scattering several leaves over the area.
-void fltr_leaves(texture *tx, void *fargs);
+void fltr_leaves(texture *tx, void const * const fargs);
 
 // Generates a block leaves texture by drawing leaves sprouting from the bottom.
-void fltr_bulb_leaves(texture *tx, void *fargs);
+void fltr_bulb_leaves(texture *tx, void const * const fargs);
 
 #endif // ifndef PLANTS_H

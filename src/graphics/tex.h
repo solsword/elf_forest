@@ -225,7 +225,13 @@ static inline void tx_set_px(
   size_t left,
   size_t top
 ) {
-  tx->pixels[left + tx->width * top] = p;
+  if (
+    ((left % tx->width) == left)
+  &&
+    ((top % tx->height) == top)
+  ) {
+    tx->pixels[left + tx->width * top] = p;
+  }
 }
 
 // Clears the given texture, setting all of its pixels to black with 0 alpha.

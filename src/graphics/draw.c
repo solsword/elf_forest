@@ -21,12 +21,20 @@ float const CURVE_DRAWING_RESOLUTION = 0.05;
 
 void draw_curve_point(float t, vector *pos, vector *dir, void *args) {
   draw_curve_point_args *dcpargs = (draw_curve_point_args*) args;
-  tx_set_px(
-    dcpargs->tx,
-    dcpargs->color,
-    (size_t) pos->x,
-    (size_t) pos->y
-  );
+  size_t x, y;
+  x = (size_t) pos->x;
+  y = (size_t) pos->y;
+  if (
+    ((x % dcpargs->tx->width) == x)
+  &&
+    ((y % dcpargs->tx->height) == y)
+  ) {
+    tx_set_px(
+      dcpargs->tx,
+      dcpargs->color,
+      x, y
+    );
+  }
 }
 
 void draw_thick_curve_segment(float t, vector *pos, vector *dir, void *args) {
@@ -37,19 +45,23 @@ void draw_thick_curve_segment(float t, vector *pos, vector *dir, void *args) {
   vrotz(&toedge, M_PI_2);
   vnorm(&toedge);
   float width = (*(dtcsargs->width_func))(t, dtcsargs->width_param);
-  vscale(&toedge, width);
+  vscale(&toedge, width/2.0);
 
   curve segment; // actually just a straight line...
 
   segment.from.x = pos->x - toedge.x; // from one edge
   segment.from.y = pos->y - toedge.y;
+  segment.from.z = 0;
   segment.come_from.x = pos->x - toedge.x;
   segment.come_from.y = pos->y - toedge.y;
+  segment.come_from.z = 0;
 
   segment.go_towards.x = pos->x + toedge.x; // to the other
   segment.go_towards.y = pos->y + toedge.y;
+  segment.go_towards.z = 0;
   segment.to.x = pos->x + toedge.x;
   segment.to.y = pos->y + toedge.y;
+  segment.to.z = 0;
 
   // Draw our segment:
   draw_curve(

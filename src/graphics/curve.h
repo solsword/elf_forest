@@ -88,8 +88,11 @@ static inline void direction_on_curve(curve *c, float t, vector *result) {
 // approximations averaged here to estimate the error and subdivide the curve
 // to get a guaranteed maximum error, but we don't do that here.
 static inline float est_curve_length(curve *c) {
-  vector line, p1, p2, p3;
-  float lest, pest;
+  vector line;
+  vector p1;
+  vector p2;
+  vector p3;
+  float lest = 0, pest = 0;
 
   // the linear estimate:
   vcopy(&line, &(c->to));

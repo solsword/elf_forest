@@ -62,13 +62,13 @@ leaves_filter_args const example_leaves_args = {
 };
 
 bulb_leaves_filter_args const example_bulb_leaves_args = {
-  .seed = 43,
-  .count = 15,
-  .spread = 0.6,
-  .bend = 6,
-  .width = 4,
+  .seed = 50,
+  .count = 7,
+  .spread = 0.2,
+  .bend = 7,
+  .width = 6,
   .main_color = 0xff00bb22, // medium green
-  .vein_color = 0xff55dd77, // light green
+  .vein_color = 0xff11cc33, // slightly lighter green
   .dark_color = 0xff007711 // dark green
 };
 
@@ -131,7 +131,7 @@ struct leaves_helper_args_s {
   texture *leaf;
   leaf_filter_args *lfargs;
 };
-void fltr_leaves_helper(int x, int y, void *arg) {
+void fltr_leaves_helper(int x, int y, void * arg) {
   struct leaves_helper_args_s *lhargs = (struct leaves_helper_args_s *) arg;
   // Scramble the leaf filter seed:
   lhargs->lfargs->seed = expanded_hash_1d(lhargs->lfargs->seed * x * y);
@@ -145,7 +145,7 @@ void fltr_leaves_helper(int x, int y, void *arg) {
  * Filter Functions *
  ********************/
 
-void fltr_branches(texture *tx, void *fargs) {
+void fltr_branches(texture *tx, void const * const fargs) {
   int row, col;
   float x, y;
   float offset;
@@ -204,7 +204,7 @@ void fltr_branches(texture *tx, void *fargs) {
   }
 }
 
-void fltr_leaf(texture *tx, void *fargs) {
+void fltr_leaf(texture *tx, void const * const fargs) {
   leaf_filter_args *lfargs = (leaf_filter_args *) fargs;
   ptrdiff_t mxhash = mixed_hash_1d(lfargs->seed);
   if (lfargs->size == LS_SMALL) {
@@ -277,7 +277,7 @@ void fltr_leaf(texture *tx, void *fargs) {
 #endif
 }
 
-void fltr_leaves(texture *tx, void *fargs) {
+void fltr_leaves(texture *tx, void const * const fargs) {
   leaves_filter_args *lfargs = (leaves_filter_args *) fargs;
   // Manually set up a texture on the stack to generate leaves into:
   pixel pixels[16*16];
@@ -303,12 +303,15 @@ void fltr_leaves(texture *tx, void *fargs) {
   );
 }
 
-void fltr_bulb_leaves(texture *tx, void *fargs) {
+void fltr_bulb_leaves(texture *tx, void const * const fargs) {
   bulb_leaves_filter_args *blfargs = (bulb_leaves_filter_args *) fargs;
   ptrdiff_t mxhash = mixed_hash_1d(blfargs->seed);
   int i = 0;
   float noise = 0.7 + 0.6 * float_hash_1d(mxhash); // [0.7, 1.3]
   int nstalks = (int) (blfargs->count * noise);
+  if (nstalks < 1) {
+    nstalks = 1;
+  }
   float x = 0, xo = 0;
   float y = BLOCK_TEXTURE_SIZE, yo = 0;
   float width = 1;
@@ -319,9 +322,11 @@ void fltr_bulb_leaves(texture *tx, void *fargs) {
     spread = MAX_BULB_SPREAD;
   }
   spread *= BLOCK_TEXTURE_SIZE / 2.0;
+  printf("spread: %.3f\n", spread);
   for (i = 0; i < nstalks; ++i) {
     // generate x in [mid - spread, mid + spread]
-    x = mid - spread + spread * float_hash_1d(spread * mxhash);
+    x = mid - spread + 2 * spread * float_hash_1d(spread * mxhash * x + i);
+    printf("x: %.3f\n", x);
     // pick an x offset
     noise = 1.0 - 2 * float_hash_1d(x * noise * mxhash); // [-1, 1]
     xo = blfargs->bend * noise;

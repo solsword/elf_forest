@@ -75,6 +75,16 @@ void setup_unit_tests(void) {
   test_suite *ts;
   ALL_TEST_SUITES = create_list();
   // Note that these #includes must be reimports or their syntax will be wrong.
+  #include "suites/test_tex.h"
+  ts = INVOKE_IMPORTED_BUILDER;
+  l_append_element(ALL_TEST_SUITES, ts);
+  #include "suites/test_txgen.h"
+  ts = INVOKE_IMPORTED_BUILDER;
+  l_append_element(ALL_TEST_SUITES, ts);
+  #include "suites/test_plants.h"
+  ts = INVOKE_IMPORTED_BUILDER;
+  l_append_element(ALL_TEST_SUITES, ts);
+  // Do data structure tests last 'cause they're slower:
   #include "suites/test_list.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
@@ -85,15 +95,6 @@ void setup_unit_tests(void) {
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
   #include "suites/test_map3.h"
-  ts = INVOKE_IMPORTED_BUILDER;
-  l_append_element(ALL_TEST_SUITES, ts);
-  #include "suites/test_tex.h"
-  ts = INVOKE_IMPORTED_BUILDER;
-  l_append_element(ALL_TEST_SUITES, ts);
-  #include "suites/test_txgen.h"
-  ts = INVOKE_IMPORTED_BUILDER;
-  l_append_element(ALL_TEST_SUITES, ts);
-  #include "suites/test_plants.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
 }
@@ -124,6 +125,7 @@ void print_all_results(void) {
     ts = (test_suite *) l_get_item(ALL_TEST_SUITES, i);
     ts_print_short_results(ts);
   }
+  printf("\n");
   for (i = 0; i < l_get_length(ALL_TEST_SUITES); ++i) {
     ts = (test_suite *) l_get_item(ALL_TEST_SUITES, i);
     if (!ts_passed(ts)) {

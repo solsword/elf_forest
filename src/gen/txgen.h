@@ -32,7 +32,7 @@ typedef struct tx_grammar_disjunction_s tx_grammar_disjunction;
 
 // A texture filter takes a texture and an additional argument and filters the
 // texture somehow (one hopes).
-typedef void (*texture_filter)(texture *, void *);
+typedef void (*texture_filter)(texture *, void const * const);
 
 // A structure for remembering where we want to do a grammar expansion:
 struct tx_grammar_expansion_site_s;
@@ -254,13 +254,13 @@ void ateach_scattered(
 // specified color over the target texture, with about the given frequencies.
 // It can be used to scatter a grammar key color in a preprocessing filter,
 // effectively scattering copies of that key's expansion.
-void fltr_scatter(texture *tx, void *args);
+void fltr_scatter(texture *tx, void const * const args);
 
 // Applies the given gradient map to the texture.
-void fltr_apply_gradient_map(texture *tx, void *args);
+void fltr_apply_gradient_map(texture *tx, void const * const args);
 
 // Generates wrapped Worley noise across the entire texture.
-void fltr_worley(texture *tx, void *args);
+void fltr_worley(texture *tx, void const * const args);
 
 /*******************
  * Remix Functions *

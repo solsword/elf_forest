@@ -319,7 +319,7 @@ void fltr_scatter_helper(int x, int y, void *arg) {
  * Filter Functions *
  ********************/
 
-void fltr_scatter(texture *tx, void *fargs) {
+void fltr_scatter(texture *tx, void const * const fargs) {
   struct scatter_helper_args_s shargs;
   scatter_filter_args *sfargs = (scatter_filter_args *) fargs;
   shargs.tx = tx;
@@ -335,7 +335,7 @@ void fltr_scatter(texture *tx, void *fargs) {
   );
 }
 
-void fltr_apply_gradient_map(texture *tx, void *fargs) {
+void fltr_apply_gradient_map(texture *tx, void const * const fargs) {
   int row, col;
   pixel p;
   gradient_map *grmap = (gradient_map *) fargs;
@@ -347,7 +347,7 @@ void fltr_apply_gradient_map(texture *tx, void *fargs) {
   }
 }
 
-void fltr_worley(texture *tx, void *fargs) {
+void fltr_worley(texture *tx, void const * const fargs) {
   int row, col;
   float noise;
   worley_filter_args *wfargs = (worley_filter_args *) fargs;
