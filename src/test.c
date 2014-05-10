@@ -39,7 +39,7 @@
 // Plains:
 //region_chunk_pos const CHUNK_ORIGIN = { .x = 69240, .y = 54067, .z = 10 };
 // Beach:
-region_chunk_pos const CHUNK_ORIGIN = { .x = 10229, .y = -10966, .z = 0 };
+region_chunk_pos const CHUNK_ORIGIN = { .x = 11929, .y = -199356, .z = 2 };
 
 /********
  * Main *
