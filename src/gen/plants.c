@@ -18,71 +18,9 @@
 
 int const SMALL_LEAF_MAX_HEIGHT = 7;
 int const SMALL_LEAF_MAX_WIDTH = 5;
+size_t const SMALL_LEAF_DEFAULT_BREADTH = 5;
 
 float const MAX_BULB_SPREAD = 0.9;
-
-/****************************
- * Example filter arguments *
- ****************************/
-
-branch_filter_args const example_branch_args = {
-  .seed = 17,
-  .rough = 0,
-  .scale = 0.125,
-  .width = 1.0,
-  .dscale = 0.125,
-  .distortion = 5.0,
-  .squash = 1.2,
-  .center_color = 0xff001133, // dark brown
-  .mid_color = 0xff004466, // mid brown
-  .outer_color = 0xff007799 // light brown
-};
-
-leaf_filter_args const example_leaf_args = {
-  .seed = 25,
-  .type = LT_SIMPLE,
-  .size = LS_LARGE,
-  .main_color = 0xff00bb22, // medium green
-  .vein_color = 0xff55dd77, // light green
-  .dark_color = 0xff007711 // dark green
-};
-
-leaves_filter_args const example_leaves_args = {
-  .seed = 37,
-  .x_spacing = 6,
-  .y_spacing = 6,
-  .leaf_args = {
-    .seed = 59,
-    .type = LT_SIMPLE,
-    .size = LS_LARGE,
-    .main_color = 0xff00bb22,
-    .vein_color = 0xff55dd77,
-    .dark_color = 0xff007711
-  },
-};
-
-bulb_leaves_filter_args const example_bulb_leaves_args = {
-  .seed = 50,
-  .count = 7,
-  .spread = 0.2,
-  .bend = 7,
-  .width = 6,
-  .main_color = 0xff00bb22, // medium green
-  .vein_color = 0xff11cc33, // slightly lighter green
-  .dark_color = 0xff007711 // dark green
-};
-
-/****************************
- * Example Grammar Elements *
- ****************************/
-
-// A branch filter:
-tx_grammar_literal example_branches_literal = FILTER_TX_LITERAL(
-  fltr_branches,
-  example_branch_args,
-  BLOCK_TEXTURE_SIZE,
-  BLOCK_TEXTURE_SIZE
-);
 
 /*************
  * Functions *
@@ -207,50 +145,51 @@ void fltr_branches(texture *tx, void const * const fargs) {
 void fltr_leaf(texture *tx, void const * const fargs) {
   leaf_filter_args *lfargs = (leaf_filter_args *) fargs;
   ptrdiff_t mxhash = mixed_hash_1d(lfargs->seed);
+  float noise = 0;
+  curve c;
+  c.from.x = 0; c.from.y = 0; c.from.z = 0;
+  c.go_towards.x = 0; c.go_towards.y = 0; c.go_towards.z = 0;
+  c.come_from.x = 0; c.come_from.y = 0; c.come_from.z = 0;
+  c.to.x = 0; c.to.y = 0; c.to.z = 0;
+  int x, y, corner;
+  tx_clear(tx);
   if (lfargs->size == LS_SMALL) {
     if (lfargs->type == LT_SIMPLE) {
-      int notch_lr = hash_2d(mxhash, 0) & 0x1; // is the notch left or right?
-      int notch_dfe = hash_2d(mxhash, 1) & 0x3; // is it dark, full, or empty?
-      int hang_lr = hash_2d(mxhash, 2) & 0x1; // does it hang left or right?
-      int hang_height = hash_2d(mxhash, 3) & 0x1; // how many pixels of hang?
-      int height = hash_2d(mxhash, 4) % SMALL_LEAF_MAX_HEIGHT;
-      int width = hash_2d(mxhash, 5) % SMALL_LEAF_MAX_WIDTH;
-      int x, y;
-      tx_clear(tx);
-      for (x = 0; x < width; ++x) {
-        for (y = 0; y < height; ++y) {
-          if (
-            y == 0
-          &&
-            (
-              (notch_lr == 0 && x == 0)
-            ||
-              (notch_lr == 1 && x == width - 1)
-            )
-          ) {
-            // the notch
-            if (notch_dfe == 0) {
-              tx_set_px(tx, lfargs->dark_color, x, y);
-            } else if (notch_dfe == 1) {
-              tx_set_px(tx, lfargs->main_color, x, y);
-            } // else do nothing; leave it transparent (2/4 cases)
-          } else if (
-            height - y <= hang_height
-          &&
-            (
-              (hang_lr == 0 && x < width/2)
-            ||
-              (hang_lr == 1 && x > width/2)
-            )
-          ) {
-            // the hanging part
-            tx_set_px(tx, lfargs->main_color, x, y);
-          } else if (height - y > hang_height) {
-            // a normal part of the leaf
-            tx_set_px(tx, lfargs->main_color, x, y);
-          }
-        }
+      noise = 0.5 + 0.5 * float_hash_1d(mxhash + 1);
+      x =  (int) (noise * SMALL_LEAF_MAX_HEIGHT);
+      noise = 0.5 + 0.5 * float_hash_1d(mxhash + 2);
+      y =  (int) (noise * SMALL_LEAF_MAX_WIDTH);
+      corner = mixed_hash_1d(mxhash + 3) & 0x3;
+      if (corner == 1) {
+        c.from.x = SMALL_LEAF_MAX_WIDTH;
+        c.go_towards.x = SMALL_LEAF_MAX_WIDTH;
+      } else if (corner == 2) {
+        c.from.y = SMALL_LEAF_MAX_HEIGHT;
+        c.go_towards.y = SMALL_LEAF_MAX_HEIGHT;
+      } else if (corner >= 3) {
+        c.from.x = SMALL_LEAF_MAX_WIDTH;
+        c.go_towards.x = SMALL_LEAF_MAX_WIDTH;
+        c.from.y = SMALL_LEAF_MAX_HEIGHT;
+        c.go_towards.y = SMALL_LEAF_MAX_HEIGHT;
       }
+      c.come_from.x = x;
+      c.come_from.y = y;
+      c.to.x = x;
+      c.to.y = y;
+      draw_thick_curve(
+        tx,
+        &c,
+        lfargs->main_color,
+        lfargs->dark_color,
+        (void *) SMALL_LEAF_DEFAULT_BREADTH,
+        // TODO: Different width func here?
+        &bulb_width_func
+      );
+      draw_curve(
+        tx,
+        &c,
+        lfargs->vein_color
+      );
     } else if (lfargs->type == LT_TRIPARTITE) {
     } else if (lfargs->type == LT_NEEDLES) {
     }
@@ -285,6 +224,7 @@ void fltr_leaves(texture *tx, void const * const fargs) {
   one_leaf.width = 16;
   one_leaf.height = 16;
   one_leaf.pixels = pixels;
+  tx_clear(&one_leaf);
 
   // Set up arguments for our helper function:
   struct leaves_helper_args_s lhargs;
@@ -292,6 +232,7 @@ void fltr_leaves(texture *tx, void const * const fargs) {
   lhargs.leaf = &one_leaf;
   lhargs.lfargs = &(lfargs->leaf_args);
 
+  tx_clear(tx);
   ateach_scattered(
     lfargs->seed,
     lfargs->x_spacing, lfargs->y_spacing,
@@ -308,12 +249,15 @@ void fltr_bulb_leaves(texture *tx, void const * const fargs) {
   ptrdiff_t mxhash = mixed_hash_1d(blfargs->seed);
   int i = 0;
   float noise = 0.7 + 0.6 * float_hash_1d(mxhash); // [0.7, 1.3]
-  int nstalks = (int) (blfargs->count * noise);
+  int nstalks = (int) (blfargs->count * noise + 0.5);
   if (nstalks < 1) {
     nstalks = 1;
   }
-  float x = 0, xo = 0;
-  float y = BLOCK_TEXTURE_SIZE, yo = 0;
+  float x = BLOCK_TEXTURE_SIZE / 2.0;
+  float y = BLOCK_TEXTURE_SIZE;
+  float x_mid = 0, y_mid = 0;
+  float x_end = 0, y_end = 0;
+  float th_base = 0, th_mid = 0;
   float width = 1;
   float mid = (BLOCK_TEXTURE_SIZE / 2);
   noise = 0.75 + 0.5 * float_hash_1d(mxhash); // [0.75, 1.25]
@@ -325,12 +269,38 @@ void fltr_bulb_leaves(texture *tx, void const * const fargs) {
   for (i = 0; i < nstalks; ++i) {
     // generate x in [mid - spread, mid + spread]
     x = mid - spread + 2 * spread * float_hash_1d(spread * mxhash * x + i);
-    // pick an x offset
-    noise = 1.0 - 2 * float_hash_1d(x * noise * mxhash); // [-1, 1]
-    xo = blfargs->bend * noise;
-    // pick a y offset
-    noise = 1.0 - 2 * float_hash_1d(x * noise * mxhash); // [-1, 1]
-    yo = blfargs->bend * noise;
+    // pick a starting angle
+    noise = 1.0 - 2 * float_hash_1d(x*noise*mxhash + i*x); // [-1, 1]
+    th_base = blfargs->angle * noise;
+    // pick a bend angle
+    noise = 0.6 + 0.8 * float_hash_1d(x*noise*mxhash + i*x); // [0.6, 1.4]
+    th_mid = blfargs->bend * noise * th_base / blfargs->angle;
+    th_mid += th_base;
+    // compute midpiont and endpoint
+    x_mid = x + sinf(th_base) * blfargs->length * blfargs->shape;
+    y_mid = y - cosf(th_base) * blfargs->length * blfargs->shape;
+    x_end = x_mid + sinf(th_mid) * blfargs->length * (1 - blfargs->shape);
+    y_end = y_mid - cosf(th_mid) * blfargs->length * (1 - blfargs->shape);
+    // keep things in-bounds
+    if (x_end < 1) {
+      x_mid += (1 - x_end) / 2.0;
+      x_end = 1;
+    } else if (x_end > BLOCK_TEXTURE_SIZE - 2) {
+      x_mid -= (x_end - (BLOCK_TEXTURE_SIZE - 2)) / 2.0;
+      x_end = BLOCK_TEXTURE_SIZE - 2;
+    }
+    if (y_end < 1) {
+      y_mid += (1 - y_end) / 2.0;
+      y_end = 1;
+    }
+    /* DEBUG:
+    printf("th_base: %.3f\n", th_base);
+    printf("th_mid: %.3f\n", th_mid);
+    printf("th_mid_atten: %.3f\n", th_base / blfargs->angle);
+    printf("th_mid_roll: %.3f\n", noise);
+    printf("xy_mid: %.2f, %.2f\n", x_mid, y_mid);
+    printf("xy_end: %.2f, %.2f\n", x_end, y_end);
+    // */
     // pick a base width:
     noise = 0.75 + 0.5 * float_hash_1d(x * noise * mxhash); // [0.75, 1.25]
     width = blfargs->width * noise;
@@ -341,9 +311,9 @@ void fltr_bulb_leaves(texture *tx, void const * const fargs) {
       blfargs->vein_color,
       blfargs->dark_color,
       x, y,
-      x, y,
-      x, y - mid + 0.5 * blfargs->bend,
-      x + xo, y - mid + yo
+      x_mid, y_mid,
+      x_mid, y_mid,
+      x_end, y_end
     );
   }
 }

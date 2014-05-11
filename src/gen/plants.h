@@ -14,6 +14,7 @@
 
 extern int const SMALL_LEAF_MAX_HEIGHT;
 extern int const SMALL_LEAF_MAX_WIDTH;
+extern size_t const SMALL_LEAF_DEFAULT_BREADTH;
 
 extern float const MAX_BULB_SPREAD;
 
@@ -37,14 +38,9 @@ typedef enum {
  * Filter Argument Structures *
  ******************************/
 
-// Arguments to the branch texture filter:
-// roughness flag, scale, width, distortion scale, distortion, squash, and
-// center, mid, and outer colors.
 struct branch_filter_args_s;
 typedef struct branch_filter_args_s branch_filter_args;
 
-// Arguments to the leaf texture filters:
-// type, 
 struct leaf_filter_args_s;
 typedef struct leaf_filter_args_s leaf_filter_args;
 
@@ -90,26 +86,14 @@ struct bulb_leaves_filter_args_s {
   size_t seed;
   size_t count; // approximate stalk count
   float spread; // [0, 1] how spread out are the bases of the stalks?
-  float bend; // how far do the stalks bend (upper limit in pixels)?
+  float angle; // maximum base angle of the leaves
+  float bend; // how far do the stalks bend (upper/lower limit in radians)?
+  float shape; // how far along the stalk does it bend [0, 1]
+  float length; // how long the stalks are (in pixels)
   float width; // how wide the stalks should be (at their bases)
   pixel main_color, vein_color, dark_color; // Colors for the main leaf
   // surface, the leaf veins, and the leaf shadows.
 };
-
-/****************************
- * Example filter arguments *
- ****************************/
-
-extern branch_filter_args const example_branch_args;
-extern leaf_filter_args const example_leaf_args;
-extern leaves_filter_args const example_leaves_args;
-extern bulb_leaves_filter_args const example_bulb_leaves_args;
-
-/****************************
- * Example Grammar Elements *
- ****************************/
-
-extern tx_grammar_literal example_branches_literal;
 
 /*************
  * Functions *

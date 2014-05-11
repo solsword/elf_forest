@@ -284,11 +284,13 @@ void ateach_scattered(
   void (*f)(int, int, void *)
 ) {
   int x, y;
-  int xi, yi; // grid indices
-  for (xi = x_min/x_scale; xi < x_max/x_scale; xi += 1) {
-    x = xi*x_scale + (expanded_hash_1d(seed*xi) % (2*x_strength)) - x_strength;
-    for (yi = y_min/y_scale; yi < y_max/y_scale; yi += 1) {
-      y = yi*y_scale + (expanded_hash_1d(seed*yi) % (2*y_strength))- y_strength;
+  int xi = 0, yi = 0; // grid indices
+  for (xi = x_min/x_scale; xi <= x_max/x_scale; xi += 1) {
+    for (yi = y_min/y_scale; yi <= y_max/y_scale; yi += 1) {
+      x = xi*x_scale;
+      x += (expanded_hash_1d(seed*xi + xi + yi) % (2*x_strength)) - x_strength;
+      y = yi*y_scale;
+      y += (expanded_hash_1d(seed*yi + xi + yi) % (2*y_strength))- y_strength;
       if (x >= x_min && x < x_max && y >= x_min && y < y_max) {
         f(x, y, arg);
       }

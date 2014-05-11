@@ -159,7 +159,7 @@ tx_grammar_literal worley_test = {
   .result = NULL
 };
 
-// Moss based a 6x6 scatter grid (specified by the args struct above):
+// Moss based on a 6x6 scatter grid (specified by the args struct above):
 tx_grammar_literal scattered_moss = {
   .filename = NULL,
   .anchor_x = 32,
