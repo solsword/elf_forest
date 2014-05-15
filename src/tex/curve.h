@@ -19,8 +19,6 @@ static int const DEFAULT_CURVE_RESOLUTION = 0.01;
 struct curve_s;
 typedef struct curve_s curve;
 
-
-
 /*************************
  * Structure Definitions *
  *************************/
@@ -111,6 +109,18 @@ static inline float est_curve_length(curve *c) {
   pest = vmag(&p1) + vmag(&p2) + vmag(&p3);
 
   return 0.5 * lest + 0.5 * pest;
+}
+
+// This is here because it makes more sense than having it anywhere else:
+static inline float sigmoid(float t, float start, float end) {
+  if (t < start) {
+    return 0;
+  } else if (t > end) {
+    return 1;
+  } else {
+    float tprime = (t - start) / (end - start);
+    return 1.0 / (1 + exp(-tprime*5));
+  }
 }
 
 /*************

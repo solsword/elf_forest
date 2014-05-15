@@ -6,15 +6,22 @@
 
 #include "world/blocks.h"
 #include "world/world.h"
+#include "tex/curve.h"
 #include "noise/noise.h"
+
+/*********
+ * Types *
+ *********/
+
+typedef float (*leaf_width_func)(float, void*);
 
 /*************
  * Constants *
  *************/
 
-extern int const SMALL_LEAF_MAX_HEIGHT;
-extern int const SMALL_LEAF_MAX_WIDTH;
-extern size_t const SMALL_LEAF_DEFAULT_BREADTH;
+extern size_t const LEAF_TEXTURE_SIZE;
+
+extern float const STEM_WIDTH_SHARPNESS;
 
 extern float const MAX_BULB_SPREAD;
 
@@ -29,14 +36,27 @@ typedef enum {
   LT_NEEDLES
 } leaf_type;
 
+// Leaf types:
 typedef enum {
-  LS_SMALL,
-  LS_LARGE
-} leaf_size;
+  LS_NEEDLE, // needle-shaped; linear
+  LS_ORBICULAR, // circular
+  LS_RHOMBOID, // diamond-shaped
+  LS_ACUMINATE, // rounded at the base but tapers to a point
+  LS_FLABELLATE, // fan-shaped
+  LS_OVATE, // egg-shaped w/ wide base
+  LS_OBOVATE, // egg-shaped w/ narrow base
+  LS_HASTATE, // triangular with lobes at the base
+  LS_SPATULATE, // spoon-shaped
+  LS_LANCEOLATE, // pointed at both ends
+  LS_LINEAR, // parallel margins for much of length
+  LS_DELTOID, // triangular
+  LS_CUNEATE, // fish-shaped w/ stem as tail
+  N_LEAF_SHAPES,
+} leaf_shape;
 
-/******************************
- * Filter Argument Structures *
- ******************************/
+/**************
+ * Structures *
+ **************/
 
 struct branch_filter_args_s;
 typedef struct branch_filter_args_s branch_filter_args;
@@ -49,6 +69,9 @@ typedef struct leaves_filter_args_s leaves_filter_args;
 
 struct bulb_leaves_filter_args_s;
 typedef struct bulb_leaves_filter_args_s bulb_leaves_filter_args;
+
+struct width_func_args_s;
+typedef struct width_func_args_s width_func_args;
 
 /*************************
  * Structure Definitions *
@@ -71,7 +94,13 @@ struct branch_filter_args_s {
 struct leaf_filter_args_s {
   size_t seed; // integer seed
   leaf_type type; // which algorithm to use
-  leaf_size size; // LS_SMALL -> 8x8 leaf; LS_LARGE -> 16x16 leaf
+  leaf_shape shape; // which width function to use
+  float angle; // what angle to pose at
+  float angle_var; // variance of the angle
+  float bend; // how much to bend (approximate in radians)
+  float width; // leaf width
+  float length; // total length in pixels
+  float stem_length; // stem length as a fraction of total length
   pixel main_color, vein_color, dark_color; // Colors for the main leaf
   // surface, the leaf veins (if any) and the shadow details.
 };
@@ -95,25 +124,34 @@ struct bulb_leaves_filter_args_s {
   // surface, the leaf veins, and the leaf shadows.
 };
 
+struct width_func_args_s {
+  float stem_length; // how long the stem should be
+  float base_width; // width of the widest point
+};
+
 /*************
  * Functions *
  *************/
 
-// Function for the width of a bulb leaf as a function of t
-float bulb_width_func(float t, void *arg);
+// Function for drawing a leaf along the given curve using the given leaf
+// filter arguments:
+void draw_leaf(texture *tx, curve *c, leaf_filter_args *lfargs);
 
-// Function for drawing a bulb leaf:
-void draw_bulb_leaf(
-  texture *tx,
-  size_t base_width,
-  pixel main_color,
-  pixel vein_color,
-  pixel shade_color,
-  float frx, float fry,
-  float twx, float twy,
-  float gtx, float gty,
-  float tox, float toy
-);
+/*******************
+ * Width Functions *
+ *******************/
+
+// Function that just takes stem width into account.
+float stem_width_func(float t, void *args);
+
+// Just draws a line:
+float needle_width_func(float t, void *arg);
+
+// Includes a stem, but linear after that; widest at the base.
+float deltoid_width_func(float t, void *arg);
+
+// The width function table allows looking up a width function from a leaf
+extern leaf_width_func leaf_width_functions_table[N_LEAF_SHAPES];
 
 /********************
  * Filter Functions *
