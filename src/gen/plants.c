@@ -23,8 +23,8 @@ float const STEM_WIDTH_SHARPNESS = 5.0;
 float const MAX_BULB_SPREAD = 0.9;
 
 leaf_width_func leaf_width_functions_table[N_LEAF_SHAPES] = {
-  &needle_width_func, // needle-shaped; linear
-  NULL, // circular
+  &needle_width_func, // needle-shaped; just a line
+  &oval_width_func, // circular
   NULL, // diamond-shaped
   NULL, // rounded at the base but tapers to a point
   NULL, // fan-shaped
@@ -73,6 +73,18 @@ float stem_width_func(float t, void *args) {
 
 float needle_width_func(float t, void *args) {
   return 0;
+}
+
+float oval_width_func(float t, void *args) {
+  width_func_args *wfargs = (width_func_args *) args;
+  float v = 0;
+  float tprime = (t - wfargs->stem_length) / (1 - wfargs->stem_length);
+  if (0 < tprime && tprime <= 0.5) {
+    v = sqrtf(0.25 - (0.5 - tprime) * (0.5 - tprime));
+  } else if (tprime < 1) {
+    v = sqrtf(0.25 - (tprime - 0.5) * (tprime - 0.5));
+  }
+  return stem_width_func(t, args) * wfargs->base_width * v;
 }
 
 float deltoid_width_func(float t, void *args) {

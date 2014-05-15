@@ -38,8 +38,8 @@ typedef enum {
 
 // Leaf types:
 typedef enum {
-  LS_NEEDLE, // needle-shaped; linear
-  LS_ORBICULAR, // circular
+  LS_NEEDLE, // needle-shaped; just a line
+  LS_OVAL, // oval
   LS_RHOMBOID, // diamond-shaped
   LS_ACUMINATE, // rounded at the base but tapers to a point
   LS_FLABELLATE, // fan-shaped
@@ -146,6 +146,9 @@ float stem_width_func(float t, void *args);
 
 // Just draws a line:
 float needle_width_func(float t, void *arg);
+
+// An oval leaf after the stem:
+float oval_width_func(float t, void *args);
 
 // Includes a stem, but linear after that; widest at the base.
 float deltoid_width_func(float t, void *arg);

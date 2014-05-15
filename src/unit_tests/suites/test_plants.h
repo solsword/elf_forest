@@ -50,18 +50,23 @@ leaf_filter_args example_leaf_args = {
 
 leaves_filter_args example_leaves_args = {
   .seed = 37,
-  .x_spacing = 7,
-  .y_spacing = 6,
+  //*
+  .x_spacing = 4,
+  .y_spacing = 4,
+  /*/
+  .x_spacing = 12,
+  .y_spacing = 16,
+  // */
   .leaf_args = {
-    .seed = 37,
+    .seed = 38,
     .type = LT_SIMPLE,
-    .shape = LS_DELTOID,
+    .shape = LS_OVAL,
     .angle = 0,
     .angle_var = M_PI / 6.0,
     .bend = M_PI / 8.0,
-    .width = 6,
-    .length = 12,
-    .stem_length = 0.2,
+    .width = 5,
+    .length = 5,
+    .stem_length = 0.1,
     .main_color = 0xff00bb22, // medium green
     .vein_color = 0xff55dd77, // light green
     .dark_color = 0xff007711 // dark green
