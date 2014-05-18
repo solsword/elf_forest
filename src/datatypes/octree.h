@@ -12,7 +12,7 @@
  * Enums *
  *********/
 
-typedef enum {
+enum octant_e {
   OCT_BOT_SW = 0x00,
   OCT_BOT_SE = 0x01,
   OCT_BOT_NW = 0x02,
@@ -21,7 +21,8 @@ typedef enum {
   OCT_TOP_SE = 0x05,
   OCT_TOP_NW = 0x06,
   OCT_TOP_NE = 0x07,
-} octant;
+};
+typedef enum octant_e octant;
 
 /**************
  * Structures *

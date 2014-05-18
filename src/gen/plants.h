@@ -30,14 +30,15 @@ extern float const MAX_BULB_SPREAD;
  *********/
 
 // Leaf types:
-typedef enum {
+enum leaf_type_e {
   LT_SIMPLE,
   LT_TRIPARTITE,
   LT_NEEDLES
-} leaf_type;
+};
+typedef enum leaf_type_e leaf_type;
 
 // Leaf types:
-typedef enum {
+enum leaf_shape_e {
   LS_NEEDLE, // needle-shaped; just a line
   LS_OVAL, // oval
   LS_RHOMBOID, // diamond-shaped
@@ -52,7 +53,8 @@ typedef enum {
   LS_DELTOID, // triangular
   LS_CUNEATE, // fish-shaped w/ stem as tail
   N_LEAF_SHAPES,
-} leaf_shape;
+};
+typedef enum leaf_shape_e leaf_shape;
 
 /**************
  * Structures *

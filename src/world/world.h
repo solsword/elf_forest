@@ -79,29 +79,32 @@
  ****************/
 
 // Layers of a chunk:
-typedef enum {
+enum layer_e {
   L_OPAQUE = 0,
   L_TRANSPARENT = 1,
   L_TRANSLUCENT = 2,
   N_LAYERS = 3
-} layer;
+};
+typedef enum layer_e layer;
 
 // The level-of-detail for a chunk:
-typedef enum {
+enum lod_e {
   LOD_BASE = 0,
   LOD_HALF = 1,
   LOD_QUARTER = 2,
   LOD_EIGHTH = 3,
   LOD_SIXTEENTH = 4,
   N_LODS = 5
-} lod;
+};
+typedef enum lod_e lod;
 
 // Whether something is a chunk or an approximation thereof:
-typedef enum {
+enum capprox_type_e {
   CA_TYPE_NOT_LOADED,
   CA_TYPE_CHUNK,
   CA_TYPE_APPROXIMATION
-} capprox_type;
+};
+typedef enum capprox_type_e capprox_type;
 
 /**************
  * Structures *

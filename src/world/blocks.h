@@ -17,6 +17,8 @@
 // 3 bits of block orientation.
 // 6 bits of block exposure.
 typedef uint32_t block;
+// for holding just a variant:
+typedef uint16_t block_variant;
 
 // Extra static block data and flags stored in the BLOCK_INFO table.
 typedef uint32_t block_info;

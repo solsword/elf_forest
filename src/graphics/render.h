@@ -16,12 +16,13 @@
  * Enums *
  *********/
 
-typedef enum {
+enum view_mode_e {
   VM_FIRST,
   VM_SECOND,
   VM_THIRD,
   NUM_VIEW_MODES
-} view_mode;
+};
+typedef enum view_mode_e view_mode;
 
 /*************
  * Constants *

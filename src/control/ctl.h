@@ -14,14 +14,15 @@
  ****************/
 
 // Logical controls:
-typedef enum {
+enum control_e {
   C_QUIT,
   C_PAUSE,
   C_JUMP, C_DIVE, C_CROUCH,
   C_LEFT, C_RIGHT, C_FORWARD, C_REVERSE,
   C_CHANGE_VIEW, C_ZOOM_IN, C_ZOOM_OUT,
   N_CONTROLS
-} control;
+};
+typedef enum control_e control;
 
 /********************
  * Global variables *
