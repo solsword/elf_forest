@@ -4,7 +4,7 @@ import perlin.*;
 
 Perlin pnl = new Perlin(this);
 
-//*
+/*
 int WIDTH = 640;
 int HEIGHT = 480;
 /*/
@@ -17,7 +17,10 @@ float TNOISE_SCALE = 0.03;
 
 float DNOISE_SCALE = 0.02;
 float DNOISE_ATTENUATE = 0.8;
-float DNOISE_STRENGTH = 60.0;
+float DNOISE_STRENGTH = 60;
+
+float SNOISE_SCALE = 0.0017;
+float SNOISE_STRENGTH = 270;
 
 //int N_BLOBS = 1;
 //int N_BLOBS = 35;
@@ -26,12 +29,12 @@ int N_BLOBS = 45;
 
 //float MIN_R = 210;
 //float MAX_R = 340;
-float MIN_R = 80;
-float MAX_R = 340;
+float MIN_R = 70;
+float MAX_R = 230;
 float MIN_VAR = 0.2;
-float MAX_VAR = 0.4;
-float MIN_LOG_T = 1.4; // 1.2;
-float MAX_LOG_T = 2.3; // 1.4;
+float MAX_VAR = 0.5;
+float MIN_LOG_T = 1.2; // 1.2;
+float MAX_LOG_T = 1.8; // 1.4;
 
 float GRID_MARGINS = 120.0;
 //float PGRID_SCALE = 15;
@@ -47,11 +50,18 @@ boolean ADD_BLOBS = true;
 boolean ADD_WORLEY = true;
 boolean ADD_PERLIN = true;
 boolean TEST_NOISE = false;
+boolean TEST_GRADIENT = true;
+boolean SHADE_TERRAIN = true;
 int EROSION_STEPS = 0;
+
+int N_TRAILS = 30;
+int STEPS_PER_TRAIL = 100;
 
 float SEA_LEVEL = 0.7;
 float SEA_LEVEL_STEP = 0.05;
 boolean DRAW_COLOR = false;
+
+float[] LIGHT_POSITION = {120, -40, 10};
 
 float MAX_WORLEY_DIST = sqrt(2.0);
 
@@ -199,7 +209,12 @@ class Map {
   }
   void draw() {
     int x, y, i;
+    float hue, sat, bri;
     float h;
+    Point gradient;
+    float [] v = new float[3];
+    float [] normal;
+    float [] lv;
     noFill();
     for (x = 0; x < WIDTH; ++x) {
       for (y = 0; y < HEIGHT; ++y) {
@@ -207,16 +222,81 @@ class Map {
         h = this.cells[i];
         if (DRAW_COLOR) {
           if (h < SEA_LEVEL) {
-            stroke(0.7, 0.4, h);
+            hue = 0.7;
+            sat = 0.4;
           } else {
-            stroke(0.08 + 0.2*h, 0.3, h);
+            hue = 0.06 + 0.24*h;
+            sat = 0.3;
           }
         } else {
-          stroke(0.0, 0.0, h);
+          hue = 0.0;
+          sat = 0.0;
         }
+        bri = h;
+        if (SHADE_TERRAIN) {
+          gradient = this.gradient(x, y);
+          gradient.x *= 120;
+          gradient.y *= 120;
+          v[0] = (float) x;
+          v[1] = (float) y;
+          v[2] = h;
+          normal = compute_normal(gradient);
+          //println("normal: ", normal[0], normal[1], normal[2]);
+          lv = vsub(LIGHT_POSITION, v);
+          bri = 0.7 * h + 0.3 * (1 + dot(norm(normal), norm(lv))) / 2.0;
+          //bri = (1 + dot(norm(normal), norm(lv))) / 2.0;
+        }
+        stroke(hue, sat, bri);
         point(x, y);
       }
     }
+  }
+
+  float get(int x, int y) {
+    int i;
+    if (x < 0) {
+      x = 0;
+    } else if (x >= WIDTH) {
+      x = WIDTH - 1;
+    }
+    if (y < 0) {
+      y = 0;
+    } else if (y >= HEIGHT) {
+      y = HEIGHT - 1;
+    }
+    i = x+y*WIDTH;
+    return this.cells[i];
+  }
+
+  Point gradient(int x, int y) {
+    float here, north, east, south, west, ne, se, sw, nw;
+    float dx, dy;
+    here = this.get(x, y);
+    north = this.get(x, y-1);
+    ne = this.get(x+1, y-1);
+    east = this.get(x+1, y);
+    se = this.get(x+1, y+1);
+    south = this.get(x, y+1);
+    sw = this.get(x-1, y+1);
+    west = this.get(x-1, y);
+    nw = this.get(x-1, y-1);
+    dx = (
+      0.5 * (ne - here) +
+      (east - here) +
+      0.5 * (se - here) +
+      0.5 * (here - sw) +
+      (here - west) +
+      0.5 * (here - nw)
+    ) / 4.0;
+    dy = (
+      0.5 * (se - here) +
+      (south - here) +
+      0.5 * (sw - here) +
+      0.5 * (here - nw) +
+      (here - north) +
+      0.5 * (here - ne)
+    ) / 4.0;
+    return new Point(dx, dy);
   }
 }
 
@@ -272,6 +352,16 @@ class Blob {
           this.seed*4.9
         )
       );
+      dx += SNOISE_STRENGTH * splnoise(
+        x*SNOISE_SCALE,
+        y*SNOISE_SCALE,
+        this.seed*11.4
+      );
+      dy += SNOISE_STRENGTH * splnoise(
+        x*SNOISE_SCALE,
+        y*SNOISE_SCALE,
+        this.seed*14.1
+      );
     }
     dx += x;
     dy += y;
@@ -308,6 +398,9 @@ class Point {
     this.x = ix;
     this.y = iy;
   }
+  Point copy() {
+    return new Point(this.x, this.y);
+  }
   float distance(Point other) {
     return sqrt(pow(this.x - other.x, 2) + pow(this.y - other.y, 2));
   }
@@ -323,6 +416,44 @@ Point jostle(Point there, Point here) {
     (there.x - here.x) * d,
     (there.y - here.y) * d
   );
+}
+
+float[] compute_normal(Point gradient) {
+  float[] n = new float[3];
+  n[0] = -gradient.x;
+  n[1] = -gradient.y;
+  n[2] = 1;
+  return n;
+}
+
+float dot(float[] a, float[] b) {
+  float result = 0;
+  result += a[0] * b[0];
+  result += a[1] * b[1];
+  result += a[2] * b[2];
+  return result;
+}
+
+float mag(float[] v) {
+  return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+}
+
+float[] norm(float[] v) {
+  float[] result = new float[3];
+  float m = mag(v);
+  result[0] = v[0] / m;
+  result[1] = v[1] / m;
+  result[2] = v[2] / m;
+  return result;
+}
+
+// a minus b
+float [] vsub(float[] a, float[] b) {
+  float[] result = new float[3];
+  result[0] = a[0] - b[0];
+  result[1] = a[1] - b[1];
+  result[2] = a[2] - b[2];
+  return result;
 }
 
 class PseudoPoissonDistribution {
@@ -444,7 +575,6 @@ class WorleyNoise {
     strengths[8] = strength(x-1, y+1);
     Point here = new Point(x, y);
     int i;
-    //*
     float first = 0.0;
     float second = 0.0;
     float str;
@@ -457,41 +587,17 @@ class WorleyNoise {
         second = str;
       }
     }
-    //return first / MAX_WORLEY_DIST;
     float result = first - second;
     result /= MAX_WORLEY_DIST;
     result = 1 - result;
     result = sqrt(result);
     result = sqrt(result);
     return result;
-    /*/
-    float first = MAX_WORLEY_DIST;
-    float second = MAX_WORLEY_DIST;
-    float d;
-    for (i = 0; i < 9; ++i) {
-      d = here.distance(neighbors[i]);
-      if (d < first) {
-        second = first;
-        first = d;
-      } else if (d < second) {
-        second = d;
-      }
-    }
-    return (second - first) / MAX_WORLEY_DIST;
-    //float d = here.distance(neighbors[0]);
-    //return d / MAX_WORLEY_DIST;
-    //return MAX_WORLEY_DIST - first;
-    /*
-    if (d < 0.03) {
-      return 1.0;
-    } else {
-      return 0.0;
-    }
-    // */
   }
 }
 
 Map THE_MAP;
+ArrayList<ArrayList<Point>> TRAILS;
 
 void setup() {
   noiseDetail(1,0.5);
@@ -576,6 +682,22 @@ void setup() {
       }
       THE_MAP.bake();
     }
+    if (TEST_GRADIENT) {
+      int j;
+      TRAILS = new ArrayList<ArrayList<Point>>(N_TRAILS);
+      for (i = 0; i < N_TRAILS; ++i) {
+        TRAILS.add(new ArrayList<Point>(STEPS_PER_TRAIL));
+        Point particle = new Point(random(WIDTH), random(HEIGHT));
+        Point g;
+        ArrayList<Point> trail = TRAILS.get(TRAILS.size() - 1);
+        for (j = 0; j < STEPS_PER_TRAIL; ++j) {
+          trail.add(particle.copy());
+          g = THE_MAP.gradient((int) particle.x, (int) particle.y);
+          particle.x -= g.x*1400;
+          particle.y -= g.y*1400;
+        }
+      }
+    }
   }
   noLoop();
   redraw();
@@ -584,6 +706,24 @@ void setup() {
 void draw() {
   background(0.5, 0.5, 0.45);
   THE_MAP.draw();
+
+  int i, j;
+  Point lp, p;
+  float t;
+  ArrayList<Point> trail;
+  if (TEST_GRADIENT) {
+    for (i = 0; i < TRAILS.size(); ++i) {
+      trail = TRAILS.get(i);
+      lp = trail.get(0);
+      for (j = 0; j < trail.size(); ++j) {
+        t = ((float) j) / ((float) trail.size());
+        stroke(0.06, 1.0, (1 - t));
+        p = trail.get(j);
+        line(lp.x, lp.y, p.x, p.y);
+        lp = p;
+      }
+    }
+  }
 }
 
 void keyPressed() {
@@ -592,13 +732,13 @@ void keyPressed() {
   } else if (key == 'k') {
     SEA_LEVEL += SEA_LEVEL_STEP;
     if (SEA_LEVEL > 1) { SEA_LEVEL = 1; }
-    redraw();
   } else if (key == 'j') {
     SEA_LEVEL -= SEA_LEVEL_STEP;
     if (SEA_LEVEL < 0) { SEA_LEVEL = 0; }
-    redraw();
   } else if (key == 'c') {
     DRAW_COLOR = !DRAW_COLOR;
-    redraw();
+  } else if (key == 's') {
+    SHADE_TERRAIN = !SHADE_TERRAIN;
   }
+  redraw();
 }
