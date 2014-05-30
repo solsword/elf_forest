@@ -15,30 +15,45 @@ int HEIGHT = 300;
 float RADIAL_NOISE_SCALE = 2.4;
 float TNOISE_SCALE = 0.03;
 
+float DNOISE_SCALE = 0.02;
+float DNOISE_ATTENUATE = 0.8;
+float DNOISE_STRENGTH = 60.0;
+
 //int N_BLOBS = 1;
 //int N_BLOBS = 35;
-//int N_BLOBS = 45;
-int N_BLOBS = 200;
+int N_BLOBS = 45;
+//int N_BLOBS = 200;
 
 //float MIN_R = 210;
 //float MAX_R = 340;
 float MIN_R = 80;
 float MAX_R = 340;
-float MIN_VAR = 0.3;
-float MAX_VAR = 0.5;
+float MIN_VAR = 0.2;
+float MAX_VAR = 0.4;
 float MIN_LOG_T = 1.4; // 1.2;
 float MAX_LOG_T = 2.3; // 1.4;
 
-float PGRID_SCALE = 15;
-//float PGRID_SCALE = 60;
+float GRID_MARGINS = 120.0;
+//float PGRID_SCALE = 15;
+float PGRID_SCALE = 40;
 
-float SEA_LEVEL = 0.6;
+float WORLEY_STRENGTH = 0.8;
+float PERLIN_STRENGTH = 0.1;
+
+boolean DISTORT_BLOBS = true;
+boolean BLOB_THICKNESS_PARABOLIC = true;
+boolean BLOB_PSEUDO_POISSON_MODE = true;
+boolean ADD_BLOBS = true;
+boolean ADD_WORLEY = true;
+boolean ADD_PERLIN = true;
+boolean TEST_NOISE = false;
+int EROSION_STEPS = 0;
+
+float SEA_LEVEL = 0.7;
+float SEA_LEVEL_STEP = 0.05;
 boolean DRAW_COLOR = false;
 
 float MAX_WORLEY_DIST = sqrt(2.0);
-
-String MODE = "pseudo-poisson";
-//String MODE = "random";
 
 int[] HASH = { // a tiny hash table
   0, 14, 15, 6,
@@ -72,7 +87,7 @@ float spline_up(float x) {
   }
   l1 = 0;
   //l1 = lerp(0.0, 0.2, t);
-  l2 = lerp(1.5, 1.0, t);
+  l2 = lerp(1.5, 0.9, t);
   result = lerp(l1, l2, t);
   if (x >= 0) {
     return result;
@@ -230,14 +245,51 @@ class Blob {
       2*this.var * n
     );
   }
-  float thickness_at(int x, int y) {
+  float thickness_at(float x, float y) {
+    float dx, dy;
+    dx = 0;
+    dy = 0;
+    if (DISTORT_BLOBS) {
+      dx += splnoise(x*DNOISE_SCALE, y*DNOISE_SCALE, this.seed*3.2);
+      dx += 0.4*splnoise(x*DNOISE_SCALE*2.1, y*DNOISE_SCALE*2.1, this.seed*4.2);
+      dx *= DNOISE_STRENGTH/1.4;
+      dy += splnoise(x*DNOISE_SCALE, y*DNOISE_SCALE, this.seed*6.8);
+      dy += 0.4*splnoise(x*DNOISE_SCALE*2.1, y*DNOISE_SCALE*2.1, this.seed*9.1);
+      dy *= DNOISE_STRENGTH/1.4;
+      dx *= (
+        (1 - DNOISE_ATTENUATE) +
+        DNOISE_ATTENUATE * splnoise(
+          x*DNOISE_SCALE*0.4,
+          y*DNOISE_SCALE*0.4,
+          this.seed*2.3
+        )
+      );
+      dy *= (
+        (1 - DNOISE_ATTENUATE) +
+        DNOISE_ATTENUATE * splnoise(
+          x*DNOISE_SCALE*0.4,
+          y*DNOISE_SCALE*0.4,
+          this.seed*4.9
+        )
+      );
+    }
+    dx += x;
+    dy += y;
+    return this.thickness_at_base(dx, dy);
+  }
+  float thickness_at_base(float x, float y) {
     float dir = atan2(y - this.y, x - this.x);
     float r = this.radius(dir);
     float d = sqrt(pow(x - this.x, 2) + pow(y - this.y, 2));
     float rinterp = 1 - (d / r);
     if (rinterp > 0) {
-      // semi-parabolic interpolation
-      rinterp = 0.5 * rinterp + 0.5 * sqrt(rinterp);
+      if (BLOB_THICKNESS_PARABOLIC) {
+        // parabolic interpolation
+        rinterp = sqrt(rinterp);
+      } else {
+        // semi-parabolic interpolation
+        rinterp = 0.5 * rinterp + 0.5 * sqrt(rinterp);
+      }
     }
     float n = pnoise(x*TNOISE_SCALE, y*TNOISE_SCALE, this.seed);
     n += 0.4 * pnoise(
@@ -450,60 +502,81 @@ void setup() {
   int x, y, i;
   float str;
   float wr;
-  //*
-  Blob b;
-  Point p;
-  PseudoPoissonDistribution ppois = new PseudoPoissonDistribution(
-    (int) (WIDTH/PGRID_SCALE),
-    (int) (HEIGHT/PGRID_SCALE),
-    173
-  );
-  for (i = 0; i < N_BLOBS; ++i) {
-    p = ppois.next();
-    if (MODE=="pseudo-poisson") {
-      x = (int) (p.x * PGRID_SCALE);
-      y = (int) (p.y * PGRID_SCALE);
-    } else {
-      x = (int) (random(0, WIDTH));
-      y = (int) (random(0, HEIGHT));
-    }
-    b = new Blob(
-      x,
-      y,
-      random(MIN_R, MAX_R),
-      random(MIN_VAR, MAX_VAR),
-      exp(random(MIN_LOG_T, MAX_LOG_T)),
-      i + HASH[HASH[x%16] + y%16]
-    );
-    THE_MAP.add_up(b);
-  }
-  THE_MAP.bake();
-  // */
-  //*
-  WorleyNoise wrn = new WorleyNoise(137);
-  for (x = 0; x < WIDTH; ++x) {
-    for (y = 0; y < HEIGHT; ++y) {
-      i = x + y*WIDTH;
-      str = splnoise(x*0.015, y*0.015, 1.4);
-      wr = wrn.value(x*0.02, y*0.02);
-      THE_MAP.cells[i] += str * wr + (1 - str) * 0.2;
-      /*
-      if (x < WIDTH/3) {
-        THE_MAP.cells[i] = pnoise(x*0.05, y*0.05, 17.3);
-        //THE_MAP.cells[i] = min(1, max(0, y*0.005));
-      } else if (x < 2*WIDTH/3) {
-        THE_MAP.cells[i] = splnoise(x*0.05, y*0.05, 17.3);
-        //THE_MAP.cells[i] = min(1, max(0, spline_up(y*0.005)));
-      } else {
-        THE_MAP.cells[i] = spnoise(x*0.05, y*0.05, 17.3);
+  if (TEST_NOISE) {
+    for (x = 0; x < WIDTH; ++x) {
+      for (y = 0; y < HEIGHT; ++y) {
+        i = x + y*WIDTH;
+        if (x < WIDTH/3) {
+          THE_MAP.cells[i] = pnoise(x*0.05, y*0.05, 17.3);
+        } else if (x < 2*WIDTH/3) {
+          THE_MAP.cells[i] = splnoise(x*0.05, y*0.05, 17.3);
+        } else {
+          THE_MAP.cells[i] = spnoise(x*0.05, y*0.05, 17.3);
+        }
       }
-      // */
-      //THE_MAP.cells[i] = 0.3 * spnoise(x*0.05, y*0.05, 17.3);
-      //THE_MAP.cells[i] += 0.1 * pnoise(x*0.1, y*0.1, 31.7);
+    }
+  } else {
+    if (ADD_BLOBS) {
+      Blob b;
+      Point p;
+      PseudoPoissonDistribution ppois = new PseudoPoissonDistribution(
+        (int) ((WIDTH+2*GRID_MARGINS)/PGRID_SCALE),
+        (int) ((HEIGHT+2*GRID_MARGINS)/PGRID_SCALE),
+        173
+      );
+      for (i = 0; i < N_BLOBS; ++i) {
+        if (BLOB_PSEUDO_POISSON_MODE) {
+          p = ppois.next();
+          x = (int) ((p.x * PGRID_SCALE) - GRID_MARGINS);
+          y = (int) ((p.y * PGRID_SCALE) - GRID_MARGINS);
+        } else {
+          x = (int) (random(-GRID_MARGINS, WIDTH + GRID_MARGINS));
+          y = (int) (random(-GRID_MARGINS, HEIGHT + GRID_MARGINS));
+        }
+        b = new Blob(
+          x,
+          y,
+          random(MIN_R, MAX_R),
+          random(MIN_VAR, MAX_VAR),
+          exp(random(MIN_LOG_T, MAX_LOG_T)),
+          i + HASH[HASH[abs(x)%16] + abs(y)%16]
+        );
+        THE_MAP.add_up(b);
+      }
+      THE_MAP.bake();
+    }
+    if (ADD_WORLEY) {
+      WorleyNoise wrn = new WorleyNoise(137);
+      for (x = 0; x < WIDTH; ++x) {
+        for (y = 0; y < HEIGHT; ++y) {
+          i = x + y*WIDTH;
+          str = WORLEY_STRENGTH * (0.4 + 0.6 * splnoise(x*0.015, y*0.015, 1.4));
+          wr = wrn.value(x*0.02, y*0.02);
+          //THE_MAP.cells[i] += str * wr + (1 - str) * 0.2;
+          THE_MAP.cells[i] += str * wr;
+        }
+      }
+      THE_MAP.bake();
+    }
+    if (ADD_PERLIN) {
+      float nlow, nmid, nhigh, n;
+      for (x = 0; x < WIDTH; ++x) {
+        for (y = 0; y < HEIGHT; ++y) {
+          i = x + y*WIDTH;
+          nlow = splnoise(x*0.05, y*0.05, 17.3);
+          nmid = splnoise(x*0.1, y*0.1, 31.7);
+          nhigh = splnoise(x*0.4, y*0.4, 37.1);
+          nlow *= (0.3 + 0.7 * splnoise(x*0.008, y*0.008, 73.1));
+          nmid *= splnoise(x*0.03, y*0.03, 71.3);
+          nhigh *= splnoise(x*0.02, y*0.02, 13.7);
+          n = nlow + 0.5 * nmid + 0.25 * nhigh;
+          n *= PERLIN_STRENGTH / 1.75;
+          THE_MAP.cells[i] += n;
+        }
+      }
+      THE_MAP.bake();
     }
   }
-  // */
-  THE_MAP.bake();
   noLoop();
   redraw();
 }
@@ -517,11 +590,11 @@ void keyPressed() {
   if (key == 'q') {
     exit();
   } else if (key == 'k') {
-    SEA_LEVEL += 0.1;
+    SEA_LEVEL += SEA_LEVEL_STEP;
     if (SEA_LEVEL > 1) { SEA_LEVEL = 1; }
     redraw();
   } else if (key == 'j') {
-    SEA_LEVEL -= 0.1;
+    SEA_LEVEL -= SEA_LEVEL_STEP;
     if (SEA_LEVEL < 0) { SEA_LEVEL = 0; }
     redraw();
   } else if (key == 'c') {
