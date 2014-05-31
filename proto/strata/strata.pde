@@ -59,8 +59,8 @@ boolean ADD_BLOBS = true;
 boolean ADD_WORLEY = true;
 boolean ADD_PERLIN = true;
 boolean TEST_NOISE = true;
-// default: comparison, 1:worley veins, 2:worley plateaus
-int NOISE_TEST = 1;
+// default: comparison, 1:worley veins, 2:worley plateaus, 3:worley distortion
+int NOISE_TEST = 3;
 boolean TEST_GRADIENT = false;
 boolean SHADE_TERRAIN = true;
 boolean SHOW_CONTINENTS = false;
@@ -113,7 +113,7 @@ float spline_up(float x) {
   }
   l1 = 0;
   //l1 = lerp(0.0, 0.2, t);
-  l2 = lerp(1.5, 0.9, t);
+  l2 = lerp(1.5, 1.0, t);
   result = lerp(l1, l2, t);
   if (x >= 0) {
     return result;
@@ -726,6 +726,16 @@ void setup() {
             0,
             wr
           );
+        } else if (NOISE_TEST == 3) {
+          float fx, fy;
+          fx = x + 30*(wrn.value(x*0.05, y*0.05) - 0.5);
+          fy = y + 30*(wrn.value(x*0.05, y*0.05) - 0.5);
+          str = splnoise(x*0.01, y*0.01, 64.3);
+          str += 0.5 * splnoise(x*0.02, y*0.02, 67.3);
+          str /= 1.5;
+          str *= str;
+          str *= str;
+          THE_MAP.cells[i] = (1 - str) * 0.2 + str * splnoise(fx*0.05, fy*0.05, 18.4);
         } else {
           if (x < WIDTH/3) { // pnoise/splnoise/spnoise comparison
             THE_MAP.cells[i] = pnoise(x*0.05, y*0.05, 17.3);

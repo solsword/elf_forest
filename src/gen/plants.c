@@ -5,8 +5,8 @@
 #include "world/world.h"
 #include "noise/noise.h"
 #include "tex/tex.h"
-#include "tex/curve.h"
 #include "tex/draw.h"
+#include "math/curve.h"
 
 #include "txgen.h"
 
@@ -154,7 +154,7 @@ void fltr_branches(texture *tx, void const * const fargs) {
       y = (row / bfargs->squash + ds * bfargs->distortion) * bfargs->scale;
       x += tx->width * offset;
       y += tx->height * offset;
-      noise = wrnoise_2d(
+      noise = wrnoise_2d_fancy(
         x, y,
         BLOCK_TEXTURE_SIZE * bfargs->scale, BLOCK_TEXTURE_SIZE * bfargs->scale,
         (!bfargs->rough) * WORLEY_FLAG_INCLUDE_NEXTBEST

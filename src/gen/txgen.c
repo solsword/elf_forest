@@ -355,7 +355,7 @@ void fltr_worley(texture *tx, void const * const fargs) {
   worley_filter_args *wfargs = (worley_filter_args *) fargs;
   for (col = 0; col < tx->width; col += 1) {
     for (row = 0; row < tx->height; row += 1) {
-      noise = wrnoise_2d(
+      noise = wrnoise_2d_fancy(
         col * wfargs->freq, row * wfargs->freq,
         32.0 * wfargs->freq, 32.0 * wfargs->freq,
         0

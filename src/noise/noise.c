@@ -622,8 +622,53 @@ float sxnoise_3d(float x, float y, float z) {
   return SCALE_3D * (srf0 + srf1 + srf2 + srf3);
 }
 
-// 2D worley noise:
-float wrnoise_2d(
+// 2D Worley noise:
+float wrnoise_2d(float x, float y) {
+  grid_neighborhood_2d grn = {
+    .i = 0, .j = 0,
+    .x = { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    .y = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+  };
+  ptrdiff_t i, j;
+  float dx, dy;
+  float d = 0;
+  float best = MAX_SQ_WORLEY_DISTANCE_2D;
+  float nextbest= MAX_SQ_WORLEY_DISTANCE_2D;
+
+  grn.i = fastfloor(x);
+  grn.j = fastfloor(y);
+
+  // Point locations:
+  for (i = 0; i < 3; ++i) {
+    for (j = 0; j < 3; ++j) {
+      compute_offset_grid_point_2d(
+        &grn,
+        grn.i + i - 1,
+        grn.j + j - 1,
+        i + j*3
+      );
+    }
+  }
+
+  // Find the two closest points:
+  for (i = 0; i < 9; ++i) {
+    dx = grn.x[i] - x;
+    dy = grn.y[i] - y;
+    d = sqrtf(dx * dx + dy * dy);
+    if (d < best) {
+      nextbest = best;
+      best = d;
+    } else if (d < nextbest) {
+      nextbest = d;
+    }
+  }
+
+  // Return the scaled distance difference:
+  return (nextbest - best) / MAX_WORLEY_DISTANCE_2D;
+}
+
+// "fancy" 2D worley noise:
+float wrnoise_2d_fancy(
   float x, float y,
   ptrdiff_t wrapx, ptrdiff_t wrapy,
   uint32_t flags
@@ -669,7 +714,7 @@ float wrnoise_2d(
     }
   }
 
-  // Return the scaled distance mapped quadratically to [0, 1]:
+  // Return the scaled distance:
   result = 0;
   if (!(flags & WORLEY_FLAG_IGNORE_NEAREST)) {
     result += best;

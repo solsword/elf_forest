@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <math.h>
 
 // noise.h
 // Noise functions (mainly simplex noise).
@@ -289,7 +290,10 @@ float sxnoise_2d(float x, float y);
 float sxnoise_3d(float x, float y, float z);
 
 // 2D Worley noise:
-float wrnoise_2d(
+float wrnoise_2d(float x, float y);
+
+// Fancy 2D Worley noise is more customizable:
+float wrnoise_2d_fancy(
   float x, float y,
   ptrdiff_t wrapx, ptrdiff_t wrapy,
   uint32_t flags
@@ -340,7 +344,26 @@ float fractal_sxnoise_3d_table(
  * Remix Functions *
  *******************/
 
-static inline float wrnoise_2d_default(float x, float y) {
-  return wrnoise_2d(x, y, 0, 0, 0);
+// Seeded & scaled 2D simplex noise:
+static inline float managed_sxnoise_2d(
+  float x, float y,
+  float xscale, float yscale,
+  float seed
+) {
+  float ox = 12345 * seed * cosf(seed);
+  float oy = 12345 * seed * sinf(seed);
+  return sxnoise_2d((x+ox)/xscale, (y+oy)/yscale);
 }
+
+// Seeded & scaled 2D Worley noise:
+static inline float managed_wrnoise_2d(
+  float x, float y,
+  float xscale, float yscale,
+  float seed
+) {
+  float ox = 12345 * seed * cosf(seed);
+  float oy = 12345 * seed * sinf(seed);
+  return wrnoise_2d((x+ox)/xscale, (y+oy)/yscale);
+}
+
 #endif // ifndef NOISE_H
