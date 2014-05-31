@@ -8,12 +8,13 @@ Perlin pnl = new Perlin(this);
 int WIDTH = 640;
 int HEIGHT = 480;
 /*/
+// Window width/height is double this.
 int WIDTH = 400;
 int HEIGHT = 300;
 // */
 
 float RADIAL_NOISE_SCALE = 2.4;
-float TNOISE_SCALE = 0.03;
+float TNOISE_SCALE = 0.042;
 
 float DNOISE_SCALE = 0.02;
 float DNOISE_ATTENUATE = 0.8;
@@ -23,9 +24,8 @@ float SNOISE_SCALE = 0.0017;
 float SNOISE_STRENGTH = 270;
 
 //int N_BLOBS = 1;
-//int N_BLOBS = 35;
 int N_BLOBS = 45;
-//int N_BLOBS = 200;
+//int N_BLOBS = 120;
 
 //float MIN_R = 210;
 //float MAX_R = 340;
@@ -36,34 +36,50 @@ float MAX_VAR = 0.5;
 float MIN_LOG_T = 1.2; // 1.2;
 float MAX_LOG_T = 1.8; // 1.4;
 
+float MAX_WORLEY_DIST = sqrt(2.0);
+float WDISTORT = 0.5;
+float WD_FREQ = 1.6;
+
 float GRID_MARGINS = 120.0;
 //float PGRID_SCALE = 15;
 float PGRID_SCALE = 40;
 
-float WORLEY_STRENGTH = 0.8;
-float PERLIN_STRENGTH = 0.1;
+float WORLEY_STRENGTH = 0.6;
+float PERLIN_STRENGTH = 0.2;
+
+int MIN_CONTINENTS = 5;
+int MAX_CONTINENTS = 9;
+float CONTINENT_STRICTNESS = 0.87;
 
 boolean DISTORT_BLOBS = true;
-boolean BLOB_THICKNESS_PARABOLIC = true;
-boolean BLOB_PSEUDO_POISSON_MODE = true;
+boolean BLOB_THICKNESS_PARABOLIC = false;
+// default:random, 1:pseudo-poisson, 2:continents
+int BLOB_DISTRIBUTION_MODE = 2;
 boolean ADD_BLOBS = true;
 boolean ADD_WORLEY = true;
 boolean ADD_PERLIN = true;
-boolean TEST_NOISE = false;
-boolean TEST_GRADIENT = true;
+boolean TEST_NOISE = true;
+// default: comparison, 1:worley veins, 2:worley plateaus
+int NOISE_TEST = 1;
+boolean TEST_GRADIENT = false;
 boolean SHADE_TERRAIN = true;
+boolean SHOW_CONTINENTS = false;
+boolean DRAW_COLOR = true;
+boolean SHOW_HISTOGRAM = true;
+
+// TODO: Implement this!
 int EROSION_STEPS = 0;
 
 int N_TRAILS = 30;
 int STEPS_PER_TRAIL = 100;
 
-float SEA_LEVEL = 0.7;
+float SEA_LEVEL = 0.55;
 float SEA_LEVEL_STEP = 0.05;
-boolean DRAW_COLOR = false;
 
 float[] LIGHT_POSITION = {120, -40, 10};
 
-float MAX_WORLEY_DIST = sqrt(2.0);
+int HIST_BINS = 50;
+int HIST_HEIGHT = 70;
 
 int[] HASH = { // a tiny hash table
   0, 14, 15, 6,
@@ -171,6 +187,20 @@ float splnoise(float x, float y, float z) {
   return result;
 }
 
+float[] colormap(float h) {
+  float[] result = new float[3];
+  if (h < SEA_LEVEL) {
+    result[0] = 0.7;
+    result[1] = 0.45;
+    result[2] = h;
+  } else {
+    result[0] = 0.02 + 0.24*h;
+    result[1] = 0.45;
+    result[2] = 0.5 + 0.4*h;
+  }
+  return result;
+}
+
 class Map {
   float cells[];
   Map() {
@@ -215,24 +245,21 @@ class Map {
     float [] v = new float[3];
     float [] normal;
     float [] lv;
-    noFill();
+    noStroke();
     for (x = 0; x < WIDTH; ++x) {
       for (y = 0; y < HEIGHT; ++y) {
         i = x + y*WIDTH;
         h = this.cells[i];
         if (DRAW_COLOR) {
-          if (h < SEA_LEVEL) {
-            hue = 0.7;
-            sat = 0.4;
-          } else {
-            hue = 0.06 + 0.24*h;
-            sat = 0.3;
-          }
+          float [] cm = colormap(h);
+          hue = cm[0];
+          sat = cm[1];
+          bri = cm[2];
         } else {
           hue = 0.0;
           sat = 0.0;
+          bri = h;
         }
-        bri = h;
         if (SHADE_TERRAIN) {
           gradient = this.gradient(x, y);
           gradient.x *= 120;
@@ -243,11 +270,11 @@ class Map {
           normal = compute_normal(gradient);
           //println("normal: ", normal[0], normal[1], normal[2]);
           lv = vsub(LIGHT_POSITION, v);
-          bri = 0.7 * h + 0.3 * (1 + dot(norm(normal), norm(lv))) / 2.0;
+          bri = 0.8 * bri + 0.2 * (1 + dot(norm(normal), norm(lv))) / 2.0;
           //bri = (1 + dot(norm(normal), norm(lv))) / 2.0;
         }
-        stroke(hue, sat, bri);
-        point(x, y);
+        fill(hue, sat, bri);
+        rect(x*2, y*2, x*2+1, y*2+1);
       }
     }
   }
@@ -332,10 +359,14 @@ class Blob {
     if (DISTORT_BLOBS) {
       dx += splnoise(x*DNOISE_SCALE, y*DNOISE_SCALE, this.seed*3.2);
       dx += 0.4*splnoise(x*DNOISE_SCALE*2.1, y*DNOISE_SCALE*2.1, this.seed*4.2);
-      dx *= DNOISE_STRENGTH/1.4;
+      dx /= 1.4;
+      dx -= 0.5;
+      dx *= DNOISE_STRENGTH;
       dy += splnoise(x*DNOISE_SCALE, y*DNOISE_SCALE, this.seed*6.8);
       dy += 0.4*splnoise(x*DNOISE_SCALE*2.1, y*DNOISE_SCALE*2.1, this.seed*9.1);
-      dy *= DNOISE_STRENGTH/1.4;
+      dy /= 1.4;
+      dy -= 0.5;
+      dy *= DNOISE_STRENGTH;
       dx *= (
         (1 - DNOISE_ATTENUATE) +
         DNOISE_ATTENUATE * splnoise(
@@ -352,15 +383,19 @@ class Blob {
           this.seed*4.9
         )
       );
-      dx += SNOISE_STRENGTH * splnoise(
-        x*SNOISE_SCALE,
-        y*SNOISE_SCALE,
-        this.seed*11.4
+      dx += SNOISE_STRENGTH * (
+        splnoise(
+          x*SNOISE_SCALE,
+          y*SNOISE_SCALE,
+          this.seed*11.4
+        ) - 0.5
       );
-      dy += SNOISE_STRENGTH * splnoise(
-        x*SNOISE_SCALE,
-        y*SNOISE_SCALE,
-        this.seed*14.1
+      dy += SNOISE_STRENGTH * (
+        splnoise(
+          x*SNOISE_SCALE,
+          y*SNOISE_SCALE,
+          this.seed*14.1
+        ) - 0.5
       );
     }
     dx += x;
@@ -377,8 +412,8 @@ class Blob {
         // parabolic interpolation
         rinterp = sqrt(rinterp);
       } else {
-        // semi-parabolic interpolation
-        rinterp = 0.5 * rinterp + 0.5 * sqrt(rinterp);
+        // linear/parabolic interpolated interpolation
+        rinterp = lerp(rinterp, sqrt(rinterp), rinterp);
       }
     }
     float n = pnoise(x*TNOISE_SCALE, y*TNOISE_SCALE, this.seed);
@@ -387,8 +422,25 @@ class Blob {
       y*TNOISE_SCALE*2,
       this.seed*2
     );
-    n /= 1.4;
-    return max(0, rinterp * this.t * (0.4 + 0.6 * n));
+    n += 0.2 * pnoise(
+      x*TNOISE_SCALE*4,
+      y*TNOISE_SCALE*4,
+      this.seed*4
+    );
+    n /= 1.6;
+    n *= (0.2 + 0.8 * splnoise(
+      x*TNOISE_SCALE/4.3,
+      y*TNOISE_SCALE/4.3,
+      this.seed*4.7
+    ));
+    n *= 0.3 + 0.7 * (1 - rinterp);
+    n = -0.4 + n;
+    /*
+    if (rinterp < 0) {
+      n = 0;
+    }
+    */
+    return max(0, this.t * (rinterp + n));
   }
 }
 
@@ -540,19 +592,32 @@ class WorleyNoise {
   Point grid_point(float x, float y) {
     int ix = (int) floor(x);
     int iy = (int) floor(y);
+    /*
     return new Point(
       ix + splnoise(ix*7.7, iy*5.4, this.seed*7.1),
       iy + splnoise(ix*4.2, iy*6.9, this.seed*8.3)
+    );
+    // */
+    return new Point(
+      ix + spnoise(ix*7.7, iy*5.4, this.seed*7.1),
+      iy + spnoise(ix*4.2, iy*6.9, this.seed*8.3)
     );
   }
 
   float strength(float x, float y) {
     int ix = (int) floor(x);
     int iy = (int) floor(y);
-    return 0.4 + 0.6 * splnoise(ix*8.4, iy*2.3, this.seed*4.5);
+    return 0.3 + 0.7 * splnoise(ix*8.4, iy*2.3, this.seed*4.5);
   }
 
   float value(float x, float y) {
+    float dx, dy;
+    dx = WDISTORT * (pnoise(x*WD_FREQ, y*WD_FREQ, this.seed*4.9) - 0.5);
+    dy = WDISTORT * (pnoise(x*WD_FREQ, y*WD_FREQ, this.seed*8.3) - 0.5);
+    return base_value(x + dx, y + dy);
+  }
+
+  float base_value(float x, float y) {
     float[] strengths = new float[9];
     Point[] neighbors = new Point[9];
     neighbors[0] = grid_point(x, y);
@@ -598,46 +663,154 @@ class WorleyNoise {
 
 Map THE_MAP;
 ArrayList<ArrayList<Point>> TRAILS;
+FloatList CONTINENT_XS;
+FloatList CONTINENT_YS;
+float CONTINENT_RADIUS;
+float[] HISTOGRAM;
 
 void setup() {
   noiseDetail(1,0.5);
   noiseSeed(17);
   colorMode(HSB, 1.0, 1.0, 1.0);
-  size(WIDTH, HEIGHT);
+  size(WIDTH*2, HEIGHT*2);
   THE_MAP = new Map();
-  int x, y, i;
+  int x, y, i, j;
   float str;
   float wr;
+  WorleyNoise wrn = new WorleyNoise(137);
   if (TEST_NOISE) {
+    DRAW_COLOR = false;
+    SEA_LEVEL = 0;
     for (x = 0; x < WIDTH; ++x) {
       for (y = 0; y < HEIGHT; ++y) {
         i = x + y*WIDTH;
-        if (x < WIDTH/3) {
-          THE_MAP.cells[i] = pnoise(x*0.05, y*0.05, 17.3);
-        } else if (x < 2*WIDTH/3) {
-          THE_MAP.cells[i] = splnoise(x*0.05, y*0.05, 17.3);
+        if (NOISE_TEST == 1) { // worley veins
+          float n = 0;
+          float wro = 0;
+          str = splnoise(x*0.02, y*0.02, 81.3);
+          str += 0.5 * splnoise(x*0.038, y*0.038, 18.3);
+          str += 0.25 * splnoise(x*0.07, y*0.07, 31.8);
+          str /= 1.75;
+          wr = wrn.value(x*0.06, y*0.06);
+          wr *= wr;
+          wr *= wr;
+          wro = wr;
+          if (wr < 0.95) {
+            wr = 0;
+          }
+          n = max(0, wr - 2*str);
+          wr = wrn.value(x*0.11, y*0.11);
+          wr *= wr;
+          wr *= wr;
+          if (wr < 0.95) {
+            wr = 0;
+          }
+          n = max(n, wr*wro - 1.8*str);
+          n = max(0, min(1, n));
+          THE_MAP.cells[i] = n;
+        } else if (NOISE_TEST == 2) { // worley plateaus
+          // TODO: use perlin instead?
+          wr = wrn.value(x*0.017, y*0.017);
+          wr *= wr;
+          wr *= wr;
+          if (wr > 0.65) {
+            wr = (1 - wr) / 0.35;
+            wr = 0.5 + 0.2 * exp(wr) / 3;
+          } else if (wr > 0.6) {
+            wr = (0.65 - wr) / 0.05;
+            wr = 0.7 + 0.3 * wr;
+          } else {
+            wr = 1.0;
+          }
+          THE_MAP.cells[i] = max(
+            0,
+            wr
+          );
         } else {
-          THE_MAP.cells[i] = spnoise(x*0.05, y*0.05, 17.3);
+          if (x < WIDTH/3) { // pnoise/splnoise/spnoise comparison
+            THE_MAP.cells[i] = pnoise(x*0.05, y*0.05, 17.3);
+          } else if (x < 2*WIDTH/3) {
+            THE_MAP.cells[i] = splnoise(x*0.05, y*0.05, 17.3);
+          } else {
+            THE_MAP.cells[i] = spnoise(x*0.05, y*0.05, 17.3);
+          }
         }
       }
     }
+    THE_MAP.bake();
   } else {
     if (ADD_BLOBS) {
       Blob b;
       Point p;
+      // pseudo-poisson distribution setup
       PseudoPoissonDistribution ppois = new PseudoPoissonDistribution(
         (int) ((WIDTH+2*GRID_MARGINS)/PGRID_SCALE),
         (int) ((HEIGHT+2*GRID_MARGINS)/PGRID_SCALE),
         173
       );
+      // "continents" distribution setup
+      int n_continents = (int) (random(MIN_CONTINENTS, MAX_CONTINENTS+0.99));
+      int continent = 0;
+      CONTINENT_XS = new FloatList();
+      CONTINENT_YS = new FloatList();
+      float cx = 0, cy = 0, ox = 0, oy = 0;
+      boolean regenerate;
+      CONTINENT_RADIUS = (WIDTH) / (float) (n_continents*0.8);
+      for (i = 0; i < n_continents; ++i) {
+        regenerate = true;
+        while (regenerate) {
+          regenerate = false;
+          cx = random(0, WIDTH);
+          cy = random(0, HEIGHT);
+          for (j = 0; j < CONTINENT_XS.size(); ++j) {
+            ox = CONTINENT_XS.get(j);
+            oy = CONTINENT_YS.get(j);
+            if (
+              sqrt(pow(cx - ox, 2) + pow(cy - oy, 2)) < CONTINENT_RADIUS*1.5
+            ) {
+              regenerate = true;
+              break;
+            }
+          }
+        }
+        CONTINENT_XS.append(cx);
+        CONTINENT_YS.append(cy);
+      }
+      if (BLOB_DISTRIBUTION_MODE == 2) {
+        // Muck with the blob sizes in this case:
+        MIN_R = CONTINENT_RADIUS * 0.5;
+        MAX_R = CONTINENT_RADIUS * 1.2;
+      }
+
+      // Now deposit N_BLOBS blobs:
       for (i = 0; i < N_BLOBS; ++i) {
-        if (BLOB_PSEUDO_POISSON_MODE) {
+        if (BLOB_DISTRIBUTION_MODE == 1) {
+          // pseudo-poisson distribution
           p = ppois.next();
           x = (int) ((p.x * PGRID_SCALE) - GRID_MARGINS);
           y = (int) ((p.y * PGRID_SCALE) - GRID_MARGINS);
+        } else if (BLOB_DISTRIBUTION_MODE == 2) {
+          // "continents" distribution
+          if (random(1.0) < CONTINENT_STRICTNESS) {
+            continent = (continent + 1) % n_continents;
+            cx = CONTINENT_XS.get(continent);
+            cy = CONTINENT_YS.get(continent);
+            float theta = random(TWO_PI);
+            float r = random(CONTINENT_RADIUS*1.1);
+            x = (int) (cx + r*cos(theta));
+            y = (int) (cy + r*sin(theta));
+          } else {
+            x = (int) (random(-GRID_MARGINS, WIDTH + GRID_MARGINS));
+            y = (int) (random(-GRID_MARGINS, HEIGHT + GRID_MARGINS));
+          }
         } else {
+          // random distribution
           x = (int) (random(-GRID_MARGINS, WIDTH + GRID_MARGINS));
           y = (int) (random(-GRID_MARGINS, HEIGHT + GRID_MARGINS));
+        }
+        if (N_BLOBS == 1) {
+          x = (int) (WIDTH/2.0);
+          y = (int) (HEIGHT/2.0);
         }
         b = new Blob(
           x,
@@ -652,7 +825,6 @@ void setup() {
       THE_MAP.bake();
     }
     if (ADD_WORLEY) {
-      WorleyNoise wrn = new WorleyNoise(137);
       for (x = 0; x < WIDTH; ++x) {
         for (y = 0; y < HEIGHT; ++y) {
           i = x + y*WIDTH;
@@ -669,12 +841,19 @@ void setup() {
       for (x = 0; x < WIDTH; ++x) {
         for (y = 0; y < HEIGHT; ++y) {
           i = x + y*WIDTH;
-          nlow = splnoise(x*0.05, y*0.05, 17.3);
+
+          nlow = splnoise(x*0.03, y*0.03, 17.3);
+          nlow += splnoise(x*0.042, y*0.042, 47.3);
+
           nmid = splnoise(x*0.1, y*0.1, 31.7);
-          nhigh = splnoise(x*0.4, y*0.4, 37.1);
+          nmid += splnoise(x*0.12, y*0.12, 41.7);
+
+          nhigh = splnoise(x*0.19, y*0.19, 37.1);
+          nhigh += splnoise(x*0.23, y*0.23, 34.1);
+
           nlow *= (0.3 + 0.7 * splnoise(x*0.008, y*0.008, 73.1));
-          nmid *= splnoise(x*0.03, y*0.03, 71.3);
-          nhigh *= splnoise(x*0.02, y*0.02, 13.7);
+          nmid = (0.4 + 0.6 * nmid * spnoise(x*0.03, y*0.03, 71.3));
+          nhigh = (0.5 + 0.5 * nhigh * spnoise(x*0.02, y*0.02, 13.7));
           n = nlow + 0.5 * nmid + 0.25 * nhigh;
           n *= PERLIN_STRENGTH / 1.75;
           THE_MAP.cells[i] += n;
@@ -682,8 +861,8 @@ void setup() {
       }
       THE_MAP.bake();
     }
+    // Compute particle trails to test the gradient:
     if (TEST_GRADIENT) {
-      int j;
       TRAILS = new ArrayList<ArrayList<Point>>(N_TRAILS);
       for (i = 0; i < N_TRAILS; ++i) {
         TRAILS.add(new ArrayList<Point>(STEPS_PER_TRAIL));
@@ -695,6 +874,18 @@ void setup() {
           g = THE_MAP.gradient((int) particle.x, (int) particle.y);
           particle.x -= g.x*1400;
           particle.y -= g.y*1400;
+        }
+      }
+    }
+  }
+  // Compute a histogram of map heights:
+  HISTOGRAM = new float[HIST_BINS];
+  for (x = 0; x < WIDTH; ++x) {
+    for (y = 0; y < HEIGHT; ++y) {
+      i = x + y*WIDTH;
+      for (j = 0; j < HIST_BINS; ++j) {
+        if (THE_MAP.cells[i] < (j+1) / ((float) (HIST_BINS))) {
+          HISTOGRAM[j] += 1;
         }
       }
     }
@@ -712,6 +903,7 @@ void draw() {
   float t;
   ArrayList<Point> trail;
   if (TEST_GRADIENT) {
+    noFill();
     for (i = 0; i < TRAILS.size(); ++i) {
       trail = TRAILS.get(i);
       lp = trail.get(0);
@@ -719,8 +911,53 @@ void draw() {
         t = ((float) j) / ((float) trail.size());
         stroke(0.06, 1.0, (1 - t));
         p = trail.get(j);
-        line(lp.x, lp.y, p.x, p.y);
+        line(lp.x*2, lp.y*2, p.x*2, p.y*2);
         lp = p;
+      }
+    }
+  }
+  if (SHOW_CONTINENTS) {
+    float x, y;
+    noFill();
+    stroke(0.07, 1.0, 1.0);
+    for (i = 0; i < CONTINENT_XS.size(); ++i) {
+      x = CONTINENT_XS.get(i);
+      y = CONTINENT_YS.get(i);
+      ellipse(x*2, y*2, 4*CONTINENT_RADIUS, 4*CONTINENT_RADIUS);
+    }
+  }
+  if (SHOW_HISTOGRAM) {
+    float hist_max = 0;
+    float h, bh;
+    for (i = 0; i < HIST_BINS; ++i) {
+      if (HISTOGRAM[i] > hist_max) {
+        hist_max = HISTOGRAM[i];
+      }
+    }
+    fill(0, 0, 0.4);
+    stroke(0, 0, 0);
+    rect(
+      width - HIST_BINS*2 - 3,
+      height - HIST_HEIGHT - 3,
+      HIST_BINS*2 + 2,
+      HIST_HEIGHT + 2
+    );
+    noStroke();
+    fill(0.0, 0.0, 0.7);
+    for (i = 0; i < HIST_BINS; ++i) {
+      bh = (HIST_HEIGHT * (HISTOGRAM[i] / hist_max));
+      h = i*1.0/((float) HIST_BINS);
+      float [] cm = colormap(h);
+      fill(cm[0], cm[1], cm[2]);
+      if (bh > 0) {
+        rect(
+          width - HIST_BINS*2 + 1 + i*2,
+          height - bh - 1,
+          2,
+          bh
+        );
+      } else if (bh < 0) {
+        println("negative bar height: ", bh);
       }
     }
   }
@@ -739,6 +976,10 @@ void keyPressed() {
     DRAW_COLOR = !DRAW_COLOR;
   } else if (key == 's') {
     SHADE_TERRAIN = !SHADE_TERRAIN;
+  } else if (key == 't') {
+    SHOW_CONTINENTS = !SHOW_CONTINENTS;
+  } else if (key == 'h') {
+    SHOW_HISTOGRAM = !SHOW_HISTOGRAM;
   }
   redraw();
 }
