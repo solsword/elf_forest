@@ -3,9 +3,9 @@
 
 #include "datatypes/vector.h"
 #include "noise/noise.h"
+#include "math/curve.h"
 
 #include "tex.h"
-#include "curve.h"
 
 #include "draw.h"
 

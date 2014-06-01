@@ -352,7 +352,7 @@ static inline float managed_sxnoise_2d(
 ) {
   float ox = 12345 * seed * cosf(seed);
   float oy = 12345 * seed * sinf(seed);
-  return sxnoise_2d((x+ox)/xscale, (y+oy)/yscale);
+  return (1 + sxnoise_2d((x+ox)/xscale, (y+oy)/yscale)) / 2.0;
 }
 
 // Seeded & scaled 2D Worley noise:

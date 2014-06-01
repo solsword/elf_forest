@@ -6,7 +6,7 @@
 
 #include "world/blocks.h"
 #include "world/world.h"
-#include "tex/curve.h"
+#include "math/curve.h"
 #include "noise/noise.h"
 
 /*********

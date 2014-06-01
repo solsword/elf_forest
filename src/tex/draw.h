@@ -6,8 +6,7 @@
 
 #include "datatypes/vector.h"
 #include "noise/noise.h"
-
-#include "curve.h"
+#include "math/curve.h"
 
 /*************
  * Constants *
