@@ -28,10 +28,6 @@ typedef enum map_function_e map_function;
  * Inline Functions *
  ********************/
 
-static inline float lerp(float from, float to, float t) {
-  return (1 - t)*from + t * to;
-}
-
 // Maps the given value through the given function.
 static float fmap(float x, map_function f) {
   switch (f) {
@@ -46,7 +42,7 @@ static float fmap(float x, map_function f) {
     case MFN_EXPONENTIAL:
       return (exp(x) - 1)/exp(1);
     case MFN_SIGMOID:
-      return 1.0 / (1.0 + exp(6.0-x*12.0))
+      return 1.0 / (1.0 + exp(6.0-x*12.0));
     case MFN_HILL:
       if (x < 0.5) {
         return x*x*2;
@@ -62,10 +58,8 @@ static float fmap(float x, map_function f) {
         return 0.5 + xmh*xmh*2;
       }
     case MFN_SPREAD_UP:
-      //return lerp(0, lerp(1.6, 1.0, x), x);
-      return x*((1 - x)*1.6 + x)
+      return x*((1 - x)*1.6 + x);
     case MFN_SPREAD_DOWN:
-      //return lerp(lerp(0, -0.6, x), 1.0, x);
       return (1 - x)*(-0.6*x) + x;
   }
   // "bad function"
@@ -74,7 +68,7 @@ static float fmap(float x, map_function f) {
 
 // Maps the given value through the given function, flipping negative values
 // pre-mapping and flopping return values if the input was negative.
-static float fmap_flipflop(float x, map_function f) {
+static inline float fmap_flipflop(float x, map_function f) {
   float sign = 1;
   if (x < 0) {
     sign = -1;

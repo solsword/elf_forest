@@ -9,6 +9,7 @@
 #include "math/functions.h"
 
 #include "world/materials.h"
+#include "world/world.h"
 
 /************************
  * Types and Structures *
@@ -117,7 +118,7 @@ struct stratum_s {
 struct erosion_layer_s {
   float seed; // The seed for noise
   // TODO: HERE!
-}
+};
 
 struct column_dynamics_s {
   float pressure;
@@ -133,6 +134,10 @@ struct stratum_dynamics_s {
 /********************
  * Inline Functions *
  ********************/
+
+static inline float geothermal_temperature(r_pos_t x, r_pos_t y, r_pos_t z) {
+  return 100.0; // TODO: HERE!
+}
 
 /******************************
  * Constructors & Destructors *

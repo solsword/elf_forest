@@ -25,44 +25,64 @@ stratum *create_stratum(
 ) {
   int i;
   stratum *result = (stratum *) malloc(sizeof(stratum));
-  result.seed = seed;
-  result.cx = cx;
-  result.cy = cy;
-  result.size = size;
-  result.thickness = thickness;
-  result.profile = profile;
-  result.source = source;
+  result->seed = seed;
+  result->cx = cx;
+  result->cy = cy;
+  result->size = size;
+  result->thickness = thickness;
+  result->profile = profile;
+  result->source = source;
 
-  result.base_material = 0; // TODO: Pick a material here!
+  result->base_material = 0; // TODO: Pick a material here!
 
   // TODO: Derive/randomize parameters here!
-  result.scale_bias = 1.0;
-  result.infill = 0.0;
+  result->scale_bias = 1.0;
+  result->infill = 0.0;
 
-  result.gross_distortion = 120.0;
-  result.fine_distortion = 40.0;
+  result->gross_distortion = 120.0;
+  result->fine_distortion = 40.0;
 
-  result.large_var = 0.2;
-  result.med_var = 0.12;
+  result->large_var = 0.2;
+  result->med_var = 0.12;
 
-  result.small_var = 2.3;
-  result.ridges = 2.5;
+  result->small_var = 2.3;
+  result->ridges = 2.5;
 
-  result.scraping = 0.7;
-  result.smoothing = 0.3;
+  result->scraping = 0.7;
+  result->smoothing = 0.3;
 
   for (i = 0; i < N_VEIN_TYPES; ++i) {
-    result.vein_scale[i] = 0; // 23.4;
-    result.vein_strength[i] = 0; // 0.5;
-    result.vein_material[i] = 0; // TODO: Pick a material here!
+    result->vein_scale[i] = 0; // 23.4;
+    result->vein_strength[i] = 0; // 0.5;
+    result->vein_material[i] = 0; // TODO: Pick a material here!
   }
 
   for (i = 0; i < N_INCLUSION_TYPES; ++i) {
-    result.inclusion_frequency[i] = 0; // 0.01;
-    result.inclusion_material[i] = 0; // TODO: Pick a material here!
+    result->inclusion_frequency[i] = 0; // 0.01;
+    result->inclusion_material[i] = 0; // TODO: Pick a material here!
   }
 
   return result;
+}
+
+/********************
+ * Inline Functions *
+ ********************/
+
+static inline float stratum_core(r_pos_t x, r_pos_t y, stratum *st) {
+  return 12.0; // TODO: HERE!
+}
+
+static inline float stratum_detail(r_pos_t x, r_pos_t y, stratum *st) {
+  return 3.0; // TODO: HERE!
+}
+
+static inline float stratum_infill(
+  r_pos_t x, r_pos_t y,
+  stratum *st,
+  stratum *below
+) {
+  return 3.0; // TODO: HERE!
 }
 
 /*************
@@ -70,7 +90,7 @@ stratum *create_stratum(
  *************/
 
 float stratum_height(
-  float x, float y,
+  r_pos_t x, r_pos_t y,
   stratum *st,
   stratum *below,
   column_dynamics *cd,
@@ -86,12 +106,12 @@ float stratum_height(
   result = core + detail + infill;
 
   // erosion
-  float erosion = mt_erosion_rate(st->base_material) * cd->erosion;
-  cd->erosion = max(
-    0,
-    cd->erosion - (result/mt_erosion_rate(st->base_material))
-  );
-  result = max(0, result - erosion);
+  float erosion_rate = mt_erosion_rate(st->base_material);
+  float erosion = erosion_rate * cd->erosion;
+  cd->erosion = cd->erosion - (result/erosion_rate);
+  if (cd->erosion < 0) { cd->erosion = 0; }
+  result = result - erosion;
+  if (result < 0) { result = 0; }
 
   // add our weight to pressure pre-compression:
   cd->pressure += mt_weight(st->base_material)*result;
@@ -99,7 +119,7 @@ float stratum_height(
   // compression
   float compression = mt_compression(st->base_material, cd->pressure);
   result *= compression;
-  result = max(1, result);
+  if (result < 1) { result = 1; }
   sd->pressure = cd->pressure;
 
   return result;

@@ -106,10 +106,33 @@ static inline material mt_from_block(block b) {
   return result;
 }
 
-/*
 static inline float mt_erosion_rate(material m) {
+  return 1.0; // TODO: HERE!
 };
-*/
+
+static inline float mt_weight(material m) {
+  return 1.0; // TODO: HERE!
+};
+
+static inline float mt_compression(material m, float pressure) {
+  return 1.0; // TODO: HERE!
+};
+
+static inline float mt_metamorphosis_rate(
+  material m,
+  float pressure,
+  float temperature
+) {
+  return 1.0; // TODO: HERE!
+};
+
+static inline float mt_metamorphic_product(
+  material m,
+  float pressure,
+  float temperature
+) {
+  return 1.0; // TODO: HERE!
+};
 
 /******************************
  * Constructors & Destructors *
