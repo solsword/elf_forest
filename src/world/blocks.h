@@ -17,13 +17,18 @@
 // 3 bits of block orientation.
 // 6 bits of block exposure.
 typedef uint32_t block;
-// for holding just a species:
-typedef uint16_t block_species;
+
+// Used for storing species info separately.
+typedef uint16_t species;
 
 // Extra static block data and flags stored in the BLOCK_INFO table.
 typedef uint32_t block_info;
 
 // Extra variable block data. Meaning depends on block ID.
+// For organic blocks:
+//   2 bits of vitality (healthy, sick, dying, dead)
+//   3 bits of growth stage
+//     (normal, dormant, sprouting, budding, flowering, fruit-bearing, autumnal)
 typedef uint16_t block_data;
 
 struct cell_s;
@@ -351,9 +356,9 @@ static block const ROTATE_FACE[8][8] = {
 
 // Hewn Blocks:
 #define           B_SMOOTHED_ROCK 0x070
-#define         B_HEWN_ROCK_STEPS 0x072
-#define     B_SMOOTHED_ROCK_STEPS 0x073
-#define         B_HEWN_ROCK_GRATE 0x074
+#define         B_HEWN_ROCK_STEPS 0x071
+#define     B_SMOOTHED_ROCK_STEPS 0x072
+#define         B_HEWN_ROCK_GRATE 0x073
 
 // Construction Materials:
 #define                    B_BALE 0x080
@@ -392,8 +397,10 @@ static block const ROTATE_FACE[8][8] = {
 #define              B_GLASS_PANE 0x09a
 #define            B_FRAMED_GLASS 0x09b
 
-// Interactive blocks:
+// Raw materials:
+#define             B_METAL_BLOCK 0x0a0
 
+// Interactive blocks:
 #define             B_WOODEN_GATE 0x0b0
 #define              B_METAL_GATE 0x0b1
 #define       B_WOODEN_PLANK_DOOR 0x0b2
@@ -424,7 +431,7 @@ static block const ROTATE_FACE[8][8] = {
 
 // Per-block properties:
 static inline block b_id(block b) { return b >> BS_ID; }
-static inline block b_species(block b) { return (b & BM_SPECIES) >> BS_SPC; }
+static inline species b_species(block b) { return (b & BM_SPECIES) >> BS_SPC; }
 static inline block b_idspc(block b) { return b >> BS_SPC; }
 static inline block b_ori(block b) { return (b & BM_ORIENTATION) >> BS_ORI; }
 static inline block b_exp(block b) { return (b & BM_EXPOSURE) >> BS_EXP; }
@@ -454,8 +461,8 @@ static inline block b_make_block(block id) {
 }
 
 // Combine an id and species into a block with default exposure and orientation:
-static inline block b_make_species(block id, block_species species) {
-  return (id << BS_ID) + (species << BS_SPC);
+static inline block b_make_species(block id, species sp) {
+  return (id << BS_ID) + (((block) sp) << BS_SPC);
 }
 
 // Comparisons:

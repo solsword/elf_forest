@@ -10,18 +10,18 @@
  * Globals *
  ***********/
 
-float GEOTHERMAL_SEED = 3975.48;
+ptrdiff_t GEOTHERMAL_SEED = 397548;
 
 /******************************
  * Constructors & Destructors *
  ******************************/
 
 stratum *create_stratum(
-  float seed,
+  ptrdiff_t seed,
   float cx, float cy,
   float size, float thickness,
   map_function profile,
-  material_origin source
+  geologic_source source
 ) {
   int i;
   stratum *result = (stratum *) malloc(sizeof(stratum));

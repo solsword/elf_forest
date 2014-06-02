@@ -15,6 +15,12 @@
  * Types and Structures *
  ************************/
 
+typedef size_t wm_pos_t;
+
+// Position within a world map.
+struct world_map_pos_s;
+typedef struct world_map_pos_s world_map_pos;
+
 // A world map is composed of many small rectangular regions.
 struct world_map_s;
 typedef struct world_map_s world_map;
@@ -48,6 +54,13 @@ typedef struct biome_s biome;
  * Constants *
  *************/
 
+// Bits per world region (6 -> 64x64 blocks).
+#define WORLD_REGION_BITS 6
+
+// Controls number of strata to generate as a multiple of MAX_STRATA_LAYERS,
+// and indirectly controls strata size.
+#define STRATA_COMPLEXITY 3
+
 // Maximum number of biomes that can overlap in the same world region
 #define MAX_BIOME_OVERLAP 4
 
@@ -68,9 +81,17 @@ typedef struct biome_s biome;
  * Structure Definitions *
  *************************/
 
+struct world_map_pos_s {
+  wm_pos_t x, y;
+};
+
 struct world_map_s {
+  ptrdiff_t seed;
   size_t width, height;
   world_region *regions;
+  list *all_strata;
+  list *all_biomes;
+  list *all_civs;
 };
 
 struct world_region_s {
@@ -81,6 +102,7 @@ struct world_region_s {
 };
 
 struct strata_info_s { // indexed starting from the bottom
+  size_t stratum_count;
   stratum *strata[MAX_STRATA_LAYERS]; // the layers that intersect this region
 };
 
@@ -129,16 +151,37 @@ struct biome_s {
  * Inline Functions *
  ********************/
 
+static inline void wmpos__rpos(
+  world_map_pos const * const wmp,
+  region_pos *rpos
+) {
+  rpos->x = ((r_pos_t) wmp->x) << WORLD_REGION_BITS;
+  rpos->y = ((r_pos_t) wmp->y) << WORLD_REGION_BITS;
+  rpos->z = 0;
+}
+
+static inline voiid rpos__wmpos(
+  region_pos const * const rpos,
+  world_map_pos *wmp
+) {
+  wmp->x = ((wm_pos_t) rpos->x) >> WORLD_REGION_BITS;
+  wmp->y = ((wm_pos_t) rpos->y) >> WORLD_REGION_BITS;
+}
 
 /******************************
  * Constructors & Destructors *
  ******************************/
 
 // Allocates and returns a new world map of the given size.
-world_map *create_world_map(size_t width, size_t height);
+world_map *create_world_map(ptrdiff_t seed, size_t width, size_t height);
+
+// Cleans up the given world map and frees the associated memory.
+void cleanup_world_map(world_map *wm);
 
 /*************
  * Functions *
  *************/
+
+void generate_geology(world_map *wm);
 
 #endif // ifndef WORLDGEN_H

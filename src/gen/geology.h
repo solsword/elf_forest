@@ -11,6 +11,19 @@
 #include "world/materials.h"
 #include "world/world.h"
 
+/*********
+ * Enums *
+ *********/
+
+// Geologic sources influence how material types and other stratum parameters
+// are chosen.
+enum geologic_source_e {
+  GEO_IGNEOUS,
+  GEO_METAMORPHIC,
+  GEO_SEDIMENTAY
+};
+typedef enum geologic_source_e geologic_source;
+
 /************************
  * Types and Structures *
  ************************/
@@ -20,6 +33,7 @@ struct stratum_s;
 typedef struct stratum_s stratum;
 
 // A layer of "erosion" which eats away at strata beneath it.
+// TODO: Use these...
 struct erosion_layer_s;
 typedef struct erosion_layer_s erosion_layer;
 
@@ -54,7 +68,7 @@ typedef struct stratum_dynamics_s stratum_dynamics;
 
 // The seed for geothermal information, which both helps determine strata
 // placement and contributes to metamorphosis.
-extern float GEOTHERMAL_SEED;
+extern ptrdiff_t GEOTHERMAL_SEED;
 
 extern float GROSS_DISTORTION_SCALE;
 extern float FINE_DISTORTION_SCALE;
@@ -68,7 +82,7 @@ extern float RIDGE_SCALE;
  *************************/
 
 struct stratum_s {
-  float seed; // seed for various noise sources
+  ptrdiff_t seed; // seed for various noise sources
 
  // Base parameters:
  // ----------------
@@ -76,7 +90,7 @@ struct stratum_s {
   float size; // base radius
   float thickness; // base thickness
   map_function profile; // base profile shape
-  material_origin source; // where the material for this layer comes from
+  geologic_source source; // where the material for this layer comes from
 
  // Derived noise parameters:
  // -------------------------
@@ -116,7 +130,7 @@ struct stratum_s {
 };
 
 struct erosion_layer_s {
-  float seed; // The seed for noise
+  ptrdiff_t seed; // The seed for noise
   // TODO: HERE!
 };
 
@@ -145,11 +159,11 @@ static inline float geothermal_temperature(r_pos_t x, r_pos_t y, r_pos_t z) {
 
 // Allocates and returns a new stratum with the given parameters.
 stratum *create_stratum(
-  float seed,
+  ptrdiff_t seed,
   float cx, float cy,
   float size, float thickness,
   map_function profile,
-  material_origin source
+  geologic_source source
 );
 
 /*************

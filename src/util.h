@@ -54,6 +54,13 @@ static inline int fastceil(float x) {
   return ix + (ix < x);
 }
 
+// (Poor quality) floating point rand:
+static inline float randf(float min, float max) {
+  float result = rand();
+  result /= RAND_MAX;
+  return min + result*(max - min);;
+}
+
 // Normalizes the given angle to be between -M_PI and M_PI.
 static inline void norm_angle(float *angle) {
     while (*angle > M_PI) {

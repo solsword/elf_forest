@@ -344,6 +344,14 @@ float fractal_sxnoise_3d_table(
  * Remix Functions *
  *******************/
 
+// Scaled 2D simplex noise on [0-1]:
+static inline float scaled_sxnoise_2d(
+  float x, float y,
+  float xscale, float yscale
+) {
+  return (1 + sxnoise_2d(x/xscale, y/yscale)) / 2.0;
+}
+
 // Seeded & scaled 2D simplex noise:
 static inline float managed_sxnoise_2d(
   float x, float y,
@@ -353,6 +361,14 @@ static inline float managed_sxnoise_2d(
   float ox = 12345 * seed * cosf(seed);
   float oy = 12345 * seed * sinf(seed);
   return (1 + sxnoise_2d((x+ox)/xscale, (y+oy)/yscale)) / 2.0;
+}
+
+// Scaled 2D Worley noise:
+static inline float scaled_wrnoise_2d(
+  float x, float y,
+  float xscale, float yscale
+) {
+  return wrnoise_2d(x/xscale, y/yscale);
 }
 
 // Seeded & scaled 2D Worley noise:

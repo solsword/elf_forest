@@ -78,11 +78,6 @@ static inline float fmap_flipflop(float x, map_function f) {
   return sign*result;
 }
 
-
-/******************************
- * Constructors & Destructors *
- ******************************/
-
 /*************
  * Functions *
  *************/
