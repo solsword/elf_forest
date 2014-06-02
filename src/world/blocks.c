@@ -17,11 +17,11 @@
 block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 //  VOID:             BOUNDARY:         AIR:              ETHER:
     0x00000009,       0x00000000,       0x00000009,       0x00000009,
-//  WATER:            WATER_FLOW:       SLIME:            SLIME_FLOW:
+//  BLACKDAMP:        WHITEDAMP:        FIREDAMP:         STINKDAMP:
+    0x00000009,       0x00000009,       0x00000009,       0x00000009,
+//  ____:             ____:             WATER:            WATER_FLOW:
     0x00000117,       0x00000117,       0x00000117,       0x00000117,
-//  ACID:             ACID_FLOW:        ____:             ____:
-    0x00000117,       0x00000117,       0x00000117,       0x00000117,
-//  ____:             ____:             ____:             ____:
+//  SLIME:            SLIME_FLOW:       ACID:             ACID_FLOW:
     0x00000117,       0x00000117,       0x00000117,       0x00000117, // 0x00f
 //  ____:             ____:             ____:             ____:
     0x00000117,       0x00000117,       0x00000117,       0x00000117,
@@ -275,9 +275,9 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 
 char const * const BLOCK_NAMES[TOTAL_BLOCK_TYPES] = {
 "void"             ,"boundary"         ,"air"              ,"ether"            ,
-"water"            ,"water_flow"       ,"slime"            ,"SLIME_FLOW"       ,
-"acid"             ,"acid_flow"        ,"____"             ,"____"             ,
-"____"             ,"____"             ,"____"             ,"____"             ,
+"blackdamp"        ,"whitedamp"        ,"firedamp"         ,"stinkdamp"        ,
+"____"             ,"____"             ,"water"            ,"water_flow"       ,
+"slime"            ,"slime_flow"       ,"acid"             ,"acid_flow"        ,
 // 0x00f                                                   
 "____"             ,"____"             ,"____"             ,"____"             ,
 "quicksand"        ,"____"             ,"lava"             ,"lava_flow"        ,

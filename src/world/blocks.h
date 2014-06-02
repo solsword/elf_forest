@@ -13,12 +13,12 @@
  ************/
 
 // 9 bits of block ID.
-// 14 bits of block variant.
+// 14 bits of block species.
 // 3 bits of block orientation.
 // 6 bits of block exposure.
 typedef uint32_t block;
-// for holding just a variant:
-typedef uint16_t block_variant;
+// for holding just a species:
+typedef uint16_t block_species;
 
 // Extra static block data and flags stored in the BLOCK_INFO table.
 typedef uint32_t block_info;
@@ -41,18 +41,18 @@ struct cell_s {
  **********************/
 
 #define BLOCK_ID_BITS 9
-#define BLOCK_VAR_BITS 14
+#define BLOCK_SPC_BITS 14
 #define BLOCK_ORI_BITS 3
 #define BLOCK_EXP_BITS 6
 
-#define BS_ID (BLOCK_VAR_BITS + BLOCK_ORI_BITS + BLOCK_EXP_BITS)
-#define BS_VAR (BLOCK_ORI_BITS + BLOCK_EXP_BITS)
+#define BS_ID (BLOCK_SPC_BITS + BLOCK_ORI_BITS + BLOCK_EXP_BITS)
+#define BS_SPC (BLOCK_ORI_BITS + BLOCK_EXP_BITS)
 #define BS_ORI BLOCK_ORI_BITS
 #define BS_EXP 0
 
 #define TOTAL_BLOCK_TYPES (1 << BLOCK_ID_BITS)
-#define TOTAL_BLOCK_VARIANTS (1 << (BLOCK_ID_BITS + BLOCK_VAR_BITS))
-#define VARIANTS_PER_BLOCK (1 << BLOCK_VAR_BITS)
+#define TOTAL_BLOCK_SPECIES (1 << (BLOCK_ID_BITS + BLOCK_SPC_BITS))
+#define SPECIES_PER_BLOCK (1 << BLOCK_SPC_BITS)
 
 extern block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES];
 
@@ -94,7 +94,7 @@ static block const   BF_EXPOSED_WEST = 1 << BFS_EXPOSED_WEST_SHIFT;
 
 static block const    BM_EXPOSURE = 0x3f << BS_EXP;
 static block const BM_ORIENTATION = 0x7 << BS_ORI;
-static block const     BM_VARIANT = 0x3fff << BS_VAR;
+static block const     BM_SPECIES = 0x3fff << BS_SPC;
 
 // Info Masks:
 // -----------
@@ -267,16 +267,20 @@ static block const ROTATE_FACE[8][8] = {
 // Invisible blocks:
 #define                     B_AIR 0x002
 #define                   B_ETHER 0x003
+#define               B_BLACKDAMP 0x004
+#define               B_WHITEDAMP 0x005
+#define                B_FIREDAMP 0x006
+#define               B_STINKDAMP 0x007
 
 // Translucent liquid blocks:
-#define                   B_WATER 0x004
-#define              B_WATER_FLOW 0x005
+#define                   B_WATER 0x00a
+#define              B_WATER_FLOW 0x00b
 
-#define                   B_SLIME 0x006
-#define              B_SLIME_FLOW 0x007
+#define                   B_SLIME 0x00c
+#define              B_SLIME_FLOW 0x00d
 
-#define                    B_ACID 0x008
-#define               B_ACID_FLOW 0x009
+#define                    B_ACID 0x00e
+#define               B_ACID_FLOW 0x00f
 
 // Opaque liquid blocks:
 #define               B_QUICKSAND 0x014
@@ -420,8 +424,8 @@ static block const ROTATE_FACE[8][8] = {
 
 // Per-block properties:
 static inline block b_id(block b) { return b >> BS_ID; }
-static inline block b_var(block b) { return (b & BM_VARIANT) >> BS_VAR; }
-static inline block b_idvar(block b) { return b >> BS_VAR; }
+static inline block b_species(block b) { return (b & BM_SPECIES) >> BS_SPC; }
+static inline block b_idspc(block b) { return b >> BS_SPC; }
 static inline block b_ori(block b) { return (b & BM_ORIENTATION) >> BS_ORI; }
 static inline block b_exp(block b) { return (b & BM_EXPOSURE) >> BS_EXP; }
 
@@ -444,25 +448,25 @@ static inline block_info bi_oabl(block b) {
 
 // Constructors:
 
-// Turn an ID into a block with default variant, exposure, and orientation:
+// Turn an ID into a block with default species, exposure, and orientation:
 static inline block b_make_block(block id) {
   return id << BS_ID;
 }
 
-// Combine an id and variant into a block with default exposure and orientation:
-static inline block b_make_variant(block id, block variant) {
-  return (id << BS_ID) + (variant << BS_VAR);
+// Combine an id and species into a block with default exposure and orientation:
+static inline block b_make_species(block id, block_species species) {
+  return (id << BS_ID) + (species << BS_SPC);
 }
 
 // Comparisons:
 
-// Compare block IDs and variants:
+// Compare block IDs and species:
 static inline block b_is(block b, block c) {
-  return b >> BS_VAR == c >> BS_VAR;
+  return b >> BS_SPC == c >> BS_SPC;
 }
 
 // Compare just block IDs:
-static inline block b_is_var_of(block b, block c) {
+static inline block b_is_species_of(block b, block c) {
   return b_id(b) == b_id(c);
 }
 
@@ -502,8 +506,8 @@ static inline block next_block(block b) {
   return b_make_block((b_id(b) + 1) % TOTAL_BLOCK_TYPES);
 }
 
-static inline block next_variant(block b) {
-  return (((b >> BS_VAR) + 1) % TOTAL_BLOCK_VARIANTS) << BS_VAR;
+static inline block next_species(block b) {
+  return (((b >> BS_SPC) + 1) % TOTAL_BLOCK_SPECIES) << BS_SPC;
 }
 
 static inline void copy_cell(cell const * const src, cell * dst) {

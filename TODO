@@ -40,9 +40,63 @@ gameplay
   glyphs
   songs
   plants
+  smell
+  sounds (directional; slow pathfinding)
 bugs/testing
   bad transparency layering (before/behind the player when in water with
     abstract water below).
   fix abstracted chunk adjacency+transparency
   test for bugs near the region origin
   double-stepping when traversing a corner precisely
+misc
+  coppicing
+  Cistercian monks
+  copper and its alloys have anti-microbial properties
+processes
+  no-till farming
+  limestone flux supplies both CO2 and CaO in a blast furnace
+    carbon from coke/charcoal provides CO and C to turn CO2 into CO
+    CaO + SiO2 -> CaSiO3
+  zinc smelting (low boiling point)
+    froth flotation
+  cupellation to separate noble metals from base metals
+  liquation to separate copper and silver
+  cement production
+    calcination
+  retting to produce straw
+    curing, breaking, and scutching
+    produces shives (fuel; wallboard) and tow (paper; stuffing)
+  cementation to produce brass from copper and gaseous zinc
+materials
+  H2S (stinkdamp) reacts with alcohol to produce thiols
+  tar, coke, and turpentine production
+  turpentine (see also mineral spirits)
+    paint thinner; furniture finish w/ beeswax; aniseptic;
+    flavor for cheap gin
+  fuller's earth & activated charcoal
+  rock wool
+  charcoal/potash as fertilizer
+  Carnauba wax
+  opium
+  alcohol
+  senna (laxative)
+  graphite
+    writing (also chalk)
+  zinc
+    (oxide)
+      glazes; white paint; calamine (with some Fe2O3) vs. itching; deodorizing;
+      antibacterial
+  bronze & brass
+    tin and non-co-occurrence with copper -> trade
+  camphor
+    cooking; embalming; perfume; calming effect; medicine; poison;
+    insect repellent
+  ipecac
+    nausea-inducer
+  mucilage (marshmallow; slippery elm; cactus; aloe; kelp; flax seeds)
+    demulcent (also honey; pectin; liquorice)
+    glue
+  flax
+    fibres for linen; oil (fuel; drying); food; 
+  burlap
+    from jute

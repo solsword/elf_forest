@@ -83,7 +83,7 @@ static inline block actual_face(
 static inline size_t dta_get_index(dynamic_texture_atlas *dta, block b) {
   return (size_t) m1_get_value(
     dta->tcmap,
-    (map_key_t) ((size_t) b_idvar(b))
+    (map_key_t) ((size_t) b_idspc(b))
   );
 }
 
@@ -97,7 +97,7 @@ static inline size_t dta_set_index(
   return (size_t) m1_put_value(
     dta->tcmap,
     (void *) index,
-    (map_key_t) ((size_t) b_idvar(b))
+    (map_key_t) ((size_t) b_idspc(b))
   );
 }
 
