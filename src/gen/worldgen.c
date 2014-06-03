@@ -100,14 +100,13 @@ void generate_geology(world_map *wm) {
         // this stratum:
         // TODO: use four-corners method instead
         wmpos__rpos(&xy, &rpos);
-        //t = stratum_core(rpos.x, rpos.y, s) + stratum_detail(rpos.x, rpos.y, s);
-        t = stratum_core(rpos.x, rpos.y, s);
+        t = stratum_core(rpos.x, rpos.y, s) + stratum_detail(rpos.x, rpos.y, s);
         if (t > 0) { // In this case, add this stratum to this region:
           //TODO: Real logging/debugging
           //printf("Adding stratum to region at %zu, %zu.\n", xy.x, xy.y);
           wr = get_world_region(wm, &xy);
           stc = wr->geology.stratum_count;
-          if (stc < MAX_STRATA_LAYERS - 1) {
+          if (stc < MAX_STRATA_LAYERS) {
             wr->geology.strata[stc] = s;
             wr->geology.stratum_count += 1;
           } else {
@@ -129,34 +128,36 @@ void strata_cell(
   cell *result
 ) {
   static stratum_dynamics sd[MAX_STRATA_LAYERS];
-  size_t i;
+  static region_pos pr_rpos = { .x = -1, .y = -1, .z = -1 };
+  int i;
   r_pos_t h;
   stratum *st;
   stratum *below;
   column_dynamics cd = { .pressure=0, .erosion=0 };
-  // Compute strata heights from the top down:
-  for (i = wr->geology.stratum_count - 1; i > -1; --i) {
-    st = wr->geology.strata[i];
-    if (i > 0) {
-      below = wr->geology.strata[i-1];
-    } else {
-      below = NULL;
+
+  if (pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
+    // No need to recompute the strata column if we're at the same x/y.
+    // Compute strata heights from the top down:
+    for (i = wr->geology.stratum_count - 1; i > -1; --i) {
+      st = wr->geology.strata[i];
+      if (i > 0) {
+        below = wr->geology.strata[i-1];
+      } else {
+        below = NULL;
+      }
+      compute_stratum_dynamics(
+        rpos->x, rpos->y,
+        st, below,
+        &cd, &(sd[i])
+      );
     }
-    compute_stratum_dynamics(
-      rpos->x, rpos->y,
-      st, below,
-      &cd, &(sd[i])
-    );
   }
   // Figure out elevations from the bottom up:
-  result->primary = b_make_block(B_VOID);
-  result->secondary = b_make_block(B_VOID);
-  result->p_data = 0;
-  result->s_data = 0;
   h = 0;
   for (i = 0; i < wr->geology.stratum_count; ++i) {
     st = wr->geology.strata[i];
     sd[i].elevation = h;
+    //printf("Thickness: %d\n", sd[i].thickness);
     h += sd[i].thickness;
     if (h > rpos->z) { // might not happen at all
       result->primary = stratum_material(
@@ -164,10 +165,7 @@ void strata_cell(
         st,
         &(sd[i])
       );
-      result->secondary = b_make_block(B_VOID);
       // TODO: block data
-      result->p_data = 0;
-      result->s_data = 0;
       // TODO: caching and/or batch processing?
       break;
     }

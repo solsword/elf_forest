@@ -505,12 +505,14 @@ void tick_physics(entity *e) {
   acceleration.x = e->impulse.x / e->mass;
   acceleration.y = e->impulse.y / e->mass;
   acceleration.z = e->impulse.z / e->mass;
-  if (in_liquid(e)) {
-    acceleration.z -= GRAVITY * (1 - e->buoyancy);
-  } else if (is_airborne(e) && !is_crouching(e)) {
-    acceleration.z -= GRAVITY * (1 - e->lift);
-  } else {
-    acceleration.z -= GRAVITY;
+  if (!in_void(e)) { // No gravity while in a void
+    if (in_liquid(e)) {
+      acceleration.z -= GRAVITY * (1 - e->buoyancy);
+    } else if (is_airborne(e) && !is_crouching(e)) {
+      acceleration.z -= GRAVITY * (1 - e->lift);
+    } else {
+      acceleration.z -= GRAVITY;
+    }
   }
   // Resolve entity collisions:
   resolve_entity_collisions(e);

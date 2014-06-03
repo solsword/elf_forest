@@ -243,7 +243,7 @@ static inline void draw_pos_info(void) {
   // Draw region position:
   sprintf(
     TXT,
-    "region :: %+8ld x    %+8ld y    %+8ld z",
+    "region :: %+6ld x    %+6ld y    %+6ld z",
     player_pos.x, player_pos.y, player_pos.z
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 540);

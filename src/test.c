@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
   region_pos origin;
   //rcpos__rpos(&CHUNK_ORIGIN, &origin);
   wmpos__rpos(&WORLD_ORIGIN, &origin);
-  origin.z = 0;
+  origin.z = 1520;
 
   // Seed the random number generator:
   srand(545438);
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
  *************/
 
 void test_spawn_player(active_entity_area *area) {
-  vector pos = { .x=2.0, .y=2.0, .z=50.0 };
+  vector pos = { .x=2.0, .y=2.0, .z=2.0 };
   //PLAYER = spawn_entity("tern", &pos, area);
   //PLAYER = spawn_entity("sparrow", &pos, area);
   PLAYER = spawn_entity("tester", &pos, area);
