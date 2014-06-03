@@ -20,7 +20,7 @@ OPT_FLAGS=-O3
 INCLUDE_FLAGS=-I/usr/include/freetype2 -I$(SRC_DIR)
 CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(DEBUG_FLAGS) $(PROFILE_FLAGS)
 
-LIBS_OPENGL=-lGLee -lGL -lGLU
+LIBS_OPENGL=-lGLEW -lGL -lGLU
 LIBS_GLFW=-lglfw -lrt -lXrandr -lXi -lXxf86vm -lXrender -lXext -lX11 \
           -lpthread -lxcb -lXau -lXdmcp
 LIBS_FTGL=-lftgl
@@ -78,6 +78,8 @@ UNIT_TEST_OBJECTS=$(OBJ_DIR)/test_suite.o \
 NOISE_TEST_OBJECTS=$(OBJ_DIR)/noise.o \
           $(OBJ_DIR)/test_noise.o
 
+CHECKGL_OBJECTS=$(OBJ_DIR)/check_gl_version.o
+
 # The default goal:
 .DEFAULT_GOAL := game
 
@@ -95,8 +97,8 @@ unit_tests: $(BIN_DIR)/unit_tests
 test_noise: $(TEST_DIR)/noise_test_2D.ppm $(TEST_DIR)/noise_test_3D.ppm \
             $(TEST_DIR)/noise_test_2D_F.ppm $(TEST_DIR)/noise_test_3D_F.ppm \
             $(TEST_DIR)/noise_test_ex.ppm
-checkgl:
-	$(CC) -E $(SRC_DIR)/check_gl_version.h | tail -n 9
+checkgl: $(BIN_DIR)/checkgl
+	./$(BIN_DIR)/checkgl
 
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
@@ -150,6 +152,9 @@ $(TEST_DIR)
 
 $(BIN_DIR)/test_noise: $(NOISE_TEST_OBJECTS) $(BIN_DIR)
 	$(CC) $(NOISE_TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/test_noise
+
+$(BIN_DIR)/checkgl: $(CHECKGL_OBJECTS) $(BIN_DIR)
+	$(CC) $(CHECKGL_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/checkgl
 
 $(TEST_DIR)/noise_test%2D.ppm $(TEST_DIR)/noise_test%3D.ppm \
 $(TEST_DIR)/noise_test%2D_F.ppm $(TEST_DIR)/noise_test%3D_F.ppm \

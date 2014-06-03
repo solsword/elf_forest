@@ -94,6 +94,7 @@ entity * create_entity(void) {
     perror("Failed to spawn entity.");
     fail(errno);
   }
+  e->move_flags = 0;
   e->model = NULL;
   e->area = NULL;
   e->last_flap = 0;

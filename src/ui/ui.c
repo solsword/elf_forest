@@ -210,26 +210,40 @@ static inline void draw_mem(void) {
 
 static inline void draw_pos_info(void) {
   // Gather position info:
-  float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
   region_pos player_pos;
   get_head_rpos(PLAYER, &player_pos);
+
+#ifdef TERRAIN_MODE_BASIC
+  // Draw geoform data:
+  float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
   get_geoforms(
     fastfloor(player_pos.x), fastfloor(player_pos.y),
     &depths, &oceans, &plains, &hills, &mountains
   );
-
-  // Draw geoform data:
   sprintf(
     TXT,
     "d: %0.2f  o: %0.2f  p: %0.2f  h: %0.2f  m: %0.2f",
     depths, oceans, plains, hills, mountains
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 570);
+#else
+  // DEBUG:
+  if (PLAYER->area != NULL) {
+    sprintf(
+      TXT,
+      "area origin :: %+6ld x   %+6ld y   %+6ld z",
+      PLAYER->area->origin.x, PLAYER->area->origin.y, PLAYER->area->origin.z
+    );
+  } else {
+    sprintf(TXT, "Player is out-of-bounds.");
+  }
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 570);
+#endif
 
   // Draw region position:
   sprintf(
     TXT,
-    "region :: %+4ld x    %+4ld y    %+4ld z",
+    "region :: %+8ld x    %+8ld y    %+8ld z",
     player_pos.x, player_pos.y, player_pos.z
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 540);

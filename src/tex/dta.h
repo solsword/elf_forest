@@ -79,7 +79,8 @@ static inline block actual_face(
   }
 }
 
-// Looks up a block and returns its index, or 0 if it isn't mapped.
+// Looks up a block and returns its index, 0 if it isn't mapped, or 1 if it is
+// unmapped and texture lookup failed previously.
 static inline size_t dta_get_index(dynamic_texture_atlas *dta, block b) {
   return (size_t) m1_get_value(
     dta->tcmap,

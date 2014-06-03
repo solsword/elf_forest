@@ -2,7 +2,7 @@
 // Texture loading and management.
 
 #include <png.h>
-#include <GLee.h> // glGenerateMipmaps
+#include <GL/glew.h> // glGenerateMipmaps
 
 #include <string.h>
 #include <stdlib.h>

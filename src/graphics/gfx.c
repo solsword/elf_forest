@@ -1,6 +1,7 @@
 // gfx.c
 // Graphics environment wrangling.
 
+#include <GL/glew.h>
 #include <GL/glu.h>
 
 #include <GLFW/glfw3.h>
@@ -235,7 +236,10 @@ void prepare(
   float b,
   float a
 ) {
+  // Initialize GLFW
   init_context(argc, argv);
+
+  // Set up the window
   WINDOW = glfwCreateWindow( w, h, name, NULL, NULL );
   if (!WINDOW) {
     glfwTerminate();
@@ -243,9 +247,21 @@ void prepare(
   }
   glfwGetWindowSize(WINDOW, &WINDOW_WIDTH, &WINDOW_HEIGHT);
   glfwMakeContextCurrent(WINDOW);
+
+  // Initialize GLEW
+  GLenum err = glewInit();
+  if (err != GLEW_OK) {
+    printf("Failed to initialize GLEW:\n");
+    printf("  %s\n", glewGetErrorString(err));
+    exit(-1);
+  }
+
+  // Settings
   set_bg_color( r, g, b, a);
   glsettings();
   glperspective();
+
+  // Activate callbacks
   activate_gfx_callbacks();
 }
 

@@ -7,7 +7,7 @@
 #include <errno.h>
 #include <assert.h>
 
-#include <GLee.h> // glDeleteBuffers etc.
+#include <GL/glew.h> // glDeleteBuffers etc.
 
 #include "vbo.h"
 

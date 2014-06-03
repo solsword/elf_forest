@@ -5,7 +5,7 @@
 // DEBUG:
 #include <stdio.h>
 
-#include <GLee.h> // glBindBuffer etc.
+#include <GL/glew.h> // glBindBuffer etc.
 #include <GL/glu.h>
 
 #include "vbo.h"

@@ -54,12 +54,19 @@ typedef struct world_map_s world_map;
  * Constants *
  *************/
 
+// World width and height in regions:
+//#define WORLD_WIDTH 768
+//#define WORLD_HEIGHT 512
+#define WORLD_WIDTH 128
+#define WORLD_HEIGHT 96
+
 // Bits per world region (6 -> 64x64 blocks).
 #define WORLD_REGION_BITS 6
+#define WORLD_REGION_SIZE (1 << WORLD_REGION_BITS)
 
 // Controls number of strata to generate as a multiple of MAX_STRATA_LAYERS,
 // and indirectly controls strata size.
-#define STRATA_COMPLEXITY 3
+#define STRATA_COMPLEXITY 0.8
 
 // Maximum number of biomes that can overlap in the same world region
 #define MAX_BIOME_OVERLAP 4
@@ -84,9 +91,6 @@ typedef struct world_map_s world_map;
 extern world_map* THE_WORLD;
 
 extern ptrdiff_t const WORLD_SEED;
-
-extern wm_pos_t const WORLD_WIDTH;
-extern wm_pos_t const WORLD_HEIGHT;
 
 /*************************
  * Structure Definitions *

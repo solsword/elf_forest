@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include <GLee.h> // glBindBuffer etc.
+#include <GL/glew.h> // glBindBuffer etc.
 
 #include "display.h"
 

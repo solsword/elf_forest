@@ -48,6 +48,7 @@ bugs/testing
   fix abstracted chunk adjacency+transparency
   test for bugs near the region origin
   double-stepping when traversing a corner precisely
+  core dump :(
 misc
   coppicing
   Cistercian monks

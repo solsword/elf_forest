@@ -43,15 +43,16 @@ dynamic_texture_atlas *create_dynamic_atlas(size_t size) {
   );
   dta->handle = 0;
 
-  // Reserve index 0 as an 'invalid' texture so that failed map lookups (which
-  // return NULL) won't be ambiguous.
+  // Reserve indices 0 and 1 as 'invalid' textures so that failed map lookups
+  // (which return NULL) won't be ambiguous.
   texture *invalid = load_texture_from_png("res/textures/invalid.png");
-  // Mark 0 as used:
-  bm_set_bits(dta->vacancies, 0, 1);
-  // Add B_VOID -> 0 to our block id/variant -> index mapping:
-  dta_set_index(dta, b_make_block(B_VOID), 0);
+  // Mark 0 and 1 as used:
+  bm_set_bits(dta->vacancies, 0, 2);
+  // Add B_VOID -> 1 to our block id/variant -> index mapping:
+  dta_set_index(dta, b_make_block(B_VOID), 1);
   // Copy the invalid texture into our texture atlas:
   tx_paste(dta->atlas, invalid, 0, 0);
+  tx_paste(dta->atlas, invalid, BLOCK_TEXTURE_SIZE, 0);
   // Clean up the loaded texture as it's no longer needed:
   cleanup_texture(invalid);
 
@@ -84,17 +85,21 @@ void ensure_mapped(block b) {
     // We need to load the block's texture:
     //* TODO: Real error checking/reporting!!
     printf(
-      "Loading texture for block '%s'\n",
+      "Loading texture for block '%s'...\n",
       BLOCK_NAMES[b_id(b)]
     );
     // */
     tx = get_block_texture(b);
     if (tx) {
+      printf("  ...done.\n");
       dta_add_block(dta, b, tx);
       dta_update_texture(dta);
+    } else {
+      printf("  ...failed (no texture found).\n");
+      // If there's no texture for the block, we'll mark it as
+      // invalid-no-texture, and it will use the default "invalid" texture.
+      dta_set_index(dta, b, 1);
     }
-    // If there's no texture for the block, we'll leave it unmapped, and it
-    // will use the default "invalid" texture.
   }
 }
 

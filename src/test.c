@@ -46,7 +46,7 @@
 //region_chunk_pos const CHUNK_ORIGIN = { .x = 11929, .y = -199356, .z = 2 };
 
 // Center of the world:
-world_map_pos WORLD_ORIGIN = { .x = 384, .y=256 };
+world_map_pos WORLD_ORIGIN = { .x = WORLD_WIDTH/2, .y=WORLD_HEIGHT/2 };
 
 /********
  * Main *
@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
   region_pos origin;
   //rcpos__rpos(&CHUNK_ORIGIN, &origin);
   wmpos__rpos(&WORLD_ORIGIN, &origin);
-  origin.z = 1000;
+  origin.z = 0;
 
   // Seed the random number generator:
   srand(545438);

@@ -11,9 +11,6 @@ world_map* THE_WORLD = NULL;
 
 ptrdiff_t const WORLD_SEED = 7184921;
 
-wm_pos_t const WORLD_WIDTH = 768;
-wm_pos_t const WORLD_HEIGHT = 512;
-
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -51,9 +48,21 @@ void world_cell(region_pos *rpos, cell *result) {
   world_map_pos wmpos;
   world_region *wr;
   rpos__wmpos(rpos, &wmpos);
+  // default values:
+  result->primary = b_make_block(B_VOID);
+  result->secondary = b_make_block(B_VOID);
+  result->p_data = 0;
+  result->s_data = 0;
   wr = get_world_region(THE_WORLD, &wmpos);
+  if (rpos->z < 0) {
+    result->primary = b_make_block(B_BOUNDARY);
+    return;
+  }
   strata_cell(wr, rpos, result);
-  // TODO: Other things like plants here...
+  if (b_is(result->primary, B_VOID)) {
+    // TODO: Other things like plants here...
+    result->primary = b_make_block(B_AIR);
+  }
 }
 
 void generate_geology(world_map *wm) {
@@ -63,7 +72,11 @@ void generate_geology(world_map *wm) {
   size_t stc;
   float t;
   stratum *s;
-  float avg_size = sqrtf(wm->width*wm->height) / ((float) STRATA_COMPLEXITY);
+
+  float avg_size = sqrtf(wm->width*wm->height);
+  avg_size /= fmax(1.0, ((float) STRATA_COMPLEXITY));
+  avg_size *= WORLD_REGION_SIZE;
+
   float avg_thickness = 10.0; // TODO: Something else here
   map_function profile = MFN_SPREAD_UP;// TODO: Something else here
   ptrdiff_t hash;
@@ -82,16 +95,19 @@ void generate_geology(world_map *wm) {
     l_append_element(wm->all_strata, (void*) s);
     // Render the stratum into the various regions:
     for (xy.x = 0; xy.x < wm->width; ++xy.x) {
-      for (xy.y = 0; xy.y < wm->width; ++xy.y) {
+      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
         // Compute thickness to determine if this region needs to be aware of
         // this stratum:
         // TODO: use four-corners method instead
         wmpos__rpos(&xy, &rpos);
-        t = stratum_core(rpos.x, rpos.y, s) + stratum_detail(rpos.x, rpos.y, s);
+        //t = stratum_core(rpos.x, rpos.y, s) + stratum_detail(rpos.x, rpos.y, s);
+        t = stratum_core(rpos.x, rpos.y, s);
         if (t > 0) { // In this case, add this stratum to this region:
+          //TODO: Real logging/debugging
+          //printf("Adding stratum to region at %zu, %zu.\n", xy.x, xy.y);
           wr = get_world_region(wm, &xy);
           stc = wr->geology.stratum_count;
-          if (stc < MAX_STRATA_LAYERS) {
+          if (stc < MAX_STRATA_LAYERS - 1) {
             wr->geology.strata[stc] = s;
             wr->geology.stratum_count += 1;
           } else {
@@ -112,14 +128,14 @@ void strata_cell(
   region_pos *rpos,
   cell *result
 ) {
+  static stratum_dynamics sd[MAX_STRATA_LAYERS];
   size_t i;
   r_pos_t h;
   stratum *st;
   stratum *below;
   column_dynamics cd = { .pressure=0, .erosion=0 };
-  stratum_dynamics sd[MAX_STRATA_LAYERS];
   // Compute strata heights from the top down:
-  for (i = MAX_STRATA_LAYERS - 1; i > -1; --i) {
+  for (i = wr->geology.stratum_count - 1; i > -1; --i) {
     st = wr->geology.strata[i];
     if (i > 0) {
       below = wr->geology.strata[i-1];
@@ -133,12 +149,16 @@ void strata_cell(
     );
   }
   // Figure out elevations from the bottom up:
+  result->primary = b_make_block(B_VOID);
+  result->secondary = b_make_block(B_VOID);
+  result->p_data = 0;
+  result->s_data = 0;
   h = 0;
-  for (i = 0; i < MAX_STRATA_LAYERS; ++i) {
+  for (i = 0; i < wr->geology.stratum_count; ++i) {
     st = wr->geology.strata[i];
     sd[i].elevation = h;
     h += sd[i].thickness;
-    if (h > rpos->z) {
+    if (h > rpos->z) { // might not happen at all
       result->primary = stratum_material(
         rpos,
         st,

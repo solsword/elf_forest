@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <GL/gl.h>
+
 /**********
  * MACROS *
  **********/
@@ -69,6 +71,36 @@ static inline void norm_angle(float *angle) {
     while (*angle < -M_PI) {
       *angle += M_PI*2;
     }
+}
+
+// Looks for an OpenGL error and prints it to stderr, after the given reason.
+// If it finds an error, it returns 1 after printing it, otherwise it returns 0.
+static inline int report_opengl_error(char const * const reason) {
+  GLenum e = glGetError();
+  if (e == GL_NO_ERROR) {
+    return 0;
+  }
+  fprintf(stderr, reason);
+  switch (e) {
+    case GL_INVALID_ENUM:
+      fprintf(stderr, "OpenGL: Invalid enumeration.\n");
+      break;
+    case GL_INVALID_VALUE:
+      fprintf(stderr, "OpenGL: Invalid value.\n");
+      break;
+    case GL_INVALID_OPERATION:
+      fprintf(stderr, "OpenGL: Invalid operation.\n");
+      break;
+    case GL_INVALID_FRAMEBUFFER_OPERATION:
+      fprintf(stderr, "OpenGL: Invalid framebuffer operation.\n");
+      break;
+    case GL_OUT_OF_MEMORY:
+      fprintf(stderr, "OpenGL: Out of memory.\n");
+      break;
+    default:
+      fprintf(stderr, "Unknown OpenGL error: %d.\n", e);
+  }
+  return 1;
 }
 
 // Reads a file and returns a malloc'd char *:
