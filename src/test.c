@@ -20,6 +20,10 @@
 #include "world/world.h"
 #include "world/entities.h"
 
+#ifndef TERRAIN_MODE_BASIC
+  #include "gen/worldgen.h"
+#endif
+
 #include "control/ctl.h"
 #include "prof/ptime.h"
 #include "gen/terrain.h"
@@ -39,7 +43,10 @@
 // Plains:
 //region_chunk_pos const CHUNK_ORIGIN = { .x = 69240, .y = 54067, .z = 10 };
 // Beach:
-region_chunk_pos const CHUNK_ORIGIN = { .x = 11929, .y = -199356, .z = 2 };
+//region_chunk_pos const CHUNK_ORIGIN = { .x = 11929, .y = -199356, .z = 2 };
+
+// Center of the world:
+world_map_pos WORLD_ORIGIN = { .x = 384, .y=256 };
 
 /********
  * Main *
@@ -48,7 +55,9 @@ region_chunk_pos const CHUNK_ORIGIN = { .x = 11929, .y = -199356, .z = 2 };
 int main(int argc, char** argv) {
   // Compute detailed starting location:
   region_pos origin;
-  rcpos__rpos(&CHUNK_ORIGIN, &origin);
+  //rcpos__rpos(&CHUNK_ORIGIN, &origin);
+  wmpos__rpos(&WORLD_ORIGIN, &origin);
+  origin.z = 1000;
 
   // Seed the random number generator:
   srand(545438);
@@ -60,16 +69,26 @@ int main(int argc, char** argv) {
   printf("Setting up test world...\n");
 
   // Initialize stateless subsystems:
+  printf("  ...control...\n");
   init_control();
+  printf("  ...tick...\n");
   init_tick(1);
+  printf("  ...ptime...\n");
   init_ptime();
 
   // Setup stateful subsystems:
+  printf("  ...shaders...\n");
   setup_shaders();
+  printf("  ...textures...\n");
   setup_textures();
+  printf("  ...ui...\n");
   setup_ui();
+  printf("  ...data...\n");
   setup_data();
+  printf("  ...entities...\n");
   setup_entities(&origin);
+  printf("  ...world_map...\n");
+  setup_world_map();
 
   printf("...done.\n");
 

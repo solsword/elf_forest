@@ -3,14 +3,28 @@
 
 #include "noise/noise.h"
 #include "math/functions.h"
+#include "datatypes/vector.h"
+
+#include "worldgen.h"
 
 #include "geology.h"
+
 
 /***********
  * Globals *
  ***********/
 
-ptrdiff_t GEOTHERMAL_SEED = 397548;
+ptrdiff_t const GEOTHERMAL_SEED = 397548;
+
+// Note: these constants are all expressed in terms of blocks.
+float const GN_GROSS_DISTORTION_SCALE = 784;
+float const GN_FINE_DISTORTION_SCALE = 211;
+float const GN_LARGE_VAR_SCALE = 2563;
+float const GN_MED_VAR_SCALE = 1345;
+float const GN_SMALL_VAR_SCALE = 547;
+float const GN_TINY_VAR_SCALE = 43;
+float const GN_DETAIL_VAR_SCALE = 5.4;
+float const GN_RIDGE_SCALE = 67;
 
 /******************************
  * Constructors & Destructors *
@@ -39,13 +53,18 @@ stratum *create_stratum(
   result->scale_bias = 1.0;
   result->infill = 0.0;
 
-  result->gross_distortion = 120.0;
-  result->fine_distortion = 40.0;
+  result->radial_frequency = M_PI/3.2;
+  result->radial_variance = 0.4;
 
-  result->large_var = 0.2;
-  result->med_var = 0.12;
+  result->gross_distortion = 1010.0;
+  result->fine_distortion = 108.0;
 
-  result->small_var = 2.3;
+  result->large_var = result->thickness*0.7;
+  result->med_var = result->thickness*0.46;
+  result->small_var = result->thickness*0.19;
+  result->tiny_var = result->thickness*0.07;
+
+  result->detail_var = 2.3;
   result->ridges = 2.5;
 
   result->scraping = 0.7;
@@ -69,27 +88,11 @@ stratum *create_stratum(
  * Inline Functions *
  ********************/
 
-static inline float stratum_core(r_pos_t x, r_pos_t y, stratum *st) {
-  return 12.0; // TODO: HERE!
-}
-
-static inline float stratum_detail(r_pos_t x, r_pos_t y, stratum *st) {
-  return 3.0; // TODO: HERE!
-}
-
-static inline float stratum_infill(
-  r_pos_t x, r_pos_t y,
-  stratum *st,
-  stratum *below
-) {
-  return 3.0; // TODO: HERE!
-}
-
 /*************
  * Functions *
  *************/
 
-float stratum_height(
+void compute_stratum_dynamics(
   r_pos_t x, r_pos_t y,
   stratum *st,
   stratum *below,
@@ -122,15 +125,19 @@ float stratum_height(
   if (result < 1) { result = 1; }
   sd->pressure = cd->pressure;
 
-  return result;
+  // store the end result:
+  sd->thickness = (r_pos_t) result;
 }
 
-material stratum_material(
-  r_pos_t x, r_pos_t y, r_pos_t height,
+block stratum_material(
+  region_pos *rpos,
   stratum *st,
   stratum_dynamics *sd
 ) {
-  // pick a material:
+  return b_make_species(B_STONE, 0);
+  /*
+  r_pos_t h = rpos->z - sd->elevation;
+  // TODO: HERE!
   material mat = st->base_material;
   // TODO: veins and inclusions here!
   //if (height < sd->infill) {
@@ -156,4 +163,5 @@ material stratum_material(
   }
 
   return mat;
+  */
 }

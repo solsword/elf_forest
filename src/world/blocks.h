@@ -31,8 +31,13 @@ typedef uint32_t block_info;
 //     (normal, dormant, sprouting, budding, flowering, fruit-bearing, autumnal)
 typedef uint16_t block_data;
 
+// A cell holds two blocks and their block data:
 struct cell_s;
 typedef struct cell_s cell;
+
+/*************************
+ * Structure Definitions *
+ *************************/
 
 struct cell_s {
   block primary;

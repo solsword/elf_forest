@@ -2,7 +2,7 @@
 #define TERRAIN_H
 
 // terrain.h
-// Terrain generation.
+// Legacy terrain generation (see worldgen.h/c).
 
 #include <math.h>
 
@@ -306,7 +306,7 @@ static inline int get_tunnel(
  *************/
 
 // Creates a cell for the given position:
-void terrain_cell(region_pos pos, cell *result);
+void terrain_cell(region_pos *pos, cell *result);
 
 // Computes geoform weights at the given location. Note that this isn't used
 // internally because the noise values that it generates are reused elsewhere

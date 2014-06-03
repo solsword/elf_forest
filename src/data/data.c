@@ -10,7 +10,11 @@
 #include "datatypes/map.h"
 
 #include "graphics/display.h"
-#include "gen/terrain.h"
+#ifdef TERRAIN_MODE_BASIC
+  #include "gen/terrain.h"
+#else
+  #include "gen/worldgen.h"
+#endif
 #include "prof/ptime.h"
 #include "world/blocks.h"
 #include "world/world.h"
@@ -495,7 +499,11 @@ void load_chunk(chunk *c) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
         cidx__rpos(c, &idx, &rpos);
-        terrain_cell(rpos, c_cell(c, idx));
+#ifdef TERRAIN_MODE_BASIC
+        terrain_cell(&rpos, c_cell(c, idx));
+#else
+        world_cell(&rpos, c_cell(c, idx));
+#endif
       }
     }
   }
@@ -522,7 +530,11 @@ void load_chunk_approx(chunk_approximation *ca) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
         caidx__rpos(ca, &idx, &rpos);
-        terrain_cell(rpos, ca_cell(ca, idx));
+#ifdef TERRAIN_MODE_BASIC
+        terrain_cell(&rpos, ca_cell(ca, idx));
+#else
+        world_cell(&rpos, ca_cell(ca, idx));
+#endif
       }
     }
   }

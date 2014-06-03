@@ -1,5 +1,5 @@
 // terrain.c
-// Terrain generation.
+// Legacy terrain generation (see worldgen.h/c).
 
 #include <math.h>
 
@@ -22,7 +22,7 @@ float TR_TERRAIN_HEIGHT_AMP = 1.0;
  * Functions *
  *************/
 
-void terrain_cell(region_pos pos, cell *result) {
+void terrain_cell(region_pos *pos, cell *result) {
   static int xcache = 3, ycache = 7;
   static int terrain = 0;
   static int dirt = 1;
@@ -34,11 +34,11 @@ void terrain_cell(region_pos pos, cell *result) {
   static float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
   int tunnel = 0;
   int altitude = 0;
-  if (xcache != pos.x || ycache != pos.y) {
-    xcache = pos.x; ycache = pos.y;
+  if (xcache != pos->x || ycache != pos->y) {
+    xcache = pos->x; ycache = pos->y;
     // recompute everything:
     // generate some noise at each frequency (which we'll reuse several times):
-    get_noise(pos.x, pos.y, &nlst, &nlwr, &nlow, &nmid, &nhig, &nhst);
+    get_noise(pos->x, pos->y, &nlst, &nlwr, &nlow, &nmid, &nhig, &nhst);
     // compute geoform mixing factors:
     depths = 0;
     oceans = 0;
@@ -64,18 +64,18 @@ void terrain_cell(region_pos pos, cell *result) {
       nmid * TR_DIRT_VAR
     );
     // compute a tree milieu:
-    //compute_tree_milieu(pos.x, pos.y, &TREE_MILIEU);
+    //compute_tree_milieu(pos->x, pos->y, &TREE_MILIEU);
     // sandiness:
     sandy = oceans > (TR_BEACH_THRESHOLD + (0.03 * terrain - TR_SEA_LEVEL));
   }
   // Altitude measures height above/below the base terrain height:
-  altitude = pos.z - terrain;
+  altitude = pos->z - terrain;
   // DEBUG: (tunnels are expensive)
   tunnel = 0;
   /*
   // compute tunnel value:
   tunnel = get_tunnel(
-    &pos,
+    pos,
     depths, oceans, plains, hills, mountains // TODO: Use these arguments!
   );
   if (
@@ -96,9 +96,9 @@ void terrain_cell(region_pos pos, cell *result) {
   int surface = (altitude == 1);
   int topsoil = (altitude == 0 && dirt > 0);
   int soil = (altitude > -dirt);
-  int underwater = (pos.z <= TR_SEA_LEVEL);
-  int on_land = (pos.z > TR_SEA_LEVEL);
-  int on_shore = (pos.z == TR_SEA_LEVEL);
+  int underwater = (pos->z <= TR_SEA_LEVEL);
+  int on_land = (pos->z > TR_SEA_LEVEL);
+  int on_shore = (pos->z == TR_SEA_LEVEL);
 
   // Set the block types and data of the result cell:
   result->primary = b_make_block(B_VOID);

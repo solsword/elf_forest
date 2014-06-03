@@ -56,6 +56,7 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/bitmap.o \
              $(OBJ_DIR)/octree.o \
              $(OBJ_DIR)/terrain.o \
+             $(OBJ_DIR)/worldgen.o \
              $(OBJ_DIR)/data.o \
              $(OBJ_DIR)/trees.o \
              $(OBJ_DIR)/geology.o \

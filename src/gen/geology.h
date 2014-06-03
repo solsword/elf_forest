@@ -68,14 +68,18 @@ typedef struct stratum_dynamics_s stratum_dynamics;
 
 // The seed for geothermal information, which both helps determine strata
 // placement and contributes to metamorphosis.
-extern ptrdiff_t GEOTHERMAL_SEED;
+extern ptrdiff_t const GEOTHERMAL_SEED;
 
-extern float GROSS_DISTORTION_SCALE;
-extern float FINE_DISTORTION_SCALE;
-extern float LARGE_VAR_SCALE;
-extern float MED_VAR_SCALE;
-extern float SMALL_VAR_SCALE;
-extern float RIDGE_SCALE;
+// Various GN_ (geology noise) constants used for defining default noise
+// parameters during strata generation:
+extern float const GN_GROSS_DISTORTION_SCALE;
+extern float const GN_FINE_DISTORTION_SCALE;
+extern float const GN_LARGE_VAR_SCALE;
+extern float const GN_MED_VAR_SCALE;
+extern float const GN_SMALL_VAR_SCALE;
+extern float const GN_TINY_VAR_SCALE;
+extern float const GN_DETAIL_VAR_SCALE;
+extern float const GN_RIDGE_SCALE;
 
 /*************************
  * Structure Definitions *
@@ -97,16 +101,22 @@ struct stratum_s {
   float scale_bias; // biases the noise scales
   float infill; // how much to fill in noise from the layer below
 
+  // radial variance:
+  float radial_frequency;
+  float radial_variance;
+
   // distortion:
   float gross_distortion; // large-scale distortion
   float fine_distortion; // small-scale distortion
 
-  // core variation (expressed as a fraction of the base thickness):
+  // core variation (expressed in max blocks)
   float large_var; // large-scale variation
   float med_var; // medium-scale variation
+  float small_var; // small-scale variation
+  float tiny_var; // tiny-scale variation
 
   // positive detail (expressed in max blocks)
-  float small_var; // small-scale variation
+  float detail_var; // detail-scale variation
   float ridges; // amplitude of ridges
 
   // negative detail:
@@ -140,9 +150,10 @@ struct column_dynamics_s {
 };
 
 struct stratum_dynamics_s {
-  float pressure; // pressure at the top of this stratum
-  r_pos_t height; // height in blocks of the base of this stratum
+  r_pos_t thickness; // thickness of this stratum in blocks
   r_pos_t infill; // how many blocks of infill this stratum has in this column
+  float pressure; // pressure at the top of this stratum
+  r_pos_t elevation; // height in blocks of the base of this stratum
 };
 
 /********************
@@ -151,6 +162,91 @@ struct stratum_dynamics_s {
 
 static inline float geothermal_temperature(r_pos_t x, r_pos_t y, r_pos_t z) {
   return 100.0; // TODO: HERE!
+}
+
+static inline float stratum_core(r_pos_t x, r_pos_t y, stratum *st) {
+  // compute distortion
+  float scale = GN_GROSS_DISTORTION_SCALE * st->scale_bias;
+  float dx = st->gross_distortion * managed_sxnoise_2d(
+    x, y,
+    scale, scale,
+    4.5 * st->seed
+  );
+  float dy = st->gross_distortion * managed_sxnoise_2d(
+    x, y,
+    scale, scale,
+    5.4 * st->seed
+  );
+  scale = GN_FINE_DISTORTION_SCALE * st->scale_bias;
+  dx += st->fine_distortion * managed_sxnoise_2d(
+    x, y,
+    scale, scale,
+    7.2 * st->seed
+  );
+  dy += st->fine_distortion * managed_sxnoise_2d(
+    x, y,
+    scale, scale,
+    2.7 * st->seed
+  );
+
+  // find angle and compute radius, followed by base thickness
+  vector v;
+  v.x = x + dx - st->cx;
+  v.y = y + dy - st->cy;
+  v.z = 0;
+  float theta = atan2(v.y, v.x);
+  float d = vmag(&v);
+  float r = st->size * (
+    (1 - st->radial_variance) +
+    2 * st->radial_variance * managed_sxnoise_2d(
+      theta, st->seed,
+      st->radial_frequency, 1,
+      57.3
+    )
+  );
+  float t = 1 - d/r; // base thickness (possibly < 0)
+
+  // Compute noise:
+  scale = GN_LARGE_VAR_SCALE * st->scale_bias;
+  float n = st->large_var * managed_sxnoise_2d(
+    v.x, v.y,
+    scale, scale,
+    st->seed*84.1
+  );
+  scale = GN_MED_VAR_SCALE * st->scale_bias;
+  n += st->med_var * managed_sxnoise_2d(
+    v.x, v.y,
+    scale, scale,
+    st->seed*14.8
+  );
+  scale = GN_SMALL_VAR_SCALE * st->scale_bias;
+  n += st->small_var * managed_sxnoise_2d(
+    v.x, v.y,
+    scale, scale,
+    st->seed*48.1
+  );
+  scale = GN_TINY_VAR_SCALE * st->scale_bias;
+  n += st->tiny_var * managed_sxnoise_2d(
+    v.x, v.y,
+    scale, scale,
+    st->seed*18.4
+  );
+  return st->thickness * fmap(t, st->profile) + n;
+}
+
+static inline float stratum_detail(r_pos_t x, r_pos_t y, stratum *st) {
+  return 3.0; // TODO: HERE!
+}
+
+static inline float stratum_infill(
+  r_pos_t x, r_pos_t y,
+  stratum *st,
+  stratum *below
+) {
+  if (below == NULL) {
+    return 0;
+  }
+  return 3.0; // TODO: HERE!
 }
 
 /******************************
@@ -170,9 +266,13 @@ stratum *create_stratum(
  * Functions *
  *************/
 
-// Computes the height of a stratum at a given x/y position. Needs to know
-// stratum dynamics information as well as the next-lower stratum (for infill).
-float stratum_height(
+// Computes the thickness, infill, and pressure of the given stratum at the
+// given x/y position, storing that information into the given stratum_dynamics
+// object and updating the given column_dynamics object. Needs to know the
+// next-lower stratum (for infill). Does not compute the elevation (that can
+// only be know after all of the strata in a stack have had their dynamics
+// computed).
+void compute_stratum_dynamics(
   r_pos_t x, r_pos_t y,
   stratum *st,
   stratum *below,
@@ -180,11 +280,11 @@ float stratum_height(
   stratum_dynamics *sd
 );
 
-// Computes the block at the given position within a stratum, using integer
-// height in cells from the bottom of the stratum. Needs to know the stratum
-// dynamics computed during a call to stratum_height.
-material stratum_material(
-  r_pos_t x, r_pos_t y, r_pos_t height,
+// Computes the block at the given position (which is assumed to fall into the
+// given stratum) Needs to know the stratum dynamics computed by
+// compute_stratum_dynamics.
+block stratum_material(
+  region_pos *rpos,
   stratum *st,
   stratum_dynamics *sd
 );

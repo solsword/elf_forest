@@ -12,6 +12,7 @@
 //  1-4: Form
 //  5-8: Origin
 
+/*
 material_info const MAT_INFO[TOTAL_BLOCK_TYPES] = {
 //  VOID:             BOUNDARY:         AIR:              ETHER:
     0x00,             0x00,             0x11,             0xa1,
@@ -270,3 +271,4 @@ material_info const MAT_INFO[TOTAL_BLOCK_TYPES] = {
 //  ____:             ____:             ____:             ____:
     0x00,             0x00,             0x00,             0x00       // 0x1ff
 };
+*/
