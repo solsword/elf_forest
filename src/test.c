@@ -77,6 +77,8 @@ int main(int argc, char** argv) {
   init_ptime();
 
   // Setup stateful subsystems:
+  printf("  ...jobs...\n");
+  setup_jobs();
   printf("  ...shaders...\n");
   setup_shaders();
   printf("  ...textures...\n");
@@ -88,7 +90,7 @@ int main(int argc, char** argv) {
   printf("  ...entities...\n");
   setup_entities(&origin);
   printf("  ...world_map...\n");
-  setup_world_map();
+  setup_worldgen();
 
   printf("...done.\n");
 

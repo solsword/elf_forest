@@ -115,6 +115,7 @@ typedef int64_t r_pos_t;
 // Defines the size of a region in chunks. Must be < the size of r_pos_t:
 typedef int32_t r_cpos_t;
 
+// TODO: Rename these!!
 // Cell position within a region:
 struct region_pos_s;
 typedef struct region_pos_s region_pos;
@@ -151,7 +152,7 @@ struct APPROX_DATA_SN(3); typedef struct APPROX_DATA_SN(3) APPROX_DATA_TN(3);
 struct APPROX_DATA_SN(4); typedef struct APPROX_DATA_SN(4) APPROX_DATA_TN(4);
 
 // Macros and types for the size of a chunk:
-#define CHUNK_BITS 4
+#define CHUNK_BITS 5
 #define CHUNK_SIZE (1 << CHUNK_BITS)
 #define CH_MASK (CHUNK_SIZE - 1) // Chunk mask
 typedef uint8_t ch_idx_t; // Needs to be big enough to hold CHUNK_BITS bits.
@@ -188,6 +189,8 @@ struct chunk_index_s {
 
 // (16 * 16 * 16) * 16 = 65536 bits = 8 KB
 // (16 * 16 * 16) * 32 = 131072 bits = 16 KB
+// (16 * 16 * 16) * 96 = 393216 bits = 48 KB
+// (32 * 32 * 32) * 96 = 3145728 bits = 384 KB <-
 struct chunk_s {
   capprox_type type; // Always CA_TYPE_CHUNK
   region_chunk_pos rcpos; // Absolute location within the region.

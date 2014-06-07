@@ -1,6 +1,12 @@
 // worldgen.c
 // World map generation.
 
+#include "datatypes/bitmap.h"
+#include "noise/noise.h"
+#include "world/blocks.h"
+
+#include "geology.h"
+
 #include "worldgen.h"
 
 /***********
@@ -39,9 +45,13 @@ void cleanup_world_map(world_map *wm) {
  * Functions *
  *************/
 
-void setup_world_map() {
+void setup_worldgen() {
   THE_WORLD = create_world_map(WORLD_SEED, WORLD_WIDTH, WORLD_HEIGHT);
   generate_geology(THE_WORLD);
+}
+
+void cleanup_worldgen() {
+  cleanup_world_map(THE_WORLD);
 }
 
 void world_cell(region_pos *rpos, cell *result) {
@@ -75,7 +85,7 @@ void generate_geology(world_map *wm) {
 
   float avg_size = sqrtf(wm->width*wm->height);
   avg_size /= fmax(1.0, ((float) STRATA_COMPLEXITY));
-  avg_size *= WORLD_REGION_SIZE;
+  avg_size *= WORLD_REGION_SIZE * CHUNK_SIZE;
 
   float avg_thickness = 10.0; // TODO: Something else here
   map_function profile = MFN_SPREAD_UP;// TODO: Something else here
@@ -170,4 +180,60 @@ void strata_cell(
       break;
     }
   }
+}
+
+/********
+ * Jobs *
+ ********/
+
+struct jm_gencolumn_s {
+  // External inputs:
+  world_map *world;
+  region_chunk_pos target_chunk;
+
+  // Internal variables:
+  world_region *current_region;
+};
+typedef struct jm_gencolumn_s jm_gencolumn;
+
+void launch_job_gencolumn(world_map *world, region_chunk_pos *target_chunk) {
+  jm_gencolumn *mem = (jm_gencolumn *) malloc(sizeof(jm_gencolumn));
+  mem->world = world;
+  mem->target_chunk.x = target_chunk->x;
+  mem->target_chunk.y = target_chunk->y;
+  mem->target_chunk.z = target_chunk->z;
+  mem->current_region = NULL;
+  start_job(&job_gencolumn, mem, NULL);
+}
+
+void (*job_gencolumn(void *jmem)) () {
+  jm_gencolumn *mem = (jm_gencolumn *) jmem;
+  world_map_pos wmpos;
+  rcpos__wmpos(&(mem->target_chunk), &wmpos);
+  mem->current_region = get_world_region(mem->world, &wmpos);
+  mem->target_chunk.z = 0;
+  return (void (*) ()) &job_gencolumn__chunk;
+}
+
+void (*job_gencolumn__chunk(void *jmem)) () {
+  jm_gencolumn *mem = (jm_gencolumn *) jmem;
+  chunk *c = create_chunk(&(mem->target_chunk));
+  chunk_index idx;
+  region_pos rpos;
+  for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
+    for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
+      for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
+        cidx__rpos(c, &idx, &rpos);
+        world_cell(&rpos, c_cell(c, idx));
+      }
+    }
+  }
+  // TODO: How to write the chunk to disk/mmap?
+  cleanup_chunk(c);
+  mem->target_chunk.z += 1;
+  // TODO: dynamic limiting!
+  if (mem->target_chunk.z > 100) {
+    return NULL;
+  }
+  return (void (*) ()) &job_gencolumn__chunk;
 }

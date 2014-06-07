@@ -72,7 +72,7 @@ bitmap *create_bitmap(size_t bits) {
   bitmap *bm = (bitmap *) malloc(sizeof(bitmap));
   bm->size = bits;
   bm->rows = (bits / BITMAP_ROW_WIDTH) + (bits % BITMAP_ROW_WIDTH > 0);
-  bm->data = (bitmap_row *) malloc(sizeof(bitmap_row) * bm->rows);
+  bm->data = (bitmap_row *) calloc(bm->rows, sizeof(bitmap_row));
   return bm;
 }
 

@@ -21,6 +21,8 @@
 #include "prof/ptime.h"
 #include "data/data.h"
 #include "control/ctl.h"
+#include "gen/worldgen.h"
+#include "jobs/jobs.h"
 #include "util.h"
 
 /***************
@@ -266,9 +268,11 @@ void prepare(
 }
 
 void cleanup(void) {
+  cleanup_worldgen();
   cleanup_entities();
   cleanup_data();
   cleanup_ui();
   cleanup_textures();
   cleanup_shaders();
+  cleanup_jobs();
 }

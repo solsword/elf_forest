@@ -8,6 +8,7 @@
 
 #include "noise/noise.h"
 #include "world/blocks.h"
+#include "jobs/jobs.h"
 
 #include "geology.h"
 
@@ -57,11 +58,16 @@ typedef struct world_map_s world_map;
 // World width and height in regions:
 //#define WORLD_WIDTH 768
 //#define WORLD_HEIGHT 512
+// 128*96 = 12288 regions
 #define WORLD_WIDTH 128
 #define WORLD_HEIGHT 96
 
-// Bits per world region (6 -> 64x64 blocks).
-#define WORLD_REGION_BITS 6
+// Bits per world region (4 -> 16x16 chunks).
+// 12288 * 16*16 * (?=1024) = 3221225472 chunks
+// 3221225472 chunks * 384 KB/chunk = 1236950581248 KB
+// 1236950581248 KB = 1152 terrabytes ~= 1 petabyte
+// 96*16*32 = 49152 blocks ~= 24576 meters ~= 25 km
+#define WORLD_REGION_BITS 4
 #define WORLD_REGION_SIZE (1 << WORLD_REGION_BITS)
 
 // Controls number of strata to generate as a multiple of MAX_STRATA_LAYERS,
@@ -174,8 +180,8 @@ static inline void wmpos__rpos(
   world_map_pos const * const wmpos,
   region_pos *rpos
 ) {
-  rpos->x = ((r_pos_t) wmpos->x) << WORLD_REGION_BITS;
-  rpos->y = ((r_pos_t) wmpos->y) << WORLD_REGION_BITS;
+  rpos->x = ((r_pos_t) wmpos->x) << (WORLD_REGION_BITS + CHUNK_BITS);
+  rpos->y = ((r_pos_t) wmpos->y) << (WORLD_REGION_BITS + CHUNK_BITS);
   rpos->z = 0;
 }
 
@@ -183,9 +189,27 @@ static inline void rpos__wmpos(
   region_pos const * const rpos,
   world_map_pos *wmpos
 ) {
-  wmpos->x = ((wm_pos_t) rpos->x) >> WORLD_REGION_BITS;
-  wmpos->y = ((wm_pos_t) rpos->y) >> WORLD_REGION_BITS;
+  wmpos->x = (wm_pos_t) (rpos->x >> (WORLD_REGION_BITS + CHUNK_BITS));
+  wmpos->y = (wm_pos_t) (rpos->y >> (WORLD_REGION_BITS + CHUNK_BITS));
 }
+
+static inline void wmpos__rcpos(
+  world_map_pos const * const wmpos,
+  region_chunk_pos *rcpos
+) {
+  rcpos->x = ((r_cpos_t) wmpos->x) << WORLD_REGION_BITS;
+  rcpos->y = ((r_cpos_t) wmpos->y) << WORLD_REGION_BITS;
+  rcpos->z = 0;
+}
+
+static inline void rcpos__wmpos(
+  region_chunk_pos const * const rcpos,
+  world_map_pos *wmpos
+) {
+  wmpos->x = (wm_pos_t) (rcpos->x >> WORLD_REGION_BITS);
+  wmpos->y = (wm_pos_t) (rcpos->y >> WORLD_REGION_BITS);
+}
+
 
 static inline world_region* get_world_region(
     world_map *wm,
@@ -209,7 +233,10 @@ void cleanup_world_map(world_map *wm);
  *************/
 
 // Sets up the world map system, including generating the main world map.
-void setup_world_map();
+void setup_worldgen();
+
+// Cleans up the world map system.
+void cleanup_worldgen();
 
 // Computes the cell contents at the given position.
 void world_cell(region_pos *pos, cell *result);
@@ -223,5 +250,16 @@ void strata_cell(
   region_pos *rpos,
   cell *result
 );
+
+/********
+ * Jobs *
+ ********/
+
+// The 'gencolumn' job generates a single column of chunks, starting at z=0 and
+// generating one chunk per step until enough chunks have been generated
+// vertically that remaining chunks in that column are just air.
+void launch_job_gencolumn(world_map *world, region_chunk_pos *target_chunk);
+void (*job_gencolumn(void *jmem)) () ;
+void (*job_gencolumn__chunk(void *jmem)) () ;
 
 #endif // ifndef WORLDGEN_H

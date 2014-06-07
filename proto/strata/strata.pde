@@ -24,8 +24,8 @@ float SNOISE_SCALE = 0.0017;
 float SNOISE_STRENGTH = 270;
 
 //int N_BLOBS = 1;
-int N_BLOBS = 45;
-//int N_BLOBS = 120;
+//int N_BLOBS = 45;
+int N_BLOBS = 120;
 
 //float MIN_R = 210;
 //float MAX_R = 340;
@@ -58,9 +58,9 @@ int BLOB_DISTRIBUTION_MODE = 2;
 boolean ADD_BLOBS = true;
 boolean ADD_WORLEY = true;
 boolean ADD_PERLIN = true;
-boolean TEST_NOISE = true;
+boolean TEST_NOISE = false;
 // default: comparison, 1:worley veins, 2:worley plateaus, 3:worley distortion
-int NOISE_TEST = 3;
+int NOISE_TEST = 1;
 boolean TEST_GRADIENT = false;
 boolean SHADE_TERRAIN = true;
 boolean SHOW_CONTINENTS = false;

@@ -18,7 +18,7 @@ typedef struct bitmap_s bitmap;
  * Constructors & Destructors *
  ******************************/
 
-// Allocates and returns a new bitmap.
+// Allocates and returns a new empty bitmap.
 bitmap *create_bitmap(size_t bits);
 
 // Frees the data allocated for the given bitmap.
