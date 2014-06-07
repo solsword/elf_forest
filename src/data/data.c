@@ -502,7 +502,7 @@ void load_chunk(chunk *c) {
 #ifdef TERRAIN_MODE_BASIC
         terrain_cell(&rpos, c_cell(c, idx));
 #else
-        world_cell(&rpos, c_cell(c, idx));
+        world_cell(THE_WORLD, &rpos, c_cell(c, idx));
 #endif
       }
     }
@@ -533,7 +533,7 @@ void load_chunk_approx(chunk_approximation *ca) {
 #ifdef TERRAIN_MODE_BASIC
         terrain_cell(&rpos, ca_cell(ca, idx));
 #else
-        world_cell(&rpos, ca_cell(ca, idx));
+        world_cell(THE_WORLD, &rpos, ca_cell(ca, idx));
 #endif
       }
     }

@@ -239,7 +239,7 @@ void setup_worldgen();
 void cleanup_worldgen();
 
 // Computes the cell contents at the given position.
-void world_cell(region_pos *pos, cell *result);
+void world_cell(world_map *wm, region_pos *pos, cell *result);
 
 // Generates geology for the given world.
 void generate_geology(world_map *wm);

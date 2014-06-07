@@ -141,6 +141,8 @@ void fltr_branches(texture *tx, void const * const fargs) {
   // Use orange for out-of-range noise results:
   grmap.colors[4] = 0xff0088ff;
   grmap.thresholds[4] = 1000.0;
+#else
+  grmap.colors[3] = 1000.0; 
 #endif
   // We want to incorporate the seed value, but we don't want to deal with
   // overflow. 4 bytes of seed-based noise should be plenty while giving

@@ -60,6 +60,8 @@ DEFINE_IMPORTED_BUILDER
 DEFINE_IMPORTED_BUILDER
 #include "suites/test_plants.h"
 DEFINE_IMPORTED_BUILDER
+#include "suites/test_worldgen.h"
+DEFINE_IMPORTED_BUILDER
 
 /***********
  * Globals *
@@ -82,6 +84,9 @@ void setup_unit_tests(void) {
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
   #include "suites/test_plants.h"
+  ts = INVOKE_IMPORTED_BUILDER;
+  l_append_element(ALL_TEST_SUITES, ts);
+  #include "suites/test_worldgen.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
   // Do data structure tests last 'cause they're slower:

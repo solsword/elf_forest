@@ -54,10 +54,10 @@ void start_job(job j, void *s, job_cleanup cl) {
   q_push_element(ACTIVE_JOBS, (void *) ws);
 }
 
-void do_step() {
+size_t do_step() {
   work_state *nws = (work_state*) q_pop_element(ACTIVE_JOBS);
   if (nws == NULL) {
-    return; // no work to do at this time
+    return 0; // no work to do at this time
   }
   do_step_for(nws);
   if (nws->j == NULL) {
@@ -65,6 +65,7 @@ void do_step() {
   } else {
     q_push_element(ACTIVE_JOBS, (void *) nws);
   }
+  return 1; // did some work
 }
 
 void do_step_for(work_state *ws) {

@@ -14,11 +14,13 @@ MAKEFLAGS+=--assume-old=$(TEST_DIR)
 # Compiler & Flags:
 CC=gcc
 DEBUG_FLAGS=-g -O1 -DDEBUG -DDEBUG_DETECT_JUMPS
+#PROFILE_FLAGS=-pg -fprofile-arcs -ftest-coverage
 #PROFILE_FLAGS=-pg
 PROFILE_FLAGS=
 OPT_FLAGS=-O3
 INCLUDE_FLAGS=-I/usr/include/freetype2 -I$(SRC_DIR)
-CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(DEBUG_FLAGS) $(PROFILE_FLAGS)
+#CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(DEBUG_FLAGS) $(PROFILE_FLAGS)
+CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(OPT_FLAGS) $(PROFILE_FLAGS)
 
 LIBS_OPENGL=-lGLEW -lGL -lGLU
 LIBS_GLFW=-lglfw -lrt -lXrandr -lXi -lXxf86vm -lXrender -lXext -lX11 \
@@ -79,6 +81,10 @@ UNIT_TEST_OBJECTS=$(OBJ_DIR)/test_suite.o \
 NOISE_TEST_OBJECTS=$(OBJ_DIR)/noise.o \
           $(OBJ_DIR)/test_noise.o
 
+NOISE_PERF_OBJECTS=$(OBJ_DIR)/noise.o \
+          $(OBJ_DIR)/ptime.o \
+          $(OBJ_DIR)/test_noiseperf.o
+
 CHECKGL_OBJECTS=$(OBJ_DIR)/check_gl_version.o
 
 # The default goal:
@@ -95,6 +101,7 @@ game: $(BIN_DIR)/elf_forest
 test: $(BIN_DIR)/test
 viewer: $(BIN_DIR)/viewer
 unit_tests: $(BIN_DIR)/unit_tests
+noise_perf: $(BIN_DIR)/noise_perf
 test_noise: $(TEST_DIR)/noise_test_2D.ppm $(TEST_DIR)/noise_test_3D.ppm \
             $(TEST_DIR)/noise_test_2D_F.ppm $(TEST_DIR)/noise_test_3D_F.ppm \
             $(TEST_DIR)/noise_test_ex.ppm
@@ -153,6 +160,9 @@ $(TEST_DIR)
 
 $(BIN_DIR)/test_noise: $(NOISE_TEST_OBJECTS) $(BIN_DIR)
 	$(CC) $(NOISE_TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/test_noise
+
+$(BIN_DIR)/noise_perf: $(NOISE_PERF_OBJECTS) $(BIN_DIR)
+	$(CC) $(NOISE_PERF_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/noise_perf
 
 $(BIN_DIR)/checkgl: $(CHECKGL_OBJECTS) $(BIN_DIR)
 	$(CC) $(CHECKGL_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/checkgl

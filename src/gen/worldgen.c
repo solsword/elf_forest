@@ -54,7 +54,7 @@ void cleanup_worldgen() {
   cleanup_world_map(THE_WORLD);
 }
 
-void world_cell(region_pos *rpos, cell *result) {
+void world_cell(world_map *wm, region_pos *rpos, cell *result) {
   world_map_pos wmpos;
   world_region *wr;
   rpos__wmpos(rpos, &wmpos);
@@ -63,7 +63,7 @@ void world_cell(region_pos *rpos, cell *result) {
   result->secondary = b_make_block(B_VOID);
   result->p_data = 0;
   result->s_data = 0;
-  wr = get_world_region(THE_WORLD, &wmpos);
+  wr = get_world_region(wm, &wmpos);
   if (rpos->z < 0) {
     result->primary = b_make_block(B_BOUNDARY);
     return;
@@ -224,7 +224,7 @@ void (*job_gencolumn__chunk(void *jmem)) () {
     for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
         cidx__rpos(c, &idx, &rpos);
-        world_cell(&rpos, c_cell(c, idx));
+        world_cell(mem->world, &rpos, c_cell(c, idx));
       }
     }
   }

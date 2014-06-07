@@ -75,8 +75,9 @@ void cleanup_jobs();
 // Adds the given job to the jobs queue.
 void start_job(job j, void *s, job_cleanup cl);
 
-// Runs the next work step on the jobs queue.
-void do_step();
+// Runs the next work step on the jobs queue. Returns 1 if it runs a step, and
+// 0 if there are no current jobs.
+size_t do_step();
 
 // Runs the next step of the given job, hopefully not blocking for very long.
 void do_step_for(work_state *ws);
