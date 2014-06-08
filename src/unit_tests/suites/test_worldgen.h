@@ -3,6 +3,7 @@
 #define TEST_SUITE_NAME worldgen
 #define TEST_SUITE_TESTS { \
     &test_create_world, \
+    &test_load_chunk, \
     &test_job_gencolumn, \
     NULL, \
   }
@@ -14,6 +15,7 @@
 
 #include "gen/worldgen.h"
 #include "jobs/jobs.h"
+#include "data/data.h"
 
 #include "unit_tests/test_suite.h"
 
@@ -32,7 +34,18 @@ size_t test_create_world(void) {
   printf("Generating test world geology...\n");
   generate_geology(TEST_WORLD);
   printf("  ...done.\n");
+  // HACK:
+  THE_WORLD = TEST_WORLD;
   return 0;
+}
+
+size_t test_load_chunk(void) {
+  region_chunk_pos rcpos = { .x = 5, .y = 5, .z = 5 };
+  setup_data();
+  mark_for_loading(&rcpos, LOD_BASE);
+  tick_data();
+  // DEBUG:
+  exit(0);
 }
 
 size_t test_job_gencolumn(void) {

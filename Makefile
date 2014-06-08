@@ -15,12 +15,12 @@ MAKEFLAGS+=--assume-old=$(TEST_DIR)
 CC=gcc
 DEBUG_FLAGS=-g -O1 -DDEBUG -DDEBUG_DETECT_JUMPS
 #PROFILE_FLAGS=-pg -fprofile-arcs -ftest-coverage
-#PROFILE_FLAGS=-pg
-PROFILE_FLAGS=
+PROFILE_FLAGS=-pg
+#PROFILE_FLAGS=
 OPT_FLAGS=-O3
 INCLUDE_FLAGS=-I/usr/include/freetype2 -I$(SRC_DIR)
-#CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(DEBUG_FLAGS) $(PROFILE_FLAGS)
-CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(OPT_FLAGS) $(PROFILE_FLAGS)
+CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(DEBUG_FLAGS) $(PROFILE_FLAGS)
+#CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(OPT_FLAGS) $(PROFILE_FLAGS)
 
 LIBS_OPENGL=-lGLEW -lGL -lGLU
 LIBS_GLFW=-lglfw -lrt -lXrandr -lXi -lXxf86vm -lXrender -lXext -lX11 \

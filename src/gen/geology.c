@@ -4,6 +4,7 @@
 #include "noise/noise.h"
 #include "math/functions.h"
 #include "datatypes/vector.h"
+#include "world/world.h"
 
 #include "worldgen.h"
 
@@ -67,8 +68,7 @@ stratum *create_stratum(
   result->detail_var = 2.3;
   result->ridges = 2.5;
 
-  result->scraping = 0.7;
-  result->smoothing = 0.3;
+  result->smoothing = 0.2;
 
   for (i = 0; i < N_VEIN_TYPES; ++i) {
     result->vein_scale[i] = 0; // 23.4;
@@ -92,76 +92,46 @@ stratum *create_stratum(
  * Functions *
  *************/
 
-void compute_stratum_dynamics(
-  r_pos_t x, r_pos_t y,
-  stratum *st,
-  stratum *below,
-  column_dynamics *cd,
-  stratum_dynamics *sd
-) {
-  float result = 0;
+r_pos_t compute_stratum_height(stratum *st, region_pos *rpos) {
+  // static variables:
+  static stratum *pr_st = NULL;
+  static region_pos pr_rpos = { .x = -1, .y = -1, .z = -1 };
+  static region_chunk_pos pr_rcpos = { .x = -1, .y = -1, .z = -1 };
+  // low- and high-frequency distortion:
+  static float lfdx = 0; static float lfdy = 0;
+  static float hfdx = 0; static float hfdy = 0;
+  // low- and high-frequency noise:
+  static float lfn = 0; static float hfn = 0;
+  // base thickness:
+  static float base = 0;
 
-  // base height
-  float core = stratum_core(x, y, st);
-  float detail = stratum_detail(x, y, st);
-  float infill = stratum_infill(x, y, st, below);
-  sd->infill = (r_pos_t) infill;
-  result = core + detail + infill;
+  // normal variables:
+  float fx;
+  float fy;
+  region_chunk_pos rcpos;
+  region_pos rounded_rpos;
 
-  // erosion
-  float erosion_rate = mt_erosion_rate(st->base_material);
-  float erosion = erosion_rate * cd->erosion;
-  cd->erosion = cd->erosion - (result/erosion_rate);
-  if (cd->erosion < 0) { cd->erosion = 0; }
-  result = result - erosion;
-  if (result < 0) { result = 0; }
+  // compute our chunk position:
+  rpos__rcpos(rpos, &rcpos);
 
-  // add our weight to pressure pre-compression:
-  cd->pressure += mt_weight(st->base_material)*result;
-
-  // compression
-  float compression = mt_compression(st->base_material, cd->pressure);
-  result *= compression;
-  if (result < 1) { result = 1; }
-  sd->pressure = cd->pressure;
-
-  // store the end result:
-  sd->thickness = (r_pos_t) result;
-}
-
-block stratum_material(
-  region_pos *rpos,
-  stratum *st,
-  stratum_dynamics *sd
-) {
-  return b_make_species(B_STONE, 0);
-  /*
-  r_pos_t h = rpos->z - sd->elevation;
-  // TODO: HERE!
-  material mat = st->base_material;
-  // TODO: veins and inclusions here!
-  //if (height < sd->infill) {
-  //  return st->base_material;
-  //}
-
-  // metamorphosis:
-  float temperature = geothermal_temperature(x, y, sd->height);
-  float metamorphosis_probability = mt_metamorphosis_rate(
-    mat,
-    sd->pressure,
-    temperature
-  );
-  if (
-    float_hash_1d(
-      hash_2d(
-        mixed_hash_1d(x) + mixed_hash_1d(y) + mixed_hash_1d(height),
-        mixed_hash_1d(st->seed)
-      )
-    ) < metamorphosis_probability
-  ) { // metamorphose
-    mat = mt_metamorphic_product(mat, sd->pressure, temperature);
+  if (pr_st != st || pr_rcpos.x != rcpos.x || pr_rcpos.y != rcpos.y) {
+    rcpos__rpos(&rcpos, &rounded_rpos);
+    // need to recompute low-frequency info:
+    fx = (float) rounded_rpos.x;
+    fy = (float) rounded_rpos.y;
+    stratum_lf_distortion(st, fx, fy, &lfdx, &lfdy);
+    stratum_lf_noise(st, fx+lfdx, fy+lfdy, &lfn);
+    stratum_base_thickness(st, fx+lfdx, fy+lfdy, &base);
   }
-
-  return mat;
-  */
+  if (pr_st != st || pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
+    // need to recompute high-frequency info:
+    fx = (float) rpos->x;
+    fy = (float) rpos->y;
+    stratum_hf_distortion(st, fx, fy, &hfdx, &hfdy);
+    stratum_hf_noise(st, fx+hfdx, fy+hfdy, &hfn);
+  }
+  return (r_pos_t) (base + (lfn - 0.5) + hfn);
+  // set static variables:
+  copy_rpos(rpos, &pr_rpos);
+  copy_rcpos(&rcpos, &pr_rcpos);
 }

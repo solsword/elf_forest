@@ -32,23 +32,6 @@ typedef enum geologic_source_e geologic_source;
 struct stratum_s;
 typedef struct stratum_s stratum;
 
-// A layer of "erosion" which eats away at strata beneath it.
-// TODO: Use these...
-struct erosion_layer_s;
-typedef struct erosion_layer_s erosion_layer;
-
-// Records per-column dynamics (pressure and erosion) as stratum heights are
-// being calculated within a column of cells.
-struct column_dynamics_s;
-typedef struct column_dynamics_s column_dynamics;
-
-// Stratum dynamics are assigned to a strata for a particular column of rock,
-// but are fixed specific to that strata rather than being updated during
-// computation of the column and applying to all strata in the column like
-// column dynamics.
-struct stratum_dynamics_s;
-typedef struct stratum_dynamics_s stratum_dynamics;
-
 /*************
  * Constants *
  *************/
@@ -120,7 +103,6 @@ struct stratum_s {
   float ridges; // amplitude of ridges
 
   // negative detail:
-  float scraping; // amount of scraping (max blocks)
   float smoothing; // amount of smooth weathering (fraction of detail removed)
 
  // Derived vein and inclusion information:
@@ -139,60 +121,24 @@ struct stratum_s {
  // metamorphosis.
 };
 
-struct erosion_layer_s {
-  ptrdiff_t seed; // The seed for noise
-  // TODO: HERE!
-};
-
-struct column_dynamics_s {
-  float pressure;
-  float erosion;
-};
-
-struct stratum_dynamics_s {
-  r_pos_t thickness; // thickness of this stratum in blocks
-  r_pos_t infill; // how many blocks of infill this stratum has in this column
-  float pressure; // pressure at the top of this stratum
-  r_pos_t elevation; // height in blocks of the base of this stratum
-};
-
 /********************
  * Inline Functions *
  ********************/
 
-static inline float geothermal_temperature(r_pos_t x, r_pos_t y, r_pos_t z) {
+static inline float geothermal_temperature(region_pos *rpos) {
   return 100.0; // TODO: HERE!
 }
 
-static inline float stratum_core(r_pos_t x, r_pos_t y, stratum *st) {
-  // compute distortion
-  float scale = GN_GROSS_DISTORTION_SCALE * st->scale_bias;
-  float dx = st->gross_distortion * managed_sxnoise_2d(
-    x, y,
-    scale, scale,
-    4.5 * st->seed
-  );
-  float dy = st->gross_distortion * managed_sxnoise_2d(
-    x, y,
-    scale, scale,
-    5.4 * st->seed
-  );
-  scale = GN_FINE_DISTORTION_SCALE * st->scale_bias;
-  dx += st->fine_distortion * managed_sxnoise_2d(
-    x, y,
-    scale, scale,
-    7.2 * st->seed
-  );
-  dy += st->fine_distortion * managed_sxnoise_2d(
-    x, y,
-    scale, scale,
-    2.7 * st->seed
-  );
-
+// Computes stratum base thickness at the given region position.
+static inline void stratum_base_thickness(
+  stratum *st,
+  float x, float y,
+  float *thickness
+) {
   // find angle and compute radius, followed by base thickness
   vector v;
-  v.x = x + dx - st->cx;
-  v.y = y + dy - st->cy;
+  v.x = x - st->cx;
+  v.y = y - st->cy;
   v.z = 0;
   float theta = atan2(v.y, v.x);
   float d = vmag(&v);
@@ -204,49 +150,100 @@ static inline float stratum_core(r_pos_t x, r_pos_t y, stratum *st) {
       57.3
     )
   );
-  float t = 1 - d/r; // base thickness (possibly < 0)
+  *thickness = fmap(1 - d/r, st->profile); // base thickness (possibly < 0)
+}
 
+// Computes low-frequency distortion dx and dy at the given region position.
+static inline void stratum_lf_distortion(
+  stratum *st,
+  float x, float y,
+  float *dx, float *dy
+) {
+  // compute distortion
+  float scale = GN_GROSS_DISTORTION_SCALE * st->scale_bias;
+  *dx = st->gross_distortion * managed_sxnoise_2d(
+    x, y,
+    scale, scale,
+    4.5 * st->seed
+  );
+  *dy = st->gross_distortion * managed_sxnoise_2d(
+    x, y,
+    scale, scale,
+    5.4 * st->seed
+  );
+}
+
+// Computes higher-frequency distortion dx and dy at the given region position.
+static inline void stratum_hf_distortion(
+  stratum *st,
+  float x, float y,
+  float *dx, float *dy
+) {
+  float scale = GN_FINE_DISTORTION_SCALE * st->scale_bias;
+  *dx += st->fine_distortion * managed_sxnoise_2d(
+    x, y,
+    scale, scale,
+    7.2 * st->seed
+  );
+  *dy += st->fine_distortion * managed_sxnoise_2d(
+    x, y,
+    scale, scale,
+    2.7 * st->seed
+  );
+}
+
+// Computes stratum low-frequency noise.
+static inline void stratum_lf_noise(
+  stratum *st,
+  float x, float y,
+  float *noise
+) {
   // Compute noise:
-  scale = GN_LARGE_VAR_SCALE * st->scale_bias;
-  float n = st->large_var * managed_sxnoise_2d(
-    v.x, v.y,
+  float scale = GN_LARGE_VAR_SCALE * st->scale_bias;
+  *noise = st->large_var * managed_sxnoise_2d(
+    x, y,
     scale, scale,
     st->seed*84.1
   );
   scale = GN_MED_VAR_SCALE * st->scale_bias;
-  n += st->med_var * managed_sxnoise_2d(
-    v.x, v.y,
+  *noise += st->med_var * managed_sxnoise_2d(
+    x, y,
     scale, scale,
     st->seed*14.8
   );
-  scale = GN_SMALL_VAR_SCALE * st->scale_bias;
-  n += st->small_var * managed_sxnoise_2d(
-    v.x, v.y,
+}
+
+// Computes stratum high-frequency noise.
+static inline void stratum_hf_noise(
+  stratum *st,
+  float x, float y,
+  float *noise
+) {
+  float scale = GN_SMALL_VAR_SCALE * st->scale_bias;
+  *noise += st->small_var * managed_sxnoise_2d(
+    x, y,
     scale, scale,
     st->seed*48.1
   );
   scale = GN_TINY_VAR_SCALE * st->scale_bias;
-  n += st->tiny_var * managed_sxnoise_2d(
-    v.x, v.y,
+  *noise += st->tiny_var * managed_sxnoise_2d(
+    x, y,
     scale, scale,
     st->seed*18.4
   );
-  return st->thickness * fmap(t, st->profile) + n;
-}
-
-static inline float stratum_detail(r_pos_t x, r_pos_t y, stratum *st) {
-  return 3.0; // TODO: HERE!
-}
-
-static inline float stratum_infill(
-  r_pos_t x, r_pos_t y,
-  stratum *st,
-  stratum *below
-) {
-  if (below == NULL) {
-    return 0;
-  }
-  return 3.0; // TODO: HERE!
+  scale = GN_RIDGE_SCALE * st->scale_bias;
+  *noise += st->ridges * managed_wrnoise_2d(
+    x, y,
+    scale, scale,
+    st->seed*84.1
+  );
+  scale = GN_DETAIL_VAR_SCALE * st->scale_bias;
+  *noise += st->detail_var * managed_sxnoise_2d(
+    x, y,
+    scale, scale,
+    st->seed*41.8
+  );
+  *noise *= (1 - st->smoothing);
 }
 
 /******************************
@@ -266,27 +263,7 @@ stratum *create_stratum(
  * Functions *
  *************/
 
-// Computes the thickness, infill, and pressure of the given stratum at the
-// given x/y position, storing that information into the given stratum_dynamics
-// object and updating the given column_dynamics object. Needs to know the
-// next-lower stratum (for infill). Does not compute the elevation (that can
-// only be know after all of the strata in a stack have had their dynamics
-// computed).
-void compute_stratum_dynamics(
-  r_pos_t x, r_pos_t y,
-  stratum *st,
-  stratum *below,
-  column_dynamics *cd,
-  stratum_dynamics *sd
-);
-
-// Computes the block at the given position (which is assumed to fall into the
-// given stratum) Needs to know the stratum dynamics computed by
-// compute_stratum_dynamics.
-block stratum_material(
-  region_pos *rpos,
-  stratum *st,
-  stratum_dynamics *sd
-);
+// Computes the heigh of the given stratum at the given coordinates (ignores z):
+r_pos_t compute_stratum_height(stratum *st, region_pos *rpos);
 
 #endif // ifndef GEOLOGY_H

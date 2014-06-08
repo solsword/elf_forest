@@ -80,7 +80,7 @@ void generate_geology(world_map *wm) {
   world_map_pos xy;
   region_pos rpos;
   size_t stc;
-  float t;
+  r_pos_t t;
   stratum *s;
 
   float avg_size = sqrtf(wm->width*wm->height);
@@ -110,7 +110,7 @@ void generate_geology(world_map *wm) {
         // this stratum:
         // TODO: use four-corners method instead
         wmpos__rpos(&xy, &rpos);
-        t = stratum_core(rpos.x, rpos.y, s) + stratum_detail(rpos.x, rpos.y, s);
+        t = compute_stratum_height(s, &rpos);
         if (t > 0) { // In this case, add this stratum to this region:
           //TODO: Real logging/debugging
           //printf("Adding stratum to region at %zu, %zu.\n", xy.x, xy.y);
@@ -137,49 +137,43 @@ void strata_cell(
   region_pos *rpos,
   cell *result
 ) {
-  static stratum_dynamics sd[MAX_STRATA_LAYERS];
+  static r_pos_t heights[MAX_STRATA_LAYERS];
   static region_pos pr_rpos = { .x = -1, .y = -1, .z = -1 };
   int i;
   r_pos_t h;
   stratum *st;
-  stratum *below;
-  column_dynamics cd = { .pressure=0, .erosion=0 };
 
   if (pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
     // No need to recompute the strata column if we're at the same x/y.
-    // Compute strata heights from the top down:
-    for (i = wr->geology.stratum_count - 1; i > -1; --i) {
+    // Compute strata heights from the bottom up:
+    for (i = 0; i < wr->geology.stratum_count; ++i) {
       st = wr->geology.strata[i];
-      if (i > 0) {
-        below = wr->geology.strata[i-1];
-      } else {
-        below = NULL;
-      }
-      compute_stratum_dynamics(
-        rpos->x, rpos->y,
-        st, below,
-        &cd, &(sd[i])
-      );
+      heights[i] = compute_stratum_height(st, rpos);
     }
   }
   // Figure out elevations from the bottom up:
   h = 0;
   for (i = 0; i < wr->geology.stratum_count; ++i) {
     st = wr->geology.strata[i];
-    sd[i].elevation = h;
     //printf("Thickness: %d\n", sd[i].thickness);
-    h += sd[i].thickness;
+    h += heights[i];
     if (h > rpos->z) { // might not happen at all
+      result->primary = b_make_block(B_STONE);
+      // TODO: A real material computation:
+      /*
       result->primary = stratum_material(
         rpos,
         st,
         &(sd[i])
       );
+      // */
       // TODO: block data
       // TODO: caching and/or batch processing?
       break;
     }
   }
+  // Keep track of our previous position:
+  copy_rpos(rpos, &pr_rpos);
 }
 
 /********
