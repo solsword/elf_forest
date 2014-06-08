@@ -16,6 +16,8 @@
 #include "datatypes/bitmap.h"
 #include "datatypes/map.h"
 
+#include "prof/pmem.h"
+
 #include "world/blocks.h"
 
 /********************
@@ -33,6 +35,9 @@ texture *create_texture(size_t width, size_t height) {
   tx->width = width;
   tx->height = height;
   tx->pixels = (pixel *) calloc(width * height, sizeof(pixel));
+#ifdef PROFILE_MEM
+  md_add_size(&TEXTURE_RAM_USAGE, width*height*sizeof(pixel), sizeof(texture));
+#endif
   return tx;
 }
 
@@ -46,10 +51,24 @@ texture *duplicate_texture(texture *original) {
     original->pixels,
     tx->width * tx->height * sizeof(pixel)
   );
+#ifdef PROFILE_MEM
+  md_add_size(
+    &TEXTURE_RAM_USAGE,
+    tx->width*tx->height*sizeof(pixel),
+    sizeof(texture)
+  );
+#endif
   return tx;
 }
 
 void cleanup_texture(texture *tx) {
+#ifdef PROFILE_MEM
+  md_sub_size(
+    &TEXTURE_RAM_USAGE,
+    tx->width*tx->height*sizeof(pixel),
+    sizeof(texture)
+  );
+#endif
   free(tx->pixels);
   free(tx);
 }
@@ -177,6 +196,15 @@ texture* load_texture_from_png(char const * const filename) {
   png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
   fclose(fp);
 
+  // Profile the allocated memory:
+#ifdef PROFILE_MEM
+  md_add_size(
+    &TEXTURE_RAM_USAGE,
+    result->width*result->height*sizeof(pixel),
+    sizeof(texture)
+  );
+#endif
+
   return result;
 }
 
@@ -290,6 +318,10 @@ void upload_texture_to(texture* source, GLuint handle) {
     source->pixels // texture data
   );
 
+#ifdef PROFILE_MEM
+  md_add_size(&TEXTURE_GPU_USAGE, source->width*source->height*sizeof(pixel),0);
+#endif
+
   // Generate mipmaps:
   // TODO: use this?
   //glGenerateMipmap( GL_TEXTURE_2D );
@@ -298,8 +330,7 @@ void upload_texture_to(texture* source, GLuint handle) {
 GLuint upload_png(char const * const filename) {
   texture* tx = load_texture_from_png(filename);
   GLuint result = upload_texture(tx);
-  free(tx->pixels);
-  free(tx);
+  cleanup_texture(tx);
   return result;
 }
 

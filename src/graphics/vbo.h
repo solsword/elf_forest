@@ -13,7 +13,8 @@
  **********************/
 
 // An index into a vertex buffer.
-typedef GLshort vb_index;
+typedef GLushort vb_index;
+// TODO: Split up models when this would overflow!
 
 // All of the data needed to define a vertex: 3D position, 3D normal, and s and
 // t texture coordinates, each stored as a 16-bit unsigned int.

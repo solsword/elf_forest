@@ -18,10 +18,11 @@
  * Structures *
  **************/
 
-// A texture atlas that dynamically stores 32x32 textures. It contains a map
-// that maps block variants to texture coordinates, as well as a texture that
-// holds an atlas of all stored sub-textures and a handle for an OpenGL texture
-// that is a copy of the CPU-side texture.
+// A texture atlas that dynamically stores BLOCK_TEXTURE_SIZE by
+// BLOCK_TEXTURE_SIZE textures. It contains a map that maps block variants to
+// texture coordinates, as well as a texture that holds an atlas of all stored
+// sub-textures and a handle for an OpenGL texture that is a copy of the
+// CPU-side texture.
 struct dynamic_texture_atlas_s;
 typedef struct dynamic_texture_atlas_s dynamic_texture_atlas;
 
@@ -30,8 +31,8 @@ typedef struct dynamic_texture_atlas_s dynamic_texture_atlas;
  *************/
 
 // The size (side, not total) of the dynamic texture atlases. This gives a
-// total texture capacity of 1024 32x32 textures, while itself being a
-// 1024x1024 texel texture.
+// total texture capacity of 1024 textures, while itself being a
+// 1024x1024 texel texture assuming that BLOCK_TEXTURE_SIZE is 32.
 static size_t const DYNAMIC_ATLAS_SIZE = 32;
 
 // Stores the additional offset for each specific face (corresponding to how
@@ -148,11 +149,12 @@ void dta_update_texture(dynamic_texture_atlas *dta);
 
 // Adds a block to the given dynamic texture atlas, updating the GPU texture
 // after importing the given textures into the atlas. If the block is
-// omnidirectional, a 32x32 texture can be used, otherwise a 128x32 texture is
-// required, and each of the four 32x32 patches of this texture will be copied
-// into a subsequent index in the texture atlas (compute_dynamic_face_tc
-// expects this packing scheme). Returns the block within the texture atlas, or
-// -1 if it fails.
+// omnidirectional, a BLOCK_TEXTURE_SIZE by BLOCK_TEXTURE_SIZE texture can be
+// used, otherwise a BLOCK_TEXTURE_SIZE*4 by BLOCK_TEXTURE_SIZE texture is
+// required, and each of the four BLOCK_TEXTURE_SIZE by BLOCK_TEXTURE_SIZE
+// patches of this texture will be copied into a subsequent index in the
+// texture atlas (compute_dynamic_face_tc expects this packing scheme). Returns
+// the block within the texture atlas, or -1 if it fails.
 ptrdiff_t dta_add_block(
   dynamic_texture_atlas *dta,
   block b,

@@ -206,6 +206,30 @@ static inline void draw_mem(void) {
     CHUNK_CACHE_RAM_USAGE.overhead / (1024.0 * 1024.0)
   );
   render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, 495);
+  sprintf(
+    TXT,
+    "chunk cache GPU usage :: %.2f MB",
+    CHUNK_CACHE_GPU_USAGE.data / (1024.0 * 1024.0)
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, 470);
+  sprintf(
+    TXT,
+    "texture RAM usage :: %.2f MB",
+    TEXTURE_RAM_USAGE.data / (1024.0 * 1024.0)
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, 445);
+  sprintf(
+    TXT,
+    "texture RAM overhead :: %.2f MB",
+    TEXTURE_RAM_USAGE.overhead / (1024.0 * 1024.0)
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, 420);
+  sprintf(
+    TXT,
+    "texture GPU usage :: %.2f MB",
+    TEXTURE_GPU_USAGE.data / (1024.0 * 1024.0)
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, 395);
 }
 
 static inline void draw_pos_info(void) {
@@ -321,7 +345,9 @@ void render_ui(void) {
 
   // Debugging info:
   draw_rates();
+#ifdef PROFILE_MEM
   draw_mem();
+#endif
   draw_pos_info();
   draw_perf_info();
 
