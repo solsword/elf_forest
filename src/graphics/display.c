@@ -79,9 +79,9 @@ static inline void push_top_face(
   v.x = idx.x + scale * (1 - east);                    v.s = st.s + 1 - east;
   vb_add_vertex(&v, vb);
 
-  vb_reuse_vertex(-3, vb); // reuse bottom left
+  vb_reuse_vertex(2, vb); // reuse bottom left
 
-  vb_reuse_vertex(-2, vb); // reuse top right
+  vb_reuse_vertex(1, vb); // reuse top right
 
   // bottom right
   v.y = idx.y + scale * south;                         v.t = st.t + 1 - south;
@@ -117,9 +117,9 @@ static inline void push_bottom_face(
   v.x = idx.x + scale * west;                        v.s = st.s + 1 - west;
   vb_add_vertex(&v, vb);
 
-  vb_reuse_vertex(-3, vb); // reuse bottom left
+  vb_reuse_vertex(2, vb); // reuse bottom left
 
-  vb_reuse_vertex(-2, vb); // reuse top right
+  vb_reuse_vertex(1, vb); // reuse top right
 
   // bottom right
   v.y = idx.y + scale * south;                       v.t = st.t + 1 - south;
@@ -155,9 +155,9 @@ static inline void push_north_face(
   v.x = idx.x + scale * right;                         v.s = st.s + 1 - right;
   vb_add_vertex(&v, vb);
 
-  vb_reuse_vertex(-3, vb); // reuse bottom left
+  vb_reuse_vertex(2, vb); // reuse bottom left
 
-  vb_reuse_vertex(-2, vb); // reuse top right
+  vb_reuse_vertex(1, vb); // reuse top right
 
   // bottom right
   v.z = idx.z + scale * bot;                           v.t = st.t + 1 - bot;
@@ -193,9 +193,9 @@ static inline void push_south_face(
   v.x = idx.x + scale * (1 - right);             v.s = st.s + 1 - right;
   vb_add_vertex(&v, vb);
 
-  vb_reuse_vertex(-3, vb); // reuse bottom left
+  vb_reuse_vertex(2, vb); // reuse bottom left
 
-  vb_reuse_vertex(-2, vb); // reuse top right
+  vb_reuse_vertex(1, vb); // reuse top right
 
   // bottom right
   v.z = idx.z + scale * bot;                     v.t = st.t + 1 - bot;
@@ -231,9 +231,9 @@ static inline void push_east_face(
   v.y = idx.y + scale * (1 - right);                   v.s = st.s + 1 - right;
   vb_add_vertex(&v, vb);
 
-  vb_reuse_vertex(-3, vb); // reuse bottom left
+  vb_reuse_vertex(2, vb); // reuse bottom left
 
-  vb_reuse_vertex(-2, vb); // reuse top right
+  vb_reuse_vertex(1, vb); // reuse top right
 
   // bottom right
   v.z = idx.z + scale * bot;                           v.t = st.t + 1 - bot;
@@ -269,9 +269,9 @@ static inline void push_west_face(
   v.y = idx.y + scale * right;                         v.s = st.s + 1 - right;
   vb_add_vertex(&v, vb);
 
-  vb_reuse_vertex(-3, vb); // reuse bottom left
+  vb_reuse_vertex(2, vb); // reuse bottom left
 
-  vb_reuse_vertex(-2, vb); // reuse top right
+  vb_reuse_vertex(1, vb); // reuse top right
 
   // bottom right
   v.z = idx.z + scale * bot;                           v.t = st.t + 1 - bot;
