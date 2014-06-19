@@ -57,7 +57,8 @@ int main(int argc, char** argv) {
   region_pos origin;
   //rcpos__rpos(&CHUNK_ORIGIN, &origin);
   wmpos__rpos(&WORLD_ORIGIN, &origin);
-  origin.z = 1520;
+  origin.z = 1620;
+  //origin.z = 20000;
 
   // Seed the random number generator:
   srand(545438);

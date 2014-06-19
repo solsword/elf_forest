@@ -125,35 +125,33 @@ uint32_t EX_TERRAIN_F[9] = {
 // symmetric set. We can exploit this duplication to add some magnitude
 // variation to our vectors (which effectively adds a free lower-frequency
 // component to the noise).
-static float const GRLEN_2D = 25.0;
-static float const GRDIV_2D = 1.0/25.0;
-static ptrdiff_t const GRADIENTS_2D[128] = {
-// Three 20-entry columns -> 60 1x2 vectors (120 ints):
-   25,   0,       20,   0,       16,   0,
-   24,   7,       19,   5,       15,   4,
-   20,  15,       16,  12,       12,  10,
-   15,  20,       12,  16,       10,  12,
-    7,  24,        5,  19,        4,  15,
-    0,  25,        0,  20,        0,  16,
-   -7,  24,       -5,  19,       -4,  15,
-  -15,  20,      -12,  16,      -10,  12,
-  -20,  15,      -16,  12,      -12,  10,
-  -24,   7,      -19,   5,      -15,   4,
-  -25,   0,      -20,   0,      -16,   0,
-  -24,  -7,      -19,  -5,      -15,  -4,
-  -20, -15,      -16, -12,      -12, -10,
-  -15, -20,      -12, -16,      -10, -12,
-   -7, -24,       -5, -19,       -4, -15,
-   -0, -25,        0, -20,        0, -16,
-    7, -24,        5, -19,        4, -15,
-   15, -20,       12, -16,       10, -12,
-   20, -15,       16, -12,       12, -10,
-   24,  -7,       19,  -5,       15,  -4,
-// Four extra 1x2 vectors makes 64 vectors (128 ints):
-   20,  15,
-  -20,  15,
-  -20, -15,
-   20, -15
+static float const GRADIENTS_2D[128] = {
+// Three 20-entry columns -> 60 1x2 vectors (120 floats):
+   25/25.0,   0/25.0,       20/25.0,   0/25.0,       16/25.0,   0/25.0,
+   24/25.0,   7/25.0,       19/25.0,   5/25.0,       15/25.0,   4/25.0,
+   20/25.0,  15/25.0,       16/25.0,  12/25.0,       12/25.0,  10/25.0,
+   15/25.0,  20/25.0,       12/25.0,  16/25.0,       10/25.0,  12/25.0,
+    7/25.0,  24/25.0,        5/25.0,  19/25.0,        4/25.0,  15/25.0,
+    0/25.0,  25/25.0,        0/25.0,  20/25.0,        0/25.0,  16/25.0,
+   -7/25.0,  24/25.0,       -5/25.0,  19/25.0,       -4/25.0,  15/25.0,
+  -15/25.0,  20/25.0,      -12/25.0,  16/25.0,      -10/25.0,  12/25.0,
+  -20/25.0,  15/25.0,      -16/25.0,  12/25.0,      -12/25.0,  10/25.0,
+  -24/25.0,   7/25.0,      -19/25.0,   5/25.0,      -15/25.0,   4/25.0,
+  -25/25.0,   0/25.0,      -20/25.0,   0/25.0,      -16/25.0,   0/25.0,
+  -24/25.0,  -7/25.0,      -19/25.0,  -5/25.0,      -15/25.0,  -4/25.0,
+  -20/25.0, -15/25.0,      -16/25.0, -12/25.0,      -12/25.0, -10/25.0,
+  -15/25.0, -20/25.0,      -12/25.0, -16/25.0,      -10/25.0, -12/25.0,
+   -7/25.0, -24/25.0,       -5/25.0, -19/25.0,       -4/25.0, -15/25.0,
+   -0/25.0, -25/25.0,        0/25.0, -20/25.0,        0/25.0, -16/25.0,
+    7/25.0, -24/25.0,        5/25.0, -19/25.0,        4/25.0, -15/25.0,
+   15/25.0, -20/25.0,       12/25.0, -16/25.0,       10/25.0, -12/25.0,
+   20/25.0, -15/25.0,       16/25.0, -12/25.0,       12/25.0, -10/25.0,
+   24/25.0,  -7/25.0,       19/25.0,  -5/25.0,       15/25.0,  -4/25.0,
+// Four extra 1x2 vectors makes 64 vectors (128 floats):
+   20/25.0,  15/25.0,
+  -20/25.0,  15/25.0,
+  -20/25.0, -15/25.0,
+   20/25.0, -15/25.0
 };
 
 // Perlin's suggestion to use the midpoints of the edges of a 2x2x2 cube
@@ -284,7 +282,7 @@ static float SCALE_3D = 7.0; // Mostly falls within [-0.9,0.9]
 // Lookup the value for 2D gradient i at (x, y):
 static inline float grad_2d(ptrdiff_t i, float x, float y) {
   ptrdiff_t g = (i & 0x3f) << 1;
-  return (GRADIENTS_2D[g]*x + GRADIENTS_2D[g + 1]*y)*GRDIV_2D;
+  return GRADIENTS_2D[g]*x + GRADIENTS_2D[g + 1]*y;
 }
 
 // Lookup the value for 3D gradient i at (x, y, z):
@@ -297,8 +295,11 @@ static inline float grad_3d(ptrdiff_t i, float x, float y, float z) {
   )*GRDIV_3D;
 }
 
-// Faster floor function (mostly 'cause we're ignoring IEEE error stuff):
+// Faster floor function (mostly 'cause we're ignoring IEEE error stuff).
+// This makes little difference either way actually. Perhaps -ffast-math is the
+// reason?
 static inline ptrdiff_t fastfloor(float x) {
+  //return floor(x);
   ptrdiff_t ix = (ptrdiff_t) x;
   return ix - (ix > x);
 }
@@ -319,7 +320,7 @@ static inline float compute_surflet_value_2d(
   } else {
     atten *= atten;
     //return atten * ((hash_2d(mixed_hash_1d(i), mixed_hash_1d(j)) & 0x2) - 1);
-    return atten * grad_2d(hash_2d(mixed_hash_1d(i), mixed_hash_1d(j)), dx, dy);
+    return atten * grad_2d(mixed_hash_1d(i) ^ mixed_hash_1d(j), dx, dy);
   }
 }
 
@@ -360,8 +361,7 @@ static inline void compute_offset_grid_point_2d(
     ) / ((float) HASH_MASK)
   );
   grn->y[idx] = (float) j + (
-    hash_3d(
-      mixed_hash_1d(i),
+    hash_2d(
       mixed_hash_1d(j),
       mixed_hash_1d(i)
     ) / ((float) HASH_MASK)

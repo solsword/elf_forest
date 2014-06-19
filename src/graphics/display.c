@@ -25,6 +25,15 @@
 
 float const Z_RECONCILIATION_OFFSET = 0.0005;
 
+/***********
+ * Globals *
+ ***********/
+
+#ifdef DEBUG
+size_t VERTEX_COUNT = 0;
+size_t INDEX_COUNT = 0;
+#endif
+
 /*********************
  * Private Functions *
  *********************/
@@ -50,29 +59,33 @@ static inline void push_top_face(
   float north, float east, float south, float west,
   int zf_off
 ) {
+#ifdef DEBUG
+  VERTEX_COUNT += 4;
+  INDEX_COUNT += 6;
+#endif
   vertex v;
   // bottom left
   v.x = idx.x + scale * west;            v.nx =  0;    v.s = st.s + west;
   v.y = idx.y + scale * south;           v.ny =  0;    v.t = st.t + 1 - south;
   v.z = idx.z + scale * (1 - offset);    v.nz = P1;
   v.z += zf_off * Z_RECONCILIATION_OFFSET;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
   // top left
   v.y = idx.y + scale * (1 - north);                   v.t = st.t + north;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
   // top right
   v.x = idx.x + scale * (1 - east);                    v.s = st.s + 1 - east;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
-  reuse_vertex(-3, vb); // reuse bottom left
+  vb_reuse_vertex(-3, vb); // reuse bottom left
 
-  reuse_vertex(-2, vb); // reuse top right
+  vb_reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
   v.y = idx.y + scale * south;                         v.t = st.t + 1 - south;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 }
 
 static inline void push_bottom_face(
@@ -84,29 +97,33 @@ static inline void push_bottom_face(
   float north, float east, float south, float west,
   int zf_off
 ) {
+#ifdef DEBUG
+  VERTEX_COUNT += 4;
+  INDEX_COUNT += 6;
+#endif
   vertex v;
   // bottom left
   v.x = idx.x + scale * (1 - east);    v.nx =  0;    v.s = st.s + east;
   v.y = idx.y + scale * south;         v.ny =  0;    v.t = st.t + 1 - south;
   v.z = idx.z + offset;                v.nz = N1;
   v.z -= zf_off * Z_RECONCILIATION_OFFSET;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
   // top left
   v.y = idx.y + scale * (1 - north);                 v.t = st.t + north;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
   // top right
   v.x = idx.x + scale * west;                        v.s = st.s + 1 - west;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
-  reuse_vertex(-3, vb); // reuse bottom left
+  vb_reuse_vertex(-3, vb); // reuse bottom left
 
-  reuse_vertex(-2, vb); // reuse top right
+  vb_reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
   v.y = idx.y + scale * south;                       v.t = st.t + 1 - south;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 }
 
 static inline void push_north_face(
@@ -118,29 +135,33 @@ static inline void push_north_face(
   float top, float right, float bot, float left,
   int zf_off
 ) {
+#ifdef DEBUG
+  VERTEX_COUNT += 4;
+  INDEX_COUNT += 6;
+#endif
   vertex v;
   // bottom left
   v.x = idx.x + scale * (1 - left)  ;    v.nx =  0;    v.s = st.s + left;
   v.y = idx.y + scale * (1 - offset);    v.ny = P1;    v.t = st.t + 1 - bot;
   v.z = idx.z + scale * bot;             v.nz =  0;
   v.y += zf_off * Z_RECONCILIATION_OFFSET;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
   // top left
   v.z = idx.z + scale * (1 - top);                     v.t = st.t + top;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
   // top right
   v.x = idx.x + scale * right;                         v.s = st.s + 1 - right;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
-  reuse_vertex(-3, vb); // reuse bottom left
+  vb_reuse_vertex(-3, vb); // reuse bottom left
 
-  reuse_vertex(-2, vb); // reuse top right
+  vb_reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
   v.z = idx.z + scale * bot;                           v.t = st.t + 1 - bot;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 }
 
 static inline void push_south_face(
@@ -152,29 +173,33 @@ static inline void push_south_face(
   float top, float right, float bot, float left,
   int zf_off
 ) {
+#ifdef DEBUG
+  VERTEX_COUNT += 4;
+  INDEX_COUNT += 6;
+#endif
   vertex v;
   // bottom left
   v.x = idx.x + scale * left;      v.nx =  0;    v.s = st.s + left;
   v.y = idx.y + scale * offset;    v.ny = N1;    v.t = st.t + 1 - bot;
   v.z = idx.z + scale * bot;       v.nz =  0;
   v.y -= zf_off * Z_RECONCILIATION_OFFSET;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
   // top left
   v.z = idx.z + scale * (1 - top);               v.t = st.t + top;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
   // top right
   v.x = idx.x + scale * (1 - right);             v.s = st.s + 1 - right;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
-  reuse_vertex(-3, vb); // reuse bottom left
+  vb_reuse_vertex(-3, vb); // reuse bottom left
 
-  reuse_vertex(-2, vb); // reuse top right
+  vb_reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
   v.z = idx.z + scale * bot;                     v.t = st.t + 1 - bot;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 }
 
 static inline void push_east_face(
@@ -186,29 +211,33 @@ static inline void push_east_face(
   float top, float right, float bot, float left,
   int zf_off
 ) {
+#ifdef DEBUG
+  VERTEX_COUNT += 4;
+  INDEX_COUNT += 6;
+#endif
   vertex v;
   // bottom left
   v.x = idx.x + scale * (1 - offset);    v.nx = P1;    v.s = st.s + left;
   v.y = idx.y + scale * left;            v.ny =  0;    v.t = st.t + 1 - bot;
   v.z = idx.z + scale * bot;             v.nz =  0;
   v.x += zf_off * Z_RECONCILIATION_OFFSET;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
   // top left
   v.z = idx.z + scale * (1 - top);                     v.t = st.t + top;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
   // top right
   v.y = idx.y + scale * (1 - right);                   v.s = st.s + 1 - right;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
-  reuse_vertex(-3, vb); // reuse bottom left
+  vb_reuse_vertex(-3, vb); // reuse bottom left
 
-  reuse_vertex(-2, vb); // reuse top right
+  vb_reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
   v.z = idx.z + scale * bot;                           v.t = st.t + 1 - bot;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 }
 
 static inline void push_west_face(
@@ -220,29 +249,33 @@ static inline void push_west_face(
   float top, float right, float bot, float left,
   int zf_off
 ) {
+#ifdef DEBUG
+  VERTEX_COUNT += 4;
+  INDEX_COUNT += 6;
+#endif
   vertex v;
   // bottom left
   v.x = idx.x + scale * offset;          v.nx = N1;    v.s = st.s + left;
   v.y = idx.y + scale * (1 - left);      v.ny =  0;    v.t = st.t + 1 - bot;
   v.z = idx.z + scale * bot;             v.nz =  0;
   v.x -= zf_off * Z_RECONCILIATION_OFFSET;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
   // top left
   v.z = idx.z + scale * (1 - top);                     v.t = st.t + top;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
   // top right
   v.y = idx.y + scale * right;                         v.s = st.s + 1 - right;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 
-  reuse_vertex(-3, vb); // reuse bottom left
+  vb_reuse_vertex(-3, vb); // reuse bottom left
 
-  reuse_vertex(-2, vb); // reuse top right
+  vb_reuse_vertex(-2, vb); // reuse top right
 
   // bottom right
   v.z = idx.z + scale * bot;                           v.t = st.t + 1 - bot;
-  add_vertex(&v, vb);
+  vb_add_vertex(&v, vb);
 }
 // Clean up our short macro definitions:
 #undef P1
@@ -376,7 +409,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   }
   if (total == 0) {
     for (i = 0; i < N_LAYERS; ++i) {
-      cleanup_vertex_buffer(&((*layers)[i]));
+      reset_vertex_buffer(&((*layers)[i]));
     }
     if (coa->type == CA_TYPE_CHUNK) {
       c->chunk_flags |= CF_COMPILED;
@@ -407,11 +440,11 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   // faces later, but we're going to ignore that for now, since these arrays
   // are temporary.
   for (i = 0; i < N_LAYERS; ++i) {
-    setup_cache(
-      24*counts[i],
-      36*counts[i],
-      &((*layers)[i])
-    );
+    vb_setup_cache(&((*layers)[i]));
+#ifdef DEBUG
+    VERTEX_COUNT = 0;
+    INDEX_COUNT = 0;
+#endif
   }
 
   for (idx.x = 0; idx.x < CHUNK_SIZE; idx.x += step) {
@@ -460,12 +493,13 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
       }
     }
   }
-  // Compile or cleanup each buffer:
+  // Compile or reset each buffer:
   for (i = 0; i < N_LAYERS; ++i) {
     if (counts[i] > 0) {
-      compile_buffers(&((*layers)[i]));
+      vb_compile_buffers(&((*layers)[i]));
+      vb_free_cache(&((*layers)[i]));
     } else {
-      cleanup_vertex_buffer(&((*layers)[i]));
+      reset_vertex_buffer(&((*layers)[i]));
     }
   }
   // Mark the chunk as compiled:

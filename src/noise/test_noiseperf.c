@@ -32,6 +32,8 @@ int main(int argc, char** argv) {
     "Average time per sxnoise_2d call (us): %0.8f\n",
     dd.duration*1000*1000
   );
+  // DEBUG:
+  exit(0);
 
   // managed_sxnoise_2d:
   setup_duration_data(&dd, 0.2);

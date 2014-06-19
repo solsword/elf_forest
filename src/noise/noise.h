@@ -137,8 +137,8 @@ extern float const MAX_SQ_WORLEY_DISTANCE_2D;
 
 // The numbers 0-255 shuffled and then copied twice two copies reduces the
 // amount of %ing you have to do to keep indices within range.
-static ptrdiff_t const HASH_MASK = 0xff;
-static ptrdiff_t const HASH_BITS = 8;
+#define HASH_MASK 0xff
+#define HASH_BITS 8
 
 static ptrdiff_t const HASH[512] = {
   248, 244, 209,  63, 108,  81,  67, 202,
@@ -229,28 +229,38 @@ static inline ptrdiff_t hash_1d(ptrdiff_t x) {
   return HASH[x & HASH_MASK];
 }
 
-// Hash that uses 4x as many bits of the input as the default hash to achieve a
+// Hash that uses 2x as many bits of the input as the default hash to achieve a
 // much larger period (given sufficient seed bits). It is of course much slower
 // as a result.
 static inline ptrdiff_t mixed_hash_1d(ptrdiff_t x) {
+//*
+  return HASH[
+    (x & HASH_MASK) +
+    HASH[
+      ((x >> HASH_BITS) & HASH_MASK)
+    ]
+  ];
+// */
+/*
   return HASH[
     (x & HASH_MASK) +
     HASH[
       ((x >> HASH_BITS) & HASH_MASK) +
       HASH[
-        ((x >> HASH_BITS*2) & HASH_MASK) +
+        ((x >> (HASH_BITS*2)) & HASH_MASK) +
         HASH[
-          (x >> HASH_BITS*3) & HASH_MASK
+          (x >> (HASH_BITS*3)) & HASH_MASK
         ]
       ]
     ]
   ];
+// */
 }
 
 // Returns a floating point value in [0, 1] rather than an integer in
 // [0, HASH_MASK]. Uses mixed_hash_1d as the underlying hash function.
 static inline float float_hash_1d(ptrdiff_t x) {
-  return (float) mixed_hash_1d(x) / (float) HASH_MASK;
+  return ((float) mixed_hash_1d(x)) / ((float) HASH_MASK);
 }
 
 // A similar approach to mixed_hash_1d, but returns a 4x wide output instead of
@@ -358,8 +368,8 @@ static inline float managed_sxnoise_2d(
   float xscale, float yscale,
   float seed
 ) {
-  float ox = 12345 * seed * cosf(seed);
-  float oy = 12345 * seed * sinf(seed);
+  float ox = 1234 * hash_1d(seed) * cosf(seed);
+  float oy = 1234 * hash_1d(seed) * sinf(seed);
   return (1 + sxnoise_2d((x+ox)/xscale, (y+oy)/yscale)) / 2.0;
 }
 

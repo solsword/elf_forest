@@ -89,16 +89,19 @@ void generate_geology(world_map *wm) {
 
   float avg_thickness = 10.0; // TODO: Something else here
   map_function profile = MFN_SPREAD_UP;// TODO: Something else here
-  ptrdiff_t hash;
+  ptrdiff_t hash, h1, h2, h3;
   world_region *wr;
   for (i = 0; i < MAX_STRATA_LAYERS * STRATA_COMPLEXITY; ++i) {
     // Create a stratum and append it to the list of all strata:
-    hash = expanded_hash_1d(wm->seed + 567*i),
+    hash = expanded_hash_1d(wm->seed + 567*i);
+    h1 = hash_1d(hash);
+    h2 = hash_1d(h1);
+    h3 = hash_1d(h2);
     s = create_stratum(
       hash,
-      randf(0, wm->width), randf(0, wm->height), // TODO: Seed these properly
-      avg_size * (0.6 + randf(0, 0.8)), // size
-      avg_thickness * (0.4 + randf(0, 1.2)), // thickness
+      float_hash_1d(hash)*wm->width, float_hash_1d(h1)*wm->height,
+      avg_size * (0.6 + float_hash_1d(h2)*0.8), // size
+      avg_thickness * (0.4 + float_hash_1d(h3)*1.2), // thickness
       profile, // profile
       GEO_IGNEOUS // TODO: Something else here
     );

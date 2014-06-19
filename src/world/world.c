@@ -184,8 +184,8 @@ size_t chunk_gpu_size(chunk *c) {
   layer i;
   size_t result = 0;
   for (i = L_OPAQUE; i < N_LAYERS; ++i) {
-    result += sizeof(vertex) * c->layers[i].stored_vertex_count;
-    result += sizeof(vb_index) * c->layers[i].vertex_count;
+    result += sizeof(vertex) * c->layers[i].vertex_count;
+    result += sizeof(vb_index) * c->layers[i].index_count;
   }
   return result;
 }
@@ -220,8 +220,8 @@ size_t chunk_approx_gpu_size(chunk_approximation *ca) {
   layer i;
   size_t result = 0;
   for (i = L_OPAQUE; i < N_LAYERS; ++i) {
-    result += sizeof(vertex) * ca->layers[i].stored_vertex_count;
-    result += sizeof(vb_index) * ca->layers[i].vertex_count;
+    result += sizeof(vertex) * ca->layers[i].vertex_count;
+    result += sizeof(vb_index) * ca->layers[i].index_count;
   }
   return result;
 }

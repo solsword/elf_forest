@@ -502,7 +502,7 @@ int render_chunk_layer(
   }
 
   // Skip this layer quickly if it's empty:
-  if (vb->vertices == 0 || vb->indices == 0) {
+  if (l_is_empty(vb->vcounts)) {
     return 0;
   }
 
