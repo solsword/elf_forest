@@ -221,15 +221,11 @@ void mark_for_loading(region_chunk_pos *rcpos, lod detail) {
   }
   if (detail == LOD_BASE) {
     chunk *c = create_chunk(rcpos);
-    c->chunk_flags &= ~CF_LOADED;
-    c->chunk_flags &= ~CF_COMPILED;
     c->chunk_flags |= CF_QUEUED_TO_LOAD;
     c->chunk_flags |= CF_COMPILE_ON_LOAD;
     enqueue_chunk(LOAD_QUEUES, c);
   } else {
     chunk_approximation *ca = create_chunk_approximation(rcpos, detail);
-    ca->chunk_flags &= ~CF_LOADED;
-    ca->chunk_flags &= ~CF_COMPILED;
     ca->chunk_flags |= CF_QUEUED_TO_LOAD;
     ca->chunk_flags |= CF_COMPILE_ON_LOAD;
     enqueue_chunk_approximation(LOAD_QUEUES, ca);
@@ -493,11 +489,15 @@ void load_chunk(chunk *c) {
   // TODO: Data from disk!
   // TODO: Cell entities!
   chunk_index idx;
+  ch_idx_t x, y, z;
   region_pos rpos;
   chunk_or_approx coa;
-  for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
-    for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
-      for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
+  for (x = 0; x < CHUNK_SIZE; ++x) {
+    for (y = 0; y < CHUNK_SIZE; ++y) {
+      for (z = 0; z < CHUNK_SIZE; ++z) {
+        idx.x = x;
+        idx.y = y;
+        idx.z = z;
         cidx__rpos(c, &idx, &rpos);
 #ifdef TERRAIN_MODE_BASIC
         terrain_cell(&rpos, c_cell(c, idx));

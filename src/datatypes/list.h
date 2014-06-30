@@ -30,15 +30,26 @@ typedef struct list_s list;
 // code should only use list pointers and shouldn't deal with the internals of
 // lists directly.
 
-/*************
- * Functions *
- *************/
+/******************************
+ * Constructors & Destructors *
+ ******************************/
 
 // Allocates and sets up a new empty list:
 list *create_list(void);
 
 // Frees the memory associated with a list.
 void cleanup_list(list *l);
+
+/***********
+ * Locking *
+ ***********/
+
+void l_lock(list *l);
+void l_unlock(list *l);
+
+/*************
+ * Functions *
+ *************/
 
 // Frees the memory associated with a list, and also calls free on each element
 // in the list.
@@ -60,8 +71,9 @@ void * l_get_item(list *l, size_t i);
 
 // Returns a pointer to the ith element of the given list. This function should
 // normally be avoided and the pointers it returns aren't safe to use if the
-// list grows or shrinks. It also doesn't do any bounds checking. This is why
-// it has an extra underscore at the beginning of its name.
+// list grows or shrinks. It also doesn't do any bounds checking, and it isn't
+// thread-safe. This is why it has an extra underscore at the beginning of its
+// name.
 void ** _l_get_pointer(list *l, size_t i);
 
 // Replaces the element at index i with the given element, returning the
@@ -98,11 +110,14 @@ int l_remove_all_elements(list *l, void *element);
 // Reverses the given list. Doesn't allocate or free any memory.
 void l_reverse(list *l);
 
-// Runs the given function sequentially on each element in the list.
+// Runs the given function sequentially on each element in the list. Note that
+// this locks the list, so the iteration function shouldn't try to call any
+// other functions on the list.
 void l_foreach(list *l, void (*f)(void *));
 
 // Runs the given function sequentially on each element in the list with the
-// given extra argument as its second argument.
+// given extra argument as its second argument. Like l_foreach, this locks the
+// list.
 void l_witheach(list *l, void *arg, void (*f)(void *, void *));
 
 // Scans the list until the given function returns non-zero, and returns the
@@ -111,7 +126,8 @@ void * l_find_element(list *l, int (*match)(void *));
 
 // Scans the list until the given function returns non-zero given the list
 // element as its first argument and the reference as its second argument.
-// Returns the element that matched. Returns NULL if no match was found.
+// Returns the element that matched. Returns NULL if no match was found. Like
+// l_foreach, this locks the list during the scan.
 void * l_scan_elements(list *l, void *ref, int (*match)(void *, void *));
 
 // Counts the number of bytes of data/overhead used by the given list.

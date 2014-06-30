@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <omp.h>
 
 #include "vector.h"
 #include "list.h"
@@ -95,21 +96,37 @@ size_t oct_remove_recursive(octree *ot, void *object) {
   return removed;
 }
 
-/*************
- * Functions *
- *************/
+/******************************
+ * Constructors & Destructors *
+ ******************************/
 
 octree * create_octree(size_t span) {
   vector origin;
+  octree *result;
   origin.x = 0;
   origin.y = 0;
   origin.z = 0;
-  return create_octree_recursive(span, &origin, 0);
+  result = create_octree_recursive(span, &origin, 0);
+  omp_init_lock(&(result->lock));
+  return result;
 }
 
 void cleanup_octree(octree *ot) {
+  omp_set_lock(&(ot->lock));
+  omp_destroy_lock(&(ot->lock));
   cleanup_octree_recursive(ot);
 }
+
+/***********
+ * Locking *
+ ***********/
+
+void oct_lock(octree *ot) { omp_set_lock(&(ot->lock)); }
+void oct_unlock(octree *ot) { omp_unset_lock(&(ot->lock)); }
+
+/*************
+ * Functions *
+ *************/
 
 int oct_insert(octree *ot, void *object, bbox *box) {
   if (intersects(*box, ot->box)) {

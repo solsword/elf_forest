@@ -37,7 +37,8 @@ typedef struct stratum_s stratum;
  *************/
 
 // Maximum number of stone layers per world region
-#define MAX_STRATA_LAYERS 128
+//#define MAX_STRATA_LAYERS 32
+#define MAX_STRATA_LAYERS 64
 
 // Maximum number of material types present in other layers as veins
 #define N_VEIN_TYPES 2

@@ -13,6 +13,8 @@
 #include "control/ctl.h"
 #include "world/world.h"
 #include "world/entities.h"
+#include "tick/tick.h"
+
 #include "util.h"
 
 /********************
@@ -57,7 +59,7 @@ static void keyboard(
   if (key == KEYMAP[0]) {
     // We quit immediately here so that this won't be blocked by other things
     // that might filter user input or pause things.
-    quit();
+    shutdown(0);
   }
   for (i = 0; i < N_CONTROLS; ++i) {
     if (key == KEYMAP[i]) {

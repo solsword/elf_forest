@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <errno.h>
+#include <omp.h>
 
 #include "queue.h"
 
@@ -39,13 +40,14 @@ struct queue_s {
   size_t count; // Measured in entries.
   size_t tail; // The index of the oldest item in the queue.
   void **elements;
+  omp_lock_t lock; // For thread safety.
 };
 
 /*********************
  * Private Functions *
  *********************/
 
-static inline void grow_if_necessary(queue *q) {
+static inline void _grow_if_necessary(queue *q) {
   size_t i;
   if (q->count == q->size*QUEUE_CHUNK_SIZE) { // We need more memory.
     void ** new_elements = (void **) realloc(
@@ -71,7 +73,7 @@ static inline void grow_if_necessary(queue *q) {
   }
 }
 
-static inline void shrink_if_necessary(queue *q) {
+static inline void _shrink_if_necessary(queue *q) {
   size_t i;
   if (
     (q->size/QUEUE_SHRINK_RATIO) > QUEUE_MIN_CHUNKS
@@ -119,9 +121,9 @@ static inline void shrink_if_necessary(queue *q) {
   }
 }
 
-/*************
- * Functions *
- *************/
+/******************************
+ * Constructors & Destructors *
+ ******************************/
 
 queue *create_queue(void) {
   queue *q = (queue *) malloc(sizeof(queue));
@@ -137,27 +139,42 @@ queue *create_queue(void) {
   q->size = 1;
   q->count = 0;
   q->tail = 0;
+  omp_init_lock(&(q->lock));
   return q;
 }
 
 void cleanup_queue(queue *q) {
+  omp_set_lock(&(q->lock));
   q->count = 0;
   q->size = 0;
+  omp_destroy_lock(&(q->lock));
   free(q->elements);
   free(q);
 }
 
 void destroy_queue(queue *q) {
   size_t i;
+  omp_set_lock(&(q->lock));
   for (i = 0; i < q->count; ++i) {
     free(q->elements[QIDX(q, i)]);
   }
   q->count = 0;
   q->size = 0;
+  omp_destroy_lock(&(q->lock));
   free(q->elements);
   free(q);
 }
 
+/***********
+ * Locking *
+ ***********/
+
+void q_lock(queue *q) { omp_set_lock(&(q->lock)); }
+void q_unlock(queue *q) { omp_unset_lock(&(q->lock)); }
+
+/*************
+ * Functions *
+ *************/
 
 inline int q_is_empty(queue *q) {
   return (q->count == 0);
@@ -187,7 +204,7 @@ void * q_get_item(queue *q, size_t i) {
 }
 
 void q_push_element(queue *q, void *element) {
-  grow_if_necessary(q);
+  _grow_if_necessary(q);
   q->elements[QIDX(q, q->count)] = element;
   q->count += 1;
 }
@@ -203,7 +220,7 @@ void * q_pop_element(queue *q) {
   result = q->elements[q->tail];
   q->count -= 1;
   q->tail = QIDX(q, 1);
-  shrink_if_necessary(q);
+  _shrink_if_necessary(q);
   return result;
 }
 
@@ -217,7 +234,7 @@ void* q_remove_element(queue *q, void *element) {
         q->elements[QIDX(q, j)] = q->elements[QIDX(q, j + 1)];
       }
       q->count -= 1;
-      shrink_if_necessary(q);
+      _shrink_if_necessary(q);
       break;
     }
   }
@@ -238,7 +255,7 @@ int q_remove_all_elements(queue *q, void *element) {
     }
   }
   q->count -= removed;
-  shrink_if_necessary(q);
+  _shrink_if_necessary(q);
   return removed;
 }
 

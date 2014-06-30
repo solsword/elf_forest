@@ -13,12 +13,13 @@ MAKEFLAGS+=--assume-old=$(TEST_DIR)
 
 # Compiler & Flags:
 CC=gcc
-DEBUG_FLAGS=-g -O1 -DDEBUG -DDEBUG_DETECT_JUMPS -DPROFILE_MEM
-PROFILE_FLAGS=
-#PROFILE_FLAGS=-pg
+DEBUG_FLAGS=-g -O1 -DDEBUG -DDEBUG_DETECT_JUMPS -DPROFILE_MEM -DTERRAIN_MODE_BASIC
+#DEBUG_FLAGS=-g -O1 -DDEBUG -DDEBUG_DETECT_JUMPS -DPROFILE_MEM
+#PROFILE_FLAGS=
+PROFILE_FLAGS=-pg
 #PROFILE_FLAGS=-pg -fprofile-arcs -ftest-coverage
 OPT_FLAGS=-O3
-INCLUDE_FLAGS=-I/usr/include/freetype2 -I$(SRC_DIR)
+INCLUDE_FLAGS=-fopenmp -I/usr/include/freetype2 -I$(SRC_DIR)
 CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(DEBUG_FLAGS) $(PROFILE_FLAGS)
 #CFLAGS=-c -Wall -ffast-math $(INCLUDE_FLAGS) $(OPT_FLAGS) $(PROFILE_FLAGS)
 
@@ -27,7 +28,8 @@ LIBS_GLFW=-lglfw -lrt -lXrandr -lXi -lXxf86vm -lXrender -lXext -lX11 \
           -lpthread -lxcb -lXau -lXdmcp
 LIBS_FTGL=-lftgl
 LIBS_PNG=-lpng
-LIBS=$(LIBS_OPENGL) $(LIBS_GLFW) $(LIBS_FTGL) $(LIBS_PNG)
+LIBS_OPENMP=-fopenmp
+LIBS=$(LIBS_OPENGL) $(LIBS_GLFW) $(LIBS_FTGL) $(LIBS_PNG) $(LIBS_OPENMP)
 
 LFLAGS=-lm $(LIBS) $(PROFILE_FLAGS)
 

@@ -29,15 +29,26 @@ typedef struct map_s map;
 // intentional: external code should only use map pointers and shouldn't deal
 // with the internals of maps directly.
 
-/*************
- * Functions *
- *************/
+/******************************
+ * Constructors & Destructors *
+ ******************************/
 
 // Allocate and set up a new empty map with the given key arity:
 map *create_map(size_t key_arity, size_t table_size);
 
 // Frees the memory associated with a map.
 void cleanup_map(map *m);
+
+/***********
+ * Locking *
+ ***********/
+
+void m_lock(map *m);
+void m_unlock(map *m);
+
+/*************
+ * Functions *
+ *************/
 
 // Frees the memory associated with a map, and also calls free on each value in
 // the map (but not on each key, as keys are commonly not real pointers).

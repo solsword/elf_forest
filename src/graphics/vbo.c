@@ -43,26 +43,6 @@ void delete_gl_buffer_in_list(void *entry) {
 #pragma GCC diagnostic warning "-Wpointer-to-int-cast"
 }
 
-void reset_vertex_buffer(vertex_buffer *vb) {
-  if (vb->allocated) {
-    free(vb->vdata);
-    free(vb->idata);
-    vb->allocated = 0;
-  }
-  vb->vdata_size = 0;
-  vb->idata_size = 0;
-  vb->vertex_count = 0;
-  vb->index_count = 0;
-  l_foreach(vb->vbuffers, &delete_gl_buffer_in_list);
-  l_foreach(vb->ibuffers, &delete_gl_buffer_in_list);
-  cleanup_list(vb->vbuffers);
-  cleanup_list(vb->ibuffers);
-  cleanup_list(vb->vcounts);
-  vb->vbuffers = create_list();
-  vb->ibuffers = create_list();
-  vb->vcounts = create_list();
-}
-
 void cleanup_vertex_buffer(vertex_buffer *vb) {
   if (vb->allocated) {
     free(vb->vdata);
@@ -78,7 +58,13 @@ void cleanup_vertex_buffer(vertex_buffer *vb) {
   cleanup_list(vb->vbuffers);
   cleanup_list(vb->ibuffers);
   cleanup_list(vb->vcounts);
-  free(vb);
+}
+
+void reset_vertex_buffer(vertex_buffer *vb) {
+  cleanup_vertex_buffer(vb);
+  vb->vbuffers = create_list();
+  vb->ibuffers = create_list();
+  vb->vcounts = create_list();
 }
 
 /*************

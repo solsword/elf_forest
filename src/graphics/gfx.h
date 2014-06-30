@@ -124,16 +124,6 @@ void glperspective(void);
  * Functions *
  *************/
 
-// Breaks out of the main loop and exits the program.
-void quit(void);
-
-// Breaks out of the main loop and exits the program, setting the return code
-// as given.
-void fail(int err);
-
-// Call after prepare(...); starts the main loop.
-void loop(void);
-
 // Set up the window using the defaults declared in gfx.h.
 void prepare_default(int* argc, char** argv);
 

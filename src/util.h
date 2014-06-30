@@ -7,6 +7,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <GL/gl.h>
 
@@ -71,6 +72,11 @@ static inline void norm_angle(float *angle) {
     while (*angle < -M_PI) {
       *angle += M_PI*2;
     }
+}
+
+static inline void nap(ms) {
+  // TODO: cross-platform BS
+  usleep(ms*1000);
 }
 
 // Looks for an OpenGL error and prints it to stderr, after the given reason.

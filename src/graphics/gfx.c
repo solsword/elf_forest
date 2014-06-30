@@ -17,7 +17,6 @@
 #include "ui/ui.h"
 #include "world/world.h"
 #include "world/entities.h"
-#include "tick/tick.h"
 #include "prof/ptime.h"
 #include "data/data.h"
 #include "control/ctl.h"
@@ -190,30 +189,6 @@ void glperspective(void) {
 /*************
  * Functions *
  *************/
-
-void quit(void) {
-  cleanup();
-  glfwTerminate();
-  exit(0);
-}
-
-void fail(int err) {
-  cleanup();
-  glfwTerminate();
-  exit(err);
-}
-
-void loop(void) {
-  while (!glfwWindowShouldClose(WINDOW)) {
-    if (RENDER) {
-      render(WINDOW);
-    }
-    // TODO: don't busy-wait while paused?
-    glfwPollEvents();
-    tick(ticks_expected());
-  }
-  glfwTerminate();
-}
 
 void prepare_default(int* argc, char** argv) {
   prepare(

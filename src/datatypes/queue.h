@@ -43,9 +43,9 @@ typedef struct queue_s queue;
 // code should only use queue pointers and shouldn't deal with the internals of
 // queues directly.
 
-/*************
- * Functions *
- *************/
+/******************************
+ * Constructors & Destructors *
+ ******************************/
 
 // Allocates and sets up a new empty queue:
 queue *create_queue(void);
@@ -57,6 +57,16 @@ void cleanup_queue(queue *q);
 // element in the queue.
 void destroy_queue(queue *q);
 
+/***********
+ * Locking *
+ ***********/
+
+void q_lock(queue *q);
+void q_unlock(queue *q);
+
+/*************
+ * Functions *
+ *************/
 
 // Tests whether the given queue is empty.
 inline int q_is_empty(queue *q);

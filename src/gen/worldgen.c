@@ -4,6 +4,7 @@
 #include "datatypes/bitmap.h"
 #include "noise/noise.h"
 #include "world/blocks.h"
+#include "data/data.h"
 
 #include "geology.h"
 
@@ -66,9 +67,12 @@ void world_cell(world_map *wm, region_pos *rpos, cell *result) {
   wr = get_world_region(wm, &wmpos);
   if (rpos->z < 0) {
     result->primary = b_make_block(B_BOUNDARY);
-    return;
+  } else if (wr == NULL) {
+    // Outside the world:
+    result->primary = b_make_block(B_AIR);
+  } else {
+    strata_cell(wr, rpos, result);
   }
-  strata_cell(wr, rpos, result);
   if (b_is(result->primary, B_VOID)) {
     // TODO: Other things like plants here...
     result->primary = b_make_block(B_AIR);
@@ -117,7 +121,7 @@ void generate_geology(world_map *wm) {
         if (t > 0) { // In this case, add this stratum to this region:
           //TODO: Real logging/debugging
           //printf("Adding stratum to region at %zu, %zu.\n", xy.x, xy.y);
-          wr = get_world_region(wm, &xy);
+          wr = get_world_region(wm, &xy); // no need to worry about NULL here
           stc = wr->geology.stratum_count;
           if (stc < MAX_STRATA_LAYERS) {
             wr->geology.strata[stc] = s;
@@ -190,6 +194,17 @@ struct jm_gencolumn_s {
 
   // Internal variables:
   world_region *current_region;
+  chunk *current_chunk;
+  region_pos origin;
+  region_pos current_cell;
+  r_pos_t stratum_heights[CHUNK_SIZE*CHUNK_SIZE*MAX_STRATA_LAYERS];
+    // this is roughly 256k at 4 bytes per r_pos_t
+  stratum* strata[CHUNK_SIZE*CHUNK_SIZE];
+    // this holds the current stratum at each x/y position
+  size_t hindices[CHUNK_SIZE*CHUNK_SIZE];
+    // holds our indices within each heights column
+  r_cpos_t hsofar[CHUNK_SIZE*CHUNK_SIZE];
+    // holds the height so far within each column
 };
 typedef struct jm_gencolumn_s jm_gencolumn;
 
@@ -200,6 +215,11 @@ void launch_job_gencolumn(world_map *world, region_chunk_pos *target_chunk) {
   mem->target_chunk.y = target_chunk->y;
   mem->target_chunk.z = target_chunk->z;
   mem->current_region = NULL;
+  mem->current_chunk = NULL;
+  mem->current_cell.x = 0;
+  mem->current_cell.y = 0;
+  mem->current_cell.z = 0;
+  rcpos__rpos(&(mem->target_chunk), &(mem->origin));
   start_job(&job_gencolumn, mem, NULL);
 }
 
@@ -207,30 +227,138 @@ void (*job_gencolumn(void *jmem)) () {
   jm_gencolumn *mem = (jm_gencolumn *) jmem;
   world_map_pos wmpos;
   rcpos__wmpos(&(mem->target_chunk), &wmpos);
+  // Figure out the relevant region and make sure we're at the bottom of the
+  // world:
   mem->current_region = get_world_region(mem->world, &wmpos);
+  if (mem->current_region == NULL) {
+    // TODO: Something more sophisticated here.
+    return NULL;
+  }
   mem->target_chunk.z = 0;
-  return (void (*) ()) &job_gencolumn__chunk;
+  // Start at the very beginning of the target chunk:
+  rcpos__rpos(&(mem->target_chunk), &(mem->current_cell));
+  return (void (*) ()) &job_gencolumn__init_column;
 }
 
-void (*job_gencolumn__chunk(void *jmem)) () {
+void (*job_gencolumn__init_column(void *jmem)) () {
   jm_gencolumn *mem = (jm_gencolumn *) jmem;
-  chunk *c = create_chunk(&(mem->target_chunk));
-  chunk_index idx;
-  region_pos rpos;
+  stratum *st;
+  size_t i;
+  // Compute stratum heights for the current column:
+  for (i = 0; i < mem->current_region->geology.stratum_count; ++i) {
+    st = mem->current_region->geology.strata[i];
+    if (st != NULL) {
+      mem->stratum_heights[
+        mem->current_cell.x +
+        mem->current_cell.y*CHUNK_SIZE +
+        i*CHUNK_SIZE*CHUNK_SIZE
+      ] = compute_stratum_height(st, &(mem->current_cell));
+    } else {
+      mem->stratum_heights[
+        mem->current_cell.x +
+        mem->current_cell.y*CHUNK_SIZE +
+        i*CHUNK_SIZE*CHUNK_SIZE
+      ] = 0;
+    }
+  }
+  // Set up our iteration variables:
+  mem->strata[
+    mem->current_cell.x +
+    mem->current_cell.y*CHUNK_SIZE
+  ] = mem->current_region->geology.strata[0];
+  mem->hindices[mem->current_cell.x + mem->current_cell.y*CHUNK_SIZE] = 0;
+  mem->hsofar[
+    mem->current_cell.x +
+    mem->current_cell.y*CHUNK_SIZE
+  ] = mem->stratum_heights[
+        mem->current_cell.x +
+        mem->current_cell.y*CHUNK_SIZE +
+        0
+      ];
+  // Check whether to compute a new column or continue to the column fill
+  // process:
+  if (
+    (mem->current_cell.x == mem->origin.x + CHUNK_SIZE)
+  &&
+    (mem->current_cell.y == mem->origin.y + CHUNK_SIZE)
+  ) {
+    // Start the column fill process:
+    mem->current_cell.x -= CHUNK_SIZE;
+    mem->current_cell.y -= CHUNK_SIZE;
+    return (void (*) ()) &job_gencolumn__fill_column;
+  } else if (mem->current_cell.x == mem->origin.x + CHUNK_SIZE) {
+    mem->current_cell.y += 1;
+    mem->current_cell.x -= CHUNK_SIZE;
+  } else {
+    mem->current_cell.x += 1;
+  }
+  // Compute the next strata stack:
+  return (void (*) ()) &job_gencolumn__init_column;
+}
+
+void (*job_gencolumn__fill_column(void *jmem)) () {
+  // Fills all of the cells in a single chunk
+  jm_gencolumn *mem = (jm_gencolumn *) jmem;
+  chunk *c = create_chunk(&(mem->target_chunk)); // chunk to fill in
+  chunk_or_approx coa; // for passing the chunk tot he compile queue
+  cell *cell; // cell to fill in
+  r_pos_t absheight; // absolute height of a cell
+  size_t xyidx; // cached x/y index value
+  uint8_t finished = 1; // are we done with this column entirely?
+  chunk_index idx = {.x = 0, .y = 0, .z = 0}; // position with this chunk
+  // Compute the current chunk index and region chunk position:
+  rcpos__rpos(&(mem->target_chunk), &(mem->current_cell));
+  // Loop through the chunk filling in cells:
   for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
+      // Cache this computation:
+      xyidx = idx.x + idx.y*CHUNK_SIZE;
+      if (mem->strata[xyidx] == NULL) {
+        // we're done with this column
+        continue;
+      }
       for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
-        cidx__rpos(c, &idx, &rpos);
-        world_cell(mem->world, &rpos, c_cell(c, idx));
+        // Compute absolute height:
+        absheight = mem->current_cell.z + idx.z;
+        // Iterate through strata in this column until either the total height
+        // so far is above the current height, or there are no more strata
+        // left:
+        while (mem->hsofar[xyidx] <= absheight && mem->strata[xyidx] != NULL) {
+          mem->hindices[xyidx] += 1;
+          mem->strata[xyidx] = mem->current_region->geology.strata[
+            mem->hindices[xyidx]
+          ];
+          mem->hsofar[xyidx] += mem->stratum_heights[
+            xyidx + mem->hindices[xyidx]*CHUNK_SIZE*CHUNK_SIZE
+          ];
+        }
+        // Set the value of the current cell:
+        cell = c_cell(c, idx);
+        if (mem->strata[xyidx] != NULL) {
+          // TODO: Different stone types here
+          cell->primary = b_make_block(B_STONE);
+          cell->secondary = b_make_block(B_VOID);
+        } else {
+          cell->primary = b_make_block(B_AIR);
+          cell->secondary = b_make_block(B_VOID);
+        }
+      }
+      // If any column still has strata, the next chunk upwards needs to be
+      // generated:
+      if (mem->strata[xyidx] != NULL) {
+        finished = 0;
       }
     }
   }
-  // TODO: How to write the chunk to disk/mmap?
-  cleanup_chunk(c);
+  // Yield the generated chunk to the data subsystem for compilation:
+  c->chunk_flags |= CF_LOADED;
+  ch__coa(c, &coa);
+  mark_for_compilation(&coa);
+  // Target the next-higher chunk:
   mem->target_chunk.z += 1;
-  // TODO: dynamic limiting!
-  if (mem->target_chunk.z > 100) {
-    return NULL;
+  if (finished) {
+    return (void (*) ()) NULL;
+  } else {
+    return (void (*) ()) &job_gencolumn__fill_column;
   }
-  return (void (*) ()) &job_gencolumn__chunk;
 }

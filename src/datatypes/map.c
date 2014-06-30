@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <errno.h>
+#include <omp.h>
 
 #ifdef DEBUG
 #include <assert.h>
@@ -32,6 +33,7 @@ struct map_s {
   size_t table_size;
   size_t count; // Measured in key/value pairs.
   list ** table;
+  omp_lock_t lock; // For thread safety.
 };
 
 /*********************
@@ -76,9 +78,9 @@ static inline map_hash_t get_hash_xyz(
   return ((result << 5) - result) % m->table_size;
 }
 
-/*************
- * Functions *
- *************/
+/******************************
+ * Constructors & Destructors *
+ ******************************/
 
 map *create_map(size_t key_arity, size_t table_size) {
   size_t i = 0;
@@ -98,22 +100,26 @@ map *create_map(size_t key_arity, size_t table_size) {
   for (i = 0; i < m->table_size; ++i) {
     m->table[i] = NULL;
   }
+  omp_init_lock(&(m->lock));
   return m;
 }
 
 void cleanup_map(map *m) {
   size_t i = 0;
+  omp_set_lock(&(m->lock));
   for (i = 0; i < m->table_size; ++i) {
     if (m->table[i] != NULL) {
       cleanup_list(m->table[i]);
     }
   }
+  omp_destroy_lock(&(m->lock));
   free(m->table);
   free(m);
 }
 
 void destroy_map(map *m) {
   size_t i = 0;
+  omp_set_lock(&(m->lock));
   for (i = 0; i < m->table_size; ++i) {
     list *l = m->table[i];
     if (l == NULL) {
@@ -130,9 +136,21 @@ void destroy_map(map *m) {
     }
     cleanup_list(l);
   }
+  omp_destroy_lock(&(m->lock));
   free(m->table);
   free(m);
 }
+
+/***********
+ * Locking *
+ ***********/
+
+void m_lock(map *m) { omp_set_lock(&(m->lock)); }
+void m_unlock(map *m) { omp_unset_lock(&(m->lock)); }
+
+/*************
+ * Functions *
+ *************/
 
 inline int m_get_key_arity(map *m) { return m->key_arity; }
 

@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <errno.h>
+#include <omp.h>
 
 #include "list.h"
 
@@ -25,13 +26,14 @@ struct list_s {
   size_t size; // Measured in chunks, not entries.
   size_t count; // Measured in entries.
   void **elements;
+  omp_lock_t lock; // lock for thread safety
 };
 
 /*********************
  * Private Functions *
  *********************/
 
-static inline void grow_if_necessary(list *l) {
+static inline void _grow_if_necessary(list *l) {
   if (l->count == l->size*LIST_CHUNK_SIZE) { // We need more memory.
     void ** new_elements = (void **) realloc(
       l->elements,
@@ -46,7 +48,7 @@ static inline void grow_if_necessary(list *l) {
   }
 }
 
-static inline void shrink_if_necessary(list *l) {
+static inline void _shrink_if_necessary(list *l) {
   if (
     l->size > LIST_KEEP_CHUNKS
   &&
@@ -66,9 +68,9 @@ static inline void shrink_if_necessary(list *l) {
   }
 }
 
-/*************
- * Functions *
- *************/
+/******************************
+ * Constructors & Destructors *
+ ******************************/
 
 list *create_list(void) {
   list *l = (list *) malloc(sizeof(list));
@@ -83,27 +85,42 @@ list *create_list(void) {
   }
   l->size = 1;
   l->count = 0;
+  omp_init_lock(&(l->lock));
   return l;
 }
 
 void cleanup_list(list *l) {
+  omp_set_lock(&(l->lock));
   l->count = 0;
   l->size = 0;
+  omp_destroy_lock(&(l->lock));
   free(l->elements);
   free(l);
 }
 
 void destroy_list(list *l) {
   size_t i;
+  omp_set_lock(&(l->lock));
   for (i = 0; i < l->count; ++i) {
     free(l->elements[i]);
   }
   l->count = 0;
   l->size = 0;
+  omp_destroy_lock(&(l->lock));
   free(l->elements);
   free(l);
 }
 
+/***********
+ * Locking *
+ ***********/
+
+void l_lock(list *l) { omp_set_lock(&(l->lock)); }
+void l_unlock(list *l) { omp_unset_lock(&(l->lock)); }
+
+/*************
+ * Functions *
+ *************/
 
 inline int l_is_empty(list *l) {
   return (l->count == 0);
@@ -152,7 +169,7 @@ void * l_remove_item(list *l, size_t i) {
     l->elements[j] = l->elements[j+1];
   }
   l->count -= 1;
-  shrink_if_necessary(l);
+  _shrink_if_necessary(l);
   return result;
 }
 
@@ -168,7 +185,7 @@ void l_remove_range(list *l, size_t i, size_t n) {
     l->elements[j] = l->elements[j+n];
   }
   l->count -= n;
-  shrink_if_necessary(l);
+  _shrink_if_necessary(l);
 }
 
 void l_delete_range(list *l, size_t i, size_t n) {
@@ -186,7 +203,7 @@ void l_delete_range(list *l, size_t i, size_t n) {
     l->elements[j] = l->elements[j+n];
   }
   l->count -= n;
-  shrink_if_necessary(l);
+  _shrink_if_necessary(l);
 }
 
 void * l_replace_item(list *l, size_t i, void *element) {
@@ -202,7 +219,7 @@ void * l_replace_item(list *l, size_t i, void *element) {
 }
 
 void l_append_element(list *l, void *element) {
-  grow_if_necessary(l);
+  _grow_if_necessary(l);
   l->elements[l->count] = element;
   l->count += 1;
 }
@@ -217,7 +234,7 @@ void * l_pop_element(list *l) {
   }
   result = l->elements[l->count - 1];
   l->count -= 1;
-  shrink_if_necessary(l);
+  _shrink_if_necessary(l);
   return result;
 }
 
@@ -231,7 +248,7 @@ void* l_remove_element(list *l, void *element) {
         l->elements[j] = l->elements[j+1];
       }
       l->count -= 1;
-      shrink_if_necessary(l);
+      _shrink_if_necessary(l);
       break;
     }
   }
@@ -252,7 +269,7 @@ int l_remove_all_elements(list *l, void *element) {
     }
   }
   l->count -= removed;
-  shrink_if_necessary(l);
+  _shrink_if_necessary(l);
   return removed;
 }
 

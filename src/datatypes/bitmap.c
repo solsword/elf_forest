@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <omp.h>
 
 #include "bitmap.h"
 
@@ -24,6 +25,7 @@ struct bitmap_s {
   size_t size; // how many entries are in this bitmap
   size_t rows; // how many rows there are
   bitmap_row *data; // the bits
+  omp_lock_t lock; // lock for thread safety
 };
 
 /*********************
@@ -73,13 +75,23 @@ bitmap *create_bitmap(size_t bits) {
   bm->size = bits;
   bm->rows = (bits / BITMAP_ROW_WIDTH) + (bits % BITMAP_ROW_WIDTH > 0);
   bm->data = (bitmap_row *) calloc(bm->rows, sizeof(bitmap_row));
+  omp_init_lock(&(bm->lock));
   return bm;
 }
 
 void cleanup_bitmap(bitmap *bm) {
+  omp_set_lock(&(bm->lock));
+  omp_destroy_lock(&(bm->lock));
   free(bm->data);
   free(bm);
 }
+
+/***********
+ * Locking *
+ ***********/
+
+void bm_lock(bitmap *bm) { omp_set_lock(&(bm->lock)); }
+void bm_unlock(bitmap *bm) { omp_unset_lock(&(bm->lock)); }
 
 /*************
  * Functions *

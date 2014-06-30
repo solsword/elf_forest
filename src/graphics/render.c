@@ -65,15 +65,14 @@ area_render_callback AREA_PRE_RENDER_CALLBACK = NULL;
  * Private Functions *
  *********************/
 
-// Takes a squared distance value and returns the highest level of detail
-// desired at that distance.
-static inline lod desired_detail(r_cpos_t dist_sq) {
+// Takes a distance and returns the highest level of detail desired at that
+// distance.
+static inline lod desired_detail(r_cpos_t dist) {
   lod result = LOD_BASE;
-  r_cpos_t mrd_sq = 0;
+  r_cpos_t mrd = 0;
   for (result = LOD_BASE; result < N_LODS; ++result) {
-    mrd_sq = MAX_RENDER_DISTANCES[result];
-    mrd_sq *= mrd_sq;
-    if (dist_sq <= mrd_sq) {
+    mrd = MAX_RENDER_DISTANCES[result];
+    if (dist <= mrd) {
       break;
     }
   }
@@ -332,7 +331,7 @@ void render_area(
 
   // Iterate over chunk positions in a sphere:
   r_cpos_t farthest_render_distance = MAX_RENDER_DISTANCES[N_LODS - 1];
-  r_cpos_t skipy = 0, skipz = 0, xdist_sq = 0, xydist_sq = 0, dist_sq = 0;
+  r_cpos_t skipy = 0, skipz = 0, xdist_sq = 0, xydist_sq = 0, dist = 0;
   // TODO: per-layer pipelines...
   use_pipeline(&CELL_PIPELINE);
   for (ly = L_OPAQUE; ly <= L_TRANSLUCENT; ++ly) {
@@ -377,10 +376,11 @@ void render_area(
           ++rcpos.z
         ) { 
           chunk_vector.z = (rcpos.z - origin.z) * CHUNK_SIZE - view_origin.z;
-          dist_sq = (rcpos.z - origin.z);
-          dist_sq *= dist_sq;
-          dist_sq += xydist_sq;
-          get_best_data_limited(&rcpos, desired_detail(dist_sq), &coa);
+          dist = (rcpos.z - origin.z);
+          dist *= dist;
+          dist += xydist_sq;
+          dist = sqrtf(dist);
+          get_best_data_limited(&rcpos, desired_detail(dist), &coa);
           // Compute angle to chunk:
           compute_hv_angles(
             &chunk_vector,

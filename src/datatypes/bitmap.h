@@ -24,6 +24,13 @@ bitmap *create_bitmap(size_t bits);
 // Frees the data allocated for the given bitmap.
 void cleanup_bitmap(bitmap *bm);
 
+/***********
+ * Locking *
+ ***********/
+
+void bm_lock(bitmap *bm);
+void bm_unlock(bitmap *bm);
+
 /*************
  * Functions *
  *************/

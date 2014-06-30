@@ -1,10 +1,12 @@
 // tick.c
-// Rate control and updates.
+// Thread management, rate control, and updates.
 
 #include <GLFW/glfw3.h> // glfwGetTime
 
 #include <stdlib.h>
 #include <math.h>
+
+#include <omp.h>
 
 #include "tick.h"
 
@@ -14,6 +16,14 @@
 #include "physics/physics.h"
 #include "prof/ptime.h"
 #include "data/data.h"
+#include "graphics/gfx.h"
+#include "shaders/pipeline.h"
+#include "jobs/jobs.h"
+#include "tex/tex.h"
+#include "gen/worldgen.h"
+#include "ui/ui.h"
+
+#include "util.h"
 
 /***********
  * Globals *
@@ -23,12 +33,177 @@ int TICK_COUNT = 0;
 
 int TICK_AUTOLOAD = 1;
 
+omp_lock_t POSITION_LOCK;
+omp_lock_t DATA_LOCK;
+
+/*******************
+ * Private Globals *
+ *******************/
+
+int SHUTDOWN = 0;
+int RENDERING_DONE = 0;
+int TICKING_DONE = 0;
+int DATA_DONE = 0;
+
+/*********************
+ * Private Functions *
+ *********************/
+
+void _get_everything_set_up(int argc, char** argv) {
+  // Seed the random number generator:
+  srand(545438);
+
+  // Prepare the window context:
+  prepare_default(&argc, argv);
+
+  // Set up the test world:
+  printf("Setting up subsystems...\n");
+
+  // Initialize stateless subsystems:
+  printf("  ...control...\n");
+  init_control();
+  printf("  ...tick...\n");
+  init_tick(1);
+  printf("  ...ptime...\n");
+  init_ptime();
+
+  // Setup stateful subsystems:
+  printf("  ...jobs...\n");
+  setup_jobs();
+  printf("  ...shaders...\n");
+  setup_shaders();
+  printf("  ...textures...\n");
+  setup_textures();
+  printf("  ...ui...\n");
+  setup_ui();
+  printf("  ...data...\n");
+  setup_data();
+  printf("  ...entities...\n");
+  setup_entities();
+  printf("  ...world_map...\n");
+  setup_worldgen();
+
+  printf("...done.\n");
+}
+
+void _spawn_the_player(
+  char *type,
+  active_entity_area *area,
+  region_pos *origin
+) {
+  vector pos;
+  rpos__vec(&(area->origin), origin, &pos);
+  warp_space(ACTIVE_AREA, &pos);
+  pos.x -= CHUNK_SIZE * fastfloor(pos.x / CHUNK_SIZE);
+  pos.y -= CHUNK_SIZE * fastfloor(pos.y / CHUNK_SIZE);
+  pos.z -= CHUNK_SIZE * fastfloor(pos.z / CHUNK_SIZE);
+  PLAYER = spawn_entity(type, &pos, area);
+}
+
 /*************
  * Functions *
  *************/
 
+void start_game(
+  int argc,
+  char **argv,
+  char *player_entity_type,
+  region_pos *spawn_point
+) {
+  int thread_id = 0;
+  region_chunk_pos rcpos, last_rcpos;
+
+  // Start the main threads:
+#pragma omp parallel num_threads(3)
+  {
+    thread_id = omp_get_thread_num();
+    // Everyone waits while the graphics thread performs setup:
+    if (thread_id == 0) {
+      _get_everything_set_up(argc, argv);
+      _spawn_the_player(player_entity_type, ACTIVE_AREA, spawn_point);
+      // A couple of sequential cycles to start things off smoothly:
+      tick(2);
+      rpos__rcpos(&(ACTIVE_AREA->origin), &rcpos);
+      tick_data();
+      render(WINDOW);
+      glfwPollEvents();
+    }
+  #pragma omp barrier
+    // And then each thread starts its own loop:
+    if (thread_id == 0) {
+      // The rendering thread (which gets to have the graphics context):
+
+  // Release the window context so that the rendering thread can use it:
+  glfwMakeContextCurrent(NULL);
+      // Grab control of the GLFW window:
+      glfwMakeContextCurrent(WINDOW);
+      while (!SHUTDOWN) {
+        if (glfwWindowShouldClose(WINDOW)) {
+          break;
+        }
+        if (RENDER) {
+          render(WINDOW);
+          glfwPollEvents();
+        } else {
+          glfwPollEvents();
+          nap(50);
+        }
+      }
+      RENDERING_DONE = 1;
+      // This thread will shut down the whole system when it exits (if the
+      // system isn't already being shutdown).
+      if (!SHUTDOWN) {
+        shutdown(0);
+      }
+    } else if (thread_id == 1) {
+      // The data management thread:
+      while (!SHUTDOWN) {
+        if (TICK_AUTOLOAD) {
+          omp_set_lock(&POSITION_LOCK);
+          last_rcpos.x = rcpos.x;
+          last_rcpos.y = rcpos.y;
+          last_rcpos.z = rcpos.z;
+          omp_unset_lock(&POSITION_LOCK);
+          load_surroundings(&last_rcpos);
+          tick_data();
+        }
+      }
+      DATA_DONE = 1;
+    } else if (thread_id == 2) {
+      // The main game loop thread:
+      while (!SHUTDOWN) {
+        tick(ticks_expected());
+        omp_set_lock(&POSITION_LOCK);
+        rpos__rcpos(&(ACTIVE_AREA->origin), &rcpos);
+        omp_unset_lock(&POSITION_LOCK);
+#pragma omp flush (rcpos)
+      }
+      TICKING_DONE = 1;
+    } else {
+      fprintf(stderr, "Error: unexpected thread ID %d. Aborting.\n", thread_id);
+      shutdown(-1);
+    }
+  } // end parallel block
+
+}
+
+void shutdown(int returnval) {
+  SHUTDOWN = 1;
+  int patience = 100;
+  // Wait for all threads to finish:
+  while (patience > 0 && (!RENDERING_DONE || !TICKING_DONE || !DATA_DONE)) {
+    nap(5);
+    patience -= 1;
+  }
+  cleanup();
+  glfwTerminate();
+  exit(returnval);
+}
+
 void init_tick(int autoload) {
   TICK_AUTOLOAD = autoload;
+  omp_init_lock(&POSITION_LOCK);
+  omp_init_lock(&DATA_LOCK);
 }
 
 int ticks_expected(void) {
@@ -53,6 +228,7 @@ void tick(int steps) {
   tick_general_controls();
   if (steps == 0 || PAUSED) {
     clear_edge_triggers();
+    nap(50);
     return;
   }
   adjust_physics_resolution();
@@ -63,16 +239,10 @@ void tick(int steps) {
     for (j = 0; j < PHYS_SUBSTEPS; ++j) {
       tick_active_entities();
     }
-    warp_space(ACTIVE_AREA, PLAYER);
+    warp_space(ACTIVE_AREA, &(PLAYER->pos));
     // TODO: tick cells
     //tick_cells(ACTIVE_AREA);
     update_rate(&TICKRATE);
-  }
-  region_chunk_pos rcpos;
-  rpos__rcpos(&(ACTIVE_AREA->origin), &rcpos);
-  if (TICK_AUTOLOAD) {
-    load_surroundings(&rcpos);
-    tick_data();
   }
   clear_edge_triggers();
 }

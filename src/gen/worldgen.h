@@ -16,7 +16,7 @@
  * Types and Structures *
  ************************/
 
-typedef size_t wm_pos_t;
+typedef ptrdiff_t wm_pos_t;
 
 // Position within a world map.
 struct world_map_pos_s;
@@ -211,11 +211,21 @@ static inline void rcpos__wmpos(
 }
 
 
+// Returns the region of the given world at the given position, or NULL if the
+// given position is outside the given world.
 static inline world_region* get_world_region(
     world_map *wm,
     world_map_pos *wmpos
 ) {
-  return &(wm->regions[wmpos->x+wmpos->y*wm->width]);
+  if (
+    (wmpos->x >= 0 && wmpos->x < wm->width)
+  &&
+    (wmpos->y >= 0 && wmpos->y < wm->height)
+  ) {
+    return &(wm->regions[wmpos->x+wmpos->y*wm->width]);
+  } else {
+    return NULL;
+  }
 }
 
 /******************************
@@ -260,6 +270,7 @@ void strata_cell(
 // vertically that remaining chunks in that column are just air.
 void launch_job_gencolumn(world_map *world, region_chunk_pos *target_chunk);
 void (*job_gencolumn(void *jmem)) () ;
-void (*job_gencolumn__chunk(void *jmem)) () ;
+void (*job_gencolumn__init_column(void *jmem)) () ;
+void (*job_gencolumn__fill_column(void *jmem)) () ;
 
 #endif // ifndef WORLDGEN_H

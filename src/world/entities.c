@@ -72,7 +72,7 @@ static inline void warp_entity(void *thing) {
 
 void setup_entities(region_pos *origin) {
   ENTITY_PROTOTYPES = create_list();
-  ACTIVE_AREA = create_active_entity_area(origin, ACTIVE_AREA_SIZE);
+  ACTIVE_AREA = create_active_entity_area(ACTIVE_AREA_SIZE);
   // TODO: management of multiple active entity areas?
   int i;
   entity *e;
@@ -91,8 +91,8 @@ void cleanup_entities(void) {
 entity * create_entity(void) {
   entity *e = (entity *) malloc(sizeof(entity));
   if (e == NULL) {
-    perror("Failed to spawn entity.");
-    fail(errno);
+    perror("Not enough memory to spawn entity.");
+    exit(errno);
   }
   e->move_flags = 0;
   e->model = NULL;
@@ -109,20 +109,17 @@ void cleanup_entity(entity *e) {
   free(e);
 }
 
-active_entity_area * create_active_entity_area(
-  region_pos *origin,
-  size_t size
-) {
+active_entity_area * create_active_entity_area(size_t size) {
   active_entity_area *area = (active_entity_area *) malloc(
     sizeof(active_entity_area)
   );
   if (area == NULL) {
-    perror("Failed to create active entity area.");
-    fail(errno);
+    perror("Not enough memory to create active entity area.");
+    exit(errno);
   }
-  area->origin.x = origin->x;
-  area->origin.y = origin->y;
-  area->origin.z = origin->z;
+  area->origin.x = 0;
+  area->origin.y = 0;
+  area->origin.z = 0;
   area->size = size;
   area->list = create_list();
   area->tree = create_octree(size);
@@ -174,16 +171,16 @@ cell * head_cell(entity *e) {
   }
 }
 
-void warp_space(active_entity_area *area, entity *e) {
+void warp_space(active_entity_area *area, vector *pos) {
   // TODO: Handle loading and unloading entities
   // Warp offset coordiantes:
-  WARP_X = fastfloor(e->pos.x / CHUNK_SIZE);
-  WARP_Y = fastfloor(e->pos.y / CHUNK_SIZE);
-  WARP_Z = fastfloor(e->pos.z / CHUNK_SIZE);
+  WARP_X = fastfloor(pos->x / CHUNK_SIZE);
+  WARP_Y = fastfloor(pos->y / CHUNK_SIZE);
+  WARP_Z = fastfloor(pos->z / CHUNK_SIZE);
   if (WARP_X || WARP_Y || WARP_Z) {
     // DEBUG:
     /*
-    printf("pre-warp pos: %0.2f, %0.2f, %0.2f\n", e->pos.x, e->pos.y, e->pos.z);
+    printf("pre-warp pos: %0.2f, %0.2f, %0.2f\n", pos->x, pos->y, pos->z);
     printf("pre-warp: %d, %d, %d\n", WARP_X, WARP_Y, WARP_Z);
     // */
     area->origin.x += WARP_X * CHUNK_SIZE;
@@ -193,9 +190,9 @@ void warp_space(active_entity_area *area, entity *e) {
     l_foreach(area->list, &warp_entity);
     // DEBUG:
     /*
-    WARP_X = fastfloor(e->pos.x / CHUNK_SIZE);
-    WARP_Y = fastfloor(e->pos.y / CHUNK_SIZE);
-    WARP_Z = fastfloor(e->pos.z / CHUNK_SIZE);
+    WARP_X = fastfloor(pos->x / CHUNK_SIZE);
+    WARP_Y = fastfloor(pos->y / CHUNK_SIZE);
+    WARP_Z = fastfloor(pos->z / CHUNK_SIZE);
     printf("post-warp: %d, %d, %d\n", WARP_X, WARP_Y, WARP_Z);
     // */
   }

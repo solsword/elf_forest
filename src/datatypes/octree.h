@@ -4,6 +4,8 @@
 // octree.h
 // Octree implementation.
 
+#include <omp.h>
+
 #include "vector.h"
 #include "list.h"
 #include "bbox.h"
@@ -48,6 +50,7 @@ struct octree_s {
   size_t count;
   octree *octants[8];
   list *contents;
+  omp_lock_t lock;
 };
 
 /********************
@@ -64,9 +67,9 @@ static inline int oct_is_empty(octree *ot) {
   return (ot->count == 0);
 }
 
-/*************
- * Functions *
- *************/
+/******************************
+ * Constructors & Destructors *
+ ******************************/
 
 // Allocates and initializes an octree which subdivides the given span. The
 // octree will have OCTREE_RESOLUTION dimension at its lowest point, unless
@@ -78,6 +81,17 @@ octree * create_octree(size_t span);
 // contents list of each octant in the tree (but not, of course, the elements
 // of that contents list, since elements are duplicated throughout the tree).
 void cleanup_octree(octree *ot);
+
+/***********
+ * Locking *
+ ***********/
+
+void oct_lock(octree *ot);
+void oct_unlock(octree *ot);
+
+/*************
+ * Functions *
+ *************/
 
 // Inserts the given object into the given octree using the given bounding box.
 // If the given bounding box doesn't overlap with the area covered by the

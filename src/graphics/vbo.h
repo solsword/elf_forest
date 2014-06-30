@@ -71,13 +71,13 @@ void setup_vertex_buffer(vertex_buffer *vb);
 // Allocates and returns a new vertex buffer.
 vertex_buffer* create_vertex_buffer();
 
+// Frees memory and deletes OpenGL array objects associated with the given
+// vertex buffer. Does not free the buffer itself.
+void cleanup_vertex_buffer(vertex_buffer *vb);
+
 // Frees memory internal to the given vertex buffer and resets it to a blank
 // state.
 void reset_vertex_buffer(vertex_buffer *vb);
-
-// Frees memory and deletes OpenGL array objects associated with the given
-// vertex buffer, and then frees the buffer.
-void cleanup_vertex_buffer(vertex_buffer *vb);
 
 /*************
  * Functions *

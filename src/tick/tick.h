@@ -2,7 +2,9 @@
 #define TICK_H
 
 // tick.h
-// Rate control and updates.
+// Thread management, rate control, and updates.
+
+#include "world/world.h"
 
 /*************
  * Constants *
@@ -28,9 +30,28 @@ extern int TICK_COUNT;
 // Whether or not automatic data loading should be performed every tick:
 extern int TICK_AUTOLOAD;
 
+// Locks for the current position and for the block data.
+extern omp_lock_t POSITION_LOCK;
+extern omp_lock_t DATA_LOCK;
+
 /*************
  * Functions *
  *************/
+
+// Starts the game, spawning the core threads and setting up the various
+// modules. Needs the arguments to main() (to pass to GLFW) as well as a string
+// specifying the type of entity that the player should be, and a region
+// position where the player will be spawned.
+void start_game(
+  int argc,
+  char **argv,
+  char *player_entity_type,
+  region_pos *spawn_point
+);
+
+// Shuts down the system, cleaning things up and stopping all of the core
+// threads.
+void shutdown(int returnval);
 
 // Sets up the tick system, in particular initializing the tick rate tracker
 // and setting the TICK_AUTOLOAD variable.

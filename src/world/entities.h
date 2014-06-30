@@ -268,8 +268,8 @@ static inline void fake_flap(entity *e) {
  ******************************/
 
 // Sets up the entities system, which defines the ENTITY_PROTOTYPES list and
-// sets up the main active entity area (which gets the given origin).
-void setup_entities(region_pos *origin);
+// sets up the main active entity area.
+void setup_entities();
 
 // Cleans up the memory used for the entities system.
 void cleanup_entities(void);
@@ -283,7 +283,7 @@ entity * create_entity(void);
 void cleanup_entity(entity *e);
 
 // Allocates and returns an active entity area.
-active_entity_area * create_active_entity_area(region_pos *origin, size_t size);
+active_entity_area * create_active_entity_area(size_t size);
 
 // Cleans up the memory used by an active entity area, also freeing memory used
 // by  all entities within the area. Remove the entities first if you don't
@@ -311,13 +311,13 @@ void tick_entity(void *thing);
 // isn't in a loaded chunk.
 cell* head_cell(entity *e);
 
-// Warps space in the given active entity area such that the given entity is
+// Warps space in the given active entity area such that the given position is
 // somewhere in its central chunk. This updates the area's origin and all
 // entities in the space have their position vectors adjusted to be relative to
 // the new origin instead of the old one. This also causes the bounding boxes
 // of each entity to be recomputed and they're each re-inserted into the area's
 // octree.
-void warp_space(active_entity_area *area, entity *e);
+void warp_space(active_entity_area *area, vector *pos);
 
 // Copies an entity from the types list, sets it up, and adds it to the given
 // active entity area at the given position. This involves allocating space for
