@@ -171,9 +171,14 @@ void get_best_data_limited(
 // LOAD_DISTANCES array.
 void load_surroundings(region_chunk_pos *rcpos);
 
-// Ticks the chunk data system, loading/unloading/compiling as many chunks as
-// allowed and appropriate. Prioritizes more-detailed areas when loading data.
-void tick_data(void);
+// Ticks the chunk loading system, loading/unloading as many chunks as allowed
+// and appropriate. Prioritizes more-detailed areas when loading data.
+void tick_load_chunks(void);
+
+// Ticks the chunk compilation system, compiling as many chunks as allowed and
+// appropriate. Prioritizes more-detailed areas when loading data. This should
+// be called from the graphics thread as it needs an OpenGL context.
+void tick_compile_chunks(void);
 
 // Loads data from disk for the given chunk/approximation. Uses the chunk's
 // x/y/z coordinates to determine what contents it should have.

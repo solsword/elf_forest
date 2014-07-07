@@ -394,7 +394,7 @@ void load_surroundings(region_chunk_pos *center) {
   }
 }
 
-void tick_data(void) {
+void tick_load_chunks(void) {
   int n = 0;
   chunk *c = NULL;
   chunk *old_chunk = NULL;
@@ -460,8 +460,14 @@ void tick_data(void) {
     }
   }
   update_count(&CHUNKS_LOADED, n);
-  n = 0;
-  q = COMPILE_QUEUES->levels[LOD_BASE];
+}
+
+void tick_compile_chunks(void) {
+  int n = 0;
+  chunk *c = NULL;
+  chunk_approximation *ca = NULL;
+  lod detail = LOD_BASE;
+  queue *q = COMPILE_QUEUES->levels[LOD_BASE];
   chunk_or_approx coa;
   while (n < COMPILE_CAP && q_get_length(q) > 0) {
     c = (chunk *) q_pop_element(q);

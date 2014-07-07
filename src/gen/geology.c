@@ -130,8 +130,10 @@ r_pos_t compute_stratum_height(stratum *st, region_pos *rpos) {
     stratum_hf_distortion(st, fx, fy, &hfdx, &hfdy);
     stratum_hf_noise(st, fx+hfdx, fy+hfdy, &hfn);
   }
-  return (r_pos_t) (base + (lfn - 0.5) + hfn);
   // set static variables:
   copy_rpos(rpos, &pr_rpos);
   copy_rcpos(&rcpos, &pr_rcpos);
+  //printf("geo: %.2f, %.2f, %.2f\n", base, lfn, hfn);
+  //printf("geo: %d\n", (r_pos_t) (base + (lfn - 0.5) + hfn));
+  return (r_pos_t) (base + (lfn - 0.5) + hfn);
 }

@@ -42,7 +42,6 @@ omp_lock_t DATA_LOCK;
 
 int SHUTDOWN = 0;
 int RENDERING_DONE = 0;
-int TICKING_DONE = 0;
 int DATA_DONE = 0;
 
 /*********************
@@ -114,7 +113,7 @@ void start_game(
   region_chunk_pos rcpos, last_rcpos;
 
   // Start the main threads:
-#pragma omp parallel num_threads(3)
+#pragma omp parallel num_threads(2) firstprivate(thread_id)
   {
     thread_id = omp_get_thread_num();
     // Everyone waits while the graphics thread performs setup:
@@ -124,23 +123,27 @@ void start_game(
       // A couple of sequential cycles to start things off smoothly:
       tick(2);
       rpos__rcpos(&(ACTIVE_AREA->origin), &rcpos);
-      tick_data();
+      tick_load_chunks();
+      tick_compile_chunks();
       render(WINDOW);
       glfwPollEvents();
     }
   #pragma omp barrier
     // And then each thread starts its own loop:
     if (thread_id == 0) {
-      // The rendering thread (which gets to have the graphics context):
-
-  // Release the window context so that the rendering thread can use it:
-  glfwMakeContextCurrent(NULL);
-      // Grab control of the GLFW window:
+      // The main thread (which gets to have the graphics context):
+      // Ensure control of the GLFW window:
       glfwMakeContextCurrent(WINDOW);
       while (!SHUTDOWN) {
         if (glfwWindowShouldClose(WINDOW)) {
           break;
         }
+        // Compile chunks
+        tick_compile_chunks();
+        tick(ticks_expected());
+        omp_set_lock(&POSITION_LOCK);
+        rpos__rcpos(&(ACTIVE_AREA->origin), &rcpos);
+        omp_unset_lock(&POSITION_LOCK);
         if (RENDER) {
           render(WINDOW);
           glfwPollEvents();
@@ -165,20 +168,11 @@ void start_game(
           last_rcpos.z = rcpos.z;
           omp_unset_lock(&POSITION_LOCK);
           load_surroundings(&last_rcpos);
-          tick_data();
+          tick_load_chunks();
         }
+        nap(1);
       }
       DATA_DONE = 1;
-    } else if (thread_id == 2) {
-      // The main game loop thread:
-      while (!SHUTDOWN) {
-        tick(ticks_expected());
-        omp_set_lock(&POSITION_LOCK);
-        rpos__rcpos(&(ACTIVE_AREA->origin), &rcpos);
-        omp_unset_lock(&POSITION_LOCK);
-#pragma omp flush (rcpos)
-      }
-      TICKING_DONE = 1;
     } else {
       fprintf(stderr, "Error: unexpected thread ID %d. Aborting.\n", thread_id);
       shutdown(-1);
@@ -191,7 +185,7 @@ void shutdown(int returnval) {
   SHUTDOWN = 1;
   int patience = 100;
   // Wait for all threads to finish:
-  while (patience > 0 && (!RENDERING_DONE || !TICKING_DONE || !DATA_DONE)) {
+  while (patience > 0 && (!RENDERING_DONE || !DATA_DONE)) {
     nap(5);
     patience -= 1;
   }

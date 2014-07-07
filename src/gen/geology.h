@@ -221,11 +221,12 @@ static inline void stratum_hf_noise(
   float *noise
 ) {
   float scale = GN_SMALL_VAR_SCALE * st->scale_bias;
-  *noise += st->small_var * managed_sxnoise_2d(
+  *noise = st->small_var * managed_sxnoise_2d(
     x, y,
     scale, scale,
     st->seed*48.1
   );
+  /*
   scale = GN_TINY_VAR_SCALE * st->scale_bias;
   *noise += st->tiny_var * managed_sxnoise_2d(
     x, y,
@@ -245,6 +246,7 @@ static inline void stratum_hf_noise(
     st->seed*41.8
   );
   *noise *= (1 - st->smoothing);
+  */
 }
 
 /******************************
