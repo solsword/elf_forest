@@ -4,6 +4,7 @@
 #define TEST_SUITE_TESTS { \
     &test_create_world, \
     &test_load_chunk, \
+    &test_load_stacked_chunks, \
     &test_job_gencolumn, \
     NULL, \
   }
@@ -36,16 +37,22 @@ size_t test_create_world(void) {
   printf("  ...done.\n");
   // HACK:
   THE_WORLD = TEST_WORLD;
+  setup_data();
   return 0;
 }
 
 size_t test_load_chunk(void) {
   region_chunk_pos rcpos = { .x = 5, .y = 5, .z = 5 };
-  setup_data();
   mark_for_loading(&rcpos, LOD_BASE);
-  tick_data();
-  // DEBUG:
-  exit(0);
+  tick_load_chunks();
+}
+
+size_t test_load_stacked_chunks(void) {
+  region_chunk_pos rcpos = { .x = 0, .y = 0, .z = 0 };
+  mark_for_loading(&rcpos, LOD_BASE);
+  rcpos.z += 1;
+  mark_for_loading(&rcpos, LOD_BASE);
+  tick_load_chunks();
 }
 
 size_t test_job_gencolumn(void) {

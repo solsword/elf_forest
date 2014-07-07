@@ -24,7 +24,7 @@ float const GN_LARGE_VAR_SCALE = 2563;
 float const GN_MED_VAR_SCALE = 1345;
 float const GN_SMALL_VAR_SCALE = 547;
 float const GN_TINY_VAR_SCALE = 43;
-float const GN_DETAIL_VAR_SCALE = 5.4;
+float const GN_DETAIL_VAR_SCALE = 23.4;
 float const GN_RIDGE_SCALE = 67;
 
 /******************************
@@ -65,7 +65,7 @@ stratum *create_stratum(
   result->small_var = result->thickness*0.19;
   result->tiny_var = result->thickness*0.07;
 
-  result->detail_var = 2.3;
+  result->detail_var = 1.2;
   result->ridges = 2.5;
 
   result->smoothing = 0.2;
@@ -117,23 +117,24 @@ r_pos_t compute_stratum_height(stratum *st, region_pos *rpos) {
   if (pr_st != st || pr_rcpos.x != rcpos.x || pr_rcpos.y != rcpos.y) {
     rcpos__rpos(&rcpos, &rounded_rpos);
     // need to recompute low-frequency info:
-    fx = (float) rounded_rpos.x;
-    fy = (float) rounded_rpos.y;
+    fx = (float) (rounded_rpos.x);
+    fy = (float) (rounded_rpos.y);
     stratum_lf_distortion(st, fx, fy, &lfdx, &lfdy);
     stratum_lf_noise(st, fx+lfdx, fy+lfdy, &lfn);
     stratum_base_thickness(st, fx+lfdx, fy+lfdy, &base);
   }
   if (pr_st != st || pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
     // need to recompute high-frequency info:
-    fx = (float) rpos->x;
-    fy = (float) rpos->y;
+    fx = (float) (rpos->x);
+    fy = (float) (rpos->y);
     stratum_hf_distortion(st, fx, fy, &hfdx, &hfdy);
     stratum_hf_noise(st, fx+hfdx, fy+hfdy, &hfn);
   }
   // set static variables:
   copy_rpos(rpos, &pr_rpos);
   copy_rcpos(&rcpos, &pr_rcpos);
+  pr_st = st;
   //printf("geo: %.2f, %.2f, %.2f\n", base, lfn, hfn);
   //printf("geo: %d\n", (r_pos_t) (base + (lfn - 0.5) + hfn));
-  return (r_pos_t) (base + (lfn - 0.5) + hfn);
+  return (r_pos_t) fastfloor(base + (lfn - 0.5) + hfn);
 }

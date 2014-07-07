@@ -170,7 +170,7 @@ void start_game(
           load_surroundings(&last_rcpos);
           tick_load_chunks();
         }
-        nap(1);
+        nap(10);
       }
       DATA_DONE = 1;
     } else {

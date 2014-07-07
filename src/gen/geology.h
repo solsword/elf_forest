@@ -181,12 +181,12 @@ static inline void stratum_hf_distortion(
   float *dx, float *dy
 ) {
   float scale = GN_FINE_DISTORTION_SCALE * st->scale_bias;
-  *dx += st->fine_distortion * managed_sxnoise_2d(
+  *dx = st->fine_distortion * managed_sxnoise_2d(
     x, y,
     scale, scale,
     7.2 * st->seed
   );
-  *dy += st->fine_distortion * managed_sxnoise_2d(
+  *dy = st->fine_distortion * managed_sxnoise_2d(
     x, y,
     scale, scale,
     2.7 * st->seed
@@ -226,7 +226,6 @@ static inline void stratum_hf_noise(
     scale, scale,
     st->seed*48.1
   );
-  /*
   scale = GN_TINY_VAR_SCALE * st->scale_bias;
   *noise += st->tiny_var * managed_sxnoise_2d(
     x, y,
@@ -246,7 +245,6 @@ static inline void stratum_hf_noise(
     st->seed*41.8
   );
   *noise *= (1 - st->smoothing);
-  */
 }
 
 /******************************

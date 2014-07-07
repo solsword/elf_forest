@@ -83,7 +83,6 @@ void generate_geology(world_map *wm) {
   int i;
   world_map_pos xy;
   region_pos rpos;
-  size_t stc;
   r_pos_t t;
   stratum *s;
 
@@ -122,9 +121,8 @@ void generate_geology(world_map *wm) {
           //TODO: Real logging/debugging
           //printf("Adding stratum to region at %zu, %zu.\n", xy.x, xy.y);
           wr = get_world_region(wm, &xy); // no need to worry about NULL here
-          stc = wr->geology.stratum_count;
-          if (stc < MAX_STRATA_LAYERS) {
-            wr->geology.strata[stc] = s;
+          if (wr->geology.stratum_count < MAX_STRATA_LAYERS) {
+            wr->geology.strata[wr->geology.stratum_count] = s;
             wr->geology.stratum_count += 1;
           } else {
             printf(
@@ -149,15 +147,86 @@ void strata_cell(
   int i;
   r_pos_t h;
   stratum *st;
+  region_pos trp;
+  copy_rpos(rpos, &trp);
+  trp.z = 0;
 
   if (pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
     // No need to recompute the strata column if we're at the same x/y.
     // Compute strata heights from the bottom up:
     for (i = 0; i < wr->geology.stratum_count; ++i) {
       st = wr->geology.strata[i];
-      heights[i] = compute_stratum_height(st, rpos);
+      heights[i] = compute_stratum_height(st, &trp);
     }
   }
+
+  // DEBUG:
+  /*
+  if (rpos->x == 3 && rpos->y == 3) {
+    printf("rpos: %ld, %ld, %ld\n", rpos->x, rpos->y, rpos->z);
+    printf("stratum: %ld\n", THE_WORLD->regions[0].geology.strata[4]);
+    printf(
+      "heights: %ld : %ld : %ld : %ld : %ld : %ld\n",
+      heights[0],
+      heights[1],
+      heights[2],
+      heights[3],
+      heights[4],
+      heights[5]
+    );
+    printf(
+      "pointers: %ld : %ld : %ld : %ld : %ld : %ld\n",
+      wr->geology.strata[0],
+      wr->geology.strata[1],
+      wr->geology.strata[2],
+      wr->geology.strata[3],
+      wr->geology.strata[4],
+      wr->geology.strata[5]
+    );
+    printf(
+      "seeds: %ld : %ld : %ld : %ld : %ld : %ld\n",
+      wr->geology.strata[0]->seed,
+      wr->geology.strata[1]->seed,
+      wr->geology.strata[2]->seed,
+      wr->geology.strata[3]->seed,
+      wr->geology.strata[4]->seed,
+      wr->geology.strata[5]->seed
+    );
+    printf(
+      "cx/cy: %.2f/%.2f : %.2f/%.2f : %.2f/%.2f : %.2f/%.2f : %.2f/%.2f : %.2f/%.2f\n",
+      wr->geology.strata[0]->cx, wr->geology.strata[0]->cy,
+      wr->geology.strata[1]->cx, wr->geology.strata[1]->cy,
+      wr->geology.strata[2]->cx, wr->geology.strata[2]->cy,
+      wr->geology.strata[3]->cx, wr->geology.strata[3]->cy,
+      wr->geology.strata[4]->cx, wr->geology.strata[4]->cy,
+      wr->geology.strata[5]->cx, wr->geology.strata[5]->cy
+    );
+    printf(
+      "size: %.2f : %.2f : %.2f : %.2f : %.2f : %.2f\n",
+      wr->geology.strata[0]->size,
+      wr->geology.strata[1]->size,
+      wr->geology.strata[2]->size,
+      wr->geology.strata[3]->size,
+      wr->geology.strata[4]->size,
+      wr->geology.strata[5]->size
+    );
+    printf(
+      "thickness: %.2f : %.2f : %.2f : %.2f : %.2f : %.2f\n",
+      wr->geology.strata[0]->thickness,
+      wr->geology.strata[1]->thickness,
+      wr->geology.strata[2]->thickness,
+      wr->geology.strata[3]->thickness,
+      wr->geology.strata[4]->thickness,
+      wr->geology.strata[5]->thickness
+    );
+    if (pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
+      printf("(recomputed)\n");
+      printf("(recomputed)\n");
+      printf("(recomputed)\n");
+    }
+  }
+  // */
+
   // Figure out elevations from the bottom up:
   h = 0;
   for (i = 0; i < wr->geology.stratum_count; ++i) {
@@ -165,7 +234,12 @@ void strata_cell(
     //printf("Thickness: %d\n", sd[i].thickness);
     h += heights[i];
     if (h > rpos->z) { // might not happen at all
-      result->primary = b_make_block(B_STONE);
+      //result->primary = b_make_block(B_STONE);
+      // DEBUG:
+      result->primary = b_make_block(B_DIRT);
+      if (h == rpos->z + 1) {
+        result->secondary = b_make_block(B_GRASS_ROOTS);
+      }
       // TODO: A real material computation:
       /*
       result->primary = stratum_material(
@@ -177,6 +251,9 @@ void strata_cell(
       // TODO: block data
       // TODO: caching and/or batch processing?
       break;
+    // DEBUG:
+    } else if (h == rpos->z) {
+      result->primary = b_make_block(B_GRASS);
     }
   }
   // Keep track of our previous position:
