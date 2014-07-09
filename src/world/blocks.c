@@ -41,9 +41,9 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
     0x00000008,       0x00000008,       0x00000008,       0x00000008, // 0x02f
 //  DIRT:             MUD:              CLAY:             SAND:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  GRAVEL:           SCREE:            STONE:            METAL_ORE:
+//  GRAVEL:           SCREE:            STONE:            NATIVE_METAL:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  NATIVE_METAL:     ____:             ____:             ____:
+//  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x03f
@@ -71,8 +71,8 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x06f
-//  SMOOTHED_ROCK:    HEWN_ROCK_STEPS:  SM_ROCK_STEPS:    HEWN_ROCK_GRATE:
-    0x00000000,       0x00000270,       0x00000270,       0x000002b2,
+//  SMOOTHED_ROCK:    HEWN_ROCK_GRATE:  ____:             ____:
+    0x00000000,       0x000002b2,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
@@ -290,8 +290,8 @@ char const * const BLOCK_NAMES[TOTAL_BLOCK_TYPES] = {
 "____"             ,"____"             ,"____"             ,"____"             ,
 // 0x02f                                                   
 "dirt"             ,"mud"              ,"clay"             ,"sand"             ,
-"gravel"           ,"scree"            ,"stone"            ,"metal_ore"        ,
-"native_metal"     ,"____"             ,"____"             ,"____"             ,
+"gravel"           ,"scree"            ,"stone"            ,"native_metal"     ,
+"____"             ,"____"             ,"____"             ,"____"             ,
 "____"             ,"____"             ,"____"             ,"____"             ,
 // 0x03f                                                   
 "mushroom"         ,"mushroom_stalk"   ,"mushroom_cap"     ,"moss"             ,
@@ -309,7 +309,7 @@ char const * const BLOCK_NAMES[TOTAL_BLOCK_TYPES] = {
 "____"             ,"____"             ,"____"             ,"____"             ,
 "____"             ,"____"             ,"____"             ,"____"             ,
 // 0x06f                                                   
-"smoothed_rock"    ,"hewn_rock_steps"  ,"sm_rock_steps"    ,"hewn_rock_grate"  ,
+"smoothed_rock"    ,"hewn_rock_grate"  ,"____"             ,"____"             ,
 "____"             ,"____"             ,"____"             ,"____"             ,
 "____"             ,"____"             ,"____"             ,"____"             ,
 "____"             ,"____"             ,"____"             ,"____"             ,

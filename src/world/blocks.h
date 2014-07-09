@@ -152,7 +152,7 @@ static block_info const        BI_GEOM_GRASS = 0x03;
 static block_info const         BI_GEOM_HERB = 0x04;
 static block_info const         BI_GEOM_VINE = 0x05;
 static block_info const         BI_GEOM_ROOT = 0x06;
-static block_info const       BI_GEOM_STAIRS = 0x07;
+static block_info const         BI_GEOM_RAMP = 0x07;
 static block_info const        BI_GEOM_FENCE = 0x08;
 static block_info const         BI_GEOM_BEAM = 0x09;
 static block_info const         BI_GEOM_DOOR = 0x0a;
@@ -313,8 +313,7 @@ static block const ROTATE_FACE[8][8] = {
 #define                  B_GRAVEL 0x034
 #define                   B_SCREE 0x035
 #define                   B_STONE 0x036
-#define               B_METAL_ORE 0x037
-#define            B_NATIVE_METAL 0x038
+#define            B_NATIVE_METAL 0x037
 
 // Plant blocks:
 #define                B_MUSHROOM 0x040
@@ -361,9 +360,7 @@ static block const ROTATE_FACE[8][8] = {
 
 // Hewn Blocks:
 #define           B_SMOOTHED_ROCK 0x070
-#define         B_HEWN_ROCK_STEPS 0x071
-#define     B_SMOOTHED_ROCK_STEPS 0x072
-#define         B_HEWN_ROCK_GRATE 0x073
+#define         B_HEWN_ROCK_GRATE 0x071
 
 // Construction Materials:
 #define                    B_BALE 0x080
