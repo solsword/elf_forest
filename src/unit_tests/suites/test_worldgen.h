@@ -45,6 +45,7 @@ size_t test_load_chunk(void) {
   region_chunk_pos rcpos = { .x = 5, .y = 5, .z = 5 };
   mark_for_loading(&rcpos, LOD_BASE);
   tick_load_chunks();
+  return 0;
 }
 
 size_t test_load_stacked_chunks(void) {
@@ -53,6 +54,7 @@ size_t test_load_stacked_chunks(void) {
   rcpos.z += 1;
   mark_for_loading(&rcpos, LOD_BASE);
   tick_load_chunks();
+  return 0;
 }
 
 size_t test_job_gencolumn(void) {

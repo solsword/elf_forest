@@ -112,11 +112,11 @@ struct stratum_s {
   float vein_strength[N_VEIN_TYPES]; // thickness and frequency of veins (0-1)
   float inclusion_frequency[N_INCLUSION_TYPES]; // frequency of inclusions (0-1)
 
- // Derived material type information:
+ // Derived species information:
  // ----------------------------------
-  material base_material; // exact material type for main mass
-  material vein_material[N_VEIN_TYPES]; // types for veins
-  material inclusion_material[N_INCLUSION_TYPES]; // types for inclusions
+  species base_material; // exact material type for main mass
+  species vein_material[N_VEIN_TYPES]; // types for veins
+  species inclusion_material[N_INCLUSION_TYPES]; // types for inclusions
 
  // Dynamic factors are erosion and pressure which influence compression and
  // metamorphosis.

@@ -11,7 +11,7 @@
 #ifndef TEST_TXGEN_H
 #define TEST_TXGEN_H
 
-#include "gen/txgen.h"
+#include "txgen/txgen.h"
 #include "tex/tex.h"
 
 #include "unit_tests/test_suite.h"

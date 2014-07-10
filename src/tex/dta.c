@@ -9,7 +9,7 @@
 
 #include "tex.h"
 
-#include "gen/txgen.h"
+#include "txgen/txgen.h"
 
 #include "datatypes/bitmap.h"
 #include "datatypes/map.h"

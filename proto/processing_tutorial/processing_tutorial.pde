@@ -10,13 +10,16 @@ PImage biome_colors;
 
 HashMap<Integer,Boolean> KEYS = new HashMap<Integer,Boolean>();
 
-float BLOCK_SIZE = 4;
+float BLOCK_SIZE = 1;
 
 int COMPASS_X = 24;
 int COMPASS_Y = 24;
 int COMPASS_SIZE = 32;
 
-float ZOOM = 1;
+int PLAYER_SIZE = 24;
+int JUMP = 0;
+
+float ZOOM = 6;
 float ZOOM_FACTOR = 1.7;
 float SEA_LEVEL = 0.5;
 float SHORELINE = 0.005;
@@ -35,8 +38,16 @@ float LIGHT_AMP = 1.5;
 
 float[] PLAYER_POS = { 0, 0, 0 };
 float PLAYER_ANGLE = -PI/2.0;
-float MOVE_SPEED = 20;
-float TURN_SPEED = PI/128.0;
+float MIN_SPEED = 0;
+float MAX_SPEED = 25;
+float MOVE_SPEED = MIN_SPEED;
+float STRAFE = 0.7;
+float TURN_SPEED = PI/64.0;
+
+float[] GOAL_POS = { 0, 0, 0 };
+float GOAL_SIZE = 100;
+float GOAL_AREA = 10000;
+int SCORE = 0;
 
 float pnoise(float x, float y) {
   float[] xy = new float[2];
@@ -128,7 +139,7 @@ float shade(float x, float y, float z, float dx, float dy) {
 
 void setup() {
   colorMode(HSB, 1.0, 1.0, 1.0);
-  size(640, 480);
+  size(800, 600);
   noStroke();
   biome_colors = loadImage("biomes.png");
 }
@@ -138,16 +149,23 @@ void draw() {
   int x, y;
   int relx, rely;
   int mapx, mapy;
+  boolean underwater = false;
   float temp;
   float humid;
   float elev;
   float sea_depth;
   int imgx, imgy;
   float dx, dy;
+  float gradient;
+  float downhill;
   float light;
   float max_elev = MOUNTAINS + HILLS + RIDGES + BUMPS;
+  float goal_angle;
+  float[] goal_vector = new float[2];
+  float goal_distance;
   color sea_color;
   color land_color;
+  noStroke();
   for (x = 0; x < width; x += BLOCK_SIZE) {
     for (y = 0; y < height; y += BLOCK_SIZE) {
       /*
@@ -175,6 +193,7 @@ void draw() {
       sea_depth = ((elev/max_elev)/SEA_LEVEL);
       sea_color = color(
         0.50 + 0.3 * (1 - sea_depth*sea_depth),
+        //0.50 + 0.3 * (1 - sea_depth),
         0.8,
         0.3 + 0.5 * sea_depth
       );
@@ -198,6 +217,7 @@ void draw() {
             (elev/max_elev - (SEA_LEVEL - SHORELINE)) / SHORELINE
           )
         );
+      
       } else if (elev/max_elev < SEA_LEVEL) {
         fill(sea_color);
       } else {
@@ -206,6 +226,67 @@ void draw() {
       rect(x, y, BLOCK_SIZE, BLOCK_SIZE);
     }
   }
+  // player-position variables:
+  mapx = floor(PLAYER_POS[0]/ZOOM);
+  mapy = floor(PLAYER_POS[1]/ZOOM);
+  elev = elevation(mapx*ZOOM, mapy*ZOOM);
+  if (elev/max_elev < SEA_LEVEL) {
+    underwater = true;
+  }
+  dx = elev - elevation((mapx+1)*ZOOM, mapy*ZOOM);
+  dy = elev - elevation(mapx*ZOOM, (mapy+1)*ZOOM);
+  gradient = atan2(dy, dx) + PI;
+  downhill = cos(gradient)*cos(PLAYER_ANGLE) + sin(gradient)*sin(PLAYER_ANGLE);
+  goal_angle = atan2(GOAL_POS[1] - PLAYER_POS[1], GOAL_POS[0] - PLAYER_POS[0]);
+  goal_angle -= PLAYER_ANGLE;
+  goal_vector[0] = GOAL_POS[0] - PLAYER_POS[0]; // map space
+  goal_vector[1] = GOAL_POS[1] - PLAYER_POS[1];
+  goal_distance = sqrt(
+    goal_vector[0]*goal_vector[0] +
+    goal_vector[1]*goal_vector[1]
+  );
+  goal_vector[0] = goal_distance/ZOOM * cos(-goal_angle+PI/2); // screen space
+  goal_vector[1] = goal_distance/ZOOM * sin(-goal_angle+PI/2); // screen space
+  // drag:
+  if (JUMP > 0) {
+    JUMP -= 1;
+  } else if (!underwater) {
+    MOVE_SPEED *= (0.97 + 0.05*downhill);
+  } else {
+    MOVE_SPEED *= 0.95;
+  }
+  // Draw a line to the goal:
+  stroke(0.16, 0.5, 1);
+  line(
+    width/2,
+    height/2,
+    width/2 + goal_vector[0],
+    height/2 + goal_vector[1]
+  );
+  noFill();
+  ellipse(
+    width/2 + goal_vector[0],
+    height/2 + goal_vector[1],
+    GOAL_SIZE/ZOOM,
+    GOAL_SIZE/ZOOM
+  );
+  // Goal touching:
+  if (goal_distance < GOAL_SIZE) {
+    SCORE += 10;
+    GOAL_POS[0] = random(-GOAL_AREA, GOAL_AREA);
+    GOAL_POS[1] = random(-GOAL_AREA, GOAL_AREA);
+  }
+  // And draw a circle at the goal:
+  // Draw the player:
+  fill(0, 0, 0.15);
+  noStroke();
+  // shadow:
+  if (JUMP > 0) {
+    ellipse(width/2, height/2+(JUMP/ZOOM), PLAYER_SIZE/ZOOM, PLAYER_SIZE/ZOOM);
+  }
+  stroke(0, 0, 0.85);
+  fill(0, 0, 1);
+  ellipse(width/2, height/2, PLAYER_SIZE/ZOOM, PLAYER_SIZE/ZOOM);
   // Draw a compass:
   stroke(0, 0, 0.3);
   fill(0, 0, 0.45);
@@ -217,22 +298,45 @@ void draw() {
     width - COMPASS_X + (COMPASS_SIZE/2-3)*cos(PLAYER_ANGLE),
     height - COMPASS_Y + (COMPASS_SIZE/2-3)*sin(PLAYER_ANGLE)
   );
-  noStroke();
   // continuous input:
   if (KEYS.get((int) 'w') != null && KEYS.get((int) 'w')) {
-    PLAYER_POS[0] -= cos(PLAYER_ANGLE)*MOVE_SPEED;
-    PLAYER_POS[1] -= sin(PLAYER_ANGLE)*MOVE_SPEED;
+    MOVE_SPEED += 1;
   }
   if (KEYS.get((int) 's') != null && KEYS.get((int) 's')) {
-    PLAYER_POS[0] += cos(PLAYER_ANGLE)*MOVE_SPEED;
-    PLAYER_POS[1] += sin(PLAYER_ANGLE)*MOVE_SPEED;
+    //MOVE_SPEED *= 0.9;
+    MOVE_SPEED = MIN_SPEED;
   }
   if (KEYS.get((int) 'a') != null && KEYS.get((int) 'a')) {
-    PLAYER_ANGLE += TURN_SPEED;
+    PLAYER_POS[0] += cos(PLAYER_ANGLE - PI/2.0)*MOVE_SPEED*STRAFE;
+    PLAYER_POS[1] += sin(PLAYER_ANGLE - PI/2.0)*MOVE_SPEED*STRAFE;
   }
   if (KEYS.get((int) 'd') != null && KEYS.get((int) 'd')) {
+    PLAYER_POS[0] += cos(PLAYER_ANGLE + PI/2.0)*MOVE_SPEED*STRAFE;
+    PLAYER_POS[1] += sin(PLAYER_ANGLE + PI/2.0)*MOVE_SPEED*STRAFE;
+  }
+  if (KEYS.get((int) LEFT) != null && KEYS.get((int) LEFT)) {
+    PLAYER_ANGLE += TURN_SPEED;
+  }
+  if (KEYS.get((int) RIGHT) != null && KEYS.get((int) RIGHT)) {
     PLAYER_ANGLE -= TURN_SPEED;
   }
+  if (KEYS.get((int) ' ') != null && KEYS.get((int) ' ')) {
+    if (JUMP == 0 && !underwater) {
+      JUMP = 16 + floor(4*downhill);
+      MOVE_SPEED += 12;
+    }
+  }
+  // constant acceleration:
+  PLAYER_POS[0] -= cos(PLAYER_ANGLE)*MOVE_SPEED;
+  PLAYER_POS[1] -= sin(PLAYER_ANGLE)*MOVE_SPEED;
+  if (MOVE_SPEED < MAX_SPEED) {
+    MOVE_SPEED += 1;
+  }
+  // display the score:
+  textSize(16);
+  stroke(0, 0, 1);
+  fill(0, 0, 0);
+  text("Score: " + SCORE, 10, 24);
 }
 
 void keyPressed() {
@@ -243,9 +347,17 @@ void keyPressed() {
   } else if (key == 'k') {
     ZOOM /= ZOOM_FACTOR;
   }
-  KEYS.put((int) key, true);
+  if (key == CODED) {
+    KEYS.put((int) keyCode, true);
+  } else {
+    KEYS.put((int) key, true);
+  }
 }
 
 void keyReleased() {
-  KEYS.put((int) key, false);
+  if (key == CODED) {
+    KEYS.put((int) keyCode, false);
+  } else {
+    KEYS.put((int) key, false);
+  }
 }

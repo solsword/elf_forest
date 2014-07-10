@@ -11,7 +11,7 @@
 #ifndef TEST_PLANTS_H
 #define TEST_PLANTS_H
 
-#include "gen/plants.h"
+#include "txgen/plants.h"
 #include "tex/tex.h"
 
 #include "unit_tests/test_suite.h"

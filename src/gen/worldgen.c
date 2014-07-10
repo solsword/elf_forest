@@ -274,6 +274,7 @@ struct jm_gencolumn_s {
   chunk *current_chunk;
   region_pos origin;
   region_pos current_cell;
+  chunk_index current_index;
   r_pos_t stratum_heights[CHUNK_SIZE*CHUNK_SIZE*MAX_STRATA_LAYERS];
     // this is roughly 256k at 4 bytes per r_pos_t
   stratum* strata[CHUNK_SIZE*CHUNK_SIZE];
@@ -296,6 +297,7 @@ void launch_job_gencolumn(world_map *world, region_chunk_pos *target_chunk) {
   mem->current_cell.x = 0;
   mem->current_cell.y = 0;
   mem->current_cell.z = 0;
+  rpos__cidx(&(mem->current_cell), &(mem->current_index));
   rcpos__rpos(&(mem->target_chunk), &(mem->origin));
   start_job(&job_gencolumn, mem, NULL);
 }
@@ -314,6 +316,7 @@ void (*job_gencolumn(void *jmem)) () {
   mem->target_chunk.z = 0;
   // Start at the very beginning of the target chunk:
   rcpos__rpos(&(mem->target_chunk), &(mem->current_cell));
+  rpos__cidx(&(mem->current_cell), &(mem->current_index));
   return (void (*) ()) &job_gencolumn__init_column;
 }
 
@@ -326,30 +329,30 @@ void (*job_gencolumn__init_column(void *jmem)) () {
     st = mem->current_region->geology.strata[i];
     if (st != NULL) {
       mem->stratum_heights[
-        mem->current_cell.x +
-        mem->current_cell.y*CHUNK_SIZE +
+        mem->current_index.x +
+        mem->current_index.y*CHUNK_SIZE +
         i*CHUNK_SIZE*CHUNK_SIZE
       ] = compute_stratum_height(st, &(mem->current_cell));
     } else {
       mem->stratum_heights[
-        mem->current_cell.x +
-        mem->current_cell.y*CHUNK_SIZE +
+        mem->current_index.x +
+        mem->current_index.y*CHUNK_SIZE +
         i*CHUNK_SIZE*CHUNK_SIZE
       ] = 0;
     }
   }
   // Set up our iteration variables:
   mem->strata[
-    mem->current_cell.x +
-    mem->current_cell.y*CHUNK_SIZE
+    mem->current_index.x +
+    mem->current_index.y*CHUNK_SIZE
   ] = mem->current_region->geology.strata[0];
-  mem->hindices[mem->current_cell.x + mem->current_cell.y*CHUNK_SIZE] = 0;
+  mem->hindices[mem->current_index.x + mem->current_index.y*CHUNK_SIZE] = 0;
   mem->hsofar[
-    mem->current_cell.x +
-    mem->current_cell.y*CHUNK_SIZE
+    mem->current_index.x +
+    mem->current_index.y*CHUNK_SIZE
   ] = mem->stratum_heights[
-        mem->current_cell.x +
-        mem->current_cell.y*CHUNK_SIZE +
+        mem->current_index.x +
+        mem->current_index.y*CHUNK_SIZE +
         0
       ];
   // Check whether to compute a new column or continue to the column fill

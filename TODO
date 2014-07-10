@@ -49,6 +49,7 @@ bugs/testing
   test for bugs near the region origin
   double-stepping when traversing a corner precisely
   add arbitrary vertex buffer lists
+  gencolumn job is buggy (run valgrind --track-origins=yes)
 misc
   coppicing
   Cistercian monks
