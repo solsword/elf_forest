@@ -1,6 +1,6 @@
 #undef TEST_SUITE_NAME
 #undef TEST_SUITE_TESTS
-#define TEST_SUITE_NAME plants
+#define TEST_SUITE_NAME txg_plants
 #define TEST_SUITE_TESTS { \
     &test_plants_branch_filter, \
     &test_plants_leaves_filter, \
@@ -8,10 +8,10 @@
     NULL, \
   }
 
-#ifndef TEST_PLANTS_H
-#define TEST_PLANTS_H
+#ifndef TEST_TXG_PLANTS_H
+#define TEST_TXG_PLANTS_H
 
-#include "txgen/plants.h"
+#include "txgen/txg_plants.h"
 #include "tex/tex.h"
 
 #include "unit_tests/test_suite.h"
@@ -139,4 +139,4 @@ size_t test_plants_bulb_leaves(void) {
   return 0;
 }
 
-#endif //ifndef TEST_PLANTS_H
+#endif //ifndef TEST_TXG_PLANTS_H

@@ -1,5 +1,5 @@
-// plants.c
-// Plant generation.
+// txg_plants.c
+// Plant texture generation.
 
 #include "world/blocks.h"
 #include "world/world.h"
@@ -10,7 +10,7 @@
 
 #include "txgen.h"
 
-#include "plants.h"
+#include "txg_plants.h"
 
 /*************
  * Constants *

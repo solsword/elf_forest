@@ -1,8 +1,8 @@
-#ifndef PLANTS_H
-#define PLANTS_H
+#ifndef TXG_PLANTS_H
+#define TXG_PLANTS_H
 
-// plants.h
-// Plant generation.
+// txg_plants.h
+// Plant texture generation.
 
 #include "world/blocks.h"
 #include "world/world.h"
@@ -174,4 +174,4 @@ void fltr_leaves(texture *tx, void const * const fargs);
 // Generates a block leaves texture by drawing leaves sprouting from the bottom.
 void fltr_bulb_leaves(texture *tx, void const * const fargs);
 
-#endif // ifndef PLANTS_H
+#endif // ifndef TXG_PLANTS_H
