@@ -60,6 +60,8 @@ DEFINE_IMPORTED_BUILDER
 DEFINE_IMPORTED_BUILDER
 #include "suites/test_txg_plants.h"
 DEFINE_IMPORTED_BUILDER
+#include "suites/test_txg_minerals.h"
+DEFINE_IMPORTED_BUILDER
 #include "suites/test_worldgen.h"
 DEFINE_IMPORTED_BUILDER
 
@@ -84,6 +86,9 @@ void setup_unit_tests(void) {
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
   #include "suites/test_txg_plants.h"
+  ts = INVOKE_IMPORTED_BUILDER;
+  l_append_element(ALL_TEST_SUITES, ts);
+  #include "suites/test_txg_minerals.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
   #include "suites/test_worldgen.h"

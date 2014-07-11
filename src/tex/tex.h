@@ -52,6 +52,10 @@ typedef struct tcoords_s tcoords;
 // An empty (completely transparent) pixel value:
 #define PX_EMPTY 0x00000000
 
+// How much to change base values when creating a highlight or shadow color:
+#define PASTEL_MIX 0x16
+#define SHADE_MIX 0x16
+
 /********************
  * Global variables *
  ********************/
@@ -95,9 +99,9 @@ static inline channel px_alpha(pixel p) {
 }
 
 static inline float px_chroma(pixel p) {
-  float r = px_red(p) / CHANNEL_MAX;
-  float g = px_green(p) / CHANNEL_MAX;
-  float b = px_blue(p) / CHANNEL_MAX;
+  float r = px_red(p) / (float) CHANNEL_MAX;
+  float g = px_green(p) / (float) CHANNEL_MAX;
+  float b = px_blue(p) / (float) CHANNEL_MAX;
   float max = 0, min = CHANNEL_MAX;
   if (r > max) { max = r; }
   if (g > max) { max = g; }
@@ -109,9 +113,9 @@ static inline float px_chroma(pixel p) {
 }
 
 static inline float px_hue(pixel p) {
-  float r = px_red(p) / CHANNEL_MAX;
-  float g = px_green(p) / CHANNEL_MAX;
-  float b = px_blue(p) / CHANNEL_MAX;
+  float r = px_red(p) / (float) CHANNEL_MAX;
+  float g = px_green(p) / (float) CHANNEL_MAX;
+  float b = px_blue(p) / (float) CHANNEL_MAX;
   float max = 0, min = CHANNEL_MAX;
   float chroma = 0;
   if (r > max) { max = r; }
@@ -132,17 +136,30 @@ static inline float px_hue(pixel p) {
   }
 }
 
-static inline float px_intensity(pixel p) {
-  float r = px_red(p) / CHANNEL_MAX;
-  float g = px_green(p) / CHANNEL_MAX;
-  float b = px_blue(p) / CHANNEL_MAX;
-  return (r + g + b) / 3.0;
+static inline float px_saturation(pixel p) {
+  float r = px_red(p) / (float) CHANNEL_MAX;
+  float g = px_green(p) / (float) CHANNEL_MAX;
+  float b = px_blue(p) / (float) CHANNEL_MAX;
+  float max = 0, min = CHANNEL_MAX;
+  float chroma = 0;
+  if (r > max) { max = r; }
+  if (g > max) { max = g; }
+  if (b > max) { max = b; }
+  if (r < min) { min = r; }
+  if (g < min) { min = g; }
+  if (b < min) { min = b; }
+  chroma = max - min;
+  if (max != 0) {
+    return chroma / max;
+  } else {
+    return 0;
+  }
 }
 
 static inline float px_value(pixel p) {
-  float r = px_red(p) / CHANNEL_MAX;
-  float g = px_green(p) / CHANNEL_MAX;
-  float b = px_blue(p) / CHANNEL_MAX;
+  float r = px_red(p) / (float) CHANNEL_MAX;
+  float g = px_green(p) / (float) CHANNEL_MAX;
+  float b = px_blue(p) / (float) CHANNEL_MAX;
   if (r >= g && r >= b) {
     return r;
   } else if (g >= b) {
@@ -152,10 +169,17 @@ static inline float px_value(pixel p) {
   }
 }
 
+static inline float px_intensity(pixel p) {
+  float r = px_red(p) / (float) CHANNEL_MAX;
+  float g = px_green(p) / (float) CHANNEL_MAX;
+  float b = px_blue(p) / (float) CHANNEL_MAX;
+  return (r + g + b) / 3.0;
+}
+
 static inline float px_lightness(pixel p) {
-  float r = px_red(p) / CHANNEL_MAX;
-  float g = px_green(p) / CHANNEL_MAX;
-  float b = px_blue(p) / CHANNEL_MAX;
+  float r = px_red(p) / (float) CHANNEL_MAX;
+  float g = px_green(p) / (float) CHANNEL_MAX;
+  float b = px_blue(p) / (float) CHANNEL_MAX;
   float max = 0, min = CHANNEL_MAX;
   if (r > max) { max = r; }
   if (g > max) { max = g; }
@@ -167,9 +191,9 @@ static inline float px_lightness(pixel p) {
 }
 
 static inline float px_luma(pixel p) {
-  float r = px_red(p) / CHANNEL_MAX;
-  float g = px_green(p) / CHANNEL_MAX;
-  float b = px_blue(p) / CHANNEL_MAX;
+  float r = px_red(p) / (float) CHANNEL_MAX;
+  float g = px_green(p) / (float) CHANNEL_MAX;
+  float b = px_blue(p) / (float) CHANNEL_MAX;
   return 0.30 * r + 0.59 * g + 0.11 * b;
 }
 
@@ -199,6 +223,161 @@ static inline void px_set_gray(pixel *p, channel gray) {
   *p |= ((pixel) gray) << RED_SHIFT;
   *p |= ((pixel) gray) << GREEN_SHIFT;
   *p |= ((pixel) gray) << BLUE_SHIFT;
+}
+
+
+// Takes an RGBA pixel and returns an HSVA pixel, using the red, green, and
+// blue channels for hue, saturation, and value respectively:
+static inline pixel rgb__hsv(pixel p) {
+  float r = px_red(p) / (float) CHANNEL_MAX;
+  float g = px_green(p) / (float) CHANNEL_MAX;
+  float b = px_blue(p) / (float) CHANNEL_MAX;
+  float max = 0, min = CHANNEL_MAX;
+  float chroma = 0;
+  pixel result = 0xff000000;
+  if (r > max) { max = r; }
+  if (g > max) { max = g; }
+  if (b > max) { max = b; }
+  if (r < min) { min = r; }
+  if (g < min) { min = g; }
+  if (b < min) { min = b; }
+  chroma = max - min;
+
+  // blue <-> saturation (first 'cause of the shortcut when max == 0)
+  if (max == 0) {
+    printf("Max is 0!\n");
+    px_set_red(&result, 0);
+    px_set_blue(&result, 0);
+    px_set_green(&result, 0);
+    return result;
+  } else {
+    px_set_blue(&result, CHANNEL_MAX * (chroma / max));
+  }
+
+  // red <-> hue
+  if (max == r) {
+    px_set_red(
+      &result,
+      CHANNEL_MAX * (
+        (1/6.0) * (g - b) / chroma + (b > g ? 1 : 0)
+      )
+    );
+  } else if (max == g) {
+    px_set_red(
+      &result,
+      CHANNEL_MAX * (
+        (1/6.0) * (b - r) / chroma + (1/3.0)
+      )
+    );
+  } else if (max == b) {
+    px_set_red(
+      &result,
+      CHANNEL_MAX * (
+        (1/6.0) * (r - g) / chroma + (2/3.0)
+      )
+    );
+  } else {
+    px_set_red(
+      &result,
+      CHANNEL_MAX * (
+        0
+      )
+    );
+  }
+
+  // green <-> value
+  if (r >= g && r >= b) {
+    px_set_green(&result, CHANNEL_MAX * r);
+  } else if (g >= b) {
+    px_set_green(&result, CHANNEL_MAX * g);
+  } else {
+    px_set_green(&result, CHANNEL_MAX * b);
+  }
+  return result;
+}
+
+// Takes an HSVA pixel and returns an RGBA pixel:
+static inline pixel hsv__rgb(pixel p) {
+  pixel result = 0xff000000;
+  float h = px_red(p) / (float) CHANNEL_MAX;
+  float s = px_blue(p) / (float) CHANNEL_MAX;
+  float v = px_green(p) / (float) CHANNEL_MAX;
+  int sector = floor(h / (1/6.0)); // which sector of the color wheel?
+  float remainder = 6 * (h - (1/6.0)*sector); // [0, 1] position in sector
+  // The three possible channel values (along with v):
+  float c1 = v * (1 - s);
+  float c2 = v * (1 - s * remainder);
+  float c3 = v * (1 - s * (1 - remainder));
+
+  // shortcut for gray:
+  if (s == 0) {
+    px_set_red(&result, CHANNEL_MAX*v);
+    px_set_blue(&result, CHANNEL_MAX*v);
+    px_set_green(&result, CHANNEL_MAX*v);
+    return result;
+  }
+  switch (sector) {
+    case 0:
+      px_set_red(&result, CHANNEL_MAX * v);
+      px_set_green(&result, CHANNEL_MAX * c3);
+      px_set_blue(&result, CHANNEL_MAX * c1);
+      break;
+    case 1:
+      px_set_red(&result, CHANNEL_MAX * c2);
+      px_set_green(&result, CHANNEL_MAX * v);
+      px_set_blue(&result, CHANNEL_MAX * c1);
+      break;
+    case 2:
+      px_set_red(&result, CHANNEL_MAX * c1);
+      px_set_green(&result, CHANNEL_MAX * v);
+      px_set_blue(&result, CHANNEL_MAX * c3);
+      break;
+    case 3:
+      px_set_red(&result, CHANNEL_MAX * c1);
+      px_set_green(&result, CHANNEL_MAX * c2);
+      px_set_blue(&result, CHANNEL_MAX * v);
+      break;
+    case 4:
+      px_set_red(&result, CHANNEL_MAX * c3);
+      px_set_green(&result, CHANNEL_MAX * c1);
+      px_set_blue(&result, CHANNEL_MAX * v);
+      break;
+    case 5:
+    default:
+      px_set_red(&result, CHANNEL_MAX * v);
+      px_set_green(&result, CHANNEL_MAX * c1);
+      px_set_blue(&result, CHANNEL_MAX * c2);
+      break;
+  }
+  return result;
+}
+
+// Pastel and shade colors based on a base color:
+static inline pixel pastel_of(pixel p) {
+  pixel result = 0;
+  pixel r, g, b, a; // extra bit width to avoid overflow
+  r = px_red(p);
+  g = px_green(p);
+  b = px_blue(p);
+  a = px_alpha(p);
+  px_set_red(&result, r+PASTEL_MIX > CHANNEL_MAX ? CHANNEL_MAX : r+PASTEL_MIX);
+  px_set_green(&result, g+PASTEL_MIX > CHANNEL_MAX ? CHANNEL_MAX :g+PASTEL_MIX);
+  px_set_blue(&result, b+PASTEL_MIX > CHANNEL_MAX ? CHANNEL_MAX : b+PASTEL_MIX);
+  px_set_alpha(&result, a);
+  return result;
+}
+static inline pixel shade_of(pixel p) {
+  pixel result = 0;
+  pixel r, g, b, a; // extra bit width to avoid overflow
+  r = px_red(p);
+  g = px_green(p);
+  b = px_blue(p);
+  a = px_alpha(p);
+  px_set_red(&result, SHADE_MIX > r ? 0 : r - SHADE_MIX);
+  px_set_green(&result, SHADE_MIX > g ? 0 : g - SHADE_MIX);
+  px_set_blue(&result, SHADE_MIX > b ? 0 : b - SHADE_MIX);
+  px_set_alpha(&result, a);
+  return result;
 }
 
 // Pixel-level texture access:

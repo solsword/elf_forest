@@ -64,7 +64,8 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/data.o \
              $(OBJ_DIR)/trees.o \
              $(OBJ_DIR)/geology.o \
-             $(OBJ_DIR)/plants.o \
+             $(OBJ_DIR)/txg_plants.o \
+             $(OBJ_DIR)/txg_minerals.o \
              $(OBJ_DIR)/txgen.o \
              $(OBJ_DIR)/ptime.o \
              $(OBJ_DIR)/pmem.o \
