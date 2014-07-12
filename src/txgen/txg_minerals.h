@@ -17,15 +17,15 @@
  * Enums *
  *********/
 
-// TODO: These?
+// TODO: Any of these?
 // Stone types:
 /*
-enum stone_type_e {
-  ST_SIMPLE,
-  ST_TRIPARTITE,
-  ST_NEEDLES
+enum stone_color_e {
+  SC_DARK,
+  ST_NORMAL,
+  ST_BRIGHT
 };
-typedef enum stone_type_e stone_type;
+typedef enum stone_color_e stone_color;
 */
 
 /**************
@@ -42,15 +42,23 @@ typedef struct stone_filter_args_s stone_filter_args;
 struct stone_filter_args_s {
   size_t seed; // integer seed
   float scale; // base scale for noise (~0.125)
-  float bumpy; // how bumpy [0, 1]
-  float noisy; // how noisy [0, 1]
-  float veins; // vein strength [0, 1]
+
+  float gritty; // per-pixel noise [0, 1]
+  float contoured; // perlin noise [0, 1]
+  float porous; // rounded veins [0, 1]
+  float bumpy; // sharp veins/shadows [0, 1]
+
+  float inclusions; // threshold for alternate-color material
+
   float dscale; // scale of distortion noise (~0.125)
   float distortion; // amount of distortion ([0, 3] pixels)
   float squash;
   // how much to squash the result in x or y (>1 means squash x, <1 means
   // squash y; ~[0.6, 1.7])
+
   pixel base_color, alt_color; // Base and alternate colors
+  float brightness; // how much to brighten/darken the color [-1, 1]
+  // (practically, this should be within about [-0.2, 0.5])
 };
 
 /*************

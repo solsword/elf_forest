@@ -19,16 +19,22 @@
  *******************/
 
 stone_filter_args example_stone_args = {
-  .seed = 27,
-  .scale = 0.125,
-  .noisy = 0.1,
-  .bumpy = 1.0,
-  .veins = 0.3,
-  .dscale = 0.135,
-  .distortion = 0.3,
+  .seed = 31,
+  .scale = 0.095,
+
+  .gritty = 0.12,
+  .contoured = 0.8,
+  .porous = 0.3,
+  .bumpy = 0.5,
+
+  .inclusions = 0.2,
+
+  .dscale = 0.065,
+  .distortion = 1.3,
   .squash = 0.9,
-  .base_color = 0xff778877, // greenish-gray
-  .alt_color = 0xff778877, // greenish-gray
+  .base_color = 0xffccaa88, // blue-gray
+  .alt_color = 0xff778899, // orange-gray
+  .brightness = 0.0,
 };
 
 tx_grammar_literal example_stone_literal = FILTER_TX_LITERAL(

@@ -179,6 +179,35 @@ static inline pixel px_gradient_result(gradient_map *grmap, pixel in) {
   return gradient_result(grmap, px_luma(in));
 }
 
+// Tints the given pixel, darkening it if the given tint amount is less than 0
+// and brightening it otherwise. The tint value given should be in [-1, 1].
+static inline pixel px_tint(pixel p, float tint) {
+  pixel result, hsv;
+  rgb__hsv(p, &hsv);
+  float val = px_green(hsv) / (float) CHANNEL_MAX;
+  if (tint < 0) {
+    px_set_green(&hsv, CHANNEL_MAX * val * (1+tint));
+  } else {
+    px_set_green(&hsv, CHANNEL_MAX * (1 - (1 - val) * (1 - tint)));
+  }
+  hsv__rgb(hsv, &result);
+  return result;
+}
+
+// Relights the given pixel, lightening or darkening it by a set amount and
+// clamping the result if it would be out-of-range. The given brightness value
+// should be in [-1, 1];
+static inline pixel px_relight(pixel p, float brightness) {
+  pixel result, hsv;
+  rgb__hsv(p, &hsv);
+  float val = px_green(hsv) / (float) CHANNEL_MAX;
+  val += brightness;
+  if (val < 0) { val = 0; } else if (val > 1) { val = 1; }
+  px_set_green(&hsv, CHANNEL_MAX * val);
+  hsv__rgb(hsv, &result);
+  return result;
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/
