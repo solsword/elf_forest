@@ -4,6 +4,7 @@
 #include "noise/noise.h"
 #include "tex/tex.h"
 #include "tex/draw.h"
+#include "world/species.h"
 
 #include "txgen.h"
 
@@ -60,13 +61,16 @@ void fltr_stone(texture *tx, void const * const fargs) {
         )
       );
 
-      alternate = wrnoise_2d_fancy(
-        x * 1.4, y * 1.4 + 1000,
-        BLOCK_TEXTURE_SIZE * sfargs->scale * 1.4,
-        BLOCK_TEXTURE_SIZE * sfargs->scale * 1.4,
-        //WORLEY_FLAG_INCLUDE_NEXTBEST
-        0
-      ) * ((1 + sxnoise_2d(x*1.2, y*1.2 + 2000)) / 2.0);
+      alternate = wrnoise_2d(
+        x * 1.4, y * 1.4 + 1000
+      ) * (
+        (1 + sxnoise_2d(x*1.2, y*1.2 + 2000)) / 2.0
+      );
+      //alternate = ((1 + sxnoise_2d(x*1.2, y*1.2 + 2000)) / 2.0);
+      //alternate *= ((1 + sxnoise_2d(x*1.4, y*1.4 + 3000)) / 2.0);
+      //alternate = exp(alternate)/exp(1);
+      //alternate *= alternate;
+      alternate = sqrtf(alternate);
 
       // value construction:
       value = (
@@ -85,10 +89,13 @@ void fltr_stone(texture *tx, void const * const fargs) {
       hsv = base_hsv;
       px_set_blue(&hsv, px_blue(hsv) * saturation);
       px_set_green(&hsv, CHANNEL_MAX * value);
-      if (alternate > sfargs->inclusions) {
+      if (alternate > (1 - sfargs->inclusions)) {
         px_set_red(&hsv, px_red(alt_hsv));
         px_set_blue(&hsv, px_blue(alt_hsv));
         px_set_green(&hsv, CHANNEL_MAX * alternate);
+      } else if (alternate > (1 - (sfargs->inclusions + 0.05))) {
+        px_set_blue(&hsv, 0.5*px_blue(hsv));
+        px_set_green(&hsv, (px_green(hsv) + CHANNEL_MAX * alternate)/2.0);
       }
       hsv__rgb(hsv, &rgb);
       rgb = px_relight(rgb, sfargs->brightness);
@@ -96,4 +103,15 @@ void fltr_stone(texture *tx, void const * const fargs) {
       tx_set_px(tx, rgb, col, row);
     }
   }
+}
+
+/*************
+ * Functions *
+ *************/
+
+texture* gen_stone_texture(species s) {
+  stone_species* ssp = get_stone_species(s);
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_stone(result, &(ssp->appearance));
+  return result;
 }

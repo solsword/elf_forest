@@ -6,6 +6,8 @@
 
 #include "noise/noise.h"
 
+#include "tex/tex.h"
+
 /*************
  * Constants *
  *************/
@@ -61,17 +63,17 @@ struct stone_filter_args_s {
   // (practically, this should be within about [-0.2, 0.5])
 };
 
-/*************
- * Functions *
- *************/
-
-// TODO: Any of these?
-
 /********************
  * Filter Functions *
  ********************/
 
 // Generates stone textures.
 void fltr_stone(texture *tx, void const * const fargs);
+
+/*************
+ * Functions *
+ *************/
+
+texture* gen_stone_texture(species s);
 
 #endif // ifndef TXG_MINERALS_H

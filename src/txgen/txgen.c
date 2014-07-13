@@ -12,6 +12,8 @@
 #include "tex/tex.h"
 #include "world/blocks.h"
 
+#include "txg_plants.h"
+#include "txg_minerals.h"
 #include "txgen.h"
 
 /*************
@@ -184,11 +186,14 @@ void cleanup_expansion_site(tx_grammar_expansion_site *ges) {
  * Functions *
  *************/
 
-texture* get_block_texture(block b) {
+texture* gen_block_texture(block b) {
   char filename[1024];
   block id = b_id(b);
   texture *tx;
   switch (id) {
+    case B_STONE:
+      tx = gen_stone_texture(b_species(b));
+      break;
     /*
     case B_GRASS:
       // TODO: Fix me!

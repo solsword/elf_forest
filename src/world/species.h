@@ -3,6 +3,9 @@
 
 #include "datatypes/map.h"
 
+#include "txgen/txg_minerals.h"
+#include "txgen/txg_plants.h"
+
 #include "materials.h"
 
 // species.h
@@ -91,6 +94,7 @@ extern map *FIBER_SPECIES; // various sources; uniform use
  * Structure Definitions *
  *************************/
 
+/*
 struct dirt_species_s {
   material material;
   dirt_texture_params appearance;
@@ -100,12 +104,14 @@ struct clay_species_s {
   material material;
   clay_texture_params appearance;
 };
+*/
 
 struct stone_species_s {
   material material;
-  stone_texture_params appearance;
+  stone_filter_args appearance;
 };
 
+/*
 struct metal_species_s {
   material material;
   metal_texture_params appearance;
@@ -180,6 +186,7 @@ struct fiber_species_s {
   material material;
   fiber_texture_params appearance;
 };
+*/
 
 
 /********************
@@ -191,7 +198,8 @@ struct fiber_species_s {
  * Functions *
  *************/
 
-// TODO: More species types?
-// extern map *_SPECIES;
+void setup_species(void);
+
+stone_species* get_stone_species(species s);
 
 #endif // ifndef SPECIES_H

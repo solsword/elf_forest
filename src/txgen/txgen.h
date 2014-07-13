@@ -256,7 +256,7 @@ void cleanup_expansion_site(tx_grammar_expansion_site *ges);
  *************/
  
 // Looks up and loads/generates the texture for the given block/variant.
-texture* get_block_texture(block b);
+texture* gen_block_texture(block b);
 
 // Takes a grammar literal and runs it, recursively picking children and
 // running them before allocating and computing a result texture.

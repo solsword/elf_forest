@@ -12,6 +12,7 @@
 
 #include "world/world.h"
 #include "world/entities.h"
+#include "world/species.h"
 #include "control/ctl.h"
 #include "physics/physics.h"
 #include "prof/ptime.h"
@@ -79,6 +80,8 @@ void _get_everything_set_up(int argc, char** argv) {
   setup_data();
   printf("  ...entities...\n");
   setup_entities();
+  printf("  ...species...\n");
+  setup_species();
   printf("  ...world_map...\n");
   setup_worldgen();
 

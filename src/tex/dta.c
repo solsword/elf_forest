@@ -89,7 +89,7 @@ void ensure_mapped(block b) {
       BLOCK_NAMES[b_id(b)]
     );
     // */
-    tx = get_block_texture(b);
+    tx = gen_block_texture(b);
     if (tx) {
       printf("  ...done.\n");
       dta_add_block(dta, b, tx);
