@@ -48,39 +48,146 @@ stratum *create_stratum(
   result->profile = profile;
   result->source = source;
 
-  result->base_material = 0; // TODO: Pick a material here!
+  ptrdiff_t hash;
+  hash = hash_3d(seed, seed, seed);
 
-  // TODO: Derive/randomize parameters here!
-  result->scale_bias = 1.0;
-  result->infill = 0.0;
+  switch (source) {
+    case GEO_IGNEOUS:
+      result->base_species = create_new_igneous_species(seed);
 
-  result->radial_frequency = M_PI/3.2;
-  result->radial_variance = 0.4;
+      result->scale_bias = 0.7 + 0.4 * float_hash_1d(hash);
+      hash = hash_1d(hash);
 
-  result->gross_distortion = 1010.0;
-  result->fine_distortion = 108.0;
+      result->radial_frequency = M_PI/(2.4 + 1.6*float_hash_1d(hash));
+      hash = hash_1d(hash);
+      result->radial_variance = 0.1 + 0.3*float_hash_1d(hash);
+      hash = hash_1d(hash);
 
-  result->large_var = result->thickness*0.7;
-  result->med_var = result->thickness*0.46;
-  result->small_var = result->thickness*0.19;
-  result->tiny_var = result->thickness*0.07;
+      result->gross_distortion = 900 + 500.0*float_hash_1d(hash);
+      hash = hash_1d(hash);
+      result->fine_distortion = 110 + 40.0*float_hash_1d(hash);
+      hash = hash_1d(hash);
 
-  result->detail_var = 1.2;
-  result->ridges = 2.5;
+      result->large_var = result->thickness * (0.5 + 0.3*float_hash_1d(hash));
+      hash = hash_1d(hash);
+      result->med_var = result->thickness * (0.3 + 0.2*float_hash_1d(hash));
+      hash = hash_1d(hash);
+      result->small_var = result->thickness * (0.17 + 0.05*float_hash_1d(hash));
+      hash = hash_1d(hash);
+      result->tiny_var = result->thickness * (0.04 + 0.06*float_hash_1d(hash));
+      hash = hash_1d(hash);
 
-  result->smoothing = 0.2;
+      result->detail_var = 1.0 + 2.0*float_hash_1d(hash);
+      hash = hash_1d(hash);
+      result->ridges = 2.0 + 3.0*float_hash_1d(hash);
+      hash = hash_1d(hash);
 
-  for (i = 0; i < N_VEIN_TYPES; ++i) {
-    result->vein_scale[i] = 0; // 23.4;
-    result->vein_strength[i] = 0; // 0.5;
-    result->vein_material[i] = 0; // TODO: Pick a material here!
+      result->smoothing = 0.15 + 0.2*float_hash_1d(hash);
+      hash = hash_1d(hash);
+
+      for (i = 0; i < N_VEIN_TYPES; ++i) {
+        result->vein_scale[i] = 0; // 23.4;
+        result->vein_strength[i] = 0; // 0.5;
+        result->vein_species[i] = 0; // TODO: Pick a material here!
+      }
+
+      for (i = 0; i < N_INCLUSION_TYPES; ++i) {
+        result->inclusion_frequency[i] = 0; // 0.01;
+        result->inclusion_species[i] = 0; // TODO: Pick a material here!
+      }
+      break;
+
+    case GEO_METAMORPHIC:
+      result->base_species = create_new_metamorphic_species();
+
+      result->scale_bias = 0.9 + 0.4 * float_hash_1d(hash);
+      hash = hash_1d(hash);
+
+      result->radial_frequency = M_PI/(2.8 + 1.0*float_hash_1d(hash));
+      hash = hash_1d(hash);
+      result->radial_variance = 0.3 + 0.3*float_hash_1d(hash);
+      hash = hash_1d(hash);
+
+      result->gross_distortion = 1100 + 600.0*float_hash_1d(hash);
+      hash = hash_1d(hash);
+      result->fine_distortion = 150 + 50.0*float_hash_1d(hash);
+      hash = hash_1d(hash);
+
+      result->large_var = result->thickness * (0.4 + 0.2*float_hash_1d(hash));
+      hash = hash_1d(hash);
+      result->med_var = result->thickness * (0.2 + 0.2*float_hash_1d(hash));
+      hash = hash_1d(hash);
+      result->small_var = result->thickness * (0.14 + 0.04*float_hash_1d(hash));
+      hash = hash_1d(hash);
+      result->tiny_var = result->thickness * (0.03 + 0.04*float_hash_1d(hash));
+      hash = hash_1d(hash);
+
+      result->detail_var = 0.4 + 2.0*float_hash_1d(hash);
+      hash = hash_1d(hash);
+      result->ridges = 0.7 + 2.4*float_hash_1d(hash);
+      hash = hash_1d(hash);
+
+      result->smoothing = 0.2 + 0.25*float_hash_1d(hash);
+      hash = hash_1d(hash);
+
+      for (i = 0; i < N_VEIN_TYPES; ++i) {
+        result->vein_scale[i] = 0; // 23.4;
+        result->vein_strength[i] = 0; // 0.5;
+        result->vein_species[i] = 0; // TODO: Pick a material here!
+      }
+
+      for (i = 0; i < N_INCLUSION_TYPES; ++i) {
+        result->inclusion_frequency[i] = 0; // 0.01;
+        result->inclusion_species[i] = 0; // TODO: Pick a material here!
+      }
+      break;
+
+    case GEO_SEDIMENTAY:
+    default:
+      result->base_species = create_new_sedimentary_species();
+
+      result->scale_bias = 1.1 + 0.3 * float_hash_1d(hash);
+      hash = hash_1d(hash);
+
+      result->radial_frequency = M_PI/(2.1 + 1.2*float_hash_1d(hash));
+      hash = hash_1d(hash);
+      result->radial_variance = 0.05 + 0.2*float_hash_1d(hash);
+      hash = hash_1d(hash);
+
+      result->gross_distortion = 700 + 400.0*float_hash_1d(hash);
+      hash = hash_1d(hash);
+      result->fine_distortion = 30 + 30.0*float_hash_1d(hash);
+      hash = hash_1d(hash);
+
+      result->large_var = result->thickness * (0.4 + 0.25*float_hash_1d(hash));
+      hash = hash_1d(hash);
+      result->med_var = result->thickness * (0.2 + 0.15*float_hash_1d(hash));
+      hash = hash_1d(hash);
+      result->small_var = result->thickness * (0.11 + 0.05*float_hash_1d(hash));
+      hash = hash_1d(hash);
+      result->tiny_var = result->thickness * (0.03 + 0.07*float_hash_1d(hash));
+      hash = hash_1d(hash);
+
+      result->detail_var = 0.7 + 3.2*float_hash_1d(hash);
+      hash = hash_1d(hash);
+      result->ridges = 0.8 + 4.5*float_hash_1d(hash);
+      hash = hash_1d(hash);
+
+      result->smoothing = 0.12 + 0.4*float_hash_1d(hash);
+      hash = hash_1d(hash);
+
+      for (i = 0; i < N_VEIN_TYPES; ++i) {
+        result->vein_scale[i] = 0; // 23.4;
+        result->vein_strength[i] = 0; // 0.5;
+        result->vein_species[i] = 0; // TODO: Pick a material here!
+      }
+
+      for (i = 0; i < N_INCLUSION_TYPES; ++i) {
+        result->inclusion_frequency[i] = 0; // 0.01;
+        result->inclusion_species[i] = 0; // TODO: Pick a material here!
+      }
+      break;
   }
-
-  for (i = 0; i < N_INCLUSION_TYPES; ++i) {
-    result->inclusion_frequency[i] = 0; // 0.01;
-    result->inclusion_material[i] = 0; // TODO: Pick a material here!
-  }
-
   return result;
 }
 
@@ -137,4 +244,68 @@ r_pos_t compute_stratum_height(stratum *st, region_pos *rpos) {
   //printf("geo: %.2f, %.2f, %.2f\n", base, lfn, hfn);
   //printf("geo: %d\n", (r_pos_t) (base + (lfn - 0.5) + hfn));
   return (r_pos_t) fastfloor(base + (lfn - 0.5) + hfn);
+}
+
+species create_new_igneous_species(ptrdiff_t seed) {
+  species result = create_stone_species();
+  stone_species* ssp = get_stone_species(result);
+  ssp->material.origin = MO_IGNEOUS_MINERAL;
+
+  ptrdiff_t hash = hash_2d(seed, seed);
+
+  // A skewed normal-like distribution of densities:
+  float base_density = pow(norm_hash_1d(hash), 0.8);
+  hash = hash_1d(hash);
+
+  ssp->material.solid_density = mat_density(0.25 + 4.75 * base_density);
+  ssp->material.liquid_density = mat_density(2.5 + 0.5 * base_density);
+  ssp->material.gas_density = mat_density(1.8 + 1.5 * base_density);
+
+  // A much tighter distribution of specific heats that correlates a bit with
+  // density:
+  float base_specific_heat = (norm_hash_1d(hash) + norm_hash_1d(hash))/2.0;
+  base_specific_heat = 0.7*base_specific_heat + 0.3*(1 - base_density);
+  hash = hash_1d(hash);
+
+  ssp->material.solid_specific_heat = mat_specific_heat(
+    0.3 + 1.1*base_specific_heat
+  );
+  ssp->material.liquid_specific_heat = mat_specific_heat(
+    0.8 + 1.4*base_specific_heat
+  );
+  ssp->material.gas_specific_heat = mat_specific_heat(
+    0.65 + 0.45*base_specific_heat
+  );
+
+  material.cold_damage_temp = 0; // stones aren't vulnerable to cold
+
+  // A flat distribution of melting points, slightly correlated with density:
+  float base_transition_temp = float_hash_1d(hash);
+  base_transition_temp = 0.8*base_transition_temp + 0.2*base_density;
+  hash = hash_1d(hash);
+
+  material.solidus = 550 + 700 * base_transition_temp;
+  material.liquidus = material.solidus + 50 + norm_hash_1d(hash) * 200;
+  hash = hash_1d(hash);
+
+  material.boiling_point = 1800 + base_transition_temp * 600;
+
+  // igneous stone isn't known for combustion:
+  material.ignition_point = smaxof(temperature);
+  material.flash_point = smaxof(temperature);
+
+  // nor is it particularly malleable:
+  material.malleability = 0;
+
+  // magma is highly viscous:
+  material.viscosity = pow(10.0, 6.0 + 10.0*float_hash_1d(hash));
+  hash = hash_1d(hash);
+
+  return result;
+}
+
+species create_new_metamorphic_species(ptrdiff_t seed) {
+}
+
+species create_new_sedimentary_species(ptrdiff_t seed) {
 }

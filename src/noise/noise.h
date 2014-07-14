@@ -263,6 +263,18 @@ static inline float float_hash_1d(ptrdiff_t x) {
   return ((float) mixed_hash_1d(x)) / ((float) HASH_MASK);
 }
 
+// Returns a floating point value in [0, 1] from a vaguely normal-ish
+// distribution (mean 0.5, variance ~0.25).
+static inline float norm_hash_1d(ptrdiff_t x) {
+  float result = float_hash_1d(x);
+  x = hash_1d(x);
+  result += ((float) x / ((float) HASH_MASK));
+  x = hash_1d(y);
+  result += ((float) x / ((float) HASH_MASK));
+  result /= 3.0;
+  return result;
+}
+
 // A similar approach to mixed_hash_1d, but returns a 4x wide output instead of
 // just a normal hash with HASH_BITS bits.
 static inline ptrdiff_t expanded_hash_1d(ptrdiff_t x) {

@@ -11,6 +11,60 @@
 // species.h
 // Manages species info for different block/item/entity types.
 
+/**********
+ * Macros *
+ **********/
+
+#define SPECIES_ACCESS_FUNCTIONS_DECL(SP_LOWER) \
+  void add_ ## SP_LOWER ## _species(species s, SP_LOWER ## _species* sp); \
+  SP_LOWER ## _species* get_ ## SP_LOWER ## _species(species s); \
+  SP_LOWER ## _species* create_ ## SP_LOWER ## _species(void);
+
+// TODO: More graceful failure for both adding and getting.
+#define SPECIES_ACCESS_FUNCTIONS(SP_LOWER, SP_CAPS) \
+  void add_ ## SP_LOWER ## _species(species s, SP_LOWER ## _species* sp) { \
+_Pragma("GCC diagnostic ignored \"-Wint-to-pointer-cast\"") \
+    SP_LOWER ## _species* old = (SP_LOWER ## _species*) m1_put_value( \
+      SP_CAPS ## _SPECIES, \
+      (map_key_t) s, \
+      (void*) sp \
+    ); \
+_Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
+    if (old != NULL) { \
+      fprintf(stderr, "Error: replaced existing SP_LOWER species.\n"); \
+      exit(-1); \
+    } \
+  } \
+  \
+  SP_LOWER ## _species* get_ ## SP_LOWER ## _species(species s) { \
+_Pragma("GCC diagnostic ignored \"-Wint-to-pointer-cast\"") \
+    SP_LOWER ## _species* result = (SP_LOWER ## _species*) m1_get_value( \
+      SP_CAPS ## _SPECIES, \
+      (map_key_t) s \
+    ); \
+_Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
+    if (result == NULL) { \
+      fprintf(stderr, "Error: tried to lookup unknown SP_LOWER species.\n"); \
+      exit(-1); \
+    } \
+    return result; \
+  } \
+  \
+  SP_LOWER ## _species* create_ ## SP_LOWER ## _species(void) { \
+    _Pragma("omp atomic") \
+    { \
+      SP_LOWER ## _species* result = (SP_LOWER ## _species*) calloc( \
+        1, \
+        sizeof(SP_LOWER ## _species) \
+      ); \
+      add_ ## SP_LOWER ## _species( \
+        (species) m_get_count(SP_CAPS ## _SPECIES), \
+        result \
+      ); \
+      return result; \
+    } \
+  }
+
 /**************
  * Structures *
  **************/
@@ -200,6 +254,6 @@ struct fiber_species_s {
 
 void setup_species(void);
 
-stone_species* get_stone_species(species s);
+SPECIES_ACCESS_FUNCTIONS_DECL(stone);
 
 #endif // ifndef SPECIES_H

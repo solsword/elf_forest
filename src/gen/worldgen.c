@@ -90,9 +90,10 @@ void generate_geology(world_map *wm) {
   avg_size /= fmax(1.0, ((float) STRATA_COMPLEXITY));
   avg_size *= WORLD_REGION_SIZE * CHUNK_SIZE;
 
-  float avg_thickness = 10.0; // TODO: Something else here
-  map_function profile = MFN_SPREAD_UP;// TODO: Something else here
-  ptrdiff_t hash, h1, h2, h3;
+  float base_thickness = 10.0;
+  map_function profile = MFN_SPREAD_UP;
+  geologic_source source = GEO_SEDIMENTAY;
+  ptrdiff_t hash, h1, h2, h3, h4;
   world_region *wr;
   for (i = 0; i < MAX_STRATA_LAYERS * STRATA_COMPLEXITY; ++i) {
     // Create a stratum and append it to the list of all strata:
@@ -100,13 +101,39 @@ void generate_geology(world_map *wm) {
     h1 = hash_1d(hash);
     h2 = hash_1d(h1);
     h3 = hash_1d(h2);
+    h4 = hash_1d(h3);
+    h5 = hash_1d(h4);
+    switch (h4 % 3) {
+      case 0:
+        profile = MFN_SPREAD_UP;
+        break;
+      case 1:
+        profile = MFN_TERRACE;
+        break;
+      case 2:
+      default:
+        profile = MFN_HILL;
+        break;
+    }
+    switch (h5 % 3) {
+      case 0:
+        source = GEO_IGNEOUS;
+        break;
+      case 1:
+        source = GEO_METAMORPHIC;
+        break;
+      case 2:
+      default:
+        source = GEO_SEDIMENTAY;
+        break;
+    }
     s = create_stratum(
       hash,
       float_hash_1d(hash)*wm->width, float_hash_1d(h1)*wm->height,
       avg_size * (0.6 + float_hash_1d(h2)*0.8), // size
-      avg_thickness * (0.4 + float_hash_1d(h3)*1.2), // thickness
+      base_thickness * exp(-0.5 + float_hash_1d(h3)*3.5), // thickness
       profile, // profile
-      GEO_IGNEOUS // TODO: Something else here
+      source
     );
     l_append_element(wm->all_strata, (void*) s);
     // Render the stratum into the various regions:

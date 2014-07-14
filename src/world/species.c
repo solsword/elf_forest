@@ -63,12 +63,5 @@ void setup_species(void) {
   FIBER_SPECIES = create_map(1, 1024); // various sources; uniform use
 }
 
-stone_species* get_stone_species(species s) {
-  stone_species* result = (stone_species*) m_get_value(STONE_SPECIES, s);
-  if (result == NULL) {
-    // TODO: Something more graceful here?
-    fprintf(stderr, "Error: tried to lookup unknown stone species.\n");
-    exit(-1);
-  }
-  return result;
-}
+// Add/get functions for various species types:
+SPECIES_ACCESS_FUNCTIONS(stone, STONE)

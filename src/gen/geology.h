@@ -83,7 +83,6 @@ struct stratum_s {
  // Derived noise parameters:
  // -------------------------
   float scale_bias; // biases the noise scales
-  float infill; // how much to fill in noise from the layer below
 
   // radial variance:
   float radial_frequency;
@@ -114,9 +113,9 @@ struct stratum_s {
 
  // Derived species information:
  // ----------------------------------
-  species base_material; // exact material type for main mass
-  species vein_material[N_VEIN_TYPES]; // types for veins
-  species inclusion_material[N_INCLUSION_TYPES]; // types for inclusions
+  species base_species; // exact material type for main mass
+  species vein_species[N_VEIN_TYPES]; // types for veins
+  species inclusion_species[N_INCLUSION_TYPES]; // types for inclusions
 
  // Dynamic factors are erosion and pressure which influence compression and
  // metamorphosis.
@@ -266,5 +265,10 @@ stratum *create_stratum(
 
 // Computes the heigh of the given stratum at the given coordinates (ignores z):
 r_pos_t compute_stratum_height(stratum *st, region_pos *rpos);
+
+// Functions that create new types of stone:
+species create_new_igneous_species(ptrdiff_t seed);
+species create_new_metamorphic_species(ptrdiff_t seed);
+species create_new_sedimentary_species(ptrdiff_t seed);
 
 #endif // ifndef GEOLOGY_H
