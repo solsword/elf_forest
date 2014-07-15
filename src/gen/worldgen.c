@@ -281,8 +281,10 @@ void strata_cell(
       // TODO: caching and/or batch processing?
       break;
     // DEBUG:
+    /*
     } else if (h == rpos->z) {
       result->primary = b_make_block(B_GRASS);
+    */
     }
   }
   // Keep track of our previous position:

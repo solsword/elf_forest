@@ -87,15 +87,15 @@ void fltr_stone(texture *tx, void const * const fargs) {
 
       // figure out the base color:
       hsv = base_hsv;
-      px_set_blue(&hsv, px_blue(hsv) * saturation);
-      px_set_green(&hsv, CHANNEL_MAX * value);
+      px_set_sat(&hsv, px_sat(hsv) * saturation);
+      px_set_val(&hsv, CHANNEL_MAX * value);
       if (alternate > (1 - sfargs->inclusions)) {
-        px_set_red(&hsv, px_red(alt_hsv));
-        px_set_blue(&hsv, px_blue(alt_hsv));
-        px_set_green(&hsv, CHANNEL_MAX * alternate);
+        px_set_hue(&hsv, px_hue(alt_hsv));
+        px_set_sat(&hsv, px_sat(alt_hsv));
+        px_set_val(&hsv, CHANNEL_MAX * alternate);
       } else if (alternate > (1 - (sfargs->inclusions + 0.05))) {
-        px_set_blue(&hsv, 0.5*px_blue(hsv));
-        px_set_green(&hsv, (px_green(hsv) + CHANNEL_MAX * alternate)/2.0);
+        px_set_sat(&hsv, 0.5*px_sat(hsv));
+        px_set_val(&hsv, (px_val(hsv) + CHANNEL_MAX * alternate)/2.0);
       }
       hsv__rgb(hsv, &rgb);
       rgb = px_relight(rgb, sfargs->brightness);

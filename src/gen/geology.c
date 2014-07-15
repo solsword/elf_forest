@@ -49,42 +49,41 @@ stratum *create_stratum(
   result->profile = profile;
   result->source = source;
 
-  ptrdiff_t hash;
-  hash = hash_3d(seed, seed, seed);
+  seed = expanded_hash_1d(seed + hash_2d(seed, seed));
 
   switch (source) {
     case GEO_IGNEOUS:
       result->base_species = create_new_igneous_species(seed);
 
-      result->scale_bias = 0.7 + 0.4 * float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->scale_bias = 0.7 + 0.4 * float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
-      result->radial_frequency = M_PI/(2.4 + 1.6*float_hash_1d(hash));
-      hash = hash_1d(hash);
-      result->radial_variance = 0.1 + 0.3*float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->radial_frequency = M_PI/(2.4 + 1.6*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
+      result->radial_variance = 0.1 + 0.3*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
-      result->gross_distortion = 900 + 500.0*float_hash_1d(hash);
-      hash = hash_1d(hash);
-      result->fine_distortion = 110 + 40.0*float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->gross_distortion = 900 + 500.0*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
+      result->fine_distortion = 110 + 40.0*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
-      result->large_var = result->thickness * (0.5 + 0.3*float_hash_1d(hash));
-      hash = hash_1d(hash);
-      result->med_var = result->thickness * (0.3 + 0.2*float_hash_1d(hash));
-      hash = hash_1d(hash);
-      result->small_var = result->thickness * (0.17 + 0.05*float_hash_1d(hash));
-      hash = hash_1d(hash);
-      result->tiny_var = result->thickness * (0.04 + 0.06*float_hash_1d(hash));
-      hash = hash_1d(hash);
+      result->large_var = result->thickness * (0.5 + 0.3*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
+      result->med_var = result->thickness * (0.3 + 0.2*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
+      result->small_var = result->thickness * (0.17 + 0.05*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
+      result->tiny_var = result->thickness * (0.04 + 0.06*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
 
-      result->detail_var = 1.0 + 2.0*float_hash_1d(hash);
-      hash = hash_1d(hash);
-      result->ridges = 2.0 + 3.0*float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->detail_var = 1.0 + 2.0*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
+      result->ridges = 2.0 + 3.0*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
-      result->smoothing = 0.15 + 0.2*float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->smoothing = 0.15 + 0.2*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
       for (i = 0; i < N_VEIN_TYPES; ++i) {
         result->vein_scale[i] = 0; // 23.4;
@@ -101,35 +100,35 @@ stratum *create_stratum(
     case GEO_METAMORPHIC:
       result->base_species = create_new_metamorphic_species(seed);
 
-      result->scale_bias = 0.9 + 0.4 * float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->scale_bias = 0.9 + 0.4 * float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
-      result->radial_frequency = M_PI/(2.8 + 1.0*float_hash_1d(hash));
-      hash = hash_1d(hash);
-      result->radial_variance = 0.3 + 0.3*float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->radial_frequency = M_PI/(2.8 + 1.0*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
+      result->radial_variance = 0.3 + 0.3*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
-      result->gross_distortion = 1100 + 600.0*float_hash_1d(hash);
-      hash = hash_1d(hash);
-      result->fine_distortion = 150 + 50.0*float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->gross_distortion = 1100 + 600.0*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
+      result->fine_distortion = 150 + 50.0*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
-      result->large_var = result->thickness * (0.4 + 0.2*float_hash_1d(hash));
-      hash = hash_1d(hash);
-      result->med_var = result->thickness * (0.2 + 0.2*float_hash_1d(hash));
-      hash = hash_1d(hash);
-      result->small_var = result->thickness * (0.14 + 0.04*float_hash_1d(hash));
-      hash = hash_1d(hash);
-      result->tiny_var = result->thickness * (0.03 + 0.04*float_hash_1d(hash));
-      hash = hash_1d(hash);
+      result->large_var = result->thickness * (0.4 + 0.2*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
+      result->med_var = result->thickness * (0.2 + 0.2*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
+      result->small_var = result->thickness * (0.14 + 0.04*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
+      result->tiny_var = result->thickness * (0.03 + 0.04*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
 
-      result->detail_var = 0.4 + 2.0*float_hash_1d(hash);
-      hash = hash_1d(hash);
-      result->ridges = 0.7 + 2.4*float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->detail_var = 0.4 + 2.0*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
+      result->ridges = 0.7 + 2.4*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
-      result->smoothing = 0.2 + 0.25*float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->smoothing = 0.2 + 0.25*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
       for (i = 0; i < N_VEIN_TYPES; ++i) {
         result->vein_scale[i] = 0; // 23.4;
@@ -147,35 +146,35 @@ stratum *create_stratum(
     default:
       result->base_species = create_new_sedimentary_species(seed);
 
-      result->scale_bias = 1.1 + 0.3 * float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->scale_bias = 1.1 + 0.3 * float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
-      result->radial_frequency = M_PI/(2.1 + 1.2*float_hash_1d(hash));
-      hash = hash_1d(hash);
-      result->radial_variance = 0.05 + 0.2*float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->radial_frequency = M_PI/(2.1 + 1.2*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
+      result->radial_variance = 0.05 + 0.2*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
-      result->gross_distortion = 700 + 400.0*float_hash_1d(hash);
-      hash = hash_1d(hash);
-      result->fine_distortion = 30 + 30.0*float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->gross_distortion = 700 + 400.0*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
+      result->fine_distortion = 30 + 30.0*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
-      result->large_var = result->thickness * (0.4 + 0.25*float_hash_1d(hash));
-      hash = hash_1d(hash);
-      result->med_var = result->thickness * (0.2 + 0.15*float_hash_1d(hash));
-      hash = hash_1d(hash);
-      result->small_var = result->thickness * (0.11 + 0.05*float_hash_1d(hash));
-      hash = hash_1d(hash);
-      result->tiny_var = result->thickness * (0.03 + 0.07*float_hash_1d(hash));
-      hash = hash_1d(hash);
+      result->large_var = result->thickness * (0.4 + 0.25*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
+      result->med_var = result->thickness * (0.2 + 0.15*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
+      result->small_var = result->thickness * (0.11 + 0.05*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
+      result->tiny_var = result->thickness * (0.03 + 0.07*float_hash_1d(seed));
+      seed = expanded_hash_1d(seed);
 
-      result->detail_var = 0.7 + 3.2*float_hash_1d(hash);
-      hash = hash_1d(hash);
-      result->ridges = 0.8 + 4.5*float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->detail_var = 0.7 + 3.2*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
+      result->ridges = 0.8 + 4.5*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
-      result->smoothing = 0.12 + 0.4*float_hash_1d(hash);
-      hash = hash_1d(hash);
+      result->smoothing = 0.12 + 0.4*float_hash_1d(seed);
+      seed = expanded_hash_1d(seed);
 
       for (i = 0; i < N_VEIN_TYPES; ++i) {
         result->vein_scale[i] = 0; // 23.4;
@@ -250,63 +249,14 @@ r_pos_t compute_stratum_height(stratum *st, region_pos *rpos) {
 species create_new_igneous_species(ptrdiff_t seed) {
   species result = create_stone_species();
   stone_species* ssp = get_stone_species(result);
-  ssp->material.origin = MO_IGNEOUS_MINERAL;
 
-  ptrdiff_t hash = hash_2d(seed, seed);
+  seed = expanded_hash_1d(seed);
 
-  // A skewed normal-like distribution of densities:
-  float base_density = pow(norm_hash_1d(hash), 0.8);
-  hash = hash_1d(hash);
+  float base_density = pow(norm_hash_1d(seed), 0.8);
 
-  ssp->material.solid_density = mat_density(0.25 + 4.75 * base_density);
-  ssp->material.liquid_density = mat_density(2.5 + 0.5 * base_density);
-  ssp->material.gas_density = mat_density(1.8 + 1.5 * base_density);
-
-  // A much tighter distribution of specific heats that correlates a bit with
-  // density:
-  float base_specific_heat = (norm_hash_1d(hash) + norm_hash_1d(hash))/2.0;
-  base_specific_heat = 0.7*base_specific_heat + 0.3*(1 - base_density);
-  hash = hash_1d(hash);
-
-  ssp->material.solid_specific_heat = mat_specific_heat(
-    0.3 + 1.1*base_specific_heat
-  );
-  ssp->material.liquid_specific_heat = mat_specific_heat(
-    0.8 + 1.4*base_specific_heat
-  );
-  ssp->material.gas_specific_heat = mat_specific_heat(
-    0.65 + 0.45*base_specific_heat
-  );
-
-  ssp->material.cold_damage_temp = 0; // stones aren't vulnerable to cold
-
-  // A flat distribution of melting points, slightly correlated with density:
-  float base_transition_temp = float_hash_1d(hash);
-  base_transition_temp = 0.8*base_transition_temp + 0.2*base_density;
-  hash = hash_1d(hash);
-
-  ssp->material.solidus = 550 + 700 * base_transition_temp;
-  ssp->material.liquidus = ssp->material.solidus + 50 +
-                           norm_hash_1d(hash) * 200;
-  hash = hash_1d(hash);
-
-  ssp->material.boiling_point = 1800 + base_transition_temp * 600;
-
-  // igneous stone isn't known for combustion:
-  ssp->material.ignition_point = smaxof(temperature);
-  ssp->material.flash_point = smaxof(temperature);
-
-  // it is generally not very malleable, and may be as brittle as glass:
-  ssp->material.malleability = 80 * norm_hash_1d(hash);
-  hash = hash_1d(hash);
-
-  // magma is extremely viscous:
-  ssp->material.viscosity = pow(10.0, 6.0 + 10.0*float_hash_1d(hash));
-  hash = hash_1d(hash);
-
-  // igneous rocks are pretty hard (and again this correlates with density):
-  ssp->material.hardness = 100+120*(0.8*norm_hash_1d(hash) + 0.2*base_density);
-  hash = hash_1d(hash);
+  determine_new_igneous_material(&(ssp->material), seed, base_density);
+  seed = expanded_hash_1d(seed);
+  determine_new_igneous_appearance(&(ssp->appearance), seed, base_density);
 
   return result;
 }
@@ -323,4 +273,152 @@ species create_new_sedimentary_species(ptrdiff_t seed) {
   stone_species* ssp = get_stone_species(result);
   ssp->material.origin = MO_SEDIMENTARY_MINERAL;
   return result;
+}
+
+void determine_new_igneous_material(
+  material *target,
+  ptrdiff_t seed,
+  float base_density
+) {
+  target->origin = MO_IGNEOUS_MINERAL;
+
+  seed = expanded_hash_1d(seed);
+
+  // Base density is taken from the external argument:
+  target->solid_density = mat_density(0.25 + 4.75 * base_density);
+  target->liquid_density = mat_density(2.5 + 0.5 * base_density);
+  target->gas_density = mat_density(1.8 + 1.5 * base_density);
+
+  // A much tighter distribution of specific heats that correlates a bit with
+  // density:
+  float base_specific_heat = (norm_hash_1d(seed) + norm_hash_1d(seed))/2.0;
+  base_specific_heat = 0.7*base_specific_heat + 0.3*(1 - base_density);
+  seed = expanded_hash_1d(seed);
+
+  target->solid_specific_heat = mat_specific_heat(
+    0.3 + 1.1*base_specific_heat
+  );
+  target->liquid_specific_heat = mat_specific_heat(
+    0.8 + 1.4*base_specific_heat
+  );
+  target->gas_specific_heat = mat_specific_heat(
+    0.65 + 0.45*base_specific_heat
+  );
+
+  target->cold_damage_temp = 0; // stones aren't vulnerable to cold
+
+  // A flat distribution of melting points, slightly correlated with density:
+  float base_transition_temp = float_hash_1d(seed);
+  base_transition_temp = 0.8*base_transition_temp + 0.2*base_density;
+  seed = expanded_hash_1d(seed);
+
+  target->solidus = 550 + 700 * base_transition_temp;
+  target->liquidus = target->solidus + 50 + norm_hash_1d(seed) * 200;
+  seed = expanded_hash_1d(seed);
+
+  target->boiling_point = 1800 + base_transition_temp * 600;
+
+  // igneous stone isn't known for combustion:
+  target->ignition_point = smaxof(temperature);
+  target->flash_point = smaxof(temperature);
+
+  // it is generally not very malleable, and may be as brittle as glass:
+  target->malleability = 80 * norm_hash_1d(seed);
+  seed = expanded_hash_1d(seed);
+
+  // magma is extremely viscous:
+  target->viscosity = pow(10.0, 6.0 + 10.0*float_hash_1d(seed));
+  seed = expanded_hash_1d(seed);
+
+  // igneous rocks are pretty hard (and again this correlates with density):
+  target->hardness = 100+120*(0.8*norm_hash_1d(seed) + 0.2*base_density);
+}
+
+void determine_new_metamorphic_material(material *target, ptrdiff_t seed) {
+}
+
+void determine_new_sedimentary_material(material *target, ptrdiff_t seed) {
+}
+
+
+void determine_new_igneous_appearance(
+  stone_filter_args *target,
+  ptrdiff_t seed,
+  float base_density
+) {
+  seed = expanded_hash_1d(seed);
+  target->seed = seed;
+
+  // Lighter rocks tend to have smaller noise scales.
+  target->scale = 0.1 + 0.08*(0.8*float_hash_1d(seed) + 0.2*base_density);
+  seed = expanded_hash_1d(seed);
+
+  // Igneous rock types are relatively gritty. Denser rocks tend to be slightly
+  // less gritty though.
+  target->gritty = 0.15 + 0.13*(0.7*float_hash_1d(seed) + 0.3*(1-base_density));
+  seed = expanded_hash_1d(seed);
+
+  // Denser rocks tend to be more contoured.
+  target->contoured = 3.5 + 3.5*(0.8*float_hash_1d(seed) + 0.2*base_density);
+  seed = expanded_hash_1d(seed);
+
+  // Lighter igneous rocks are far more porous.
+  target->porous = 2.0 + 8.5*(0.5*float_hash_1d(seed) + 0.5*(1-base_density));
+  seed = expanded_hash_1d(seed);
+
+  // Igneous rocks don't tend to be very bumpy.
+  target->bumpy = 1.0 + 4.0*float_hash_1d(seed);
+  seed = expanded_hash_1d(seed);
+
+  // Igneous rocks rarely have significant inclusions.
+  target->inclusions = exp(0.55*float_hash_1d(seed)) - 1;
+  seed = expanded_hash_1d(seed);
+
+  // The distortion scale is within 10% of the base scale.
+  target->dscale = target->scale * 1 + 0.2*(float_hash_1d(seed) - 0.5);
+  seed = expanded_hash_1d(seed);
+
+  // Igneous rocks can have at most moderate distortion, and largely have very
+  // little distortion.
+  target->distortion = 4.4*(exp(0.65*norm_hash_1d(seed)) - 1);
+  seed = expanded_hash_1d(seed);
+
+  // Igneous rocks can be squashed in either direction
+  target->squash = 0.7 + 0.6*norm_hash_1d(seed);
+  seed = expanded_hash_1d(seed);
+  target->squash /= 0.7 + 0.6*norm_hash_1d(seed);
+  seed = expanded_hash_1d(seed);
+
+  // Hues range from blue to orange:
+  float hue = -0.2 + 0.3*float_hash_1d(seed);
+  seed = expanded_hash_1d(seed);
+  if (hue < 0) {
+    hue = 1 + hue;
+  }
+  // Saturation is usually negligible though:
+  float sat = 0;
+  if (float_hash_1d(seed) < 0.7) {
+    seed = expanded_hash_1d(seed);
+    sat = 0.05*float_hash_1d(seed);
+  } else {
+    seed = expanded_hash_1d(seed);
+    sat = 0.3*norm_hash_1d(seed);
+  }
+  seed = expanded_hash_1d(seed);
+
+  // Base values are correlated with density, and are mostly dark:
+  float val = 0.5*float_hash_1d(seed) + 0.5*(1-base_density);
+  seed = expanded_hash_1d(seed);
+  val *= val*val;
+
+  // Construct the base color:
+  pixel hsv = float_color(hue, sat, val, 1.0);
+  hsv__rgb(hsv, &(target->base_color));
+
+  // Igneous inclusions just have contrasting brightness:
+  hsv = float_color(hue, sat, 1 - val, 1.0);
+  hsv__rgb(hsv, &(target->alt_color));
+
+  // TODO: A skewed binary distribution here!
+  target->brightness = -0.2 + 0.4*norm_hash_1d(seed);
 }

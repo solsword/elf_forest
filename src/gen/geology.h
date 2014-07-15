@@ -8,6 +8,7 @@
 
 #include "math/functions.h"
 
+#include "txgen/txg_minerals.h"
 #include "world/materials.h"
 #include "world/world.h"
 
@@ -270,5 +271,21 @@ r_pos_t compute_stratum_height(stratum *st, region_pos *rpos);
 species create_new_igneous_species(ptrdiff_t seed);
 species create_new_metamorphic_species(ptrdiff_t seed);
 species create_new_sedimentary_species(ptrdiff_t seed);
+
+// Helper functions for creating materials:
+void determine_new_igneous_material(
+  material *target,
+  ptrdiff_t seed,
+  float base_density
+);
+void determine_new_metamorphic_material(material *target, ptrdiff_t seed);
+void determine_new_sedimentary_material(material *target, ptrdiff_t seed);
+
+// Helper functions for creating appearances:
+void determine_new_igneous_appearance(
+  stone_filter_args *target,
+  ptrdiff_t seed,
+  float base_density
+);
 
 #endif // ifndef GEOLOGY_H

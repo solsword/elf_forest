@@ -52,6 +52,9 @@ typedef struct tcoords_s tcoords;
 // An empty (completely transparent) pixel value:
 #define PX_EMPTY 0x00000000
 
+// A black opaque pixel value:
+#define PX_BLACK 0xff000000
+
 /********************
  * Global variables *
  ********************/
@@ -81,12 +84,21 @@ struct tcoords_s {
 static inline channel px_red(pixel p) {
   return ((p & RED_MASK) >> RED_SHIFT);
 }
+static inline channel px_hue(pixel p) {
+  return ((p & RED_MASK) >> RED_SHIFT);
+}
 
 static inline channel px_green(pixel p) {
   return ((p & GREEN_MASK) >> GREEN_SHIFT);
 }
+static inline channel px_sat(pixel p) {
+  return ((p & GREEN_MASK) >> GREEN_SHIFT);
+}
 
 static inline channel px_blue(pixel p) {
+  return ((p & BLUE_MASK) >> BLUE_SHIFT);
+}
+static inline channel px_val(pixel p) {
   return ((p & BLUE_MASK) >> BLUE_SHIFT);
 }
 
@@ -94,7 +106,7 @@ static inline channel px_alpha(pixel p) {
   return ((p & ALPHA_MASK) >> ALPHA_SHIFT);
 }
 
-static inline float px_chroma(pixel p) {
+static inline float px_chroma_f(pixel p) {
   float r = px_red(p) / (float) CHANNEL_MAX;
   float g = px_green(p) / (float) CHANNEL_MAX;
   float b = px_blue(p) / (float) CHANNEL_MAX;
@@ -108,7 +120,7 @@ static inline float px_chroma(pixel p) {
   return max - min;
 }
 
-static inline float px_hue(pixel p) {
+static inline float px_hue_f(pixel p) {
   float r = px_red(p) / (float) CHANNEL_MAX;
   float g = px_green(p) / (float) CHANNEL_MAX;
   float b = px_blue(p) / (float) CHANNEL_MAX;
@@ -132,7 +144,7 @@ static inline float px_hue(pixel p) {
   }
 }
 
-static inline float px_saturation(pixel p) {
+static inline float px_saturation_f(pixel p) {
   float r = px_red(p) / (float) CHANNEL_MAX;
   float g = px_green(p) / (float) CHANNEL_MAX;
   float b = px_blue(p) / (float) CHANNEL_MAX;
@@ -152,7 +164,7 @@ static inline float px_saturation(pixel p) {
   }
 }
 
-static inline float px_value(pixel p) {
+static inline float px_value_f(pixel p) {
   float r = px_red(p) / (float) CHANNEL_MAX;
   float g = px_green(p) / (float) CHANNEL_MAX;
   float b = px_blue(p) / (float) CHANNEL_MAX;
@@ -165,14 +177,14 @@ static inline float px_value(pixel p) {
   }
 }
 
-static inline float px_intensity(pixel p) {
+static inline float px_intensity_f(pixel p) {
   float r = px_red(p) / (float) CHANNEL_MAX;
   float g = px_green(p) / (float) CHANNEL_MAX;
   float b = px_blue(p) / (float) CHANNEL_MAX;
   return (r + g + b) / 3.0;
 }
 
-static inline float px_lightness(pixel p) {
+static inline float px_lightness_f(pixel p) {
   float r = px_red(p) / (float) CHANNEL_MAX;
   float g = px_green(p) / (float) CHANNEL_MAX;
   float b = px_blue(p) / (float) CHANNEL_MAX;
@@ -186,7 +198,7 @@ static inline float px_lightness(pixel p) {
   return (max + min) / 2.0;
 }
 
-static inline float px_luma(pixel p) {
+static inline float px_luma_f(pixel p) {
   float r = px_red(p) / (float) CHANNEL_MAX;
   float g = px_green(p) / (float) CHANNEL_MAX;
   float b = px_blue(p) / (float) CHANNEL_MAX;
@@ -198,15 +210,27 @@ static inline void px_set_red(pixel *p, channel r) {
   *p &= ~RED_MASK;
   *p |= ((pixel) r) << RED_SHIFT;
 }
+static inline void px_set_hue(pixel *p, channel h) {
+  *p &= ~RED_MASK;
+  *p |= ((pixel) h) << RED_SHIFT;
+}
 
 static inline void px_set_green(pixel *p, channel g) {
   *p &= ~GREEN_MASK;
   *p |= ((pixel) g) << GREEN_SHIFT;
 }
+static inline void px_set_sat(pixel *p, channel s) {
+  *p &= ~GREEN_MASK;
+  *p |= ((pixel) s) << GREEN_SHIFT;
+}
 
 static inline void px_set_blue(pixel *p, channel b) {
   *p &= ~BLUE_MASK;
   *p |= ((pixel) b) << BLUE_SHIFT;
+}
+static inline void px_set_val(pixel *p, channel v) {
+  *p &= ~BLUE_MASK;
+  *p |= ((pixel) v) << BLUE_SHIFT;
 }
 
 static inline void px_set_alpha(pixel *p, channel a) {
@@ -219,6 +243,17 @@ static inline void px_set_gray(pixel *p, channel gray) {
   *p |= ((pixel) gray) << RED_SHIFT;
   *p |= ((pixel) gray) << GREEN_SHIFT;
   *p |= ((pixel) gray) << BLUE_SHIFT;
+}
+
+
+// Takes RGBA floating point values in [0, 1] and returns a pixel.
+static inline pixel float_color(float r, float g, float b, float a) {
+  pixel result = PX_EMPTY;
+  px_set_red(&result, fastfloor(CHANNEL_MAX * r));
+  px_set_green(&result, fastfloor(CHANNEL_MAX * g));
+  px_set_blue(&result, fastfloor(CHANNEL_MAX * b));
+  px_set_alpha(&result, fastfloor(CHANNEL_MAX * a));
+  return result;
 }
 
 
@@ -293,10 +328,10 @@ static inline void rgb__hsv(pixel p, pixel *result) {
 
 // Takes an HSVA pixel and returns an RGBA pixel:
 static inline void hsv__rgb(pixel p, pixel *result) {
-  *result = 0xff000000;
+  *result = PX_BLACK;
   float h = px_red(p) / (float) CHANNEL_MAX;
-  float s = px_blue(p) / (float) CHANNEL_MAX;
-  float v = px_green(p) / (float) CHANNEL_MAX;
+  float s = px_green(p) / (float) CHANNEL_MAX;
+  float v = px_blue(p) / (float) CHANNEL_MAX;
   int sector = floor(h / (1/6.0)); // which sector of the color wheel?
   float remainder = 6 * (h - (1/6.0)*sector); // [0, 1] position in sector
   // The three possible channel values (along with v):
@@ -307,8 +342,8 @@ static inline void hsv__rgb(pixel p, pixel *result) {
   // shortcut for gray:
   if (s == 0) {
     px_set_red(result, CHANNEL_MAX*v);
-    px_set_blue(result, CHANNEL_MAX*v);
     px_set_green(result, CHANNEL_MAX*v);
+    px_set_blue(result, CHANNEL_MAX*v);
     return;
   }
   switch (sector) {

@@ -176,7 +176,7 @@ static inline pixel gradient_result(gradient_map *grmap, float in) {
 }
 
 static inline pixel px_gradient_result(gradient_map *grmap, pixel in) {
-  return gradient_result(grmap, px_luma(in));
+  return gradient_result(grmap, px_luma_f(in));
 }
 
 // Tints the given pixel, darkening it if the given tint amount is less than 0
@@ -184,11 +184,11 @@ static inline pixel px_gradient_result(gradient_map *grmap, pixel in) {
 static inline pixel px_tint(pixel p, float tint) {
   pixel result, hsv;
   rgb__hsv(p, &hsv);
-  float val = px_green(hsv) / (float) CHANNEL_MAX;
+  float val = px_val(hsv) / (float) CHANNEL_MAX;
   if (tint < 0) {
-    px_set_green(&hsv, CHANNEL_MAX * val * (1+tint));
+    px_set_val(&hsv, CHANNEL_MAX * val * (1+tint));
   } else {
-    px_set_green(&hsv, CHANNEL_MAX * (1 - (1 - val) * (1 - tint)));
+    px_set_val(&hsv, CHANNEL_MAX * (1 - (1 - val) * (1 - tint)));
   }
   hsv__rgb(hsv, &result);
   return result;
@@ -200,10 +200,10 @@ static inline pixel px_tint(pixel p, float tint) {
 static inline pixel px_relight(pixel p, float brightness) {
   pixel result, hsv;
   rgb__hsv(p, &hsv);
-  float val = px_green(hsv) / (float) CHANNEL_MAX;
+  float val = px_val(hsv) / (float) CHANNEL_MAX;
   val += brightness;
   if (val < 0) { val = 0; } else if (val > 1) { val = 1; }
-  px_set_green(&hsv, CHANNEL_MAX * val);
+  px_set_val(&hsv, CHANNEL_MAX * val);
   hsv__rgb(hsv, &result);
   return result;
 }
