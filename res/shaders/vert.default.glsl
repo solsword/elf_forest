@@ -19,8 +19,9 @@ void main() {
 
   // Logarithmic depth buffer from:
   // outerra.blogspot.com/2013/07/logarithmic-depth-buffer-optimizations.html
-  float far = 1024.0; // TODO: make this a parameter.
+  float far = 1024.0; // TODO: make these parameters.
+  float near = 0.5;
   float Fcoef = 2.0 / log2(far + 1.0);
-  gl_Position.z = log2(max(1e-6, 1.0 + gl_Position.w)) * Fcoef - 1.0;
+  gl_Position.z = log2(max(1e-6, 1.0 + gl_Position.w)) * Fcoef - near;
   flogz = 1.0 + gl_Position.w;
 }

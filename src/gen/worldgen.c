@@ -284,7 +284,7 @@ void strata_cell(
     /*
     } else if (h == rpos->z) {
       result->primary = b_make_block(B_GRASS);
-    */
+    // */
     }
   }
   // Keep track of our previous position:

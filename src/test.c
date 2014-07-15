@@ -45,7 +45,7 @@
 // Center of the world:
 world_map_pos WORLD_ORIGIN = { .x = WORLD_WIDTH/2, .y=WORLD_HEIGHT/2 };
 
-ptrdiff_t SEED = 18234103;
+ptrdiff_t SEED = 18234109;
 
 /********
  * Main *
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
   origin.x += 2;
   origin.y += 2;
   //origin.z = 450;
-  origin.z = 1900;
+  origin.z = 2400;
 
   // Start the game:
   start_game(SEED, argc, argv, "tester", &origin);
