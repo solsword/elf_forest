@@ -56,7 +56,8 @@ int main(int argc, char** argv) {
   wmpos__rpos(&WORLD_ORIGIN, &origin);
   origin.x += 2;
   origin.y += 2;
-  origin.z = 450;
+  //origin.z = 450;
+  origin.z = 1900;
 
   // Start the game:
   start_game(argc, argv, "tester", &origin);

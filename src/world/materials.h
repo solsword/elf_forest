@@ -5,6 +5,7 @@
 // Material management and properties.
 
 #include <stdint.h>
+#include <stdio.h>
 
 #include "blocks.h"
 
@@ -87,9 +88,9 @@ struct material_s {
   uint8_t malleability; // in solid phase
   float viscosity; // in liquid phase, measured relative to water at 1.0
   uint8_t hardness;
-  uint8_t brittleness;
   // 4 bits each of impact, compressive, tensile, and shear strength:
-  uint16_t strength;
+  // TODO: remove this?
+  //uint16_t strength;
 };
 
 /********************
@@ -112,16 +113,16 @@ static inline density mat_density(float specific_weight) {
   ptrdiff_t i = fastfloor(((float) BASE_DENSITY) * specific_weight);
 #ifdef DEBUG
   if (specific_weight < (1.0/(1.5*((float) BASE_DENSITY)))) {
-    fprtinf(
+    fprintf(
       stderr,
-      "Warning: specific weight %.4f is too small to be accurately " +
+      "Warning: specific weight %.4f is too small to be accurately "
       "represented in terms of absolute density.\n",
       specific_weight
     );
   } else if (i > umaxof(density) + 4) {
-    fprtinf(
+    fprintf(
       stderr,
-      "Warning: specific weight %.2f is too large to be accurately " +
+      "Warning: specific weight %.2f is too large to be accurately "
       "represented in terms of absolute density.\n",
       specific_weight
     );
@@ -141,16 +142,16 @@ static inline specific_heat mat_specific_heat(float relative) {
   ptrdiff_t i = fastfloor(((float) BASE_SPECIFIC_HEAT) * relative);
 #ifdef DEBUG
   if (relative < (1.0/(1.5*((float) BASE_DENSITY)))) {
-    fprtinf(
+    fprintf(
       stderr,
-      "Warning: relative specific heat %.4f is too small to be accurately " +
+      "Warning: relative specific heat %.4f is too small to be accurately "
       "represented in terms of absolute specific heat.\n",
       relative
     );
   } else if (i > umaxof(specific_heat) + 4) {
-    fprtinf(
+    fprintf(
       stderr,
-      "Warning: relative specific heat %.2f is too large to be accurately " +
+      "Warning: relative specific heat %.2f is too large to be accurately "
       "represented in terms of absolute specific heat.\n",
       relative
     );

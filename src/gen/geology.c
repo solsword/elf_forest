@@ -5,6 +5,7 @@
 #include "math/functions.h"
 #include "datatypes/vector.h"
 #include "world/world.h"
+#include "world/species.h"
 
 #include "worldgen.h"
 
@@ -98,7 +99,7 @@ stratum *create_stratum(
       break;
 
     case GEO_METAMORPHIC:
-      result->base_species = create_new_metamorphic_species();
+      result->base_species = create_new_metamorphic_species(seed);
 
       result->scale_bias = 0.9 + 0.4 * float_hash_1d(hash);
       hash = hash_1d(hash);
@@ -144,7 +145,7 @@ stratum *create_stratum(
 
     case GEO_SEDIMENTAY:
     default:
-      result->base_species = create_new_sedimentary_species();
+      result->base_species = create_new_sedimentary_species(seed);
 
       result->scale_bias = 1.1 + 0.3 * float_hash_1d(hash);
       hash = hash_1d(hash);
@@ -277,35 +278,49 @@ species create_new_igneous_species(ptrdiff_t seed) {
     0.65 + 0.45*base_specific_heat
   );
 
-  material.cold_damage_temp = 0; // stones aren't vulnerable to cold
+  ssp->material.cold_damage_temp = 0; // stones aren't vulnerable to cold
 
   // A flat distribution of melting points, slightly correlated with density:
   float base_transition_temp = float_hash_1d(hash);
   base_transition_temp = 0.8*base_transition_temp + 0.2*base_density;
   hash = hash_1d(hash);
 
-  material.solidus = 550 + 700 * base_transition_temp;
-  material.liquidus = material.solidus + 50 + norm_hash_1d(hash) * 200;
+  ssp->material.solidus = 550 + 700 * base_transition_temp;
+  ssp->material.liquidus = ssp->material.solidus + 50 +
+                           norm_hash_1d(hash) * 200;
   hash = hash_1d(hash);
 
-  material.boiling_point = 1800 + base_transition_temp * 600;
+  ssp->material.boiling_point = 1800 + base_transition_temp * 600;
 
   // igneous stone isn't known for combustion:
-  material.ignition_point = smaxof(temperature);
-  material.flash_point = smaxof(temperature);
+  ssp->material.ignition_point = smaxof(temperature);
+  ssp->material.flash_point = smaxof(temperature);
 
-  // nor is it particularly malleable:
-  material.malleability = 0;
+  // it is generally not very malleable, and may be as brittle as glass:
+  ssp->material.malleability = 80 * norm_hash_1d(hash);
+  hash = hash_1d(hash);
 
-  // magma is highly viscous:
-  material.viscosity = pow(10.0, 6.0 + 10.0*float_hash_1d(hash));
+  // magma is extremely viscous:
+  ssp->material.viscosity = pow(10.0, 6.0 + 10.0*float_hash_1d(hash));
+  hash = hash_1d(hash);
+
+  // igneous rocks are pretty hard (and again this correlates with density):
+  ssp->material.hardness = 100+120*(0.8*norm_hash_1d(hash) + 0.2*base_density);
   hash = hash_1d(hash);
 
   return result;
 }
 
 species create_new_metamorphic_species(ptrdiff_t seed) {
+  species result = create_stone_species();
+  stone_species* ssp = get_stone_species(result);
+  ssp->material.origin = MO_METAMORPHIC_MINERAL;
+  return result;
 }
 
 species create_new_sedimentary_species(ptrdiff_t seed) {
+  species result = create_stone_species();
+  stone_species* ssp = get_stone_species(result);
+  ssp->material.origin = MO_SEDIMENTARY_MINERAL;
+  return result;
 }

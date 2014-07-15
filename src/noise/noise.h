@@ -269,7 +269,7 @@ static inline float norm_hash_1d(ptrdiff_t x) {
   float result = float_hash_1d(x);
   x = hash_1d(x);
   result += ((float) x / ((float) HASH_MASK));
-  x = hash_1d(y);
+  x = hash_1d(x);
   result += ((float) x / ((float) HASH_MASK));
   result /= 3.0;
   return result;

@@ -93,7 +93,7 @@ void generate_geology(world_map *wm) {
   float base_thickness = 10.0;
   map_function profile = MFN_SPREAD_UP;
   geologic_source source = GEO_SEDIMENTAY;
-  ptrdiff_t hash, h1, h2, h3, h4;
+  ptrdiff_t hash, h1, h2, h3, h4, h5;
   world_region *wr;
   for (i = 0; i < MAX_STRATA_LAYERS * STRATA_COMPLEXITY; ++i) {
     // Create a stratum and append it to the list of all strata:
@@ -261,12 +261,14 @@ void strata_cell(
     //printf("Thickness: %d\n", sd[i].thickness);
     h += heights[i];
     if (h > rpos->z) { // might not happen at all
-      //result->primary = b_make_block(B_STONE);
+      result->primary = b_make_species(B_STONE, st->base_species);
       // DEBUG:
+      /*
       result->primary = b_make_block(B_DIRT);
       if (h == rpos->z + 1) {
         result->secondary = b_make_block(B_GRASS_ROOTS);
       }
+      */
       // TODO: A real material computation:
       /*
       result->primary = stratum_material(
