@@ -221,6 +221,8 @@ r_pos_t compute_stratum_height(stratum *st, region_pos *rpos) {
   // compute our chunk position:
   rpos__rcpos(rpos, &rcpos);
 
+  /*
+  // DEBUG:
   if (pr_st != st || pr_rcpos.x != rcpos.x || pr_rcpos.y != rcpos.y) {
     rcpos__rpos(&rcpos, &rounded_rpos);
     // need to recompute low-frequency info:
@@ -230,7 +232,15 @@ r_pos_t compute_stratum_height(stratum *st, region_pos *rpos) {
     stratum_lf_noise(st, fx+lfdx, fy+lfdy, &lfn);
     stratum_base_thickness(st, fx+lfdx, fy+lfdy, &base);
   }
+  // */
   if (pr_st != st || pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
+    // DEBUG:
+    // need to recompute low-frequency info:
+    fx = (float) (rpos->x);
+    fy = (float) (rpos->y);
+    stratum_lf_distortion(st, fx, fy, &lfdx, &lfdy);
+    stratum_lf_noise(st, fx+lfdx, fy+lfdy, &lfn);
+    stratum_base_thickness(st, fx+lfdx, fy+lfdy, &base);
     // need to recompute high-frequency info:
     fx = (float) (rpos->x);
     fy = (float) (rpos->y);
@@ -355,7 +365,7 @@ void determine_new_igneous_appearance(
 
   // Igneous rock types are relatively gritty. Denser rocks tend to be slightly
   // less gritty though.
-  target->gritty = 0.15 + 0.13*(0.7*float_hash_1d(seed) + 0.3*(1-base_density));
+  target->gritty = 1.4 + 2.3*(0.7*float_hash_1d(seed) + 0.3*(1-base_density));
   seed = expanded_hash_1d(seed);
 
   // Denser rocks tend to be more contoured.
@@ -395,6 +405,7 @@ void determine_new_igneous_appearance(
   if (hue < 0) {
     hue = 1 + hue;
   }
+
   // Saturation is usually negligible though:
   float sat = 0;
   if (float_hash_1d(seed) < 0.7) {
@@ -402,14 +413,14 @@ void determine_new_igneous_appearance(
     sat = 0.05*float_hash_1d(seed);
   } else {
     seed = expanded_hash_1d(seed);
-    sat = 0.3*norm_hash_1d(seed);
+    sat = 0.3*float_hash_1d(seed);
   }
   seed = expanded_hash_1d(seed);
 
   // Base values are correlated with density, and are mostly dark:
-  float val = 0.5*float_hash_1d(seed) + 0.5*(1-base_density);
+  float val = 0.6*float_hash_1d(seed) + 0.4*(1-base_density);
   seed = expanded_hash_1d(seed);
-  val *= val*val;
+  val *= val;
 
   // Construct the base color:
   pixel hsv = float_color(hue, sat, val, 1.0);

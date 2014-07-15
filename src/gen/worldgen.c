@@ -16,8 +16,6 @@
 
 world_map* THE_WORLD = NULL;
 
-ptrdiff_t const WORLD_SEED = 7184921;
-
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -46,8 +44,8 @@ void cleanup_world_map(world_map *wm) {
  * Functions *
  *************/
 
-void setup_worldgen() {
-  THE_WORLD = create_world_map(WORLD_SEED, WORLD_WIDTH, WORLD_HEIGHT);
+void setup_worldgen(ptrdiff_t seed) {
+  THE_WORLD = create_world_map(seed, WORLD_WIDTH, WORLD_HEIGHT);
   generate_geology(THE_WORLD);
 }
 
@@ -127,6 +125,8 @@ void generate_geology(world_map *wm) {
         source = GEO_SEDIMENTAY;
         break;
     }
+    // DEBUG:
+    source = GEO_IGNEOUS;
     s = create_stratum(
       hash,
       float_hash_1d(hash)*wm->width, float_hash_1d(h1)*wm->height,

@@ -274,40 +274,40 @@ static inline void rgb__hsv(pixel p, pixel *result) {
   if (b < min) { min = b; }
   chroma = max - min;
 
-  // blue <-> saturation (first 'cause of the shortcut when max == 0)
+  // saturation (first 'cause of the shortcut when max == 0)
   if (max == 0) {
     px_set_red(result, 0);
     px_set_blue(result, 0);
     px_set_green(result, 0);
     return;
   } else {
-    px_set_blue(result, CHANNEL_MAX * (chroma / max));
+    px_set_sat(result, CHANNEL_MAX * (chroma / max));
   }
 
-  // red <-> hue
+  // hue
   if (max == r) {
-    px_set_red(
+    px_set_hue(
       result,
       CHANNEL_MAX * (
         (1/6.0) * (g - b) / chroma + (b > g ? 1 : 0)
       )
     );
   } else if (max == g) {
-    px_set_red(
+    px_set_hue(
       result,
       CHANNEL_MAX * (
         (1/6.0) * (b - r) / chroma + (1/3.0)
       )
     );
   } else if (max == b) {
-    px_set_red(
+    px_set_hue(
       result,
       CHANNEL_MAX * (
         (1/6.0) * (r - g) / chroma + (2/3.0)
       )
     );
   } else {
-    px_set_red(
+    px_set_hue(
       result,
       CHANNEL_MAX * (
         0
@@ -315,13 +315,13 @@ static inline void rgb__hsv(pixel p, pixel *result) {
     );
   }
 
-  // green <-> value
+  // value
   if (r >= g && r >= b) {
-    px_set_green(result, CHANNEL_MAX * r);
+    px_set_val(result, CHANNEL_MAX * r);
   } else if (g >= b) {
-    px_set_green(result, CHANNEL_MAX * g);
+    px_set_val(result, CHANNEL_MAX * g);
   } else {
-    px_set_green(result, CHANNEL_MAX * b);
+    px_set_val(result, CHANNEL_MAX * b);
   }
   return;
 }
@@ -329,9 +329,9 @@ static inline void rgb__hsv(pixel p, pixel *result) {
 // Takes an HSVA pixel and returns an RGBA pixel:
 static inline void hsv__rgb(pixel p, pixel *result) {
   *result = PX_BLACK;
-  float h = px_red(p) / (float) CHANNEL_MAX;
-  float s = px_green(p) / (float) CHANNEL_MAX;
-  float v = px_blue(p) / (float) CHANNEL_MAX;
+  float h = px_hue(p) / (float) CHANNEL_MAX;
+  float s = px_sat(p) / (float) CHANNEL_MAX;
+  float v = px_val(p) / (float) CHANNEL_MAX;
   int sector = floor(h / (1/6.0)); // which sector of the color wheel?
   float remainder = 6 * (h - (1/6.0)*sector); // [0, 1] position in sector
   // The three possible channel values (along with v):

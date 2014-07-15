@@ -43,6 +43,7 @@ extern omp_lock_t DATA_LOCK;
 // specifying the type of entity that the player should be, and a region
 // position where the player will be spawned.
 void start_game(
+  ptrdiff_t seed,
   int argc,
   char **argv,
   char *player_entity_type,

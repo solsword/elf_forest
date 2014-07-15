@@ -52,7 +52,7 @@ _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
       fprintf( \
         stderr, \
         "Error: tried to lookup unknown " #SP_LOWER " species %d.\n" \
-        "Species count is: %d\n", \
+        "Species count is: %zu\n", \
         s, \
         m_get_count(SP_CAPS ## _SPECIES) \
       ); \

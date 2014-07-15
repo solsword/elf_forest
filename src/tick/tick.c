@@ -49,9 +49,9 @@ int DATA_DONE = 0;
  * Private Functions *
  *********************/
 
-void _get_everything_set_up(int argc, char** argv) {
+void _get_everything_set_up(ptrdiff_t seed, int argc, char** argv) {
   // Seed the random number generator:
-  srand(545438);
+  srand(seed);
 
   // Prepare the window context:
   prepare_default(&argc, argv);
@@ -83,7 +83,7 @@ void _get_everything_set_up(int argc, char** argv) {
   printf("  ...species...\n");
   setup_species();
   printf("  ...world_map...\n");
-  setup_worldgen();
+  setup_worldgen(seed);
 
   printf("...done.\n");
 }
@@ -107,6 +107,7 @@ void _spawn_the_player(
  *************/
 
 void start_game(
+  ptrdiff_t seed,
   int argc,
   char **argv,
   char *player_entity_type,
@@ -121,7 +122,7 @@ void start_game(
     thread_id = omp_get_thread_num();
     // Everyone waits while the graphics thread performs setup:
     if (thread_id == 0) {
-      _get_everything_set_up(argc, argv);
+      _get_everything_set_up(seed, argc, argv);
       _spawn_the_player(player_entity_type, ACTIVE_AREA, spawn_point);
       // A couple of sequential cycles to start things off smoothly:
       tick(2);
