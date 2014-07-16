@@ -125,8 +125,6 @@ void generate_geology(world_map *wm) {
         source = GEO_SEDIMENTAY;
         break;
     }
-    // DEBUG:
-    source = GEO_IGNEOUS;
     s = create_stratum(
       hash,
       float_hash_1d(hash)*wm->width, float_hash_1d(h1)*wm->height,
@@ -177,6 +175,12 @@ void strata_cell(
   region_pos trp;
   copy_rpos(rpos, &trp);
   trp.z = 0;
+  // DEBUG: (to show the strata)
+  if (abs(rpos->x - 32720) < CHUNK_SIZE) {
+    result->primary = b_make_block(B_AIR);
+    result->secondary = b_make_block(B_VOID);
+    return;
+  }
 
   if (pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
     // No need to recompute the strata column if we're at the same x/y.

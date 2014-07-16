@@ -87,7 +87,7 @@ struct material_s {
   // fine structure info:
   uint8_t malleability; // in solid phase
   float viscosity; // in liquid phase, measured relative to water at 1.0
-  uint8_t hardness;
+  uint8_t hardness; // 60 ~= wood, fingernails; most stone is 100-220
   // 4 bits each of impact, compressive, tensile, and shear strength:
   // TODO: remove this?
   //uint16_t strength;

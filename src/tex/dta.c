@@ -85,8 +85,9 @@ void ensure_mapped(block b) {
     // We need to load the block's texture:
     //* TODO: Real error checking/reporting!!
     printf(
-      "Loading texture for block '%s'...\n",
-      BLOCK_NAMES[b_id(b)]
+      "Loading texture for block %s:%d...\n",
+      BLOCK_NAMES[b_id(b)],
+      b_species(b)
     );
     // */
     tx = gen_block_texture(b);

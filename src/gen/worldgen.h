@@ -117,7 +117,7 @@ struct climate_info_s {
   float temp_mean[N_SEASONS]; // day, in each season
   float temp_high[N_SEASONS];
   size_t water_table; // how high the water table is, in blocks
-  uint8_t fresh_water; // whether groundwater here is fresh or salty
+  uint8_t water_salinity; // the salinity of local groundwater
 };
 
 struct biome_info_s {
