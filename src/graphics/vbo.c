@@ -38,8 +38,7 @@ vertex_buffer* create_vertex_buffer(void) {
 
 void delete_gl_buffer_in_list(void *entry) {
 #pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
-  // TODO: Fix this!
-  glDeleteBuffers(1, (GLuint) entry);
+  glDeleteBuffers(1, (GLuint*) &entry);
 #pragma GCC diagnostic warning "-Wpointer-to-int-cast"
 }
 

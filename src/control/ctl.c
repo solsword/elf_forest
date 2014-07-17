@@ -59,7 +59,7 @@ static void keyboard(
   if (key == KEYMAP[0]) {
     // We quit immediately here so that this won't be blocked by other things
     // that might filter user input or pause things.
-    shutdown(0);
+    core_shutdown(0);
   }
   for (i = 0; i < N_CONTROLS; ++i) {
     if (key == KEYMAP[i]) {

@@ -52,7 +52,7 @@ void start_game(
 
 // Shuts down the system, cleaning things up and stopping all of the core
 // threads.
-void shutdown(int returnval);
+void core_shutdown(int returnval);
 
 // Sets up the tick system, in particular initializing the tick rate tracker
 // and setting the TICK_AUTOLOAD variable.

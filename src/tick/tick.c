@@ -160,7 +160,7 @@ void start_game(
       // This thread will shut down the whole system when it exits (if the
       // system isn't already being shutdown).
       if (!SHUTDOWN) {
-        shutdown(0);
+        core_shutdown(0);
       }
     } else if (thread_id == 1) {
       // The data management thread:
@@ -179,13 +179,18 @@ void start_game(
       DATA_DONE = 1;
     } else {
       fprintf(stderr, "Error: unexpected thread ID %d. Aborting.\n", thread_id);
-      shutdown(-1);
+      core_shutdown(-1);
     }
   } // end parallel block
 
 }
 
-void shutdown(int returnval) {
+void core_shutdown(int returnval) {
+  if (returnval == 0) {
+    printf("Shutting down normally.\n");
+  } else {
+    printf("Shutting down due to error (code %d).\n", returnval);
+  }
   SHUTDOWN = 1;
   int patience = 100;
   // Wait for all threads to finish:
