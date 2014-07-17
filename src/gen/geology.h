@@ -201,17 +201,17 @@ static inline void stratum_lf_noise(
 ) {
   // Compute noise:
   float scale = GN_LARGE_VAR_SCALE * st->scale_bias;
-  *noise = st->large_var * (-0.5 + managed_sxnoise_2d(
+  *noise = st->large_var * managed_sxnoise_2d(
     x, y,
     scale, scale,
     st->seed*84.1
-  ));
+  );
   scale = GN_MED_VAR_SCALE * st->scale_bias;
-  *noise += st->med_var * (-0.5 + managed_sxnoise_2d(
+  *noise += st->med_var * managed_sxnoise_2d(
     x, y,
     scale, scale,
     st->seed*14.8
-  ));
+  );
 }
 
 // Computes stratum high-frequency noise.

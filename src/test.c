@@ -45,7 +45,7 @@
 // Center of the world:
 world_map_pos WORLD_ORIGIN = { .x = WORLD_WIDTH/2, .y=WORLD_HEIGHT/2 };
 
-ptrdiff_t SEED = 18234122;
+ptrdiff_t SEED = 18234124;
 
 /********
  * Main *
@@ -63,10 +63,11 @@ int main(int argc, char** argv) {
 
   // Start the game:
   //start_game(SEED, argc, argv, "tester", &origin);
+  start_game(SEED, argc, argv, "viewer", &origin);
   //start_game(SEED, argc, argv, "dwarf", &origin);
   //start_game(SEED, argc, argv, "elf", &origin);
   //start_game(SEED, argc, argv, "sparrow", &origin);
-  start_game(SEED, argc, argv, "tern", &origin);
+  //start_game(SEED, argc, argv, "tern", &origin);
 
   // This should never be reached.
   return 0;

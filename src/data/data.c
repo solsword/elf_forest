@@ -31,7 +31,7 @@ size_t const CHUNK_CACHE_MAP_SIZE = 16384;
 //int const LOAD_CAP = 128;
 //int const COMPILE_CAP = 2048;
 int const LOAD_CAP = 16;
-int const COMPILE_CAP = 1024;
+int const COMPILE_CAP = 16;
 //int const LOAD_CAP = 1;
 //int const COMPILE_CAP = 16;
 
