@@ -75,6 +75,15 @@ float example_noise(float x, float y) {
   );
 }
 
+float example_wrapped_noise(float x, float y) {
+  return tiled_func(
+    &sxnoise_2d,
+    x, y,
+    128*SCALE, 128*SCALE,
+    19
+  );
+}
+
 void write_noise_ppm(
   float (*noisefunc)(float, float),
   char const * const filename
@@ -92,8 +101,8 @@ void write_noise_ppm(
   fprintf(fp, "15\n");
   int i, j, col;
   col = 0;
-  for (i = 0; i < 256; ++i) {
-    for (j = 0; j < 256; ++j) {
+  for (j = 0; j < 256; ++j) {
+    for (i = 0; i < 256; ++i) {
       float n = noisefunc((float)i*SCALE, (float)j*SCALE);  // [-1, 1)
       int v = (int) ((n + 1.0) * 16.5);                     // [0, 32]
       if (v < 0 || v > 32) {
@@ -124,5 +133,6 @@ int main(int argc, char** argv) {
   write_noise_ppm(&fractal_2d_noise, "noise_test_2D_F.ppm");
   write_noise_ppm(&slice_fractal_3d_noise, "noise_test_3D_F.ppm");
   write_noise_ppm(&example_noise, "noise_test_ex.ppm");
+  write_noise_ppm(&example_wrapped_noise, "noise_test_wrapped.ppm");
   return 0;
 }

@@ -57,6 +57,12 @@ static inline int fastceil(float x) {
   return ix + (ix < x);
 }
 
+// Rounds a floating point value to the nearest fraction with the given integer
+// denominator.
+static inline float rounddenom(float x, int denom) {
+  return roundf(x*denom)/((float) denom);
+}
+
 // (Poor quality) floating point rand:
 static inline float randf(float min, float max) {
   float result = rand();

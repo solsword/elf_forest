@@ -295,15 +295,6 @@ static inline float grad_3d(ptrdiff_t i, float x, float y, float z) {
   )*GRDIV_3D;
 }
 
-// Faster floor function (mostly 'cause we're ignoring IEEE error stuff).
-// This makes little difference either way actually. Perhaps -ffast-math is the
-// reason?
-static inline ptrdiff_t fastfloor(float x) {
-  //return floor(x);
-  ptrdiff_t ix = (ptrdiff_t) x;
-  return ix - (ix > x);
-}
-
 // Given surflet indices i and j, a surflet center position (sx, sy), and a
 // target position (x, y), compute the surflet influence at the target position.
 static inline float compute_surflet_value_2d(
@@ -426,8 +417,8 @@ float sxnoise_2d(float x, float y) {
 
   // Now we can get the integer coords of the bottom-left corner of the simplex
   // pair we're in:
-  ptrdiff_t i = fastfloor(sx);
-  ptrdiff_t j = fastfloor(sy);
+  ptrdiff_t i = ffloor(sx);
+  ptrdiff_t j = ffloor(sy);
 
   // And the fractional components in square-grid-space that will disambiguate
   // between the upper and lower simplices within this square:
@@ -506,9 +497,9 @@ float sxnoise_3d(float x, float y, float z) {
 
   // Now we can get the integer coords of the bottom-left corner of the simplex
   // sextuple we're in:
-  ptrdiff_t i = fastfloor(sx);
-  ptrdiff_t j = fastfloor(sy);
-  ptrdiff_t k = fastfloor(sz);
+  ptrdiff_t i = ffloor(sx);
+  ptrdiff_t j = ffloor(sy);
+  ptrdiff_t k = ffloor(sz);
 
   // And the fractional components in cubic-grid-space that will disambiguate
   // between the six simplices within this cube:
@@ -635,8 +626,8 @@ float wrnoise_2d(float x, float y) {
   float best = MAX_SQ_WORLEY_DISTANCE_2D;
   float nextbest= MAX_SQ_WORLEY_DISTANCE_2D;
 
-  grn.i = fastfloor(x);
-  grn.j = fastfloor(y);
+  grn.i = ffloor(x);
+  grn.j = ffloor(y);
 
   // Point locations:
   for (i = 0; i < 3; ++i) {
@@ -685,8 +676,8 @@ float wrnoise_2d_fancy(
   float best = MAX_SQ_WORLEY_DISTANCE_2D;
   float nextbest= MAX_SQ_WORLEY_DISTANCE_2D;
 
-  grn.i = fastfloor(x);
-  grn.j = fastfloor(y);
+  grn.i = ffloor(x);
+  grn.j = ffloor(y);
 
   // Point locations:
   for (i = 0; i < 3; ++i) {

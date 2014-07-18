@@ -16,79 +16,135 @@
 
 // Generates stone textures.
 void fltr_stone(texture *tx, void const * const fargs) {
-  int row, col;
-  float x, y;
-  float offset;
-  float ds;
-  float grit, contours, matrix, bumps, alternate;
-  float saturation, value;
+  int row, col; // position within texture
+  float x, y; // distorted/squashed x/y coordinates
+  float alx, aly; // distorted/squashed alternate x/y coordinates
+
+  float scx, scy; // rounded x/y scales
+  float dscx, dscy; // rounded x/y distortion scales
+  float alscx, alscy; // rounded alternate x/y scales
+
+  float wx, wy; // wrap scales
+  float dwx, dwy; // distortion wrap scales
+  float alwx, alwy; // alternate wrap scales
+
+  ptrdiff_t offset; // absolute offset for seed effect
+  float ds; // distortion
+  float grit, contours, matrix, bumps, alternate; // noise layers
+  float saturation, value; // color values
+  pixel base_hsv, alt_hsv; // base and alternate colors in hsv
+  pixel hsv; // temp hsv color
+  pixel rgb; // final rgb color
   stone_filter_args *sfargs = (stone_filter_args *) fargs;
-  pixel base_hsv, alt_hsv;
-  pixel hsv;
-  pixel rgb;
   rgb__hsv(sfargs->base_color, &base_hsv);
   rgb__hsv(sfargs->alt_color, &alt_hsv);
   // We want to incorporate the seed value, but we don't want to deal with
   // overflow. 4 bytes of seed-based noise should be plenty while giving
   // comfortable overhead against overflow.
   offset = expanded_hash_1d(sfargs->seed) & 0xffff;
+  // Round all scale values so that the scaled coordinate-space texture
+  // boundaries are integers (for simplex noise wrapping purposes):
+  scx = rounddenom(sfargs->scale*sfargs->squash, tx->width);
+  scy = rounddenom(sfargs->scale/sfargs->squash, tx->height);
+  wx = tx->width * scx;
+  wy = tx->height * scy;
+
+  dscx = rounddenom(sfargs->dscale, tx->width);
+  dscy = rounddenom(sfargs->dscale, tx->height);
+  dwx = tx->width * dscx;
+  dwy = tx->height * dscy;
+
+  alscx = (tx->width/5 + scx*tx->width)/((float) tx->width);
+  alscy = (tx->height/5 + scy*tx->height)/((float) tx->height);
+  alwx = tx->width * alscx;
+  alwy = tx->height * alscy;
+
+  // Loop over each pixel of the texture:
   for (col = 0; col < tx->width; col += 1) {
     for (row = 0; row < tx->height; row += 1) {
-      ds = sxnoise_2d(col * sfargs->dscale, row * sfargs->dscale);
-      x = (col * sfargs->squash + ds * sfargs->distortion) * sfargs->scale;
-      y = (row / sfargs->squash + ds * sfargs->distortion) * sfargs->scale;
-      x += tx->width * offset;
-      y += tx->height * offset;
+      ds = tiled_func(
+        &sxnoise_2d,
+        col * dscx, row * dscy,
+        dwx, dwy,
+        sfargs->seed
+      );
+      //x = (col + ds * sfargs->distortion) * scx;
+      //y = (row + ds * sfargs->distortion) * scy;
+      x = col * scx;
+      y = row * scy;
+      //x += tx->width * offset;
+      //y += tx->height * offset;
       grit = hash_2d(
         col + fastfloor(x),
         row + fastfloor(y)
       ) / (float) HASH_MASK;
-      contours = (1 + sxnoise_2d(x, y)) / 2.0;
+      contours = (
+        1 + tiled_func(&sxnoise_2d, x, y, wx/2.0, wy/2.0, sfargs->seed+1)
+      ) / 2.0;
+      //contours = (1 + sxnoise_2d(x, y)) / 2.0;
       matrix = sqrtf(
         wrnoise_2d_fancy(
-          x+1000, y,
-          BLOCK_TEXTURE_SIZE * sfargs->scale,
-          BLOCK_TEXTURE_SIZE * sfargs->scale,
+          x, y,
+          fastfloor(wx), fastfloor(wy),
           0
         )
       );
       bumps = sqrtf(
         wrnoise_2d_fancy(
-          x, y,
-          BLOCK_TEXTURE_SIZE * sfargs->scale,
-          BLOCK_TEXTURE_SIZE * sfargs->scale,
+          x + tx->width*offset, y,
+          fastfloor(wx), fastfloor(wy),
           WORLEY_FLAG_INCLUDE_NEXTBEST
         )
       );
 
-      alternate = wrnoise_2d(
-        x * 1.4, y * 1.4 + 1000
+      alx = col * alscx + tx->width*offset*3;
+      aly = row * alscy + tx->height*offset*3;
+      alternate = wrnoise_2d_fancy(
+        alx, aly,
+        fastfloor(wx), fastfloor(wy),
+        WORLEY_FLAG_INCLUDE_NEXTBEST
       ) * (
-        (1 + sxnoise_2d(x*1.2, y*1.2 + 2000)) / 2.0
+        (
+          1 + tiled_func(
+            &sxnoise_2d,
+            alx, aly,
+            tx->width, tx->height,
+            sfargs->seed+2
+          )
+        ) / 2.0
       );
-      //alternate = ((1 + sxnoise_2d(x*1.2, y*1.2 + 2000)) / 2.0);
-      //alternate *= ((1 + sxnoise_2d(x*1.4, y*1.4 + 3000)) / 2.0);
-      //alternate = exp(alternate)/exp(1);
-      //alternate *= alternate;
       alternate = sqrtf(alternate);
 
       // value construction:
       value = (
-        sfargs->gritty * grit +
+        //sfargs->gritty * grit +
         sfargs->contoured * contours +
-        sfargs->porous * matrix +
-        sfargs->bumpy * bumps
+        //sfargs->porous * matrix +
+        //sfargs->bumpy * bumps +
+        0
       ) / (
-        sfargs->gritty + sfargs->contoured + sfargs->porous + sfargs->bumpy
+        //sfargs->gritty +
+        sfargs->contoured +
+        //sfargs->porous +
+        //sfargs->bumpy +
+        0
       );
 
       // saturation variance:
-      saturation = (0.7 + 0.3 * sxnoise_2d(x, y+1000));
+      saturation = (
+        0.7 + 0.3 * tiled_func(
+          &sxnoise_2d,
+          x, y,
+          tx->width, tx->height,
+          sfargs->seed+3
+        )
+      );
 
       // figure out the base color:
       hsv = base_hsv;
       px_set_sat(&hsv, px_sat(hsv) * saturation);
       px_set_val(&hsv, CHANNEL_MAX * value);
+      /*
       if (alternate > (1 - sfargs->inclusions)) {
         px_set_hue(&hsv, px_hue(alt_hsv));
         px_set_sat(&hsv, px_sat(alt_hsv));
@@ -97,6 +153,7 @@ void fltr_stone(texture *tx, void const * const fargs) {
         px_set_sat(&hsv, 0.5*px_sat(hsv));
         px_set_val(&hsv, (px_val(hsv) + CHANNEL_MAX * alternate)/2.0);
       }
+      */
       hsv__rgb(hsv, &rgb);
       rgb = px_relight(rgb, sfargs->brightness);
 

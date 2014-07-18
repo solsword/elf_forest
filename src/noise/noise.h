@@ -222,6 +222,15 @@ struct grid_neighborhood_2d_s {
  * Inline Functions *
  ********************/
 
+// Faster floor function (mostly 'cause we're ignoring IEEE error stuff).
+// This makes little difference either way actually. Perhaps -ffast-math is the
+// reason?
+static inline ptrdiff_t ffloor(float x) {
+  //return floor(x);
+  ptrdiff_t ix = (ptrdiff_t) x;
+  return ix - (ix > x);
+}
+
 // Hash functions using the hash table:
 
 // Basic hash of a single value, using only the first HASH_BITS bits:
@@ -402,6 +411,64 @@ static inline float managed_wrnoise_2d(
   float ox = 12345 * seed * cosf(seed);
   float oy = 12345 * seed * sinf(seed);
   return wrnoise_2d((x+ox)/xscale, (y+oy)/yscale);
+}
+
+// Takes a 2-d function, x, and y coordinates, wrap scales, and a seed, and
+// returns a value for that function that's been made tileable at a scale of
+// wrapx, wrapy. Zero or negative wrap values disable wrapping on that axis.
+static inline float tiled_func(
+  float (*f)(float, float),
+  float x, float y,
+  float wrapx, float wrapy,
+  ptrdiff_t seed
+) {
+  float base;
+  float wx, wy; // wrapped coordinates
+  float ex, ey; // extended coordinates
+  float mx, my; // mix parameters for x and y
+
+  seed &= 0xffff;
+
+  if (wrapx > 0) {
+    wx = x - wrapx*ffloor(x/wrapx);
+    ex = wx + wrapx;
+    mx = 1.0 / (1 + exp(6 - (4*(1-(wx/wrapx))-3)*12));
+    wx += 3*seed*wrapx;
+    ex += 3*seed*wrapx;
+  } else {
+    wx = x + seed*23;
+    ex = x + seed*23;
+    mx = 0;
+  }
+
+  if (wrapy > 0) {
+    wy = y - wrapy*ffloor(y/wrapy);
+    ey = wy + wrapy;
+    wy += (seed/27)*wrapy;
+    ey += (seed/27)*wrapy;
+    my = 1.0 / (1 + exp(6 - (4*(1-(wy/wrapy))-3)*12));
+  } else {
+    wy = y+seed*31;
+    ey = y+seed*31;
+    my = 0;
+  }
+
+  base = f(wx, wy);
+  if (wrapx > 0) {
+    base = (1 - mx) * base + mx * f(ex, wy);
+    if (wrapy > 0) {
+      base = (
+        (1 - my) * base +
+        my * (
+          (1 - mx) * f(wx, ey) + mx * f(ex, ey)
+        )
+      );
+    }
+  } else if (wrapy > 0) {
+    base = (1 - my) * base + my * f(wx, ey);
+  }
+
+  return base;
 }
 
 #endif // ifndef NOISE_H
