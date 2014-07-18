@@ -80,7 +80,7 @@ float example_wrapped_noise(float x, float y) {
     &sxnoise_2d,
     x, y,
     128*SCALE, 128*SCALE,
-    19
+    20
   );
 }
 

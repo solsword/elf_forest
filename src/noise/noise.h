@@ -432,7 +432,7 @@ static inline float tiled_func(
   if (wrapx > 0) {
     wx = x - wrapx*ffloor(x/wrapx);
     ex = wx + wrapx;
-    mx = 1.0 / (1 + exp(6 - (4*(1-(wx/wrapx))-3)*12));
+    mx = 1.0 / (1 + exp(6 - (2*(1-(wx/wrapx))-1)*12));
     wx += 3*seed*wrapx;
     ex += 3*seed*wrapx;
   } else {
@@ -444,9 +444,9 @@ static inline float tiled_func(
   if (wrapy > 0) {
     wy = y - wrapy*ffloor(y/wrapy);
     ey = wy + wrapy;
+    my = 1.0 / (1 + exp(6 - (2*(1-(wy/wrapy))-1)*12));
     wy += (seed/27)*wrapy;
     ey += (seed/27)*wrapy;
-    my = 1.0 / (1 + exp(6 - (4*(1-(wy/wrapy))-3)*12));
   } else {
     wy = y+seed*31;
     ey = y+seed*31;

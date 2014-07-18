@@ -46,8 +46,8 @@ void fltr_stone(texture *tx, void const * const fargs) {
   // boundaries are integers (for simplex noise wrapping purposes):
   scx = rounddenom(sfargs->scale*sfargs->squash, tx->width);
   scy = rounddenom(sfargs->scale/sfargs->squash, tx->height);
-  wx = tx->width * scx;
-  wy = tx->height * scy;
+  wx = (float) tx->width * scx;
+  wy = (float) tx->height * scy;
 
   dscx = rounddenom(sfargs->dscale, tx->width);
   dscy = rounddenom(sfargs->dscale, tx->height);
@@ -68,20 +68,17 @@ void fltr_stone(texture *tx, void const * const fargs) {
         dwx, dwy,
         sfargs->seed
       );
-      //x = (col + ds * sfargs->distortion) * scx;
-      //y = (row + ds * sfargs->distortion) * scy;
-      x = col * scx;
-      y = row * scy;
-      //x += tx->width * offset;
-      //y += tx->height * offset;
+      x = (col + ds * sfargs->distortion) * scx;
+      y = (row + ds * sfargs->distortion) * scy;
+      x += tx->width * offset;
+      y += tx->height * offset;
       grit = hash_2d(
         col + fastfloor(x),
         row + fastfloor(y)
       ) / (float) HASH_MASK;
       contours = (
-        1 + tiled_func(&sxnoise_2d, x, y, wx/2.0, wy/2.0, sfargs->seed+1)
+        1 + tiled_func(&sxnoise_2d, x, y, wx, wy, sfargs->seed+1)
       ) / 2.0;
-      //contours = (1 + sxnoise_2d(x, y)) / 2.0;
       matrix = sqrtf(
         wrnoise_2d_fancy(
           x, y,
@@ -108,7 +105,7 @@ void fltr_stone(texture *tx, void const * const fargs) {
           1 + tiled_func(
             &sxnoise_2d,
             alx, aly,
-            tx->width, tx->height,
+            alwx, alwy,
             sfargs->seed+2
           )
         ) / 2.0
@@ -117,16 +114,16 @@ void fltr_stone(texture *tx, void const * const fargs) {
 
       // value construction:
       value = (
-        //sfargs->gritty * grit +
+        sfargs->gritty * grit +
         sfargs->contoured * contours +
-        //sfargs->porous * matrix +
-        //sfargs->bumpy * bumps +
+        sfargs->porous * matrix +
+        sfargs->bumpy * bumps +
         0
       ) / (
-        //sfargs->gritty +
+        sfargs->gritty +
         sfargs->contoured +
-        //sfargs->porous +
-        //sfargs->bumpy +
+        sfargs->porous +
+        sfargs->bumpy +
         0
       );
 
@@ -135,7 +132,7 @@ void fltr_stone(texture *tx, void const * const fargs) {
         0.7 + 0.3 * tiled_func(
           &sxnoise_2d,
           x, y,
-          tx->width, tx->height,
+          wx, wy,
           sfargs->seed+3
         )
       );
@@ -144,7 +141,6 @@ void fltr_stone(texture *tx, void const * const fargs) {
       hsv = base_hsv;
       px_set_sat(&hsv, px_sat(hsv) * saturation);
       px_set_val(&hsv, CHANNEL_MAX * value);
-      /*
       if (alternate > (1 - sfargs->inclusions)) {
         px_set_hue(&hsv, px_hue(alt_hsv));
         px_set_sat(&hsv, px_sat(alt_hsv));
@@ -153,7 +149,6 @@ void fltr_stone(texture *tx, void const * const fargs) {
         px_set_sat(&hsv, 0.5*px_sat(hsv));
         px_set_val(&hsv, (px_val(hsv) + CHANNEL_MAX * alternate)/2.0);
       }
-      */
       hsv__rgb(hsv, &rgb);
       rgb = px_relight(rgb, sfargs->brightness);
 

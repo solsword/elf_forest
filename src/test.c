@@ -45,8 +45,8 @@
 // Center of the world:
 world_map_pos WORLD_ORIGIN = { .x = WORLD_WIDTH/2, .y=WORLD_HEIGHT/2 };
 
-ptrdiff_t SEED = 18234131;
-int spawn_height = 1416;
+ptrdiff_t SEED = 18234134;
+int spawn_height = 1816;
 
 /********
  * Main *
