@@ -70,9 +70,14 @@ typedef struct world_map_s world_map;
 #define WORLD_REGION_BITS 4
 #define WORLD_REGION_SIZE (1 << WORLD_REGION_BITS)
 
-// Controls number of strata to generate as a multiple of MAX_STRATA_LAYERS,
-// and indirectly controls strata size.
-#define STRATA_COMPLEXITY 0.8
+// Controls the size of strata relative to the world map size.
+#define STRATA_AVG_SIZE 0.25
+
+// Controls how many strata to generate (a multiple of MAX_STRATA_LAYERS).
+#define STRATA_COMPLEXITY 4.0
+
+// The base stratum thickness (before an exponential distribution).
+#define BASE_STRATUM_THICKNESS 10.0
 
 // Maximum number of biomes that can overlap in the same world region
 #define MAX_BIOME_OVERLAP 4
@@ -108,9 +113,9 @@ struct world_map_pos_s {
 
 struct strata_info_s { // indexed starting from the bottom
   size_t stratum_count;
-  stratum *strata[MAX_STRATA_LAYERS]; // the layers that intersect this region
-  //float total_height;
-  //float heights[MAX_STRATA_LAYERS];
+  stratum* strata[MAX_STRATA_LAYERS]; // the layers that intersect this region
+  float total_height; // cumulative height in blocks (as float for division)
+  float bottoms[MAX_STRATA_LAYERS]; // the bottom of each layer on [0, 1]
 };
 
 struct climate_info_s {
@@ -155,8 +160,10 @@ struct biome_s {
 };
 
 // Each world region stores info on geology, climate, ecology, and
-// anthropoloogy.
+// anthropoloogy, as well as an anchor position that's randomly placed
+// somewhere within the region.
 struct world_region_s {
+  region_pos anchor;
   strata_info geology;
   climate_info climate;
   biome_info ecology;

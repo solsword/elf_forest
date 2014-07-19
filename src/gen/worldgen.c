@@ -22,6 +22,9 @@ world_map* THE_WORLD = NULL;
 
 world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
   world_map *result = (world_map*) malloc(sizeof(world_map));
+  world_map_pos xy;
+  world_region* wr;
+  ptrdiff_t hash = seed + 71;
   result->seed = seed;
   result->width = width;
   result->height = height;
@@ -29,6 +32,18 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
   result->all_strata = create_list();
   result->all_biomes = create_list();
   result->all_civs = create_list();
+  for (xy.x = 0; xy.x < result->width; ++xy.x) {
+    for (xy.y = 0; xy.y < result->height; ++xy.y) {
+      wr = get_world_region(wm, &xy); // no need to worry about NULL here
+      wmpos__rpos(&xy, &(wr->anchor));
+      wr->anchor.x += WORLD_REGION_SIZE * CHUNK_SIZE * float_hash_1d(hash); 
+      wr->anchor.y += WORLD_REGION_SIZE * CHUNK_SIZE * float_hash_1d(hash); 
+      wr->anchor.z = (
+        BASE_STRATUM_THICKNESS * MAX_STRATA_LAYERS * float_hash_1d(hash)
+      );
+      hash += 1;
+    }
+  }
   return result;
 }
 
@@ -78,17 +93,17 @@ void world_cell(world_map *wm, region_pos *rpos, cell *result) {
 }
 
 void generate_geology(world_map *wm) {
-  int i;
+  size_t i, j;
   world_map_pos xy;
-  region_pos rpos;
-  r_pos_t t;
+  region_pos corners[4];
+  r_pos_t t[4];
+  r_pos_t t_avg;
   stratum *s;
 
   float avg_size = sqrtf(wm->width*wm->height);
-  avg_size /= fmax(1.0, ((float) STRATA_COMPLEXITY));
+  avg_size *= STRATA_AVG_SIZE;
   avg_size *= WORLD_REGION_SIZE * CHUNK_SIZE;
 
-  float base_thickness = 10.0;
   map_function profile = MFN_SPREAD_UP;
   geologic_source source = GEO_SEDIMENTAY;
   ptrdiff_t hash, h1, h2, h3, h4, h5;
@@ -129,7 +144,7 @@ void generate_geology(world_map *wm) {
       hash,
       float_hash_1d(hash)*wm->width, float_hash_1d(h1)*wm->height,
       avg_size * (0.6 + float_hash_1d(h2)*0.8), // size
-      base_thickness * exp(-0.5 + float_hash_1d(h3)*3.5), // thickness
+      BASE_STRATUM_THICKNESS * exp(-0.5 + float_hash_1d(h3)*3.5), // thickness
       profile, // profile
       source
     );
@@ -140,22 +155,37 @@ void generate_geology(world_map *wm) {
         // Compute thickness to determine if this region needs to be aware of
         // this stratum:
         // TODO: use four-corners method instead
-        wmpos__rpos(&xy, &rpos);
-        t = compute_stratum_height(s, &rpos);
-        if (t > 0) { // In this case, add this stratum to this region:
+        wmpos__rpos(&xy, &(corners[0]));
+        copy_rpos(&(corners[0]), &(corners[1]));
+        corners[1].y += WORLD_REGION_SIZE*CHUNK_SIZE;
+        copy_rpos(&(corners[1]), &(corners[2]));
+        corners[2].x += WORLD_REGION_SIZE*CHUNK_SIZE;
+        copy_rpos(&(corners[0]), &(corners[3]));
+        corners[3].x += WORLD_REGION_SIZE*CHUNK_SIZE;
+        t[0] = compute_stratum_height(s, &(corners[0]));
+        t[1] = compute_stratum_height(s, &(corners[1]));
+        t[2] = compute_stratum_height(s, &(corners[2]));
+        t[3] = compute_stratum_height(s, &(corners[3]));
+        t_avg = (t[0] + t[1] + t[2] + t[3]) / 4.0;
+        // If any corner has material, add this stratum to this region:
+        if (t[0] + t[1] + t[2] + t[3] > 0) {
           //TODO: Real logging/debugging
           //printf("Adding stratum to region at %zu, %zu.\n", xy.x, xy.y);
           wr = get_world_region(wm, &xy); // no need to worry about NULL here
           if (wr->geology.stratum_count < MAX_STRATA_LAYERS) {
+            // adjust existing strata:
+            for (j = 0; j < wr->geology.stratum_count; ++j) {
+              wr->geology.bottoms[j] *= (
+                wr->geology.total_height + t_avg
+              ) / wr->geology.total_height;
+            }
+            wr->geology.total_height += t_avg;
+            wr->geology.bottoms[wr->geology.stratum_count] = 1 - (
+              t_avg / wr->geology.total_height // this is the new total height
+            );
             wr->geology.strata[wr->geology.stratum_count] = s;
             wr->geology.stratum_count += 1;
-          } else {
-            printf(
-              "Warning: strata stacked too high at %zu, %zu!\n",
-              xy.x,
-              xy.y
-            );
-          }
+          } // it's okay if some strata are zoned out by the layers limit
         }
       }
     }
