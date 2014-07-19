@@ -1,3 +1,9 @@
 Elf Forest
 
-An (incomplete) Minecraft clone.
+A game modelled on Minecraft and Dwarf Fortress. Still in the engine
+construction stages for now. Core features so far:
+
+- Basic voxel engine.
+- Simplex and Worley noise functions.
+- Procedural texture generation tools.
+- Procedural stone types and geology.
