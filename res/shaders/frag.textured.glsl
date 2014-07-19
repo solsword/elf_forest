@@ -7,7 +7,11 @@ in float flogz;
 
 void main() {
   vec4 texture_color = texture2D(texture, gl_TexCoord[0].st);
+  float shade = gl_Color.r;
   gl_FragColor = texture_color;
+  gl_FragColor.r *= shade; // lighting
+  gl_FragColor.g *= shade; // lighting
+  gl_FragColor.b *= shade; // lighting
 
   // Logarithmic z-buffer interpolation correction:
   float far = 1024.0; // TODO: make this a parameter.

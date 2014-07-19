@@ -7,12 +7,42 @@
 #include "world/world.h"
 #include "world/blocks.h"
 
+/*********
+ * Types *
+ *********/
+
+// Contains illumination data for 6 faces.
+struct cube_illumination_s;
+typedef struct cube_illumination_s cube_illumination;
+
+// 2 bits for each of four vertices:
+typedef uint8_t face_illumination;
+
+// A full 8 bits of vertex illumination is interpolated across faces on the
+// graphics card:
+typedef GLubyte vertex_illumination;
+
+// (really 2 bits): vertex on a face:
+//   0 = southwest
+//   1 = northwest
+//   2 = northeast
+//   3 = northwest
+typedef uint8_t face_vertex;
+
 /*************
  * Constants *
  *************/
 
 // How far to push things to prevent z-fighting:
 extern float const Z_RECONCILIATION_OFFSET;
+
+/*************************
+ * Structure Definitions *
+ *************************/
+
+struct cube_illumination_s {
+  face_illumination faces[6];
+};
 
 /********************
  * Inline Functions *
@@ -25,6 +55,146 @@ static inline layer block_layer(block b) {
     return L_TRANSLUCENT;
   } else {
     return L_OPAQUE;
+  }
+}
+
+// Looks up a vertex illumination (2 bits) in a face illumination value and
+// adjusts to the full 1-byte range. The vertex argument should be either 0, 1,
+// 2, or 3.
+static inline vertex_illumination vertex_light(
+  face_illumination light,
+  face_vertex vertex
+) {
+  return 96 + 20 * ((light >> (2*vertex)) & 0x3);
+}
+
+// Looks up a face illumination (8 bits) in a cube_illumination value. The
+// vertex argument should be either 0, 1, 2, or 3.
+static inline face_illumination face_light(
+  cube_illumination* i,
+  block_data face
+) {
+  return i->faces[face];
+}
+
+// Computes lighting for the vertices of a cube. Normally computes external
+// illumination, unless internal is 1, in which case it computes internal
+// illumination.
+static inline void compute_lighting(
+  cell** neighborhood,
+  int internal,
+  cube_illumination* result
+) {
+  block_data face = BD_FACE_FRONT;
+  face_vertex vertex;
+  // Which face determines what north/south/east/west mean and the base offset:
+  int o_base = 0;
+  int o_n = 0, o_e = 0, o_s = 0, o_w = 0;
+  int i0, i1, ic;
+  int side0, side1, corner;
+  for (face = BD_FACE_FRONT; face < BD_FACE_INSIDE; ++face) {
+    // clear the lighting for this face:
+    result->faces[face] = 0x00;
+    switch (face) {
+      case M_BD_FACE_FRONT:
+      default:
+        o_base = 1;
+        o_n = 9;
+        o_e = -3;
+        o_s = -9;
+        o_w = 3;
+        break;
+      case M_BD_FACE_BACK:
+        o_base = -1;
+        o_n = 9;
+        o_e = 3;
+        o_s = -9;
+        o_w = -3;
+        break;
+      case M_BD_FACE_RIGHT:
+        o_base = -3;
+        o_n = 9;
+        o_e = -1;
+        o_s = -9;
+        o_w = 1;
+        break;
+      case M_BD_FACE_LEFT:
+        o_base = 3;
+        o_n = 9;
+        o_e = 1;
+        o_s = -9;
+        o_w = -1;
+        break;
+      case M_BD_FACE_TOP:
+        o_base = 9;
+        o_n = 1;
+        o_e = 3;
+        o_s = -1;
+        o_w = -3;
+        break;
+      case M_BD_FACE_BOT:
+        o_base = -9;
+        o_n = 1;
+        o_e = -3;
+        o_s = -1;
+        o_w = 3;
+        break;
+    }
+    if (internal) {
+      o_base = 0;
+    }
+    for (vertex = 0; vertex < 4; ++vertex) {
+      i0 = 13 + o_base;
+      i1 = 13 + o_base;
+      ic = 13 + o_base;
+      switch (vertex) {
+        case 0:
+        default:
+          i0 += o_s;
+          i1 += o_w;
+          ic += o_s + o_w;
+          break;
+        case 1:
+          i0 += o_n;
+          i1 += o_w;
+          ic += o_n + o_w;
+          break;
+        case 2:
+          i0 += o_n;
+          i1 += o_e;
+          ic += o_n + o_e;
+          break;
+        case 3:
+          i0 += o_s;
+          i1 += o_e;
+          ic += o_s + o_e;
+          break;
+      }
+      side0 = b_is_opaque(neighborhood[i0]->primary);
+      side1 = b_is_opaque(neighborhood[i1]->primary);
+      corner = b_is_opaque(neighborhood[ic]->primary);
+      // DEBUG:
+      /*
+      if (face == BD_FACE_FRONT) {
+        result->faces[face] = 0x00;
+      } else if (face == BD_FACE_BACK) {
+        result->faces[face] = 0x00;
+      } else if (face == BD_FACE_RIGHT) {
+        result->faces[face] = 0x55;
+      } else if (face == BD_FACE_LEFT) {
+        result->faces[face] = 0x55;
+      } else if (face == BD_FACE_TOP) {
+        result->faces[face] = 0xaa;
+      } else if (face == BD_FACE_BOT) {
+        result->faces[face] = 0xaa;
+      }
+      // */
+      //*
+      if (!(side0 && side1)) {
+        result->faces[face] |= (3 - (side0 + side1 + corner)) << (2*vertex);
+      } // else lighting is 0 so we do nothing since that's the default
+      // */
+    }
   }
 }
 

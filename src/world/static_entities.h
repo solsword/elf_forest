@@ -11,8 +11,8 @@
 entity STATIC_ENTITY_TYPES[NUM_STATIC_ENTITY_TYPES] = {
   {
     .type="tester",
-    .size={.x=1.3,.y=1.3,.z=3.2},
-    .head_pos={.x=0.0,.y=0.0,.z=1.2},
+    .size={.x=0.9,.y=0.9,.z=2.8},
+    .head_pos={.x=0.0,.y=0.0,.z=1.0},
     .mass=45,
     .walk=600,
       .step_height=1,

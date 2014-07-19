@@ -13,6 +13,7 @@ out float flogz;
 void main() {
   //gl_Position = projection * model * gl_Vertex;
   gl_Position = ftransform();
+  // Pass through colors:
   gl_FrontColor = gl_Color;
   gl_BackColor = gl_Color;
   gl_TexCoord[0] = gl_TextureMatrix[0] * gl_MultiTexCoord0;

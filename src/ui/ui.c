@@ -55,6 +55,8 @@ color const LEAF_SHADOW = { .r=32, .g=45, .b=41, .a=170 };
 float OVERLAY_WIDTH = 1.0;
 float OVERLAY_HEIGHT = 1.0;
 
+uint8_t DRAW_DEBUG_INFO = 0;
+
 /********************
  * Inline Functions *
  ********************/
@@ -285,17 +287,24 @@ static inline void draw_pos_info(void) {
 static inline void draw_perf_info(void) {
   sprintf(
     TXT,
-    "chunk layers rendered :: %d ",
+    "chunk layers rendered :: %d",
     CHUNK_LAYERS_RENDERED.average
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 480);
 
   sprintf(
     TXT,
-    "chunks loaded :: %d chunks compiled :: %d",
-    CHUNKS_LOADED.average, CHUNKS_COMPILED.average
+    "chunks loaded :: %d",
+    CHUNKS_LOADED.average
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 450);
+
+  sprintf(
+    TXT,
+    "chunks compiled :: %d",
+    CHUNKS_COMPILED.average
+  );
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 420);
 }
 
 /*************
@@ -344,12 +353,14 @@ void render_ui(void) {
   draw_watermark();
 
   // Debugging info:
-  draw_rates();
+  if (DRAW_DEBUG_INFO) {
+    draw_rates();
 #ifdef PROFILE_MEM
-  draw_mem();
+    draw_mem();
 #endif
-  draw_pos_info();
-  draw_perf_info();
+    draw_pos_info();
+    draw_perf_info();
+  }
 
   // Reenable depth testing and face culling and pop back to the previous
   // model view matrix state:

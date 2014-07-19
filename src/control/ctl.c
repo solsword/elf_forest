@@ -14,6 +14,7 @@
 #include "world/world.h"
 #include "world/entities.h"
 #include "tick/tick.h"
+#include "ui/ui.h"
 
 #include "util.h"
 
@@ -28,6 +29,7 @@ int KEYMAP[N_CONTROLS] = {
   GLFW_KEY_A, GLFW_KEY_D, GLFW_KEY_W, GLFW_KEY_S, // movement
   GLFW_KEY_V, // swap views
   GLFW_KEY_KP_ADD, GLFW_KEY_KP_SUBTRACT, // zoom in/out
+  GLFW_KEY_F1, // draw debug info
 };
 
 uint8_t CONTROLS[N_CONTROLS];
@@ -37,7 +39,7 @@ uint8_t UP[N_CONTROLS];
 uint8_t PAUSED = 0;
 uint8_t PHYSICS_PAUSED = 0;
 
-float MOUSE_SENSITIVITY = 1.0/6.0;
+float MOUSE_SENSITIVITY = 1.0/8.0;
 
 entity * PLAYER = NULL;
 
@@ -139,6 +141,11 @@ void tick_general_controls(void) {
   if (CONTROLS[C_ZOOM_OUT]) {
     ZOOM *= 1.1;
     ZOOM = ZOOM > MAX_ZOOM ? MAX_ZOOM : ZOOM;
+  }
+
+  // Displaying debug info:
+  if (DOWN[C_DRAW_DEBUG_INFO]) {
+    DRAW_DEBUG_INFO = !DRAW_DEBUG_INFO;
   }
 }
 

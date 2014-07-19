@@ -42,6 +42,9 @@ extern color const LEAF_SHADOW;
 extern float OVERLAY_WIDTH;
 extern float OVERLAY_HEIGHT;
 
+// Whether to draw the debug info or not:
+extern uint8_t DRAW_DEBUG_INFO;
+
 /*************************
  * Structure Definitions *
  *************************/

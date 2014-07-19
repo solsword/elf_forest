@@ -43,6 +43,7 @@ gameplay
   smell
   sounds (directional; slow pathfinding)
 bugs/testing
+  edge-of-chunk lighting and transparency issues
   bad transparency layering (before/behind the player when in water with
     abstract water below).
   fix abstracted chunk adjacency+transparency

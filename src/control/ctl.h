@@ -20,6 +20,7 @@ enum control_e {
   C_JUMP, C_DIVE, C_CROUCH,
   C_LEFT, C_RIGHT, C_FORWARD, C_REVERSE,
   C_CHANGE_VIEW, C_ZOOM_IN, C_ZOOM_OUT,
+  C_DRAW_DEBUG_INFO,
   N_CONTROLS
 };
 typedef enum control_e control;

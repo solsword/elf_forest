@@ -107,6 +107,9 @@ void vb_add_vertex(vertex const * const v, vertex_buffer *vb) {
   vb->vdata[vb->vertex_count].nz = v->nz;
   vb->vdata[vb->vertex_count].s = v->s;
   vb->vdata[vb->vertex_count].t = v->t;
+  vb->vdata[vb->vertex_count].brightness = v->brightness;
+  vb->vdata[vb->vertex_count]._1 = v->_1;
+  vb->vdata[vb->vertex_count]._2 = v->_2;
   vb->idata[vb->index_count] = vb->vertex_count;
   vb->index_count += 1;
   vb->vertex_count += 1;
@@ -185,7 +188,7 @@ void draw_vertex_buffer(vertex_buffer *vb, GLuint txid) {
   }
 
   // Enable array functionality:
-  glDisableClientState( GL_COLOR_ARRAY );
+  glEnableClientState( GL_COLOR_ARRAY );
   glEnableClientState( GL_VERTEX_ARRAY );
   glEnableClientState( GL_NORMAL_ARRAY );
   //glDisableClientState( GL_NORMAL_ARRAY );
@@ -210,7 +213,7 @@ void draw_vertex_buffer(vertex_buffer *vb, GLuint txid) {
     glBindBuffer( GL_ARRAY_BUFFER, (GLuint) l_get_item(vb->vbuffers, i) );
 #pragma GCC diagnostic warning "-Wpointer-to-int-cast"
 
-    // Set the vertex/normal/texture data strides & offsets:
+    // Set the vertex/normal/texture/color data strides & offsets:
     glVertexPointer(
       3,
       GL_FLOAT,
@@ -228,6 +231,12 @@ void draw_vertex_buffer(vertex_buffer *vb, GLuint txid) {
       GL_SHORT,
       sizeof(vertex),
       (GLvoid const *) (5*sizeof(GLfloat))
+    );
+    glColorPointer(
+      3,
+      GL_UNSIGNED_BYTE,
+      sizeof(vertex),
+      (GLvoid const *) (5*sizeof(GLfloat)+3*sizeof(GLshort))
     );
     // */
     // DEBUG!

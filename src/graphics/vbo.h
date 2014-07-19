@@ -19,8 +19,8 @@
 // An index into a vertex buffer.
 typedef GLushort vb_index;
 
-// All of the data needed to define a vertex: 3D position, 3D normal, and s and
-// t texture coordinates, each stored as a 16-bit unsigned int.
+// All of the data needed to define a vertex: 3D position, 3D normal, s and t
+// texture coordinates, and brightness.
 struct vertex_s;
 typedef struct vertex_s vertex;
 
@@ -44,6 +44,7 @@ struct vertex_s {
   GLfloat x, y, z;
   GLfloat s, t;
   GLshort nx, ny, nz;
+  GLubyte brightness, _1, _2; // TODO: Use these extra bytes
 };
 
 struct vertex_buffer_s {

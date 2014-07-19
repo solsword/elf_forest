@@ -127,7 +127,7 @@ struct biome_info_s {
 };
 
 struct civ_info_s {
-  // TODO: HERE
+  // TODO: this
   size_t population;
 };
 

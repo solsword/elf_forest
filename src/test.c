@@ -36,7 +36,7 @@
 world_map_pos WORLD_ORIGIN = { .x = WORLD_WIDTH/2, .y=WORLD_HEIGHT/2 };
 
 ptrdiff_t SEED = 18234141;
-int spawn_height = 1700;
+int spawn_height = 1750;
 
 /********
  * Main *
@@ -52,8 +52,8 @@ int main(int argc, char** argv) {
   origin.z = spawn_height;
 
   // Start the game:
-  //start_game(SEED, argc, argv, "tester", &origin);
-  start_game(SEED, argc, argv, "viewer", &origin);
+  start_game(SEED, argc, argv, "tester", &origin);
+  //start_game(SEED, argc, argv, "viewer", &origin);
   //start_game(SEED, argc, argv, "dwarf", &origin);
   //start_game(SEED, argc, argv, "elf", &origin);
   //start_game(SEED, argc, argv, "sparrow", &origin);

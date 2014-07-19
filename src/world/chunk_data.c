@@ -33,6 +33,7 @@ static inline int occludes_face(block neighbor, block occluded) {
   );
 }
 
+// TODO: Get rid of this?
 // Macro-expanded face-checking functions:
 #define CHECK_ANY_FACE \
   static inline int FN_NAME( \

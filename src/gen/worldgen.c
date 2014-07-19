@@ -183,7 +183,10 @@ void strata_cell(
   }
 
   // DEBUG: Caves to show things off more:
-  if (sxnoise_3d(rpos->x*1/6.0, rpos->y*1/6.0, rpos->z*1/6.0) > 0.2) {
+  if (
+    sxnoise_3d(rpos->x*1/12.0, rpos->y*1/12.0, rpos->z*1/12.0) >
+      sxnoise_3d(rpos->x*1/52.0, rpos->y*1/52.0, rpos->z*1/52.0)
+  ) {
     result->primary = b_make_block(B_AIR);
     result->secondary = b_make_block(B_VOID);
     return;
