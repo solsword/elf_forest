@@ -167,10 +167,10 @@ static inline void draw_watermark(void) {
     -2, 0
   );
   render_string(
-    "<Grand Canyon Demo>",
+    "<alpha test>",
     WHITE,
     22,
-    520, 15
+    620, 15
   );
 }
 
