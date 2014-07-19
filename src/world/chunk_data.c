@@ -138,15 +138,20 @@ CHECK_ANY_FACE
  *************/
 
 void compute_exposure(chunk_or_approx *coa) {
+  static cell dummy = {
+    .primary = 0,
+    .secondary = 0,
+    .p_data = 0,
+    .s_data = 0
+  };
   chunk_index idx;
-  block b = 0;
   block flags_to_set = 0;
   block flags_to_clear = 0;
-  block ba = 0, bb = 0, bn = 0, bs = 0, be = 0, bw = 0;
   region_chunk_pos rcpos;
   chunk *c;
   chunk_approximation *ca;
-  chunk_or_approx above, below, north, south, east, west;
+  chunk_or_approx chunk_neighbors[27]; // also zxy order
+  cell* neighborhood[27]; // zxy order:
   ch_idx_t step = 1;
 
   if (coa->type == CA_TYPE_CHUNK) {
@@ -166,23 +171,8 @@ void compute_exposure(chunk_or_approx *coa) {
     exit(1);
   }
 
-  // Get neighbor data, returning 0 if it's not available:
-  rcpos.x += 1;
-  get_best_data(&rcpos, &east);
-  rcpos.x -= 2;
-  get_best_data(&rcpos, &west);
-  rcpos.x += 1;
-
-  rcpos.y += 1;
-  get_best_data(&rcpos, &north);
-  rcpos.y -= 2;
-  get_best_data(&rcpos, &south);
-  rcpos.y += 1;
-
-  rcpos.z += 1;
-  get_best_data(&rcpos, &above);
-  rcpos.z -= 2;
-  get_best_data(&rcpos, &below);
+  // Get the chunk neighborhood:
+  get_chunk_neighborhood(&rcpos, chunk_neighbors);
 
   if (coa->type == CA_TYPE_CHUNK) {
     step = 1;
@@ -193,42 +183,66 @@ void compute_exposure(chunk_or_approx *coa) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
         // get main block and neighbors:
-        if (coa->type == CA_TYPE_CHUNK) {
-          b = c_cell(c, idx)->primary;
-          c_get_primary_neighbors(c, idx, &ba, &bb, &bn, &bs, &be, &bw);
-        } else {
-          b = ca_cell(ca, idx)->primary;
-          ca_get_primary_neighbors(ca, idx, &ba, &bb, &bn, &bs, &be, &bw);
-        }
+        get_cell_neighborhood(idx, chunk_neighbors, neighborhood, step, &dummy);
         // Check exposure:
         flags_to_set = 0;
         flags_to_clear = 0;
-        if (!check_top_face(idx, step, &above, b, ba)) {
+        if (
+          !occludes_face(
+            neighborhood[13+9]->primary,
+            neighborhood[13]->primary
+          )
+        ) {
           flags_to_set |= BF_EXPOSED_ABOVE;
         } else {
           flags_to_clear |= BF_EXPOSED_ABOVE;
         }
-        if (!check_bot_face(idx, step, &below, b, bb)) {
+        if (
+          !occludes_face(
+            neighborhood[13-9]->primary,
+            neighborhood[13]->primary
+          )
+        ) {
           flags_to_set |= BF_EXPOSED_BELOW;
         } else {
           flags_to_clear |= BF_EXPOSED_BELOW;
         }
-        if (!check_north_face(idx, step, &north, b, bn)) {
+        if (
+          !occludes_face(
+            neighborhood[13+1]->primary,
+            neighborhood[13]->primary
+          )
+        ) {
           flags_to_set |= BF_EXPOSED_NORTH;
         } else {
           flags_to_clear |= BF_EXPOSED_NORTH;
         }
-        if (!check_south_face(idx, step, &south, b, bs)) {
+        if (
+          !occludes_face(
+            neighborhood[13-1]->primary,
+            neighborhood[13]->primary
+          )
+        ) {
           flags_to_set |= BF_EXPOSED_SOUTH;
         } else {
           flags_to_clear |= BF_EXPOSED_SOUTH;
         }
-        if (!check_east_face(idx, step, &east, b, be)) {
+        if (
+          !occludes_face(
+            neighborhood[13+3]->primary,
+            neighborhood[13]->primary
+          )
+        ) {
           flags_to_set |= BF_EXPOSED_EAST;
         } else {
           flags_to_clear |= BF_EXPOSED_EAST;
         }
-        if (!check_west_face(idx, step, &west, b, bw)) {
+        if (
+          !occludes_face(
+            neighborhood[13-3]->primary,
+            neighborhood[13]->primary
+          )
+        ) {
           flags_to_set |= BF_EXPOSED_WEST;
         } else {
           flags_to_clear |= BF_EXPOSED_WEST;

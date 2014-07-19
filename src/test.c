@@ -32,21 +32,11 @@
  * Constants *
  *************/
 
-// TODO: test for oddness near the origin.
-// 50% Hills:
-//region_chunk_pos const CHUNK_ORIGIN = { .x = 70240, .y = 54567, .z = 10 };
-// 70% Hills:
-//region_chunk_pos const CHUNK_ORIGIN = { .x = 71240, .y = 54567, .z = 10 };
-// Plains:
-//region_chunk_pos const CHUNK_ORIGIN = { .x = 69240, .y = 54067, .z = 10 };
-// Beach:
-//region_chunk_pos const CHUNK_ORIGIN = { .x = 11929, .y = -199356, .z = 2 };
-
 // Center of the world:
 world_map_pos WORLD_ORIGIN = { .x = WORLD_WIDTH/2, .y=WORLD_HEIGHT/2 };
 
-ptrdiff_t SEED = 18234134;
-int spawn_height = 1816;
+ptrdiff_t SEED = 18234141;
+int spawn_height = 1700;
 
 /********
  * Main *

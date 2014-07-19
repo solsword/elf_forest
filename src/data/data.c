@@ -345,6 +345,7 @@ void get_best_data_limited(
     }
   }
   coa->type = CA_TYPE_NOT_LOADED;
+  coa->ptr = NULL;
   return;
 }
 

@@ -109,6 +109,8 @@ struct world_map_pos_s {
 struct strata_info_s { // indexed starting from the bottom
   size_t stratum_count;
   stratum *strata[MAX_STRATA_LAYERS]; // the layers that intersect this region
+  //float total_height;
+  //float heights[MAX_STRATA_LAYERS];
 };
 
 struct climate_info_s {

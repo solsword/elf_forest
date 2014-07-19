@@ -185,4 +185,72 @@ void tick_compile_chunks(void);
 void load_chunk(chunk *c);
 void load_chunk_approx(chunk_approximation *ca);
 
+/**************************
+ * Extra Inline Functions *
+ **************************/
+
+// neighborhood should be a 27-dimensional array of chunk_or_approxes, which
+// will be filled in in zxy order.
+static inline void get_chunk_neighborhood(
+  region_chunk_pos* rcpos,
+  chunk_or_approx* neighborhood
+) {
+  region_chunk_pos nbpos;
+  size_t i = 0;
+  for (nbpos.z = rcpos->z - 1; nbpos.z <= rcpos->z + 1; nbpos.z += 1) {
+    for (nbpos.x = rcpos->x - 1; nbpos.x <= rcpos->x + 1; nbpos.x += 1) {
+      for (nbpos.y = rcpos->y - 1; nbpos.y <= rcpos->y + 1; nbpos.y += 1) {
+        get_best_data(&nbpos, &(neighborhood[i]));
+        i += 1;
+      }
+    }
+  }
+}
+
+// chunk_neighbors should be a 27-dimensional array of chunk_or_approxes in zxy
+// order, while neighborhood should be a pointer to a 27-dimensional array of
+// cell pointers in zxy order. The step value indicates how far to go to reach
+// a "neighbor." The dummy value is substituted for missing cells.
+static inline void get_cell_neighborhood(
+  chunk_index idx,
+  chunk_or_approx const * const chunk_neighbors,
+  cell* neighborhood[],
+  int step,
+  cell* dummy
+) {
+  // note that the intentional underflow should wrap correctly here
+  chunk_index nbr;
+  int dx, dy, dz;
+  chunk_or_approx const * coa;
+  size_t i = 0, j = 0;
+  for (dz = -step; dz <= step; dz += step) {
+    for (dx = -step; dx <= step; dx += step) {
+      for (dy = -step; dy <= step; dy += step) {
+        nbr.x = idx.x + dx;
+        nbr.y = idx.y + dy;
+        nbr.z = idx.z + dz;
+        j = 13; // the center of the chunk neighborhood
+        if (idx.z < step && nbr.z == idx.z - step) { j -= 9; }
+        if (idx.z >= CHUNK_SIZE - step && nbr.z == idx.z + step) { j += 9; }
+        if (idx.x < step && nbr.x == idx.x - step) { j -= 3; }
+        if (idx.x >= CHUNK_SIZE - step && nbr.x == idx.x + step) { j += 3; }
+        if (idx.y < step && nbr.y == idx.y - step) { j -= 1; }
+        if (idx.y >= CHUNK_SIZE - step && nbr.y == idx.y + step) { j += 1; }
+        nbr.x &= CH_MASK;
+        nbr.y &= CH_MASK;
+        nbr.z &= CH_MASK;
+        coa = &(chunk_neighbors[j]);
+        if (coa->type == CA_TYPE_CHUNK) {
+          neighborhood[i] = c_cell((chunk*) (coa->ptr), nbr);
+        } else if (coa->type == CA_TYPE_APPROXIMATION) {
+          neighborhood[i] = ca_cell((chunk_approximation*) (coa->ptr), nbr);
+        } else {
+          neighborhood[i] = dummy;
+        }
+        i += 1;
+      }
+    }
+  }
+}
+
 #endif // ifndef DATA_H

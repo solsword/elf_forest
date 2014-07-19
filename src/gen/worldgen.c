@@ -176,7 +176,14 @@ void strata_cell(
   copy_rpos(rpos, &trp);
   trp.z = 0;
   // DEBUG: (to show the strata)
-  if (abs(rpos->x - 32720) < CHUNK_SIZE) {
+  if (abs(rpos->x - 32770) < CHUNK_SIZE) {
+    result->primary = b_make_block(B_AIR);
+    result->secondary = b_make_block(B_VOID);
+    return;
+  }
+
+  // DEBUG: Caves to show things off more:
+  if (sxnoise_3d(rpos->x*1/6.0, rpos->y*1/6.0, rpos->z*1/6.0) > 0.2) {
     result->primary = b_make_block(B_AIR);
     result->secondary = b_make_block(B_VOID);
     return;

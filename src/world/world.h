@@ -446,65 +446,6 @@ static inline cell* ca_cell(
   return ca_cell_table[ca->detail](ca, &idx);
 }
 
-static inline void c_get_primary_neighbors(
-  chunk *c,
-  chunk_index idx,
-  block *ba, block *bb,
-  block *bn, block *cs,
-  block *be, block *bw
-) {
-  // note that even underflow should wrap correctly here
-  chunk_index nbr;
-  nbr.x = idx.x;
-  nbr.y = idx.y;
-  nbr.z = idx.z + 1;
-  *ba = (idx.z < CHUNK_SIZE - 1) * c_cell(c, nbr)->primary;
-  nbr.z = idx.z - 1;
-  *bb = (idx.z > 0) *c_cell(c, nbr)->primary;
-  nbr.z = idx.z;
-  nbr.y = idx.y + 1;
-  *bn = (idx.y < CHUNK_SIZE - 1) * c_cell(c, nbr)->primary;
-  nbr.y = idx.y - 1;
-  *cs = (idx.y > 0) * c_cell(c, nbr)->primary;
-  nbr.y = idx.y;
-  nbr.x = idx.x + 1;
-  *be = (idx.x < CHUNK_SIZE - 1) * c_cell(c, nbr)->primary;
-  nbr.x = idx.x - 1;
-  *bw = (idx.x > 0) * c_cell(c, nbr)->primary;
-}
-
-// This has to be declared after ca_cell.
-static inline void ca_get_primary_neighbors(
-  chunk_approximation *ca,
-  chunk_index idx,
-  block *ba, block *bb,
-  block *bn, block *cs,
-  block *be, block *bw
-) {
-  // note that even underflow should wrap correctly here
-  ch_idx_t step = 1 << (ca->detail);
-  ch_idx_t mask = umaxof(ch_idx_t) << (ca->detail);
-  chunk_index nbr;
-  nbr.x = idx.x;
-  nbr.y = idx.y;
-  nbr.z = idx.z;
-
-  nbr.z = (idx.z & mask) + step;
-  *ba = (idx.z < CHUNK_SIZE - step) * ca_cell(ca, nbr)->primary;
-  nbr.z = (idx.z & mask) - step;
-  *bb = (idx.z > step - 1) * ca_cell(ca, nbr)->primary;
-  nbr.z = (idx.z & mask);
-  nbr.y = (idx.y & mask) + step;
-  *bn = (idx.y < CHUNK_SIZE - step) * ca_cell(ca, nbr)->primary;
-  nbr.y = (idx.y & mask) - step;
-  *cs = (idx.y > step - 1) * ca_cell(ca, nbr)->primary;
-  nbr.y = (idx.y & mask);
-  nbr.x = (idx.x & mask) + step;
-  *be = (idx.x < CHUNK_SIZE - step) * ca_cell(ca, nbr)->primary;
-  nbr.x = (idx.x & mask) - step;
-  *bw = (idx.x > step - 1) * ca_cell(ca, nbr)->primary;
-}
-
 // cell_at returns the cell at the given region position according to the best
 // available currently-loaded data, returning NULL if there is no data loaded
 // for that position. Note that this will cache the chunk used and re-use it
