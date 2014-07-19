@@ -36,6 +36,10 @@ typedef uint8_t face_vertex;
 // How far to push things to prevent z-fighting:
 extern float const Z_RECONCILIATION_OFFSET;
 
+// Lighting parameters for ambient occlusion lighting:
+extern uint8_t const BASE_LIGHT_LEVEL;
+extern uint8_t const AMBIENT_LIGHT_STRENGTH;
+
 /*************************
  * Structure Definitions *
  *************************/
@@ -65,7 +69,10 @@ static inline vertex_illumination vertex_light(
   face_illumination light,
   face_vertex vertex
 ) {
-  return 96 + 20 * ((light >> (2*vertex)) & 0x3);
+  return (
+    BASE_LIGHT_LEVEL +
+    AMBIENT_LIGHT_STRENGTH * ((light >> (2*vertex)) & 0x3)
+  );
 }
 
 // Looks up a face illumination (8 bits) in a cube_illumination value. The

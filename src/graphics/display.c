@@ -26,6 +26,9 @@
 
 float const Z_RECONCILIATION_OFFSET = 0.0005;
 
+uint8_t const BASE_LIGHT_LEVEL = 80;
+uint8_t const AMBIENT_LIGHT_STRENGTH = 30;
+
 /***********
  * Globals *
  ***********/
