@@ -69,22 +69,29 @@ void cleanup_worldgen() {
 }
 
 void world_cell(world_map *wm, region_pos *rpos, cell *result) {
-  world_map_pos wmpos;
-  world_region *wr;
+  world_map_pos wmpos, iter;
+  world_region *neighborhood[9];
+  size_t i = 0;
   rpos__wmpos(rpos, &wmpos);
   // default values:
   result->primary = b_make_block(B_VOID);
   result->secondary = b_make_block(B_VOID);
   result->p_data = 0;
   result->s_data = 0;
-  wr = get_world_region(wm, &wmpos);
+  i = 0;
+  for (iter.x = wmpos.x - 1; iter.x <= wmpos.x + 1; ++iter.x) {
+    for (iter.y = wmpos.y - 1; iter.y <= wmpos.y + 1; ++iter.y) {
+      neighborhood[i] = get_world_region(wm, &iter);
+      i += 1;
+    }
+  }
   if (rpos->z < 0) {
     result->primary = b_make_block(B_BOUNDARY);
-  } else if (wr == NULL) {
+  } else if (neighborhood[4] == NULL) {
     // Outside the world:
     result->primary = b_make_block(B_AIR);
   } else {
-    strata_cell(wr, rpos, result);
+    strata_cell(neighborhood, rpos, result);
   }
   if (b_is(result->primary, B_VOID)) {
     // TODO: Other things like plants here...
@@ -181,7 +188,9 @@ void generate_geology(world_map *wm) {
             }
             wr->geology.total_height += t_avg;
             wr->geology.bottoms[wr->geology.stratum_count] = 1 - (
-              t_avg / wr->geology.total_height // this is the new total height
+              t_avg / fmax(BASE_STRATUM_THICKNESS*6, wr->geology.total_height)
+              // the higher of the new total height or approximately 6 strata
+              // of height
             );
             wr->geology.strata[wr->geology.stratum_count] = s;
             wr->geology.stratum_count += 1;
@@ -193,11 +202,12 @@ void generate_geology(world_map *wm) {
 }
 
 void strata_cell(
-  world_region *wr,
+  world_region* neighborhood[],
   region_pos *rpos,
   cell *result
 ) {
-  static r_pos_t heights[MAX_STRATA_LAYERS];
+  static r_pos_t surface_height;
+  float column_height;
   static region_pos pr_rpos = { .x = -1, .y = -1, .z = -1 };
   int i;
   r_pos_t h;
@@ -205,7 +215,9 @@ void strata_cell(
   region_pos trp;
   copy_rpos(rpos, &trp);
   trp.z = 0;
+
   // DEBUG: (to show the strata)
+  /*
   if (abs(rpos->x - 32770) < CHUNK_SIZE) {
     result->primary = b_make_block(B_AIR);
     result->secondary = b_make_block(B_VOID);
@@ -221,14 +233,11 @@ void strata_cell(
     result->secondary = b_make_block(B_VOID);
     return;
   }
+  */
 
   if (pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
-    // No need to recompute the strata column if we're at the same x/y.
-    // Compute strata heights from the bottom up:
-    for (i = 0; i < wr->geology.stratum_count; ++i) {
-      st = wr->geology.strata[i];
-      heights[i] = compute_stratum_height(st, &trp);
-    }
+    // No need to recompute the surface height if we're at the same x/y.
+    surface_height = compute_surface_height(&(neighborhood[4]), &rpos);
   }
 
   // DEBUG:

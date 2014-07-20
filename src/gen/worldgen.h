@@ -237,6 +237,12 @@ static inline world_region* get_world_region(
   }
 }
 
+static inline r_pos_t compute_surface_height(
+  world_region* wr,
+  region_pos* rpos
+) {
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/

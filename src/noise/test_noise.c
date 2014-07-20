@@ -84,6 +84,87 @@ float example_wrapped_noise(float x, float y) {
   );
 }
 
+float terrain_noise(float x, float y) {
+  x += 1800;
+  x *= 18;
+  y *= 18;
+  float ds = 4*sxnoise_2d(x*0.08, y*0.08);
+  float dslx = 50*stretch(sxnoise_2d(x*0.02+500, y*0.02), 1.3);
+  float dsly = 50*stretch(sxnoise_2d(x*0.02+1000, y*0.02), 1.3);
+  float dsmx = 60 * sxnoise_2d(x*0.035+700, y*0.01);
+  float dsmy = 80 * sxnoise_2d(x*0.035+700, y*0.01);
+  float dx = x + ds;
+  float dy = y + ds;
+
+  // Worley-based details:
+  float result = wrnoise_2d_fancy(
+    x*0.19, y*0.19,
+    0, 0,
+    WORLEY_FLAG_IGNORE_NEAREST | WORLEY_FLAG_INCLUDE_NEXTBEST
+  );
+  result += wrnoise_2d_fancy(
+    x*0.13+1000, y*0.13,
+    0, 0,
+    WORLEY_FLAG_INCLUDE_NEXTBEST
+  );
+  result /= 2.0;
+  result = 2*result - 1;
+
+  //return result;
+  //result = 0;
+
+  // Simplex-based details.
+  result += (
+    sxnoise_2d(dx*0.12+10, dy*0.12) +
+    0.8 * sxnoise_2d(x*0.1+7, y*0.1) +
+    0.6 * sxnoise_2d(dx*0.2+9, dy*0.2) +
+    0.4 * sxnoise_2d(x*0.41+9, y*0.41)
+  ) / 2.8;
+  result /= 2.0;
+  result = stretch(result, 0.7);
+
+  //return result;
+  //result = 0;
+
+  // Heavily distorted periodic continents.
+  result += 1.5 * cos((dx+dslx)*0.1) * sin((dy+dsly)*0.1);
+  result += 2.5 * cos((dx-dslx)*0.045) * sin((dy-dsly)*0.045);
+  result /= 5.0;
+
+  //return result;
+  result = 0;
+
+  // Simplex-based "mountain ranges."
+  result += sxnoise_2d((x+dsmx)*0.032, (y+dsmy)*0.032);
+  result /= 1.3;
+
+  return result;
+  //result = 0;
+
+  // Stretching the result to establish sea level around 0.28:
+  result = stretch(result, 0.4);
+  result = stretch((1 + result)/2.0, 1.6) * 2 - 1;
+
+  // Terrace the oceans, continental shelves, and land:
+  result = (1 + result)/2.0;
+  if (result < 0.15) {
+    result /= 0.15;
+    result = pow(result, 4) * 0.23;
+  } else if (result < 0.28) {
+    result = (result - 0.15) / (0.28 - 0.15);
+    result = 0.23 + pow(result, 1.7) * (0.28 - 0.15);
+  } else {
+    result = (result - 0.28) / (1 - 0.28);
+    result = 0.28 + pow(result, 4) * (1 - 0.28);
+  }
+  result = result * 2 - 1.000001;
+  return result;
+}
+
+float wrapped_terrain(float x, float y) {
+  return tiled_func(&terrain_noise, x, y, 256*SCALE, 0, 5);
+}
+
 void write_noise_ppm(
   float (*noisefunc)(float, float),
   char const * const filename
@@ -96,7 +177,7 @@ void write_noise_ppm(
   }
   fprintf(fp, "P3\n");
   fprintf(fp, "# noise test ppm\n");
-  fprintf(fp, "# Auto-generated test of simplex noise function in noise.c.\n");
+  fprintf(fp, "# Auto-generated test of noise function in noise.c.\n");
   fprintf(fp, "256 256\n");
   fprintf(fp, "15\n");
   int i, j, col;
@@ -134,5 +215,7 @@ int main(int argc, char** argv) {
   write_noise_ppm(&slice_fractal_3d_noise, "noise_test_3D_F.ppm");
   write_noise_ppm(&example_noise, "noise_test_ex.ppm");
   write_noise_ppm(&example_wrapped_noise, "noise_test_wrapped.ppm");
+  write_noise_ppm(&terrain_noise, "noise_test_terrain.ppm");
+  write_noise_ppm(&wrapped_terrain, "noise_test_wrapped_terrain.ppm");
   return 0;
 }

@@ -375,6 +375,16 @@ float fractal_sxnoise_3d_table(
  * Remix Functions *
  *******************/
 
+// Takes a value in [-1, 1] and stretches it towards the nearest extreme by
+// raising it to the given exponent.
+static inline float stretch(float n, float stretch) {
+  if (n < 0) {
+    return -pow(-n, stretch);
+  } else {
+    return pow(n, stretch);
+  }
+}
+
 // Scaled 2D simplex noise on [0-1]:
 static inline float scaled_sxnoise_2d(
   float x, float y,
