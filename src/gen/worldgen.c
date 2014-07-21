@@ -200,11 +200,13 @@ void generate_geology(world_map *wm) {
         }
       }
     }
-    printf(
-      "    ...%zu / %zu strata done...\r",
-      i,
-      (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
-    );
+    if (i % 4 == 0) {
+      printf(
+        "    ...%zu / %zu strata done...\r",
+        i,
+        (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
+      );
+    }
   }
   printf("\n");
 }
@@ -226,7 +228,7 @@ void strata_cell(
   trp.z = 0;
 
   // DEBUG: (to show the strata)
-  //*
+  /*
   if (abs(rpos->x - 32770) < CHUNK_SIZE) {
     result->primary = b_make_block(B_AIR);
     result->secondary = b_make_block(B_VOID);
