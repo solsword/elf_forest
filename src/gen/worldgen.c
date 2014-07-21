@@ -62,6 +62,7 @@ void cleanup_world_map(world_map *wm) {
 
 void setup_worldgen(ptrdiff_t seed) {
   THE_WORLD = create_world_map(seed, WORLD_WIDTH, WORLD_HEIGHT);
+  printf("  ...generating geology...\n");
   generate_geology(THE_WORLD);
 }
 
@@ -199,7 +200,13 @@ void generate_geology(world_map *wm) {
         }
       }
     }
+    printf(
+      "    ...%zu / %zu strata done...\r",
+      i,
+      (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
+    );
   }
+  printf("\n");
 }
 
 void strata_cell(

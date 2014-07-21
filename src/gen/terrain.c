@@ -37,10 +37,17 @@ float terrain_height(region_pos *pos) {
       &ridges, &mounds, &details, &bumps
     );
   }
-  height = (
-    continents + geoforms + mountains + hills +
-    ridges + mounds + details + bumps
-  );
-  height = (height + 1) / 2.0;
+  float base = (continents + geoforms + mountains) / 3.0;
+  base = (1 + base)/2.0; // squash into [0, 1]
+  base = smooth(base, 0.5, 0.5); // pull things in
+  // remap everything:
+  height = geomap(base);
+
+  height += hills * TR_SCALE_HILLS;
+  height += ridges * TR_SCALE_RIDGES;
+  height += mounds * TR_SCALE_MOUNDS;
+  height += details * TR_SCALE_DETAILS;
+  height += bumps * TR_SCALE_BUMPS;
+
   return height;
 }

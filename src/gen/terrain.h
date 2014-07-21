@@ -47,18 +47,27 @@
 // Geoform parameters:
 
 // Noise->geoform mapping (see compute_geoforms):
-#define       TR_GEOMAP_SHELF (-0.5)
-#define       TR_GEOMAP_OCEAN (-0.2)
-#define      TR_GEOMAP_PLAINS 0.1
-#define       TR_GEOMAP_HILLS 0.4
-#define   TR_GEOMAP_MOUNTAINS 0.75
+#define       TR_GEOMAP_SHELF 0.3
+#define       TR_GEOMAP_OCEAN 0.45
+#define      TR_GEOMAP_PLAINS 0.6
+#define       TR_GEOMAP_HILLS 0.7
+#define   TR_GEOMAP_MOUNTAINS 0.85
 
-// Terrain feature heights:
-#define TR_HEIGHT_CONTINENTAL_SHELF 14750
-#define TR_HEIGHT_SEA_LEVEL 15000
-#define TR_HEIGHT_COASTAL_PLAINS 15150
-#define TR_HEIGHT_HIGHLANDS 16500
-#define TR_HEIGHT_MOUNTAIN_TOPS 27000
+// Geoform heights:
+#define        TR_HEIGHT_OCEAN_DEPTHS 1500
+#define   TR_HEIGHT_CONTINENTAL_SHELF 14750
+#define           TR_HEIGHT_SEA_LEVEL 15000
+#define      TR_HEIGHT_COASTAL_PLAINS 15150
+#define           TR_HEIGHT_HIGHLANDS 16500
+#define      TR_HEIGHT_MOUNTAIN_BASES 18500
+#define       TR_HEIGHT_MOUNTAIN_TOPS 27000
+
+// Terrain noise contributions:
+#define     TR_SCALE_HILLS 1000
+#define    TR_SCALE_RIDGES 200
+#define    TR_SCALE_MOUNDS 80
+#define   TR_SCALE_DETAILS 8
+#define     TR_SCALE_BUMPS 2
 
 /***********
  * Globals *
@@ -161,6 +170,62 @@ static inline void get_noise(
     (x + dsx) * TR_FREQUENCY_BUMPS,
     (y + dsy) * TR_FREQUENCY_BUMPS
   );
+}
+
+// Remaps the given value (on [0, 1]) to account for the shape and height of
+// the overall height profile.
+static inline float geomap(float base) {
+  float interp;
+  if (base < TR_GEOMAP_SHELF) { // deep ocean
+    interp = base / TR_GEOMAP_SHELF;
+    interp = smooth(interp, 2, 0.1);
+    return (
+      TR_HEIGHT_OCEAN_DEPTHS +
+      interp * (TR_HEIGHT_CONTINENTAL_SHELF - TR_HEIGHT_OCEAN_DEPTHS)
+    );
+
+  } else if (base < TR_GEOMAP_OCEAN) { // continental shelf
+    interp = (base - TR_GEOMAP_SHELF) / (TR_GEOMAP_OCEAN - TR_GEOMAP_SHELF);
+    interp = smooth(interp, 1.6, 0.2);
+    // TODO: Sea cliffs?
+    return (
+      TR_HEIGHT_CONTINENTAL_SHELF +
+      interp * (TR_HEIGHT_SEA_LEVEL - TR_HEIGHT_CONTINENTAL_SHELF)
+    );
+
+  } else if (base < TR_GEOMAP_PLAINS) { // coastal plain
+    interp = (base - TR_GEOMAP_OCEAN) / (TR_GEOMAP_PLAINS - TR_GEOMAP_OCEAN);
+    interp = smooth(interp, 1.2, 0.5);
+    return (
+      TR_HEIGHT_SEA_LEVEL +
+      interp * (TR_HEIGHT_COASTAL_PLAINS - TR_HEIGHT_SEA_LEVEL)
+    );
+
+  } else if (base < TR_GEOMAP_HILLS) { // hills
+    interp = (base - TR_GEOMAP_PLAINS) / (TR_GEOMAP_HILLS - TR_GEOMAP_PLAINS);
+    interp = smooth(interp, 1.4, 0.35);
+    return (
+      TR_HEIGHT_COASTAL_PLAINS +
+      interp * (TR_HEIGHT_HIGHLANDS - TR_HEIGHT_COASTAL_PLAINS)
+    );
+
+  } else if (base < TR_GEOMAP_MOUNTAINS) { // highlands
+    interp = (base - TR_GEOMAP_HILLS) / (TR_GEOMAP_MOUNTAINS - TR_GEOMAP_HILLS);
+    interp = 0.2 * sin(interp*4*M_PI) + 0.8 * smooth(interp, 1.3, 0.5);
+    return (
+      TR_HEIGHT_HIGHLANDS +
+      interp * (TR_HEIGHT_MOUNTAIN_BASES - TR_HEIGHT_HIGHLANDS)
+    );
+
+  } else { // mountains
+    interp = (base - TR_GEOMAP_MOUNTAINS) / (1 - TR_GEOMAP_MOUNTAINS);
+    interp = pow(interp, 2.4);
+    return (
+      TR_HEIGHT_MOUNTAIN_BASES +
+      interp * (TR_HEIGHT_MOUNTAIN_TOPS - TR_HEIGHT_MOUNTAIN_BASES)
+    );
+
+  }
 }
 
 /*
