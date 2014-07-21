@@ -118,9 +118,9 @@ void fltr_leaves_helper(int x, int y, void * arg) {
 
 void fltr_branches(texture *tx, void const * const fargs) {
   int row, col;
-  float x, y;
+  float dx, dy, x, y;
   float offset;
-  float noise, ds;
+  float noise;
   gradient_map grmap;
   branch_filter_args *bfargs = (branch_filter_args *) fargs;
   grmap.colors[0] = bfargs->center_color;
@@ -132,9 +132,9 @@ void fltr_branches(texture *tx, void const * const fargs) {
     grmap.thresholds[1] = 0.61;
     grmap.thresholds[2] = 0.72;
   } else {
-    grmap.thresholds[0] = 0.06;
+    grmap.thresholds[0] = 0.08;
     grmap.thresholds[1] = 0.14;
-    grmap.thresholds[2] = 0.2;
+    grmap.thresholds[2] = 0.19;
   }
   grmap.thresholds[3] = 1.0;
 #ifdef DEBUG
@@ -149,16 +149,32 @@ void fltr_branches(texture *tx, void const * const fargs) {
   for (col = 0; col < tx->width; col += 1) {
     for (row = 0; row < tx->height; row += 1) {
       // TODO: properly wrapped simplex noise.
-      ds = sxnoise_2d(col * bfargs->dscale, row * bfargs->dscale);
-      x = (col * bfargs->squash + ds * bfargs->distortion) * bfargs->scale;
-      y = (row / bfargs->squash + ds * bfargs->distortion) * bfargs->scale;
+      dx = tiled_func(
+        &sxnoise_2d,
+        col * bfargs->dscale,
+        row * bfargs->dscale,
+        tx->width * bfargs->dscale,
+        tx->height * bfargs->dscale,
+        14
+      );
+      dy = tiled_func(
+        &sxnoise_2d,
+        col * bfargs->dscale,
+        row * bfargs->dscale,
+        tx->width * bfargs->dscale,
+        tx->height * bfargs->dscale,
+        4
+      );
+      x = (col * bfargs->squash + dx * bfargs->distortion) * bfargs->scale;
+      y = (row / bfargs->squash + dy * bfargs->distortion) * bfargs->scale;
       x += tx->width * offset;
       y += tx->height * offset;
       noise = wrnoise_2d_fancy(
         x, y,
-        BLOCK_TEXTURE_SIZE * bfargs->scale, BLOCK_TEXTURE_SIZE * bfargs->scale,
+        tx->width * bfargs->scale, tx->height * bfargs->scale,
         (!bfargs->rough) * WORLEY_FLAG_INCLUDE_NEXTBEST
       );
+      noise = pow(noise, 1.6);
       if (bfargs->rough) {
         noise = 1 - noise;
         // TODO: a sigmoid for organizing branches

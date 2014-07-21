@@ -36,8 +36,10 @@ float MAX_VAR = 0.5;
 float MIN_LOG_T = 1.2; // 1.2;
 float MAX_LOG_T = 1.8; // 1.4;
 
-float MAX_WORLEY_DIST = sqrt(2.0);
+//float MAX_WORLEY_DIST = sqrt(2.0);
+float MAX_WORLEY_DIST = 2.0;
 float WDISTORT = 0.5;
+//float WDISTORT = 0;
 float WD_FREQ = 1.6;
 
 float GRID_MARGINS = 120.0;
@@ -58,9 +60,13 @@ int BLOB_DISTRIBUTION_MODE = 2;
 boolean ADD_BLOBS = true;
 boolean ADD_WORLEY = true;
 boolean ADD_PERLIN = true;
-boolean TEST_NOISE = false;
-// default: comparison, 1:worley veins, 2:worley plateaus, 3:worley distortion
-int NOISE_TEST = 1;
+boolean TEST_NOISE = true;
+// default: comparison
+// 1:worley veins
+// 2:worley plateaus
+// 3:worley distortion
+// 4:simple worley
+int NOISE_TEST = 3;
 boolean TEST_GRADIENT = false;
 boolean SHADE_TERRAIN = true;
 boolean SHOW_CONTINENTS = false;
@@ -640,16 +646,22 @@ class WorleyNoise {
     strengths[8] = strength(x-1, y+1);
     Point here = new Point(x, y);
     int i;
+    int ifst = 0, isnd = 0;
     float first = 0.0;
     float second = 0.0;
     float str;
+    float dist;
     for (i = 0; i < neighbors.length; ++i) {
-      str = (MAX_WORLEY_DIST - here.distance(neighbors[i])) * strengths[i];
+      dist = here.distance(neighbors[i]);
+      str = (MAX_WORLEY_DIST - dist*dist) * strengths[i];
       if (str > first) {
+        isnd = ifst;
+        ifst = i;
         second = first;
         first = str;
       } else if (str > second) {
         second = str;
+        isnd = i;
       }
     }
     float result = first - second;
@@ -727,15 +739,36 @@ void setup() {
             wr
           );
         } else if (NOISE_TEST == 3) {
-          float fx, fy;
-          fx = x + 30*(wrn.value(x*0.05, y*0.05) - 0.5);
-          fy = y + 30*(wrn.value(x*0.05, y*0.05) - 0.5);
-          str = splnoise(x*0.01, y*0.01, 64.3);
-          str += 0.5 * splnoise(x*0.02, y*0.02, 67.3);
+          float zx, zy, fx, fy, dx, dy;
+          zx = x*0.4;
+          zy = y*0.4;
+          dx = (
+            30*(wrn.value(zx*0.05, zy*0.05) - 0.5) +
+            15*(wrn.value(zx*0.1, zy*0.1) - 0.5)
+          );
+          dy = (
+            30*(wrn.value(zx*0.05+100, zy*0.05) - 0.5) +
+            15*(wrn.value(zx*0.1+100, zy*0.1) - 0.5)
+          );
+          fx = zx + dx;
+          fy = zy + dy;
+          str = splnoise(zx*0.01, zy*0.01, 64.3);
+          str += 0.5 * splnoise(zx*0.02, zy*0.02, 67.3);
           str /= 1.5;
           str *= str;
-          str *= str;
-          THE_MAP.cells[i] = (1 - str) * 0.2 + str * splnoise(fx*0.05, fy*0.05, 18.4);
+          str = 1;
+          //THE_MAP.cells[i] = 0.5 * dx/45.0 + 0.5 * splnoise(zx*0.05, zy*0.05,1);
+          THE_MAP.cells[i] = dx/45.0;
+          /*
+          THE_MAP.cells[i] = (1 - str) * 0.2 + str * splnoise(
+            fx*0.05,
+            fy*0.05,
+            18.4
+          );
+          */
+        } else if (NOISE_TEST == 4) {
+          wr = wrn.value(x*0.017, y*0.017);
+          THE_MAP.cells[i] = wr;
         } else {
           if (x < WIDTH/3) { // pnoise/splnoise/spnoise comparison
             THE_MAP.cells[i] = pnoise(x*0.05, y*0.05, 17.3);

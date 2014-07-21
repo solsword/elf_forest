@@ -146,7 +146,7 @@ static inline int valid_trunk_elevation(int root) {
   return (
     root < TREE_TREELINE
   &&
-    root > TR_SEA_LEVEL // TODO: Underwater seaweed "trees"
+    root > TR_HEIGHT_SEA_LEVEL // TODO: Underwater seaweed "trees"
   );
 }
 
@@ -174,8 +174,8 @@ static inline int compute_tree_trunk(int tx, int ty, int radius, trunk *trk) {
   trk->root.x = tx;
   trk->root.y = ty;
   // compute terrain at the trunk location:
-  get_noise(tx, ty, &nlst, &nlwr, &nlow, &nmid, &nhig, &nhst);
-  compute_geoforms(nlst, &depths, &oceans, &plains, &hills, &mountains);
+  //get_noise(tx, ty, &nlst, &nlwr, &nlow, &nmid, &nhig, &nhst);
+  //compute_geoforms(nlst, &depths, &oceans, &plains, &hills, &mountains);
   // fill in the trunk height (return 0 if the height is too low):
   trk->height = (
     depths * TREE_DEPTHS_HEIGHT +
@@ -184,14 +184,17 @@ static inline int compute_tree_trunk(int tx, int ty, int radius, trunk *trk) {
     hills * TREE_HILLS_HEIGHT +
     mountains * TREE_MOUNTAINS_HEIGHT
   );
+  trk->root.z = 0;
+  /*
   trk->root.z = get_terrain_height(
     nlst, nlwr, nlow, nmid, nhig, nhst,
     depths, oceans, plains, hills, mountains
   ) + 1;
+  */
   if (!valid_trunk_elevation(trk->root.z)) {
     return 0;
   }
-  trk->height += TREE_DIRT_EFFECT * ((1 + nmid) / 2.0) * TR_DIRT_VAR;
+  trk->height += TREE_DIRT_EFFECT * ((1 + nmid) / 2.0) * 5;
   trk->height += TREE_CANOPY_DETAIL_HIGH * ((1 + nhig) / 2.0);
   trk->height += TREE_CANOPY_DETAIL_HIGHEST * nhst;
   trk->height += TREE_ELEVATION_EFFECT * (trk->root.z / TREE_ELEVATION_STEP);

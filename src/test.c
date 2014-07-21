@@ -36,7 +36,6 @@
 world_map_pos WORLD_ORIGIN = { .x = WORLD_WIDTH/2, .y=WORLD_HEIGHT/2 };
 
 ptrdiff_t SEED = 18234141;
-int spawn_height = 1750;
 
 /********
  * Main *
@@ -49,7 +48,7 @@ int main(int argc, char** argv) {
   wmpos__rpos(&WORLD_ORIGIN, &origin);
   origin.x += 2;
   origin.y += 2;
-  origin.z = spawn_height;
+  origin.z = terrain_height(&origin) + 20;
 
   // Start the game:
   start_game(SEED, argc, argv, "tester", &origin);

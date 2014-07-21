@@ -2,89 +2,63 @@
 #define TERRAIN_H
 
 // terrain.h
-// Legacy terrain generation (see worldgen.h/c).
+// Code for determining terrain height.
 
 #include <math.h>
 
 #include "noise/noise.h"
-#include "world/blocks.h"
 #include "world/world.h"
 
 /**************
  * Parameters *
  **************/
 
-// Top-level terrain parameters:
-#define TR_SEA_LEVEL 0
-#define TR_BEACH_THRESHOLD 0.15
-#define TR_DIRT_MID 6
-#define TR_DIRT_VAR 5
-
 // Basic frequencies:
-#define TR_FREQUENCY_LOWEST 0.00001 // 6250-chunk features
-#define TR_FREQUENCY_LOWER 0.0005 // 125-chunk features
-#define TR_FREQUENCY_LOW 0.003 // ~20-chunk features
-#define TR_FREQUENCY_MID 0.01 // ~6-chunk features
-#define TR_FREQUENCY_HIGH 0.05 // ~20-cell features
-#define TR_FREQUENCY_HIGHEST 0.25 // ~4-cell variance
+#define   TR_FREQUENCY_CONTINENTS 0.0000002 // 312500-chunk ~= 3300 km features
+#define     TR_FREQUENCY_GEOFORMS 0.000003 // 20833-chunk ~= 220 km features
+#define    TR_FREQUENCY_MOUNTAINS 0.00001 // 6250-chunk ~= 67 km features
+#define        TR_FREQUENCY_HILLS 0.0005 // 125-chunk ~= 1.3 km features
+#define       TR_FREQUENCY_RIDGES 0.003 // ~20-chunk ~= 215 m features
+#define       TR_FREQUENCY_MOUNDS 0.01 // ~6-chunk ~= 64 m features
+#define      TR_FREQUENCY_DETAILS 0.05 // ~20-cell ~= 13 m features
+#define        TR_FREQUENCY_BUMPS 0.25 // ~4-cell ~= 2.5 m variance
+
+// Distortion frequencies:
+#define   TR_DFQ_CONTINENTS 0.00000004 // 1/5 of base
+#define     TR_DFQ_GEOFORMS 0.0000018 // 3/5 of base
+#define    TR_DFQ_MOUNTAINS 0.000006 // 3/5 of base
+#define        TR_DFQ_HILLS 0.0002 // 2/5 of base
+#define       TR_DFQ_RIDGES 0.0006 // 1/5 of base
+#define       TR_DFQ_MOUNDS 0.004 // 2/5 of base
+#define      TR_DFQ_DETAILS 0.02 // 2/5 of base
+#define        TR_DFQ_BUMPS 0.05 // 1/5 of base
+
+// Distortion strengths:
+#define   TR_DS_CONTINENTS 25000000.0 // ~5 periods
+#define     TR_DS_GEOFORMS 6000000.0 // ~2 periods
+#define    TR_DS_MOUNTAINS 100000.0 // ~1 period
+#define        TR_DS_HILLS 2000.0 // ~1 period
+#define       TR_DS_RIDGES 200.0 // ~2/3 period
+#define       TR_DS_MOUNDS 50.0 // ~1/2 period
+#define      TR_DS_DETAILS 10.0 // ~1/2 period
+#define        TR_DS_BUMPS 2.0 // ~1/2 period
+
 
 // Geoform parameters:
 
 // Noise->geoform mapping (see compute_geoforms):
-#define TR_GEOMAP_DEPTHS (-0.5)
-#define TR_GEOMAP_OCEAN 0.0
-#define TR_GEOMAP_PLAINS 0.3
-#define TR_GEOMAP_HILLS 0.7
-#define TR_GEOMAP_MOUNTAINS 0.95
+#define       TR_GEOMAP_SHELF (-0.5)
+#define       TR_GEOMAP_OCEAN (-0.2)
+#define      TR_GEOMAP_PLAINS 0.1
+#define       TR_GEOMAP_HILLS 0.4
+#define   TR_GEOMAP_MOUNTAINS 0.75
 
-// Heights (lowest):
-#define TR_DEPTHS_HEIGHT (-600)
-#define TR_OCEANS_HEIGHT (-180)
-#define TR_PLAINS_HEIGHT 3
-#define TR_HILLS_HEIGHT 150
-#define TR_MOUNTAINS_HEIGHT 380
-
-// Landforms (lower):
-#define TR_DEPTHS_LANDFORMS 80
-#define TR_OCEANS_LANDFORMS 60
-#define TR_PLAINS_LANDFORMS 10
-#define TR_HILLS_LANDFORMS 140
-#define TR_MOUNTAINS_LANDFORMS 250
-
-// Hills (low):
-#define TR_DEPTHS_HILLS 30
-#define TR_OCEANS_HILLS 40
-#define TR_PLAINS_HILLS 6
-#define TR_HILLS_HILLS 50
-#define TR_MOUNTAINS_HILLS 70
-
-// Ridges (mid):
-#define TR_DEPTHS_RIDGES 16
-#define TR_OCEANS_RIDGES 12
-#define TR_PLAINS_RIDGES 4
-#define TR_HILLS_RIDGES 20
-#define TR_MOUNTAINS_RIDGES 22
-
-// Roughnesses (low-mid):
-#define TR_DEPTHS_ROUGHNESS 0.3
-#define TR_OCEANS_ROUGHNESS 0.2
-#define TR_PLAINS_ROUGHNESS 0.1
-#define TR_HILLS_ROUGHNESS 0.6
-#define TR_MOUNTAINS_ROUGHNESS 0.9
-
-// Details:
-#define TR_DETAIL_MID 25
-#define TR_DETAIL_HIGH 5
-#define TR_DETAIL_HIGHEST 3
-// TODO: trenches/canyons etc?
-
-// Tunnels:
-#define TR_FREQUENCY_TUNNEL_REGIONS 0.015
-#define TR_FREQUENCY_TUNNELS 0.031
-#define TR_FREQUENCY_TUNNEL_DETAILS 0.11
-#define TR_TUNNEL_YZ_OFFSET 73
-#define TR_TUNNEL_THRESHOLD 0.45
-#define TR_TUNNEL_UNDERSEA_OFFSET 8 // TODO: handle undersea tunnels elsehow?
+// Terrain feature heights:
+#define TR_HEIGHT_CONTINENTAL_SHELF 14750
+#define TR_HEIGHT_SEA_LEVEL 15000
+#define TR_HEIGHT_COASTAL_PLAINS 15150
+#define TR_HEIGHT_HIGHLANDS 16500
+#define TR_HEIGHT_MOUNTAIN_TOPS 27000
 
 /***********
  * Globals *
@@ -101,29 +75,95 @@ extern float TR_TERRAIN_HEIGHT_AMP;
  ********************/
 
 static inline void get_noise(
-  int x, int y,
-  float *lowest, float *lower, float *low,
-  float *medium, float *high, float *highest
+  r_pos_t x, r_pos_t y,
+  float *continents, float *geoforms, float *mountains, float *hills,
+  float *ridges, float *mounds, float *details, float *bumps
 ) {
+  float dsx, dsy;
   x += TR_NOISE_OFFSET;
   y += TR_NOISE_OFFSET;
-  *lowest  = sxnoise_2d( x * TR_FREQUENCY_LOWEST ,   y * TR_FREQUENCY_LOWEST  );
-  *lower   = sxnoise_2d( x * TR_FREQUENCY_LOWER  ,   y * TR_FREQUENCY_LOWER   );
-  *low     = sxnoise_2d( x * TR_FREQUENCY_LOW    ,   y * TR_FREQUENCY_LOW     );
-  *medium  = sxnoise_2d( x * TR_FREQUENCY_MID    ,   y * TR_FREQUENCY_MID     );
-  *high    = sxnoise_2d( x * TR_FREQUENCY_HIGH   ,   y * TR_FREQUENCY_HIGH    );
-  *highest = sxnoise_2d( x * TR_FREQUENCY_HIGHEST,   y * TR_FREQUENCY_HIGHEST );
+  dsx = TR_DS_CONTINENTS * sxnoise_2d(
+    x * TR_DFQ_CONTINENTS,
+    y*TR_DFQ_CONTINENTS
+  );
+  dsy = TR_DS_CONTINENTS * sxnoise_2d(
+    y * TR_DFQ_CONTINENTS,
+    x*TR_DFQ_CONTINENTS
+  );
+  *continents = (
+    cos((x + dsx) * TR_FREQUENCY_CONTINENTS) *
+    sin((y + dsy) * TR_FREQUENCY_CONTINENTS)
+  ) + (
+    cos((x - dsx) * TR_FREQUENCY_CONTINENTS * 1.8) *
+    sin((y - dsy) * TR_FREQUENCY_CONTINENTS * 1.8)
+  );
+  dsx = TR_DS_GEOFORMS * sxnoise_2d(x * TR_DFQ_GEOFORMS, y*TR_DFQ_GEOFORMS);
+  dsy = TR_DS_GEOFORMS * sxnoise_2d(y * TR_DFQ_GEOFORMS, x*TR_DFQ_GEOFORMS);
+  *geoforms = sxnoise_2d(
+    (x + dsx) * TR_FREQUENCY_GEOFORMS,
+    (y + dsy) * TR_FREQUENCY_GEOFORMS
+  );
+  dsx = TR_DS_MOUNTAINS * sxnoise_2d(x * TR_DFQ_MOUNTAINS, y*TR_DFQ_MOUNTAINS);
+  dsy = TR_DS_MOUNTAINS * sxnoise_2d(y * TR_DFQ_MOUNTAINS, x*TR_DFQ_MOUNTAINS);
+  *mountains = sxnoise_2d(
+    (x + dsx) * TR_FREQUENCY_MOUNTAINS,
+    (y + dsy) * TR_FREQUENCY_MOUNTAINS
+  );
+  *mountains += 2*smooth(
+    wrnoise_2d_fancy(
+      (x + dsy) * TR_FREQUENCY_MOUNTAINS,
+      (y + dsx) * TR_FREQUENCY_MOUNTAINS,
+      0, 0,
+      WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
+    ),
+    2,
+    0.5
+  );
+  *mountains += wrnoise_2d_fancy(
+    (x - dsx) * TR_FREQUENCY_MOUNTAINS * 0.7,
+    (y - dsy) * TR_FREQUENCY_MOUNTAINS * 0.7,
+    0, 0,
+    WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
+  );
+  *mountains /= 4.0;
+  dsx = TR_DS_HILLS * sxnoise_2d(x * TR_DFQ_HILLS, y*TR_DFQ_HILLS);
+  dsy = TR_DS_HILLS * sxnoise_2d(y * TR_DFQ_HILLS, x*TR_DFQ_HILLS);
+  *hills = sxnoise_2d(
+    (x + dsx) * TR_FREQUENCY_HILLS,
+    (y + dsy) * TR_FREQUENCY_HILLS
+  );
+  dsx = TR_DS_RIDGES * sxnoise_2d(x * TR_DFQ_RIDGES, y*TR_DFQ_RIDGES);
+  dsy = TR_DS_RIDGES * sxnoise_2d(y * TR_DFQ_RIDGES, x*TR_DFQ_RIDGES);
+  *ridges = sxnoise_2d(
+    (x + dsx) * TR_FREQUENCY_RIDGES,
+    (y + dsy) * TR_FREQUENCY_RIDGES
+  );
+  *ridges += 0.5 * wrnoise_2d(
+    (x + dsy) * TR_FREQUENCY_RIDGES,
+    (y - dsx) * TR_FREQUENCY_RIDGES
+  );
+  *ridges /= 1.5;
+  dsx = TR_DS_MOUNDS * sxnoise_2d(x * TR_DFQ_MOUNDS, y*TR_DFQ_MOUNDS);
+  dsy = TR_DS_MOUNDS * sxnoise_2d(y * TR_DFQ_MOUNDS, x*TR_DFQ_MOUNDS);
+  *mounds = sxnoise_2d(
+    (x + dsx) * TR_FREQUENCY_MOUNDS,
+    (y + dsy) * TR_FREQUENCY_MOUNDS
+  );
+  dsx = TR_DS_DETAILS * sxnoise_2d(x * TR_DFQ_DETAILS, y*TR_DFQ_DETAILS);
+  dsy = TR_DS_DETAILS * sxnoise_2d(y * TR_DFQ_DETAILS, x*TR_DFQ_DETAILS);
+  *details = sxnoise_2d(
+    (x + dsx) * TR_FREQUENCY_DETAILS,
+    (y + dsy) * TR_FREQUENCY_DETAILS
+  );
+  dsx = TR_DS_BUMPS * sxnoise_2d(x * TR_DFQ_BUMPS, y*TR_DFQ_BUMPS);
+  dsy = TR_DS_BUMPS * sxnoise_2d(y * TR_DFQ_BUMPS, x*TR_DFQ_BUMPS);
+  *bumps = sxnoise_2d(
+    (x + dsx) * TR_FREQUENCY_BUMPS,
+    (y + dsy) * TR_FREQUENCY_BUMPS
+  );
 }
 
-// A cheap (hopefully) sigmoid-like function on [0, 1]:
-static inline void stretch(float *value) {
-  if (*value > 0.5) {
-    *value = 1 - (2 *(1 - *value)*(1 - *value));
-  } else {
-    *value = (2 *(*value)*(*value));
-  }
-}
-
+/*
 static inline void compute_geoforms(
   float index,
   float *depths, float *oceans, float *plains, float *hills, float *mountains
@@ -135,33 +175,34 @@ static inline void compute_geoforms(
       0.0,
       (TR_GEOMAP_OCEAN - index) / (TR_GEOMAP_OCEAN - TR_GEOMAP_DEPTHS)
     );
-    stretch(depths);
+    *depths = smooth(*depths, 2, 0.5);
     *oceans = 1.0 - *depths;
   } else if (index < TR_GEOMAP_PLAINS) {
     *oceans = fmax(
       0.0,
         (TR_GEOMAP_PLAINS - index) / (TR_GEOMAP_PLAINS - TR_GEOMAP_OCEAN)
     );
-    stretch(oceans);
+    *oceans = smooth(*oceans, 2, 0.5);
     *plains = 1.0 - *oceans;
   } else if (index < TR_GEOMAP_HILLS) {
     *plains = fmax(
       0.0,
         (TR_GEOMAP_HILLS - index) / (TR_GEOMAP_HILLS - TR_GEOMAP_PLAINS)
     );
-    stretch(plains);
+    *plains = smooth(*plains, 2, 0.5);
     *hills = 1.0 - *plains;
   } else if (index < TR_GEOMAP_MOUNTAINS) {
     *hills = fmax(
       0.0,
         (TR_GEOMAP_MOUNTAINS - index) / (TR_GEOMAP_MOUNTAINS - TR_GEOMAP_HILLS)
     );
-    stretch(mountains);
+    *mountains = smooth(*mountains, 2, 0.5);
     *mountains = 1.0 - *hills;
   } else {
     *mountains = 1.0;
   }
 }
+*/
 
 static inline float oabs(float noise) {
   return (0.999 - fabs(noise));
@@ -177,144 +218,11 @@ static inline float oabscb(float noise) {
   return noise * noise * noise;
 }
 
-static inline int get_terrain_height(
-  float nlst, float nlwr, float nlow, float nmid, float nhig, float nhst,
-  float depths, float oceans, float plains, float hills, float mountains
-) {
-  float roughness;
-  // Compute roughness:
-  roughness = (
-    depths * TR_DEPTHS_ROUGHNESS +
-    oceans * TR_OCEANS_ROUGHNESS +
-    plains * TR_PLAINS_ROUGHNESS +
-    hills * TR_HILLS_ROUGHNESS +
-    mountains * TR_MOUNTAINS_ROUGHNESS 
-  );
-  // Vary the roughness a bit:
-  roughness = (
-    0.3 * oabssq(fmin(1.0, nmid + nlow)) +
-    0.2 * oabssq(nlow) * roughness +
-    0.5 * roughness
-  );
-  // Exaggerate the roughness:
-  roughness = fmin(1.0, 0.2 + 1.2*roughness);
-
-  // Compute the result:
-  return (
-    ( // base height - geoform variation
-      depths * TR_DEPTHS_HEIGHT +
-      oceans * TR_OCEANS_HEIGHT +
-      plains * TR_PLAINS_HEIGHT +
-      hills * TR_HILLS_HEIGHT +
-      mountains * TR_MOUNTAINS_HEIGHT 
-    )
-  //**/ ); /* DEBUG: enable this comment to view pure base heights.
-  +
-    ( // lower-frequency variation - landforms
-      nlwr *
-      (
-        depths * TR_DEPTHS_LANDFORMS +
-        oceans * TR_OCEANS_LANDFORMS +
-        plains * TR_PLAINS_LANDFORMS +
-        hills * TR_HILLS_LANDFORMS +
-        mountains * TR_MOUNTAINS_LANDFORMS 
-      )
-    )
-  +
-    ( // low-frequency variation - hills
-      oabssq(nlow) *
-      (
-        depths * TR_DEPTHS_HILLS +
-        oceans * TR_OCEANS_HILLS +
-        plains * TR_PLAINS_HILLS +
-        hills * TR_HILLS_HILLS +
-        mountains * TR_MOUNTAINS_HILLS 
-      )
-    )
-  +
-    ( // mid-frequency variation - ridges
-      oabs(nmid) * (
-        0.5 * oabs(nlow) * TR_DETAIL_MID +
-        0.5 * (
-          depths * TR_DEPTHS_RIDGES +
-          oceans * TR_OCEANS_RIDGES +
-          plains * TR_PLAINS_RIDGES +
-          hills * TR_HILLS_RIDGES +
-          mountains * TR_MOUNTAINS_RIDGES 
-        )
-      )
-    )
-  +
-    ( // high-frequency variation - chunk-to-chunk variance
-      (0.5 * oabs(nhig) + 0.5 * roughness) * TR_DETAIL_HIGH
-    )
-  +
-    ( // highest-frequency variation - bumps
-      roughness * oabs(nhst) * TR_DETAIL_HIGHEST
-    )
-  );
-  // */
-}
-
-static inline void get_cave_layers(
-  float nlst, float nlwr, float nlow, float nmid, float nhig, float nhst,
-  float depths, float oceans, float plains, float hills, float mountains,
-  int *cave_layer_1_b, int *cave_layer_1_t,
-  int *cave_layer_2_b, int *cave_layer_2_t,
-  int *cave_layer_3_b, int *cave_layer_3_t
-) {
-  // TODO: this function!
-}
-
-static inline int get_tunnel(
-  region_pos *pos,
-  float depths, float oceans, float plains, float hills, float mountains
-) {
-  float xz, yz, xyz;
-  xz = sxnoise_2d(
-    pos->x * TR_FREQUENCY_TUNNEL_REGIONS,
-    pos->z * TR_FREQUENCY_TUNNEL_REGIONS
-  );
-  xz = (1 + xz) / 2.0;
-  xz += sxnoise_2d(
-    pos->x * TR_FREQUENCY_TUNNELS,
-    pos->z * TR_FREQUENCY_TUNNELS
-  );
-  xz = (1 + xz) / 3.0;
-
-  yz = sxnoise_2d(
-    pos->y * TR_FREQUENCY_TUNNEL_REGIONS + TR_TUNNEL_YZ_OFFSET,
-    pos->z * TR_FREQUENCY_TUNNEL_REGIONS
-  );
-  yz = (1 + yz) / 2.0;
-  yz += sxnoise_2d(
-    pos->y * TR_FREQUENCY_TUNNELS + TR_TUNNEL_YZ_OFFSET,
-    pos->z * TR_FREQUENCY_TUNNELS
-  );
-  yz = (1 + yz) / 3.0;
-  xyz = sxnoise_3d(
-    pos->x * TR_FREQUENCY_TUNNEL_DETAILS,
-    pos->y * TR_FREQUENCY_TUNNEL_DETAILS,
-    pos->z * TR_FREQUENCY_TUNNEL_DETAILS
-  );
-  xyz = (1 + xyz) / 2.0;
-  return (0.6 * (xz * yz) + 0.4 * xyz) > TR_TUNNEL_THRESHOLD;
-}
-
 /*************
  * Functions *
  *************/
 
-// Creates a cell for the given position:
-void terrain_cell(region_pos *pos, cell *result);
-
-// Computes geoform weights at the given location. Note that this isn't used
-// internally because the noise values that it generates are reused elsewhere
-// in terrain_cell, but it should produce exactly the same geoform values as
-// terrain_cell uses.
-void get_geoforms(
-  int x, int y,
-  float *depths, float *oceans, float *plains, float *hills, float *mountains
-);
+// Returns the terrain height at the given region position in blocks.
+float terrain_height(region_pos *pos);
 
 #endif // ifndef TERRAIN_H

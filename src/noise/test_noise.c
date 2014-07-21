@@ -7,7 +7,7 @@
 static float const SCALE = 1/32.0;
 static float const NOISE_Z = 0.0;
 
-static int const FALSE_COLOR[96] = {
+static int const FALSE_COLOR[99] = {
   0x0,  0x0,  0xf,
   0x1,  0x1,  0xf,
   0x2,  0x2,  0xf,
@@ -39,6 +39,7 @@ static int const FALSE_COLOR[96] = {
   0xd,  0xd,  0xc,
   0xe,  0xe,  0xd,
   0xf,  0xf,  0xe,
+  0xf,  0xf,  0xf,
   0xf,  0xf,  0xf,
 };
 
@@ -85,14 +86,16 @@ float example_wrapped_noise(float x, float y) {
 }
 
 float terrain_noise(float x, float y) {
-  x += 1800;
+  x += 1600;
   x *= 18;
   y *= 18;
+  //x *= 6;
+  //y *= 6;
+  //x *= 2;
+  //y *= 2;
   float ds = 4*sxnoise_2d(x*0.08, y*0.08);
   float dslx = 50*stretch(sxnoise_2d(x*0.02+500, y*0.02), 1.3);
   float dsly = 50*stretch(sxnoise_2d(x*0.02+1000, y*0.02), 1.3);
-  float dsmx = 60 * sxnoise_2d(x*0.035+700, y*0.01);
-  float dsmy = 80 * sxnoise_2d(x*0.035+700, y*0.01);
   float dx = x + ds;
   float dy = y + ds;
 
@@ -100,28 +103,51 @@ float terrain_noise(float x, float y) {
   float result = wrnoise_2d_fancy(
     x*0.19, y*0.19,
     0, 0,
-    WORLEY_FLAG_IGNORE_NEAREST | WORLEY_FLAG_INCLUDE_NEXTBEST
+    WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
+    //WORLEY_FLAG_INCLUDE_NEXTBEST
+    //WORLEY_FLAG_SMOOTH_SIDES
+    //0
   );
-  result += wrnoise_2d_fancy(
-    x*0.13+1000, y*0.13,
-    0, 0,
-    WORLEY_FLAG_INCLUDE_NEXTBEST
+
+  //return result * 2 - 1;
+
+  result += 0.5 * smooth(
+    wrnoise_2d_fancy(
+      x*0.13+1000, y*0.13,
+      0, 0,
+      WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
+    ),
+    1.7,
+    0.5
   );
-  result /= 2.0;
-  result = 2*result - 1;
+  result += 0.25 * smooth(
+    wrnoise_2d_fancy(
+      x*0.41+5000, y*0.41,
+      0, 0,
+      WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
+    ),
+    1.7,
+    0.5
+  );
+
+  result += sxnoise_2d(x*0.15+800, y*0.15);
+  result += sxnoise_2d(x*0.45+300, y*0.45);
+
+  result /= 3.75;
+  //result /= 1.75;
 
   //return result;
   //result = 0;
 
   // Simplex-based details.
-  result += (
+  result += 0.5 * (
     sxnoise_2d(dx*0.12+10, dy*0.12) +
     0.8 * sxnoise_2d(x*0.1+7, y*0.1) +
     0.6 * sxnoise_2d(dx*0.2+9, dy*0.2) +
     0.4 * sxnoise_2d(x*0.41+9, y*0.41)
   ) / 2.8;
-  result /= 2.0;
-  result = stretch(result, 0.7);
+  result /= 1.5;
+  result = fmax(-1.0, fmin(1.0, result * 2.0));
 
   //return result;
   //result = 0;
@@ -132,32 +158,35 @@ float terrain_noise(float x, float y) {
   result /= 5.0;
 
   //return result;
-  result = 0;
-
-  // Simplex-based "mountain ranges."
-  result += sxnoise_2d((x+dsmx)*0.032, (y+dsmy)*0.032);
-  result /= 1.3;
-
-  return result;
   //result = 0;
 
   // Stretching the result to establish sea level around 0.28:
-  result = stretch(result, 0.4);
-  result = stretch((1 + result)/2.0, 1.6) * 2 - 1;
+  result = smooth((result + 1)/2.0, 2.4, 0.7) * 2 - 1;
+  //result = stretch((1 + result)/2.0, 1.6) * 2 - 1;
 
   // Terrace the oceans, continental shelves, and land:
   result = (1 + result)/2.0;
+  float depths = smooth(result/0.15, 2.6, 0.8)*0.19;
+  float cshelves = (result - 0.15) / (0.281 - 0.15);
+  cshelves = 0.19 + smooth(cshelves, 1.8, 0.6) * (0.281 - 0.19);
+  float plains = (result - 0.281)/(0.63-0.281);
+  plains = 0.281 + smooth(plains, 2, 0.7) * (0.63 - 0.281);
+  float mountains = (result - 0.63)/(1-0.63);
+  mountains = 0.63 + smooth(mountains, 1.3, 0.8)*(1 - 0.63);
   if (result < 0.15) {
-    result /= 0.15;
-    result = pow(result, 4) * 0.23;
-  } else if (result < 0.28) {
-    result = (result - 0.15) / (0.28 - 0.15);
-    result = 0.23 + pow(result, 1.7) * (0.28 - 0.15);
+    result = depths;
+    //result = 0;
+  } else if (result < 0.281) {
+    result = cshelves;
+    //result = 0;
+  } else if (result < 0.63) {
+    result = plains;
+    //result = 0;
   } else {
-    result = (result - 0.28) / (1 - 0.28);
-    result = 0.28 + pow(result, 4) * (1 - 0.28);
+    result = mountains;
+    //result = result;
   }
-  result = result * 2 - 1.000001;
+  result = result * 2 - 1.0;
   return result;
 }
 
@@ -165,10 +194,23 @@ float wrapped_terrain(float x, float y) {
   return tiled_func(&terrain_noise, x, y, 256*SCALE, 0, 5);
 }
 
+
 void write_noise_ppm(
   float (*noisefunc)(float, float),
-  char const * const filename
+  char const * const filename,
+  uint8_t map_colors,
+  uint8_t light
 ) {
+  float n, nf;
+  int color;
+  int i, j, col;
+  float lightx = 0.2;
+  float lighty = -0.5;
+  float lightz = 1.0;
+  float grx, gry, grz, grl;
+  float lvx, lvy, lvz, lvl;
+  float lighting;
+  float r, g, b;
   FILE *fp;
   fp = fopen(filename, "w");
   if (!fp) {
@@ -179,23 +221,84 @@ void write_noise_ppm(
   fprintf(fp, "# noise test ppm\n");
   fprintf(fp, "# Auto-generated test of noise function in noise.c.\n");
   fprintf(fp, "256 256\n");
-  fprintf(fp, "15\n");
-  int i, j, col;
+  fprintf(fp, "256\n");
   col = 0;
   for (j = 0; j < 256; ++j) {
     for (i = 0; i < 256; ++i) {
-      float n = noisefunc((float)i*SCALE, (float)j*SCALE);  // [-1, 1)
-      int v = (int) ((n + 1.0) * 16.5);                     // [0, 32]
-      if (v < 0 || v > 32) {
-        printf("n, v: %.3f, %d\n", n, v);
+      n = noisefunc(i*SCALE, j*SCALE); // [-1, 1)
+
+      nf = ((n+1.0) * 15.9999) - floor((n+1.0) * 15.9999);
+
+      color = (int) floor((n + 1.0) * 15.9999); // [0, 31]
+
+      // Compute gradient:
+      grx = (n - noisefunc((i+1)*SCALE, j*SCALE))*32;
+      grx += (noisefunc((i-1)*SCALE, j*SCALE) - n)*32;
+      grx /= 2.0;
+      gry = (n - noisefunc(i*SCALE, (j+1)*SCALE))*32;
+      gry += (noisefunc(i*SCALE, (j-1)*SCALE) - n)*32;
+      gry /= 2.0;
+      grz = 1;
+      //grx *= -1;
+      //gry *= -1;
+      //grz *= -1;
+      grl = sqrtf(grx*grx + gry*gry + grz*grz);
+      // Normalize:
+      grx /= grl;
+      gry /= grl;
+      grz /= grl;
+      // Compute light vector:
+      lvx = lightx*256 - i;
+      lvy = lighty*256 - j;
+      lvz = (lightz - n);
+      lvz *= 32;
+      lvl = sqrtf(lvx*lvx + lvy*lvy + lvz*lvz);
+      // Normalize:
+      lvx /= lvl;
+      lvy /= lvl;
+      lvz /= lvl;
+      // Dot product:
+      lighting = (
+        grx * lvx +
+        gry * lvy +
+        grz * lvz
+      ); // [-1, 1]
+      lighting = (lighting + 1)/2.0; // [0, 1]
+
+      // Interpolate colors from the table:
+      if (color < 0 || color > 31) {
+        printf("Out of range! n, color = %.3f, %d\n", n, color);
+        r = 1.0;
+        g = 0.5;
+        b = 0;
+      } else {
+        if (map_colors) {
+          r = (1 - nf)*FALSE_COLOR[color*3] + nf*FALSE_COLOR[(color+1)*3];
+          g = (1 - nf)*FALSE_COLOR[color*3+1] + nf*FALSE_COLOR[(color+1)*3+1];
+          b = (1 - nf)*FALSE_COLOR[color*3+2] + nf*FALSE_COLOR[(color+1)*3+2];
+          r /= 15.0;
+          g /= 15.0;
+          b /= 15.0;
+        } else {
+          r = (n+1)/2.0;
+          g = (n+1)/2.0;
+          b = (n+1)/2.0;
+        }
       }
-      fprintf(
-        fp,
-        "%02d %02d %02d ",
-        FALSE_COLOR[v*3],
-        FALSE_COLOR[v*3+1],
-        FALSE_COLOR[v*3+2]
-      );
+      /*
+      r = 0.5;
+      g = 0.5;
+      b = 0.5;
+      // */
+      if (light) {
+        r *= lighting;
+        g *= lighting;
+        b *= lighting;
+      }
+      r *= 255;
+      g *= 255;
+      b *= 255;
+      fprintf(fp, "%02d %02d %02d ", (int) r, (int) g, (int) b);
       col += 9;
       if (col >= 70) {
         fprintf(fp, "\n");
@@ -209,13 +312,13 @@ void write_noise_ppm(
 }
 
 int main(int argc, char** argv) {
-  write_noise_ppm(&sxnoise_2d, "noise_test_2D.ppm");
-  write_noise_ppm(&slice_3d_noise, "noise_test_3D.ppm");
-  write_noise_ppm(&fractal_2d_noise, "noise_test_2D_F.ppm");
-  write_noise_ppm(&slice_fractal_3d_noise, "noise_test_3D_F.ppm");
-  write_noise_ppm(&example_noise, "noise_test_ex.ppm");
-  write_noise_ppm(&example_wrapped_noise, "noise_test_wrapped.ppm");
-  write_noise_ppm(&terrain_noise, "noise_test_terrain.ppm");
-  write_noise_ppm(&wrapped_terrain, "noise_test_wrapped_terrain.ppm");
+  write_noise_ppm(&sxnoise_2d, "noise_test_2D.ppm", 1, 1);
+  write_noise_ppm(&slice_3d_noise, "noise_test_3D.ppm", 1, 1);
+  write_noise_ppm(&fractal_2d_noise, "noise_test_2D_F.ppm", 1, 1);
+  write_noise_ppm(&slice_fractal_3d_noise, "noise_test_3D_F.ppm", 1, 1);
+  write_noise_ppm(&example_noise, "noise_test_ex.ppm", 1, 1);
+  write_noise_ppm(&example_wrapped_noise, "noise_test_wrapped.ppm", 1, 1);
+  write_noise_ppm(&terrain_noise, "noise_test_terrain.ppm", 1, 1);
+  write_noise_ppm(&wrapped_terrain, "noise_test_wrapped_terrain.ppm", 1, 1);
   return 0;
 }

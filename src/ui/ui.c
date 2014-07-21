@@ -239,8 +239,9 @@ static inline void draw_pos_info(void) {
   region_pos player_pos;
   get_head_rpos(PLAYER, &player_pos);
 
-#ifdef TERRAIN_MODE_BASIC
   // Draw geoform data:
+  // TODO: New geoform data?
+  /*
   float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
   get_geoforms(
     fastfloor(player_pos.x), fastfloor(player_pos.y),
@@ -252,7 +253,7 @@ static inline void draw_pos_info(void) {
     depths, oceans, plains, hills, mountains
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 570);
-#else
+  // */
   // DEBUG:
   if (PLAYER->area != NULL) {
     sprintf(
@@ -264,7 +265,6 @@ static inline void draw_pos_info(void) {
     sprintf(TXT, "Player is out-of-bounds.");
   }
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 570);
-#endif
 
   // Draw region position:
   sprintf(

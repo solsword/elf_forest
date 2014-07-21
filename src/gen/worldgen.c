@@ -9,6 +9,7 @@
 #include "geology.h"
 
 #include "worldgen.h"
+#include "terrain.h"
 
 /***********
  * Globals *
@@ -34,7 +35,7 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
   result->all_civs = create_list();
   for (xy.x = 0; xy.x < result->width; ++xy.x) {
     for (xy.y = 0; xy.y < result->height; ++xy.y) {
-      wr = get_world_region(wm, &xy); // no need to worry about NULL here
+      wr = get_world_region(result, &xy); // no need to worry about NULL here
       wmpos__rpos(&xy, &(wr->anchor));
       wr->anchor.x += WORLD_REGION_SIZE * CHUNK_SIZE * float_hash_1d(hash); 
       wr->anchor.y += WORLD_REGION_SIZE * CHUNK_SIZE * float_hash_1d(hash); 
@@ -207,17 +208,18 @@ void strata_cell(
   cell *result
 ) {
   static r_pos_t surface_height;
-  float column_height;
   static region_pos pr_rpos = { .x = -1, .y = -1, .z = -1 };
+  world_region* wr = neighborhood[4];
   int i;
-  r_pos_t h;
+  float h;
+  uint8_t hit = 0;
   stratum *st;
   region_pos trp;
   copy_rpos(rpos, &trp);
   trp.z = 0;
 
   // DEBUG: (to show the strata)
-  /*
+  //*
   if (abs(rpos->x - 32770) < CHUNK_SIZE) {
     result->primary = b_make_block(B_AIR);
     result->secondary = b_make_block(B_VOID);
@@ -225,6 +227,7 @@ void strata_cell(
   }
 
   // DEBUG: Caves to show things off more:
+  /*
   if (
     sxnoise_3d(rpos->x*1/12.0, rpos->y*1/12.0, rpos->z*1/12.0) >
       sxnoise_3d(rpos->x*1/52.0, rpos->y*1/52.0, rpos->z*1/52.0)
@@ -233,115 +236,37 @@ void strata_cell(
     result->secondary = b_make_block(B_VOID);
     return;
   }
-  */
+  // */
 
   if (pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
     // No need to recompute the surface height if we're at the same x/y.
-    surface_height = compute_surface_height(&(neighborhood[4]), &rpos);
+    // TODO: Get rid of double-caching here?
+    surface_height = terrain_height(rpos);
   }
 
-  // DEBUG:
-  /*
-  if (rpos->x == 3 && rpos->y == 3) {
-    printf("rpos: %ld, %ld, %ld\n", rpos->x, rpos->y, rpos->z);
-    printf("stratum: %ld\n", THE_WORLD->regions[0].geology.strata[4]);
-    printf(
-      "heights: %ld : %ld : %ld : %ld : %ld : %ld\n",
-      heights[0],
-      heights[1],
-      heights[2],
-      heights[3],
-      heights[4],
-      heights[5]
-    );
-    printf(
-      "pointers: %ld : %ld : %ld : %ld : %ld : %ld\n",
-      wr->geology.strata[0],
-      wr->geology.strata[1],
-      wr->geology.strata[2],
-      wr->geology.strata[3],
-      wr->geology.strata[4],
-      wr->geology.strata[5]
-    );
-    printf(
-      "seeds: %ld : %ld : %ld : %ld : %ld : %ld\n",
-      wr->geology.strata[0]->seed,
-      wr->geology.strata[1]->seed,
-      wr->geology.strata[2]->seed,
-      wr->geology.strata[3]->seed,
-      wr->geology.strata[4]->seed,
-      wr->geology.strata[5]->seed
-    );
-    printf(
-      "cx/cy: %.2f/%.2f : %.2f/%.2f : %.2f/%.2f : %.2f/%.2f : %.2f/%.2f : %.2f/%.2f\n",
-      wr->geology.strata[0]->cx, wr->geology.strata[0]->cy,
-      wr->geology.strata[1]->cx, wr->geology.strata[1]->cy,
-      wr->geology.strata[2]->cx, wr->geology.strata[2]->cy,
-      wr->geology.strata[3]->cx, wr->geology.strata[3]->cy,
-      wr->geology.strata[4]->cx, wr->geology.strata[4]->cy,
-      wr->geology.strata[5]->cx, wr->geology.strata[5]->cy
-    );
-    printf(
-      "size: %.2f : %.2f : %.2f : %.2f : %.2f : %.2f\n",
-      wr->geology.strata[0]->size,
-      wr->geology.strata[1]->size,
-      wr->geology.strata[2]->size,
-      wr->geology.strata[3]->size,
-      wr->geology.strata[4]->size,
-      wr->geology.strata[5]->size
-    );
-    printf(
-      "thickness: %.2f : %.2f : %.2f : %.2f : %.2f : %.2f\n",
-      wr->geology.strata[0]->thickness,
-      wr->geology.strata[1]->thickness,
-      wr->geology.strata[2]->thickness,
-      wr->geology.strata[3]->thickness,
-      wr->geology.strata[4]->thickness,
-      wr->geology.strata[5]->thickness
-    );
-    if (pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
-      printf("(recomputed)\n");
-      printf("(recomputed)\n");
-      printf("(recomputed)\n");
-    }
-  }
-  // */
-
-  // Figure out elevations from the bottom up:
-  h = 0;
-  for (i = 0; i < wr->geology.stratum_count; ++i) {
-    st = wr->geology.strata[i];
-    //printf("Thickness: %d\n", sd[i].thickness);
-    h += heights[i];
-    if (h > rpos->z) { // might not happen at all
-      result->primary = b_make_species(B_STONE, st->base_species);
-      // DEBUG:
-      /*
-      result->primary = b_make_block(B_DIRT);
-      if (h == rpos->z + 1) {
-        result->secondary = b_make_block(B_GRASS_ROOTS);
-      }
-      */
-      // TODO: A real material computation:
-      /*
-      result->primary = stratum_material(
-        rpos,
-        st,
-        &(sd[i])
-      );
-      // */
-      // TODO: block data
-      // TODO: caching and/or batch processing?
-      break;
-    // DEBUG:
-    /*
-    } else if (h == rpos->z) {
-      result->primary = b_make_block(B_GRASS);
-    // */
-    }
-  }
   // Keep track of our previous position:
   copy_rpos(rpos, &pr_rpos);
+
+  // Compute our fractional height:
+  h = rpos->z / ((float) surface_height);
+  // TODO: Add some distortion here
+  if (h > 1.0) {
+    return;
+  }
+
+  // Find out which layer we're in:
+  st = wr->geology.strata[0];
+  for (i = 1; i < wr->geology.stratum_count; ++i) {
+    if (h > wr->geology.bottoms[i]) { // might not happen at all
+      result->primary = b_make_species(B_STONE, st->base_species);
+      hit = 1;
+      break;
+    }
+    st = wr->geology.strata[i];
+  }
+  if (!hit) {
+    result->primary = b_make_species(B_STONE, st->base_species);
+  }
 }
 
 /********

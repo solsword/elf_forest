@@ -241,6 +241,8 @@ static inline r_pos_t compute_surface_height(
   world_region* wr,
   region_pos* rpos
 ) {
+  // TODO: HERE
+  return 1000;
 }
 
 /******************************
@@ -271,9 +273,9 @@ void generate_geology(world_map *wm);
 
 // Computes the cell contents at the given position based on strata.
 void strata_cell(
-  world_region *wr,
-  region_pos *rpos,
-  cell *result
+  world_region* wr[],
+  region_pos* rpos,
+  cell* result
 );
 
 /********

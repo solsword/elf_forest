@@ -23,10 +23,10 @@
 branch_filter_args example_branch_args = {
   .seed = 17,
   .rough = 0,
-  .scale = 0.125,
+  .scale = 0.085,
   .width = 1.0,
-  .dscale = 0.125,
-  .distortion = 5.0,
+  .dscale = 0.12,
+  .distortion = 3.0,
   .squash = 1.2,
   .center_color = 0xff001133, // dark brown
   .mid_color = 0xff004466, // mid brown

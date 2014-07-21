@@ -32,6 +32,9 @@ typedef struct grid_neighborhood_2d_s grid_neighborhood_2d;
 #define WORLEY_FLAG_INCLUDE_NEXTBEST 0x00000002
 // Disables normalization of the result.
 #define WORLEY_FLAG_DONT_NORMALIZE 0x0000004
+// Smoothes the sides of the Worley contours somewhat using some fancy
+// interpolation.
+#define WORLEY_FLAG_SMOOTH_SIDES 0x0000008
 
 // These flags control the noise generation when given to the table form of
 // the fractal sum noise generators (see fractal_sxnoise_*d_table).
@@ -376,13 +379,32 @@ float fractal_sxnoise_3d_table(
  *******************/
 
 // Takes a value in [-1, 1] and stretches it towards the nearest extreme by
-// raising it to the given exponent.
+// raising it to the given exponent. Note that for stretch values less than 1
+// there's a discontinuity at 0.
 static inline float stretch(float n, float stretch) {
   if (n < 0) {
     return -pow(-n, stretch);
   } else {
     return pow(n, stretch);
   }
+}
+
+// Takes a value in [-1, 1] and maps it through a sigmoid function centered on
+// (center, center) with an exponent of strength. Negative values are flipped
+// first and flopped afterwards, so it's really a double sigmoid.
+static inline float smooth(float n, float strength, float center) {
+  float sign = 1;
+  float result = 0;
+  if (n < 0) {
+    sign = -1;
+    n = -n;
+  }
+  if (n < center) {
+    result = center * pow(n/center, strength);
+  } else {
+    result = 1 - (1 - center) * pow(1 - (n - center)/(1 - center), strength);
+  }
+  return sign * result;
 }
 
 // Scaled 2D simplex noise on [0-1]:

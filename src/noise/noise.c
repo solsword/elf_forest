@@ -624,7 +624,7 @@ float wrnoise_2d(float x, float y) {
   float dx, dy;
   float d = 0;
   float best = MAX_SQ_WORLEY_DISTANCE_2D;
-  float nextbest= MAX_SQ_WORLEY_DISTANCE_2D;
+  float secondbest = MAX_SQ_WORLEY_DISTANCE_2D;
 
   grn.i = ffloor(x);
   grn.j = ffloor(y);
@@ -645,17 +645,17 @@ float wrnoise_2d(float x, float y) {
   for (i = 0; i < 9; ++i) {
     dx = grn.x[i] - x;
     dy = grn.y[i] - y;
-    d = sqrtf(dx * dx + dy * dy);
+    d = (dx * dx + dy * dy);
     if (d < best) {
-      nextbest = best;
+      secondbest = best;
       best = d;
-    } else if (d < nextbest) {
-      nextbest = d;
+    } else if (d < secondbest) {
+      secondbest = d;
     }
   }
 
   // Return the scaled distance difference:
-  return (nextbest - best) / MAX_WORLEY_DISTANCE_2D;
+  return (secondbest - best) / MAX_SQ_WORLEY_DISTANCE_2D;
 }
 
 // "fancy" 2D worley noise:
@@ -674,7 +674,8 @@ float wrnoise_2d_fancy(
   float d = 0;
   float result;
   float best = MAX_SQ_WORLEY_DISTANCE_2D;
-  float nextbest= MAX_SQ_WORLEY_DISTANCE_2D;
+  float secondbest= MAX_SQ_WORLEY_DISTANCE_2D;
+  float thirdbest= MAX_SQ_WORLEY_DISTANCE_2D;
 
   grn.i = ffloor(x);
   grn.j = ffloor(y);
@@ -692,30 +693,50 @@ float wrnoise_2d_fancy(
     }
   }
 
-  // Find the two closest points:
+  // Find the three closest points:
   for (i = 0; i < 9; ++i) {
     dx = grn.x[i] - x;
     dy = grn.y[i] - y;
-    d = sqrtf(dx * dx + dy * dy);
+    d = (dx * dx + dy * dy);
     if (d < best) {
-      nextbest = best;
+      thirdbest = secondbest;
+      secondbest = best;
       best = d;
-    } else if (d < nextbest) {
-      nextbest = d;
+    } else if (d < secondbest) {
+      thirdbest = secondbest;
+      secondbest = d;
+    } else if (d < thirdbest) {
+      thirdbest = d;
     }
   }
 
   // Return the scaled distance:
   result = 0;
   if (!(flags & WORLEY_FLAG_IGNORE_NEAREST)) {
-    result += best;
+    if (flags & WORLEY_FLAG_SMOOTH_SIDES) {
+      float interp = best / (best + secondbest);
+
+      result += (1 - interp) * best + interp * secondbest;
+    } else {
+      result += best;
+    }
   }
   if (flags & WORLEY_FLAG_INCLUDE_NEXTBEST) {
-    result -= nextbest;
+    if (flags & WORLEY_FLAG_SMOOTH_SIDES) {
+      float secondthird = secondbest / thirdbest;
+      result -= (
+        (1 - secondthird) * secondbest +
+        secondthird * (0.5 * secondbest + 0.5 * thirdbest)
+      );
+    } else {
+      result -= secondbest;
+    }
     result *= -1;
   }
   if (!(flags & WORLEY_FLAG_DONT_NORMALIZE)) {
-    result /= MAX_WORLEY_DISTANCE_2D;
+    //result = sqrt(result / MAX_SQ_WORLEY_DISTANCE_2D);
+    result = result / MAX_SQ_WORLEY_DISTANCE_2D;
+    //result = smooth(result, 4, 0.5);
   }
   return result;
 }
