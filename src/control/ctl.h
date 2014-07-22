@@ -21,6 +21,7 @@ enum control_e {
   C_LEFT, C_RIGHT, C_FORWARD, C_REVERSE,
   C_CHANGE_VIEW, C_ZOOM_IN, C_ZOOM_OUT,
   C_DRAW_DEBUG_INFO,
+  C_TELEPORT,
   N_CONTROLS
 };
 typedef enum control_e control;
@@ -58,6 +59,9 @@ extern float MIN_PITCH;
 extern float ZOOM;
 extern float MIN_ZOOM;
 extern float MAX_ZOOM;
+
+// Teleportation distance:
+extern float TELEPORT_DISTANCE;
 
 /********************
  * Inline Functions *

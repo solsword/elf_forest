@@ -441,11 +441,14 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
     // We can't deal with unloaded chunks
     return;
   }
+
   uint16_t counts[N_LAYERS];
   uint16_t total = 0;
   layer i;
+  // Initialize counts and clear out any old data:
   for (i = 0; i < N_LAYERS; ++i) {
     counts[i] = 0;
+    reset_vertex_buffer(&((*layers)[i]));
   }
   chunk_index idx;
   cell *here = NULL;

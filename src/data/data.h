@@ -106,6 +106,35 @@ static inline chunk_approximation * get_chunk_approx(
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
 }
 
+// Computes the desired detail level at the given position (assuming the player
+// is at the given center position). Returns N_LODS if the given chunk is
+// outside the max loading distance.
+static inline lod desired_detail_at(
+  region_chunk_pos* center,
+  region_chunk_pos* pos
+) {
+  lod result = N_LODS;
+  lod detail;
+  r_cpos_t edge;
+  float d2 = (
+    (pos->x - center->x) * (pos->x - center->x) +
+    (pos->y - center->y) * (pos->y - center->y) +
+    (
+      (pos->z - center->z) * (pos->z - center->z)
+      *
+      VERTICAL_LOAD_BIAS
+    )
+  );
+  for (detail = LOD_BASE; detail < N_LODS; ++detail) {
+    edge = LOAD_DISTANCES[detail];
+    if (d2 <= edge * edge) {
+      result = detail;
+      break;
+    }
+  }
+  return result;
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/

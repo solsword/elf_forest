@@ -56,25 +56,31 @@ typedef struct world_map_s world_map;
  *************/
 
 // World width and height in regions:
+// 768*512 = 393216 regions
 //#define WORLD_WIDTH 768
 //#define WORLD_HEIGHT 512
+// 400*320 = 128000 regions
+#define WORLD_WIDTH 400
+#define WORLD_HEIGHT 320
 // 128*96 = 12288 regions
-#define WORLD_WIDTH 128
-#define WORLD_HEIGHT 96
+//#define WORLD_WIDTH 128
+//#define WORLD_HEIGHT 96
 
-// Bits per world region (4 -> 16x16 chunks).
-// 12288 * 16*16 * (?=1024) = 3221225472 chunks
-// 3221225472 chunks * 384 KB/chunk = 1236950581248 KB
-// 1236950581248 KB = 1152 terrabytes ~= 1 petabyte
-// 96*16*32 = 49152 blocks ~= 24576 meters ~= 25 km
-#define WORLD_REGION_BITS 4
+// Bits per world region (8 -> 256x256 chunks).
+// 12288 * 256*256*(?=512) = 412316860416 chunks
+// 412316860416 chunks * 384 KB/chunk = 144 petabytes
+// 96*256*32 = 786432 blocks ~= 524300 meters ~= 525 km
+// 320*256*32 = 2621440 blocks ~= 1747500 meters ~= 1750 km <-
+// 512*256*32 = 4194304 blocks ~= 2796000 meters ~= 2800 km
+#define WORLD_REGION_BITS 8
 #define WORLD_REGION_SIZE (1 << WORLD_REGION_BITS)
 
 // Controls the size of strata relative to the world map size.
 #define STRATA_AVG_SIZE 0.25
 
 // Controls how many strata to generate (a multiple of MAX_STRATA_LAYERS).
-#define STRATA_COMPLEXITY 4.0
+//#define STRATA_COMPLEXITY 4.0
+#define STRATA_COMPLEXITY (1/32.0)
 
 // The base stratum thickness (before an exponential distribution).
 #define BASE_STRATUM_THICKNESS 10.0
@@ -101,7 +107,7 @@ typedef struct world_map_s world_map;
 
 extern world_map* THE_WORLD;
 
-extern ptrdiff_t const WORLD_SEED;
+extern char const * const WORLD_MAP_FILE;
 
 /*************************
  * Structure Definitions *
@@ -161,9 +167,10 @@ struct biome_s {
 
 // Each world region stores info on geology, climate, ecology, and
 // anthropoloogy, as well as an anchor position that's randomly placed
-// somewhere within the region.
+// somewhere within the region and an estimate of local terrain height.
 struct world_region_s {
   region_pos anchor;
+  r_pos_t terrain_height;
   strata_info geology;
   climate_info climate;
   biome_info ecology;

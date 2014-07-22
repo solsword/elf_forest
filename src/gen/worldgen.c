@@ -5,6 +5,8 @@
 #include "noise/noise.h"
 #include "world/blocks.h"
 #include "data/data.h"
+#include "txgen/cartography.h"
+#include "tex/tex.h"
 
 #include "geology.h"
 
@@ -16,6 +18,8 @@
  ***********/
 
 world_map* THE_WORLD = NULL;
+
+char const * const WORLD_MAP_FILE = "out/world_map.png";
 
 /******************************
  * Constructors & Destructors *
@@ -37,8 +41,21 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
     for (xy.y = 0; xy.y < result->height; ++xy.y) {
       wr = get_world_region(result, &xy); // no need to worry about NULL here
       wmpos__rpos(&xy, &(wr->anchor));
+      // Average the heights at the corners of the world region:
+      wr->terrain_height = terrain_height(&(wr->anchor));
+      wr->anchor.y += (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
+      wr->terrain_height += terrain_height(&(wr->anchor));
+      wr->anchor.x += (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
+      wr->terrain_height += terrain_height(&(wr->anchor));
+      wr->anchor.y -= (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
+      wr->terrain_height += terrain_height(&(wr->anchor));
+      wr->terrain_height /= 4;
+
+      // Randomize the anchor position:
       wr->anchor.x += WORLD_REGION_SIZE * CHUNK_SIZE * float_hash_1d(hash); 
+      hash += 1;
       wr->anchor.y += WORLD_REGION_SIZE * CHUNK_SIZE * float_hash_1d(hash); 
+      hash += 1;
       wr->anchor.z = (
         BASE_STRATUM_THICKNESS * MAX_STRATA_LAYERS * float_hash_1d(hash)
       );
@@ -64,6 +81,11 @@ void setup_worldgen(ptrdiff_t seed) {
   THE_WORLD = create_world_map(seed, WORLD_WIDTH, WORLD_HEIGHT);
   printf("  ...generating geology...\n");
   generate_geology(THE_WORLD);
+  printf("  ...writing world map to '%s'...\n", WORLD_MAP_FILE);
+  texture *tx = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
+  render_map(THE_WORLD, tx);
+  write_texture_to_png(tx, WORLD_MAP_FILE);
+  cleanup_texture(tx);
 }
 
 void cleanup_worldgen() {
@@ -200,13 +222,11 @@ void generate_geology(world_map *wm) {
         }
       }
     }
-    if (i % 4 == 0) {
-      printf(
-        "    ...%zu / %zu strata done...\r",
-        i,
-        (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
-      );
-    }
+    printf(
+      "    ...%zu / %zu strata done...\r",
+      i,
+      (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
+    );
   }
   printf("\n");
 }
@@ -228,8 +248,15 @@ void strata_cell(
   trp.z = 0;
 
   // DEBUG: (to show the strata)
-  /*
-  if (abs(rpos->x - 32770) < CHUNK_SIZE) {
+  if (
+    (
+      abs(rpos->x - 32770) < CHUNK_SIZE
+    ) && (
+      rpos->z > (rpos->y - 24578) + 15000
+      //rpos->z > (rpos->y - (WORLD_HEIGHT*WORLD_REGION_SIZE*CHUNK_SIZE)/2)
+    )
+  ) {
+  //if (abs(rpos->x - 32770) < CHUNK_SIZE) {
     result->primary = b_make_block(B_AIR);
     result->secondary = b_make_block(B_VOID);
     return;

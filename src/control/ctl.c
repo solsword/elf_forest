@@ -13,6 +13,7 @@
 #include "control/ctl.h"
 #include "world/world.h"
 #include "world/entities.h"
+#include "gen/terrain.h"
 #include "tick/tick.h"
 #include "ui/ui.h"
 
@@ -30,6 +31,7 @@ int KEYMAP[N_CONTROLS] = {
   GLFW_KEY_V, // swap views
   GLFW_KEY_KP_ADD, GLFW_KEY_KP_SUBTRACT, // zoom in/out
   GLFW_KEY_F1, // draw debug info
+  GLFW_KEY_L, // teleport
 };
 
 uint8_t CONTROLS[N_CONTROLS];
@@ -49,6 +51,8 @@ float MIN_PITCH = -M_PI_2;
 float ZOOM = 1.0;
 float MIN_ZOOM = 0.5;
 float MAX_ZOOM = 2.5;
+
+float TELEPORT_DISTANCE = 2000;
 
 /*************
  * Callbacks *
@@ -114,6 +118,8 @@ void init_control(void) {
 void tick_general_controls(void) {
   // Handle mouse movement (TODO: switch this on/off):
   double mx, my;
+  vector teleport_vector;
+  region_pos teleport_destination;
   glfwGetCursorPos(WINDOW, &mx, &my);
   mx -= WINDOW_WIDTH/2.0;
   my -= WINDOW_HEIGHT/2.0;
@@ -146,6 +152,18 @@ void tick_general_controls(void) {
   // Displaying debug info:
   if (DOWN[C_DRAW_DEBUG_INFO]) {
     DRAW_DEBUG_INFO = !DRAW_DEBUG_INFO;
+  }
+
+  // Teleporting:
+  if (DOWN[C_TELEPORT]) {
+    vface(&teleport_vector, PLAYER->yaw, 0);
+    vscale(&teleport_vector, TELEPORT_DISTANCE);
+    vadd(&(PLAYER->pos), &teleport_vector);
+    get_head_rpos(PLAYER, &teleport_destination);
+    PLAYER->pos.z = (
+      (r_pos_t) ffloor(terrain_height(&teleport_destination)+10) -
+      PLAYER->area->origin.z
+    );
   }
 }
 

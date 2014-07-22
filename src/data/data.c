@@ -14,7 +14,9 @@
 #include "prof/ptime.h"
 #include "world/blocks.h"
 #include "world/world.h"
+#include "world/entities.h"
 #include "world/chunk_data.h"
+#include "control/ctl.h"
 
 /*************
  * Constants *
@@ -348,8 +350,6 @@ void get_best_data_limited(
 void load_surroundings(region_chunk_pos *center) {
   lod detail = LOD_BASE; // level of detail being considered
   region_chunk_pos rcpos = { .x=0, .y=0, .z=0 }; // current chunk
-  r_cpos_t d2 = 0; // squared Euclidean distance to current chunk
-  r_cpos_t edge = 0; // edge of the current LOD
   // Max distance at which to load anything, trimmed a bit:
   r_cpos_t max_distance = LOAD_DISTANCES[N_LODS - 1];
   max_distance -= max_distance / LOAD_AREA_TRIM_FRACTION;
@@ -369,23 +369,9 @@ void load_surroundings(region_chunk_pos *center) {
         rcpos.z < center->z + (max_distance / VERTICAL_LOAD_BIAS);
         ++rcpos.z
       ) {
-        d2 = (
-          (rcpos.x - center->x) * (rcpos.x - center->x)
-        +
-          (rcpos.y - center->y) * (rcpos.y - center->y)
-        +
-          (
-            (rcpos.z - center->z) * (rcpos.z - center->z)
-          *
-            VERTICAL_LOAD_BIAS * VERTICAL_LOAD_BIAS
-          )
-        );
-        for (detail = LOD_BASE; detail < N_LODS; ++detail) {
-          edge = LOAD_DISTANCES[detail];
-          if (d2 <= edge * edge) {
-            mark_for_loading(&rcpos, detail);
-            break;
-          }
+        detail = desired_detail_at(center, &rcpos);
+        if (detail < N_LODS) {
+          mark_for_loading(&rcpos, detail);
         }
       }
     }
@@ -398,9 +384,16 @@ void tick_load_chunks(void) {
   chunk *old_chunk = NULL;
   chunk_approximation *ca = NULL;
   chunk_approximation *old_approx = NULL;
+  region_pos player_pos;
+  region_chunk_pos load_center;
   lod detail = LOD_BASE;
+
   queue *q = LOAD_QUEUES->levels[LOD_BASE];
   map *m = LOAD_QUEUES->maps[LOD_BASE];
+
+  get_head_rpos(PLAYER, &player_pos);
+  rpos__rcpos(&player_pos, &load_center);
+
   while (n < LOAD_CAP && q_get_length(q) > 0) {
     c = (chunk *) q_pop_element(q);
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
@@ -410,6 +403,11 @@ void tick_load_chunks(void) {
       (map_key_t) c->rcpos.y,
       (map_key_t) c->rcpos.z
     );
+    if (desired_detail_at(&load_center, &(c->rcpos)) > LOD_BASE) {
+      // discard this chunk and don't load it.
+      cleanup_chunk(c);
+      continue;
+    }
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
     load_chunk(c);
     c->chunk_flags &= ~CF_QUEUED_TO_LOAD;
@@ -439,6 +437,11 @@ void tick_load_chunks(void) {
         (map_key_t) ca->rcpos.y,
         (map_key_t) ca->rcpos.z
       );
+      if (desired_detail_at(&load_center, &(ca->rcpos)) > detail) {
+        // discard this chunk and don't load it.
+        cleanup_chunk_approximation(ca);
+        continue;
+      }
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
       load_chunk_approx(ca);
       ca->chunk_flags &= ~CF_QUEUED_TO_LOAD;
@@ -513,6 +516,7 @@ void load_chunk(chunk *c) {
     coa.type = CA_TYPE_CHUNK;
     coa.ptr = c;
     mark_for_compilation(&coa);
+    // TODO: Thread-safety here!
     mark_neighbors_for_compilation(&(c->rcpos));
   }
 }

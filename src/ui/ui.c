@@ -240,17 +240,14 @@ static inline void draw_pos_info(void) {
   get_head_rpos(PLAYER, &player_pos);
 
   // Draw geoform data:
-  // TODO: New geoform data?
-  /*
-  float depths = 0, oceans = 0, plains = 0, hills = 0, mountains = 0;
-  get_geoforms(
-    fastfloor(player_pos.x), fastfloor(player_pos.y),
-    &depths, &oceans, &plains, &hills, &mountains
-  );
+  //*
+  terrain_region region;
+  float tr_interp;
+  geoform_info(&player_pos, &region, &tr_interp);
   sprintf(
     TXT,
-    "d: %0.2f  o: %0.2f  p: %0.2f  h: %0.2f  m: %0.2f",
-    depths, oceans, plains, hills, mountains
+    "%s <- %.2f -> %s",
+    TR_REGION_NAMES[region], tr_interp, TR_REGION_NAMES[region+1]
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 570);
   // */
@@ -264,7 +261,7 @@ static inline void draw_pos_info(void) {
   } else {
     sprintf(TXT, "Player is out-of-bounds.");
   }
-  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 570);
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 540);
 
   // Draw region position:
   sprintf(
@@ -272,7 +269,7 @@ static inline void draw_pos_info(void) {
     "region :: %+6ld x    %+6ld y    %+6ld z",
     player_pos.x, player_pos.y, player_pos.z
   );
-  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 540);
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 510);
 
   // Draw active entity area position:
   sprintf(
@@ -280,7 +277,7 @@ static inline void draw_pos_info(void) {
     "area :: %0.1f x    %0.1f y    %0.1f z",
     PLAYER->pos.x, PLAYER->pos.y, PLAYER->pos.z
   );
-  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 510);
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 480);
 
 }
 
@@ -290,21 +287,21 @@ static inline void draw_perf_info(void) {
     "chunk layers rendered :: %d",
     CHUNK_LAYERS_RENDERED.average
   );
-  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 480);
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 450);
 
   sprintf(
     TXT,
     "chunks loaded :: %d",
     CHUNKS_LOADED.average
   );
-  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 450);
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 420);
 
   sprintf(
     TXT,
     "chunks compiled :: %d",
     CHUNKS_COMPILED.average
   );
-  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 420);
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 390);
 }
 
 /*************
