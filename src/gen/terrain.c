@@ -34,8 +34,8 @@ char const * const TR_REGION_NAMES[] = {
 
 float terrain_height(region_pos *pos) {
   static int xcache = 3, ycache = 7;
-  static float continents = 0, geoforms = 0, mountains = 0, hills = 0;
-  static float ridges = 0, mounds = 0, details = 0, bumps = 0;
+  static float continents = 0, geoforms = 0, geodetails = 0, mountains = 0;
+  static float hills = 0, ridges = 0, mounds = 0, details = 0, bumps = 0;
   terrain_region region;
   float tr_interp;
   static float height;
@@ -48,16 +48,18 @@ float terrain_height(region_pos *pos) {
   }
   xcache = pos->x; ycache = pos->y;
 
-  comptue_base_geoforms(
+  compute_base_geoforms(
     pos,
-    &continents, &geoforms, &mountains, &hills,
-    &ridges, &mounds, &details, &bumps,
+    &continents, &geoforms, &geodetails, &mountains,
+    &hills, &ridges, &mounds, &details, &bumps,
     &base,
     &region,
     &tr_interp,
     &height
   );
 
+  // DEBUG:
+  //*
   if (region == TR_REGION_DEPTHS) {
     // amplify bumps, ridges, and details; attenuate hills
     hills = smooth(hills, 2, 0.7);
@@ -129,21 +131,21 @@ float terrain_height(region_pos *pos) {
     details = smooth(details, 1.5, 0.4);
     bumps = smooth(bumps, 1.5, 0.3);
   }
+  // */
 
-  /*
+  height += mountains * TR_SCALE_MOUNTAINS;
   height += hills * TR_SCALE_HILLS;
   height += ridges * TR_SCALE_RIDGES;
   height += mounds * TR_SCALE_MOUNDS;
   height += details * TR_SCALE_DETAILS;
   height += bumps * TR_SCALE_BUMPS;
-  */
 
   return height;
 }
 
 void geoform_info(region_pos *pos, terrain_region* region, float* tr_interp) {
   static int xcache = 3, ycache = 7;
-  static float continents = 0, geoforms = 0, mountains = 0;
+  static float continents = 0, geoforms = 0, geodetails = 0;
   static float base = 0;
   static float my_tr_interp = 0;
   static terrain_region my_region = 0;
@@ -157,10 +159,10 @@ void geoform_info(region_pos *pos, terrain_region* region, float* tr_interp) {
   }
   xcache = pos->x; ycache = pos->y;
 
-  comptue_base_geoforms(
+  compute_base_geoforms(
     pos,
-    &continents, &geoforms, &mountains, &dontcare,
-    &dontcare, &dontcare, &dontcare, &dontcare,
+    &continents, &geoforms, &geodetails, &dontcare,
+    &dontcare, &dontcare, &dontcare, &dontcare, &dontcare,
     &base,
     &my_region,
     &my_tr_interp,

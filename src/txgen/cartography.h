@@ -12,7 +12,7 @@
  *************/
 
 // The number of sea elevation colors
-#define EC_SEA_COLORS 12
+#define EC_SEA_COLORS 16
 
 // The number of land elevation colors
 #define EC_LAND_COLORS 23
