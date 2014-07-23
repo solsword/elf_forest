@@ -250,8 +250,8 @@ static ptrdiff_t const GRADIENTS_3D[256] = {
 #define TWO__RT3 (2.0 / RT3)
 
 // sqrt(3)/2 squared is 3/4:
-float const SURFLET_RADIUS_2D = RT3__TWO;
-float const SURFLET_SQ_RADIUS_2D = 0.75;
+float const SURFLET_RADIUS_2D = RT3__TWO - 0.05;
+float const SURFLET_SQ_RADIUS_2D = 0.75 - 0.05;
 
 // The 3D simplices aren't quite regular (regular tetrahedrons don't tile
 // properly), so this value is a bit of a fudge. A regular unit tetrahedron
@@ -265,7 +265,7 @@ float const MAX_SQ_WORLEY_DISTANCE_2D = 2.0;
 // These scaling values are chosen based on trial-and-error.
 // Because of this it might be possible for a value outside [-1,1] to be
 // generated.
-static float SCALE_2D = 3.25; // Mostly falls within [-0.9,0.9]
+static float SCALE_2D = 2.5; // Mostly falls within [-0.9,0.9]
 static float SCALE_3D = 7.0; // Mostly falls within [-0.9,0.9]
 // Note that the 2D noise seems to have a slight positive bias (this is a
 // bug?) with an average of ~50.5 over 65536 samples normalized to integers on
@@ -305,14 +305,15 @@ static inline float compute_surflet_value_2d(
   float dx = x - sx;
   float dy = y - sy;
 
-  float atten = SURFLET_SQ_RADIUS_2D - (dx*dx + dy*dy);
+  //float atten = SURFLET_SQ_RADIUS_2D - (dx*dx + dy*dy);
+  float atten = SURFLET_RADIUS_2D - sqrtf(dx*dx + dy*dy);
   if (atten < 0) {
     return 0.0;
   } else {
-    atten *= atten;
-    //return atten * ((hash_2d(mixed_hash_1d(i), mixed_hash_1d(j)) & 0x2) - 1);
-    return atten * grad_2d(mixed_hash_1d(i) ^ mixed_hash_1d(j), dx, dy);
+    //atten *= atten;
+    atten = pow(atten, 2.3);
   }
+  return atten * grad_2d(mixed_hash_1d(i) ^ mixed_hash_1d(j), dx, dy);
 }
 
 // Given surflet indices i, j, and k, a surflet center position (sx, sy, sz),
@@ -474,6 +475,7 @@ float sxnoise_2d(float x, float y) {
 
   // Return the scaled sum:
   return SCALE_2D * (srf0 + srf1 + srf2);
+  //return SCALE_2D * (srf0);
 }
 
 // 3D simplex noise:

@@ -247,7 +247,8 @@ static inline void get_cell_neighborhood(
   int step,
   cell* dummy
 ) {
-  // note that the intentional underflow should wrap correctly here
+  // Note that the underflow should wrap correctly here, but we're fixing up
+  // the values anyways.
   chunk_index nbr;
   int dx, dy, dz;
   chunk_or_approx const * coa;
@@ -259,15 +260,12 @@ static inline void get_cell_neighborhood(
         nbr.y = idx.y + dy;
         nbr.z = idx.z + dz;
         j = 13; // the center of the chunk neighborhood
-        if (idx.z < step && nbr.z == idx.z - step) { j -= 9; }
-        if (idx.z >= CHUNK_SIZE - step && nbr.z == idx.z + step) { j += 9; }
-        if (idx.x < step && nbr.x == idx.x - step) { j -= 3; }
-        if (idx.x >= CHUNK_SIZE - step && nbr.x == idx.x + step) { j += 3; }
-        if (idx.y < step && nbr.y == idx.y - step) { j -= 1; }
-        if (idx.y >= CHUNK_SIZE - step && nbr.y == idx.y + step) { j += 1; }
-        nbr.x &= CH_MASK;
-        nbr.y &= CH_MASK;
-        nbr.z &= CH_MASK;
+        if (idx.z < step && dz == -step) { j -= 9; nbr.z = CHUNK_SIZE - 1; }
+        if (idx.z >= CHUNK_SIZE - step && dz == step) { j += 9; nbr.z = 0; }
+        if (idx.x < step && dx == -step) { j -= 3; nbr.x = CHUNK_SIZE - 1; }
+        if (idx.x >= CHUNK_SIZE - step && dx == step) { j += 3; nbr.x = 0; }
+        if (idx.y < step && dy == -step) { j -= 1; nbr.y = CHUNK_SIZE - 1; }
+        if (idx.y >= CHUNK_SIZE - step && dy == step) { j += 1; nbr.y = 0; }
         coa = &(chunk_neighbors[j]);
         if (coa->type == CA_TYPE_CHUNK) {
           neighborhood[i] = c_cell((chunk*) (coa->ptr), nbr);

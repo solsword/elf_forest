@@ -67,6 +67,7 @@ typedef struct world_map_s world_map;
 //#define WORLD_HEIGHT 96
 
 // Bits per world region (8 -> 256x256 chunks).
+// 128*96 = 12288 regions
 // 12288 * 256*256*(?=512) = 412316860416 chunks
 // 412316860416 chunks * 384 KB/chunk = 144 petabytes
 // 96*256*32 = 786432 blocks ~= 524300 meters ~= 525 km

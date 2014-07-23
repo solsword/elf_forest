@@ -133,12 +133,15 @@ float terrain_height(region_pos *pos) {
   }
   // */
 
+  // TODO: attenuate mountains near the beach?
+  //*
   height += mountains * TR_SCALE_MOUNTAINS;
   height += hills * TR_SCALE_HILLS;
   height += ridges * TR_SCALE_RIDGES;
   height += mounds * TR_SCALE_MOUNDS;
   height += details * TR_SCALE_DETAILS;
   height += bumps * TR_SCALE_BUMPS;
+  // */
 
   return height;
 }

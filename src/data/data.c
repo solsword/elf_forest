@@ -27,7 +27,7 @@ size_t const CHUNK_CACHE_MAP_SIZE = 16384;
 
 // TODO: dynamic capping?
 //int const LOAD_CAP = 128;
-//int const COMPILE_CAP = 2048;
+//int const COMPILE_CAP = 64;
 int const LOAD_CAP = 16;
 int const COMPILE_CAP = 16;
 //int const LOAD_CAP = 1;
@@ -37,8 +37,9 @@ int const COMPILE_CAP = 16;
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 6, 16, 50, 150, 500 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 8, 16, 32, 64, 128 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 8, 12, 16, 20 };
-r_cpos_t const LOAD_DISTANCES[N_LODS] = { 5, 6, 7, 7, 7 };
+//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 5, 6, 7, 7, 7 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 3, 4, 5, 5, 5 };
+r_cpos_t const LOAD_DISTANCES[N_LODS] = { 2, 3, 4, 4, 4 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 2, 3, 3, 3, 3 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 1, 2, 2, 2, 2 };
 
@@ -87,14 +88,17 @@ int find_chunk_approx_at_position(void *element, void *reference) {
  ****************************/
 
 static inline int is_loaded(region_chunk_pos *rcpos, lod detail) {
+  m_lock(CHUNK_CACHE->levels[detail]);
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-  return m3_contains_key(
+  int result = m3_contains_key(
     CHUNK_CACHE->levels[detail],
     (map_key_t) rcpos->x,
     (map_key_t) rcpos->y,
     (map_key_t) rcpos->z
   );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+  m_unlock(CHUNK_CACHE->levels[detail]);
+  return result;
 }
 
 static inline int is_loading(region_chunk_pos *rcpos, lod detail) {
@@ -189,7 +193,10 @@ void cleanup_chunk_cache(chunk_cache *cc) {
  *************/
 
 void enqueue_chunk(chunk_queue_set *cqs, chunk *c) {
+  q_lock(cqs->levels[LOD_BASE]);
   q_push_element(cqs->levels[LOD_BASE], (void *) c);
+  q_unlock(cqs->levels[LOD_BASE]);
+  m_lock(cqs->maps[LOD_BASE]);
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
   m3_put_value(
     cqs->maps[LOD_BASE],
@@ -199,10 +206,14 @@ void enqueue_chunk(chunk_queue_set *cqs, chunk *c) {
     (map_key_t) c->rcpos.z
   );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+  m_unlock(cqs->maps[LOD_BASE]);
 }
 
 void enqueue_chunk_approximation(chunk_queue_set *cqs, chunk_approximation *ca){
+  q_lock(cqs->levels[ca->detail]);
   q_push_element(cqs->levels[ca->detail], (void *) ca);
+  q_unlock(cqs->levels[ca->detail]);
+  m_lock(cqs->maps[ca->detail]);
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
   m3_put_value(
     cqs->maps[ca->detail],
@@ -212,6 +223,7 @@ void enqueue_chunk_approximation(chunk_queue_set *cqs, chunk_approximation *ca){
     (map_key_t) ca->rcpos.z
   );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+  m_unlock(cqs->maps[ca->detail]);
 }
 
 void mark_for_loading(region_chunk_pos *rcpos, lod detail) {
@@ -288,6 +300,7 @@ lod get_best_loaded_level(region_chunk_pos *rcpos) {
   lod detail = N_LODS; // level of detail being considered
   for (detail = LOD_BASE; detail < N_LODS; ++detail) {
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+    m_lock(CHUNK_CACHE->levels[detail]);
     if (
       m3_contains_key(
         CHUNK_CACHE->levels[detail],
@@ -297,8 +310,10 @@ lod get_best_loaded_level(region_chunk_pos *rcpos) {
       )
     ) {
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+      m_unlock(CHUNK_CACHE->levels[detail]);
       return detail;
     }
+    m_unlock(CHUNK_CACHE->levels[detail]);
   }
   return N_LODS;
 }
@@ -315,6 +330,7 @@ void get_best_data_limited(
   lod detail = LOD_BASE; // level of detail being considered
   if (limit <= LOD_BASE) {
     coa->type = CA_TYPE_CHUNK;
+    m_lock(CHUNK_CACHE->levels[LOD_BASE]);
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
     coa->ptr = m3_get_value(
       CHUNK_CACHE->levels[LOD_BASE],
@@ -323,6 +339,7 @@ void get_best_data_limited(
       (map_key_t) rcpos->z
     );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+    m_unlock(CHUNK_CACHE->levels[LOD_BASE]);
     if (coa->ptr != NULL) {
       return;
     }
@@ -330,6 +347,7 @@ void get_best_data_limited(
   }
   coa->type = CA_TYPE_APPROXIMATION;
   for (detail = limit; detail < N_LODS; ++detail) {
+    m_lock(CHUNK_CACHE->levels[detail]);
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
     coa->ptr = m3_get_value(
       CHUNK_CACHE->levels[detail],
@@ -338,6 +356,7 @@ void get_best_data_limited(
       (map_key_t) rcpos->z
     );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+    m_unlock(CHUNK_CACHE->levels[detail]);
     if (coa->ptr != NULL) {
       return;
     }
@@ -411,6 +430,7 @@ void tick_load_chunks(void) {
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
     load_chunk(c);
     c->chunk_flags &= ~CF_QUEUED_TO_LOAD;
+    m_lock(CHUNK_CACHE->levels[LOD_BASE]);
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
     old_chunk = (chunk *) m3_put_value(
       CHUNK_CACHE->levels[LOD_BASE],
@@ -420,6 +440,7 @@ void tick_load_chunks(void) {
       (map_key_t) c->rcpos.z
     );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+    m_unlock(CHUNK_CACHE->levels[LOD_BASE]);
     if (old_chunk != NULL) {
       cleanup_chunk(old_chunk);
     }
@@ -437,14 +458,15 @@ void tick_load_chunks(void) {
         (map_key_t) ca->rcpos.y,
         (map_key_t) ca->rcpos.z
       );
+#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
       if (desired_detail_at(&load_center, &(ca->rcpos)) > detail) {
         // discard this chunk and don't load it.
         cleanup_chunk_approximation(ca);
         continue;
       }
-#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
       load_chunk_approx(ca);
       ca->chunk_flags &= ~CF_QUEUED_TO_LOAD;
+      m_lock(CHUNK_CACHE->levels[ca->detail]);
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
       old_approx = (chunk_approximation *) m3_put_value(
         CHUNK_CACHE->levels[ca->detail],
@@ -453,10 +475,11 @@ void tick_load_chunks(void) {
         (map_key_t) ca->rcpos.y,
         (map_key_t) ca->rcpos.z
       );
+#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+      m_unlock(CHUNK_CACHE->levels[ca->detail]);
       if (old_approx != NULL) {
         cleanup_chunk_approximation(old_approx);
       }
-#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
       n += 1;
     }
   }
@@ -516,7 +539,6 @@ void load_chunk(chunk *c) {
     coa.type = CA_TYPE_CHUNK;
     coa.ptr = c;
     mark_for_compilation(&coa);
-    // TODO: Thread-safety here!
     mark_neighbors_for_compilation(&(c->rcpos));
   }
 }

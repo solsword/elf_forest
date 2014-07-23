@@ -119,6 +119,7 @@ static inline void get_noise(
   float *hills, float *ridges, float *mounds, float *details, float *bumps
 ) {
   float dsx, dsy, frequency;
+  float scaleinterp;
   float geodetailed, mountainous, hilly, ridged, mounded, detailed, bumpy;
   x += TR_NOISE_OFFSET;
   y += TR_NOISE_OFFSET;
@@ -132,31 +133,31 @@ static inline void get_noise(
     x * TR_DFQ_CONTINENTS + 7000,
     y * TR_DFQ_CONTINENTS
   );
-  frequency = TR_FREQUENCY_CONTINENTS * (
-    1 +
-    0.2 * sxnoise_2d(
+  scaleinterp = (
+    0.7 +
+    0.4 * sxnoise_2d(
       x * TR_DFQ_CONTINENTS,
       y * TR_DFQ_CONTINENTS + 3050
     )
   );
-  *continents = 0.7 * (
+  frequency = TR_FREQUENCY_CONTINENTS;
+  *continents = scaleinterp * (
     cosf((x + dsx) * frequency) *
     sinf((y + dsy) * frequency)
   );
-  frequency = TR_FREQUENCY_CONTINENTS * 1.8 * (
-    1 +
-    0.2 * sxnoise_2d(
-      x * TR_DFQ_CONTINENTS + 5040,
-      y * TR_DFQ_CONTINENTS
-    )
-  );
-  *continents += 0.3 * (
-    cosf((x + 0.8 * dsy) * frequency) *
-    sinf((y - 0.8 * dsx) * frequency)
+  *continents += (1 - scaleinterp) * (
+    cosf((x + 0.8 * dsy) * frequency * 1.6) *
+    sinf((y - 0.8 * dsx) * frequency * 1.6)
   );
   *continents = (1 + *continents) / 2.0;
   *continents = smooth(*continents, 3, 0.5);
   *continents = (2 * (*continents)) - 1;
+  /*
+  *continents = sxnoise_2d(
+    x * TR_DFQ_CONTINENTS,
+    y * TR_DFQ_CONTINENTS + 3050
+  );
+  */
 
   geodetailed = sxnoise_2d(
     (x - dsy) * frequency * 1.7 + 1100000,
@@ -410,11 +411,14 @@ static inline void compute_base_geoforms(
     hills, ridges, mounds, details, bumps
   );
 
+  //*
   *base = (
     2*(*continents) +
     2*(*geoforms) +
     (*geodetails)
   ) / 5;
+  // */
+  //*base = *continents;
   *base = (1 + (*base))/2.0; // squash into [0, 1]
   *base = smooth(*base, 2, 0.5); // spread things out
   // remap everything:

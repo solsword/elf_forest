@@ -250,9 +250,14 @@ void strata_cell(
   // DEBUG: (to show the strata)
   if (
     (
-      abs(rpos->x - 32770) < CHUNK_SIZE
+      abs(
+        rpos->x -
+        ((WORLD_WIDTH / 2.0) * WORLD_REGION_SIZE * CHUNK_SIZE + 2*CHUNK_SIZE)
+      ) < CHUNK_SIZE
     ) && (
-      rpos->z > (rpos->y - 24578) + 15000
+      rpos->z > (
+        rpos->y - (WORLD_HEIGHT/2.0) * WORLD_REGION_SIZE * CHUNK_SIZE
+      ) + 10000
       //rpos->z > (rpos->y - (WORLD_HEIGHT*WORLD_REGION_SIZE*CHUNK_SIZE)/2)
     )
   ) {
