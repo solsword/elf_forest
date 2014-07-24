@@ -344,18 +344,19 @@ static inline void compute_offset_grid_point_2d(
   grid_neighborhood_2d *grn,
   ptrdiff_t i,
   ptrdiff_t j,
-  size_t idx
+  size_t idx,
+  ptrdiff_t salt
 ) {
   grn->x[idx] = (float) i + (
     hash_2d(
-      mixed_hash_1d(i),
-      mixed_hash_1d(j)
+      mixed_hash_1d(i + salt),
+      mixed_hash_1d(j + salt)
     ) / ((float) HASH_MASK)
   );
   grn->y[idx] = (float) j + (
     hash_2d(
-      mixed_hash_1d(j),
-      mixed_hash_1d(i)
+      mixed_hash_1d(j + salt),
+      mixed_hash_1d(i + salt)
     ) / ((float) HASH_MASK)
   );
 }
@@ -370,22 +371,23 @@ static inline void compute_offset_grid_point_2d_wrapped(
   ptrdiff_t j,
   ptrdiff_t width,
   ptrdiff_t height,
-  size_t idx
+  size_t idx,
+  ptrdiff_t salt
 ) {
   ptrdiff_t iw = i, jw = j;
   if (width > 0) { iw = posmod(iw, width); }
   if (height > 0) { jw = posmod(jw, height); }
   grn->x[idx] = (float) i + (
     hash_2d(
-      mixed_hash_1d(iw),
-      mixed_hash_1d(jw)
+      mixed_hash_1d(iw + salt),
+      mixed_hash_1d(jw + salt)
     ) / ((float) HASH_MASK)
   );
   grn->y[idx] = (float) j + (
     hash_3d(
-      mixed_hash_1d(jw),
-      mixed_hash_1d(iw),
-      mixed_hash_1d(iw)
+      mixed_hash_1d(jw + salt),
+      mixed_hash_1d(iw + salt),
+      mixed_hash_1d(iw + salt)
     ) / ((float) HASH_MASK)
   );
 }
@@ -395,7 +397,7 @@ static inline void compute_offset_grid_point_2d_wrapped(
  *************/
 
 // 2D simplex noise:
-float sxnoise_2d(float x, float y) {
+float sxnoise_2d(float x, float y, ptrdiff_t salt) {
   // Skew the input space.
   // Move -
   //   x values to the left depending on their height
@@ -468,6 +470,19 @@ float sxnoise_2d(float x, float y) {
   float cx2 = i2 + j2 * 0.5;
   float cy2 = j2 * RT3__TWO;
 
+  // Salt our indices:
+  // Note that we don't change the underlying floating point space, because
+  // that can easily lead to floating point imprecision when extremely
+  // low-frequency noise is desired.
+  i0 += salt;
+  j0 += salt;
+
+  i1 += salt;
+  j1 += salt;
+
+  i2 += salt;
+  j2 += salt;
+
   // Surflet values:
   float srf0 = compute_surflet_value_2d(i0, j0, cx0, cy0, x, y);
   float srf1 = compute_surflet_value_2d(i1, j1, cx1, cy1, x, y);
@@ -488,7 +503,7 @@ float sxnoise_2d(float x, float y) {
 // case, regular 3D simplices (tetrahedra) don't tile the space. So there's
 // going to be some distortion in the noise, but we'll choose our skew factor
 // (or let Perlin choose it for us, in fact) to minimize this.
-float sxnoise_3d(float x, float y, float z) {
+float sxnoise_3d(float x, float y, float z, ptrdiff_t salt) {
   float const skew = 1.0/3.0;
   float const unskew = -1.0/6.0;
   // Skew the input space (see note above).
@@ -605,6 +620,23 @@ float sxnoise_3d(float x, float y, float z) {
   float cz3 = k3 + unsk;
   // Sadly, the backbeat ends here.
 
+  // Salt our indices:
+  i0 += salt;
+  j0 += salt;
+  k0 += salt;
+
+  i1 += salt;
+  j1 += salt;
+  k1 += salt;
+
+  i2 += salt;
+  j2 += salt;
+  k2 += salt;
+
+  i3 += salt;
+  j3 += salt;
+  k3 += salt;
+
   // Surflet values:
   float srf0 = compute_surflet_value_3d(i0, j0, k0, cx0, cy0, cz0, x, y, z);
   float srf1 = compute_surflet_value_3d(i1, j1, k1, cx1, cy1, cz1, x, y, z);
@@ -616,7 +648,7 @@ float sxnoise_3d(float x, float y, float z) {
 }
 
 // 2D Worley noise:
-float wrnoise_2d(float x, float y) {
+float wrnoise_2d(float x, float y, ptrdiff_t salt) {
   grid_neighborhood_2d grn = {
     .i = 0, .j = 0,
     .x = { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -638,7 +670,8 @@ float wrnoise_2d(float x, float y) {
         &grn,
         grn.i + i - 1,
         grn.j + j - 1,
-        i + j*3
+        i + j*3,
+        salt
       );
     }
   }
@@ -662,7 +695,7 @@ float wrnoise_2d(float x, float y) {
 
 // "fancy" 2D worley noise:
 float wrnoise_2d_fancy(
-  float x, float y,
+  float x, float y, ptrdiff_t salt,
   ptrdiff_t wrapx, ptrdiff_t wrapy,
   uint32_t flags
 ) {
@@ -690,7 +723,8 @@ float wrnoise_2d_fancy(
         grn.i + i - 1,
         grn.j + j - 1,
         wrapx, wrapy,
-        i + j*3
+        i + j*3,
+        salt
       );
     }
   }
@@ -774,7 +808,7 @@ float fractal_sxnoise_2d(
     float tx = (x - orix) * scale;
     float ty = (y - oriy) * scale;
     // Accumulate noise:
-    n += amplitude * sxnoise_2d(tx, ty);
+    n += amplitude * sxnoise_2d(tx, ty, 0); // TODO: Better salt
     // Keep track of total power:
     power += fabs(amplitude);
   }
@@ -810,7 +844,7 @@ float fractal_sxnoise_3d(
     float ty = (y - oriy) * scale;
     float tz = (z - oriz) * scale;
     // Accumulate noise:
-    n += amplitude * sxnoise_3d(tx, ty, tz);
+    n += amplitude * sxnoise_3d(tx, ty, tz, 0); // TODO: Better salt
     // Keep track of total power:
     power += fabs(amplitude);
   }
@@ -940,7 +974,9 @@ float fractal_sxnoise_3d(
     ty = (y - oriy) * scale;
 
 #define DIM_GET_NOISE \
-    noise = sxnoise_2d(tx, ty);
+    noise = sxnoise_2d(tx, ty, 0);
+
+// TODO: Better salt value above
 
 // And now we can create the function content:
 FRACTAL_SXNOISE_VAR_TABLE
@@ -992,7 +1028,9 @@ FRACTAL_SXNOISE_VAR_TABLE
     tz = (z - oriz) * scale;
 
 #define DIM_GET_NOISE \
-    noise = sxnoise_3d(tx, ty, tz);
+    noise = sxnoise_3d(tx, ty, tz, 0);
+
+// TODO: Better salt above
 
 // And now we can create the 3D version of the same function:
 FRACTAL_SXNOISE_VAR_TABLE

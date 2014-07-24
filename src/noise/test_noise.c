@@ -7,6 +7,8 @@
 static float const SCALE = 1/32.0;
 static float const NOISE_Z = 0.0;
 
+static ptrdiff_t const SALT = 1717283;
+
 static int const FALSE_COLOR[99] = {
   0x0,  0x0,  0xf,
   0x1,  0x1,  0xf,
@@ -43,8 +45,12 @@ static int const FALSE_COLOR[99] = {
   0xf,  0xf,  0xf,
 };
 
+float unsalt_2d_noise(float x, float y) {
+  return sxnoise_2d(x, y, 7);
+}
+
 float slice_3d_noise(float x, float y) {
-  return sxnoise_3d(x, y, NOISE_Z);
+  return sxnoise_3d(x, y, NOISE_Z, SALT);
 }
 
 float fractal_2d_noise(float x, float y) {
@@ -81,11 +87,11 @@ float example_wrapped_noise(float x, float y) {
     &sxnoise_2d,
     x, y,
     128*SCALE, 128*SCALE,
-    22
+    1829401
   );
 }
 
-float terrain_noise(float x, float y) {
+float terrain_noise(float x, float y, ptrdiff_t salt) {
   x += 1600;
   x *= 18;
   y *= 18;
@@ -93,15 +99,16 @@ float terrain_noise(float x, float y) {
   //y *= 6;
   //x *= 2;
   //y *= 2;
-  float ds = 4*sxnoise_2d(x*0.08, y*0.08);
-  float dslx = 50*stretch(sxnoise_2d(x*0.02+500, y*0.02), 1.3);
-  float dsly = 50*stretch(sxnoise_2d(x*0.02+1000, y*0.02), 1.3);
+  float ds = 4*sxnoise_2d(x*0.08, y*0.08, salt);
+  float dslx = 50*stretch(sxnoise_2d(x*0.02+500, y*0.02, salt), 1.3);
+  float dsly = 50*stretch(sxnoise_2d(x*0.02+1000, y*0.02, salt), 1.3);
   float dx = x + ds;
   float dy = y + ds;
 
   // Worley-based details:
   float result = wrnoise_2d_fancy(
     x*0.19, y*0.19,
+    salt,
     0, 0,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
     //WORLEY_FLAG_INCLUDE_NEXTBEST
@@ -114,6 +121,7 @@ float terrain_noise(float x, float y) {
   result += 0.5 * smooth(
     wrnoise_2d_fancy(
       x*0.13+1000, y*0.13,
+      salt,
       0, 0,
       WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
     ),
@@ -123,6 +131,7 @@ float terrain_noise(float x, float y) {
   result += 0.25 * smooth(
     wrnoise_2d_fancy(
       x*0.41+5000, y*0.41,
+      salt,
       0, 0,
       WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
     ),
@@ -130,8 +139,8 @@ float terrain_noise(float x, float y) {
     0.5
   );
 
-  result += sxnoise_2d(x*0.15+800, y*0.15);
-  result += sxnoise_2d(x*0.45+300, y*0.45);
+  result += sxnoise_2d(x*0.15+800, y*0.15, salt);
+  result += sxnoise_2d(x*0.45+300, y*0.45, salt);
 
   result /= 3.75;
   //result /= 1.75;
@@ -141,10 +150,10 @@ float terrain_noise(float x, float y) {
 
   // Simplex-based details.
   result += 0.5 * (
-    sxnoise_2d(dx*0.12+10, dy*0.12) +
-    0.8 * sxnoise_2d(x*0.1+7, y*0.1) +
-    0.6 * sxnoise_2d(dx*0.2+9, dy*0.2) +
-    0.4 * sxnoise_2d(x*0.41+9, y*0.41)
+    sxnoise_2d(dx*0.12+10, dy*0.12, salt) +
+    0.8 * sxnoise_2d(x*0.1+7, y*0.1, salt) +
+    0.6 * sxnoise_2d(dx*0.2+9, dy*0.2, salt) +
+    0.4 * sxnoise_2d(x*0.41+9, y*0.41, salt)
   ) / 2.8;
   result /= 1.5;
   result = fmax(-1.0, fmin(1.0, result * 2.0));
@@ -190,6 +199,10 @@ float terrain_noise(float x, float y) {
   return result;
 }
 
+float unsalted_terrain(float x, float y) {
+  return terrain_noise(x, y, SALT);
+}
+
 float wrapped_terrain(float x, float y) {
   return tiled_func(&terrain_noise, x, y, 256*SCALE, 0, 5);
 }
@@ -197,18 +210,29 @@ float wrapped_terrain(float x, float y) {
 float zoomed_noise(float x, float y) {
   //float zf = 0.0000004;
   float zf =   0.0004;
+  float yo = 10000;
   x *= zf;
   y *= zf;
-  y += 3050.0;
-  float top = sxnoise_2d(0.0, 3050.0);
-  float bot = sxnoise_2d(255*SCALE*zf, 255*SCALE*zf + 3050.0);
-  float result = sxnoise_2d(x, y);
+  y += yo;
+  float top = -2, bot = 2;
+  float test = sxnoise_2d(0.0, yo, SALT);
+  if (test > top) { top = test; }
+  if (test < bot) { bot = test; }
+  test = sxnoise_2d(0.0, 256*SCALE*zf + yo, SALT);
+  if (test > top) { top = test; }
+  if (test < bot) { bot = test; }
+  test = sxnoise_2d(256*SCALE*zf, 256*SCALE*zf + yo, SALT);
+  if (test > top) { top = test; }
+  if (test < bot) { bot = test; }
+  test = sxnoise_2d(256*SCALE*zf, yo, SALT);
+  if (test > top) { top = test; }
+  if (test < bot) { bot = test; }
+  float result = sxnoise_2d(x, y, SALT);
   //*
   result -= bot;
   result /= (top - bot);
   return 2*result - 1;
-  // */
-  //return result;
+  // */ return result;
 }
 
 
@@ -329,13 +353,13 @@ void write_noise_ppm(
 }
 
 int main(int argc, char** argv) {
-  write_noise_ppm(&sxnoise_2d, "noise_test_2D.ppm", 1, 1);
+  write_noise_ppm(&unsalt_2d_noise, "noise_test_2D.ppm", 1, 1);
   write_noise_ppm(&slice_3d_noise, "noise_test_3D.ppm", 1, 1);
   write_noise_ppm(&fractal_2d_noise, "noise_test_2D_F.ppm", 1, 1);
   write_noise_ppm(&slice_fractal_3d_noise, "noise_test_3D_F.ppm", 1, 1);
   write_noise_ppm(&example_noise, "noise_test_ex.ppm", 1, 1);
   write_noise_ppm(&example_wrapped_noise, "noise_test_wrapped.ppm", 1, 1);
-  write_noise_ppm(&terrain_noise, "noise_test_terrain.ppm", 1, 1);
+  write_noise_ppm(&unsalted_terrain, "noise_test_terrain.ppm", 1, 1);
   write_noise_ppm(&wrapped_terrain, "noise_test_wrapped_terrain.ppm", 1, 1);
   write_noise_ppm(&zoomed_noise, "noise_test_zoomed.ppm", 0, 0);
   return 0;

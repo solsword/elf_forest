@@ -318,17 +318,17 @@ static inline ptrdiff_t hash_3d(ptrdiff_t x, ptrdiff_t y, ptrdiff_t z) {
  *************/
 
 // 2D simplex noise:
-float sxnoise_2d(float x, float y);
+float sxnoise_2d(float x, float y, ptrdiff_t salt);
 
 // 3D simplex noise:
-float sxnoise_3d(float x, float y, float z);
+float sxnoise_3d(float x, float y, float z, ptrdiff_t salt);
 
 // 2D Worley noise:
-float wrnoise_2d(float x, float y);
+float wrnoise_2d(float x, float y, ptrdiff_t salt);
 
 // Fancy 2D Worley noise is more customizable:
 float wrnoise_2d_fancy(
-  float x, float y,
+  float x, float y, ptrdiff_t salt,
   ptrdiff_t wrapx, ptrdiff_t wrapy,
   uint32_t flags
 );
@@ -407,49 +407,12 @@ static inline float smooth(float n, float strength, float center) {
   return sign * result;
 }
 
-// Scaled 2D simplex noise on [0-1]:
-static inline float scaled_sxnoise_2d(
-  float x, float y,
-  float xscale, float yscale
-) {
-  return (1 + sxnoise_2d(x/xscale, y/yscale)) / 2.0;
-}
-
-// Seeded & scaled 2D simplex noise:
-static inline float managed_sxnoise_2d(
-  float x, float y,
-  float xscale, float yscale,
-  float seed
-) {
-  float ox = 1234 * hash_1d(seed) * cosf(seed);
-  float oy = 1234 * hash_1d(seed) * sinf(seed);
-  return (1 + sxnoise_2d((x+ox)/xscale, (y+oy)/yscale)) / 2.0;
-}
-
-// Scaled 2D Worley noise:
-static inline float scaled_wrnoise_2d(
-  float x, float y,
-  float xscale, float yscale
-) {
-  return wrnoise_2d(x/xscale, y/yscale);
-}
-
-// Seeded & scaled 2D Worley noise:
-static inline float managed_wrnoise_2d(
-  float x, float y,
-  float xscale, float yscale,
-  float seed
-) {
-  float ox = 12345 * seed * cosf(seed);
-  float oy = 12345 * seed * sinf(seed);
-  return wrnoise_2d((x+ox)/xscale, (y+oy)/yscale);
-}
-
 // Takes a 2-d function, x, and y coordinates, wrap scales, and a seed, and
 // returns a value for that function that's been made tileable at a scale of
 // wrapx, wrapy. Zero or negative wrap values disable wrapping on that axis.
+// Note that only 32 bits of the seed are used.
 static inline float tiled_func(
-  float (*f)(float, float),
+  float (*f)(float, float, ptrdiff_t),
   float x, float y,
   float wrapx, float wrapy,
   ptrdiff_t seed
@@ -459,17 +422,15 @@ static inline float tiled_func(
   float ex, ey; // extended coordinates
   float mx, my; // mix parameters for x and y
 
-  seed &= 0xffff;
+  ptrdiff_t salt = expanded_hash_1d(seed);
 
   if (wrapx > 0) {
     wx = x - wrapx*ffloor(x/wrapx);
     ex = wx + wrapx;
     mx = 1.0 / (1 + exp(6 - (2*(1-(wx/wrapx))-1)*12));
-    wx += 3*seed*wrapx;
-    ex += 3*seed*wrapx;
   } else {
-    wx = x + seed*23;
-    ex = x + seed*23;
+    wx = x;
+    ex = x;
     mx = 0;
   }
 
@@ -477,27 +438,25 @@ static inline float tiled_func(
     wy = y - wrapy*ffloor(y/wrapy);
     ey = wy + wrapy;
     my = 1.0 / (1 + exp(6 - (2*(1-(wy/wrapy))-1)*12));
-    wy += (seed/27)*wrapy;
-    ey += (seed/27)*wrapy;
   } else {
-    wy = y+seed*31;
-    ey = y+seed*31;
+    wy = y;
+    ey = y;
     my = 0;
   }
 
-  base = f(wx, wy);
+  base = f(wx, wy, salt);
   if (wrapx > 0) {
-    base = (1 - mx) * base + mx * f(ex, wy);
+    base = (1 - mx) * base + mx * f(ex, wy, salt);
     if (wrapy > 0) {
       base = (
         (1 - my) * base +
         my * (
-          (1 - mx) * f(wx, ey) + mx * f(ex, ey)
+          (1 - mx) * f(wx, ey, salt) + mx * f(ex, ey, salt)
         )
       );
     }
   } else if (wrapy > 0) {
-    base = (1 - my) * base + my * f(wx, ey);
+    base = (1 - my) * base + my * f(wx, ey, salt);
   }
 
   return base;
