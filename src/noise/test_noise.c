@@ -195,16 +195,20 @@ float wrapped_terrain(float x, float y) {
 }
 
 float zoomed_noise(float x, float y) {
-  float zf = 0.0000004;
-  //x *= zf;
-  //y *= zf;
-  //y += 3050;
-  //float top = sxnoise_2d(0, 3050);
-  //float bot = sxnoise_2d(256*zf, 256*zf + 3050);
-  float top = sxnoise_2d(0.0, 0.0);
-  float bot = sxnoise_2d(256.0*zf, 256.0*zf);
-  //return 2 * ((sxnoise_2d(x, y) - bot) / (top - bot)) - 1;
-  return sxnoise_2d(x, y);
+  //float zf = 0.0000004;
+  float zf =   0.0004;
+  x *= zf;
+  y *= zf;
+  y += 3050.0;
+  float top = sxnoise_2d(0.0, 3050.0);
+  float bot = sxnoise_2d(255*SCALE*zf, 255*SCALE*zf + 3050.0);
+  float result = sxnoise_2d(x, y);
+  //*
+  result -= bot;
+  result /= (top - bot);
+  return 2*result - 1;
+  // */
+  //return result;
 }
 
 
@@ -333,6 +337,6 @@ int main(int argc, char** argv) {
   write_noise_ppm(&example_wrapped_noise, "noise_test_wrapped.ppm", 1, 1);
   write_noise_ppm(&terrain_noise, "noise_test_terrain.ppm", 1, 1);
   write_noise_ppm(&wrapped_terrain, "noise_test_wrapped_terrain.ppm", 1, 1);
-  write_noise_ppm(&zoomed_noise, "noise_test_zoomed.ppm", 0, 1);
+  write_noise_ppm(&zoomed_noise, "noise_test_zoomed.ppm", 0, 0);
   return 0;
 }
