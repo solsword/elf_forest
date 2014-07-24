@@ -28,20 +28,28 @@ void fltr_stone(texture *tx, void const * const fargs) {
   float dwx, dwy; // distortion wrap scales
   float alwx, alwy; // alternate wrap scales
 
-  ptrdiff_t offset; // absolute offset for seed effect
   float ds; // distortion
   float grit, contours, matrix, bumps, alternate; // noise layers
   float saturation, value; // color values
+
+  // salt values for noise:
+  ptrdiff_t salt1, salt2, salt3, salt4, salt5, salt6, salt7;
+
   pixel base_hsv, alt_hsv; // base and alternate colors in hsv
   pixel hsv; // temp hsv color
   pixel rgb; // final rgb color
   stone_filter_args *sfargs = (stone_filter_args *) fargs;
   rgb__hsv(sfargs->base_color, &base_hsv);
   rgb__hsv(sfargs->alt_color, &alt_hsv);
-  // We want to incorporate the seed value, but we don't want to deal with
-  // overflow. 4 bytes of seed-based noise should be plenty while giving
-  // comfortable overhead against overflow.
-  offset = expanded_hash_1d(sfargs->seed) & 0xffff;
+
+  salt1 = expanded_hash_1d(expanded_hash_1d(sfargs->seed-5));
+  salt2 = expanded_hash_1d(salt1);
+  salt3 = expanded_hash_1d(salt2);
+  salt4 = expanded_hash_1d(salt3);
+  salt5 = expanded_hash_1d(salt4);
+  salt6 = expanded_hash_1d(salt5);
+  salt7 = expanded_hash_1d(salt6);
+
   // Round all scale values so that the scaled coordinate-space texture
   // boundaries are integers (for simplex noise wrapping purposes):
   scx = rounddenom(sfargs->scale*sfargs->squash, tx->width);
@@ -66,38 +74,36 @@ void fltr_stone(texture *tx, void const * const fargs) {
         &sxnoise_2d,
         col * dscx, row * dscy,
         dwx, dwy,
-        sfargs->seed
+        salt1
       );
       x = (col + ds * sfargs->distortion) * scx;
       y = (row + ds * sfargs->distortion) * scy;
-      x += tx->width * offset;
-      y += tx->height * offset;
       grit = hash_2d(
         col + fastfloor(x),
         row + fastfloor(y)
       ) / (float) HASH_MASK;
       contours = (
-        1 + tiled_func(&sxnoise_2d, x, y, wx, wy, sfargs->seed+1)
+        1 + tiled_func(&sxnoise_2d, x, y, wx, wy, salt2)
       ) / 2.0;
       matrix = sqrtf(
         wrnoise_2d_fancy(
-          x, y,
+          x, y, salt3,
           fastfloor(wx), fastfloor(wy),
           0
         )
       );
       bumps = sqrtf(
         wrnoise_2d_fancy(
-          x + tx->width*offset, y,
+          x, y, salt4,
           fastfloor(wx), fastfloor(wy),
           WORLEY_FLAG_INCLUDE_NEXTBEST
         )
       );
 
-      alx = col * alscx + tx->width*offset*3;
-      aly = row * alscy + tx->height*offset*3;
+      alx = col * alscx;
+      aly = row * alscy;
       alternate = wrnoise_2d_fancy(
-        alx, aly,
+        alx, aly, salt5,
         fastfloor(wx), fastfloor(wy),
         WORLEY_FLAG_INCLUDE_NEXTBEST
       ) * (
@@ -106,7 +112,7 @@ void fltr_stone(texture *tx, void const * const fargs) {
             &sxnoise_2d,
             alx, aly,
             alwx, alwy,
-            sfargs->seed+2
+            salt6
           )
         ) / 2.0
       );
@@ -133,7 +139,7 @@ void fltr_stone(texture *tx, void const * const fargs) {
           &sxnoise_2d,
           x, y,
           wx, wy,
-          sfargs->seed+3
+          salt7
         )
       );
 

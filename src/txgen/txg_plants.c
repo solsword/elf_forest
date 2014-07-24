@@ -119,10 +119,13 @@ void fltr_leaves_helper(int x, int y, void * arg) {
 void fltr_branches(texture *tx, void const * const fargs) {
   int row, col;
   float dx, dy, x, y;
-  float offset;
   float noise;
+  ptrdiff_t salt1, salt2, salt3;
   gradient_map grmap;
   branch_filter_args *bfargs = (branch_filter_args *) fargs;
+  salt1 = expanded_hash_1d(bfargs->seed+73);
+  salt2 = expanded_hash_1d(salt1);
+  salt3 = expanded_hash_1d(salt2);
   grmap.colors[0] = bfargs->center_color;
   grmap.colors[1] = bfargs->mid_color;
   grmap.colors[2] = bfargs->outer_color;
@@ -142,10 +145,6 @@ void fltr_branches(texture *tx, void const * const fargs) {
   grmap.colors[4] = 0xff0088ff;
   grmap.thresholds[4] = 1000.0;
 #endif
-  // We want to incorporate the seed value, but we don't want to deal with
-  // overflow. 4 bytes of seed-based noise should be plenty while giving
-  // comfortable overhead against overflow.
-  offset = expanded_hash_1d(bfargs->seed) & 0xffff;
   for (col = 0; col < tx->width; col += 1) {
     for (row = 0; row < tx->height; row += 1) {
       // TODO: properly wrapped simplex noise.
@@ -155,7 +154,7 @@ void fltr_branches(texture *tx, void const * const fargs) {
         row * bfargs->dscale,
         tx->width * bfargs->dscale,
         tx->height * bfargs->dscale,
-        14
+        salt1
       );
       dy = tiled_func(
         &sxnoise_2d,
@@ -163,14 +162,12 @@ void fltr_branches(texture *tx, void const * const fargs) {
         row * bfargs->dscale,
         tx->width * bfargs->dscale,
         tx->height * bfargs->dscale,
-        4
+        salt2
       );
       x = (col * bfargs->squash + dx * bfargs->distortion) * bfargs->scale;
       y = (row / bfargs->squash + dy * bfargs->distortion) * bfargs->scale;
-      x += tx->width * offset;
-      y += tx->height * offset;
       noise = wrnoise_2d_fancy(
-        x, y,
+        x, y, salt3,
         tx->width * bfargs->scale, tx->height * bfargs->scale,
         (!bfargs->rough) * WORLEY_FLAG_INCLUDE_NEXTBEST
       );

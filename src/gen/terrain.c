@@ -14,7 +14,7 @@
  * Globals *
  ***********/
 
-float TR_NOISE_OFFSET = 7300;
+float TR_NOISE_SALT = 7300845;
 
 float TR_TERRAIN_HEIGHT_AMP = 1.0;
 
@@ -41,6 +41,7 @@ float terrain_height(region_pos *pos) {
   static float height;
   float base;
   float flatten;
+  ptrdiff_t salt = TR_NOISE_SALT;
 
   if (xcache == pos->x && ycache == pos->y) {
     // no need to recompute everything:
@@ -49,7 +50,7 @@ float terrain_height(region_pos *pos) {
   xcache = pos->x; ycache = pos->y;
 
   compute_base_geoforms(
-    pos,
+    pos, salt,
     &continents, &geoforms, &geodetails, &mountains,
     &hills, &ridges, &mounds, &details, &bumps,
     &base,
@@ -57,6 +58,7 @@ float terrain_height(region_pos *pos) {
     &tr_interp,
     &height
   );
+  salt = expanded_hash_1d(salt);
 
   // DEBUG:
   //*
@@ -77,11 +79,14 @@ float terrain_height(region_pos *pos) {
     // attenuate everything; create some superflat regions:
     flatten = sxnoise_2d(
       pos->x * TR_FREQUENCY_GEOFORMS * 1.8,
-      pos->y * TR_FREQUENCY_GEOFORMS * 1.8
+      pos->y * TR_FREQUENCY_GEOFORMS * 1.8,
+      salt
     );
+    salt = expanded_hash_1d(salt);
     flatten += 0.7 * sxnoise_2d(
       pos->x * TR_FREQUENCY_GEOFORMS * 1.5,
-      pos->y * TR_FREQUENCY_GEOFORMS * 1.5
+      pos->y * TR_FREQUENCY_GEOFORMS * 1.5,
+      salt
     );
     flatten /= 1.7;
     flatten = (1 + flatten) / 2.0;
@@ -105,12 +110,16 @@ float terrain_height(region_pos *pos) {
     // attenuate hills and ridges slightly; create some flatter regions:
     flatten = sxnoise_2d(
       pos->x * TR_FREQUENCY_MOUNTAINS * 0.7,
-      pos->y * TR_FREQUENCY_MOUNTAINS * 0.7
+      pos->y * TR_FREQUENCY_MOUNTAINS * 0.7,
+      salt
     );
+    salt = expanded_hash_1d(salt);
     flatten += 0.5 * sxnoise_2d(
       pos->x * TR_FREQUENCY_MOUNTAINS * 0.3,
-      pos->y * TR_FREQUENCY_MOUNTAINS * 0.3
+      pos->y * TR_FREQUENCY_MOUNTAINS * 0.3,
+      salt
     );
+    salt = expanded_hash_1d(salt);
     flatten /= 1.5;
     flatten = (1 + flatten) / 2.0;
     flatten = smooth(flatten, 1.2, 0.5);
@@ -163,7 +172,7 @@ void geoform_info(region_pos *pos, terrain_region* region, float* tr_interp) {
   xcache = pos->x; ycache = pos->y;
 
   compute_base_geoforms(
-    pos,
+    pos, TR_NOISE_SALT,
     &continents, &geoforms, &geodetails, &dontcare,
     &dontcare, &dontcare, &dontcare, &dontcare, &dontcare,
     &base,

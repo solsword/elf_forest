@@ -9,7 +9,12 @@ static float const NOISE_Z = 0.0;
 
 static ptrdiff_t const SALT = 1717283;
 
-static int const FALSE_COLOR[99] = {
+#define N_FALSE_COLORS 27
+
+// 26 colors from dark blue to a shoreline and then dark green to bright green
+// to yellow, gray, and then white, with an extra magenta to test slight
+// out-of-bounds at the top.
+static int const FALSE_COLOR[3*(N_FALSE_COLORS + 1)] = {
   0x0,  0x0,  0xf,
   0x1,  0x1,  0xf,
   0x2,  0x2,  0xf,
@@ -18,30 +23,25 @@ static int const FALSE_COLOR[99] = {
   0x5,  0x5,  0xf,
   0x5,  0x6,  0xf,
   0x6,  0x6,  0xf,
-  0x6,  0x7,  0xf,
+  0x6,  0x7,  0xf, // last blue
+  0x0,  0x4,  0x0,
+  0x0,  0x5,  0x0,
+  0x0,  0x6,  0x0,
   0x0,  0x7,  0x0,
-  0x0,  0x8,  0x0,
-  0x1,  0x9,  0x1,
-  0x2,  0xa,  0x2,
-  0x3,  0xb,  0x3,
-  0x4,  0xc,  0x4,
-  0x5,  0xc,  0x5,
-  0x6,  0xc,  0x5,
-  0x7,  0xd,  0x5,
-  0x9,  0xe,  0x6,
-  0xa,  0xe,  0x6,
-  0xc,  0xd,  0x6,
+  0x1,  0x8,  0x0,
+  0x2,  0x9,  0x1,
+  0x3,  0xa,  0x2,
+  0x4,  0xb,  0x3,
+  0x6,  0xc,  0x4,
+  0x8,  0xd,  0x5, // last green
   0xd,  0xd,  0x6,
   0xe,  0xe,  0x7,
-  0xe,  0xe,  0x7,
-  0xf,  0xf,  0x8,
   0xf,  0xf,  0x9,
-  0xe,  0xe,  0xa,
-  0xd,  0xd,  0xb,
+  0xe,  0xe,  0xa, // last yellow
   0xd,  0xd,  0xc,
-  0xe,  0xe,  0xd,
-  0xf,  0xf,  0xe,
-  0xf,  0xf,  0xf,
+  0xd,  0xd,  0xd,
+  0xe,  0xe,  0xe,
+  0xf,  0xf,  0xf, // full white
   0xf,  0xf,  0xf,
 };
 
@@ -236,6 +236,12 @@ float zoomed_noise(float x, float y) {
 }
 
 
+static inline void colormap(float n, int* color, float* fraction) {
+  float scaled = ((n+1)/2.0)*N_FALSE_COLORS;
+  *color = (int) ffloor(scaled);
+  *fraction = scaled - *color;
+}
+
 void write_noise_ppm(
   float (*noisefunc)(float, float),
   char const * const filename,
@@ -268,9 +274,7 @@ void write_noise_ppm(
     for (i = 0; i < 256; ++i) {
       n = noisefunc(i*SCALE, j*SCALE); // [-1, 1)
 
-      nf = ((n+1.0) * 15.9999) - floor((n+1.0) * 15.9999);
-
-      color = (int) floor((n + 1.0) * 15.9999); // [0, 31]
+      colormap(n, &color, &nf);
 
       // Compute gradient:
       grx = (n - noisefunc((i+1)*SCALE, j*SCALE))*32;
@@ -307,7 +311,7 @@ void write_noise_ppm(
       lighting = (lighting + 1)/2.0; // [0, 1]
 
       // Interpolate colors from the table:
-      if (color < 0 || color > 31) {
+      if (color < 0 || color >= N_FALSE_COLORS) {
         printf("Out of range! n, color = %.3f, %d\n", n, color);
         r = 1.0;
         g = 0.5;
@@ -358,7 +362,7 @@ int main(int argc, char** argv) {
   write_noise_ppm(&fractal_2d_noise, "noise_test_2D_F.ppm", 1, 1);
   write_noise_ppm(&slice_fractal_3d_noise, "noise_test_3D_F.ppm", 1, 1);
   write_noise_ppm(&example_noise, "noise_test_ex.ppm", 1, 1);
-  write_noise_ppm(&example_wrapped_noise, "noise_test_wrapped.ppm", 1, 1);
+  write_noise_ppm(&example_wrapped_noise, "noise_test_wrapped.ppm", 1, 0);
   write_noise_ppm(&unsalted_terrain, "noise_test_terrain.ppm", 1, 1);
   write_noise_ppm(&wrapped_terrain, "noise_test_wrapped_terrain.ppm", 1, 1);
   write_noise_ppm(&zoomed_noise, "noise_test_zoomed.ppm", 0, 0);

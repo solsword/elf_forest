@@ -223,11 +223,13 @@ static inline void compute_tree_cell(
   // Get some noise to use for tree density:
   nlow = sxnoise_2d(
     cell->origin.x * TREE_DENSITY_FREQUENCY_LOW,
-    cell->origin.y * TREE_DENSITY_FREQUENCY_LOW
+    cell->origin.y * TREE_DENSITY_FREQUENCY_LOW,
+    0
   );
   nhig = sxnoise_2d(
     cell->origin.x * TREE_DENSITY_FREQUENCY_HIGH,
-    cell->origin.y * TREE_DENSITY_FREQUENCY_HIGH
+    cell->origin.y * TREE_DENSITY_FREQUENCY_HIGH,
+    0
   );
   // Compute tree density:
   cell->n_trunks = ((1 + nlow) / 2.0) * TREE_DENSITY_FACTOR_LOW;

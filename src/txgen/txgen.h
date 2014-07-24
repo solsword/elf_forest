@@ -112,6 +112,7 @@ struct scatter_filter_args_s {
 
 struct worley_filter_args_s {
   float freq;
+  size_t seed;
   gradient_map *grmap;
 };
 

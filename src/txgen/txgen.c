@@ -357,11 +357,13 @@ void fltr_apply_gradient_map(texture *tx, void const * const fargs) {
 void fltr_worley(texture *tx, void const * const fargs) {
   int row, col;
   float noise;
+  ptrdiff_t salt;
   worley_filter_args *wfargs = (worley_filter_args *) fargs;
+  salt = expanded_hash_1d(wfargs->seed);
   for (col = 0; col < tx->width; col += 1) {
     for (row = 0; row < tx->height; row += 1) {
       noise = wrnoise_2d_fancy(
-        col * wfargs->freq, row * wfargs->freq,
+        col * wfargs->freq, row * wfargs->freq, salt,
         32.0 * wfargs->freq, 32.0 * wfargs->freq,
         0
       );

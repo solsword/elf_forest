@@ -143,11 +143,10 @@ static inline void stratum_base_thickness(
   float theta = atan2(v.y, v.x);
   float d = vmag(&v);
   float r = st->size * (
-    (1 - st->radial_variance) +
-    2 * st->radial_variance * managed_sxnoise_2d(
-      theta, st->seed,
-      st->radial_frequency, 1,
-      57.3
+    1 + st->radial_variance * sxnoise_2d(
+      theta / st->radial_frequency,
+      0,
+      expanded_hash_1d(st->seed)
     )
   );
   *thickness = fmap(1 - d/r, st->profile); // base thickness (possibly < 0)
@@ -161,15 +160,13 @@ static inline void stratum_lf_distortion(
 ) {
   // compute distortion
   float scale = GN_GROSS_DISTORTION_SCALE * st->scale_bias;
-  *dx = st->gross_distortion * managed_sxnoise_2d(
-    x, y,
-    scale, scale,
-    4.5 * st->seed
+  *dx = st->gross_distortion * sxnoise_2d(
+    x/scale, y/scale,
+    expanded_hash_1d(st->seed+1)
   );
-  *dy = st->gross_distortion * managed_sxnoise_2d(
-    x, y,
-    scale, scale,
-    5.4 * st->seed
+  *dy = st->gross_distortion * sxnoise_2d(
+    x/scale, y/scale,
+    expanded_hash_1d(st->seed+2)
   );
 }
 
@@ -180,15 +177,13 @@ static inline void stratum_hf_distortion(
   float *dx, float *dy
 ) {
   float scale = GN_FINE_DISTORTION_SCALE * st->scale_bias;
-  *dx = st->fine_distortion * managed_sxnoise_2d(
-    x, y,
-    scale, scale,
-    7.2 * st->seed
+  *dx = st->fine_distortion * sxnoise_2d(
+    x/scale, y/scale,
+    expanded_hash_1d(st->seed+3)
   );
-  *dy = st->fine_distortion * managed_sxnoise_2d(
-    x, y,
-    scale, scale,
-    2.7 * st->seed
+  *dy = st->fine_distortion * sxnoise_2d(
+    x/scale, y/scale,
+    expanded_hash_1d(st->seed+4)
   );
 }
 
@@ -200,16 +195,14 @@ static inline void stratum_lf_noise(
 ) {
   // Compute noise:
   float scale = GN_LARGE_VAR_SCALE * st->scale_bias;
-  *noise = st->large_var * managed_sxnoise_2d(
-    x, y,
-    scale, scale,
-    st->seed*84.1
+  *noise = st->large_var * sxnoise_2d(
+    x/scale, y/scale,
+    expanded_hash_1d(st->seed+5)
   );
   scale = GN_MED_VAR_SCALE * st->scale_bias;
-  *noise += st->med_var * managed_sxnoise_2d(
-    x, y,
-    scale, scale,
-    st->seed*14.8
+  *noise += st->med_var * sxnoise_2d(
+    x/scale, y/scale,
+    expanded_hash_1d(st->seed+6)
   );
 }
 
@@ -220,28 +213,24 @@ static inline void stratum_hf_noise(
   float *noise
 ) {
   float scale = GN_SMALL_VAR_SCALE * st->scale_bias;
-  *noise = st->small_var * managed_sxnoise_2d(
-    x, y,
-    scale, scale,
-    st->seed*48.1
+  *noise = st->small_var * sxnoise_2d(
+    x/scale, y/scale,
+    expanded_hash_1d(st->seed+7)
   );
   scale = GN_TINY_VAR_SCALE * st->scale_bias;
-  *noise += st->tiny_var * managed_sxnoise_2d(
-    x, y,
-    scale, scale,
-    st->seed*18.4
+  *noise += st->tiny_var * sxnoise_2d(
+    x/scale, y/scale,
+    expanded_hash_1d(st->seed+8)
   );
   scale = GN_RIDGE_SCALE * st->scale_bias;
-  *noise += st->ridges * managed_wrnoise_2d(
-    x, y,
-    scale, scale,
-    st->seed*84.1
+  *noise += st->ridges * wrnoise_2d(
+    x/scale, y/scale,
+    expanded_hash_1d(st->seed+9)
   );
   scale = GN_DETAIL_VAR_SCALE * st->scale_bias;
-  *noise += st->detail_var * managed_sxnoise_2d(
-    x, y,
-    scale, scale,
-    st->seed*41.8
+  *noise += st->detail_var * sxnoise_2d(
+    x/scale, y/scale,
+    expanded_hash_1d(st->seed+10)
   );
   *noise *= (1 - st->smoothing);
 }

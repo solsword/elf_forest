@@ -75,7 +75,6 @@ r_pos_t world_map_height(world_map *wm, float x, float y) {
 void render_map(world_map *wm, texture *tx) {
   size_t row, col;
   float x, y;
-  float dx, dy;
   r_pos_t h;
   float hf;
   float cinterp;

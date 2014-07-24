@@ -100,8 +100,8 @@ typedef enum terrain_region_e terrain_region;
  * Globals *
  ***********/
 
-// A salt that gets added to noise input coordinates:
-extern float TR_NOISE_OFFSET;
+// A base salt for terrain noise:
+extern float TR_NOISE_SALT;
 
 // Amplification factor for terrain height:
 extern float TR_TERRAIN_HEIGHT_AMP;
@@ -114,32 +114,36 @@ extern char const * const TR_REGION_NAMES[];
  ********************/
 
 static inline void get_noise(
-  r_pos_t x, r_pos_t y,
+  r_pos_t x, r_pos_t y, ptrdiff_t salt,
   float *continents, float *geoforms, float *geodetails, float *mountains,
   float *hills, float *ridges, float *mounds, float *details, float *bumps
 ) {
   float dsx, dsy, frequency;
   float scaleinterp;
   float geodetailed, mountainous, hilly, ridged, mounded, detailed, bumpy;
-  x += TR_NOISE_OFFSET;
-  y += TR_NOISE_OFFSET;
 
   // continents
   dsx = TR_DS_CONTINENTS * sxnoise_2d(
     x * TR_DFQ_CONTINENTS,
-    y * TR_DFQ_CONTINENTS
+    y * TR_DFQ_CONTINENTS,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   dsy = TR_DS_CONTINENTS * sxnoise_2d(
-    x * TR_DFQ_CONTINENTS + 7000,
-    y * TR_DFQ_CONTINENTS
+    x * TR_DFQ_CONTINENTS,
+    y * TR_DFQ_CONTINENTS,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   scaleinterp = (
     0.7 +
     0.4 * sxnoise_2d(
       x * TR_DFQ_CONTINENTS,
-      y * TR_DFQ_CONTINENTS + 3050
+      y * TR_DFQ_CONTINENTS,
+      salt
     )
   );
+  salt = expanded_hash_1d(salt);
   frequency = TR_FREQUENCY_CONTINENTS;
   *continents = scaleinterp * (
     cosf((x + dsx) * frequency) *
@@ -152,184 +156,251 @@ static inline void get_noise(
   *continents = (1 + *continents) / 2.0;
   *continents = smooth(*continents, 3, 0.5);
   *continents = (2 * (*continents)) - 1;
-  /*
-  *continents = sxnoise_2d(
-    x * TR_DFQ_CONTINENTS,
-    y * TR_DFQ_CONTINENTS + 3050
-  );
-  */
 
   geodetailed = sxnoise_2d(
-    (x - dsy) * frequency * 1.7 + 1100000,
-    (y - dsx) * frequency * 1.7 - 3100000
+    (x - dsy) * frequency * 1.7,
+    (y - dsx) * frequency * 1.7,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   geodetailed = (1 + geodetailed) / 2.0;
   //geodetailed = 0.2 + 0.8 * geodetailed;
 
   // geoforms
-  dsx = TR_DS_GEOFORMS * sxnoise_2d(x*TR_DFQ_GEOFORMS, y*TR_DFQ_GEOFORMS+500);
-  dsy = TR_DS_GEOFORMS * sxnoise_2d(y*TR_DFQ_GEOFORMS, x*TR_DFQ_GEOFORMS);
+  dsx = TR_DS_GEOFORMS*sxnoise_2d(x*TR_DFQ_GEOFORMS, y*TR_DFQ_GEOFORMS, salt);
+  salt = expanded_hash_1d(salt);
+  dsy = TR_DS_GEOFORMS*sxnoise_2d(y*TR_DFQ_GEOFORMS, x*TR_DFQ_GEOFORMS, salt);
+  salt = expanded_hash_1d(salt);
   frequency = TR_FREQUENCY_GEOFORMS * (
     1 +
     0.3 * sxnoise_2d(
       x * TR_DFQ_GEOFORMS,
-      y * TR_DFQ_GEOFORMS + 7150
+      y * TR_DFQ_GEOFORMS,
+      salt
     )
   );
+  salt = expanded_hash_1d(salt);
   *geoforms = sxnoise_2d(
-    (x + dsx) * frequency - 3000,
-    (y + dsy) * frequency
+    (x + dsx) * frequency,
+    (y + dsy) * frequency,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   *geoforms += wrnoise_2d_fancy(
-    (x - dsy) * frequency + 57000,
+    (x - dsy) * frequency,
     (y + dsx) * frequency,
+    salt,
     0, 0,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
+  salt = expanded_hash_1d(salt);
   *geoforms /= 2.0;
 
   mountainous = sxnoise_2d(
-    (x + dsy) * frequency * 0.7 + 5000,
-    (y - dsx) * frequency * 0.7 - 9400
+    (x + dsy) * frequency * 0.7,
+    (y - dsx) * frequency * 0.7,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   mountainous = (1 + mountainous) / 2.0;
   mountainous *= mountainous; 
   mountainous = smooth(mountainous, 1.8, 0.5);
 
   // geodetails
-  dsx = TR_DS_GEODETAIL * sxnoise_2d(x*TR_DFQ_GEODETAIL, y*TR_DFQ_GEODETAIL);
-  dsy = TR_DS_GEODETAIL * sxnoise_2d(y*TR_DFQ_GEODETAIL, x*TR_DFQ_GEODETAIL+50);
+  dsx = TR_DS_GEODETAIL * sxnoise_2d(
+    x * TR_DFQ_GEODETAIL,
+    y * TR_DFQ_GEODETAIL,
+    salt
+  );
+  salt = expanded_hash_1d(salt);
+  dsy = TR_DS_GEODETAIL * sxnoise_2d(
+    y * TR_DFQ_GEODETAIL,
+    x * TR_DFQ_GEODETAIL,
+    salt
+  );
+  salt = expanded_hash_1d(salt);
   frequency = TR_FREQUENCY_GEODETAIL;
 
   *geodetails = sxnoise_2d(
     (x + dsx) * frequency,
-    (y + dsy) * frequency + 40000
+    (y + dsy) * frequency,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   *geodetails += wrnoise_2d_fancy(
     (x + dsy) * frequency,
-    (y - dsx) * frequency + 60000,
+    (y - dsx) * frequency,
+    salt,
     0, 0,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
+  salt = expanded_hash_1d(salt);
   *geodetails /= 2.0;
   *geodetails *= geodetailed;
 
   hilly = sxnoise_2d(
-    (x + dsy + 1000) * frequency * 0.3,
-    (y - dsx) * frequency * 0.3
+    (x + dsy) * frequency * 0.3,
+    (y - dsx) * frequency * 0.3,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   hilly = (1 + hilly) / 2.0;
   hilly = pow(hilly, 1.5);
   hilly = 0.1 + 0.9 * hilly;
 
   ridged = sxnoise_2d(
-    (x - dsy + 2000) * frequency * 0.4,
-    (y + dsx) * frequency * 0.4
+    (x - dsy) * frequency * 0.4,
+    (y + dsx) * frequency * 0.4,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   ridged = (1 + ridged) / 2.0;
   ridged = 0.3 + 0.7 * ridged;
 
   // mountains
-  dsx = TR_DS_MOUNTAINS * sxnoise_2d(x*TR_DFQ_MOUNTAINS, y*TR_DFQ_MOUNTAINS+27);
-  dsy = TR_DS_MOUNTAINS * sxnoise_2d(y*TR_DFQ_MOUNTAINS, x*TR_DFQ_MOUNTAINS+50);
+  dsx = TR_DS_MOUNTAINS * sxnoise_2d(
+    x * TR_DFQ_MOUNTAINS,
+    y * TR_DFQ_MOUNTAINS,
+    salt
+  );
+  salt = expanded_hash_1d(salt);
+  dsy = TR_DS_MOUNTAINS * sxnoise_2d(
+    y * TR_DFQ_MOUNTAINS,
+    x * TR_DFQ_MOUNTAINS,
+    salt
+  );
+  salt = expanded_hash_1d(salt);
   frequency = TR_FREQUENCY_MOUNTAINS;
   *mountains = sxnoise_2d(
     x * frequency,
-    y * frequency + 70000
+    y * frequency,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   *mountains += 2*smooth(
     wrnoise_2d_fancy(
-      (x + dsy) * frequency + 750,
-      (y + dsx) * frequency - 600,
+      (x + dsy) * frequency,
+      (y + dsx) * frequency,
+      salt,
       0, 0,
       WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
     ),
     2,
     0.5
   );
+  salt = expanded_hash_1d(salt);
   *mountains += wrnoise_2d_fancy(
-    (x - dsx) * frequency * 0.7 - 6100,
-    (y - dsy) * frequency * 0.7 + 4800,
+    (x - dsx) * frequency * 0.7,
+    (y - dsy) * frequency * 0.7,
+    salt,
     0, 0,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
+  salt = expanded_hash_1d(salt);
   *mountains /= 4.0;
   *mountains *= mountainous;
 
   mounded = sxnoise_2d(
-    (x - dsy + 600) * frequency * 0.6,
-    (y + dsx) * frequency * 0.6
+    (x - dsy) * frequency * 0.6,
+    (y + dsx) * frequency * 0.6,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   mounded = (1 + mounded) / 2.0;
   mounded = 0.5 + 0.5 * mounded;
 
   // hills
-  dsx = TR_DS_HILLS * sxnoise_2d(x * TR_DFQ_HILLS, y*TR_DFQ_HILLS+2000);
-  dsy = TR_DS_HILLS * sxnoise_2d(y * TR_DFQ_HILLS, x*TR_DFQ_HILLS);
+  dsx = TR_DS_HILLS * sxnoise_2d(x * TR_DFQ_HILLS, y*TR_DFQ_HILLS, salt);
+  salt = expanded_hash_1d(salt);
+  dsy = TR_DS_HILLS * sxnoise_2d(y * TR_DFQ_HILLS, x*TR_DFQ_HILLS, salt);
+  salt = expanded_hash_1d(salt);
   frequency = TR_FREQUENCY_HILLS;
   *hills = sxnoise_2d(
     (x + dsx) * frequency,
-    (y + dsy) * frequency
+    (y + dsy) * frequency,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   *hills *= hilly;
 
   detailed = sxnoise_2d(
-    (x - dsy + 30000) * frequency * 0.5,
-    (y + dsx) * frequency * 0.5
+    (x - dsy) * frequency * 0.5,
+    (y + dsx) * frequency * 0.5,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   detailed = (1 + detailed) / 2.0;
   detailed = 0.2 + 0.8 * detailed;
 
   // ridges
-  dsx = TR_DS_RIDGES * sxnoise_2d(x * TR_DFQ_RIDGES, y*TR_DFQ_RIDGES);
-  dsy = TR_DS_RIDGES * sxnoise_2d(y * TR_DFQ_RIDGES, x*TR_DFQ_RIDGES+2000);
+  dsx = TR_DS_RIDGES * sxnoise_2d(x * TR_DFQ_RIDGES, y*TR_DFQ_RIDGES, salt);
+  salt = expanded_hash_1d(salt);
+  dsy = TR_DS_RIDGES * sxnoise_2d(y * TR_DFQ_RIDGES, x*TR_DFQ_RIDGES, salt);
+  salt = expanded_hash_1d(salt);
   frequency = TR_FREQUENCY_RIDGES;
   *ridges = wrnoise_2d(
     (x + dsx) * frequency,
-    (y + dsy) * frequency + 7800
+    (y + dsy) * frequency,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   *ridges += 0.5 * wrnoise_2d(
-    (x + dsy) * frequency * 1.8 + 91000,
-    (y - dsx) * frequency * 1.8
+    (x + dsy) * frequency * 1.8,
+    (y - dsx) * frequency * 1.8,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   *ridges /= 1.5;
   *ridges *= ridged;
 
   bumpy = sxnoise_2d(
-    (x - dsy + 10000) * frequency * 0.2,
-    (y + dsx) * frequency * 0.2
+    (x - dsy) * frequency * 0.2,
+    (y + dsx) * frequency * 0.2,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   bumpy = (1 + bumpy) / 2.0;
   bumpy = 0.4 + 0.6 * bumpy;
 
   // mounds
-  dsx = TR_DS_MOUNDS * sxnoise_2d(x * TR_DFQ_MOUNDS, y*TR_DFQ_MOUNDS+9000);
-  dsy = TR_DS_MOUNDS * sxnoise_2d(y * TR_DFQ_MOUNDS, x*TR_DFQ_MOUNDS);
+  dsx = TR_DS_MOUNDS * sxnoise_2d(x * TR_DFQ_MOUNDS, y*TR_DFQ_MOUNDS, salt);
+  salt = expanded_hash_1d(salt);
+  dsy = TR_DS_MOUNDS * sxnoise_2d(y * TR_DFQ_MOUNDS, x*TR_DFQ_MOUNDS, salt);
+  salt = expanded_hash_1d(salt);
   frequency = TR_FREQUENCY_MOUNDS;
   *mounds = sxnoise_2d(
     (x + dsx) * frequency,
-    (y + dsy) * frequency + 900
+    (y + dsy) * frequency,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   *mounds *= mounded;
 
   // details
-  dsx = TR_DS_DETAILS * sxnoise_2d(x * TR_DFQ_DETAILS, y*TR_DFQ_DETAILS);
-  dsy = TR_DS_DETAILS * sxnoise_2d(y * TR_DFQ_DETAILS, x*TR_DFQ_DETAILS+4500);
+  dsx = TR_DS_DETAILS * sxnoise_2d(x*TR_DFQ_DETAILS, y*TR_DFQ_DETAILS, salt);
+  salt = expanded_hash_1d(salt);
+  dsy = TR_DS_DETAILS * sxnoise_2d(y*TR_DFQ_DETAILS, x*TR_DFQ_DETAILS, salt);
+  salt = expanded_hash_1d(salt);
   frequency = TR_FREQUENCY_DETAILS;
   *details = sxnoise_2d(
-    (x + dsx) * frequency - 300,
-    (y + dsy) * frequency
+    (x + dsx) * frequency,
+    (y + dsy) * frequency,
+    salt
   );
   *details *= detailed;
 
   // bumps
-  dsx = TR_DS_BUMPS * sxnoise_2d(x * TR_DFQ_BUMPS, y*TR_DFQ_BUMPS+8400);
-  dsy = TR_DS_BUMPS * sxnoise_2d(y * TR_DFQ_BUMPS, x*TR_DFQ_BUMPS);
+  dsx = TR_DS_BUMPS * sxnoise_2d(x*TR_DFQ_BUMPS, y*TR_DFQ_BUMPS, salt);
+  salt = expanded_hash_1d(salt);
+  dsy = TR_DS_BUMPS * sxnoise_2d(y*TR_DFQ_BUMPS, x*TR_DFQ_BUMPS, salt);
+  salt = expanded_hash_1d(salt);
   frequency = TR_FREQUENCY_BUMPS;
   *bumps = sxnoise_2d(
     (x + dsx) * frequency,
-    (y + dsy) * frequency
+    (y + dsy) * frequency,
+    salt
   );
+  salt = expanded_hash_1d(salt);
   *bumps *= bumpy;
 }
 
@@ -396,7 +467,7 @@ static inline float geomap(float base, terrain_region* region, float* interp) {
 
 // Computes basic geoform information to be used by terrain_height.
 static inline void compute_base_geoforms(
-  region_pos* pos,
+  region_pos* pos, ptrdiff_t salt,
   float* continents, float* geoforms, float* geodetails, float* mountains,
   float* hills, float* ridges, float* mounds, float* details, float* bumps,
   float* base,
@@ -406,7 +477,7 @@ static inline void compute_base_geoforms(
 ) {
   // make some noise:
   get_noise(
-    pos->x, pos->y,
+    pos->x, pos->y, salt,
     continents, geoforms, geodetails, mountains,
     hills, ridges, mounds, details, bumps
   );
