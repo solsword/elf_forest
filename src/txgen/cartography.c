@@ -31,29 +31,25 @@ pixel const SEA_COLORS[EC_SEA_COLORS] = {
 };
 
 pixel const LAND_COLORS[EC_LAND_COLORS] = {
-  0xff007700, // 1
-  0xff008800,
-  0xff119911,
-  0xff22aa22, // 4
-  0xff33bb33,
-  0xff44cc44,
-  0xff55cc55,
-  0xff55cc66, // 8
-  0xff55dd77,
-  0xff66ee99,
-  0xff66eeaa,
-  0xff66ddcc, // 12
+  0xff004400, // 1
+  0xff005500,
+  0xff006600,
+  0xff007700, // 4
+  0xff008811,
+  0xff119922,
+  0xff22aa33,
+  0xff33bb44, // 8
+  0xff44cc66,
+  0xff55dd88, // last green
   0xff66dddd,
-  0xff77eeee,
-  0xff77eeee,
-  0xff88ffff, // 16
+  0xff77eeee, // 12
   0xff99ffff,
-  0xffaaeeee,
-  0xffbbdddd,
-  0xffccdddd, // 20
-  0xffddeeee,
-  0xffeeffff,
-  0xffffffff, // 23
+  0xffaaeeee, // last yellow
+  0xffccdddd,
+  0xffdddddd, // 16
+  0xffeeeeee,
+  0xffffffff, // white
+  0xffffffff,
 };
 
 /*************

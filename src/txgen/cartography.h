@@ -15,7 +15,7 @@
 #define EC_SEA_COLORS 16
 
 // The number of land elevation colors
-#define EC_LAND_COLORS 23
+#define EC_LAND_COLORS 19
 
 // Elevation colors for coloring maps:
 extern pixel const SEA_COLORS[EC_SEA_COLORS];
