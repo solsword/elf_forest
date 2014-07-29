@@ -8,6 +8,7 @@
 
 #include "physics/physics.h"
 #include "world/world.h"
+#include "gen/worldgen.h"
 
 #include "tex/tex.h"
 #include "tex/dta.h"
@@ -49,6 +50,14 @@ extern float const MIN_CULL_DIST;
 // before frustum culling kicks in.
 extern float const RENDER_ANGLE_ALLOWANCE;
 
+// How much of the surrounding world map to render as distant terrain. The
+// total number of region anchors considered is 1 + 2*WORLD_NEIGHBORHOOD_SIZE.
+#define WORLD_NEIGHBORHOOD_SIZE 1
+
+// A number to add to the z position of the nearest vertex in the distant
+// terrain so that surrounding positions look better.
+extern r_pos_t const THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET;
+
 /***********
  * Globals *
  ***********/
@@ -68,6 +77,9 @@ extern float FOG_DENSITY;
 typedef void (*area_render_callback)(active_entity_area *);
 extern area_render_callback AREA_PRE_RENDER_CALLBACK;
 
+// A vertex buffer for local world map geometry (distant terrain):
+extern vertex_buffer* WM_VB;
+
 /********************
  * Inline Functions *
  ********************/
@@ -83,6 +95,12 @@ static inline void no_tint(void) {
 /*************
  * Functions *
  *************/
+
+// Sets up the rendering subsystem.
+void setup_render(void);
+
+// Cleans up the rendering subsystem.
+void cleanup_render(void);
 
 // Renders the world.
 void render_area(
@@ -106,5 +124,13 @@ int render_chunk_layer(
 // Renders the given entity. Takes it as a void* instead of an entity* so that
 // this function can be passed to list's l_foreach().
 void iter_render_entity(void *e);
+
+// Compiles the area surrounding the given world region into the WM_VB vertex
+// buffer.
+void compile_distant_terrain(world_map_pos *origin);
+
+// Renders the nearby portions of the world map. Recompiles the distant terrain
+// buffer as necessary.
+void render_world_neighborhood(world_map_pos *wmpos, region_pos *origin);
 
 #endif // ifndef RENDER_H

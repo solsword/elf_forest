@@ -150,17 +150,17 @@ include $(OBJ_DIR)/obj.d
 $(OBJ_DIR)/%.o:
 	$(CC) $(CFLAGS) $< -o $@
 
-$(BIN_DIR)/elf_forest: $(CORE_OBJECTS) $(MAIN_OBJECTS) $(BIN_DIR)
+$(BIN_DIR)/elf_forest: $(CORE_OBJECTS) $(MAIN_OBJECTS) $(BIN_DIR) $(OUT_DIR)
 	$(CC) $(CORE_OBJECTS) $(MAIN_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/elf_forest
 
-$(BIN_DIR)/test: $(CORE_OBJECTS) $(TEST_OBJECTS) $(BIN_DIR)
+$(BIN_DIR)/test: $(CORE_OBJECTS) $(TEST_OBJECTS) $(BIN_DIR) $(OUT_DIR)
 	$(CC) $(CORE_OBJECTS) $(TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/test
 
-$(BIN_DIR)/viewer: $(CORE_OBJECTS) $(VIEWER_OBJECTS) $(BIN_DIR)
+$(BIN_DIR)/viewer: $(CORE_OBJECTS) $(VIEWER_OBJECTS) $(BIN_DIR) $(OUT_DIR)
 	$(CC) $(CORE_OBJECTS) $(VIEWER_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/viewer
 
 $(BIN_DIR)/unit_tests: $(CORE_OBJECTS) $(UNIT_TEST_OBJECTS) $(BIN_DIR) \
-$(TEST_DIR)
+$(TEST_DIR) $(OUT_DIR)
 	$(CC) $(CORE_OBJECTS) $(UNIT_TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/unit_tests
 
 $(BIN_DIR)/test_noise: $(NOISE_TEST_OBJECTS) $(BIN_DIR)

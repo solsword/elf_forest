@@ -140,7 +140,4 @@ void prepare(
   float a
 );
 
-// Cleans up resources before exiting. Called by quit() and fail();
-void cleanup(void);
-
 #endif // ifndef GFX_H

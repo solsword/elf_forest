@@ -25,6 +25,9 @@
 #include "data/data.h"
 #include "prof/ptime.h"
 #include "ui/ui.h"
+#include "gen/worldgen.h"
+#include "gen/terrain.h"
+
 #include "util.h"
 
 /*************
@@ -47,6 +50,10 @@ float const RENDER_ANGLE_ALLOWANCE = M_PI/8.0;
 // DEBUG:
 //float const MIN_CULL_DIST = 0;
 //float const RENDER_ANGLE_ALLOWANCE = -M_PI/8.0;
+
+vertex_buffer* WM_VB = NULL;
+
+r_pos_t const THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET = -1000;
 
 /***********
  * Globals *
@@ -160,6 +167,16 @@ static inline void draw_basis_vectors(
  * Functions *
  *************/
 
+void setup_render(void) {
+  WM_VB = create_vertex_buffer();
+}
+
+void cleanup_render(void) {
+  cleanup_vertex_buffer(WM_VB);
+  free(WM_VB);
+  WM_VB = NULL;
+}
+
 void render_area(
   active_entity_area *area,
   vector *head_pos,
@@ -175,34 +192,6 @@ void render_area(
 
   // Set the fog density:
   set_fog_density(FOG_DENSITY);
-
-  // DEBUG: spin right 'round:
-  /*
-  static float theta = 0;
-  float r = 0.75*FULL_FRAME - ZOOM;
-  gluLookAt(
-    HALF_FRAME + r*cos(theta),
-    HALF_FRAME + r*sin(theta),
-    FULL_FRAME * 0.75 - 0.25 * FULL_FRAME * (ZOOM/(0.75*FULL_FRAME)),
-    //0, 0, 0,
-    head_pos->x+HALF_FRAME, head_pos->y+HALF_FRAME, head_pos->z+HALF_FRAME,
-    0, 0, 1
-  ); // Look north from head_pos
-  if (!PAUSED) {
-    theta += M_PI/256;
-  }
-  */
-
-  // DEBUG: RED TRIANGLE
-  /*
-  glBindTexture( GL_TEXTURE_2D, 0);
-  glColor4ub(255, 0, 0, 255);
-  glBegin( GL_TRIANGLES );
-  glVertex3f(0, 0, -1);
-  glVertex3f(0, 0.125, -1);
-  glVertex3f(0.125, 0.125, -1);
-  glEnd();
-  // */
 
   // head_pos (the argument) is a vector from the origin to the head position
   vector eye_vector; // vector pointing in the player's model's view direction
@@ -275,21 +264,7 @@ void render_area(
     (*AREA_PRE_RENDER_CALLBACK)(area);
   }
 
-  // DEBUG: BLUE TRIANGLE
-  /*
-  //printf("hp: %.2f, %.2f, %.2f\n", head_pos->x, head_pos->y, head_pos->z);
-
-  use_pipeline(&RAW_PIPELINE);
-
-  glColor4ub(0, 0, 255, 255);
-  glBegin( GL_TRIANGLES );
-  glVertex3f(0, 0, -1);
-  glVertex3f(0, 1, -1);
-  glVertex3f(1, 1, -1);
-  glEnd();
-  // */
-
-  // DEBUG: Render a bounding box:
+  // DEBUG: Render a bounding box for our area:
   /*
 
   use_pipeline(&RAW_PIPELINE);
@@ -320,6 +295,11 @@ void render_area(
   // opaque layer, then rendering entities, then rendering their transparent
   // layer and finally rendering their translucent layer with appropriate
   // settings.
+
+  // Render our distant surroundings, and then clear the depth buffer:
+  world_map_pos wmorigin;
+  rpos__wmpos(&(area->origin), &wmorigin); // TODO: really area->origin here?
+  render_world_neighborhood(&wmorigin, &(area->origin));
 
   // First, some loop variables:
   chunk_or_approx coa;
@@ -380,7 +360,7 @@ void render_area(
           dist *= dist;
           dist += xydist_sq;
           dist = sqrtf(dist);
-          get_best_data_limited(&rcpos, desired_detail(dist), &coa);
+          get_best_data_limited(&rcpos, desired_detail(dist), 1, &coa);
           // Compute angle to chunk:
           compute_hv_angles(
             &chunk_vector,
@@ -520,8 +500,8 @@ int render_chunk_layer(
   // Set our drawing color:
   glColor4ub(255, 255, 255, 255); // 100% white
 
-  // DEBUG: Draw a bounding box:
-  /*
+  // DEBUG: Draw a bounding box for this chunk:
+  //*
   glBegin( GL_LINE_LOOP );
 
   glVertex3f(0, 0, 0);
@@ -548,10 +528,7 @@ int render_chunk_layer(
   glScalef(1/(float)(dta->size), 1/(float)(dta->size), 1);
   glMatrixMode( GL_MODELVIEW );
 
-  // Bind our texture:
-  glBindTexture( GL_TEXTURE_2D, dta->handle);
-
-  // Draw the appropriate vertex buffer:
+  // Draw the appropriate vertex buffer with the given texture atlas' texture:
   draw_vertex_buffer(vb, dta->handle);
 
   // Reset the texture matrix:
@@ -624,5 +601,117 @@ void iter_render_entity(void *thing) {
   glEnd();
   // */
 
+  glPopMatrix();
+}
+
+void compile_neighborhood(world_map_pos *wmpos) {
+  world_map_pos iter;
+  region_pos peak;
+  region_pos origin;
+  compute_region_anchor(THE_WORLD, wmpos, &origin);
+  origin.z = (r_pos_t) terrain_height(&origin);
+  origin.z += THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET;
+  vertex v[(WORLD_NEIGHBORHOOD_SIZE*2 + 1)*(WORLD_NEIGHBORHOOD_SIZE*2 + 1)];
+  size_t index = 0;
+  // Compute the vertex positions:
+  for (
+    iter.x = wmpos->x - WORLD_NEIGHBORHOOD_SIZE;
+    iter.x <= wmpos->x + WORLD_NEIGHBORHOOD_SIZE;
+    iter.x += 1
+  ) {
+    for (
+      iter.y = wmpos->y - WORLD_NEIGHBORHOOD_SIZE;
+      iter.y <= wmpos->y + WORLD_NEIGHBORHOOD_SIZE;
+      iter.y += 1
+    ) {
+      compute_region_anchor(THE_WORLD, &iter, &peak);
+      peak.z = (r_pos_t) terrain_height(&peak);
+      if (iter.x == wmpos->x && iter.y == wmpos->y) {
+        peak.z += THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET;
+      }
+      v[index].x = peak.x - origin.x;
+      v[index].y = peak.y - origin.y;
+      v[index].z = peak.z - origin.z;
+      // TODO: Real texture coordinates here?
+      v[index].s = 0;
+      v[index].t = 0;
+      // TODO: Real normals here?
+      v[index].nx = 0;
+      v[index].ny = 0;
+      v[index].nz = 1;
+      // TODO: Real colors here?
+      v[index].r = 96;
+      v[index].g = 96;
+      v[index].b = 96;
+      index += 1;
+    }
+  }
+  // Reset the vertex buffer and construct a mesh:
+  reset_vertex_buffer(WM_VB);
+  vb_setup_cache(WM_VB);
+  size_t ix, iy;
+  // Offsets for the next vertex in x/y directions:
+  size_t ox = (1 + 2*WORLD_NEIGHBORHOOD_SIZE);
+  size_t oy = 1;
+  // Note that these loop variables stop one short of the ends because the loop
+  // code uses the vertices at ix+1 and iy+1.
+  for (ix = 0; ix < WORLD_NEIGHBORHOOD_SIZE*2; ix += 1) {
+    for (iy = 0; iy < WORLD_NEIGHBORHOOD_SIZE*2; iy += 1) {
+      index = iy + ix * (1 + 2*WORLD_NEIGHBORHOOD_SIZE);
+      vb_add_vertex(&(v[index]), WM_VB); // bottom left
+      vb_add_vertex(&(v[index + oy]), WM_VB); // top left
+      vb_add_vertex(&(v[index + ox]), WM_VB); // bottom right
+
+      vb_reuse_vertex(0, WM_VB); // reuse bottom right
+      vb_reuse_vertex(2, WM_VB); // reuse top left
+      vb_add_vertex(&(v[index + ox + oy]), WM_VB); // top right
+      // note there's a bunch of vertex duplication between iterations, but we
+      // won't worry about that.
+    }
+  }
+
+  // Compile our geometry to the graphics card and free the cache:
+  vb_compile_buffers(WM_VB);
+  vb_free_cache(WM_VB);
+}
+
+void render_world_neighborhood(world_map_pos *wmpos, region_pos *origin) {
+  static world_map_pos prev_pos = { .x = -3, .y = -7 };
+  region_pos anchor;
+  if (
+    wmpos->x != prev_pos.x ||
+    wmpos->y != prev_pos.y
+  ) {
+    compile_neighborhood(wmpos);
+  }
+  prev_pos.x = wmpos->x;
+  prev_pos.y = wmpos->y;
+
+  compute_region_anchor(THE_WORLD, wmpos, &anchor);
+  anchor.z = (r_pos_t) terrain_height(&anchor);
+  anchor.z += THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET;
+
+  // Use the raw rendering pipeline:
+  // TODO: A custom pipeline here for haze?
+  use_pipeline(&RAW_PIPELINE);
+
+  // Push a model view matrix:
+  glMatrixMode( GL_MODELVIEW );
+  glPushMatrix();
+
+  // Translate to the central anchor position:
+  glTranslatef(
+    anchor.x - origin->x,
+    anchor.y - origin->y,
+    anchor.z - origin->z
+  );
+
+  // Draw the distant terrain:
+  draw_vertex_buffer(WM_VB, 0); // TODO: distant terrain texture?
+
+  // Clear the depth buffer:
+  clear_depth_buffer();
+
+  // Pop our matrix:
   glPopMatrix();
 }

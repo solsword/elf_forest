@@ -188,11 +188,13 @@ lod get_best_loaded_level(region_chunk_pos *rcpos);
 // available data for the given chunk, or NULL if there is no loaded data for
 // that chunk. If there isn't any data, it will return a chunk_or_approx with
 // type CA_TYPE_NOT_LOADED. The limited version accepts an upper bound on the
-// resolution of data to return.
+// resolution of data to return, and a flag for requesting only compiled chunk
+// data.
 void get_best_data(region_chunk_pos *rcpos, chunk_or_approx *coa);
 void get_best_data_limited(
   region_chunk_pos *rcpos,
   lod limit,
+  uint8_t compiled,
   chunk_or_approx *coa
 );
 
@@ -252,6 +254,7 @@ static inline void get_cell_neighborhood(
   chunk_index nbr;
   int dx, dy, dz;
   chunk_or_approx const * coa;
+  capprox_type center_type = chunk_neighbors[13].type;
   size_t i = 0, j = 0;
   for (dz = -step; dz <= step; dz += step) {
     for (dx = -step; dx <= step; dx += step) {
@@ -267,7 +270,10 @@ static inline void get_cell_neighborhood(
         if (idx.y < step && dy == -step) { j -= 1; nbr.y = CHUNK_SIZE - 1; }
         if (idx.y >= CHUNK_SIZE - step && dy == step) { j += 1; nbr.y = 0; }
         coa = &(chunk_neighbors[j]);
-        if (coa->type == CA_TYPE_CHUNK) {
+        if (center_type == CA_TYPE_APPROXIMATION && coa->type == CA_TYPE_CHUNK){
+          // Expose all faces of approximations that border actual chunks
+          neighborhood[i] = dummy;
+        } else if (coa->type == CA_TYPE_CHUNK) {
           neighborhood[i] = c_cell((chunk*) (coa->ptr), nbr);
         } else if (coa->type == CA_TYPE_APPROXIMATION) {
           neighborhood[i] = ca_cell((chunk_approximation*) (coa->ptr), nbr);

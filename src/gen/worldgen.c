@@ -21,6 +21,12 @@ world_map* THE_WORLD = NULL;
 
 char const * const WORLD_MAP_FILE = "out/world_map.png";
 
+float const REGION_GEO_STRENGTH_VARIANCE = 0.4;
+float const REGION_GEO_STRENGTH_FREQUENCY = 2.0;
+
+float const STRATA_FRACTION_NOISE_STRENGTH = 0.05;
+float const STRATA_FRACTION_NOISE_SCALE = 1.0 / 40.0;
+
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -29,7 +35,6 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
   world_map *result = (world_map*) malloc(sizeof(world_map));
   world_map_pos xy;
   world_region* wr;
-  ptrdiff_t hash = seed + 71;
   result->seed = seed;
   result->width = width;
   result->height = height;
@@ -51,15 +56,10 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
       wr->terrain_height += terrain_height(&(wr->anchor));
       wr->terrain_height /= 4;
 
+      // Pick a seed for this world region:
+      wr->seed = hash_3d(xy.x, xy.y, seed + 8731);
       // Randomize the anchor position:
-      wr->anchor.x += WORLD_REGION_SIZE * CHUNK_SIZE * float_hash_1d(hash); 
-      hash += 1;
-      wr->anchor.y += WORLD_REGION_SIZE * CHUNK_SIZE * float_hash_1d(hash); 
-      hash += 1;
-      wr->anchor.z = (
-        BASE_STRATUM_THICKNESS * MAX_STRATA_LAYERS * float_hash_1d(hash)
-      );
-      hash += 1;
+      compute_region_anchor(result, &xy, &(wr->anchor));
     }
   }
   return result;
@@ -115,7 +115,7 @@ void world_cell(world_map *wm, region_pos *rpos, cell *result) {
     // Outside the world:
     result->primary = b_make_block(B_AIR);
   } else {
-    strata_cell(neighborhood, rpos, result);
+    strata_cell(wm, neighborhood, rpos, result);
   }
   if (b_is(result->primary, B_VOID)) {
     // TODO: Other things like plants here...
@@ -232,22 +232,29 @@ void generate_geology(world_map *wm) {
 }
 
 void strata_cell(
+  world_map *wm,
   world_region* neighborhood[],
   region_pos *rpos,
   cell *result
 ) {
-  static r_pos_t surface_height;
+  static float surface_height;
   static region_pos pr_rpos = { .x = -1, .y = -1, .z = -1 };
-  world_region* wr = neighborhood[4];
   int i;
   float h;
-  uint8_t hit = 0;
+  world_map_pos wmpos;
+  region_pos anchor;
+  world_region *wr, *best, *secondbest; // best and second-best regions
+  vector v, vbest, vsecond;
+  float m, mbest, msecond;
+  ptrdiff_t bestseed, secondseed; // seeds for polar noise
   stratum *st;
   region_pos trp;
   copy_rpos(rpos, &trp);
   trp.z = 0;
+  rpos__wmpos(rpos, &wmpos);
 
   // DEBUG: (to show the strata)
+  //*
   if (
     (
       abs(
@@ -257,7 +264,7 @@ void strata_cell(
     ) && (
       rpos->z > (
         rpos->y - (WORLD_HEIGHT/2.0) * WORLD_REGION_SIZE * CHUNK_SIZE
-      ) + 10000
+      ) + 8000
       //rpos->z > (rpos->y - (WORLD_HEIGHT*WORLD_REGION_SIZE*CHUNK_SIZE)/2)
     )
   ) {
@@ -266,6 +273,7 @@ void strata_cell(
     result->secondary = b_make_block(B_VOID);
     return;
   }
+  // */
 
   // DEBUG: Caves to show things off more:
   /*
@@ -289,24 +297,133 @@ void strata_cell(
   copy_rpos(rpos, &pr_rpos);
 
   // Compute our fractional height:
-  h = rpos->z / ((float) surface_height);
-  // TODO: Add some distortion here
-  if (h > 1.0) {
+  h = rpos->z / surface_height;
+  if (h > 1.0) { // if we're above the surface, return without doing anything
     return;
   }
+  // Add some noise to distort the height:
+  h += STRATA_FRACTION_NOISE_STRENGTH * (
+    sxnoise_3d(
+      rpos->x * STRATA_FRACTION_NOISE_SCALE,
+      rpos->y * STRATA_FRACTION_NOISE_SCALE,
+      rpos->z * STRATA_FRACTION_NOISE_SCALE,
+      7193
+    ) + 
+    0.5 * sxnoise_3d(
+      rpos->x * STRATA_FRACTION_NOISE_SCALE * 1.7,
+      rpos->y * STRATA_FRACTION_NOISE_SCALE * 1.7,
+      rpos->z * STRATA_FRACTION_NOISE_SCALE * 1.7,
+      7194
+    )
+  ) / 1.5;
+  // Clamp out-of-range values after noise:
+  if (h > 1.0) { h = 1.0; } else if (h < 0.0) { h = 0.0; }
 
-  // Find out which layer we're in:
-  st = wr->geology.strata[0];
-  for (i = 1; i < wr->geology.stratum_count; ++i) {
-    if (h > wr->geology.bottoms[i]) { // might not happen at all
-      result->primary = b_make_species(B_STONE, st->base_species);
-      hit = 1;
-      break;
+  // Figure out the two nearest world regions:
+
+  // Setup worst-case defaults:
+  vbest.x = WORLD_REGION_SIZE * CHUNK_SIZE;
+  vbest.y = WORLD_REGION_SIZE * CHUNK_SIZE;
+  vbest.z = BASE_STRATUM_THICKNESS * MAX_STRATA_LAYERS;
+  mbest = vmag(&vbest);
+  bestseed = 0;
+  vsecond.x = WORLD_REGION_SIZE * CHUNK_SIZE;
+  vsecond.y = WORLD_REGION_SIZE * CHUNK_SIZE;
+  vsecond.z = BASE_STRATUM_THICKNESS * MAX_STRATA_LAYERS;
+  msecond = vmag(&vsecond);
+  secondseed = 0;
+
+  secondbest = NULL;
+  best = NULL;
+
+  wmpos.x -= 1;
+  wmpos.y -= 1;
+  for (i = 0; i < 9; i += 1) {
+    if (i == 3 || i == 6) {
+      wmpos.x += 1;
+      wmpos.y -= 2;
+    } else {
+      wmpos.y += 1;
     }
-    st = wr->geology.strata[i];
+    wr = neighborhood[i];
+    if (wr != NULL) {
+      copy_rpos(&(wr->anchor), &anchor);
+    } else {
+      compute_region_anchor(wm, &wmpos, &anchor);
+    }
+    v.x = anchor.x - rpos->x;
+    v.y = anchor.y - rpos->y;
+    v.z = anchor.z - rpos->z;
+    m = vmag(&v);
+    if (m < mbest) {
+      vcopy(&vsecond, &vbest);
+      msecond = mbest;
+      secondbest = best;
+      secondseed = bestseed;
+
+      vcopy(&vbest, &v);
+      mbest = m;
+      best = wr;
+      if (wr != NULL) {
+        bestseed = wr->seed;
+      } else {
+        bestseed = hash_3d(wmpos.x, wmpos.y, 574);
+      }
+    } else if (m < msecond) {
+      vcopy(&vsecond, &v);
+      msecond = m;
+      secondbest = wr;
+      if (wr != NULL) {
+        secondseed = wr->seed;
+      } else {
+        secondseed = hash_3d(wmpos.x, wmpos.y, 574);
+      }
+    }
   }
-  if (!hit) {
-    result->primary = b_make_species(B_STONE, st->base_species);
+  // Figure out which stratum dominates:
+  vxyz__polar(&vbest, &v);
+  mbest *= (
+    1 + REGION_GEO_STRENGTH_VARIANCE * sxnoise_2d(
+      v.y * REGION_GEO_STRENGTH_FREQUENCY,
+      v.z * REGION_GEO_STRENGTH_FREQUENCY,
+      bestseed
+    )
+  );
+  vxyz__polar(&vsecond, &v);
+  msecond *= (
+    1 + REGION_GEO_STRENGTH_VARIANCE * sxnoise_2d(
+      v.y * REGION_GEO_STRENGTH_FREQUENCY,
+      v.z * REGION_GEO_STRENGTH_FREQUENCY,
+      secondseed
+    )
+  );
+  if (best != NULL) {
+    st = get_stratum(best, h);
+    mbest *= st->persistence;
+  }
+  if (secondbest != NULL) {
+    st = get_stratum(secondbest, h);
+    msecond *= st->persistence;
+  }
+
+  if (mbest < msecond) {
+    if (best == NULL) {
+      // TODO: Various edge factors here?
+      result->primary = b_make_block(B_STONE);
+    } else {
+      st = get_stratum(best, h);
+      // TODO: veins and inclusions here!
+      result->primary = b_make_species(B_STONE, st->base_species);
+    }
+  } else {
+    if (secondbest == NULL) {
+      // TODO: Various edge factors here?
+      result->primary = b_make_block(B_STONE);
+    } else {
+      st = get_stratum(secondbest, h);
+      // TODO: veins and inclusions here!
+      result->primary = b_make_species(B_STONE, st->base_species);
+    }
   }
 }
 

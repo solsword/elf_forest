@@ -50,6 +50,9 @@ void start_game(
   region_pos *spawn_point
 );
 
+// Cleans up resources before exiting.
+void cleanup(void);
+
 // Shuts down the system, cleaning things up and stopping all of the core
 // threads.
 void core_shutdown(int returnval);

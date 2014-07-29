@@ -52,7 +52,7 @@ float ZOOM = 1.0;
 float MIN_ZOOM = 0.5;
 float MAX_ZOOM = 2.5;
 
-float TELEPORT_DISTANCE = 2000;
+float TELEPORT_DISTANCE = 200000;
 
 /*************
  * Callbacks *

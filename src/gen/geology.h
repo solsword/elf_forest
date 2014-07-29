@@ -56,14 +56,9 @@ extern ptrdiff_t const GEOTHERMAL_SEED;
 
 // Various GN_ (geology noise) constants used for defining default noise
 // parameters during strata generation:
-extern float const GN_GROSS_DISTORTION_SCALE;
-extern float const GN_FINE_DISTORTION_SCALE;
+extern float const GN_DISTORTION_SCALE;
 extern float const GN_LARGE_VAR_SCALE;
 extern float const GN_MED_VAR_SCALE;
-extern float const GN_SMALL_VAR_SCALE;
-extern float const GN_TINY_VAR_SCALE;
-extern float const GN_DETAIL_VAR_SCALE;
-extern float const GN_RIDGE_SCALE;
 
 /*************************
  * Structure Definitions *
@@ -82,6 +77,8 @@ struct stratum_s {
 
  // Derived noise parameters:
  // -------------------------
+  float persistence; // how much this layer extends at the expense of others
+   // Note that this should be in [0, 2] and that lower values are stronger.
   float scale_bias; // biases the noise scales
 
   // radial variance:
@@ -116,9 +113,6 @@ struct stratum_s {
   species base_species; // exact material type for main mass
   species vein_species[N_VEIN_TYPES]; // types for veins
   species inclusion_species[N_INCLUSION_TYPES]; // types for inclusions
-
- // Dynamic factors are erosion and pressure which influence compression and
- // metamorphosis.
 };
 
 /********************
@@ -159,7 +153,7 @@ static inline void stratum_lf_distortion(
   float *dx, float *dy
 ) {
   // compute distortion
-  float scale = GN_GROSS_DISTORTION_SCALE * st->scale_bias;
+  float scale = GN_DISTORTION_SCALE * st->scale_bias;
   *dx = st->gross_distortion * sxnoise_2d(
     x/scale, y/scale,
     expanded_hash_1d(st->seed+1)
@@ -167,23 +161,6 @@ static inline void stratum_lf_distortion(
   *dy = st->gross_distortion * sxnoise_2d(
     x/scale, y/scale,
     expanded_hash_1d(st->seed+2)
-  );
-}
-
-// Computes higher-frequency distortion dx and dy at the given region position.
-static inline void stratum_hf_distortion(
-  stratum *st,
-  float x, float y,
-  float *dx, float *dy
-) {
-  float scale = GN_FINE_DISTORTION_SCALE * st->scale_bias;
-  *dx = st->fine_distortion * sxnoise_2d(
-    x/scale, y/scale,
-    expanded_hash_1d(st->seed+3)
-  );
-  *dy = st->fine_distortion * sxnoise_2d(
-    x/scale, y/scale,
-    expanded_hash_1d(st->seed+4)
   );
 }
 
@@ -204,35 +181,6 @@ static inline void stratum_lf_noise(
     x/scale, y/scale,
     expanded_hash_1d(st->seed+6)
   );
-}
-
-// Computes stratum high-frequency noise.
-static inline void stratum_hf_noise(
-  stratum *st,
-  float x, float y,
-  float *noise
-) {
-  float scale = GN_SMALL_VAR_SCALE * st->scale_bias;
-  *noise = st->small_var * sxnoise_2d(
-    x/scale, y/scale,
-    expanded_hash_1d(st->seed+7)
-  );
-  scale = GN_TINY_VAR_SCALE * st->scale_bias;
-  *noise += st->tiny_var * sxnoise_2d(
-    x/scale, y/scale,
-    expanded_hash_1d(st->seed+8)
-  );
-  scale = GN_RIDGE_SCALE * st->scale_bias;
-  *noise += st->ridges * wrnoise_2d(
-    x/scale, y/scale,
-    expanded_hash_1d(st->seed+9)
-  );
-  scale = GN_DETAIL_VAR_SCALE * st->scale_bias;
-  *noise += st->detail_var * sxnoise_2d(
-    x/scale, y/scale,
-    expanded_hash_1d(st->seed+10)
-  );
-  *noise *= (1 - st->smoothing);
 }
 
 /******************************

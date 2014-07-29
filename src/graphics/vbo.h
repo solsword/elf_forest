@@ -44,7 +44,7 @@ struct vertex_s {
   GLfloat x, y, z;
   GLfloat s, t;
   GLshort nx, ny, nz;
-  GLubyte brightness, _1, _2; // TODO: Use these extra bytes
+  GLubyte r, g, b; // TODO: Use these extra bytes
 };
 
 struct vertex_buffer_s {
@@ -69,7 +69,8 @@ struct vertex_buffer_s {
 // Sets up the given vertex buffer, but just does minimal initialization.
 void setup_vertex_buffer(vertex_buffer *vb);
 
-// Allocates and returns a new vertex buffer.
+// Allocates and returns a new vertex buffer. It calls setup_vertex_buffer on
+// the new buffer before returning it.
 vertex_buffer* create_vertex_buffer();
 
 // Frees memory and deletes OpenGL array objects associated with the given
@@ -85,10 +86,10 @@ void reset_vertex_buffer(vertex_buffer *vb);
  *************/
 
 // Sets up the data cache of the given buffer. Should be called before any
-// calls to add_vertex or reuse_vertex. If the buffer is already allocated,
-// this will free the old buffer and set up a new one. This function also
-// deletes (if necessary) and unbinds the OpenGL arrays associated with the
-// given vertex buffer object.
+// calls to vb_add_vertex or vb_reuse_vertex. If the buffer is already
+// allocated, this will free the old buffer and set up a new one. This function
+// also deletes (if necessary) and unbinds the OpenGL arrays associated with
+// the given vertex buffer object.
 void vb_setup_cache(vertex_buffer *buf);
 
 // Copies the given vertex into the given buffer's data cache.
@@ -101,9 +102,12 @@ void vb_add_vertex(vertex const * const v, vertex_buffer *buf);
 // MAX_INDICES might corrupt the vertex caches.
 void vb_reuse_vertex(int i, vertex_buffer *buf);
 
-// Compiles the given vertex buffer into a pair of OpenGL array objects,
-// freeing the data cache after doing so. If the buffer already has OpenGL
-// array(s) associated with it, these will be deleted first.
+// Compiles the current cache contents into a pair of OpenGL array objects, and
+// adds them to the buffer's list of arrays. Note that this is called
+// internally whenever the vertex cache gets too big. vb_free_cache should be
+// called afterwards if the buffer is finalized, but if it isn't, the buffer
+// can continue to accept new vertices, and a later call to vb_compile_buffers
+// will add those to the internal list of OpenGL arrays.
 void vb_compile_buffers(vertex_buffer *buf);
 
 // Frees the data cache of the given vertex buffer. Can safely be called

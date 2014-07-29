@@ -68,23 +68,23 @@ static inline void push_top_face(
   VERTEX_COUNT += 4;
   INDEX_COUNT += 6;
 #endif
-  vertex v = { ._1 = 0, ._2 = 0 };
+  vertex v = { .g = 0, .b = 0 };
   // bottom left
   v.x = idx.x + scale * west;            v.nx =  0;    v.s = st.s + west;
   v.y = idx.y + scale * south;           v.ny =  0;    v.t = st.t + 1 - south;
   v.z = idx.z + scale * (1 - offset);    v.nz = P1;
-  v.brightness = vertex_light(light, 0);
+  v.r = vertex_light(light, 0);
   v.z += zf_off * Z_RECONCILIATION_OFFSET;
   vb_add_vertex(&v, vb);
 
   // top left
   v.y = idx.y + scale * (1 - north);                   v.t = st.t + north;
-  v.brightness = vertex_light(light, 1);
+  v.r = vertex_light(light, 1);
   vb_add_vertex(&v, vb);
 
   // top right
   v.x = idx.x + scale * (1 - east);                    v.s = st.s + 1 - east;
-  v.brightness = vertex_light(light, 2);
+  v.r = vertex_light(light, 2);
   vb_add_vertex(&v, vb);
 
   vb_reuse_vertex(2, vb); // reuse bottom left
@@ -93,7 +93,7 @@ static inline void push_top_face(
 
   // bottom right
   v.y = idx.y + scale * south;                         v.t = st.t + 1 - south;
-  v.brightness = vertex_light(light, 3);
+  v.r = vertex_light(light, 3);
   vb_add_vertex(&v, vb);
 }
 
@@ -111,23 +111,23 @@ static inline void push_bottom_face(
   VERTEX_COUNT += 4;
   INDEX_COUNT += 6;
 #endif
-  vertex v = { ._1 = 0, ._2 = 0 };
+  vertex v = { .g = 0, .b = 0 };
   // bottom left
   v.x = idx.x + scale * (1 - east);    v.nx =  0;    v.s = st.s + east;
   v.y = idx.y + scale * south;         v.ny =  0;    v.t = st.t + 1 - south;
   v.z = idx.z + offset;                v.nz = N1;
-  v.brightness = vertex_light(light, 0);
+  v.r = vertex_light(light, 0);
   v.z -= zf_off * Z_RECONCILIATION_OFFSET;
   vb_add_vertex(&v, vb);
 
   // top left
   v.y = idx.y + scale * (1 - north);                 v.t = st.t + north;
-  v.brightness = vertex_light(light, 1);
+  v.r = vertex_light(light, 1);
   vb_add_vertex(&v, vb);
 
   // top right
   v.x = idx.x + scale * west;                        v.s = st.s + 1 - west;
-  v.brightness = vertex_light(light, 2);
+  v.r = vertex_light(light, 2);
   vb_add_vertex(&v, vb);
 
   vb_reuse_vertex(2, vb); // reuse bottom left
@@ -136,7 +136,7 @@ static inline void push_bottom_face(
 
   // bottom right
   v.y = idx.y + scale * south;                       v.t = st.t + 1 - south;
-  v.brightness = vertex_light(light, 3);
+  v.r = vertex_light(light, 3);
   vb_add_vertex(&v, vb);
 }
 
@@ -154,23 +154,23 @@ static inline void push_north_face(
   VERTEX_COUNT += 4;
   INDEX_COUNT += 6;
 #endif
-  vertex v = { ._1 = 0, ._2 = 0 };
+  vertex v = { .g = 0, .b = 0 };
   // bottom left
   v.x = idx.x + scale * (1 - left)  ;    v.nx =  0;    v.s = st.s + left;
   v.y = idx.y + scale * (1 - offset);    v.ny = P1;    v.t = st.t + 1 - bot;
   v.z = idx.z + scale * bot;             v.nz =  0;
-  v.brightness = vertex_light(light, 0);
+  v.r = vertex_light(light, 0);
   v.y += zf_off * Z_RECONCILIATION_OFFSET;
   vb_add_vertex(&v, vb);
 
   // top left
   v.z = idx.z + scale * (1 - top);                     v.t = st.t + top;
-  v.brightness = vertex_light(light, 1);
+  v.r = vertex_light(light, 1);
   vb_add_vertex(&v, vb);
 
   // top right
   v.x = idx.x + scale * right;                         v.s = st.s + 1 - right;
-  v.brightness = vertex_light(light, 2);
+  v.r = vertex_light(light, 2);
   vb_add_vertex(&v, vb);
 
   vb_reuse_vertex(2, vb); // reuse bottom left
@@ -179,7 +179,7 @@ static inline void push_north_face(
 
   // bottom right
   v.z = idx.z + scale * bot;                           v.t = st.t + 1 - bot;
-  v.brightness = vertex_light(light, 3);
+  v.r = vertex_light(light, 3);
   vb_add_vertex(&v, vb);
 }
 
@@ -197,23 +197,23 @@ static inline void push_south_face(
   VERTEX_COUNT += 4;
   INDEX_COUNT += 6;
 #endif
-  vertex v = { ._1 = 0, ._2 = 0 };
+  vertex v = { .g = 0, .b = 0 };
   // bottom left
   v.x = idx.x + scale * left;      v.nx =  0;    v.s = st.s + left;
   v.y = idx.y + scale * offset;    v.ny = N1;    v.t = st.t + 1 - bot;
   v.z = idx.z + scale * bot;       v.nz =  0;
-  v.brightness = vertex_light(light, 0);
+  v.r = vertex_light(light, 0);
   v.y -= zf_off * Z_RECONCILIATION_OFFSET;
   vb_add_vertex(&v, vb);
 
   // top left
   v.z = idx.z + scale * (1 - top);               v.t = st.t + top;
-  v.brightness = vertex_light(light, 1);
+  v.r = vertex_light(light, 1);
   vb_add_vertex(&v, vb);
 
   // top right
   v.x = idx.x + scale * (1 - right);             v.s = st.s + 1 - right;
-  v.brightness = vertex_light(light, 2);
+  v.r = vertex_light(light, 2);
   vb_add_vertex(&v, vb);
 
   vb_reuse_vertex(2, vb); // reuse bottom left
@@ -222,7 +222,7 @@ static inline void push_south_face(
 
   // bottom right
   v.z = idx.z + scale * bot;                     v.t = st.t + 1 - bot;
-  v.brightness = vertex_light(light, 3);
+  v.r = vertex_light(light, 3);
   vb_add_vertex(&v, vb);
 }
 
@@ -240,23 +240,23 @@ static inline void push_east_face(
   VERTEX_COUNT += 4;
   INDEX_COUNT += 6;
 #endif
-  vertex v = { ._1 = 0, ._2 = 0 };
+  vertex v = { .g = 0, .b = 0 };
   // bottom left
   v.x = idx.x + scale * (1 - offset);    v.nx = P1;    v.s = st.s + left;
   v.y = idx.y + scale * left;            v.ny =  0;    v.t = st.t + 1 - bot;
   v.z = idx.z + scale * bot;             v.nz =  0;
-  v.brightness = vertex_light(light, 0);
+  v.r = vertex_light(light, 0);
   v.x += zf_off * Z_RECONCILIATION_OFFSET;
   vb_add_vertex(&v, vb);
 
   // top left
   v.z = idx.z + scale * (1 - top);                     v.t = st.t + top;
-  v.brightness = vertex_light(light, 1);
+  v.r = vertex_light(light, 1);
   vb_add_vertex(&v, vb);
 
   // top right
   v.y = idx.y + scale * (1 - right);                   v.s = st.s + 1 - right;
-  v.brightness = vertex_light(light, 2);
+  v.r = vertex_light(light, 2);
   vb_add_vertex(&v, vb);
 
   vb_reuse_vertex(2, vb); // reuse bottom left
@@ -265,7 +265,7 @@ static inline void push_east_face(
 
   // bottom right
   v.z = idx.z + scale * bot;                           v.t = st.t + 1 - bot;
-  v.brightness = vertex_light(light, 3);
+  v.r = vertex_light(light, 3);
   vb_add_vertex(&v, vb);
 }
 
@@ -283,23 +283,23 @@ static inline void push_west_face(
   VERTEX_COUNT += 4;
   INDEX_COUNT += 6;
 #endif
-  vertex v = { ._1 = 0, ._2 = 0 };
+  vertex v = { .g = 0, .b = 0 };
   // bottom left
   v.x = idx.x + scale * offset;          v.nx = N1;    v.s = st.s + left;
   v.y = idx.y + scale * (1 - left);      v.ny =  0;    v.t = st.t + 1 - bot;
   v.z = idx.z + scale * bot;             v.nz =  0;
-  v.brightness = vertex_light(light, 0);
+  v.r = vertex_light(light, 0);
   v.x -= zf_off * Z_RECONCILIATION_OFFSET;
   vb_add_vertex(&v, vb);
 
   // top left
   v.z = idx.z + scale * (1 - top);                     v.t = st.t + top;
-  v.brightness = vertex_light(light, 1);
+  v.r = vertex_light(light, 1);
   vb_add_vertex(&v, vb);
 
   // top right
   v.y = idx.y + scale * right;                         v.s = st.s + 1 - right;
-  v.brightness = vertex_light(light, 2);
+  v.r = vertex_light(light, 2);
   vb_add_vertex(&v, vb);
 
   vb_reuse_vertex(2, vb); // reuse bottom left
@@ -308,7 +308,7 @@ static inline void push_west_face(
 
   // bottom right
   v.z = idx.z + scale * bot;                           v.t = st.t + 1 - bot;
-  v.brightness = vertex_light(light, 3);
+  v.r = vertex_light(light, 3);
   vb_add_vertex(&v, vb);
 }
 // Clean up our short macro definitions:

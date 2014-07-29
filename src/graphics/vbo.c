@@ -107,9 +107,9 @@ void vb_add_vertex(vertex const * const v, vertex_buffer *vb) {
   vb->vdata[vb->vertex_count].nz = v->nz;
   vb->vdata[vb->vertex_count].s = v->s;
   vb->vdata[vb->vertex_count].t = v->t;
-  vb->vdata[vb->vertex_count].brightness = v->brightness;
-  vb->vdata[vb->vertex_count]._1 = v->_1;
-  vb->vdata[vb->vertex_count]._2 = v->_2;
+  vb->vdata[vb->vertex_count].r = v->r;
+  vb->vdata[vb->vertex_count].g = v->g;
+  vb->vdata[vb->vertex_count].b = v->b;
   vb->idata[vb->index_count] = vb->vertex_count;
   vb->index_count += 1;
   vb->vertex_count += 1;

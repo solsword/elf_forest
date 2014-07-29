@@ -80,8 +80,8 @@ typedef struct world_map_s world_map;
 #define STRATA_AVG_SIZE 0.25
 
 // Controls how many strata to generate (a multiple of MAX_STRATA_LAYERS).
-//#define STRATA_COMPLEXITY 4.0
-#define STRATA_COMPLEXITY (1/32.0)
+#define STRATA_COMPLEXITY 4.0
+//#define STRATA_COMPLEXITY (1/32.0)
 
 // The base stratum thickness (before an exponential distribution).
 #define BASE_STRATUM_THICKNESS 10.0
@@ -106,9 +106,20 @@ typedef struct world_map_s world_map;
  * Globals *
  ***********/
 
+// The globally-accessible world:
 extern world_map* THE_WORLD;
 
+// The name of the file to write a copy of the world map into:
 extern char const * const WORLD_MAP_FILE;
+
+// The variance and frequency of noise used to determine which region's stratum
+// information is used when generating terrain.
+extern float const REGION_GEO_STRENGTH_VARIANCE;
+extern float const REGION_GEO_STRENGTH_FREQUENCY;
+
+// The strength and base scale of the noise that distorts strata boundaries:
+extern float const STRATA_FRACTION_NOISE_STRENGTH;
+extern float const STRATA_FRACTION_NOISE_SCALE;
 
 /*************************
  * Structure Definitions *
@@ -170,6 +181,7 @@ struct biome_s {
 // anthropoloogy, as well as an anchor position that's randomly placed
 // somewhere within the region and an estimate of local terrain height.
 struct world_region_s {
+  ptrdiff_t seed;
   region_pos anchor;
   r_pos_t terrain_height;
   strata_info geology;
@@ -227,6 +239,14 @@ static inline void rcpos__wmpos(
   wmpos->y = (wm_pos_t) (rcpos->y >> WORLD_REGION_BITS);
 }
 
+static inline void copy_wmpos(
+  world_map_pos const * const from,
+  world_map_pos *to
+) {
+  to->x = from->x;
+  to->y = from->y;
+}
+
 
 // Returns the region of the given world at the given position, or NULL if the
 // given position is outside the given world.
@@ -245,12 +265,43 @@ static inline world_region* get_world_region(
   }
 }
 
-static inline r_pos_t compute_surface_height(
-  world_region* wr,
-  region_pos* rpos
+static inline void compute_region_anchor(
+  world_map *wm,
+  world_map_pos const * const wmpos,
+  region_pos *anchor
 ) {
-  // TODO: HERE
-  return 1000;
+  ptrdiff_t hash = wmpos->x + wmpos->y + wm->seed + 71;
+  anchor->x = (
+    (float) (wmpos->x) + float_hash_1d(hash)
+  ) * WORLD_REGION_SIZE * CHUNK_SIZE;
+  hash += 1;
+  anchor->y = (
+    (float) (wmpos->y) + float_hash_1d(hash)
+  ) * WORLD_REGION_SIZE * CHUNK_SIZE;
+  hash += 1;
+  anchor->z = (
+    BASE_STRATUM_THICKNESS * MAX_STRATA_LAYERS * float_hash_1d(hash)
+  );
+}
+
+// Given a world region and a fractional height between 0 and 1, returns the
+// stratum in that region at that height. If h is less than 0, it returns the
+// bottom stratum in the given region, and likewise if h is greater than 1, it
+// returns the top stratum.
+static inline stratum* get_stratum(
+  world_region* wr,
+  float h
+) {
+  int i;
+  stratum *result = wr->geology.strata[0];
+  // Find out which layer we're in:
+  for (i = 1; i < wr->geology.stratum_count; i += 1) {
+    if (h < wr->geology.bottoms[i]) { // might not happen at all
+      break;
+    }
+    result = wr->geology.strata[i];
+  }
+  return result;
 }
 
 /******************************
@@ -281,7 +332,8 @@ void generate_geology(world_map *wm);
 
 // Computes the cell contents at the given position based on strata.
 void strata_cell(
-  world_region* wr[],
+  world_map *wm,
+  world_region* neighborhood[],
   region_pos* rpos,
   cell* result
 );

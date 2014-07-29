@@ -38,8 +38,8 @@ int const COMPILE_CAP = 16;
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 8, 16, 32, 64, 128 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 8, 12, 16, 20 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 5, 6, 7, 7, 7 };
-//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 3, 4, 5, 5, 5 };
-r_cpos_t const LOAD_DISTANCES[N_LODS] = { 2, 3, 4, 4, 4 };
+r_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 6, 7, 7, 7 };
+//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 2, 3, 4, 4, 4 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 2, 3, 3, 3, 3 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 1, 2, 2, 2, 2 };
 
@@ -319,12 +319,13 @@ lod get_best_loaded_level(region_chunk_pos *rcpos) {
 }
 
 void get_best_data(region_chunk_pos *rcpos, chunk_or_approx *coa) {
-  get_best_data_limited(rcpos, LOD_BASE, coa);
+  get_best_data_limited(rcpos, LOD_BASE, 0, coa);
 }
 
 void get_best_data_limited(
   region_chunk_pos *rcpos,
   lod limit,
+  uint8_t compiled,
   chunk_or_approx *coa
 ) {
   lod detail = LOD_BASE; // level of detail being considered
@@ -340,7 +341,11 @@ void get_best_data_limited(
     );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
     m_unlock(CHUNK_CACHE->levels[LOD_BASE]);
-    if (coa->ptr != NULL) {
+    if (
+      coa->ptr != NULL
+    &&
+      (!compiled || (((chunk*) (coa->ptr))->chunk_flags) & CF_COMPILED)
+    ) {
       return;
     }
     limit = LOD_BASE + 1; // Increase our limit so that the for loop works.
@@ -357,7 +362,15 @@ void get_best_data_limited(
     );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
     m_unlock(CHUNK_CACHE->levels[detail]);
-    if (coa->ptr != NULL) {
+    if (
+      coa->ptr != NULL
+    &&
+      (
+        !compiled
+      ||
+        (((chunk_approximation*) (coa->ptr))->chunk_flags) & CF_COMPILED
+      )
+    ) {
       return;
     }
   }

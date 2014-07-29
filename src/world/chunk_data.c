@@ -18,8 +18,6 @@
 
 static inline int occludes_face(block neighbor, block occluded) {
   return (
-    b_is_void(neighbor)
-  ||
     b_is_opaque(neighbor)
   ||
     (
@@ -32,107 +30,6 @@ static inline int occludes_face(block neighbor, block occluded) {
     )
   );
 }
-
-// TODO: Get rid of this?
-// Macro-expanded face-checking functions:
-#define CHECK_ANY_FACE \
-  static inline int FN_NAME( \
-    chunk_index idx, \
-    ch_idx_t step, \
-    chunk_or_approx *neighbor, \
-    block here, block there \
-  ) { \
-    if ( b_is_void(there) && OOR_AXIS OOR_CMP OOR_LIMIT ) { \
-      if (step > 1) { \
-        return 0; \
-      } else if ( (neighbor->type != CA_TYPE_NOT_LOADED) ) { \
-        OOR_AXIS = OOR_REPLACE; \
-        if (neighbor->type == CA_TYPE_CHUNK) { \
-          there = c_cell((chunk *) (neighbor->ptr), idx)->primary; \
-        } else if (neighbor->type == CA_TYPE_APPROXIMATION) { \
-          there = ca_cell( \
-            (chunk_approximation *) (neighbor->ptr), \
-            idx \
-          )->primary; \
-        } else { \
-          there = b_make_block(B_VOID); \
-        }\
-      } \
-    } \
-    return occludes_face(there, here); \
-  }
-
-#define FN_NAME check_top_face
-#define OOR_AXIS idx.z
-#define OOR_CMP >=
-#define OOR_LIMIT (CHUNK_SIZE - step)
-#define OOR_REPLACE 0
-CHECK_ANY_FACE
-#undef FN_NAME
-#undef OOR_AXIS
-#undef OOR_CMP
-#undef OOR_LIMIT
-#undef OOR_REPLACE
-
-#define FN_NAME check_bot_face
-#define OOR_AXIS idx.z
-#define OOR_CMP <=
-#define OOR_LIMIT step
-#define OOR_REPLACE (CHUNK_SIZE - 1)
-CHECK_ANY_FACE
-#undef FN_NAME
-#undef OOR_AXIS
-#undef OOR_CMP
-#undef OOR_LIMIT
-#undef OOR_REPLACE
-
-#define FN_NAME check_north_face
-#define OOR_AXIS idx.y
-#define OOR_CMP >=
-#define OOR_LIMIT (CHUNK_SIZE - step)
-#define OOR_REPLACE 0
-CHECK_ANY_FACE
-#undef FN_NAME
-#undef OOR_AXIS
-#undef OOR_CMP
-#undef OOR_LIMIT
-#undef OOR_REPLACE
-
-#define FN_NAME check_south_face
-#define OOR_AXIS idx.y
-#define OOR_CMP <=
-#define OOR_LIMIT step
-#define OOR_REPLACE (CHUNK_SIZE - 1)
-CHECK_ANY_FACE
-#undef FN_NAME
-#undef OOR_AXIS
-#undef OOR_CMP
-#undef OOR_LIMIT
-#undef OOR_REPLACE
-
-#define FN_NAME check_east_face
-#define OOR_AXIS idx.x
-#define OOR_CMP >=
-#define OOR_LIMIT (CHUNK_SIZE - step)
-#define OOR_REPLACE 0
-CHECK_ANY_FACE
-#undef FN_NAME
-#undef OOR_AXIS
-#undef OOR_CMP
-#undef OOR_LIMIT
-#undef OOR_REPLACE
-
-#define FN_NAME check_west_face
-#define OOR_AXIS idx.x
-#define OOR_CMP <=
-#define OOR_LIMIT step
-#define OOR_REPLACE (CHUNK_SIZE - 1)
-CHECK_ANY_FACE
-#undef FN_NAME
-#undef OOR_AXIS
-#undef OOR_CMP
-#undef OOR_LIMIT
-#undef OOR_REPLACE
 
 /*************
  * Functions *
@@ -153,7 +50,7 @@ void compute_exposure(chunk_or_approx *coa) {
   chunk_approximation *ca;
   chunk_or_approx chunk_neighbors[27]; // also zxy order
   cell* neighborhood[27]; // zxy order:
-  ch_idx_t step = 1;
+  int step = 1;
 
   if (coa->type == CA_TYPE_CHUNK) {
     c = (chunk*) (coa->ptr);

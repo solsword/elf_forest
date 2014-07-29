@@ -18,6 +18,7 @@
 #include "prof/ptime.h"
 #include "data/data.h"
 #include "graphics/gfx.h"
+#include "graphics/render.h"
 #include "shaders/pipeline.h"
 #include "jobs/jobs.h"
 #include "tex/tex.h"
@@ -68,8 +69,11 @@ void _get_everything_set_up(ptrdiff_t seed, int argc, char** argv) {
   init_ptime();
 
   // Setup stateful subsystems:
-  printf("  ...jobs...\n");
-  setup_jobs();
+  // TODO: Do we need/want this subsystem?
+  //printf("  ...jobs...\n");
+  //setup_jobs();
+  printf("  ...rendering...\n");
+  setup_render();
   printf("  ...shaders...\n");
   setup_shaders();
   printf("  ...textures...\n");
@@ -183,6 +187,17 @@ void start_game(
     }
   } // end parallel block
 
+}
+
+void cleanup(void) {
+  cleanup_worldgen();
+  cleanup_entities();
+  cleanup_data();
+  cleanup_ui();
+  cleanup_textures();
+  cleanup_shaders();
+  cleanup_render();
+  //cleanup_jobs();
 }
 
 void core_shutdown(int returnval) {
