@@ -174,14 +174,15 @@ static inline void draw_watermark(void) {
   );
 }
 
-static inline void draw_rates(void) {
+static inline void draw_rates(int *h) {
   // Draw framerate:
   sprintf(
     TXT,
     "framerate :: %.1f",
     FRAMERATE.rate
   );
-  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 590, 570);
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 590, *h);
+  *h -= 25;
 
   // Draw tick rate:
   sprintf(
@@ -189,10 +190,11 @@ static inline void draw_rates(void) {
     "tick rate :: %.1f",
     TICKRATE.rate
   );
-  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 590, 545);
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 590, *h);
+  *h -= 25;
 }
 
-static inline void draw_mem(void) {
+static inline void draw_mem(int *h) {
   // First compute memory info:
   compute_chunk_cache_mem();
   // Draw memory info:
@@ -201,46 +203,55 @@ static inline void draw_mem(void) {
     "chunk cache size :: %.2f MB",
     CHUNK_CACHE_RAM_USAGE.data / (1024.0 * 1024.0)
   );
-  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 490, 520);
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 490, *h);
+  *h -= 25;
   sprintf(
     TXT,
     "chunk cache overhead :: %.2f MB",
     CHUNK_CACHE_RAM_USAGE.overhead / (1024.0 * 1024.0)
   );
-  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, 495);
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, *h);
+  *h -= 25;
   sprintf(
     TXT,
     "chunk cache GPU usage :: %.2f MB",
     CHUNK_CACHE_GPU_USAGE.data / (1024.0 * 1024.0)
   );
-  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, 470);
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, *h);
+  *h -= 25;
   sprintf(
     TXT,
     "texture RAM usage :: %.2f MB",
     TEXTURE_RAM_USAGE.data / (1024.0 * 1024.0)
   );
-  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, 445);
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, *h);
+  *h -= 25;
   sprintf(
     TXT,
     "texture RAM overhead :: %.2f MB",
     TEXTURE_RAM_USAGE.overhead / (1024.0 * 1024.0)
   );
-  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, 420);
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, *h);
+  *h -= 25;
   sprintf(
     TXT,
     "texture GPU usage :: %.2f MB",
     TEXTURE_GPU_USAGE.data / (1024.0 * 1024.0)
   );
-  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, 395);
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 445, *h);
+  *h -= 25;
 }
 
-static inline void draw_pos_info(void) {
+static inline void draw_pos_info(int *h) {
   // Gather position info:
+  world_map_pos wmpos;
+  world_region *wr;
   region_pos player_pos;
   get_head_rpos(PLAYER, &player_pos);
+  rpos__wmpos(&player_pos, &wmpos);
+  wr = get_world_region(THE_WORLD, &wmpos);
 
   // Draw geoform data:
-  //*
   terrain_region region;
   float tr_interp;
   geoform_info(&player_pos, &region, &tr_interp);
@@ -249,8 +260,21 @@ static inline void draw_pos_info(void) {
     "%s <- %.2f -> %s",
     TR_REGION_NAMES[region], tr_interp, TR_REGION_NAMES[region+1]
   );
-  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 570);
-  // */
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
+  *h -= 30;
+
+  // Draw fractional height:
+  sprintf(
+    TXT,
+    "h: %.2f :: bottoms: %.2f, %.2f, %.2f",
+    player_pos.z / terrain_height(&player_pos), 
+    wr == NULL ? 0 : wr->geology.bottoms[0],
+    wr == NULL ? 0 : wr->geology.bottoms[1],
+    wr == NULL ? 0 : wr->geology.bottoms[2]
+  );
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
+  *h -= 30;
+
   // DEBUG:
   if (PLAYER->area != NULL) {
     sprintf(
@@ -261,7 +285,8 @@ static inline void draw_pos_info(void) {
   } else {
     sprintf(TXT, "Player is out-of-bounds.");
   }
-  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 540);
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
+  *h -= 30;
 
   // Draw region position:
   sprintf(
@@ -269,7 +294,8 @@ static inline void draw_pos_info(void) {
     "region :: %+6ld x    %+6ld y    %+6ld z",
     player_pos.x, player_pos.y, player_pos.z
   );
-  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 510);
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
+  *h -= 30;
 
   // Draw active entity area position:
   sprintf(
@@ -277,31 +303,35 @@ static inline void draw_pos_info(void) {
     "area :: %0.1f x    %0.1f y    %0.1f z",
     PLAYER->pos.x, PLAYER->pos.y, PLAYER->pos.z
   );
-  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 480);
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
+  *h -= 30;
 
 }
 
-static inline void draw_perf_info(void) {
+static inline void draw_perf_info(int *h) {
   sprintf(
     TXT,
     "chunk layers rendered :: %d",
     CHUNK_LAYERS_RENDERED.average
   );
-  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 450);
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
+  *h -= 30;
 
   sprintf(
     TXT,
     "chunks loaded :: %d",
     CHUNKS_LOADED.average
   );
-  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 420);
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
+  *h -= 30;
 
   sprintf(
     TXT,
     "chunks compiled :: %d",
     CHUNKS_COMPILED.average
   );
-  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, 390);
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
+  *h -= 30;
 }
 
 /*************
@@ -324,6 +354,7 @@ void cleanup_ui(void) {
 }
 
 void render_ui(void) {
+  int h;
   // Update the overlay plane size:
   compute_overlay_size();
 
@@ -350,13 +381,15 @@ void render_ui(void) {
   draw_watermark();
 
   // Debugging info:
+  h = 570;
   if (DRAW_DEBUG_INFO) {
-    draw_rates();
+    draw_rates(&h);
 #ifdef PROFILE_MEM
-    draw_mem();
+    draw_mem(&h);
 #endif
-    draw_pos_info();
-    draw_perf_info();
+    h = 570;
+    draw_pos_info(&h);
+    draw_perf_info(&h);
   }
 
   // Reenable depth testing and face culling and pop back to the previous

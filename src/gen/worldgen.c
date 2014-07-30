@@ -24,7 +24,7 @@ char const * const WORLD_MAP_FILE = "out/world_map.png";
 float const REGION_GEO_STRENGTH_VARIANCE = 0.4;
 float const REGION_GEO_STRENGTH_FREQUENCY = 2.0;
 
-float const STRATA_FRACTION_NOISE_STRENGTH = 0.05;
+float const STRATA_FRACTION_NOISE_STRENGTH = 16;
 float const STRATA_FRACTION_NOISE_SCALE = 1.0 / 40.0;
 
 /******************************
@@ -126,9 +126,8 @@ void world_cell(world_map *wm, region_pos *rpos, cell *result) {
 void generate_geology(world_map *wm) {
   size_t i, j;
   world_map_pos xy;
-  region_pos corners[4];
-  r_pos_t t[4];
-  r_pos_t t_avg;
+  region_pos anchor;
+  r_pos_t t;
   stratum *s;
 
   float avg_size = sqrtf(wm->width*wm->height);
@@ -185,21 +184,10 @@ void generate_geology(world_map *wm) {
       for (xy.y = 0; xy.y < wm->height; ++xy.y) {
         // Compute thickness to determine if this region needs to be aware of
         // this stratum:
-        // TODO: use four-corners method instead
-        wmpos__rpos(&xy, &(corners[0]));
-        copy_rpos(&(corners[0]), &(corners[1]));
-        corners[1].y += WORLD_REGION_SIZE*CHUNK_SIZE;
-        copy_rpos(&(corners[1]), &(corners[2]));
-        corners[2].x += WORLD_REGION_SIZE*CHUNK_SIZE;
-        copy_rpos(&(corners[0]), &(corners[3]));
-        corners[3].x += WORLD_REGION_SIZE*CHUNK_SIZE;
-        t[0] = compute_stratum_height(s, &(corners[0]));
-        t[1] = compute_stratum_height(s, &(corners[1]));
-        t[2] = compute_stratum_height(s, &(corners[2]));
-        t[3] = compute_stratum_height(s, &(corners[3]));
-        t_avg = (t[0] + t[1] + t[2] + t[3]) / 4.0;
+        compute_region_anchor(wm, &xy, &anchor);
+        t = compute_stratum_height(s, &anchor);
         // If any corner has material, add this stratum to this region:
-        if (t[0] + t[1] + t[2] + t[3] > 0) {
+        if (t > 0) {
           //TODO: Real logging/debugging
           //printf("Adding stratum to region at %zu, %zu.\n", xy.x, xy.y);
           wr = get_world_region(wm, &xy); // no need to worry about NULL here
@@ -207,12 +195,14 @@ void generate_geology(world_map *wm) {
             // adjust existing strata:
             for (j = 0; j < wr->geology.stratum_count; ++j) {
               wr->geology.bottoms[j] *= (
-                wr->geology.total_height + t_avg
-              ) / wr->geology.total_height;
+                wr->geology.total_height
+              ) / (
+                wr->geology.total_height + t
+              );
             }
-            wr->geology.total_height += t_avg;
+            wr->geology.total_height += t;
             wr->geology.bottoms[wr->geology.stratum_count] = 1 - (
-              t_avg / fmax(BASE_STRATUM_THICKNESS*6, wr->geology.total_height)
+              t / fmax(BASE_STRATUM_THICKNESS*6, wr->geology.total_height)
               // the higher of the new total height or approximately 6 strata
               // of height
             );
@@ -278,8 +268,8 @@ void strata_cell(
   // DEBUG: Caves to show things off more:
   /*
   if (
-    sxnoise_3d(rpos->x*1/12.0, rpos->y*1/12.0, rpos->z*1/12.0) >
-      sxnoise_3d(rpos->x*1/52.0, rpos->y*1/52.0, rpos->z*1/52.0)
+    sxnoise_3d(rpos->x*1/12.0, rpos->y*1/12.0, rpos->z*1/12.0, 17) >
+      sxnoise_3d(rpos->x*1/52.0, rpos->y*1/52.0, rpos->z*1/52.0, 18)
   ) {
     result->primary = b_make_block(B_AIR);
     result->secondary = b_make_block(B_VOID);
@@ -301,8 +291,9 @@ void strata_cell(
   if (h > 1.0) { // if we're above the surface, return without doing anything
     return;
   }
-  // Add some noise to distort the height:
-  h += STRATA_FRACTION_NOISE_STRENGTH * (
+ // Add some noise to distort the height:
+  // TODO: more spatial variance in noise strength?
+  h += (STRATA_FRACTION_NOISE_STRENGTH / surface_height) * (
     sxnoise_3d(
       rpos->x * STRATA_FRACTION_NOISE_SCALE,
       rpos->y * STRATA_FRACTION_NOISE_SCALE,
@@ -319,8 +310,7 @@ void strata_cell(
   // Clamp out-of-range values after noise:
   if (h > 1.0) { h = 1.0; } else if (h < 0.0) { h = 0.0; }
 
-  // Figure out the two nearest world regions:
-
+ // Figure out the two nearest world regions:
   // Setup worst-case defaults:
   vbest.x = WORLD_REGION_SIZE * CHUNK_SIZE;
   vbest.y = WORLD_REGION_SIZE * CHUNK_SIZE;
@@ -336,6 +326,7 @@ void strata_cell(
   secondbest = NULL;
   best = NULL;
 
+  // Figure out which of our neighbors are closest:
   wmpos.x -= 1;
   wmpos.y -= 1;
   for (i = 0; i < 9; i += 1) {
@@ -351,9 +342,9 @@ void strata_cell(
     } else {
       compute_region_anchor(wm, &wmpos, &anchor);
     }
-    v.x = anchor.x - rpos->x;
-    v.y = anchor.y - rpos->y;
-    v.z = anchor.z - rpos->z;
+    v.x = rpos->x - anchor.x;
+    v.y = rpos->y - anchor.y;
+    v.z = rpos->z - anchor.z;
     m = vmag(&v);
     if (m < mbest) {
       vcopy(&vsecond, &vbest);
@@ -380,7 +371,9 @@ void strata_cell(
       }
     }
   }
-  // Figure out which stratum dominates:
+
+ // Figure out which stratum dominates:
+  // Polar base noise modifies strengths:
   vxyz__polar(&vbest, &v);
   mbest *= (
     1 + REGION_GEO_STRENGTH_VARIANCE * sxnoise_2d(
@@ -397,6 +390,7 @@ void strata_cell(
       secondseed
     )
   );
+  // Where available, persistence values are also a factor:
   if (best != NULL) {
     st = get_stratum(best, h);
     mbest *= st->persistence;
@@ -406,6 +400,7 @@ void strata_cell(
     msecond *= st->persistence;
   }
 
+ // Now that we know which stratum to use, set the cell's block data:
   if (mbest < msecond) {
     if (best == NULL) {
       // TODO: Various edge factors here?
@@ -431,6 +426,8 @@ void strata_cell(
  * Jobs *
  ********/
 
+/*
+ * TODO: Get rid of this
 struct jm_gencolumn_s {
   // External inputs:
   world_map *world;
@@ -609,3 +606,4 @@ void (*job_gencolumn__fill_column(void *jmem)) () {
     return (void (*) ()) &job_gencolumn__fill_column;
   }
 }
+*/

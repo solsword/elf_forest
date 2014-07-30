@@ -224,15 +224,15 @@ static inline void vrotz(vector *v, float radians) {
 
 // Takes an x/y/z vector and computes polar coordinates r/theta/phi which it
 // stores in the result vector in that order.
-static inline void vpolar__xyz(vector const * const input, vector *result) {
+static inline void vxyz__polar(vector const * const input, vector *result) {
   result->x = vmag(input);
   result->y = atan2(input->y, input->x);
   result->z = atan2(input->z, sqrtf(input->x*input->x + input->y*input->y));
 }
 
-// The inverse of vpolar, vunpolar takes a polar coordinates vector and
+// The inverse of vxyz__polar, vpolar__xyz takes a polar coordinates vector and
 // computes a normal x/y/z vector.
-static inline void vxyz__polar(vector const * const input, vector *result) {
+static inline void vpolar__xyz(vector const * const input, vector *result) {
   float flr; // the flat "radius"
   result->z = input->x * sinf(input->z);
   flr = input->x * cosf(input->z);
