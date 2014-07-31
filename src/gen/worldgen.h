@@ -102,24 +102,31 @@ typedef struct world_map_s world_map;
 #define MAX_BIOME_SHRUBS 32
 #define MAX_BIOME_TREES 64
 
+// The name of the file to write a copy of the world map into:
+extern char const * const WORLD_MAP_FILE;
+
+// Maximum distance between two world region anchors:
+#define MAX_REGION_ANCHOR_DISTANCE sqrtf( \
+  (WORLD_REGION_SIZE * CHUNK_SIZE) * (WORLD_REGION_SIZE * CHUNK_SIZE) + \
+  (WORLD_REGION_SIZE * CHUNK_SIZE) * (WORLD_REGION_SIZE * CHUNK_SIZE) + \
+  TR_MAX_HEIGHT * TR_MAX_HEIGHT \
+)
+
+// The variance and frequency of noise used to determine which region's stratum
+// information is used when generating terrain.
+#define REGION_GEO_STRENGTH_VARIANCE 0.4
+#define REGION_GEO_STRENGTH_FREQUENCY 2.0
+
+// The strength and base scale of the noise that distorts strata boundaries:
+#define STRATA_FRACTION_NOISE_STRENGTH 16
+#define STRATA_FRACTION_NOISE_SCALE (1.0 / 40.0)
+
 /***********
  * Globals *
  ***********/
 
 // The globally-accessible world:
 extern world_map* THE_WORLD;
-
-// The name of the file to write a copy of the world map into:
-extern char const * const WORLD_MAP_FILE;
-
-// The variance and frequency of noise used to determine which region's stratum
-// information is used when generating terrain.
-extern float const REGION_GEO_STRENGTH_VARIANCE;
-extern float const REGION_GEO_STRENGTH_FREQUENCY;
-
-// The strength and base scale of the noise that distorts strata boundaries:
-extern float const STRATA_FRACTION_NOISE_STRENGTH;
-extern float const STRATA_FRACTION_NOISE_SCALE;
 
 /*************************
  * Structure Definitions *
@@ -336,6 +343,33 @@ void strata_cell(
   world_region* neighborhood[],
   region_pos* rpos,
   cell* result
+);
+
+// Computes a stone cell from within the base strata layers.
+void stone_cell(
+  world_map *wm, region_pos *rpos,
+  float h, float ceiling,
+  world_region *best, world_region *secondbest, float strbest, float strsecond,
+  cell *result
+);
+
+// Computes a dirt cell from the dirt layer.
+void dirt_cell(
+  world_map *wm, region_pos *rpos,
+  float ceiling,
+  world_region *best, world_region *secondbest, float strbest, float strsecond,
+  cell *result
+);
+
+// Computes the two closest world region anchors to the given point, along with
+// the strengths of each.
+void compute_region_contenders(
+  world_map *wm,
+  world_region* neighborhood[],
+  region_pos *rpos,
+  ptrdiff_t salt,
+  world_region **best, world_region **secondbest,
+  float *strbest, float *strsecond
 );
 
 /********

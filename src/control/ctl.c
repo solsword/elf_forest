@@ -118,6 +118,7 @@ void init_control(void) {
 void tick_general_controls(void) {
   // Handle mouse movement (TODO: switch this on/off):
   double mx, my;
+  float dontcare, th;
   vector teleport_vector;
   region_pos teleport_destination;
   glfwGetCursorPos(WINDOW, &mx, &my);
@@ -160,8 +161,9 @@ void tick_general_controls(void) {
     vscale(&teleport_vector, TELEPORT_DISTANCE);
     vadd(&(PLAYER->pos), &teleport_vector);
     get_head_rpos(PLAYER, &teleport_destination);
+    compute_terrain_height(&teleport_destination, &dontcare, &th);
     PLAYER->pos.z = (
-      (r_pos_t) ffloor(terrain_height(&teleport_destination)+10) -
+      (r_pos_t) ffloor(th+15) -
       PLAYER->area->origin.z
     );
   }

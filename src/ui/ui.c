@@ -245,11 +245,9 @@ static inline void draw_mem(int *h) {
 static inline void draw_pos_info(int *h) {
   // Gather position info:
   world_map_pos wmpos;
-  world_region *wr;
   region_pos player_pos;
   get_head_rpos(PLAYER, &player_pos);
   rpos__wmpos(&player_pos, &wmpos);
-  wr = get_world_region(THE_WORLD, &wmpos);
 
   // Draw geoform data:
   terrain_region region;
@@ -264,13 +262,12 @@ static inline void draw_pos_info(int *h) {
   *h -= 30;
 
   // Draw fractional height:
+  float dummy, th;
+  compute_terrain_height(&player_pos, &dummy, &th);
   sprintf(
     TXT,
-    "h: %.2f :: bottoms: %.2f, %.2f, %.2f",
-    player_pos.z / terrain_height(&player_pos), 
-    wr == NULL ? 0 : wr->geology.bottoms[0],
-    wr == NULL ? 0 : wr->geology.bottoms[1],
-    wr == NULL ? 0 : wr->geology.bottoms[2]
+    "h: %.2f",
+    player_pos.z / th
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
   *h -= 30;

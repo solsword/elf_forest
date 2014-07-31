@@ -78,7 +78,7 @@ struct stratum_s {
  // Derived noise parameters:
  // -------------------------
   float persistence; // how much this layer extends at the expense of others
-   // Note that this should be in [0, 2] and that lower values are stronger.
+   // Note that larger values are stronger; [0.5, 2] is reasonable.
   float scale_bias; // biases the noise scales
 
   // radial variance:

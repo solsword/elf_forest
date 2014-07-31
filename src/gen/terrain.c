@@ -3,7 +3,6 @@
 
 #include <math.h>
 
-//#include "trees.h"
 #include "terrain.h"
 
 #include "world/blocks.h"
@@ -32,137 +31,304 @@ char const * const TR_REGION_NAMES[] = {
  * Functions *
  *************/
 
-float terrain_height(region_pos *pos) {
+void compute_terrain_height(region_pos *pos, float *r_rocks, float *r_dirt) {
   static int xcache = 3, ycache = 7;
   static float continents = 0, primary_geoforms = 0, secondary_geoforms = 0;
   float geodetails = 0, mountains = 0;
   static float hills = 0, ridges = 0, mounds = 0, details = 0, bumps = 0;
   terrain_region region;
   float tr_interp;
-  static float height;
+  static float rocks_height, dirt_height;
   float base;
-  float flatten;
   ptrdiff_t salt = TR_NOISE_SALT;
 
   if (xcache == pos->x && ycache == pos->y) {
     // no need to recompute everything:
-    return height;
+    *r_rocks =  rocks_height;
+    *r_dirt =  dirt_height;
   }
   xcache = pos->x; ycache = pos->y;
 
   compute_base_geoforms(
-    pos, salt,
+    pos, &salt,
     &continents, &primary_geoforms, &secondary_geoforms,
     &geodetails, &mountains,
     &hills, &ridges, &mounds, &details, &bumps,
     &base,
     &region,
     &tr_interp,
-    &height
+    &rocks_height
   );
   salt = expanded_hash_1d(salt);
 
-  // DEBUG:
-  /*
-  if (region == TR_REGION_DEPTHS) {
-    // amplify bumps, ridges, and details; attenuate hills
-    hills = smooth(hills, 2, 0.7);
-    ridges = smooth(ridges, 4, 0.2);
-    details = smooth(details, 2, 0.2);
-    bumps = smooth(bumps, 3, 0.3);
-  } else if (region == TR_REGION_SHELF) {
-    // gently attenuate most features; strongly attenuate ridges:
-    hills = smooth(hills, 1.5, 0.65);
-    ridges = smooth(ridges, 3, 0.8);
-    mounds = smooth(mounds, 1.3, 0.6);
-    details = smooth(details, 2, 0.6);
-    bumps = smooth(bumps, 3, 0.8);
-  } else if (region == TR_REGION_PLAINS) {
-    // attenuate everything; create some superflat regions:
-    flatten = sxnoise_2d(
-      pos->x * TR_FREQUENCY_SGEOFORMS * 1.8,
-      pos->y * TR_FREQUENCY_SGEOFORMS * 1.8,
-      salt
-    );
-    salt = expanded_hash_1d(salt);
-    flatten += 0.7 * sxnoise_2d(
-      pos->x * TR_FREQUENCY_SGEOFORMS * 1.5,
-      pos->y * TR_FREQUENCY_SGEOFORMS * 1.5,
-      salt
-    );
-    flatten /= 1.7;
-    flatten = (1 + flatten) / 2.0;
-    flatten *= 0.8;
-
-    hills = smooth(hills, 1.5, 0.7);
-    hills *= flatten;
-    ridges = smooth(ridges, 1.3, 0.6);
-    ridges *= flatten;
-    mounds = smooth(mounds, 1.3, 0.6);
-    mounds *= flatten;
-    details = smooth(details, 1.4, 0.6);
-    details *= flatten;
-    bumps = smooth(bumps, 3, 0.9);
-    bumps *= flatten;
-  } else if (region == TR_REGION_HILLS) {
-    // slightly accentuate hills and ridges:
-    hills = smooth(hills, 1.8, 0.3);
-    ridges = smooth(ridges, 1.5, 0.35);
-  } else if (region == TR_REGION_HIGHLANDS) {
-    // attenuate hills and ridges slightly; create some flatter regions:
-    flatten = sxnoise_2d(
-      pos->x * TR_FREQUENCY_MOUNTAINS * 0.7,
-      pos->y * TR_FREQUENCY_MOUNTAINS * 0.7,
-      salt
-    );
-    salt = expanded_hash_1d(salt);
-    flatten += 0.5 * sxnoise_2d(
-      pos->x * TR_FREQUENCY_MOUNTAINS * 0.3,
-      pos->y * TR_FREQUENCY_MOUNTAINS * 0.3,
-      salt
-    );
-    salt = expanded_hash_1d(salt);
-    flatten /= 1.5;
-    flatten = (1 + flatten) / 2.0;
-    flatten = smooth(flatten, 1.2, 0.5);
-    flatten = 0.1 + 0.9 * flatten;
-
-    hills = smooth(hills, 1.3, 0.55);
-    hills *= flatten;
-    ridges = smooth(ridges, 1.6, 0.4);
-    ridges *= flatten;
-    mounds *= flatten;
-    details *= (0.25 + 0.5*flatten);
-    bumps *= (0.25 + 0.5*flatten);
-  } else if (region == TR_REGION_MOUNTAINS) {
-    // amplify most things:
-    hills = smooth(hills, 1.5, 0.4);
-    ridges = smooth(ridges, 2, 0.2);
-    mounds = smooth(mounds, 1.3, 0.3);
-    details = smooth(details, 1.5, 0.4);
-    bumps = smooth(bumps, 1.5, 0.3);
-  }
-  // */
+  alter_terrain_values(
+    pos, &salt,
+    region, tr_interp,
+    &mountains, &hills, &ridges, &mounds, &details, &bumps
+  );
 
   // TODO: attenuate mountains near the beach?
-  //*
-  height += mountains * TR_SCALE_MOUNTAINS;
-  height += hills * TR_SCALE_HILLS;
-  height += ridges * TR_SCALE_RIDGES;
-  height += mounds * TR_SCALE_MOUNDS;
-  height += details * TR_SCALE_DETAILS;
-  height += bumps * TR_SCALE_BUMPS;
-  // */
+  rocks_height += mountains * TR_SCALE_MOUNTAINS;
+  rocks_height += hills * TR_SCALE_HILLS;
+  rocks_height += ridges * TR_SCALE_RIDGES;
+  rocks_height += mounds * TR_SCALE_MOUNDS;
+  rocks_height += details * TR_SCALE_DETAILS;
+  rocks_height += bumps * TR_SCALE_BUMPS;
 
-  /*
-  height = TR_HEIGHT_SEA_LEVEL + (
-    TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL
-  ) * primary_geoforms;
-  //height = TR_MAX_HEIGHT * hills;
-  //height = TR_MAX_HEIGHT * (1 + secondary_geoforms)/2.0;
-  */
+  // Figure out our soil depth:
+  compute_dirt_height(
+    pos, &salt,
+    rocks_height,
+    mountains, hills, bumps,
+    &dirt_height
+  );
 
-  return height;
+  // Write out our results:
+  *r_rocks = rocks_height;
+  *r_dirt = dirt_height;
+  //*r_rocks = rocks_height;
+  //*r_dirt = rocks_height;
+}
+
+void alter_terrain_values(
+  region_pos *pos, ptrdiff_t *salt,
+  terrain_region region, float tr_interp,
+  float *mountains, float *hills, float *ridges,
+  float *mounds, float *details, float *bumps
+) {
+  // Compute superflat areas:
+  float flatten = sxnoise_2d(
+    pos->x * TR_FREQUENCY_SGEOFORMS * 1.3,
+    pos->y * TR_FREQUENCY_SGEOFORMS * 1.3,
+    *salt
+  );
+  *salt = expanded_hash_1d(*salt);
+  flatten += 0.7 * sxnoise_2d(
+    pos->x * TR_FREQUENCY_SGEOFORMS * 2.4,
+    pos->y * TR_FREQUENCY_SGEOFORMS * 2.4,
+    *salt
+  );
+  *salt = expanded_hash_1d(*salt);
+  flatten /= 1.7;
+  flatten = (1 + flatten) / 2.0;
+  if (region == TR_REGION_DEPTHS) {
+    // amplify *bumps, *ridges, and *details; attenuate *hills and *mountains
+    *mountains = (
+      tr_interp * smooth(*mountains, 1.5, 0.6) +
+      (1 - tr_interp) * smooth(*mountains, 3, 0.75)
+    );
+    *hills = (
+      tr_interp * smooth(*hills, 2, 0.7) +
+      (1 - tr_interp) * smooth(*hills, 1.5, 0.65)
+    );
+    *ridges = (
+      tr_interp * smooth(*ridges, 4, 0.2) +
+      (1 - tr_interp) * smooth(*ridges, 3, 0.8)
+    );
+    *mounds = (
+      tr_interp * (*mounds) +
+      (1 - tr_interp) * smooth(*mounds, 1.3, 0.6)
+    );
+    *details = (
+      tr_interp * smooth(*details, 2, 0.2) +
+      (1 - tr_interp) * smooth(*details, 2, 0.6)
+    );
+    *bumps = (
+      tr_interp * smooth(*bumps, 3, 0.3) +
+      (1 - tr_interp) * smooth(*bumps, 3, 0.8)
+    );
+  } else if (region == TR_REGION_SHELF) {
+    // gently attenuate most features; strongly attenuate *ridges:
+    flatten *= 0.8;
+    *mountains = (
+      tr_interp * smooth(*mountains, 3, 0.75) +
+      (1 - tr_interp) * smooth(*mountains, 1.7, 0.6) * flatten
+    );
+    *hills = (
+      tr_interp * smooth(*hills, 1.5, 0.65) +
+      (1 - tr_interp) * smooth(*hills, 1.5, 0.7) * flatten
+    );
+    *ridges = (
+      tr_interp * smooth(*ridges, 3, 0.8) +
+      (1 - tr_interp) * smooth(*ridges, 1.3, 0.6) * flatten
+    );
+    *mounds = (
+      tr_interp * smooth(*mounds, 1.3, 0.6) +
+      (1 - tr_interp) * smooth(*mounds, 1.3, 0.6) * flatten
+    );
+    *details = (
+      tr_interp * smooth(*details, 2, 0.6) +
+      (1 - tr_interp) * smooth(*details, 1.4, 0.6) * flatten
+    );
+    *bumps = (
+      tr_interp * smooth(*bumps, 3, 0.8) +
+      (1 - tr_interp) * smooth(*bumps, 3, 0.9) * flatten
+    );
+  } else if (region == TR_REGION_PLAINS) {
+    // attenuate everything; create some superflat regions:
+    flatten *= 0.8;
+    *mountains = (
+      tr_interp * smooth(*mountains, 1.7, 0.6) * flatten +
+      (1 - tr_interp) * (*mountains)
+    );
+    *hills = (
+      tr_interp * smooth(*hills, 1.5, 0.7) * flatten +
+      (1 - tr_interp) * smooth(*hills, 1.8, 0.3)
+    );
+    *ridges = (
+      tr_interp * smooth(*ridges, 1.3, 0.6) * flatten +
+      (1 - tr_interp) * smooth(*ridges, 1.5, 0.35)
+    );
+    *mounds = (
+      tr_interp * smooth(*mounds, 1.3, 0.6) * flatten +
+      (1 - tr_interp) * (*mounds)
+    );
+    *details = (
+      tr_interp * smooth(*details, 1.4, 0.6) * flatten +
+      (1 - tr_interp) * (*details)
+    );
+    *bumps = (
+      tr_interp * smooth(*bumps, 3, 0.9) * flatten +
+      (1 - tr_interp) * (*bumps)
+    );
+  } else if (region == TR_REGION_HILLS) {
+    // slightly accentuate *hills and *ridges:
+    flatten = smooth(flatten, 1.2, 0.5);
+    flatten = 0.1 + 0.9 * flatten;
+    *mountains = (
+      tr_interp * (*mountains) +
+      (1 - tr_interp) * smooth(*mountains, 0.6, 0.5)
+    );
+    *hills = (
+      tr_interp * smooth(*hills, 1.8, 0.3) +
+      (1 - tr_interp) * smooth(*hills, 1.3, 0.55)
+    );
+    *ridges = (
+      tr_interp * smooth(*ridges, 1.5, 0.35) +
+      (1 - tr_interp) * smooth(*ridges, 1.6, 0.4) * flatten
+    );
+    *mounds = (
+      tr_interp * (*mounds) +
+      (1 - tr_interp) * (*mounds) * flatten
+    );
+    *details = (
+      tr_interp * (*details) +
+      (1 - tr_interp) * (*details) * (0.25 + 0.5 * flatten)
+    );
+    *bumps = (
+      tr_interp * (*bumps) +
+      (1 - tr_interp) * (*bumps) * (0.25 + 0.5 * flatten)
+    );
+  } else if (region == TR_REGION_HIGHLANDS) {
+    // accentuate *mountains; attenuate *hills and *ridges slightly; create some
+    // flatter regions:
+    flatten = smooth(flatten, 1.2, 0.5);
+    flatten = 0.1 + 0.9 * flatten;
+    *mountains = (
+      tr_interp * smooth(*mountains, 0.6, 0.5) +
+      (1 - tr_interp) * smooth(*mountains, 0.6, 0.65)
+    );
+    *hills = (
+      tr_interp * smooth(*hills, 1.3, 0.55) +
+      (1 - tr_interp) * smooth(*hills, 1.5, 0.4)
+    );
+    *ridges = (
+      tr_interp * smooth(*ridges, 1.6, 0.4) * flatten +
+      (1 - tr_interp) * smooth(*ridges, 0.5, 0.7)
+    );
+    *mounds = (
+      tr_interp * (*mounds) * flatten +
+      (1 - tr_interp) * smooth(*mounds, 1.3, 0.3)
+    );
+    *details = (
+      tr_interp * (*details) * (0.25 + 0.5 * flatten) +
+      (1 - tr_interp) * smooth(*details, 1.5, 0.4)
+    );
+    *bumps = (
+      tr_interp * (*bumps) * (0.25 + 0.5 * flatten) +
+      (1 - tr_interp) * smooth(*bumps, 1.5, 0.3)
+    );
+  } else if (region == TR_REGION_MOUNTAINS) {
+    // amplify most things:
+    *mountains = tr_interp * smooth(*mountains, 0.6, 0.65);
+    *hills = tr_interp * smooth(*hills, 1.5, 0.4);
+    *ridges = tr_interp * smooth(*ridges, 0.5, 0.7);
+    *mounds = tr_interp * smooth(*mounds, 1.3, 0.3);
+    *details = tr_interp * smooth(*details, 1.5, 0.4);
+    *bumps = tr_interp * smooth(*bumps, 1.5, 0.3);
+  }
+}
+
+void compute_dirt_height(
+  region_pos *pos, ptrdiff_t *salt,
+  float rocks_height,
+  float mountains, float hills, float bumps,
+  float *result
+) {
+  r_pos_t depth;
+  float n, alt;
+  // Base soil height varies a bit over large distances:
+  n = sxnoise_2d(
+    pos->x * TR_DIRT_NOISE_SCALE,
+    pos->y * TR_DIRT_NOISE_SCALE,
+    *salt
+  );
+  *salt = expanded_hash_1d(*salt);
+  n += 0.5 * sxnoise_2d(
+    pos->x * TR_DIRT_NOISE_SCALE * 2.5,
+    pos->y * TR_DIRT_NOISE_SCALE * 2.5,
+    *salt
+  );
+  *salt = expanded_hash_1d(*salt);
+  n /= 1.5;
+  n = (1 + n) / 2.0;
+  n = 0.6 + 0.4 * n;
+
+  // Base soil depth:
+  depth = n * TR_BASE_SOIL_DEPTH;
+
+  // Mountains and hills cause "erosion" which can lead to exposed rock:
+  // TODO: gradient-based erosion? (this would be super-cool)
+  n = sxnoise_2d(
+    pos->x * TR_DIRT_EROSION_SCALE,
+    pos->y * TR_DIRT_EROSION_SCALE,
+    *salt
+  );
+  *salt = expanded_hash_1d(*salt);
+  n = (1 + n) / 2.0;
+  depth -= mountains * TR_DIRT_MOUNTAIN_EROSION * n;
+
+  n = sxnoise_2d(
+    pos->x * TR_DIRT_EROSION_SCALE * 1.6,
+    pos->y * TR_DIRT_EROSION_SCALE * 1.6,
+    *salt
+  );
+  *salt = expanded_hash_1d(*salt);
+  n = (1 + n) / 2.0;
+  depth -= hills * TR_DIRT_HILL_EROSION * n;
+
+  // Altitude above/below sea level contributes to soil depth due to wind
+  // erosion and marine snow (this is a stupidly oversimplified model of
+  // course):
+  alt = rocks_height - TR_HEIGHT_SEA_LEVEL;
+  if (alt > 0) {
+    alt /= TR_MAX_HEIGHT;
+    alt = smooth(alt, 3, 0.9);
+  } else {
+    alt /= TR_HEIGHT_SEA_LEVEL;
+    alt = smooth(alt, 1.4, 0.5);
+  }
+
+  depth -= alt * TR_ALTITUDE_EROSION_STRENGTH;
+
+  // Bumps in the stone aren't reflected in the dirt:
+  depth -= bumps * TR_SCALE_BUMPS;
+
+  // Dirt depth can't be negative:
+  depth = depth < 0 ? 0 : depth;
+
+  // Write out the result:
+  *result = rocks_height + depth;
 }
 
 void geoform_info(region_pos *pos, terrain_region* region, float* tr_interp) {
@@ -173,6 +339,7 @@ void geoform_info(region_pos *pos, terrain_region* region, float* tr_interp) {
   static float my_tr_interp = 0;
   static terrain_region my_region = 0;
   float dontcare = 0;
+  ptrdiff_t salt = TR_NOISE_SALT;
 
   if (xcache == pos->x && ycache == pos->y) {
     // no need to recompute everything:
@@ -183,7 +350,7 @@ void geoform_info(region_pos *pos, terrain_region* region, float* tr_interp) {
   xcache = pos->x; ycache = pos->y;
 
   compute_base_geoforms(
-    pos, TR_NOISE_SALT,
+    pos, &salt,
     &continents, &primary_geoforms, &secondary_geoforms,
     &geodetails, &dontcare,
     &dontcare, &dontcare, &dontcare, &dontcare, &dontcare,

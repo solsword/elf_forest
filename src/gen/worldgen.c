@@ -13,25 +13,24 @@
 #include "worldgen.h"
 #include "terrain.h"
 
+/*************
+ * Constants *
+ *************/
+
+char const * const WORLD_MAP_FILE = "out/world_map.png";
+
 /***********
  * Globals *
  ***********/
 
 world_map* THE_WORLD = NULL;
 
-char const * const WORLD_MAP_FILE = "out/world_map.png";
-
-float const REGION_GEO_STRENGTH_VARIANCE = 0.4;
-float const REGION_GEO_STRENGTH_FREQUENCY = 2.0;
-
-float const STRATA_FRACTION_NOISE_STRENGTH = 16;
-float const STRATA_FRACTION_NOISE_SCALE = 1.0 / 40.0;
-
 /******************************
  * Constructors & Destructors *
  ******************************/
 
 world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
+  float dontcare, th;
   world_map *result = (world_map*) malloc(sizeof(world_map));
   world_map_pos xy;
   world_region* wr;
@@ -47,13 +46,17 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
       wr = get_world_region(result, &xy); // no need to worry about NULL here
       wmpos__rpos(&xy, &(wr->anchor));
       // Average the heights at the corners of the world region:
-      wr->terrain_height = terrain_height(&(wr->anchor));
+      compute_terrain_height(&(wr->anchor), &dontcare, &th);
+      wr->terrain_height += th;
       wr->anchor.y += (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
-      wr->terrain_height += terrain_height(&(wr->anchor));
+      compute_terrain_height(&(wr->anchor), &dontcare, &th);
+      wr->terrain_height += th;
       wr->anchor.x += (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
-      wr->terrain_height += terrain_height(&(wr->anchor));
+      compute_terrain_height(&(wr->anchor), &dontcare, &th);
+      wr->terrain_height += th;
       wr->anchor.y -= (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
-      wr->terrain_height += terrain_height(&(wr->anchor));
+      compute_terrain_height(&(wr->anchor), &dontcare, &th);
+      wr->terrain_height += th;
       wr->terrain_height /= 4;
 
       // Pick a seed for this world region:
@@ -227,21 +230,14 @@ void strata_cell(
   region_pos *rpos,
   cell *result
 ) {
-  static float surface_height;
+  static float stone_height, dirt_height;
   static region_pos pr_rpos = { .x = -1, .y = -1, .z = -1 };
-  int i;
   float h;
-  world_map_pos wmpos;
-  region_pos anchor;
-  world_region *wr, *best, *secondbest; // best and second-best regions
-  vector v, vbest, vsecond;
-  float m, mbest, msecond;
-  ptrdiff_t bestseed, secondseed; // seeds for polar noise
-  stratum *st;
+  world_region *best, *secondbest; // best and second-best regions
+  float strbest, strsecond; // their respective strengths
   region_pos trp;
   copy_rpos(rpos, &trp);
   trp.z = 0;
-  rpos__wmpos(rpos, &wmpos);
 
   // DEBUG: (to show the strata)
   //*
@@ -280,20 +276,51 @@ void strata_cell(
   if (pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
     // No need to recompute the surface height if we're at the same x/y.
     // TODO: Get rid of double-caching here?
-    surface_height = terrain_height(rpos);
+    compute_terrain_height(rpos, &stone_height, &dirt_height);
   }
 
   // Keep track of our previous position:
   copy_rpos(rpos, &pr_rpos);
 
   // Compute our fractional height:
-  h = rpos->z / surface_height;
-  if (h > 1.0) { // if we're above the surface, return without doing anything
-    return;
+  h = rpos->z / stone_height;
+
+  // Figure out the nearest regions:
+  compute_region_contenders(
+    wm,
+    neighborhood,
+    rpos, wm->seed + 317,
+    &best, &secondbest, 
+    &strbest, &strsecond
+  );
+
+  if (h <= 1.0) { // if we're in the stone layers, compute a stone type
+    stone_cell(
+      wm, rpos,
+      h, stone_height,
+      best, secondbest, strbest, strsecond,
+      result
+    );
+  } else { // if we're in dirt, compute a dirt type
+    dirt_cell(
+      wm, rpos,
+      dirt_height,
+      best, secondbest, strbest, strsecond,
+      result
+    );
   }
- // Add some noise to distort the height:
+}
+
+void stone_cell(
+  world_map *wm, region_pos *rpos,
+  float h, float ceiling,
+  world_region *best, world_region *secondbest, float strbest, float strsecond,
+  cell *result
+) {
+  stratum *st;
+  // Add some noise to distort the base height:
   // TODO: more spatial variance in noise strength?
-  h += (STRATA_FRACTION_NOISE_STRENGTH / surface_height) * (
+  h += (STRATA_FRACTION_NOISE_STRENGTH / ceiling) * (
     sxnoise_3d(
       rpos->x * STRATA_FRACTION_NOISE_SCALE,
       rpos->y * STRATA_FRACTION_NOISE_SCALE,
@@ -308,23 +335,79 @@ void strata_cell(
     )
   ) / 1.5;
   // Clamp out-of-range values after noise:
+  // TODO: some low-frequency un-clamped noise?
   if (h > 1.0) { h = 1.0; } else if (h < 0.0) { h = 0.0; }
+
+  // Where available, persistence values are also a factor:
+  if (best != NULL) {
+    st = get_stratum(best, h);
+    strbest *= st->persistence;
+  }
+  if (secondbest != NULL) {
+    st = get_stratum(secondbest, h);
+    strsecond *= st->persistence;
+  }
+
+ // Now that we know which stratum to use, set the cell's block data:
+  if (strsecond > strbest) {
+    best = secondbest;
+  }
+  if (best == NULL) {
+    // TODO: Various edge types here?
+    result->primary = b_make_block(B_STONE);
+  } else {
+    st = get_stratum(best, h);
+    // TODO: veins and inclusions here!
+    result->primary = b_make_species(B_STONE, st->base_species);
+  }
+}
+
+void dirt_cell(
+  world_map *wm, region_pos *rpos,
+  float ceiling,
+  world_region *best, world_region *secondbest, float strbest, float strsecond,
+  cell *result
+) {
+  if (rpos->z > ceiling) {
+    return;
+  }
+  // TODO: THIS FUNCTION!
+  result->primary = b_make_block(B_DIRT);
+}
+
+void compute_region_contenders(
+  world_map *wm,
+  world_region* neighborhood[],
+  region_pos *rpos,
+  ptrdiff_t salt,
+  world_region **best, world_region **secondbest,
+  float *strbest, float *strsecond
+) {
+  world_region *wr; // best and second-best regions
+  int i;
+  region_pos anchor;
+  vector v, vbest, vsecond;
+  float str;
+  ptrdiff_t bestseed, secondseed; // seeds for polar noise
+  world_map_pos wmpos;
+
+  rpos__wmpos(rpos, &wmpos);
 
  // Figure out the two nearest world regions:
   // Setup worst-case defaults:
   vbest.x = WORLD_REGION_SIZE * CHUNK_SIZE;
   vbest.y = WORLD_REGION_SIZE * CHUNK_SIZE;
   vbest.z = BASE_STRATUM_THICKNESS * MAX_STRATA_LAYERS;
-  mbest = vmag(&vbest);
+  *strbest = 1 - (vmag(&vbest) / MAX_REGION_ANCHOR_DISTANCE);
   bestseed = 0;
   vsecond.x = WORLD_REGION_SIZE * CHUNK_SIZE;
   vsecond.y = WORLD_REGION_SIZE * CHUNK_SIZE;
   vsecond.z = BASE_STRATUM_THICKNESS * MAX_STRATA_LAYERS;
-  msecond = vmag(&vsecond);
+  *strsecond = 1 - (vmag(&vsecond) / MAX_REGION_ANCHOR_DISTANCE);
   secondseed = 0;
 
-  secondbest = NULL;
-  best = NULL;
+  *secondbest = NULL;
+  *best = NULL;
 
   // Figure out which of our neighbors are closest:
   wmpos.x -= 1;
@@ -345,25 +428,25 @@ void strata_cell(
     v.x = rpos->x - anchor.x;
     v.y = rpos->y - anchor.y;
     v.z = rpos->z - anchor.z;
-    m = vmag(&v);
-    if (m < mbest) {
+    str = 1 - (vmag(&v) / MAX_REGION_ANCHOR_DISTANCE);
+    if (str > *strbest) {
       vcopy(&vsecond, &vbest);
-      msecond = mbest;
-      secondbest = best;
+      *strsecond = *strbest;
+      *secondbest = *best;
       secondseed = bestseed;
 
       vcopy(&vbest, &v);
-      mbest = m;
-      best = wr;
+      *strbest = str;
+      *best = wr;
       if (wr != NULL) {
         bestseed = wr->seed;
       } else {
         bestseed = hash_3d(wmpos.x, wmpos.y, 574);
       }
-    } else if (m < msecond) {
+    } else if (str > *strsecond) {
       vcopy(&vsecond, &v);
-      msecond = m;
-      secondbest = wr;
+      *strsecond = str;
+      *secondbest = wr;
       if (wr != NULL) {
         secondseed = wr->seed;
       } else {
@@ -375,51 +458,21 @@ void strata_cell(
  // Figure out which stratum dominates:
   // Polar base noise modifies strengths:
   vxyz__polar(&vbest, &v);
-  mbest *= (
+  *strbest *= (
     1 + REGION_GEO_STRENGTH_VARIANCE * sxnoise_2d(
       v.y * REGION_GEO_STRENGTH_FREQUENCY,
       v.z * REGION_GEO_STRENGTH_FREQUENCY,
-      bestseed
+      bestseed + salt
     )
   );
   vxyz__polar(&vsecond, &v);
-  msecond *= (
+  *strsecond *= (
     1 + REGION_GEO_STRENGTH_VARIANCE * sxnoise_2d(
       v.y * REGION_GEO_STRENGTH_FREQUENCY,
       v.z * REGION_GEO_STRENGTH_FREQUENCY,
-      secondseed
+      secondseed + salt
     )
   );
-  // Where available, persistence values are also a factor:
-  if (best != NULL) {
-    st = get_stratum(best, h);
-    mbest *= st->persistence;
-  }
-  if (secondbest != NULL) {
-    st = get_stratum(secondbest, h);
-    msecond *= st->persistence;
-  }
-
- // Now that we know which stratum to use, set the cell's block data:
-  if (mbest < msecond) {
-    if (best == NULL) {
-      // TODO: Various edge factors here?
-      result->primary = b_make_block(B_STONE);
-    } else {
-      st = get_stratum(best, h);
-      // TODO: veins and inclusions here!
-      result->primary = b_make_species(B_STONE, st->base_species);
-    }
-  } else {
-    if (secondbest == NULL) {
-      // TODO: Various edge factors here?
-      result->primary = b_make_block(B_STONE);
-    } else {
-      st = get_stratum(secondbest, h);
-      // TODO: veins and inclusions here!
-      result->primary = b_make_species(B_STONE, st->base_species);
-    }
-  }
 }
 
 /********

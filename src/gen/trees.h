@@ -185,12 +185,6 @@ static inline int compute_tree_trunk(int tx, int ty, int radius, trunk *trk) {
     mountains * TREE_MOUNTAINS_HEIGHT
   );
   trk->root.z = 0;
-  /*
-  trk->root.z = get_terrain_height(
-    nlst, nlwr, nlow, nmid, nhig, nhst,
-    depths, oceans, plains, hills, mountains
-  ) + 1;
-  */
   if (!valid_trunk_elevation(trk->root.z)) {
     return 0;
   }
