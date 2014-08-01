@@ -266,7 +266,7 @@ static inline void draw_pos_info(int *h) {
   compute_terrain_height(&player_pos, &dummy, &th);
   sprintf(
     TXT,
-    "h: %.2f",
+    "h: %.4f",
     player_pos.z / th
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);

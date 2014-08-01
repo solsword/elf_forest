@@ -9,6 +9,7 @@
 #include "noise/noise.h"
 #include "world/blocks.h"
 #include "jobs/jobs.h"
+#include "gen/terrain.h"
 
 #include "geology.h"
 
@@ -109,7 +110,7 @@ extern char const * const WORLD_MAP_FILE;
 #define MAX_REGION_ANCHOR_DISTANCE sqrtf( \
   (WORLD_REGION_SIZE * CHUNK_SIZE) * (WORLD_REGION_SIZE * CHUNK_SIZE) + \
   (WORLD_REGION_SIZE * CHUNK_SIZE) * (WORLD_REGION_SIZE * CHUNK_SIZE) + \
-  TR_MAX_HEIGHT * TR_MAX_HEIGHT \
+  TR_MAX_HEIGHT * 0.6 * TR_MAX_HEIGHT * 0.6 \
 )
 
 // The variance and frequency of noise used to determine which region's stratum
@@ -189,6 +190,7 @@ struct biome_s {
 // somewhere within the region and an estimate of local terrain height.
 struct world_region_s {
   ptrdiff_t seed;
+  world_map_pos pos;
   region_pos anchor;
   r_pos_t terrain_height;
   strata_info geology;
@@ -277,18 +279,13 @@ static inline void compute_region_anchor(
   world_map_pos const * const wmpos,
   region_pos *anchor
 ) {
-  ptrdiff_t hash = wmpos->x + wmpos->y + wm->seed + 71;
-  anchor->x = (
-    (float) (wmpos->x) + float_hash_1d(hash)
-  ) * WORLD_REGION_SIZE * CHUNK_SIZE;
+  ptrdiff_t hash = hash_3d(wmpos->x, wmpos->y, wm->seed + 71);
+  wmpos__rpos(wmpos, anchor);
+  anchor->x += float_hash_1d(hash) * (WORLD_REGION_SIZE * CHUNK_SIZE - 1);
   hash += 1;
-  anchor->y = (
-    (float) (wmpos->y) + float_hash_1d(hash)
-  ) * WORLD_REGION_SIZE * CHUNK_SIZE;
+  anchor->y += float_hash_1d(hash) * (WORLD_REGION_SIZE * CHUNK_SIZE - 1);
   hash += 1;
-  anchor->z = (
-    BASE_STRATUM_THICKNESS * MAX_STRATA_LAYERS * float_hash_1d(hash)
-  );
+  anchor->z = TR_MAX_HEIGHT * ( 0.2 + 0.6 * float_hash_1d(hash));
 }
 
 // Given a world region and a fractional height between 0 and 1, returns the

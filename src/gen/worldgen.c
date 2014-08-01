@@ -41,11 +41,14 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
   result->all_strata = create_list();
   result->all_biomes = create_list();
   result->all_civs = create_list();
-  for (xy.x = 0; xy.x < result->width; ++xy.x) {
-    for (xy.y = 0; xy.y < result->height; ++xy.y) {
+  for (xy.x = 0; xy.x < result->width; xy.x += 1) {
+    for (xy.y = 0; xy.y < result->height; xy.y += 1) {
       wr = get_world_region(result, &xy); // no need to worry about NULL here
-      wmpos__rpos(&xy, &(wr->anchor));
+      // Set position information:
+      wr->pos.x = xy.x;
+      wr->pos.y = xy.y;
       // Average the heights at the corners of the world region:
+      wmpos__rpos(&xy, &(wr->anchor));
       compute_terrain_height(&(wr->anchor), &dontcare, &th);
       wr->terrain_height += th;
       wr->anchor.y += (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
@@ -106,8 +109,8 @@ void world_cell(world_map *wm, region_pos *rpos, cell *result) {
   result->p_data = 0;
   result->s_data = 0;
   i = 0;
-  for (iter.x = wmpos.x - 1; iter.x <= wmpos.x + 1; ++iter.x) {
-    for (iter.y = wmpos.y - 1; iter.y <= wmpos.y + 1; ++iter.y) {
+  for (iter.x = wmpos.x - 1; iter.x <= wmpos.x + 1; iter.x += 1) {
+    for (iter.y = wmpos.y - 1; iter.y <= wmpos.y + 1; iter.y += 1) {
       neighborhood[i] = get_world_region(wm, &iter);
       i += 1;
     }
@@ -192,7 +195,6 @@ void generate_geology(world_map *wm) {
         // If any corner has material, add this stratum to this region:
         if (t > 0) {
           //TODO: Real logging/debugging
-          //printf("Adding stratum to region at %zu, %zu.\n", xy.x, xy.y);
           wr = get_world_region(wm, &xy); // no need to worry about NULL here
           if (wr->geology.stratum_count < MAX_STRATA_LAYERS) {
             // adjust existing strata:
@@ -235,9 +237,6 @@ void strata_cell(
   float h;
   world_region *best, *secondbest; // best and second-best regions
   float strbest, strsecond; // their respective strengths
-  region_pos trp;
-  copy_rpos(rpos, &trp);
-  trp.z = 0;
 
   // DEBUG: (to show the strata)
   //*
@@ -413,12 +412,6 @@ void compute_region_contenders(
   wmpos.x -= 1;
   wmpos.y -= 1;
   for (i = 0; i < 9; i += 1) {
-    if (i == 3 || i == 6) {
-      wmpos.x += 1;
-      wmpos.y -= 2;
-    } else {
-      wmpos.y += 1;
-    }
     wr = neighborhood[i];
     if (wr != NULL) {
       copy_rpos(&(wr->anchor), &anchor);
@@ -452,6 +445,13 @@ void compute_region_contenders(
       } else {
         secondseed = hash_3d(wmpos.x, wmpos.y, 574);
       }
+    }
+    // Update wmpos based on i:
+    if (i == 2 || i == 5) {
+      wmpos.x += 1;
+      wmpos.y -= 2;
+    } else {
+      wmpos.y += 1;
     }
   }
 

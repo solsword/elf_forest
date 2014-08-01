@@ -87,8 +87,8 @@
 )
 
 // Soil parameters
-#define    TR_DIRT_NOISE_SCALE 0.004
-#define  TR_DIRT_EROSION_SCALE 0.03
+#define    TR_DIRT_NOISE_SCALE 0.0004
+#define  TR_DIRT_EROSION_SCALE 0.003
 
 #define TR_DIRT_MOUNTAIN_EROSION 10
 #define TR_DIRT_HILL_EROSION 4

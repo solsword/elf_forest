@@ -38,8 +38,8 @@ int const COMPILE_CAP = 16;
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 8, 16, 32, 64, 128 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 8, 12, 16, 20 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 5, 6, 7, 7, 7 };
-r_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 6, 7, 7, 7 };
-//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 2, 3, 4, 4, 4 };
+//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 6, 7, 7, 7 };
+r_cpos_t const LOAD_DISTANCES[N_LODS] = { 3, 4, 4, 4, 4 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 2, 3, 3, 3, 3 };
 //r_cpos_t const LOAD_DISTANCES[N_LODS] = { 1, 2, 2, 2, 2 };
 
