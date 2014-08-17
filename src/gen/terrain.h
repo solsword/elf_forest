@@ -601,7 +601,7 @@ void alter_terrain_values(
 void compute_dirt_height(
   region_pos *pos, ptrdiff_t *salt,
   float rocks_height,
-  float mountains, float hills, float bumps,
+  float mountains, float hills, float details, float bumps,
   float *result
 );
 

@@ -320,6 +320,9 @@ static inline ptrdiff_t hash_3d(ptrdiff_t x, ptrdiff_t y, ptrdiff_t z) {
 // 2D simplex noise:
 float sxnoise_2d(float x, float y, ptrdiff_t salt);
 
+// 2D simplex noise that computes a gradient:
+float sxnoise_grad_2d(float x, float y, ptrdiff_t salt, float *dx, float *dy);
+
 // 3D simplex noise:
 float sxnoise_3d(float x, float y, float z, ptrdiff_t salt);
 

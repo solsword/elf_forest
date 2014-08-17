@@ -207,6 +207,10 @@ float wrapped_terrain(float x, float y) {
   return tiled_func(&terrain_noise, x, y, 256*SCALE, 0, 5);
 }
 
+float grad_noise(float x, float y, float *dx, float *dy) {
+  return sxnoise_grad_2d(x, y, 17, dx, dy);
+}
+
 float zoomed_noise(float x, float y) {
   //float zf = 0.0000004;
   float zf =   0.0004;
@@ -356,8 +360,104 @@ void write_noise_ppm(
   return;
 }
 
+void write_grad_ppm(
+  float (*ngfunc)(float, float, float*, float*),
+  char const * const filename
+) {
+  int i, j, ij, col;
+  float r, g, b;
+  FILE *fp;
+  float n[256*256];
+  float dx[256*256];
+  float dy[256*256];
+  float max = 0, maxdx = 0, maxdy = 0;
+  float min = 0, mindx = 0, mindy = 0;
+  float lightx = 0.2;
+  float lighty = -0.5;
+  float lightz = 1.0;
+  float grx, gry, grz, grl;
+  float lvx, lvy, lvz, lvl;
+  float lighting;
+  fp = fopen(filename, "w");
+  if (!fp) {
+    fprintf(stderr, "Error: couldn't open destination file '%s'.\n", filename);
+    exit(1);
+  }
+  fprintf(fp, "P3\n");
+  fprintf(fp, "# noise test ppm\n");
+  fprintf(fp, "# Auto-generated test of noise gradient function in noise.c.\n");
+  fprintf(fp, "256 256\n");
+  fprintf(fp, "256\n");
+  col = 0;
+
+  // First, compute noise and gradient values and record mins and maxes:
+  for (j = 0; j < 256; ++j) {
+    for (i = 0; i < 256; ++i) {
+      ij = 256 * j + i;
+      n[ij] = ngfunc(i*SCALE, j*SCALE, &(dx[ij]), &(dy[ij])); // [-1, 1)
+      if (n[ij] > max) { max = n[ij]; }
+      if (dx[ij] > maxdx) { maxdx = dx[ij]; }
+      if (dy[ij] > maxdy) { maxdy = dy[ij]; }
+      if (n[ij] < min) { min = n[ij]; }
+      if (dx[ij] < mindx) { mindx = dx[ij]; }
+      if (dy[ij] < mindy) { mindy = dy[ij]; }
+    }
+  }
+
+  // Now loop over our values again to write out colors:
+  for (j = 0; j < 256; ++j) {
+    for (i = 0; i < 256; ++i) {
+      ij = 256 * j + i;
+
+      r = (n[ij] - min) / (max - min);
+      g = r;
+      b = r;
+
+      // Gradient:
+      grx = dx[ij]*32;
+      gry = dy[ij]*32;
+      grz = 1;
+      grl = sqrtf(grx*grx + gry*gry + grz*grz);
+      // Normalize:
+      grx /= grl;
+      gry /= grl;
+      grz /= grl;
+      // Compute light vector:
+      lvx = lightx*256 - i;
+      lvy = lighty*256 - j;
+      lvz = (lightz - n[ij]);
+      lvz *= 32;
+      lvl = sqrtf(lvx*lvx + lvy*lvy + lvz*lvz);
+      // Normalize:
+      lvx /= lvl;
+      lvy /= lvl;
+      lvz /= lvl;
+      // Dot product:
+      lighting = (
+        grx * lvx +
+        gry * lvy +
+        grz * lvz
+      ); // [-1, 1]
+      lighting = (lighting + 1)/2.0; // [0, 1]
+
+      r *= 255 * lighting;
+      g *= 255 * lighting;
+      b *= 255 * lighting;
+      fprintf(fp, "%02d %02d %02d ", (int) r, (int) g, (int) b);
+      col += 9;
+      if (col >= 70) {
+        fprintf(fp, "\n");
+        col = 0;
+      }
+    }
+  }
+  fprintf(fp, "\n");
+  fclose(fp);
+  return;
+}
+
 int main(int argc, char** argv) {
-  write_noise_ppm(&unsalt_2d_noise, "noise_test_2D.ppm", 1, 1);
+  write_noise_ppm(&unsalt_2d_noise, "noise_test_2D.ppm", 0, 1);
   write_noise_ppm(&slice_3d_noise, "noise_test_3D.ppm", 1, 1);
   write_noise_ppm(&fractal_2d_noise, "noise_test_2D_F.ppm", 1, 1);
   write_noise_ppm(&slice_fractal_3d_noise, "noise_test_3D_F.ppm", 1, 1);
@@ -366,5 +466,6 @@ int main(int argc, char** argv) {
   write_noise_ppm(&unsalted_terrain, "noise_test_terrain.ppm", 1, 1);
   write_noise_ppm(&wrapped_terrain, "noise_test_wrapped_terrain.ppm", 1, 1);
   write_noise_ppm(&zoomed_noise, "noise_test_zoomed.ppm", 0, 0);
+  write_grad_ppm(&grad_noise, "noise_test_grad.ppm");
   return 0;
 }

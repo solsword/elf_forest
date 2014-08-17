@@ -265,7 +265,7 @@ float const MAX_SQ_WORLEY_DISTANCE_2D = 2.0;
 // These scaling values are chosen based on trial-and-error.
 // Because of this it might be possible for a value outside [-1,1] to be
 // generated.
-static float SCALE_2D = 3.25; // Mostly falls within [-0.9,0.9]
+static float SCALE_2D = 14.7; // Mostly falls within [-0.9,0.9]
 static float SCALE_3D = 7.0; // Mostly falls within [-0.9,0.9]
 // Note that the 2D noise seems to have a slight positive bias (this is a
 // bug?) with an average of ~50.5 over 65536 samples normalized to integers on
@@ -279,13 +279,178 @@ static float SCALE_3D = 7.0; // Mostly falls within [-0.9,0.9]
  * Inline Functions *
  ********************/
 
-// Lookup the value for 2D gradient i at (x, y):
-static inline float grad_2d(ptrdiff_t i, float x, float y) {
-  ptrdiff_t g = (i & 0x3f) << 1;
+// Look up the value for 2D gradient i at (x, y) (along with derivatives):
+static inline float grad_2d(ptrdiff_t g, float x, float y) {
   return GRADIENTS_2D[g]*x + GRADIENTS_2D[g + 1]*y;
 }
+// Note the full equation for the gradient is as follows (where ssqr is
+// SURFLET_SQ_RADIUS_2D):
+// 
+//  (
+//    0
+//    + gx * x^9
+//    + gy * y^9
+//
+//    + gy * x^8 * y
+//    + gx * x * y^8
+//
+//    - 4 * ssqr * gx * x^7
+//    + 4 * gx * x^7 * y^2
+//    - 4 * ssqr * gy * y^7
+//    + 4 * gy * x^2 * y^7
+//
+//    - 4 * ssqr * gy * x^6 * y
+//    + 4 * gy * x^6 * y^3
+//    - 4 * ssqr * gx * x * y^6
+//    + 4 * gx * x^3 * y^6
+//
+//    + 6 * (ssqr ^ 2) * gx * x^5
+//    - 12 * ssqr * gx * x^5 * y^2
+//    + 6 * gx * x^5 * y^4
+//    + 6 * (ssqr ^ 2) * gy * y^5
+//    - 12 * ssqr * gy * x^2 * y^5
+//    + 6 * gy * x^4 * y^5
+//
+//    + 6 * (ssqr ^ 2) * gy * x^4 * y
+//    - 12 * ssqr * gy * x^4 * y^3
+//    + 6 * (ssqr ^ 2) * gx * x * y^4
+//    - 12 * ssqr * gx * x^3 * y^4
+//
+//    - 4 * (ssqr ^ 3) * gx * x^3
+//    + 12 * (ssqr ^ 2) * gx * x^3 * y^2
+//    - 4 * (ssqr ^ 3) * gy * y^3
+//    + 12 * (ssqr ^ 2) * gy * x^2 * y^3
+//
+//    - 4 * (ssqr ^ 3) * gy * x^2 * y
+//    - 4 * (ssqr ^ 3) * gx * x * y^2
+//
+//    + (ssqr ^ 4) * gx * x
+//    + (ssqr ^ 4) * gy * y
+//  );
+// 
+// The functions below are the derivatives of this with respect to x and y,
+// simplified for the computer. Appendix A shows the derivation for the above
+// full gradient equation.
+static inline float grad_2d_dx(ptrdiff_t g, float x, float y) {
+  float gx = GRADIENTS_2D[g];
+  float gy = GRADIENTS_2D[g+1];
+  float x2 = x*x;
+  float x3 = x2*x;
+  float x4 = x3*x;
+  float x5 = x4*x;
+  float x6 = x5*x;
+  float x7 = x6*x;
+  float x8 = x7*x;
+  float y2 = y*y;
+  float y3 = y2*y;
+  float y4 = y3*y;
+  float y5 = y4*y;
+  float y6 = y5*y;
+  float y7 = y6*y;
+  float y8 = y7*y;
+  float ssqr = SURFLET_SQ_RADIUS_2D;
+  float ssqr2 = ssqr * ssqr;
+  float ssqr3 = ssqr2 * ssqr;
+  float ssqr4 = ssqr3 * ssqr;
 
-// Lookup the value for 3D gradient i at (x, y, z):
+  return (
+    0
+    + 9 * gx * x8
+
+    + 8 * gy * x7 * y
+    + gx * y8
+
+    - 7*4 * ssqr * gx * x6
+    + 7*4 * gx * x6 * y2
+    + 2*4 * gy * x * y7
+
+    - 6*4 * ssqr * gy * x5 * y
+    + 6*4 * gy * x5 * y3
+    - 4 * ssqr * gx * y6
+    + 3*4 * gx * x2 * y6
+
+    + 5*6 * ssqr2 * gx * x4
+    - 5*12 * ssqr * gx * x4 * y2
+    + 5*6 * gx * x4 * y4
+    - 2*12 * ssqr * gy * x * y5
+    + 4*6 * gy * x3 * y5
+
+    + 4*6 * (ssqr2) * gy * x3 * y
+    - 4*12 * ssqr * gy * x3 * y3
+    + 6 * (ssqr2) * gx * y4
+    - 3*12 * ssqr * gx * x2 * y4
+
+    - 3*4 * (ssqr3) * gx * x2
+    + 3*12 * (ssqr2) * gx * x2 * y2
+    + 2*12 * (ssqr2) * gy * x * y3
+
+    - 2*4 * (ssqr3) * gy * x * y
+    - 4 * (ssqr3) * gx * y2
+
+    + (ssqr4) * gx
+  );
+}
+static inline float grad_2d_dy(ptrdiff_t g, float x, float y) {
+  float gx = GRADIENTS_2D[g];
+  float gy = GRADIENTS_2D[g+1];
+  float x2 = x*x;
+  float x3 = x2*x;
+  float x4 = x3*x;
+  float x5 = x4*x;
+  float x6 = x5*x;
+  float x7 = x6*x;
+  float x8 = x7*x;
+  float y2 = y*y;
+  float y3 = y2*y;
+  float y4 = y3*y;
+  float y5 = y4*y;
+  float y6 = y5*y;
+  float y7 = y6*y;
+  float y8 = y7*y;
+  float ssqr = SURFLET_SQ_RADIUS_2D;
+  float ssqr2 = ssqr * ssqr;
+  float ssqr3 = ssqr2 * ssqr;
+  float ssqr4 = ssqr3 * ssqr;
+
+  return (
+    0
+    + 9 * gy * y8
+
+    + gy * x8
+    + 8 * gx * x * y7
+
+    + 2*4 * gx * x7 * y
+    - 7*4 * ssqr * gy * y6
+    + 7*4 * gy * x2 * y6
+
+    - 4 * ssqr * gy * x6
+    + 3*4 * gy * x6 * y2
+    - 6*4 * ssqr * gx * x * y5
+    + 6*4 * gx * x3 * y5
+
+    - 2*12 * ssqr * gx * x5 * y
+    + 4*6 * gx * x5 * y3
+    + 5*6 * (ssqr2) * gy * y4
+    - 5*12 * ssqr * gy * x2 * y4
+    + 5*6 * gy * x4 * y4
+
+    + 6 * (ssqr2) * gy * x4
+    - 3*12 * ssqr * gy * x4 * y2
+    + 4*6 * (ssqr2) * gx * x * y3
+    - 4*12 * ssqr * gx * x3 * y3
+
+    + 2*12 * (ssqr2) * gx * x3 * y
+    - 3*4 * (ssqr3) * gy * y2
+    + 3*12 * (ssqr2) * gy * x2 * y2
+
+    - 4 * (ssqr3) * gy * x2
+    - 2*4 * (ssqr3) * gx * x * y
+
+    + (ssqr4) * gy
+  );
+}
+
+// Look up the value for 3D gradient i at (x, y, z):
 static inline float grad_3d(ptrdiff_t i, float x, float y, float z) {
   ptrdiff_t g = (i & 0x3f) << 2;
   return (
@@ -295,23 +460,49 @@ static inline float grad_3d(ptrdiff_t i, float x, float y, float z) {
   )*GRDIV_3D;
 }
 
-// Given surflet indices i and j, a surflet center position (sx, sy), and a
-// target position (x, y), compute the surflet influence at the target position.
+// Given a gradient index g and a surflet position (x, y) from the center of a
+// surflet, compute the surflet influence at the target position.
 static inline float compute_surflet_value_2d(
-  ptrdiff_t i, ptrdiff_t j,
-  float sx, float sy,
+  ptrdiff_t g,
   float x, float y
 ) {
-  float dx = x - sx;
-  float dy = y - sy;
-
-  float atten = SURFLET_SQ_RADIUS_2D - (dx*dx + dy*dy);
+  // attenuation
+  float atten = (SURFLET_SQ_RADIUS_2D - (x*x + y*y));
   if (atten < 0) {
     return 0.0;
   } else {
     atten *= atten;
+    atten *= atten;
   }
-  return atten * grad_2d(mixed_hash_1d(i) ^ mixed_hash_1d(j), dx, dy);
+
+  return atten * grad_2d(g, x, y);
+}
+
+// Given surflet indices i and j, a surflet center position (sx, sy), and a
+// target position (x, y), compute the surflet gradient at the target position,
+// putting the results into the rx and ry and returning the surflet value as
+// normal.
+static inline float compute_surflet_gradient_2d(
+  ptrdiff_t g,
+  float x, float y,
+  float *rx, float *ry
+) {
+  // attenuation
+  float atten = (SURFLET_SQ_RADIUS_2D - (x*x + y*y)) / SURFLET_SQ_RADIUS_2D;
+
+  if (atten < 0) {
+    *rx = 0;
+    *ry = 0;
+    return 0;
+  } else {
+    atten *= atten;
+    atten *= atten;
+    // TODO: FIX THIS!
+  }
+
+  *rx = grad_2d_dx(g, x, y);
+  *ry = grad_2d_dy(g, x, y);
+  return atten * grad_2d(g, x, y);
 }
 
 // Given surflet indices i, j, and k, a surflet center position (sx, sy, sz),
@@ -481,10 +672,81 @@ float sxnoise_2d(float x, float y, ptrdiff_t salt) {
   i2 += salt;
   j2 += salt;
 
+  // Compute gradient indices for each simplex corner:
+  ptrdiff_t g0 = ((mixed_hash_1d(i0) ^ mixed_hash_1d(j0)) & 0x3f) << 1;
+  ptrdiff_t g1 = ((mixed_hash_1d(i1) ^ mixed_hash_1d(j1)) & 0x3f) << 1;
+  ptrdiff_t g2 = ((mixed_hash_1d(i2) ^ mixed_hash_1d(j2)) & 0x3f) << 1;
+
   // Surflet values:
-  float srf0 = compute_surflet_value_2d(i0, j0, cx0, cy0, x, y);
-  float srf1 = compute_surflet_value_2d(i1, j1, cx1, cy1, x, y);
-  float srf2 = compute_surflet_value_2d(i2, j2, cx2, cy2, x, y);
+  float srf0 = compute_surflet_value_2d(g0, x - cx0, y - cy0);
+  float srf1 = compute_surflet_value_2d(g1, x - cx1, y - cy1);
+  float srf2 = compute_surflet_value_2d(g2, x - cx2, y - cy2);
+
+  // Return the scaled sum:
+  return SCALE_2D * (srf0 + srf1 + srf2);
+}
+
+// 2D simplex noise that also returns its gradient:
+float sxnoise_grad_2d(float x, float y, ptrdiff_t salt, float *dx, float *dy) {
+  // a copy of sxnoise_2d to start with
+  float sy = y * TWO__RT3;
+  float sx = x - sy * 0.5;
+
+  ptrdiff_t i = ffloor(sx);
+  ptrdiff_t j = ffloor(sy);
+
+  float fx = sx - i;
+  float fy = sy - j;
+
+  ptrdiff_t upper = (fx > (1 - fy));
+
+  ptrdiff_t i0 = i;
+  ptrdiff_t j0 = j + upper;
+
+  ptrdiff_t i1 = i + 1;
+  ptrdiff_t j1 = j;
+
+  ptrdiff_t i2 = i + upper;
+  ptrdiff_t j2 = j + 1;
+
+  float cx0 = i0 + j0 * 0.5;
+  float cy0 = j0 * RT3__TWO;
+
+  float cx1 = i1 + j1 * 0.5;
+  float cy1 = j1 * RT3__TWO;
+
+  float cx2 = i2 + j2 * 0.5;
+  float cy2 = j2 * RT3__TWO;
+
+  i0 += salt;
+  j0 += salt;
+
+  i1 += salt;
+  j1 += salt;
+
+  i2 += salt;
+  j2 += salt;
+
+  ptrdiff_t g0 = ((mixed_hash_1d(i0) ^ mixed_hash_1d(j0)) & 0x3f) << 1;
+  ptrdiff_t g1 = ((mixed_hash_1d(i1) ^ mixed_hash_1d(j1)) & 0x3f) << 1;
+  ptrdiff_t g2 = ((mixed_hash_1d(i2) ^ mixed_hash_1d(j2)) & 0x3f) << 1;
+
+  // Here we start getting gradient information:
+  float tdx = 0, tdy = 0;
+
+  float srf0 = compute_surflet_gradient_2d(g0, x - cx0, y - cy0, &tdx, &tdy);
+  *dx = tdx;
+  *dy = tdy;
+  float srf1 = compute_surflet_gradient_2d(g1, x - cx1, y - cy1, &tdx, &tdy);
+  *dx += tdx;
+  *dy += tdy;
+  float srf2 = compute_surflet_gradient_2d(g2, x - cx2, y - cy2, &tdx, &tdy);
+  *dx += tdx;
+  *dy += tdy;
+
+  // Write out the scaled gradient values:
+  *dx *= SCALE_2D;
+  *dy *= SCALE_2D;
 
   // Return the scaled sum:
   return SCALE_2D * (srf0 + srf1 + srf2);
@@ -1031,3 +1293,272 @@ FRACTAL_SXNOISE_VAR_TABLE
 
 // And now we can create the 3D version of the same function:
 FRACTAL_SXNOISE_VAR_TABLE
+
+/*
+ * Appendices:
+
+A: Derivation of the full equation for a 2D surflet:
+
+  gx and gy are the gradient values for the surflet, and the dot product of
+  these values and the surflet-center-relative x- and y-coordinates is the base
+  surflet value. Base attenuation is:
+
+    SURFLET_SQ_RADIUS_2D - (x*x + y*y)
+
+  ...but it's taken to the fourth power before being applied.
+
+
+  (ssqr - (x*x + y*y)) *
+  (ssqr - (x*x + y*y)) *
+  (ssqr - (x*x + y*y)) *
+  (ssqr - (x*x + y*y)) *
+  (gx*x + gy*y);
+
+
+  (
+    0
+    + ssqr * ssqr 
+    - 2 * ssqr * (x*x + y*y)
+    + (x*x + y*y) * (x*x + y*y)
+  ) * (
+    0
+    + ssqr * ssqr
+    - 2 * ssqr * (x*x + y*y)
+    + (x*x + y*y) * (x*x + y*y)
+  ) * (
+    gx*x + gy*y
+  );
+
+
+  (
+    0
+    + (ssqr ^ 4)
+    - 4 * (ssqr ^ 3) * (x^2 + y^2)
+    + 2 * (ssqr ^ 2) * (x^2 + y^2) * (x^2 + y^2)
+    + 4 * (ssqr ^ 2) * (x^2 + y^2) * (x^2 + y^2)
+    - 4 * ssqr * (x^2 + y^2) ^ 3
+    + (x^2 + y^2) ^ 4
+  ) * (
+    gx*x + gy*y
+  );
+
+
+  (
+    0
+    + (ssqr ^ 4)
+    - 4 * (ssqr ^ 3) * (x^2 + y^2)
+    + 6 * (ssqr ^ 2) * (x^2 + y^2) * (x^2 + y^2)
+    - 4 * ssqr * (x^2 + y^2) ^ 3
+    + (x^2 + y^2) ^ 4
+  ) * (
+    gx*x + gy*y
+  );
+
+
+  (
+    0
+    + (ssqr ^ 4)
+    - 4 * (ssqr ^ 3) * x^2
+    - 4 * (ssqr ^ 3) * y^2
+    + 6 * (ssqr ^ 2) * (x^4 + 2 * x^2 * y^2 + y^4)
+    - 4 * ssqr * (x^4 + 2 * x^2 * y^2 + y^4) * (x^2 + y^2)
+    + (x^4 + 2 * x^2 * y^2 + y^4) * (x^4 + 2 * x^2 * y^2 + y^4)
+  ) * (
+    gx*x + gy*y
+  );
+
+
+  (
+    0
+    + (ssqr ^ 4)
+    - 4 * (ssqr ^ 3) * x^2
+    - 4 * (ssqr ^ 3) * y^2
+    + 6 * (ssqr ^ 2) * (x^4 + 2 * x^2 * y^2 + y^4)
+    - 4 * ssqr * (
+      x^6 + (x^4 * y^2) + (2 * x^4 * y^2) + (2 * x^2 * y^4) + (x^2 * y^4) + y^6
+    )
+    + (
+      x^8 + (4 * x^6 * y^2) + (2 * x^4 * y^4) +
+        (4 * x^4 * y^4) + (4 * x^2 * y^6) + y^8
+    )
+  ) * (
+    gx*x + gy*y
+  );
+
+
+  (
+    0
+    + (ssqr ^ 4)
+    - 4 * (ssqr ^ 3) * x^2
+    - 4 * (ssqr ^ 3) * y^2
+    + 6 * (ssqr ^ 2) * (x^4 + 2 * x^2 * y^2 + y^4)
+    - 4 * ssqr * (
+      x^6 + (x^4 * y^2) + (2 * x^4 * y^2) + (2 * x^2 * y^4) + (x^2 * y^4) + y^6
+    )
+    + (
+      x^8 + (4 * x^6 * y^2) + (2 * x^4 * y^4) +
+        (4 * x^4 * y^4) + (4 * x^2 * y^6) + y^8
+    )
+  ) * (
+    gx*x + gy*y
+  );
+
+
+  (
+    0
+    + (ssqr ^ 4)
+    - 4 * (ssqr ^ 3) * x^2
+    - 4 * (ssqr ^ 3) * y^2
+    + 6 * (ssqr ^ 2) * x^4
+    + 12 * (ssqr ^ 2) * x^2 * y^2
+    + 6 * (ssqr ^ 2) * y^4
+    - 4 * ssqr * x^6
+    - 12 * ssqr * x^4 * y^2
+    - 12 * ssqr * x^2 * y^4
+    - 4 * ssqr * y^6
+    + (
+      x^8 + (4 * x^6 * y^2) + (6 * x^4 * y^4) + (4 * x^2 * y^6) + y^8
+    )
+  ) * (
+    gx*x + gy*y
+  );
+
+
+  (
+    0
+    + (ssqr ^ 4)
+    - 4 * (ssqr ^ 3) * x^2
+    - 4 * (ssqr ^ 3) * y^2
+    + 6 * (ssqr ^ 2) * x^4
+    + 12 * (ssqr ^ 2) * x^2 * y^2
+    + 6 * (ssqr ^ 2) * y^4
+    - 4 * ssqr * x^6
+    - 12 * ssqr * x^4 * y^2
+    - 12 * ssqr * x^2 * y^4
+    - 4 * ssqr * y^6
+    + x^8
+    + 4 * x^6 * y^2
+    + 6 * x^4 * y^4
+    + 4 * x^2 * y^6
+    + y^8
+  ) * (
+    gx*x + gy*y
+  );
+
+
+  (
+    0
+    + (ssqr ^ 4) * gx * x
+    - 4 * (ssqr ^ 3) * gx * x^3
+    - 4 * (ssqr ^ 3) * gx * x * y^2
+    + 6 * (ssqr ^ 2) * gx * x^5
+    + 12 * (ssqr ^ 2) * gx * x^3 * y^2
+    + 6 * (ssqr ^ 2) * gx * x * y^4
+    - 4 * ssqr * gx * x^7
+    - 12 * ssqr * gx * x^5 * y^2
+    - 12 * ssqr * gx * x^3 * y^4
+    - 4 * ssqr * gx * x * y^6
+    + gx * x^9
+    + 4 * gx * x^7 * y^2
+    + 6 * gx * x^5 * y^4
+    + 4 * gx * x^3 * y^6
+    + gx * x * y^8
+  ) +
+  (
+    0
+    + (ssqr ^ 4) * gy * y
+    - 4 * (ssqr ^ 3) * gy * x^2 * y
+    - 4 * (ssqr ^ 3) * gy * y^3
+    + 6 * (ssqr ^ 2) * gy * x^4 * y
+    + 12 * (ssqr ^ 2) * gy * x^2 * y^3
+    + 6 * (ssqr ^ 2) * gy * y^5
+    - 4 * ssqr * gy * x^6 * y
+    - 12 * ssqr * gy * x^4 * y^3
+    - 12 * ssqr * gy * x^2 * y^5
+    - 4 * ssqr * gy * y^7
+    + gy * x^8 * y
+    + 4 * gy * x^6 * y^3
+    + 6 * gy * x^4 * y^5
+    + 4 * gy * x^2 * y^7
+    + gy * y^9
+  );
+
+
+  (
+    0
+    + (ssqr ^ 4) * gx * x
+    - 4 * (ssqr ^ 3) * gx * x^3
+    - 4 * (ssqr ^ 3) * gx * x * y^2
+    + 6 * (ssqr ^ 2) * gx * x^5
+    + 12 * (ssqr ^ 2) * gx * x^3 * y^2
+    + 6 * (ssqr ^ 2) * gx * x * y^4
+    - 4 * ssqr * gx * x^7
+    - 12 * ssqr * gx * x^5 * y^2
+    - 12 * ssqr * gx * x^3 * y^4
+    - 4 * ssqr * gx * x * y^6
+    + gx * x^9
+    + 4 * gx * x^7 * y^2
+    + 6 * gx * x^5 * y^4
+    + 4 * gx * x^3 * y^6
+    + gx * x * y^8
+    + (ssqr ^ 4) * gy * y
+    - 4 * (ssqr ^ 3) * gy * x^2 * y
+    - 4 * (ssqr ^ 3) * gy * y^3
+    + 6 * (ssqr ^ 2) * gy * x^4 * y
+    + 12 * (ssqr ^ 2) * gy * x^2 * y^3
+    + 6 * (ssqr ^ 2) * gy * y^5
+    - 4 * ssqr * gy * x^6 * y
+    - 12 * ssqr * gy * x^4 * y^3
+    - 12 * ssqr * gy * x^2 * y^5
+    - 4 * ssqr * gy * y^7
+    + gy * x^8 * y
+    + 4 * gy * x^6 * y^3
+    + 6 * gy * x^4 * y^5
+    + 4 * gy * x^2 * y^7
+    + gy * y^9
+  );
+
+
+  (
+    0
+    + gx * x^9
+    + gy * y^9
+
+    + gy * x^8 * y
+    + gx * x * y^8
+
+    - 4 * ssqr * gx * x^7
+    + 4 * gx * x^7 * y^2
+    - 4 * ssqr * gy * y^7
+    + 4 * gy * x^2 * y^7
+
+    - 4 * ssqr * gy * x^6 * y
+    + 4 * gy * x^6 * y^3
+    - 4 * ssqr * gx * x * y^6
+    + 4 * gx * x^3 * y^6
+
+    + 6 * (ssqr ^ 2) * gx * x^5
+    - 12 * ssqr * gx * x^5 * y^2
+    + 6 * gx * x^5 * y^4
+    + 6 * (ssqr ^ 2) * gy * y^5
+    - 12 * ssqr * gy * x^2 * y^5
+    + 6 * gy * x^4 * y^5
+
+    + 6 * (ssqr ^ 2) * gy * x^4 * y
+    - 12 * ssqr * gy * x^4 * y^3
+    + 6 * (ssqr ^ 2) * gx * x * y^4
+    - 12 * ssqr * gx * x^3 * y^4
+
+    - 4 * (ssqr ^ 3) * gx * x^3
+    + 12 * (ssqr ^ 2) * gx * x^3 * y^2
+    - 4 * (ssqr ^ 3) * gy * y^3
+    + 12 * (ssqr ^ 2) * gy * x^2 * y^3
+
+    - 4 * (ssqr ^ 3) * gy * x^2 * y
+    - 4 * (ssqr ^ 3) * gx * x * y^2
+
+    + (ssqr ^ 4) * gx * x
+    + (ssqr ^ 4) * gy * y
+  );
+
+*/

@@ -79,7 +79,7 @@ void compute_terrain_height(region_pos *pos, float *r_rocks, float *r_dirt) {
   compute_dirt_height(
     pos, &salt,
     rocks_height,
-    mountains, hills, bumps,
+    mountains, hills, details, bumps,
     &dirt_height
   );
 
@@ -262,10 +262,10 @@ void alter_terrain_values(
 void compute_dirt_height(
   region_pos *pos, ptrdiff_t *salt,
   float rocks_height,
-  float mountains, float hills, float bumps,
+  float mountains, float hills, float details, float bumps,
   float *result
 ) {
-  r_pos_t depth;
+  float depth;
   float n, alt;
   // Base soil height varies a bit over large distances:
   n = sxnoise_2d(
@@ -321,7 +321,9 @@ void compute_dirt_height(
 
   depth -= alt * TR_ALTITUDE_EROSION_STRENGTH;
 
-  // Bumps in the stone aren't reflected in the dirt:
+  // Details and bumps in the stone aren't reflected in the dirt:
+  // TODO: smoothness vs. roughness
+  depth -= details * TR_SCALE_DETAILS;
   depth -= bumps * TR_SCALE_BUMPS;
 
   // Dirt depth can't be negative:
