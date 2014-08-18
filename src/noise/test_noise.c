@@ -208,7 +208,7 @@ float wrapped_terrain(float x, float y) {
 }
 
 float grad_noise(float x, float y, float *dx, float *dy) {
-  return sxnoise_grad_2d(x, y, 17, dx, dy);
+  return sxnoise_grad_2d(x * 0.8, y * 0.8, 17, dx, dy);
 }
 
 float zoomed_noise(float x, float y) {
@@ -378,6 +378,8 @@ void write_grad_ppm(
   float grx, gry, grz, grl;
   float lvx, lvy, lvz, lvl;
   float lighting;
+  float nn, ndx, ndy, cdx, cdy;
+  float ndxdx, ndxdy, ndydx, ndydy;
   fp = fopen(filename, "w");
   if (!fp) {
     fprintf(stderr, "Error: couldn't open destination file '%s'.\n", filename);
@@ -409,16 +411,110 @@ void write_grad_ppm(
     for (i = 0; i < 256; ++i) {
       ij = 256 * j + i;
 
-      r = (n[ij] - min) / (max - min);
+      nn = (n[ij] - min) / (max - min);
+      ndx = (dx[ij] - mindx) / (maxdx - mindx);
+      ndy = (dy[ij] - mindy) / (maxdy - mindy);
+
+      cdx = 0;
+      if (i < 255) {
+        cdx += nn - (n[ij+1] - min) / (max - min);
+      }
+      if (i > 0) {
+        cdx += (n[ij-1] - min) / (max - min) - nn;
+      }
+      if (i > 0 && i < 255) {
+        cdx /= 2.0;
+      }
+
+      cdy = 0;
+      if (j < 255) {
+        cdy = nn - (n[ij+256] - min) / (max - min);
+      }
+      if (j > 0) {
+        cdy += (n[ij-256] - min) / (max - min) - nn;
+      }
+      if (j < 255 && j > 0) {
+        cdy /= 2.0;
+      }
+
+      ndxdx = 0;
+      if (i < 255) {
+        ndxdx = ndx - (dx[ij+1] - mindx) / (maxdx - mindx);
+      }
+      if (i > 0) {
+        ndxdx += (dx[ij-1] - mindx) / (maxdx - mindx) - ndx;
+      }
+      if (i < 255 && i > 0) {
+        ndxdx /= 2.0;
+      }
+
+      ndxdy = 0;
+      if (j < 255) {
+        ndxdy = ndx - (dx[ij+256] - mindx) / (maxdx - mindx);
+      }
+      if (j > 0) {
+        ndxdy += (dx[ij-256] - mindx) / (maxdx - mindx) - ndx;
+      }
+      if (j < 255 && j > 0) {
+        ndxdy /= 2.0;
+      }
+
+      ndydx = 0;
+      if (i < 255) {
+        ndydx = ndy - (dy[ij+1] - mindy) / (maxdy - mindy);
+      }
+      if (i > 0) {
+        ndydx += (dy[ij-1] - mindy) / (maxdy - mindy) - ndy;
+      }
+      if (i < 255 && i > 0) {
+        ndydx /= 2.0;
+      }
+
+      ndydy = 0;
+      if (j < 255) {
+        ndydy = ndy - (dy[ij+256] - mindy) / (maxdy - mindy);
+      }
+      if (j > 0) {
+        ndydy += (dy[ij-256] - mindy) / (maxdy - mindy) - ndy;
+      }
+      if (j < 255 && j > 0) {
+        ndydy /= 2.0;
+      }
+
+      // Base color:
+      r = nn;
       g = r;
       b = r;
 
-      // Gradient:
-      grx = dx[ij]*32;
-      gry = dy[ij]*32;
+      /*
+      r = ndx;
+      g = r;
+      b = r;
+      // */
+
+      /*
+      r *= ndx;
+      g *= ndx;
+      // */
+      /*
+      r *= ndy;
+      g *= ndy;
+      // */
+
+      // Analytical gradient:
+      //*
+      grx = -dx[ij];
+      gry = -dy[ij];
       grz = 1;
-      grl = sqrtf(grx*grx + gry*gry + grz*grz);
+      // */
+      // Computed gradient:
+      /*
+      grx = cdx*32;
+      gry = cdy*32;
+      grz = 0.7;
+      // */
       // Normalize:
+      grl = sqrtf(grx*grx + gry*gry + grz*grz);
       grx /= grl;
       gry /= grl;
       grz /= grl;
@@ -440,9 +536,15 @@ void write_grad_ppm(
       ); // [-1, 1]
       lighting = (lighting + 1)/2.0; // [0, 1]
 
-      r *= 255 * lighting;
-      g *= 255 * lighting;
-      b *= 255 * lighting;
+      //*
+      r *= lighting;
+      g *= lighting;
+      b *= lighting;
+      // */
+
+      r *= 255;
+      g *= 255;
+      b *= 255;
       fprintf(fp, "%02d %02d %02d ", (int) r, (int) g, (int) b);
       col += 9;
       if (col >= 70) {
@@ -462,7 +564,7 @@ int main(int argc, char** argv) {
   write_noise_ppm(&fractal_2d_noise, "noise_test_2D_F.ppm", 1, 1);
   write_noise_ppm(&slice_fractal_3d_noise, "noise_test_3D_F.ppm", 1, 1);
   write_noise_ppm(&example_noise, "noise_test_ex.ppm", 1, 1);
-  write_noise_ppm(&example_wrapped_noise, "noise_test_wrapped.ppm", 1, 0);
+  write_noise_ppm(&example_wrapped_noise, "noise_test_wrapped.ppm", 1, 1);
   write_noise_ppm(&unsalted_terrain, "noise_test_terrain.ppm", 1, 1);
   write_noise_ppm(&wrapped_terrain, "noise_test_wrapped_terrain.ppm", 1, 1);
   write_noise_ppm(&zoomed_noise, "noise_test_zoomed.ppm", 0, 0);

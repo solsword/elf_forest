@@ -4,9 +4,6 @@
 #include <math.h>
 #include <stdlib.h>
 
-// DEBUG:
-#include <stdio.h>
-
 #include "noise.h"
 
 /************
