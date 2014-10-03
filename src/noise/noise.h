@@ -329,10 +329,11 @@ float sxnoise_3d(float x, float y, float z, ptrdiff_t salt);
 // 2D Worley noise:
 float wrnoise_2d(float x, float y, ptrdiff_t salt);
 
-// Fancy 2D Worley noise is more customizable:
+// Fancy 2D Worley noise is more customizable and returns a gradient:
 float wrnoise_2d_fancy(
   float x, float y, ptrdiff_t salt,
   ptrdiff_t wrapx, ptrdiff_t wrapy,
+  float *dx, float *dy,
   uint32_t flags
 );
 
@@ -408,6 +409,27 @@ static inline float smooth(float n, float strength, float center) {
     result = 1 - (1 - center) * pow(1 - (n - center)/(1 - center), strength);
   }
   return sign * result;
+}
+
+// Takes the same arguments as smooth() and edits the extra gradient arguments
+// (which should be gradient values for the function underlying the value n
+// pre-smoothing). Afterwards, the gradient values are accurate for the
+// smoothed function.
+static inline void smooth_grad(
+  float n,
+  float strength, float center,
+  float *grx, float *gry
+) {
+  if (n < 0) {
+    n = -n;
+  }
+  if (n < center) {
+    *grx = strength * (*grx) * pow(n / center, strength - 1);
+    *gry = strength * (*gry) * pow(n / center, strength - 1);
+  } else {
+    *grx = strength * (*grx) * pow((n - 1) / (center - 1), strength - 1);
+    *gry = strength * (*gry) * pow((n - 1) / (center - 1), strength - 1);
+  }
 }
 
 // Takes a 2-d function, x, and y coordinates, wrap scales, and a seed, and

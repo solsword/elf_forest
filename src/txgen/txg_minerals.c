@@ -32,6 +32,8 @@ void fltr_stone(texture *tx, void const * const fargs) {
   float grit, contours, matrix, bumps, alternate; // noise layers
   float saturation, value; // color values
 
+  float dontcare;
+
   // salt values for noise:
   ptrdiff_t salt1, salt2, salt3, salt4, salt5, salt6, salt7;
 
@@ -89,6 +91,7 @@ void fltr_stone(texture *tx, void const * const fargs) {
         wrnoise_2d_fancy(
           x, y, salt3,
           fastfloor(wx), fastfloor(wy),
+          &dontcare, &dontcare,
           0
         )
       );
@@ -96,6 +99,7 @@ void fltr_stone(texture *tx, void const * const fargs) {
         wrnoise_2d_fancy(
           x, y, salt4,
           fastfloor(wx), fastfloor(wy),
+          &dontcare, &dontcare,
           WORLEY_FLAG_INCLUDE_NEXTBEST
         )
       );
@@ -105,6 +109,7 @@ void fltr_stone(texture *tx, void const * const fargs) {
       alternate = wrnoise_2d_fancy(
         alx, aly, salt5,
         fastfloor(wx), fastfloor(wy),
+        &dontcare, &dontcare,
         WORLEY_FLAG_INCLUDE_NEXTBEST
       ) * (
         (

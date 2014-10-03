@@ -120,6 +120,7 @@ void fltr_branches(texture *tx, void const * const fargs) {
   int row, col;
   float dx, dy, x, y;
   float noise;
+  float dontcare;
   ptrdiff_t salt1, salt2, salt3;
   gradient_map grmap;
   branch_filter_args *bfargs = (branch_filter_args *) fargs;
@@ -169,6 +170,7 @@ void fltr_branches(texture *tx, void const * const fargs) {
       noise = wrnoise_2d_fancy(
         x, y, salt3,
         tx->width * bfargs->scale, tx->height * bfargs->scale,
+        &dontcare, &dontcare,
         (!bfargs->rough) * WORLEY_FLAG_INCLUDE_NEXTBEST
       );
       noise = pow(noise, 1.6);

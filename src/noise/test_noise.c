@@ -104,12 +104,14 @@ float terrain_noise(float x, float y, ptrdiff_t salt) {
   float dsly = 50*stretch(sxnoise_2d(x*0.02+1000, y*0.02, salt), 1.3);
   float dx = x + ds;
   float dy = y + ds;
+  float dontcare;
 
   // Worley-based details:
   float result = wrnoise_2d_fancy(
     x*0.19, y*0.19,
     salt,
     0, 0,
+    &dontcare, &dontcare,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
     //WORLEY_FLAG_INCLUDE_NEXTBEST
     //WORLEY_FLAG_SMOOTH_SIDES
@@ -123,6 +125,7 @@ float terrain_noise(float x, float y, ptrdiff_t salt) {
       x*0.13+1000, y*0.13,
       salt,
       0, 0,
+      &dontcare, &dontcare,
       WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
     ),
     1.7,
@@ -133,6 +136,7 @@ float terrain_noise(float x, float y, ptrdiff_t salt) {
       x*0.41+5000, y*0.41,
       salt,
       0, 0,
+      &dontcare, &dontcare,
       WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
     ),
     1.7,

@@ -953,6 +953,7 @@ float wrnoise_2d(float x, float y, ptrdiff_t salt) {
 float wrnoise_2d_fancy(
   float x, float y, ptrdiff_t salt,
   ptrdiff_t wrapx, ptrdiff_t wrapy,
+  float *dx, float *dy,
   uint32_t flags
 ) {
   grid_neighborhood_2d grn = {
@@ -961,12 +962,16 @@ float wrnoise_2d_fancy(
     .y = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
   };
   ptrdiff_t i, j;
-  float dx, dy;
+  float dist_x, dist_y;
   float d = 0;
+  float dx_this, dy_this;
   float result;
   float best = MAX_SQ_WORLEY_DISTANCE_2D;
+  float dx_best, dy_best;
   float secondbest= MAX_SQ_WORLEY_DISTANCE_2D;
+  float dx_secondbest, dy_secondbest;
   float thirdbest= MAX_SQ_WORLEY_DISTANCE_2D;
+  float dx_thirdbest, dy_thirdbest;
 
   grn.i = ffloor(x);
   grn.j = ffloor(y);
@@ -987,18 +992,32 @@ float wrnoise_2d_fancy(
 
   // Find the three closest points:
   for (i = 0; i < 9; ++i) {
-    dx = grn.x[i] - x;
-    dy = grn.y[i] - y;
-    d = (dx * dx + dy * dy);
+    dist_x = grn.x[i] - x;
+    dist_y = grn.y[i] - y;
+    d = (dist_x * dist_x + dist_y * dist_y);
+    dx_this = 2 * dist_x;
+    dy_this = 2 * dist_y;
     if (d < best) {
       thirdbest = secondbest;
+      dx_thirdbest = dx_secondbest;
+      dy_thirdbest = dy_secondbest;
       secondbest = best;
+      dx_secondbest = dx_best;
+      dy_secondbest = dy_best;
       best = d;
+      dx_best = dx_this;
+      dy_best = dy_this;
     } else if (d < secondbest) {
       thirdbest = secondbest;
+      dx_thirdbest = dx_secondbest;
+      dy_thirdbest = dy_secondbest;
       secondbest = d;
+      dx_secondbest = dx_this;
+      dy_secondbest = dy_this;
     } else if (d < thirdbest) {
       thirdbest = d;
+      dx_thirdbest = dx_this;
+      dy_thirdbest = dy_this;
     }
   }
 
@@ -1007,10 +1026,36 @@ float wrnoise_2d_fancy(
   if (!(flags & WORLEY_FLAG_IGNORE_NEAREST)) {
     if (flags & WORLEY_FLAG_SMOOTH_SIDES) {
       float interp = best / (best + secondbest);
+      float dx_interp = (
+        secondbest * dx_best - best * dx_secondbest
+      ) / pow(best + secondbest, 2)
+      float dy_interp = (
+        secondbest * dy_best - best * dy_secondbest
+      ) / pow(best + secondbest, 2)
 
       result += (1 - interp) * best + interp * secondbest;
+      *dx = (
+        -best * dx_interp
+      +
+        secondbest * dx_interp
+      -
+        (interp - 1) * dx_best
+      +
+        interp * dx_secondbest
+      );
+      *dy = (
+        -best * dy_interp
+      +
+        secondbest * dy_interp
+      -
+        (interp - 1) * dy_best
+      +
+        interp * dy_secondbest
+      );
     } else {
       result += best;
+      *dx = dx_best;
+      *dy = dy_best;
     }
   }
   if (flags & WORLEY_FLAG_INCLUDE_NEXTBEST) {
@@ -1020,14 +1065,30 @@ float wrnoise_2d_fancy(
         (1 - secondthird) * secondbest +
         secondthird * (0.5 * secondbest + 0.5 * thirdbest)
       );
+      *dx -= (
+        dx_secondbest * (1.5 - secondthird)
+      +
+        0.5 * dx_thirdbest * secondthird * secondthird
+      );
+      *dy -= (
+        dy_secondbest * (1.5 - secondthird)
+      +
+        0.5 * dy_thirdbest * secondthird * secondthird
+      );
     } else {
       result -= secondbest;
+      *dx -= dx_secondbest;
+      *dy -= dy_secondbest;
     }
     result *= -1;
+    *dx *= -1;
+    *dy *= -1;
   }
   if (!(flags & WORLEY_FLAG_DONT_NORMALIZE)) {
     //result = sqrt(result / MAX_SQ_WORLEY_DISTANCE_2D);
-    result = result / MAX_SQ_WORLEY_DISTANCE_2D;
+    result /= MAX_SQ_WORLEY_DISTANCE_2D;
+    *dx /= MAX_SQ_WORLEY_DISTANCE_2D;
+    *dy /= MAX_SQ_WORLEY_DISTANCE_2D;
     //result = smooth(result, 4, 0.5);
   }
   return result;

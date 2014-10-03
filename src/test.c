@@ -53,8 +53,8 @@ int main(int argc, char** argv) {
   origin.z = (r_pos_t) fastfloor(th) + 20;
 
   // Start the game:
-  start_game(SEED, argc, argv, "tester", &origin);
-  //start_game(SEED, argc, argv, "viewer", &origin);
+  //start_game(SEED, argc, argv, "tester", &origin);
+  start_game(SEED, argc, argv, "viewer", &origin);
   //start_game(SEED, argc, argv, "dwarf", &origin);
   //start_game(SEED, argc, argv, "elf", &origin);
   //start_game(SEED, argc, argv, "sparrow", &origin);

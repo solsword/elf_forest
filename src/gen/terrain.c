@@ -31,7 +31,12 @@ char const * const TR_REGION_NAMES[] = {
  * Functions *
  *************/
 
-void compute_terrain_height(region_pos *pos, float *r_rocks, float *r_dirt) {
+void compute_terrain_height(
+  region_pos *pos,
+  float *r_rocks,
+  float *r_dirt,
+  float *r_downhill
+) {
   static int xcache = 3, ycache = 7;
   static float continents = 0, primary_geoforms = 0, secondary_geoforms = 0;
   float geodetails = 0, mountains = 0;

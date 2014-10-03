@@ -87,6 +87,10 @@ void setup_worldgen(ptrdiff_t seed) {
   THE_WORLD = create_world_map(seed, WORLD_WIDTH, WORLD_HEIGHT);
   printf("  ...generating geology...\n");
   generate_geology(THE_WORLD);
+  printf("  ...generating hydrology...\n");
+  generate_hydrology(THE_WORLD);
+  printf("  ...generating climate...\n");
+  generate_climate(THE_WORLD);
   printf("  ...writing world map to '%s'...\n", WORLD_MAP_FILE);
   texture *tx = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
   render_map(THE_WORLD, tx);
@@ -226,6 +230,30 @@ void generate_geology(world_map *wm) {
   printf("\n");
 }
 
+void generate_hydrology(world_map *wm) {
+  world_map_pos xy;
+  world_region *wr;
+
+  for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+    for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+      wr = get_world_region(result, &xy); // no need to worry about NULL here
+      wr->climate->
+    }
+  }
+}
+
+void generate_climate(world_map *wm) {
+  world_map_pos xy;
+  world_region *wr;
+
+  for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+    for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+      wr = get_world_region(result, &xy); // no need to worry about NULL here
+      wr->climate->
+    }
+  }
+}
+
 void strata_cell(
   world_map *wm,
   world_region* neighborhood[],
@@ -293,20 +321,22 @@ void strata_cell(
     &strbest, &strsecond
   );
 
-  if (h <= 1.0) { // if we're in the stone layers, compute a stone type
+  if (h <= 1.0) { // we're in the stone layers
     stone_cell(
       wm, rpos,
       h, stone_height,
       best, secondbest, strbest, strsecond,
       result
     );
-  } else { // if we're in dirt, compute a dirt type
+  } else if (h <= dirt_height / stone_height) { // we're in dirt
     dirt_cell(
       wm, rpos,
       dirt_height,
       best, secondbest, strbest, strsecond,
       result
     );
+  } else { // we're above the ground
+    j
   }
 }
 

@@ -144,13 +144,16 @@ struct strata_info_s { // indexed starting from the bottom
   float bottoms[MAX_STRATA_LAYERS]; // the bottom of each layer on [0, 1]
 };
 
+struct hydrology_info_s { // info on rivers, lakes, and the ocean
+  size_t water_table; // how high the water table is, in blocks
+  uint8_t water_salinity; // the salinity of local groundwater
+}
+
 struct climate_info_s {
   float rainfall[N_SEASONS]; // rainfall per season
   float temp_low[N_SEASONS]; // temperature low, mean and high throughout the
   float temp_mean[N_SEASONS]; // day, in each season
   float temp_high[N_SEASONS];
-  size_t water_table; // how high the water table is, in blocks
-  uint8_t water_salinity; // the salinity of local groundwater
 };
 
 struct biome_info_s {
@@ -192,7 +195,10 @@ struct world_region_s {
   ptrdiff_t seed;
   world_map_pos pos;
   region_pos anchor;
+  // topology info:
   r_pos_t terrain_height;
+  float downhill; // the local downhill direction in radians
+  // various info modules:
   strata_info geology;
   climate_info climate;
   biome_info ecology;
@@ -333,6 +339,12 @@ void world_cell(world_map *wm, region_pos *pos, cell *result);
 
 // Generates geology for the given world.
 void generate_geology(world_map *wm);
+
+// Generates hydrology (rivers, lakes, and the ocean) for the given world.
+void generate_hydrology(world_map *wm);
+
+// Generates climate for the given world.
+void generate_climate(world_map *wm);
 
 // Computes the cell contents at the given position based on strata.
 void strata_cell(

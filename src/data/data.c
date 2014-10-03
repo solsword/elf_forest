@@ -1,5 +1,5 @@
 // data.c
-// Loading from and saving to disk.
+// Data management.
 
 #include <stdint.h>
 #include <stdio.h>

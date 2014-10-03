@@ -132,86 +132,204 @@ static inline void get_noise(
   r_pos_t x, r_pos_t y, ptrdiff_t *salt,
   float *continents, float *primary_geoforms, float *secondary_geoforms,
   float *geodetails, float *mountains,
-  float *hills, float *ridges, float *mounds, float *details, float *bumps
+  float *hills, float *ridges, float *mounds, float *details, float *bumps,
+  float *grx, float *gry
 ) {
   float dsx, dsy;
+  float cos_part, sin_part;
+  float dx, dy;
+  float wr_dx, wr_dy;
+  float dsx_dx, dsx_dy, dsy_dx, dsy_dy;
+  float mod_dx, mod_dy; // derivatives of modulation component
   float scaleinterp;
   float geodetailed, mountainous, hilly, ridged, mounded, detailed, bumpy;
+  float dontcare;
 
   // continents
-  dsx = TR_DS_CONTINENTS * sxnoise_2d(
+  dsx = TR_DS_CONTINENTS * sxnoise_grad_2d(
     x * TR_DFQ_CONTINENTS,
     y * TR_DFQ_CONTINENTS,
-    *salt
+    *salt,
+    &dsx_dx, &dsx_dy
   );
   *salt = expanded_hash_1d(*salt);
-  dsy = TR_DS_CONTINENTS * sxnoise_2d(
+  dsy = TR_DS_CONTINENTS * sxnoise_grad_2d(
     x * TR_DFQ_CONTINENTS,
     y * TR_DFQ_CONTINENTS,
-    *salt
+    *salt,
+    &dsy_dx, &dsy_dy
   );
   *salt = expanded_hash_1d(*salt);
   scaleinterp = (
     0.7 +
-    0.4 * sxnoise_2d(
+    0.4 * sxnoise_grad_2d(
       x * TR_DFQ_CONTINENTS,
       y * TR_DFQ_CONTINENTS,
-      *salt
+      *salt,
+      &mod_dx, &mod_dy
     )
   );
   *salt = expanded_hash_1d(*salt);
-  *continents = scaleinterp * (
-    cosf((x + dsx) * TR_FREQUENCY_CONTINENTS) *
-    sinf((y + dsy) * TR_FREQUENCY_CONTINENTS)
-  );
-  *continents += (1 - scaleinterp) * (
-    cosf((x + 0.8 * dsy) * TR_FREQUENCY_CONTINENTS * 1.6) *
-    sinf((y - 0.8 * dsx) * TR_FREQUENCY_CONTINENTS * 1.6)
-  );
-  *continents = (1 + *continents) / 2.0;
-  *continents = smooth(*continents, 3, 0.5);
-  *continents = (2 * (*continents)) - 1;
 
-  geodetailed = sxnoise_2d(
+  cos_part = cosf((x + dsx) * TR_FREQUENCY_CONTINENTS);
+  sin_part = sinf((y + dsy) * TR_FREQUENCY_CONTINENTS);
+  *continents = scaleinterp * cos_part * sin_part;
+  dx = scaleinterp * (
+    (
+      cos_part *
+      (0 + dsy_dx) * TR_FREQUENCY_CONTINENTS *
+      cosf((y + dsy) * TR_FREQUENCY_CONTINENTS)
+    -
+      sin_part *
+      (1 + dsx_dx) * TR_FREQUENCY_CONTINENTS *
+      sinf((x + dsx) * TR_FREQUENCY_CONTINENTS)
+    )
+  +
+    (
+      cos_part *
+      sin_part *
+      mod_dx
+    )
+  );
+  dy = scaleinterp * (
+    (
+      cos_part *
+      (1 + dsy_dy) * TR_FREQUENCY_CONTINENTS *
+      cosf((y + dsy) * TR_FREQUENCY_CONTINENTS)
+    -
+      sin_part *
+      (0 + dsx_dy) * TR_FREQUENCY_CONTINENTS *
+      sinf((x + dsx) * TR_FREQUENCY_CONTINENTS)
+    )
+  +
+    (
+      cos_part *
+      sin_part *
+      mod_dy
+    )
+  );
+  *grx = dx;
+  *gry = dy;
+
+  cos_part = cosf((x + 0.8 * dsy) * TR_FREQUENCY_CONTINENTS * 1.6);
+  sin_part = sinf((y - 0.8 * dsx) * TR_FREQUENCY_CONTINENTS * 1.6);
+  *continents += (1 - scaleinterp) * cos_part * sin_part;
+  dx = (1 - scaleinterp) * (
+    (
+      cos_part *
+      (0 - 0.8 * dsx_dx) * TR_FREQUENCY_CONTINENTS * 1.6 *
+      cosf((y - 0.8 * dsx) * TR_FREQUENCY_CONTINENTS * 1.6)
+    -
+      sin_part *
+      (1 + 0.8 * dsy_dx) * TR_FREQUENCY_CONTINENTS * 1.6 *
+      sinf((x + 0.8 * dsx) * TR_FREQUENCY_CONTINENTS * 1.6)
+    )
+  +
+    (
+      cos_part *
+      sin_part *
+      (-mod_dx)
+    )
+  );
+  dy = (1 - scaleinterp) * (
+    (
+      cos_part *
+      (1 - 0.8 * dsx_dy) * TR_FREQUENCY_CONTINENTS * 1.6 *
+      cosf((y - 0.8 * dsx) * TR_FREQUENCY_CONTINENTS * 1.6)
+    -
+      sin_part *
+      (0 + 0.8 * dsy_dy) * TR_FREQUENCY_CONTINENTS * 1.6 *
+      sinf((x + 0.8 * dsx) * TR_FREQUENCY_CONTINENTS * 1.6)
+    )
+  +
+    (
+      cos_part *
+      sin_part *
+      (-mod_dy)
+    )
+  );
+  *grx += dx;
+  *gry += dy;
+
+  *continents = (1 + *continents) / 2.0;
+  *grx /= 2.0;
+  *gry /= 2.0;
+  *continents = smooth(*continents, 3, 0.5);
+  smooth_grad(*continents, 3, 0.5, &grx, &gry);
+  *continents = (2 * (*continents)) - 1;
+  *grx *= 2.0;
+  *gry *= 2.0;
+
+  geodetailed = sxnoise_grad_2d(
     (x - dsy) * TR_FREQUENCY_CONTINENTS * 1.7,
     (y - dsx) * TR_FREQUENCY_CONTINENTS * 1.7,
-    *salt
+    *salt,
+    &mod_dx, &mod_dy
   );
+  mod_dx *= (1 - dsy_dx) * TR_FREQUENCY_CONTINENTS * 1.7;
+  mod_dy *= (1 - dsx_dy) * TR_FREQUENCY_CONTINENTS * 1.7;
   *salt = expanded_hash_1d(*salt);
   geodetailed = (1 + geodetailed) / 2.0;
+  mod_dx /= 2.0;
+  mod_dy /= 2.0;
 
   // primary geoforms (mountain bones)
-  dsx = TR_DS_PGEOFORMS*sxnoise_2d(
+  dsx = TR_DS_PGEOFORMS*sxnoise_grad_2d(
     x*TR_DFQ_PGEOFORMS,
     y*TR_DFQ_PGEOFORMS,
-    *salt
+    *salt,
+    &dsx_dx, &dsx_dy
   );
   *salt = expanded_hash_1d(*salt);
-  dsy = TR_DS_PGEOFORMS*sxnoise_2d(
+  dsy = TR_DS_PGEOFORMS*sxnoise_grad_2d(
     y*TR_DFQ_PGEOFORMS,
     x*TR_DFQ_PGEOFORMS,
-    *salt
+    *salt,
+    &dsy_dx, &dsy_dy
   );
   *salt = expanded_hash_1d(*salt);
-  *primary_geoforms = sxnoise_2d(
+  *primary_geoforms = sxnoise_grad_2d(
     (x + dsx) * TR_FREQUENCY_PGEOFORMS * 0.7,
     (y + dsy) * TR_FREQUENCY_PGEOFORMS * 0.7,
-    *salt
+    *salt,
+    &dx, &dy
   );
+  dx *= (1 + dsx_dx) * TR_FREQUENCY_PGEOFORMS * 0.7;
+  dy *= (1 + dsy_dy) * TR_FREQUENCY_PGEOFORMS * 0.7;
+  // TODO: is it really okay to ignore the effects of off-axis distortion?
   *salt = expanded_hash_1d(*salt);
   *primary_geoforms += wrnoise_2d_fancy(
     (x - dsy) * TR_FREQUENCY_PGEOFORMS * 0.8,
     (y + dsx) * TR_FREQUENCY_PGEOFORMS * 0.8,
     *salt,
     0, 0,
+    &wr_dx, &wr_dy,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
+  wr_dx *= (1 - dsy_dx) * TR_FREQUENCY_PGEOFORMS * 0.8;
+  wr_dy *= (1 + dsx_dy) * TR_FREQUENCY_PGEOFORMS * 0.8;
+  dx += wr_dx;
+  dy += wr_dy;
   *salt = expanded_hash_1d(*salt);
   *primary_geoforms /= 2.0;
+  dx /= 2.0;
+  dy /= 2.0;
   *primary_geoforms = (1 + *primary_geoforms) / 2.0;
+  dx /= 2.0;
+  dy /= 2.0;
   *primary_geoforms = smooth(*primary_geoforms, 2, 0.5);
+  smooth_grad(*primary_geoforms, 2, 0.5, &dx, &dy);
   *primary_geoforms *= *primary_geoforms;
+  dx = 2 * (*primary_geoforms) * dx;
+  dy = 2 * (*primary_geoforms) * dy;
   *primary_geoforms = (2.0 * *primary_geoforms) - 1;
+  dx *= 2;
+  dy *= 2;
+
+  grx += dx;
+  gry += dy;
+  dx = 0;
+  dy = 0;
 
   mountainous = fmax(0, *primary_geoforms);
   mountainous = smooth(mountainous, 2, 0.7);
@@ -262,64 +380,100 @@ static inline void get_noise(
   ridged = 0.1 + 0.9 * ridged;
 
   // secondary geoforms (not used for roughness vaules)
-  dsx = TR_DS_SGEOFORMS*sxnoise_2d(
+  dsx = TR_DS_SGEOFORMS*sxnoise_grad_2d(
     x*TR_DFQ_SGEOFORMS,
     y*TR_DFQ_SGEOFORMS,
-    *salt
+    *salt,
+    &dsx_dx, &dsx_dy
   );
   *salt = expanded_hash_1d(*salt);
-  dsy = TR_DS_SGEOFORMS*sxnoise_2d(
+  dsy = TR_DS_SGEOFORMS*sxnoise_grad_2d(
     y*TR_DFQ_SGEOFORMS,
     x*TR_DFQ_SGEOFORMS,
-    *salt
+    *salt,
+    &dsy_dx, &dsy_dy
   );
   *salt = expanded_hash_1d(*salt);
-  *secondary_geoforms = sxnoise_2d(
+  *secondary_geoforms = sxnoise_grad_2d(
     (x + dsx) * TR_FREQUENCY_SGEOFORMS,
     (y + dsy) * TR_FREQUENCY_SGEOFORMS,
-    *salt
+    *salt,
+    &dx, &dy
   );
+  dx *= (1 + dsx_dx) * TR_FREQUENCY_SGEOFORMS;
+  dy *= (1 + dsy_dy) * TR_FREQUENCY_SGEOFORMS;
   *salt = expanded_hash_1d(*salt);
   *secondary_geoforms += wrnoise_2d_fancy(
     (x - dsy) * TR_FREQUENCY_SGEOFORMS,
     (y + dsx) * TR_FREQUENCY_SGEOFORMS,
     *salt,
     0, 0,
+    &wr_dx, &wr_dy
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
+  wr_dx += (1 - dsy_dx) * TR_FREQUENCY_SGEOFORMS;
+  wr_dy += (1 + dsx_dy) * TR_FREQUENCY_SGEOFORMS;
+  dx += wr_dx;
+  dy += wr_dy;
   *salt = expanded_hash_1d(*salt);
   *secondary_geoforms /= 2.0;
+  dx /= 2.0;
+  dy /= 2.0;
+
+  grx += dx;
+  gry += dy;
+  dx = 0;
+  dy = 0;
 
   // geodetails
-  dsx = TR_DS_GEODETAIL * sxnoise_2d(
+  dsx = TR_DS_GEODETAIL * sxnoise_grad_2d(
     x * TR_DFQ_GEODETAIL,
     y * TR_DFQ_GEODETAIL,
-    *salt
+    *salt,
+    &dsx_dx, &dsx_dy
   );
   *salt = expanded_hash_1d(*salt);
-  dsy = TR_DS_GEODETAIL * sxnoise_2d(
+  dsy = TR_DS_GEODETAIL * sxnoise_grad_2d(
     y * TR_DFQ_GEODETAIL,
     x * TR_DFQ_GEODETAIL,
-    *salt
+    *salt,
+    &dsy_dx, &dsy_dy
   );
   *salt = expanded_hash_1d(*salt);
 
-  *geodetails = 2.0 * sxnoise_2d(
+  *geodetails = 2.0 * sxnoise_grad_2d(
     (x + dsx) * TR_FREQUENCY_GEODETAIL,
     (y + dsy) * TR_FREQUENCY_GEODETAIL,
-    *salt
+    *salt,
+    &dx, &dy
   );
+  dx *= 2 * (1 + dsx_dx) * TR_FREQUENCY_GEODETAIL;
+  dy *= 2 * (1 + dsy_dy) * TR_FREQUENCY_GEODETAIL;
   *salt = expanded_hash_1d(*salt);
   *geodetails += wrnoise_2d_fancy(
     (x + dsy) * TR_FREQUENCY_GEODETAIL,
     (y - dsx) * TR_FREQUENCY_GEODETAIL,
     *salt,
     0, 0,
+    &wr_dx, &wr_dy,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
+  wr_dx *= (1 + dsy_dx) * TR_FREQUENCY_GEODETAIL;
+  wr_dy *= (1 - dsx_dy) * TR_FREQUENCY_GEODETAIL;
+  dx += wr_dx;
+  dy += wr_dy;
   *salt = expanded_hash_1d(*salt);
   *geodetails /= 3.0;
+  dx /= 3.0;
+  dy /= 3.0;
   *geodetails *= geodetailed;
+  dx *= mod_dx;
+  dy *= mod_dy;
+
+  grx += dx;
+  gry += dy;
+  dx = 0;
+  dy = 0;
 
   // mountains
   dsx = TR_DS_MOUNTAINS * sxnoise_2d(
@@ -347,6 +501,7 @@ static inline void get_noise(
       (y + dsx) * TR_FREQUENCY_MOUNTAINS,
       *salt,
       0, 0,
+      &dontcare, &dontcare,
       WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
     ),
     2,
@@ -358,6 +513,7 @@ static inline void get_noise(
     (y - dsy) * TR_FREQUENCY_MOUNTAINS * 0.7,
     *salt,
     0, 0,
+    &dontcare, &dontcare,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
   *salt = expanded_hash_1d(*salt);
@@ -580,11 +736,13 @@ static inline float oabscb(float noise) {
  *************/
 
 // Computes the terrain height at the given region position in blocks, and
-// writes out the rock and dirt heights at that location.
+// writes out the rock and dirt heights at that location, along with the
+// general downhill direction in radians.
 void compute_terrain_height(
   region_pos *pos,
   float *r_rocks,
-  float *r_dirt
+  float *r_dirt,
+  float *r_downhill
 );
 
 // Alters the various detail values according to the terrain region

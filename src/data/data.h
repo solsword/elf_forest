@@ -2,7 +2,7 @@
 #define DATA_H
 
 // data.h
-// Loading from and saving to disk.
+// Data management.
 
 #include <stdint.h>
 

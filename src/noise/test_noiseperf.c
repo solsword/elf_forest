@@ -23,8 +23,9 @@ int main(int argc, char** argv) {
   setup_duration_data(&dd, 0.2);
   for (x = 0; x < SIZE; ++x) {
     for (y = 0; y < SIZE; ++y) {
+      start_duration(&dd);
       f[x+y*SIZE] = sxnoise_2d(x*SCALE, y*SCALE, 18304);
-      update_duration(&dd);
+      end_duration(&dd);
     }
   }
   x = (int) f[0];
@@ -37,8 +38,9 @@ int main(int argc, char** argv) {
   setup_duration_data(&dd, 0.2);
   for (x = 0; x < SIZE; ++x) {
     for (y = 0; y < SIZE; ++y) {
+      start_duration(&dd);
       f[x+y*SIZE] = wrnoise_2d(x*SCALE, y*SCALE, 81293);
-      update_duration(&dd);
+      end_duration(&dd);
     }
   }
   x = (int) f[0];
