@@ -130,207 +130,216 @@ extern char const * const TR_REGION_NAMES[];
 
 static inline void get_noise(
   r_pos_t x, r_pos_t y, ptrdiff_t *salt,
-  float *continents, float *primary_geoforms, float *secondary_geoforms,
-  float *geodetails, float *mountains,
-  float *hills, float *ridges, float *mounds, float *details, float *bumps,
-  float *grx, float *gry
+  manifold_point *continents,
+  manifold_point *primary_geoforms, manifold_point *secondary_geoforms,
+  manifold_point *geodetails, manifold_point *mountains,
+  manifold_point *hills, manifold_point *ridges,
+  manifold_point *mounds, manifold_point *details, manifold_point *bumps
 ) {
-  float dsx, dsy;
-  float cos_part, sin_part;
+  manifold_point temp; // temporary manifold point for intermediates
+  manifold_point dst_x, dst_y; //distortion values
+  manifold_point cos_part, sin_part; // cos and sin components of continents
   float dx, dy;
   float wr_dx, wr_dy;
   float dsx_dx, dsx_dy, dsy_dx, dsy_dy;
   float mod_dx, mod_dy; // derivatives of modulation component
-  float scaleinterp;
-  float geodetailed, mountainous, hilly, ridged, mounded, detailed, bumpy;
+
+  manifold_point scaleinterp;
+  manifold_point geodetailed, mountainous, hilly, ridged;
+  manifold_point mounded, detailed, bumpy;
   float dontcare;
 
   // continents
-  dsx = TR_DS_CONTINENTS * sxnoise_grad_2d(
+  // ----------
+    // x distortion
+  mani_get_sxnoise_2d(
+    dst_x,
+    x * TR_DFQ_CONTINENTS,
+    y * TR_DFQ_CONTINENTS, 
+    *salt
+  );
+  mani_compose_simple(dst_x, TR_DFQ_CONTINENTS, TR_DFQ_CONTINENTS);
+  mani_scale_const(dst_x, TR_DS_CONTINENTS);
+  *salt = expanded_hash_1d(*salt);
+    // y distortion
+  mani_get_sxnoise_2d(
+    dst_y,
+    x * TR_DFQ_CONTINENTS,
+    y * TR_DFQ_CONTINENTS, 
+    *salt
+  );
+  mani_compose_simple(dst_x, TR_DFQ_CONTINENTS, TR_DFQ_CONTINENTS);
+  mani_scale_const(dst_x, TR_DS_CONTINENTS);
+  *salt = expanded_hash_1d(*salt);
+
+    // interpolant between larger and smaller scales:
+  mani_get_sxnoise_2d(
+    scaleinterp,
     x * TR_DFQ_CONTINENTS,
     y * TR_DFQ_CONTINENTS,
-    *salt,
-    &dsx_dx, &dsx_dy
+    *salt
   );
-  *salt = expanded_hash_1d(*salt);
-  dsy = TR_DS_CONTINENTS * sxnoise_grad_2d(
-    x * TR_DFQ_CONTINENTS,
-    y * TR_DFQ_CONTINENTS,
-    *salt,
-    &dsy_dx, &dsy_dy
-  );
-  *salt = expanded_hash_1d(*salt);
-  scaleinterp = (
-    0.7 +
-    0.4 * sxnoise_grad_2d(
-      x * TR_DFQ_CONTINENTS,
-      y * TR_DFQ_CONTINENTS,
-      *salt,
-      &mod_dx, &mod_dy
-    )
-  );
+  mani_compose_simple(scaleinterp, TR_DFQ_CONTINENTS, TR_DFQ_CONTINENTS);
+  mani_scale_const(scaleinterp, 0.3);
+  mani_offset_const(scaleinterp, 0.7);
   *salt = expanded_hash_1d(*salt);
 
-  cos_part = cosf((x + dsx) * TR_FREQUENCY_CONTINENTS);
-  sin_part = sinf((y + dsy) * TR_FREQUENCY_CONTINENTS);
-  *continents = scaleinterp * cos_part * sin_part;
-  dx = scaleinterp * (
-    (
-      cos_part *
-      (0 + dsy_dx) * TR_FREQUENCY_CONTINENTS *
-      cosf((y + dsy) * TR_FREQUENCY_CONTINENTS)
-    -
-      sin_part *
-      (1 + dsx_dx) * TR_FREQUENCY_CONTINENTS *
-      sinf((x + dsx) * TR_FREQUENCY_CONTINENTS)
-    )
-  +
-    (
-      cos_part *
-      sin_part *
-      mod_dx
-    )
+    // large-scale cos part:
+  cos_part.z = cosf((x + dst_x.z) * TR_FREQUENCY_CONTINENTS);
+  cos_part.dx = (
+    TR_FREQUENCY_CONTINENTS * (1 + dst_x.dx)
+  *
+    (-sinf((x + dst_x.z) * TR_FREQUENCY_CONTINENTS)
   );
-  dy = scaleinterp * (
-    (
-      cos_part *
-      (1 + dsy_dy) * TR_FREQUENCY_CONTINENTS *
-      cosf((y + dsy) * TR_FREQUENCY_CONTINENTS)
-    -
-      sin_part *
-      (0 + dsx_dy) * TR_FREQUENCY_CONTINENTS *
-      sinf((x + dsx) * TR_FREQUENCY_CONTINENTS)
-    )
-  +
-    (
-      cos_part *
-      sin_part *
-      mod_dy
-    )
+  cos_part.dy = (
+    TR_FREQUENCY_CONTINENTS * dst_x.dy
+  *
+    (-sinf((x + dst_x.z) * TR_FREQUENCY_CONTINENTS)
   );
-  *grx = dx;
-  *gry = dy;
 
-  cos_part = cosf((x + 0.8 * dsy) * TR_FREQUENCY_CONTINENTS * 1.6);
-  sin_part = sinf((y - 0.8 * dsx) * TR_FREQUENCY_CONTINENTS * 1.6);
-  *continents += (1 - scaleinterp) * cos_part * sin_part;
-  dx = (1 - scaleinterp) * (
-    (
-      cos_part *
-      (0 - 0.8 * dsx_dx) * TR_FREQUENCY_CONTINENTS * 1.6 *
-      cosf((y - 0.8 * dsx) * TR_FREQUENCY_CONTINENTS * 1.6)
-    -
-      sin_part *
-      (1 + 0.8 * dsy_dx) * TR_FREQUENCY_CONTINENTS * 1.6 *
-      sinf((x + 0.8 * dsx) * TR_FREQUENCY_CONTINENTS * 1.6)
-    )
-  +
-    (
-      cos_part *
-      sin_part *
-      (-mod_dx)
-    )
+    // large-scale sin part:
+  sin_part.z = sinf((y + dst_y.z) * TR_FREQUENCY_CONTINENTS);
+  sin_part.dx = (
+    TR_FREQUENCY_CONTINENTS * dst_y.dx
+  *
+    cosf((y + dst_y.z) * TR_FREQUENCY_CONTINENTS
   );
-  dy = (1 - scaleinterp) * (
-    (
-      cos_part *
-      (1 - 0.8 * dsx_dy) * TR_FREQUENCY_CONTINENTS * 1.6 *
-      cosf((y - 0.8 * dsx) * TR_FREQUENCY_CONTINENTS * 1.6)
-    -
-      sin_part *
-      (0 + 0.8 * dsy_dy) * TR_FREQUENCY_CONTINENTS * 1.6 *
-      sinf((x + 0.8 * dsx) * TR_FREQUENCY_CONTINENTS * 1.6)
-    )
-  +
-    (
-      cos_part *
-      sin_part *
-      (-mod_dy)
-    )
+  sin_part.dy = (
+    TR_FREQUENCY_CONTINENTS * (1 + dst_y.dy)
+  *
+    cosf((y + dst_y.z) * TR_FREQUENCY_CONTINENTS
   );
-  *grx += dx;
-  *gry += dy;
 
-  *continents = (1 + *continents) / 2.0;
-  *grx /= 2.0;
-  *gry /= 2.0;
-  *continents = smooth(*continents, 3, 0.5);
-  smooth_grad(*continents, 3, 0.5, &grx, &gry);
-  *continents = (2 * (*continents)) - 1;
-  *grx *= 2.0;
-  *gry *= 2.0;
+    // large-scale part of continents
+  mani_copy(*continents, scaleinterp);
+  mani_multiply(*continents, cos_part);
+  mani_multiply(*continents, sin_part);
 
-  geodetailed = sxnoise_grad_2d(
+    // small-scale cos part:
+  cos_part.z = cosf((x + 0.8 * dst_y.z) * TR_FREQUENCY_CONTINENTS * 1.6);
+  cos_part.dx = (
+    TR_FREQUENCY_CONTINENTS * 1.6 * (1 + 0.8 * dst_y.dx)
+  *
+    (-sinf((x + 0.8 * dst_y.z) * TR_FREQUENCY_CONTINENTS * 1.6)
+  );
+  cos_part.dy = (
+    TR_FREQUENCY_CONTINENTS * 1.6 * 0.8 * dst_y.dy
+  *
+    (-sinf((x + 0.8 * dst_y.z) * TR_FREQUENCY_CONTINENTS * 1.6)
+  );
+
+    // small-scale sin part:
+  sin_part.z = sinf((y - 0.8 * dst_x.z) * TR_FREQUENCY_CONTINENTS * 1.6);
+  sin_part.dx = (
+    -TR_FREQUENCY_CONTINENTS * 1.6 * 0.8 * dst_x.dx
+  *
+    cosf((y - 0.8 * dst_x.z) * TR_FREQUENCY_CONTINENTS * 1.6
+  );
+  sin_part.dy = (
+    TR_FREQUENCY_CONTINENTS * 1.6 * (1 - 0.8 * dst_x.dy)
+  *
+    cosf((y - 0.8 * dst_x.z) * TR_FREQUENCY_CONTINENTS * 1.6
+  );
+
+  // we'll use the small cos part to accumulate the other half of the
+  // continents manifold and then add it back in:
+  mani_scale_const(scaleinterp, -1);
+  mani_multiply(cos_part, sin_part);
+  mani_multiply(cos_part, scaleinterp);
+  mani_add(*continents, cos_part);
+
+  // a bit of smoothing at the end:
+  mani_offset_const(*continents, 1);
+  mani_scale_const(*continents, 0.5);
+
+  mani_smooth(*continents, 3, 0.5);
+
+  mani_scale_const(*continents, 2.0);
+  mani_offset_const(*continents, -1);
+
+  // geodetails fading
+  // -----------------
+  mani_get_sxnoise_2d(
+    geodetailed,
     (x - dsy) * TR_FREQUENCY_CONTINENTS * 1.7,
     (y - dsx) * TR_FREQUENCY_CONTINENTS * 1.7,
-    *salt,
-    &mod_dx, &mod_dy
+    *salt
   );
-  mod_dx *= (1 - dsy_dx) * TR_FREQUENCY_CONTINENTS * 1.7;
-  mod_dy *= (1 - dsx_dy) * TR_FREQUENCY_CONTINENTS * 1.7;
+  mani_compose_simple(
+    geodetailed,
+    (1 - dsy.dx) * TR_FREQUENCY_CONTINENTS * 1.7,
+    (1 - dsx.dy) * TR_FREQUENCY_CONTINENTS * 1.7
+  );
   *salt = expanded_hash_1d(*salt);
-  geodetailed = (1 + geodetailed) / 2.0;
-  mod_dx /= 2.0;
-  mod_dy /= 2.0;
+  mani_offset_const(geodetailed, 1);
+  mani_scale_const(geodetailed, 0.5);
 
   // primary geoforms (mountain bones)
-  dsx = TR_DS_PGEOFORMS*sxnoise_grad_2d(
-    x*TR_DFQ_PGEOFORMS,
-    y*TR_DFQ_PGEOFORMS,
-    *salt,
-    &dsx_dx, &dsx_dy
+  // ---------------------------------
+    // x distortion
+  mani_get_sxnoise_2d(
+    dst_x,
+    x * TR_DFQ_PGEOFORMS,
+    y * TR_DFQ_PGEOFORMS, 
+    *salt
+  );
+  mani_compose_simple(dst_x, TR_DFQ_PGEOFORMS, TR_DFQ_PGEOFORMS);
+  mani_scale_const(dst_x, TR_DS_PGEOFORMS);
+  *salt = expanded_hash_1d(*salt);
+
+    // y distortion
+  mani_get_sxnoise_2d(
+    dst_y,
+    x * TR_DFQ_PGEOFORMS,
+    y * TR_DFQ_PGEOFORMS, 
+    *salt
+  );
+  mani_compose_simple(dst_y, TR_DFQ_PGEOFORMS, TR_DFQ_PGEOFORMS);
+  mani_scale_const(dst_y, TR_DS_PGEOFORMS);
+  *salt = expanded_hash_1d(*salt);
+
+    // simplex noise component
+  mani_get_sxnoise_2d(
+    *primary_geoforms,
+    (x + dst_x.z) * TR_FREQUENCY_PGEOFORMS * 0.7,
+    (y + dst_y.z) * TR_FREQUENCY_PGEOFORMS * 0.7,
+    *salt
+  );
+  mani_compose_simple(
+    *primary_geoforms,
+    (1 + dst_x.dx) * TR_FREQUENCY_PGEOFORMS * 0.7,
+    (1 + dst_y.dy) * TR_FREQUENCY_PGEOFORMS * 0.7
   );
   *salt = expanded_hash_1d(*salt);
-  dsy = TR_DS_PGEOFORMS*sxnoise_grad_2d(
-    y*TR_DFQ_PGEOFORMS,
-    x*TR_DFQ_PGEOFORMS,
-    *salt,
-    &dsy_dx, &dsy_dy
-  );
-  *salt = expanded_hash_1d(*salt);
-  *primary_geoforms = sxnoise_grad_2d(
-    (x + dsx) * TR_FREQUENCY_PGEOFORMS * 0.7,
-    (y + dsy) * TR_FREQUENCY_PGEOFORMS * 0.7,
-    *salt,
-    &dx, &dy
-  );
-  dx *= (1 + dsx_dx) * TR_FREQUENCY_PGEOFORMS * 0.7;
-  dy *= (1 + dsy_dy) * TR_FREQUENCY_PGEOFORMS * 0.7;
   // TODO: is it really okay to ignore the effects of off-axis distortion?
-  *salt = expanded_hash_1d(*salt);
-  *primary_geoforms += wrnoise_2d_fancy(
-    (x - dsy) * TR_FREQUENCY_PGEOFORMS * 0.8,
-    (y + dsx) * TR_FREQUENCY_PGEOFORMS * 0.8,
+    // worley noise component
+  mani_get_wrnoise_2d(
+    *temp,
+    (x - dst_y.z) * TR_FREQUENCY_PGEOFORMS * 0.8,
+    (y + dst_x.z) * TR_FREQUENCY_PGEOFORMS * 0.8,
     *salt,
     0, 0,
-    &wr_dx, &wr_dy,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
-  wr_dx *= (1 - dsy_dx) * TR_FREQUENCY_PGEOFORMS * 0.8;
-  wr_dy *= (1 + dsx_dy) * TR_FREQUENCY_PGEOFORMS * 0.8;
-  dx += wr_dx;
-  dy += wr_dy;
+  mani_compose_simple(
+    temp,
+    (1 - dst_y.dx) * TR_FREQUENCY_PGEOFORMS * 0.8,
+    (1 + dst_x.dy) * TR_FREQUENCY_PGEOFORMS * 0.8
+  );
+  mani_add(*primary_geoforms, temp);
   *salt = expanded_hash_1d(*salt);
-  *primary_geoforms /= 2.0;
-  dx /= 2.0;
-  dy /= 2.0;
-  *primary_geoforms = (1 + *primary_geoforms) / 2.0;
-  dx /= 2.0;
-  dy /= 2.0;
-  *primary_geoforms = smooth(*primary_geoforms, 2, 0.5);
-  smooth_grad(*primary_geoforms, 2, 0.5, &dx, &dy);
-  *primary_geoforms *= *primary_geoforms;
-  dx = 2 * (*primary_geoforms) * dx;
-  dy = 2 * (*primary_geoforms) * dy;
-  *primary_geoforms = (2.0 * *primary_geoforms) - 1;
-  dx *= 2;
-  dy *= 2;
 
-  grx += dx;
-  gry += dy;
-  dx = 0;
-  dy = 0;
+  mani_scale_const(*primary_geoforms, 0.5);
+  mani_offset_const(*primary_geoforms, 1);
+  mani_scale_const(*primary_geoforms, 0.5);
+  mani_smooth(*primary_geoforms, 2, 0.5);
+  mani_multiply(*primary_geoforms, *primary_geoforms);
+  mani_scale_const(*primary_geoforms, 2.0);
+  mani_offset_const(*primary_geoforms, -1);
 
+  // mountains fading
+  // ----------------
+  // TODO: HERE!
   mountainous = fmax(0, *primary_geoforms);
   mountainous = smooth(mountainous, 2, 0.7);
   mountainous += 0.2 * sxnoise_2d(
