@@ -18,6 +18,7 @@
 #include "world/entities.h"
 #include "world/blocks.h"
 #include "gen/terrain.h" // to draw geoform and other terrain data
+#include "math/manifold.h"
 
 #include "ui/ui.h"
 
@@ -262,12 +263,12 @@ static inline void draw_pos_info(int *h) {
   *h -= 30;
 
   // Draw fractional height:
-  float dummy, th;
+  manifold_point dummy, th;
   compute_terrain_height(&player_pos, &dummy, &th);
   sprintf(
     TXT,
     "h: %.4f",
-    player_pos.z / th
+    player_pos.z / th.z
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
   *h -= 30;

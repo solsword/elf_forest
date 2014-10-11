@@ -967,11 +967,11 @@ float wrnoise_2d_fancy(
   float dx_this, dy_this;
   float result;
   float best = MAX_SQ_WORLEY_DISTANCE_2D;
-  float dx_best, dy_best;
+  float dx_best = 0, dy_best = 0;
   float secondbest= MAX_SQ_WORLEY_DISTANCE_2D;
-  float dx_secondbest, dy_secondbest;
+  float dx_secondbest = 0, dy_secondbest = 0;
   float thirdbest= MAX_SQ_WORLEY_DISTANCE_2D;
-  float dx_thirdbest, dy_thirdbest;
+  float dx_thirdbest = 0, dy_thirdbest = 0;
 
   grn.i = ffloor(x);
   grn.j = ffloor(y);
@@ -1028,10 +1028,10 @@ float wrnoise_2d_fancy(
       float interp = best / (best + secondbest);
       float dx_interp = (
         secondbest * dx_best - best * dx_secondbest
-      ) / pow(best + secondbest, 2)
+      ) / pow(best + secondbest, 2);
       float dy_interp = (
         secondbest * dy_best - best * dy_secondbest
-      ) / pow(best + secondbest, 2)
+      ) / pow(best + secondbest, 2);
 
       result += (1 - interp) * best + interp * secondbest;
       *dx = (

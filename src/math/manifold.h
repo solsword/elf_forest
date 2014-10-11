@@ -83,6 +83,13 @@ static inline void mani_scale_const(manifold_point point, float factor) {
   point.dy *= factor;
 }
 
+// Raises the manifold to the given constant exponent.
+static inline void mani_pow_const(manifold_point point, float exponent) {
+  point.dx = exponent * pow(point.z, exponent - 1) * point.dx;
+  point.dy = exponent * pow(point.z, exponent - 1) * point.dy;
+  point.z = pow(point.z, exponent);
+}
+
 // Adds two manifolds, storing the result in the first.
 static inline void mani_add(
   manifold_point target,

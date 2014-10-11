@@ -7,6 +7,7 @@
 #include "data/data.h"
 #include "txgen/cartography.h"
 #include "tex/tex.h"
+#include "math/manifold.h"
 
 #include "geology.h"
 
@@ -30,7 +31,7 @@ world_map* THE_WORLD = NULL;
  ******************************/
 
 world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
-  float dontcare, th;
+  manifold_point dontcare, th;
   world_map *result = (world_map*) malloc(sizeof(world_map));
   world_map_pos xy;
   world_region* wr;
@@ -50,16 +51,16 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
       // Average the heights at the corners of the world region:
       wmpos__rpos(&xy, &(wr->anchor));
       compute_terrain_height(&(wr->anchor), &dontcare, &th);
-      wr->terrain_height += th;
+      wr->terrain_height += th.z;
       wr->anchor.y += (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
       compute_terrain_height(&(wr->anchor), &dontcare, &th);
-      wr->terrain_height += th;
+      wr->terrain_height += th.z;
       wr->anchor.x += (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
       compute_terrain_height(&(wr->anchor), &dontcare, &th);
-      wr->terrain_height += th;
+      wr->terrain_height += th.z;
       wr->anchor.y -= (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
       compute_terrain_height(&(wr->anchor), &dontcare, &th);
-      wr->terrain_height += th;
+      wr->terrain_height += th.z;
       wr->terrain_height /= 4;
 
       // Pick a seed for this world region:
@@ -231,6 +232,8 @@ void generate_geology(world_map *wm) {
 }
 
 void generate_hydrology(world_map *wm) {
+  /*
+   * TODO: HERE!
   world_map_pos xy;
   world_region *wr;
 
@@ -240,9 +243,12 @@ void generate_hydrology(world_map *wm) {
       wr->climate->
     }
   }
+  */
 }
 
 void generate_climate(world_map *wm) {
+  /*
+   * TODO: HERE!
   world_map_pos xy;
   world_region *wr;
 
@@ -252,6 +258,7 @@ void generate_climate(world_map *wm) {
       wr->climate->
     }
   }
+  */
 }
 
 void strata_cell(
@@ -260,7 +267,7 @@ void strata_cell(
   region_pos *rpos,
   cell *result
 ) {
-  static float stone_height, dirt_height;
+  static manifold_point stone_height, dirt_height;
   static region_pos pr_rpos = { .x = -1, .y = -1, .z = -1 };
   float h;
   world_region *best, *secondbest; // best and second-best regions
@@ -310,7 +317,7 @@ void strata_cell(
   copy_rpos(rpos, &pr_rpos);
 
   // Compute our fractional height:
-  h = rpos->z / stone_height;
+  h = rpos->z / stone_height.z;
 
   // Figure out the nearest regions:
   compute_region_contenders(
@@ -324,19 +331,19 @@ void strata_cell(
   if (h <= 1.0) { // we're in the stone layers
     stone_cell(
       wm, rpos,
-      h, stone_height,
+      h, stone_height.z,
       best, secondbest, strbest, strsecond,
       result
     );
-  } else if (h <= dirt_height / stone_height) { // we're in dirt
+  } else if (h <= dirt_height.z / stone_height.z) { // we're in dirt
     dirt_cell(
       wm, rpos,
-      dirt_height,
+      dirt_height.z,
       best, secondbest, strbest, strsecond,
       result
     );
   } else { // we're above the ground
-    j
+    // TODO: HERE!
   }
 }
 

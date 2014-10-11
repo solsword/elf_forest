@@ -147,7 +147,7 @@ struct strata_info_s { // indexed starting from the bottom
 struct hydrology_info_s { // info on rivers, lakes, and the ocean
   size_t water_table; // how high the water table is, in blocks
   uint8_t water_salinity; // the salinity of local groundwater
-}
+};
 
 struct climate_info_s {
   float rainfall[N_SEASONS]; // rainfall per season

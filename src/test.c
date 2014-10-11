@@ -21,6 +21,7 @@
 #include "world/entities.h"
 
 #include "gen/worldgen.h"
+#include "math/manifold.h"
 #include "control/ctl.h"
 #include "prof/ptime.h"
 #include "gen/terrain.h"
@@ -42,7 +43,7 @@ ptrdiff_t SEED = 18234141;
  ********/
 
 int main(int argc, char** argv) {
-  float dontcare, th;
+  manifold_point dontcare, th;
   // Compute detailed starting location:
   region_pos origin;
   //rcpos__rpos(&CHUNK_ORIGIN, &origin);
@@ -50,7 +51,7 @@ int main(int argc, char** argv) {
   origin.x += 2;
   origin.y += 2;
   compute_terrain_height(&origin, &dontcare, &th);
-  origin.z = (r_pos_t) fastfloor(th) + 20;
+  origin.z = (r_pos_t) fastfloor(th.z) + 20;
 
   // Start the game:
   //start_game(SEED, argc, argv, "tester", &origin);
