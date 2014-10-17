@@ -51,8 +51,9 @@ void compute_terrain_height(
 
   if (xcache == pos->x && ycache == pos->y) {
     // no need to recompute everything:
-    mani_copy(*r_rocks, rocks_height);
-    mani_copy(*r_dirt, dirt_height);
+    // printf("cached heights: %.2f, %.2f\n\n", rocks_height.z, dirt_height.z);
+    mani_copy(r_rocks, &rocks_height);
+    mani_copy(r_dirt, &dirt_height);
   }
   xcache = pos->x; ycache = pos->y;
 
@@ -68,36 +69,91 @@ void compute_terrain_height(
   );
   salt = expanded_hash_1d(salt);
 
+  // DEBUG: print base geoforms:
+  //*
+  // printf("Base geoforms!\n");
+  // printf("continents: %.2f\n", continents.z);
+  if (continents.z < -1 || continents.z > 1) { printf("BAD!\n"); exit(17); }
+  // printf("primary_geoforms: %.2f\n", primary_geoforms.z);
+  if (primary_geoforms.z < -1 || primary_geoforms.z > 1) {
+    printf("BAD!\n");
+    exit(17);
+  }
+  // printf("secondary_geoforms: %.2f\n", secondary_geoforms.z);
+  if (secondary_geoforms.z < -1 || secondary_geoforms.z > 1) {
+    printf("BAD!\n");
+    exit(17);
+  }
+  // printf("geodetails: %.2f\n", geodetails.z);
+  if (geodetails.z < -1 || geodetails.z > 1) { printf("BAD!\n"); exit(17); }
+  // printf("mountains: %.2f\n", mountains.z);
+  if (mountains.z < -1 || mountains.z > 1) { printf("BAD!\n"); exit(17); }
+  // printf("hills: %.2f\n", hills.z);
+  if (hills.z < -1 || hills.z > 1) { printf("BAD!\n"); exit(17); }
+  // printf("ridges: %.2f\n", ridges.z);
+  if (ridges.z < -1 || ridges.z > 1) { printf("BAD!\n"); exit(17); }
+  // printf("mounds: %.2f\n", mounds.z);
+  if (mounds.z < -1 || mounds.z > 1) { printf("BAD!\n"); exit(17); }
+  // printf("details: %.2f\n", details.z);
+  if (details.z < -1 || details.z > 1) { printf("BAD!\n"); exit(17); }
+  // printf("bumps: %.2f\n", bumps.z);
+  if (bumps.z < -1 || bumps.z > 1) { printf("BAD!\n"); exit(17); }
+  // printf("base: %.2f\n", base.z);
+  if (base.z < -1 || base.z > 1) { printf("BAD!\n"); exit(17); }
+  // printf("interp: %.2f\n", tr_interp.z);
+  if (tr_interp.z < -1 || tr_interp.z > 1) { printf("BAD!\n"); exit(17); }
+  // printf("rocks: %.2f\n", rocks_height.z);
+  // printf("\n");
+  // */
+
   alter_terrain_values(
     pos, &salt,
     region, &tr_interp,
     &mountains, &hills, &ridges, &mounds, &details, &bumps
   );
 
+  // DEBUG:
+  //*
+  // printf("altered values!\n");
+  // printf("mountains: %.2f\n", mountains.z);
+  // printf("hills: %.2f\n", hills.z);
+  // printf("ridges: %.2f\n", ridges.z);
+  // printf("mounds: %.2f\n", mounds.z);
+  // printf("details: %.2f\n", details.z);
+  // printf("bumps: %.2f\n", bumps.z);
+  // printf("\n");
+  // */
+
   // TODO: attenuate mountains near the beach?
-  mani_copy(temp, mountains);
-  mani_scale_const(temp, TR_SCALE_MOUNTAINS);
-  mani_add(rocks_height, temp);
+  mani_copy(&temp, &mountains);
+  mani_scale_const(&temp, TR_SCALE_MOUNTAINS);
+  mani_add(&rocks_height, &temp);
 
-  mani_copy(temp, hills);
-  mani_scale_const(temp, TR_SCALE_HILLS);
-  mani_add(rocks_height, temp);
+  mani_copy(&temp, &hills);
+  mani_scale_const(&temp, TR_SCALE_HILLS);
+  mani_add(&rocks_height, &temp);
 
-  mani_copy(temp, ridges);
-  mani_scale_const(temp, TR_SCALE_RIDGES);
-  mani_add(rocks_height, temp);
+  mani_copy(&temp, &ridges);
+  mani_scale_const(&temp, TR_SCALE_RIDGES);
+  mani_add(&rocks_height, &temp);
 
-  mani_copy(temp, mounds);
-  mani_scale_const(temp, TR_SCALE_MOUNDS);
-  mani_add(rocks_height, temp);
+  mani_copy(&temp, &mounds);
+  mani_scale_const(&temp, TR_SCALE_MOUNDS);
+  mani_add(&rocks_height, &temp);
 
-  mani_copy(temp, details);
-  mani_scale_const(temp, TR_SCALE_DETAILS);
-  mani_add(rocks_height, temp);
+  mani_copy(&temp, &details);
+  mani_scale_const(&temp, TR_SCALE_DETAILS);
+  mani_add(&rocks_height, &temp);
 
-  mani_copy(temp, bumps);
-  mani_scale_const(temp, TR_SCALE_BUMPS);
-  mani_add(rocks_height, temp);
+  mani_copy(&temp, &bumps);
+  mani_scale_const(&temp, TR_SCALE_BUMPS);
+  mani_add(&rocks_height, &temp);
+
+  // DEBUG:
+  //*
+  // printf("summed rocks: %.2f\n", rocks_height.z);
+  // printf("\n");
+  // */
 
   // Figure out our soil depth:
   compute_dirt_height(
@@ -108,9 +164,23 @@ void compute_terrain_height(
     &dirt_height
   );
 
+  // DEBUG:
+  //*
+  // printf("rocks post-dirt: %.2f\n", rocks_height.z);
+  // printf("dirt: %.2f\n", dirt_height.z);
+  // printf("\n");
+  // */
+
   // Write out our results:
-  mani_copy(*r_rocks, rocks_height);
-  mani_copy(*r_dirt, dirt_height);
+  mani_copy(r_rocks, &rocks_height);
+  mani_copy(r_dirt, &dirt_height);
+
+  // DEBUG:
+  //*
+  // printf("result rocks: %.2f\n", r_rocks->z);
+  // printf("result dirt: %.2f\n", r_dirt->z);
+  // printf("\n");
+  // */
 }
 
 // helper for alter_terrian_values
@@ -123,22 +193,22 @@ static inline void alter_value(
   manifold_point *next_flatten
 ) {
   manifold_point result, temp, tinterp;
-  mani_copy(temp, *value);
-  mani_smooth(temp, this_str, this_ctr);
-  mani_multiply(temp, *interp);
-  mani_multiply(temp, *this_flatten);
-  mani_copy(result, temp);
+  mani_copy(&temp, value);
+  mani_smooth(&temp, this_str, this_ctr);
+  mani_multiply(&temp, interp);
+  mani_multiply(&temp, this_flatten);
+  mani_copy(&result, &temp);
 
-  mani_copy(temp, *value);
-  mani_copy(tinterp, *interp);
-  mani_smooth(temp, next_str, next_ctr);
-  mani_scale_const(tinterp, -1);
-  mani_offset_const(tinterp, 1);
-  mani_multiply(temp, tinterp);
-  mani_multiply(temp, *next_flatten);
+  mani_copy(&temp, value);
+  mani_copy(&tinterp, interp);
+  mani_smooth(&temp, next_str, next_ctr);
+  mani_scale_const(&tinterp, -1);
+  mani_offset_const(&tinterp, 1);
+  mani_multiply(&temp, &tinterp);
+  mani_multiply(&temp, next_flatten);
 
-  mani_add(result, temp);
-  mani_copy(*value, result);
+  mani_add(&result, &temp);
+  mani_copy(value, &result);
 }
 
 void alter_terrain_values(
@@ -168,11 +238,11 @@ void alter_terrain_values(
     TR_FREQUENCY_SGEOFORMS * 2.4,
     salt
   );
-  mani_scale_const(temp, 0.7);
-  mani_add(flatten, temp);
-  mani_scale_const(flatten, 1.0/1.7);
-  mani_offset_const(flatten, 1);
-  mani_scale_const(flatten, 0.5);
+  mani_scale_const(&temp, 0.7);
+  mani_add(&flatten, &temp);
+  mani_scale_const(&flatten, 1.0/1.7);
+  mani_offset_const(&flatten, 1);
+  mani_scale_const(&flatten, 0.5);
 
   if (region == TR_REGION_DEPTHS) {
     // amplify *bumps, *ridges, and *details; attenuate *hills and *mountains
@@ -184,7 +254,7 @@ void alter_terrain_values(
     alter_value(bumps, tr_interp, 3, 0.3, 3, 0.8, &nofl, &nofl);
   } else if (region == TR_REGION_SHELF) {
     // gently attenuate most features; strongly attenuate *ridges:
-    mani_scale_const(flatten, 0.8);
+    mani_scale_const(&flatten, 0.8);
 
     alter_value(mountains, tr_interp, 3, 0.75, 1.7, 0.6, &nofl, &flatten);
     alter_value(hills, tr_interp, 1.5, 0.65, 1.5, 0.7, &nofl, &flatten);
@@ -194,7 +264,7 @@ void alter_terrain_values(
     alter_value(bumps, tr_interp, 3, 0.8, 3, 0.9, &nofl, &flatten);
   } else if (region == TR_REGION_PLAINS) {
     // attenuate everything; create some superflat regions:
-    mani_scale_const(flatten, 0.8);
+    mani_scale_const(&flatten, 0.8);
 
     alter_value(mountains, tr_interp, 1.7, 0.6, 1, 1, &flatten, &nofl);
     alter_value(hills, tr_interp, 1.5, 0.7, 1.8, 0.3, &flatten, &nofl);
@@ -205,45 +275,45 @@ void alter_terrain_values(
 
   } else if (region == TR_REGION_HILLS) {
     // slightly accentuate *hills and *ridges:
-    mani_smooth(flatten, 1.2, 0.5);
-    mani_scale_const(flatten, 0.9);
-    mani_offset_const(flatten, 0.1);
+    mani_smooth(&flatten, 1.2, 0.5);
+    mani_scale_const(&flatten, 0.9);
+    mani_offset_const(&flatten, 0.1);
 
     alter_value(mountains, tr_interp, 1, 1, 0.6, 0.5, &nofl, &nofl);
     alter_value(hills, tr_interp, 1.8, 0.3, 1.3, 0.55, &nofl, &nofl);
     alter_value(ridges, tr_interp, 1.5, 0.35, 1.6, 0.4, &nofl, &flatten);
     alter_value(mounds, tr_interp, 1, 1, 1, 1, &nofl, &flatten);
 
-    mani_scale_const(flatten, 0.5);
-    mani_offset_const(flatten, 0.25);
+    mani_scale_const(&flatten, 0.5);
+    mani_offset_const(&flatten, 0.25);
     alter_value(details, tr_interp, 1, 1, 1, 1, &nofl, &flatten);
     alter_value(bumps, tr_interp, 1, 1, 1, 1, &nofl, &flatten);
 
   } else if (region == TR_REGION_HIGHLANDS) {
     // accentuate *mountains; attenuate *hills and *ridges slightly; create some
     // flatter regions:
-    mani_smooth(flatten, 1.2, 0.5);
-    mani_scale_const(flatten, 0.9);
-    mani_offset_const(flatten, 0.1);
+    mani_smooth(&flatten, 1.2, 0.5);
+    mani_scale_const(&flatten, 0.9);
+    mani_offset_const(&flatten, 0.1);
 
     alter_value(mountains, tr_interp, 0.6, 0.5, 0.6, 0.65, &nofl, &nofl);
     alter_value(hills, tr_interp, 1.3, 0.55, 1.5, 0.4, &nofl, &nofl);
     alter_value(ridges, tr_interp, 1.6, 0.4, 0.5, 0.7, &flatten, &nofl);
     alter_value(mounds, tr_interp, 1, 1, 1.3, 0.3, &flatten, &nofl);
 
-    mani_scale_const(flatten, 0.5);
-    mani_offset_const(flatten, 0.25);
+    mani_scale_const(&flatten, 0.5);
+    mani_offset_const(&flatten, 0.25);
     alter_value(details, tr_interp, 1, 1, 1.5, 0.4, &flatten, &nofl);
     alter_value(bumps, tr_interp, 1, 1, 1.5, 0.3, &flatten, &nofl);
 
   } else if (region == TR_REGION_MOUNTAINS) {
     // amplify most things:
-    mani_smooth(*mountains, 0.6, 0.65);
-    mani_smooth(*hills, 1.5, 0.4);
-    mani_smooth(*ridges, 0.5, 0.7);
-    mani_smooth(*mounds, 1.3, 0.3);
-    mani_smooth(*details, 1.5, 0.4);
-    mani_smooth(*bumps, 1.5, 0.3);
+    mani_smooth(mountains, 0.6, 0.65);
+    mani_smooth(hills, 1.5, 0.4);
+    mani_smooth(ridges, 0.5, 0.7);
+    mani_smooth(mounds, 1.3, 0.3);
+    mani_smooth(details, 1.5, 0.4);
+    mani_smooth(bumps, 1.5, 0.3);
   }
 }
 
@@ -271,17 +341,17 @@ void compute_dirt_height(
     TR_DIRT_NOISE_SCALE * 2.5,
     salt
   );
-  mani_scale_const(temp, 0.5);
-  mani_add(var, temp);
+  mani_scale_const(&temp, 0.5);
+  mani_add(&var, &temp);
 
-  mani_scale_const(var, 1.0/1.5);
-  mani_offset_const(var, 1);
-  mani_scale_const(var, 0.5 * 0.4);
-  mani_offset_const(var, 0.6);
+  mani_scale_const(&var, 1.0/1.5);
+  mani_offset_const(&var, 1);
+  mani_scale_const(&var, 0.5 * 0.4);
+  mani_offset_const(&var, 0.6);
 
   // Base soil depth:
-  mani_copy(*result, var);
-  mani_scale_const(*result, TR_BASE_SOIL_DEPTH);
+  mani_copy(result, &var);
+  mani_scale_const(result, TR_BASE_SOIL_DEPTH);
 
   // Mountains and hills have less dirt on them in general:
   simplex_component(
@@ -291,12 +361,12 @@ void compute_dirt_height(
     TR_DIRT_EROSION_SCALE,
     salt
   );
-  mani_offset_const(temp, 1);
-  mani_scale_const(temp, 0.5 * 0.5);
-  mani_offset_const(temp, 0.25);
-  mani_scale_const(temp, -TR_DIRT_MOUNTAIN_EROSION);
-  mani_multiply(temp, *mountains);
-  mani_add(*result, temp);
+  mani_offset_const(&temp, 1);
+  mani_scale_const(&temp, 0.5 * 0.5);
+  mani_offset_const(&temp, 0.25);
+  mani_scale_const(&temp, -TR_DIRT_MOUNTAIN_EROSION);
+  mani_multiply(&temp, mountains);
+  mani_add(result, &temp);
 
   simplex_component(
     &temp,
@@ -305,57 +375,57 @@ void compute_dirt_height(
     TR_DIRT_EROSION_SCALE * 1.6,
     salt
   );
-  mani_offset_const(temp, 1);
-  mani_scale_const(temp, 0.5 * 0.5);
-  mani_offset_const(temp, 0.25);
-  mani_scale_const(temp, -TR_DIRT_HILL_EROSION);
-  mani_multiply(temp, *hills);
-  mani_add(*result, temp);
+  mani_offset_const(&temp, 1);
+  mani_scale_const(&temp, 0.5 * 0.5);
+  mani_offset_const(&temp, 0.25);
+  mani_scale_const(&temp, -TR_DIRT_HILL_EROSION);
+  mani_multiply(&temp, hills);
+  mani_add(result, &temp);
 
   // Altitude above/below sea level contributes to soil depth due to wind
   // erosion and marine snow (this is a stupidly oversimplified model of
   // course):
-  mani_copy(temp, *rocks_height);
-  mani_offset_const(temp, -TR_HEIGHT_SEA_LEVEL);
+  mani_copy(&temp, rocks_height);
+  mani_offset_const(&temp, -TR_HEIGHT_SEA_LEVEL);
   if (temp.z > 0) {
-    mani_scale_const(temp, 1.0/(TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL));
-    mani_smooth(temp, 2.3, 0.8);
+    mani_scale_const(&temp, 1.0/(TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL));
+    mani_smooth(&temp, 2.3, 0.8);
   } else {
-    mani_scale_const(temp, 1.0/TR_HEIGHT_SEA_LEVEL);
-    mani_smooth(temp, 1.4, 0.5);
+    mani_scale_const(&temp, 1.0/TR_HEIGHT_SEA_LEVEL);
+    mani_smooth(&temp, 1.4, 0.5);
   }
 
-  mani_scale_const(temp, -TR_ALTITUDE_EROSION_STRENGTH);
-  mani_add(*result, temp);
+  mani_scale_const(&temp, -TR_ALTITUDE_EROSION_STRENGTH);
+  mani_add(result, &temp);
 
   // Steeper places (especially at high altitudes) have less dirt, while
   // flatter places have more:
-  steepness = mani_slope(*rocks_height);
+  steepness = mani_slope(rocks_height);
   steepness = fmin(1.5, steepness); // slopes above 1.5 are treated identically
   steepness /= 1.5;
   smooth(steepness, 2.0, 0.25);
   steepness -= 0.25;
 
-  mani_copy(temp, *rocks_height);
-  mani_scale_const(temp, 1.0/TR_MAX_HEIGHT);
-  mani_smooth(temp, 1.5, 0.65);
-  mani_scale_const(temp, steepness * -TR_SLOPE_EROSION_STRENGTH);
+  mani_copy(&temp, rocks_height);
+  mani_scale_const(&temp, 1.0/TR_MAX_HEIGHT);
+  mani_smooth(&temp, 1.5, 0.65);
+  mani_scale_const(&temp, steepness * -TR_SLOPE_EROSION_STRENGTH);
     // Note: this is incorrect: for a correct erosion manifold you'd need to
     // know the second derivative of rocks_height, but we don't so we're
     // ignoring it. This means that the dirt_height won't have a completely
     // correct derivative, but for most applications, using the rocks_height
     // derivative should be satisfactory.
-  mani_add(*result, temp);
+  mani_add(result, &temp);
 
   // Details and bumps in the stone aren't reflected in the dirt:
   // TODO: smoothness vs. roughness
-  mani_copy(temp, *details);
-  mani_scale_const(temp, -TR_SCALE_DETAILS);
-  mani_add(*result, temp);
+  mani_copy(&temp, details);
+  mani_scale_const(&temp, -TR_SCALE_DETAILS);
+  mani_add(result, &temp);
 
-  mani_copy(temp, *bumps);
-  mani_scale_const(temp, -TR_SCALE_BUMPS);
-  mani_add(*result, temp);
+  mani_copy(&temp, bumps);
+  mani_scale_const(&temp, -TR_SCALE_BUMPS);
+  mani_add(result, &temp);
 
   // Dirt depth can't be negative:
   if (result->z < 0) {
@@ -365,7 +435,7 @@ void compute_dirt_height(
   }
 
   // Convert to absolute dirt height:
-  mani_add(*result, *rocks_height);
+  mani_add(result, rocks_height);
 }
 
 void geoform_info(

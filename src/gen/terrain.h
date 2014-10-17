@@ -139,13 +139,15 @@ static inline void simplex_component(
   ptrdiff_t *salt
 ) {
   mani_get_sxnoise_2d(
-    *result,
+    result,
     x * frequency,
     y * frequency,
     *salt
   ); *salt = expanded_hash_1d(*salt);
+  // DEBUG:
+  // printf("simp-comp-base: %.3f\n", result->z);
   mani_compose_simple(
-    *result,
+    result,
     dx * frequency,
     dy * frequency
   );
@@ -160,7 +162,7 @@ static inline void worley_component(
   uint32_t flags
 ) {
   mani_get_wrnoise_2d(
-    *result,
+    result,
     x * frequency,
     y * frequency,
     *salt,
@@ -168,7 +170,7 @@ static inline void worley_component(
     flags
   ); *salt = expanded_hash_1d(*salt);
   mani_compose_simple(
-    *result,
+    result,
     dx * frequency,
     dy * frequency
   );
@@ -189,7 +191,7 @@ static inline void get_standard_distortion(
     frequency,
     salt
   );
-  mani_scale_const(*result_x, scale);
+  mani_scale_const(result_x, scale);
   // y distortion
   simplex_component(
     result_y,
@@ -198,7 +200,7 @@ static inline void get_standard_distortion(
     frequency,
     salt
   );
-  mani_scale_const(*result_y, scale);
+  mani_scale_const(result_y, scale);
 }
 
 static inline void get_noise(
@@ -233,8 +235,12 @@ static inline void get_noise(
     TR_DFQ_CONTINENTS,
     salt
   );
-  mani_scale_const(scaleinterp, 0.3);
-  mani_offset_const(scaleinterp, 0.7);
+  // DEBUG:
+  // printf("cont-scint-simplex: %.3f\n", scaleinterp.z);
+  mani_scale_const(&scaleinterp, 0.3);
+  mani_offset_const(&scaleinterp, 0.7);
+  // DEBUG:
+  // printf("cont-scint: %.3f\n", scaleinterp.z);
 
     // large-scale cos part:
   cos_part.z = cosf((x + dst_x.z) * TR_FREQUENCY_CONTINENTS);
@@ -262,10 +268,17 @@ static inline void get_noise(
     cosf((y + dst_y.z) * TR_FREQUENCY_CONTINENTS)
   );
 
+  // DEBUG:
+  // printf("cont-lfcos: %.3f\n", cos_part.z);
+  // printf("cont-lfsin: %.3f\n", sin_part.z);
+
     // large-scale part of continents
-  mani_copy(*continents, scaleinterp);
-  mani_multiply(*continents, cos_part);
-  mani_multiply(*continents, sin_part);
+  mani_copy(continents, &scaleinterp);
+  mani_multiply(continents, &cos_part);
+  mani_multiply(continents, &sin_part);
+
+  // DEBUG:
+  // printf("cont-base: %.3f\n", continents->z);
 
     // small-scale cos part:
   cos_part.z = cosf((x + 0.8 * dst_y.z) * TR_FREQUENCY_CONTINENTS * 1.6);
@@ -293,21 +306,36 @@ static inline void get_noise(
     cosf((y - 0.8 * dst_x.z) * TR_FREQUENCY_CONTINENTS * 1.6)
   );
 
+  // DEBUG:
+  // printf("cont-hfcos: %.3f\n", cos_part.z);
+  // printf("cont-hfsin: %.3f\n", sin_part.z);
+
   // we'll use the small cos part to accumulate the other half of the
   // continents manifold and then add it back in:
-  mani_scale_const(scaleinterp, -1);
-  mani_multiply(cos_part, sin_part);
-  mani_multiply(cos_part, scaleinterp);
-  mani_add(*continents, cos_part);
+  mani_scale_const(&scaleinterp, -1);
+  mani_offset_const(&scaleinterp, 1);
+  mani_multiply(&cos_part, &sin_part);
+  mani_multiply(&cos_part, &scaleinterp);
+  // DEBUG:
+  // printf("cont-hf-base: %.3f\n", cos_part.z);
+
+  mani_add(continents, &cos_part);
+
+  // DEBUG:
+  // printf("cont-full: %.3f\n", continents->z);
 
   // a bit of smoothing at the end:
-  mani_offset_const(*continents, 1);
-  mani_scale_const(*continents, 0.5);
+  mani_offset_const(continents, 1);
+  mani_scale_const(continents, 0.5);
 
-  mani_smooth(*continents, 3, 0.5);
+  mani_smooth(continents, 3, 0.5);
 
-  mani_scale_const(*continents, 2.0);
-  mani_offset_const(*continents, -1);
+  mani_scale_const(continents, 2.0);
+  mani_offset_const(continents, -1);
+    // continents should be in [-1, 1].
+
+  // DEBUG:
+  // printf("cont-smooth: %.3f\n", continents->z);
 
   // geodetails fading
   // -----------------
@@ -320,8 +348,9 @@ static inline void get_noise(
     TR_FREQUENCY_CONTINENTS * 1.7,
     salt
   );
-  mani_offset_const(geodetailed, 1);
-  mani_scale_const(geodetailed, 0.5);
+  mani_offset_const(&geodetailed, 1);
+  mani_scale_const(&geodetailed, 0.5);
+    // geodetailed should be in [0, 1].
 
   // primary geoforms (mountain bones)
   // ---------------------------------
@@ -354,15 +383,16 @@ static inline void get_noise(
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
-  mani_add(*primary_geoforms, temp);
+  mani_add(primary_geoforms, &temp);
 
-  mani_scale_const(*primary_geoforms, 0.5);
-  mani_offset_const(*primary_geoforms, 1);
-  mani_scale_const(*primary_geoforms, 0.5);
-  mani_smooth(*primary_geoforms, 2, 0.5);
-  mani_multiply(*primary_geoforms, *primary_geoforms);
-  mani_scale_const(*primary_geoforms, 2.0);
-  mani_offset_const(*primary_geoforms, -1);
+  mani_scale_const(primary_geoforms, 0.5);
+  mani_offset_const(primary_geoforms, 1);
+  mani_scale_const(primary_geoforms, 0.5);
+  mani_smooth(primary_geoforms, 2, 0.5);
+  mani_multiply(primary_geoforms, primary_geoforms);
+  mani_scale_const(primary_geoforms, 2.0);
+  mani_offset_const(primary_geoforms, -1);
+    // primary_geoforms should be in [-1, 1].
 
   // mountains fading
   // ----------------
@@ -371,9 +401,9 @@ static inline void get_noise(
     mountainous.dx = 0;
     mountainous.dy = 0;
   } else {
-    mani_copy(mountainous, *primary_geoforms);
+    mani_copy(&mountainous, primary_geoforms);
   }
-  mani_smooth(mountainous, 2, 0.7);
+  mani_smooth(&mountainous, 2, 0.7);
   simplex_component(
     &temp,
     x + dst_y.z,
@@ -383,15 +413,16 @@ static inline void get_noise(
     TR_FREQUENCY_SGEOFORMS * 0.7,
     salt
   );
-  mani_scale_const(temp, 0.2);
-  mani_add(mountainous, temp);
+  mani_scale_const(&temp, 0.2);
+  mani_add(&mountainous, &temp);
 
-  mani_scale_const(mountainous, 1.0/1.2);
+  mani_scale_const(&mountainous, 1.0/1.2);
   if (mountainous.z < 0) {
     mountainous.z = 0;
     mountainous.dx = 0;
     mountainous.dy = 0;
   }
+    // mountainous should be in [0, 1].
 
   // hills fading
   // ------------
@@ -400,9 +431,9 @@ static inline void get_noise(
     hilly.dx = 0;
     hilly.dy = 0;
   } else {
-    mani_copy(hilly, *primary_geoforms);
+    mani_copy(&hilly, primary_geoforms);
   }
-  mani_pow_const(hilly, 0.7);
+  mani_pow_const(&hilly, 0.7);
   simplex_component(
     &temp,
     x + dst_x.z * 0.6,
@@ -412,7 +443,7 @@ static inline void get_noise(
     TR_FREQUENCY_SGEOFORMS * 0.8,
     salt
   );
-  mani_add(hilly, temp);
+  mani_add(&hilly, &temp);
   simplex_component(
     &temp,
     x - dst_y.z * 0.4,
@@ -422,14 +453,15 @@ static inline void get_noise(
     TR_FREQUENCY_GEODETAIL * 0.3,
     salt
   );
-  mani_scale_const(temp, 0.5);
-  mani_add(hilly, temp);
-  mani_scale_const(hilly, 1.0/2.5);
+  mani_scale_const(&temp, 0.5);
+  mani_add(&hilly, &temp);
+  mani_scale_const(&hilly, 1.0/2.5);
   if (hilly.z < 0) {
     hilly.z = 0;
     hilly.dx = 0;
     hilly.dy = 0;
   }
+    // hilly should be in [0, 1].
 
   // ridges fading
   // -------------
@@ -438,10 +470,10 @@ static inline void get_noise(
     ridged.dx = 0;
     ridged.dy = 0;
   } else {
-    mani_copy(ridged, *primary_geoforms);
-    mani_offset_const(ridged, 0.05);
+    mani_copy(&ridged, primary_geoforms);
+    mani_offset_const(&ridged, 0.05);
   }
-  mani_pow_const(ridged, 0.6);
+  mani_pow_const(&ridged, 0.6);
   simplex_component(
     &temp,
     x + dst_x.z*0.4,
@@ -451,7 +483,7 @@ static inline void get_noise(
     TR_FREQUENCY_SGEOFORMS * 0.9,
     salt
   );
-  mani_add(ridged, temp);
+  mani_add(&ridged, &temp);
 
   simplex_component(
     &temp,
@@ -462,11 +494,12 @@ static inline void get_noise(
     TR_FREQUENCY_GEODETAIL * 0.4,
     salt
   );
-  mani_scale_const(ridged, 0.5);
-  mani_add(ridged, temp);
+  mani_scale_const(&ridged, 0.5);
+  mani_add(&ridged, &temp);
 
-  mani_scale_const(ridged, 0.9/2.5);
-  mani_offset_const(ridged, 0.1);
+  mani_scale_const(&ridged, 0.9/2.5);
+  mani_offset_const(&ridged, 0.1);
+    // ridged should be in [0.1, 1].
 
   // secondary geoforms (not used for roughness vaules)
   // --------------------------------------------------
@@ -499,8 +532,9 @@ static inline void get_noise(
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
-  mani_add(*secondary_geoforms, temp);
-  mani_scale_const(*secondary_geoforms, 0.5);
+  mani_add(secondary_geoforms, &temp);
+  mani_scale_const(secondary_geoforms, 0.5);
+    // secondary_geoforms should be in [-1, 1].
 
   // geodetails
   // ----------
@@ -521,7 +555,7 @@ static inline void get_noise(
     TR_FREQUENCY_GEODETAIL,
     salt
   );
-  mani_scale_const(*geodetails, 2.0);
+  mani_scale_const(geodetails, 2.0);
 
     // worley component
   worley_component(
@@ -534,10 +568,11 @@ static inline void get_noise(
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
-  mani_add(*geodetails, temp);
+  mani_add(geodetails, &temp);
 
-  mani_scale_const(*geodetails, 1.0/3.0);
-  mani_multiply(*geodetails, geodetailed);
+  mani_scale_const(geodetails, 1.0/3.0);
+  mani_multiply(geodetails, &geodetailed);
+    // geodetails should be in [-1, 1].
 
   // mountains
   // ---------
@@ -559,8 +594,8 @@ static inline void get_noise(
     salt
   );
 
-  mani_offset_const(*mountains, 1);
-  mani_scale_const(*mountains, 0.5);
+  mani_offset_const(mountains, 1);
+  mani_scale_const(mountains, 0.5);
 
     // first worley component
   worley_component(
@@ -573,9 +608,9 @@ static inline void get_noise(
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
-  mani_smooth(temp, 2, 0.5);
-  mani_scale_const(temp, 2.0);
-  mani_add(*mountains, temp);
+  mani_smooth(&temp, 2, 0.5);
+  mani_scale_const(&temp, 2.0);
+  mani_add(mountains, &temp);
 
     // second worley component
   worley_component(
@@ -588,10 +623,11 @@ static inline void get_noise(
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
-  mani_add(*mountains, temp);
+  mani_add(mountains, &temp);
 
-  mani_scale_const(*mountains, 0.25);
-  mani_multiply(*mountains, mountainous);
+  mani_scale_const(mountains, 0.25);
+  mani_multiply(mountains, &mountainous);
+    // mountains should be in [0, 1].
 
   // mounds fading
   // -------------
@@ -604,9 +640,10 @@ static inline void get_noise(
     TR_FREQUENCY_MOUNTAINS * 0.6,
     salt
   );
-  mani_offset_const(mounded, 1);
-  mani_scale_const(mounded, 0.25);
-  mani_offset_const(mounded, 0.5);
+  mani_offset_const(&mounded, 1);
+  mani_scale_const(&mounded, 0.25);
+  mani_offset_const(&mounded, 0.5);
+    // mounded should be in [0.5, 1].
 
   // hills
   // -----
@@ -626,7 +663,8 @@ static inline void get_noise(
     TR_FREQUENCY_HILLS,
     salt
   );
-  mani_multiply(*hills, hilly);
+  mani_multiply(hills, &hilly);
+    // hills should be in [-1, 1].
 
   // detail fading
   // -------------
@@ -639,9 +677,10 @@ static inline void get_noise(
     TR_FREQUENCY_HILLS * 0.5,
     salt
   );
-  mani_offset_const(detailed, 1);
-  mani_scale_const(detailed, 0.5 * 0.8);
-  mani_offset_const(detailed, 0.2);
+  mani_offset_const(&detailed, 1);
+  mani_scale_const(&detailed, 0.5 * 0.8);
+  mani_offset_const(&detailed, 0.2);
+    // detailed should be in [0.2, 1].
 
   // ridges
   // ------
@@ -673,10 +712,11 @@ static inline void get_noise(
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST
   );
-  mani_scale_const(temp, 0.5);
-  mani_add(*ridges, temp);
-  mani_scale_const(*ridges, 1.0/1.5);
-  mani_multiply(*ridges, ridged);
+  mani_scale_const(&temp, 0.5);
+  mani_add(ridges, &temp);
+  mani_scale_const(ridges, 1.0/1.5);
+  mani_multiply(ridges, &ridged);
+    // ridges should be in [0, 1].
 
   // bumps fading
   // ------------
@@ -689,9 +729,10 @@ static inline void get_noise(
     TR_FREQUENCY_RIDGES * 0.2,
     salt
   );
-  mani_offset_const(bumpy, 1);
-  mani_scale_const(bumpy, 0.5 * 0.6);
-  mani_offset_const(bumpy, 0.4);
+  mani_offset_const(&bumpy, 1);
+  mani_scale_const(&bumpy, 0.5 * 0.6);
+  mani_offset_const(&bumpy, 0.4);
+    // bumpy should be in [0.4, 1].
 
   // mounds
   // ------
@@ -711,7 +752,8 @@ static inline void get_noise(
     TR_FREQUENCY_MOUNDS,
     salt
   );
-  mani_multiply(*mounds, mounded);
+  mani_multiply(mounds, &mounded);
+    // mounds should be in [-1, 1].
 
   // details
   // -------
@@ -731,7 +773,8 @@ static inline void get_noise(
     TR_FREQUENCY_DETAILS,
     salt
   );
-  mani_multiply(*details, detailed);
+  mani_multiply(details, &detailed);
+    // details should be in [-1, 1].
 
   // bumps
   get_standard_distortion(
@@ -750,7 +793,8 @@ static inline void get_noise(
     TR_FREQUENCY_BUMPS,
     salt
   );
-  mani_multiply(*bumps, bumpy);
+  mani_multiply(bumps, &bumpy);
+    // bumps should be in [-1, 1].
 }
 
 static inline void geomap_segment(
@@ -759,16 +803,26 @@ static inline void geomap_segment(
   float lower, float upper,
   float lower_height, float upper_height
 ) {
-  mani_copy(*interp, *base);
-  mani_offset_const(*interp, -lower);
-  mani_scale_const(*interp, 1.0/(upper - lower));
-  mani_smooth(*interp, sm_str, sm_ctr);
-  mani_copy(*result, *interp);
+  mani_copy(interp, base);
+  // DEBUG:
+  // printf("Geomap segment :: base %.2f\n", base->z);
+  // printf("Geomap segment :: interp %.2f\n", interp->z);
+  mani_offset_const(interp, -lower);
+  // printf("Geomap segment :: offset :: interp %.2f\n", interp->z);
+  mani_scale_const(interp, 1.0/(upper - lower));
+  // printf("Geomap segment :: scale :: interp %.2f\n", interp->z);
+  mani_smooth(interp, sm_str, sm_ctr);
+  // printf("Geomap segment :: smooth :: interp %.2f\n", interp->z);
+  mani_copy(result, interp);
+  // printf("Geomap segment :: copy :: result %.2f\n", result->z);
   mani_scale_const(
-    *result,
+    result,
     (upper_height - lower_height)
   );
-  mani_offset_const(*result, lower_height);
+  // printf("Geomap segment :: scale :: result %.2f\n", result->z);
+  mani_offset_const(result, lower_height);
+  // printf("Geomap segment :: offset :: result %.2f\n", result->z);
+  // printf("\n\n\n");
 }
 
 // Remaps the given value (on [0, 1]) to account for the shape and height of
@@ -855,30 +909,46 @@ static inline void compute_base_geoforms(
   );
   *salt = expanded_hash_1d(*salt);
 
+  // DEBUG: print noise
+  //*
+  // printf("Base geoforms noise!\n");
+  // printf("continents: %.8f\n", continents->z);
+  // printf("primary_geoforms: %.8f\n", primary_geoforms->z);
+  // printf("secondary_geoforms: %.8f\n", secondary_geoforms->z);
+  // printf("geodetails: %.8f\n", geodetails->z);
+  // printf("mountains: %.8f\n", mountains->z);
+  // printf("hills: %.8f\n", hills->z);
+  // printf("ridges: %.8f\n", ridges->z);
+  // printf("mounds: %.8f\n", mounds->z);
+  // printf("details: %.8f\n", details->z);
+  // printf("bumps: %.8f\n", bumps->z);
+  // printf("\n\n\n");
+  // */
+
   base->z = 0;
   base->dx = 0;
   base->dy = 0;
 
-  mani_copy(temp, *continents);
-  mani_scale_const(temp, 2.5);
-  mani_add(*base, temp);
+  mani_copy(&temp, continents);
+  mani_scale_const(&temp, 2.5);
+  mani_add(base, &temp);
 
-  mani_copy(temp, *primary_geoforms);
-  mani_scale_const(temp, 2);
-  mani_add(*base, temp);
+  mani_copy(&temp, primary_geoforms);
+  mani_scale_const(&temp, 2);
+  mani_add(base, &temp);
 
-  mani_copy(temp, *secondary_geoforms);
-  mani_scale_const(temp, 1.5);
-  mani_add(*base, temp);
+  mani_copy(&temp, secondary_geoforms);
+  mani_scale_const(&temp, 1.5);
+  mani_add(base, &temp);
 
-  mani_add(*base, *geodetails);
+  mani_add(base, geodetails);
 
-  mani_scale_const(*base, 1.0/7.0);
+  mani_scale_const(base, 1.0/7.0);
 
-  mani_offset_const(*base, 1);
-  mani_scale_const(*base, 0.5); // squash into [0, 1]
+  mani_offset_const(base, 1);
+  mani_scale_const(base, 0.5); // squash into [0, 1]
 
-  mani_smooth(*base, 2, 0.5); // spread things out
+  mani_smooth(base, 2, 0.5); // spread things out
 
   // remap everything:
   geomap(height, base, region, tr_interp);

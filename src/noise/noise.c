@@ -485,7 +485,7 @@ static inline float compute_surflet_gradient_2d(
   float *rx, float *ry
 ) {
   // attenuation
-  float atten = (SURFLET_SQ_RADIUS_2D - (x*x + y*y)) / SURFLET_SQ_RADIUS_2D;
+  float atten = (SURFLET_SQ_RADIUS_2D - (x*x + y*y));
 
   if (atten < 0) {
     *rx = 0;

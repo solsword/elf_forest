@@ -91,6 +91,8 @@ void render_map(world_map *wm, texture *tx) {
         i = (size_t) (hf*(EC_SEA_COLORS - 1));
         cinterp = (hf*(EC_SEA_COLORS - 1)) - i;
         if (hf < 0 || hf > 1) {
+          // DEBUG:
+          printf("hf! %.3f\n", hf);
           tx_set_px(tx, 0xff0088ff, col, row);
         } else {
           color = SEA_COLORS[i];

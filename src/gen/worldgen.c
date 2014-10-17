@@ -51,17 +51,27 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
       // Average the heights at the corners of the world region:
       wmpos__rpos(&xy, &(wr->anchor));
       compute_terrain_height(&(wr->anchor), &dontcare, &th);
+      // DEBUG:
+      // printf("th1: %.3f\n", th.z);
       wr->terrain_height += th.z;
       wr->anchor.y += (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
       compute_terrain_height(&(wr->anchor), &dontcare, &th);
+      // DEBUG:
+      // printf("th2: %.3f\n", th.z);
       wr->terrain_height += th.z;
       wr->anchor.x += (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
       compute_terrain_height(&(wr->anchor), &dontcare, &th);
+      // DEBUG:
+      // printf("th3: %.3f\n", th.z);
       wr->terrain_height += th.z;
       wr->anchor.y -= (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
+      // DEBUG:
+      // printf("th4: %.3f\n", th.z);
       compute_terrain_height(&(wr->anchor), &dontcare, &th);
       wr->terrain_height += th.z;
       wr->terrain_height /= 4;
+      // DEBUG:
+      // printf("th final: %d\n\n\n", wr->terrain_height);
 
       // Pick a seed for this world region:
       wr->seed = hash_3d(xy.x, xy.y, seed + 8731);
