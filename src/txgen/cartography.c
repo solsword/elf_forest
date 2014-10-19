@@ -2,8 +2,10 @@
 // Map drawing functions.
 
 #include "tex/tex.h"
+#include "tex/draw.h"
 #include "gen/worldgen.h"
 #include "gen/terrain.h"
+#include "math/manifold.h"
 
 #include "cartography.h"
 
@@ -137,4 +139,28 @@ void render_map(world_map *wm, texture *tx) {
       // */
     }
   }
+  // DEBUG:
+  // Draw downhill vectors:
+  /*
+  region_pos rpos;
+  manifold_point gross, dontcare;
+  float dh;
+  vector from, to;
+  color = 0xffffffff; // white
+  for (col = 0; col < tx->width; col += 16) {
+    for (row = 0; row < tx->height; row += 16) {
+      x = col / ((float) tx->width);
+      y = row / ((float) tx->height);
+      rpos.x = WORLD_REGION_SIZE * CHUNK_SIZE * wm->width * x;
+      rpos.y = WORLD_REGION_SIZE * CHUNK_SIZE * wm->height * y;
+      compute_terrain_height(&rpos, &gross, &dontcare, &dontcare);
+      dh = mani_downhill(&gross);
+      from.x = col;
+      from.y = row;
+      to.x = from.x + 4 * cos(dh);
+      to.y = from.y + 4 * sin(dh);
+      draw_line(tx, &from, &to, color);
+    }
+  }
+  // */
 }

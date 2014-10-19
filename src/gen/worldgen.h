@@ -81,8 +81,8 @@ typedef struct world_map_s world_map;
 #define STRATA_AVG_SIZE 0.25
 
 // Controls how many strata to generate (a multiple of MAX_STRATA_LAYERS).
-#define STRATA_COMPLEXITY 3.0
-//#define STRATA_COMPLEXITY (1/32.0)
+//#define STRATA_COMPLEXITY 3.0
+#define STRATA_COMPLEXITY (1/32.0)
 
 // The base stratum thickness (before an exponential distribution).
 #define BASE_STRATUM_THICKNESS 10.0

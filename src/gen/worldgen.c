@@ -50,24 +50,24 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
       wr->pos.y = xy.y;
       // Average the heights at the corners of the world region:
       wmpos__rpos(&xy, &(wr->anchor));
-      compute_terrain_height(&(wr->anchor), &dontcare, &th);
+      compute_terrain_height(&(wr->anchor), &dontcare, &dontcare, &th);
       // DEBUG:
       // printf("th1: %.3f\n", th.z);
       wr->terrain_height += th.z;
       wr->anchor.y += (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
-      compute_terrain_height(&(wr->anchor), &dontcare, &th);
+      compute_terrain_height(&(wr->anchor), &dontcare, &dontcare, &th);
       // DEBUG:
       // printf("th2: %.3f\n", th.z);
       wr->terrain_height += th.z;
       wr->anchor.x += (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
-      compute_terrain_height(&(wr->anchor), &dontcare, &th);
+      compute_terrain_height(&(wr->anchor), &dontcare, &dontcare, &th);
       // DEBUG:
       // printf("th3: %.3f\n", th.z);
       wr->terrain_height += th.z;
       wr->anchor.y -= (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
       // DEBUG:
       // printf("th4: %.3f\n", th.z);
-      compute_terrain_height(&(wr->anchor), &dontcare, &th);
+      compute_terrain_height(&(wr->anchor), &dontcare, &dontcare, &th);
       wr->terrain_height += th.z;
       wr->terrain_height /= 4;
       // DEBUG:
@@ -95,6 +95,7 @@ void cleanup_world_map(world_map *wm) {
  *************/
 
 void setup_worldgen(ptrdiff_t seed) {
+  setup_terrain_gen(seed);
   THE_WORLD = create_world_map(seed, WORLD_WIDTH, WORLD_HEIGHT);
   printf("  ...generating geology...\n");
   generate_geology(THE_WORLD);
@@ -277,7 +278,7 @@ void strata_cell(
   region_pos *rpos,
   cell *result
 ) {
-  static manifold_point stone_height, dirt_height;
+  static manifold_point dontcare, stone_height, dirt_height;
   static region_pos pr_rpos = { .x = -1, .y = -1, .z = -1 };
   float h;
   world_region *best, *secondbest; // best and second-best regions
@@ -320,7 +321,7 @@ void strata_cell(
   if (pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
     // No need to recompute the surface height if we're at the same x/y.
     // TODO: Get rid of double-caching here?
-    compute_terrain_height(rpos, &stone_height, &dirt_height);
+    compute_terrain_height(rpos, &dontcare, &stone_height, &dirt_height);
   }
 
   // Keep track of our previous position:

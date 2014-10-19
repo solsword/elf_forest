@@ -11,6 +11,8 @@
 /*************
  * Constants *
  *************/
+
+extern float const LINE_DRAWING_RESOLUTION;
 extern float const CURVE_DRAWING_RESOLUTION;
 
 /**************
@@ -56,6 +58,9 @@ void draw_thick_curve_segment(float t, vector *pos, vector *dir, void *args);
 /*************
  * Functions *
  *************/
+
+// Draws the line between the given points using the given color.
+void draw_line(texture *tx, vector *from, vector *to, pixel color);
 
 // Draws the given curve onto the given texture using the given color:
 void draw_curve(texture *tx, curve *c, pixel color);

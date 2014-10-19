@@ -27,12 +27,24 @@ char const * const TR_REGION_NAMES[] = {
   "sky",
 };
 
+/*******************
+ * Private Globals *
+ *******************/
+
+omp_lock_t TERRAIN_HEIGHT_LOCK;
+
 /*************
  * Functions *
  *************/
 
+void setup_terrain_gen(ptrdiff_t seed) {
+  omp_init_lock(&TERRAIN_HEIGHT_LOCK);
+  TR_NOISE_SALT = seed + 719102;
+}
+
 void compute_terrain_height(
   region_pos *pos,
+  manifold_point *r_gross,
   manifold_point *r_rocks,
   manifold_point *r_dirt
 ) {
@@ -41,8 +53,7 @@ void compute_terrain_height(
   static manifold_point geodetails, mountains;
   static manifold_point hills, ridges;
   static manifold_point mounds, details, bumps;
-  static manifold_point rocks_height, dirt_height;
-  manifold_point temp;
+  static manifold_point gross_height, rocks_height, dirt_height;
 
   terrain_region region;
   manifold_point tr_interp;
@@ -52,9 +63,14 @@ void compute_terrain_height(
   if (xcache == pos->x && ycache == pos->y) {
     // no need to recompute everything:
     // printf("cached heights: %.2f, %.2f\n\n", rocks_height.z, dirt_height.z);
+    mani_copy(r_gross, &gross_height);
     mani_copy(r_rocks, &rocks_height);
     mani_copy(r_dirt, &dirt_height);
   }
+  // beyond this point we can't let multiple threads run at once as they'd mess
+  // up each others' static variables.
+  omp_set_lock(&TERRAIN_HEIGHT_LOCK);
+  
   xcache = pos->x; ycache = pos->y;
 
   compute_base_geoforms(
@@ -72,36 +88,66 @@ void compute_terrain_height(
   // DEBUG: print base geoforms:
   //*
   // printf("Base geoforms!\n");
-  // printf("continents: %.2f\n", continents.z);
-  if (continents.z < -1 || continents.z > 1) { printf("BAD!\n"); exit(17); }
-  // printf("primary_geoforms: %.2f\n", primary_geoforms.z);
+  if (continents.z < -1 || continents.z > 1) {
+    printf("BAD!\n");
+    printf("continents: %.2f\n", continents.z);
+    exit(17);
+  }
   if (primary_geoforms.z < -1 || primary_geoforms.z > 1) {
     printf("BAD!\n");
+    printf("primary_geoforms: %.2f\n", primary_geoforms.z);
     exit(17);
   }
-  // printf("secondary_geoforms: %.2f\n", secondary_geoforms.z);
   if (secondary_geoforms.z < -1 || secondary_geoforms.z > 1) {
     printf("BAD!\n");
+    printf("secondary_geoforms: %.2f\n", secondary_geoforms.z);
     exit(17);
   }
-  // printf("geodetails: %.2f\n", geodetails.z);
-  if (geodetails.z < -1 || geodetails.z > 1) { printf("BAD!\n"); exit(17); }
-  // printf("mountains: %.2f\n", mountains.z);
-  if (mountains.z < -1 || mountains.z > 1) { printf("BAD!\n"); exit(17); }
-  // printf("hills: %.2f\n", hills.z);
-  if (hills.z < -1 || hills.z > 1) { printf("BAD!\n"); exit(17); }
-  // printf("ridges: %.2f\n", ridges.z);
-  if (ridges.z < -1 || ridges.z > 1) { printf("BAD!\n"); exit(17); }
-  // printf("mounds: %.2f\n", mounds.z);
-  if (mounds.z < -1 || mounds.z > 1) { printf("BAD!\n"); exit(17); }
-  // printf("details: %.2f\n", details.z);
-  if (details.z < -1 || details.z > 1) { printf("BAD!\n"); exit(17); }
-  // printf("bumps: %.2f\n", bumps.z);
-  if (bumps.z < -1 || bumps.z > 1) { printf("BAD!\n"); exit(17); }
-  // printf("base: %.2f\n", base.z);
-  if (base.z < -1 || base.z > 1) { printf("BAD!\n"); exit(17); }
-  // printf("interp: %.2f\n", tr_interp.z);
-  if (tr_interp.z < -1 || tr_interp.z > 1) { printf("BAD!\n"); exit(17); }
+  if (geodetails.z < -1 || geodetails.z > 1) {
+    printf("BAD!\n");
+    printf("geodetails: %.2f\n", geodetails.z);
+    exit(17);
+  }
+  if (mountains.z < -1 || mountains.z > 1) {
+    printf("BAD!\n");
+    printf("mountains: %.2f\n", mountains.z);
+    exit(17);
+  }
+  if (hills.z < -1 || hills.z > 1) {
+    printf("BAD!\n");
+    printf("hills: %.2f\n", hills.z);
+    exit(17);
+  }
+  if (ridges.z < -1 || ridges.z > 1) {
+    printf("BAD!\n");
+    printf("ridges: %.2f\n", ridges.z);
+    exit(17);
+  }
+  if (mounds.z < -1 || mounds.z > 1) {
+    printf("BAD!\n");
+    printf("mounds: %.2f\n", mounds.z);
+    exit(17);
+  }
+  if (details.z < -1 || details.z > 1) {
+    printf("BAD!\n");
+    printf("details: %.2f\n", details.z);
+    exit(17);
+  }
+  if (bumps.z < -1 || bumps.z > 1) {
+    printf("BAD!\n");
+    printf("bumps: %.2f\n", bumps.z);
+    exit(17);
+  }
+  if (base.z < -1 || base.z > 1) {
+    printf("BAD!\n");
+    printf("base: %.2f\n", base.z);
+    exit(17);
+  }
+  if (tr_interp.z < -1 || tr_interp.z > 1) {
+    printf("BAD!\n");
+    printf("interp: %.2f\n", tr_interp.z);
+    exit(17);
+  }
   // printf("rocks: %.2f\n", rocks_height.z);
   // printf("\n");
   // */
@@ -125,29 +171,26 @@ void compute_terrain_height(
   // */
 
   // TODO: attenuate mountains near the beach?
-  mani_copy(&temp, &mountains);
-  mani_scale_const(&temp, TR_SCALE_MOUNTAINS);
-  mani_add(&rocks_height, &temp);
+  mani_scale_const(&mountains, TR_SCALE_MOUNTAINS);
+  mani_add(&rocks_height, &mountains);
 
-  mani_copy(&temp, &hills);
-  mani_scale_const(&temp, TR_SCALE_HILLS);
-  mani_add(&rocks_height, &temp);
+  mani_scale_const(&hills, TR_SCALE_HILLS);
+  mani_add(&rocks_height, &hills);
 
-  mani_copy(&temp, &ridges);
-  mani_scale_const(&temp, TR_SCALE_RIDGES);
-  mani_add(&rocks_height, &temp);
+  // Gross height includes hills and mountains but no smaller details.
+  mani_copy(&gross_height, &rocks_height);
 
-  mani_copy(&temp, &mounds);
-  mani_scale_const(&temp, TR_SCALE_MOUNDS);
-  mani_add(&rocks_height, &temp);
+  mani_scale_const(&ridges, TR_SCALE_RIDGES);
+  mani_add(&rocks_height, &ridges);
 
-  mani_copy(&temp, &details);
-  mani_scale_const(&temp, TR_SCALE_DETAILS);
-  mani_add(&rocks_height, &temp);
+  mani_scale_const(&mounds, TR_SCALE_MOUNDS);
+  mani_add(&rocks_height, &mounds);
 
-  mani_copy(&temp, &bumps);
-  mani_scale_const(&temp, TR_SCALE_BUMPS);
-  mani_add(&rocks_height, &temp);
+  mani_scale_const(&details, TR_SCALE_DETAILS);
+  mani_add(&rocks_height, &details);
+
+  mani_scale_const(&bumps, TR_SCALE_BUMPS);
+  mani_add(&rocks_height, &bumps);
 
   // DEBUG:
   //*
@@ -172,8 +215,13 @@ void compute_terrain_height(
   // */
 
   // Write out our results:
+  mani_copy(r_gross, &gross_height);
   mani_copy(r_rocks, &rocks_height);
   mani_copy(r_dirt, &dirt_height);
+
+  // Now we can release the lock and let another thread compute some terrain
+  // height.
+  omp_unset_lock(&TERRAIN_HEIGHT_LOCK);
 
   // DEBUG:
   //*
@@ -366,6 +414,7 @@ void compute_dirt_height(
   mani_offset_const(&temp, 0.25);
   mani_scale_const(&temp, -TR_DIRT_MOUNTAIN_EROSION);
   mani_multiply(&temp, mountains);
+  mani_scale_const(&temp, 1.0/TR_SCALE_MOUNTAINS);
   mani_add(result, &temp);
 
   simplex_component(
@@ -380,6 +429,7 @@ void compute_dirt_height(
   mani_offset_const(&temp, 0.25);
   mani_scale_const(&temp, -TR_DIRT_HILL_EROSION);
   mani_multiply(&temp, hills);
+  mani_scale_const(&temp, 1.0/TR_SCALE_HILLS);
   mani_add(result, &temp);
 
   // Altitude above/below sea level contributes to soil depth due to wind
@@ -399,14 +449,16 @@ void compute_dirt_height(
   mani_add(result, &temp);
 
   // Steeper places (especially at high altitudes) have less dirt, while
-  // flatter places have more:
-  steepness = mani_slope(rocks_height);
+  // flatter places have more (but small-scale slope components are ignored):
+  mani_copy(&temp, rocks_height);
+  mani_sub(&temp, details);
+  mani_sub(&temp, bumps);
+  steepness = mani_slope(&temp);
   steepness = fmin(1.5, steepness); // slopes above 1.5 are treated identically
   steepness /= 1.5;
   smooth(steepness, 2.0, 0.25);
   steepness -= 0.25;
 
-  mani_copy(&temp, rocks_height);
   mani_scale_const(&temp, 1.0/TR_MAX_HEIGHT);
   mani_smooth(&temp, 1.5, 0.65);
   mani_scale_const(&temp, steepness * -TR_SLOPE_EROSION_STRENGTH);
@@ -419,13 +471,8 @@ void compute_dirt_height(
 
   // Details and bumps in the stone aren't reflected in the dirt:
   // TODO: smoothness vs. roughness
-  mani_copy(&temp, details);
-  mani_scale_const(&temp, -TR_SCALE_DETAILS);
-  mani_add(result, &temp);
-
-  mani_copy(&temp, bumps);
-  mani_scale_const(&temp, -TR_SCALE_BUMPS);
-  mani_add(result, &temp);
+  mani_sub(result, details);
+  mani_sub(result, bumps);
 
   // Dirt depth can't be negative:
   if (result->z < 0) {

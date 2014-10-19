@@ -86,7 +86,7 @@ void _get_everything_set_up(ptrdiff_t seed, int argc, char** argv) {
   setup_entities();
   printf("  ...species...\n");
   setup_species();
-  printf("  ...world_map...\n");
+  printf("  ...worldgen...\n");
   setup_worldgen(seed);
 
   printf("...done.\n");
@@ -97,6 +97,9 @@ void _spawn_the_player(
   active_entity_area *area,
   region_pos *origin
 ) {
+  manifold_point dontcare, th;
+  compute_terrain_height(origin, &dontcare, &dontcare, &th);
+  origin->z = (r_pos_t) fastfloor(th.z) + 4;
   vector pos;
   rpos__vec(&(area->origin), origin, &pos);
   warp_space(ACTIVE_AREA, &pos);

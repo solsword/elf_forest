@@ -41,7 +41,8 @@ extern omp_lock_t DATA_LOCK;
 // Starts the game, spawning the core threads and setting up the various
 // modules. Needs the arguments to main() (to pass to GLFW) as well as a string
 // specifying the type of entity that the player should be, and a region
-// position where the player will be spawned.
+// position where the player will be spawned (only x and y are honored; z is
+// set to just above the terrain at that position).
 void start_game(
   ptrdiff_t seed,
   int argc,

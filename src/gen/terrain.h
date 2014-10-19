@@ -48,7 +48,7 @@
 #define       TR_DS_RIDGES 50.0 // ~1/4 period
 #define       TR_DS_MOUNDS 30.0 // ~1/2 period
 #define      TR_DS_DETAILS 10.0 // ~1/2 period
-#define        TR_DS_BUMPS 2.0 // ~1/2 period
+#define        TR_DS_BUMPS 1.5 // ~3/8 period
 
 
 // Geoform parameters:
@@ -74,8 +74,8 @@
 #define       TR_SCALE_HILLS 900
 #define      TR_SCALE_RIDGES 60
 #define      TR_SCALE_MOUNDS 15
-#define     TR_SCALE_DETAILS 8
-#define       TR_SCALE_BUMPS 2
+#define     TR_SCALE_DETAILS 6
+#define       TR_SCALE_BUMPS 0.7
 
 // Max height:
 #define TR_MAX_HEIGHT (\
@@ -91,8 +91,8 @@
 #define    TR_DIRT_NOISE_SCALE 0.0004
 #define  TR_DIRT_EROSION_SCALE 0.003
 
-#define TR_DIRT_MOUNTAIN_EROSION 10
-#define TR_DIRT_HILL_EROSION 4
+#define TR_DIRT_MOUNTAIN_EROSION 11
+#define TR_DIRT_HILL_EROSION 5
 
 #define TR_BASE_SOIL_DEPTH 8
 
@@ -972,11 +972,14 @@ static inline float oabscb(float noise) {
  * Functions *
  *************/
 
+// Performs initial setup for terrain generation.
+void setup_terrain_gen(ptrdiff_t seed);
+
 // Computes the terrain height at the given region position in blocks, and
-// writes out the rock and dirt heights at that location, along with the
-// general downhill direction in radians.
+// writes out the gross (large-scale), rock and dirt heights at that location.
 void compute_terrain_height(
   region_pos *pos,
+  manifold_point *r_gross,
   manifold_point *r_rocks,
   manifold_point *r_dirt
 );

@@ -43,15 +43,13 @@ ptrdiff_t SEED = 18234141;
  ********/
 
 int main(int argc, char** argv) {
-  manifold_point dontcare, th;
   // Compute detailed starting location:
   region_pos origin;
   //rcpos__rpos(&CHUNK_ORIGIN, &origin);
   wmpos__rpos(&WORLD_ORIGIN, &origin);
   origin.x += 2;
   origin.y += 2;
-  compute_terrain_height(&origin, &dontcare, &th);
-  origin.z = (r_pos_t) fastfloor(th.z) + 20;
+  // note origin.z is ignored by start_game
 
   // Start the game:
   //start_game(SEED, argc, argv, "tester", &origin);

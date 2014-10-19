@@ -100,6 +100,18 @@ static inline void mani_add(
   target->z += addend->z;
 }
 
+// Subtracts the second manifold from the first, storing the result in the
+// first.
+static inline void mani_sub(
+  manifold_point *target,
+  manifold_point *subtract
+) {
+  target->dx -= subtract->dx;
+  target->dy -= subtract->dy;
+  target->z -= subtract->z;
+}
+
+
 // Multiplies two manifolds, storing the result in the first.
 static inline void mani_multiply(
   manifold_point *target,

@@ -161,7 +161,7 @@ void tick_general_controls(void) {
     vscale(&teleport_vector, TELEPORT_DISTANCE);
     vadd(&(PLAYER->pos), &teleport_vector);
     get_head_rpos(PLAYER, &teleport_destination);
-    compute_terrain_height(&teleport_destination, &dontcare, &th);
+    compute_terrain_height(&teleport_destination, &dontcare, &dontcare, &th);
     PLAYER->pos.z = (
       (r_pos_t) ffloor(th.z+15) -
       PLAYER->area->origin.z

@@ -13,6 +13,7 @@
  * Constants *
  *************/
 
+float const LINE_DRAWING_RESOLUTION = 0.05;
 float const CURVE_DRAWING_RESOLUTION = 0.05;
 
 /***********************
@@ -82,6 +83,33 @@ void draw_thick_curve_segment(float t, vector *pos, vector *dir, void *args) {
 /*************
  * Functions *
  *************/
+
+void draw_line(
+  texture *tx,
+  vector *from,
+  vector *to,
+  pixel color
+) {
+  vector line, here;
+  float t, length;
+  size_t row, col;
+  vcopy(&line, to);
+  vsub(&line, from);
+  line.z = 0;
+  length = vmag(&line);
+  for (t = 0; t < 1; t += LINE_DRAWING_RESOLUTION / length) {
+    vlerp(from, to, t, &here);
+    col = (size_t) here.x;
+    row = (size_t) here.y;
+    if (
+      ((col % tx->width) == col)
+    &&
+      ((row % tx->height) == row)
+    ) {
+      tx_set_px(tx, color, col, row);
+    }
+  }
+}
 
 void draw_curve(
   texture *tx,

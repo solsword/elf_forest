@@ -263,8 +263,8 @@ static inline void draw_pos_info(int *h) {
   *h -= 30;
 
   // Draw fractional height:
-  manifold_point dummy, th;
-  compute_terrain_height(&player_pos, &dummy, &th);
+  manifold_point dontcare, th;
+  compute_terrain_height(&player_pos, &dontcare, &dontcare, &th);
   sprintf(
     TXT,
     "h: %.4f",

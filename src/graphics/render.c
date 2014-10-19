@@ -610,7 +610,7 @@ void compile_neighborhood(world_map_pos *wmpos) {
   region_pos origin;
   manifold_point dontcare, th;
   compute_region_anchor(THE_WORLD, wmpos, &origin);
-  compute_terrain_height(&origin, &dontcare, &th);
+  compute_terrain_height(&origin, &dontcare, &dontcare, &th);
   origin.z = (r_pos_t) fastfloor(th.z);
   origin.z += THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET;
   vertex v[(WORLD_NEIGHBORHOOD_SIZE*2 + 1)*(WORLD_NEIGHBORHOOD_SIZE*2 + 1)];
@@ -627,7 +627,7 @@ void compile_neighborhood(world_map_pos *wmpos) {
       iter.y += 1
     ) {
       compute_region_anchor(THE_WORLD, &iter, &peak);
-      compute_terrain_height(&peak, &dontcare, &th);
+      compute_terrain_height(&peak, &dontcare, &dontcare, &th);
       peak.z = (r_pos_t) fastfloor(th.z);
       if (iter.x == wmpos->x && iter.y == wmpos->y) {
         peak.z += THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET;
@@ -692,7 +692,7 @@ void render_world_neighborhood(world_map_pos *wmpos, region_pos *origin) {
   prev_pos.y = wmpos->y;
 
   compute_region_anchor(THE_WORLD, wmpos, &anchor);
-  compute_terrain_height(&anchor, &dontcare, &th);
+  compute_terrain_height(&anchor, &dontcare, &dontcare, &th);
   anchor.z = (r_pos_t) fastfloor(th.z);
   anchor.z += THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET;
 
