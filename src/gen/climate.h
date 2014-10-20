@@ -10,8 +10,6 @@
  * Types and Structures *
  ************************/
 
-typedef uint8_t salinity;
-
 struct body_of_water_s;
 typedef struct body_of_water_s body_of_water;
 
@@ -35,9 +33,21 @@ enum hydro_state_e {
 };
 typedef enum hydro_state_e hydro_state;
 
+enum salinity_e {
+  SALINITY_FRESH = 0,
+  SALINITY_BRACKISH = 1,
+  SALINITY_SALINE = 2,
+  SALINITY_BRINE = 3,
+};
+typedef enum salinity_e salinity;
+
 /*************
  * Constants *
  *************/
+
+// Ocean and lake size limits:
+#define MIN_OCEAN_SIZE 20
+#define MAX_OCEAN_SIZE (-1)
 
 // Number of seasons in the year
 #define N_SEASONS 5
@@ -117,8 +127,8 @@ typedef enum hydro_state_e hydro_state;
  *************************/
 
 struct body_of_water_s {
-  salinity salt;
   r_pos_t level;
+  salinity salt;
 };
 
 struct hydrology_s {
@@ -147,6 +157,16 @@ struct weather_s {
   float temp_mean[N_SEASONS]; // day, in each season
   float temp_high[N_SEASONS];
 };
+
+/******************************
+ * Constructors & Destructors *
+ ******************************/
+
+// Allocates and returns a new body of water.
+body_of_water* create_body_of_water(r_pos_t level, salinity salt);
+
+// Frees the memory associated with the given body of water.
+void cleanup_body_of_water(body_of_water *body);
 
 /*************
  * Functions *

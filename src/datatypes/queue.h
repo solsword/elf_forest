@@ -85,8 +85,8 @@ void * q_get_item(queue *q, size_t i);
 // to expand the queue if necessary.
 void q_push_element(queue *q, void *element);
 
-// Removes and returns the last element of the given queue. Returns NULL if the
-// queue is already empty.
+// Removes and returns the first element of the given queue. Returns NULL if
+// the queue is already empty.
 void * q_pop_element(queue *q);
 
 // Removes just the first copy of the given element from the given queue (uses

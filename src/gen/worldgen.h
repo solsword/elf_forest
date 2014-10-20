@@ -66,8 +66,11 @@ typedef struct world_map_s world_map;
 //#define WORLD_WIDTH 400
 //#define WORLD_HEIGHT 320
 // 128*96 = 12288 regions
-#define WORLD_WIDTH 128
-#define WORLD_HEIGHT 96
+//#define WORLD_WIDTH 128
+//#define WORLD_HEIGHT 96
+// 32*32 = 1024 regions
+#define WORLD_WIDTH 32
+#define WORLD_HEIGHT 32
 
 // Bits per world region (8 -> 256x256 chunks).
 // 128*96 = 12288 regions
@@ -223,8 +226,7 @@ struct world_map_s {
   wm_pos_t width, height;
   world_region *regions;
   list *all_strata;
-  list *all_oceans;
-  list *all_lakes;
+  list *all_water;
   list *all_biomes;
   list *all_civs;
 };
@@ -395,15 +397,17 @@ void compute_region_contenders(
 );
 
 // Takes an origin point and a water body and fills ares of the given world map
-// as part of that water body up to the given size limit. If the size limit is
-// exceeded, the entire operation is cancelled, and the return value will be 0.
-// Otherwise, the return value is 1 and the regions filled will have their
-// hydrology info set to point to the given water body.
+// as part of that water body between the given size limits. The size limits
+// will be ignored if they are negative. If the body of water turns out to be
+// too small or too large, the entire operation is cancelled, and the return
+// value will be 0. Otherwise, the return value is 1 and the regions filled
+// will have their hydrology info set to point to the given body of water.
 int fill_water(
   world_map *wm,
   body_of_water *body,
   world_map_pos *origin,
-  size_t size_limit
+  int min_size,
+  int max_size
 );
 
 #endif // ifndef WORLDGEN_H

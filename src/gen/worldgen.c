@@ -3,6 +3,7 @@
 
 #include "datatypes/bitmap.h"
 #include "datatypes/list.h"
+#include "datatypes/queue.h"
 #include "datatypes/map.h"
 #include "noise/noise.h"
 #include "world/blocks.h"
@@ -45,8 +46,7 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
   result->height = height;
   result->regions = (world_region *) calloc(width*height, sizeof(world_region));
   result->all_strata = create_list();
-  result->all_oceans = create_list();
-  result->all_lakes = create_list();
+  result->all_water = create_list();
   result->all_biomes = create_list();
   result->all_civs = create_list();
   sofar = 0;
@@ -57,8 +57,6 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
       // Set position information:
       wr->pos.x = xy.x;
       wr->pos.y = xy.y;
-      // Initialize body of water to NULL:
-      wr->climate.water.body = NULL;
       // Probe chunk heights in the region to get min/max and average:
       wmpos__rpos(&xy, &sample_point);
       copy_rpos(&sample_point, &(wr->anchor));
@@ -98,6 +96,12 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
           wr->gross_height.dy += gross.dy/(WORLD_REGION_SIZE*WORLD_REGION_SIZE);
         }
       }
+
+      // Default hydrology info:
+      wr->climate.water.state = HYDRO_LAND;
+      wr->climate.water.body = NULL;
+      wr->climate.water.water_table = 0; // TODO: get rid of water table?
+      wr->climate.water.salt = SALINITY_FRESH;
 
       // Pick a seed for this world region:
       wr->seed = hash_3d(xy.x, xy.y, seed + 8731);
@@ -140,6 +144,8 @@ void _iter_flag_as_water_interior(void *v_region, void *v_body) {
   body_of_water *body = (body_of_water*) v_body;
   region->climate.water.state = HYDRO_WATER;
   region->climate.water.body = body;
+  region->climate.water.water_table = body->level;
+  region->climate.water.salt = body->salt;
 }
 
 void _iter_flag_as_water_shore(void *v_region, void *v_body) {
@@ -147,6 +153,11 @@ void _iter_flag_as_water_shore(void *v_region, void *v_body) {
   body_of_water *body = (body_of_water*) v_body;
   region->climate.water.state = HYDRO_SHORE;
   region->climate.water.body = body;
+  region->climate.water.water_table = body->level;
+  region->climate.water.salt = body->salt - 1;
+  if (region->climate.water.salt < 0) {
+    region->climate.water.salt = 0;
+  }
 }
 
 /*************
@@ -311,13 +322,26 @@ void generate_geology(world_map *wm) {
 void generate_hydrology(world_map *wm) {
   world_map_pos xy;
   world_region *wr;
+  body_of_water *next_water;
 
+  next_water = create_body_of_water(TR_HEIGHT_SEA_LEVEL, SALINITY_SALINE);
+
+  // First generate world oceans:
   for (xy.x = 0; xy.x < wm->width; ++xy.x) {
     for (xy.y = 0; xy.y < wm->height; ++xy.y) {
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
-      //wr->hydrology->
+      // Note that hydrology defaults are set up in create_world_map
+      if (
+        wr->climate.water.body == NULL
+      &&
+        fill_water(wm, next_water, &xy, MIN_OCEAN_SIZE, MAX_OCEAN_SIZE)
+      ) {
+        l_append_element(wm->all_water, next_water);
+        next_water = create_body_of_water(TR_HEIGHT_SEA_LEVEL, SALINITY_SALINE);
+      }
     }
   }
+  // TODO: lakes!
 }
 
 void generate_climate(world_map *wm) {
@@ -699,36 +723,34 @@ void compute_region_contenders(
   ); // result is in [0, 1 + REGION_GEO_STRENGTH_VARIANCE]
 }
 
-int fill_water_body(
+int fill_water(
   world_map *wm,
   body_of_water *body,
   world_map_pos *origin,
-  size_t size_limit
+  int min_size,
+  int max_size
 ) {
   world_map_pos wmpos;
-  list *open = create_list();
+  queue *open = create_queue();
   list *interior = create_list();
   list *shore = create_list();
   map *visited = create_map(1, 2048);
   world_region *this, *next;
+  size_t size = 0;
 
   this = get_world_region(wm, origin);
   if (this != NULL) {
-    l_append_element(open, this);
-    m_put_value(visited, (map_key_t) this, 1);
+    q_push_element(open, this);
+    m_put_value(visited, (void*) 1, (map_key_t) this);
   }
 
-  while (
-    !l_is_empty(open)
-  &&
-    (l_get_length(interior) + l_get_length(shore)) <= size_limit
-  ) {
+  while (!q_is_empty(open) && (max_size < 0 || size <= max_size) ) {
     // Grab the next open region:
-    this = (world_region*) l_remove_item(open, 0);
+    this = (world_region*) q_pop_element(open);
     if (this->climate.water.body != NULL) {
       // We've hit another body of water (shouldn't be possible?)!
       // All we can do is abort at this point.
-      cleanup_list(open);
+      cleanup_queue(open);
       cleanup_list(interior);
       cleanup_list(shore);
       cleanup_map(visited);
@@ -743,42 +765,44 @@ int fill_water_body(
       continue;
     } else if (this->max_height > body->level) {
       // This is an interior region
+      size += 1;
       l_append_element(interior, this);
     } else {
       // This is a shore region
+      size += 1;
       l_append_element(shore, this);
     }
     // Add our neighbors to the open list:
     wmpos.x = this->pos.x + 1;
     wmpos.y = this->pos.y;
     next = get_world_region(wm, &wmpos);
-    if (!m_contains_key(visited, (map_key_t) next)) {
-      l_append_element(open, next);
-      m_put_value(visited, (map_key_t) next, 1);
+    if (next != NULL && !m_contains_key(visited, (map_key_t) next)) {
+      q_push_element(open, next);
+      m_put_value(visited, (void*) 1, (map_key_t) next);
     }
     wmpos.x -= 2;
     next = get_world_region(wm, &wmpos);
-    if (!m_contains_key(visited, (map_key_t) next)) {
-      l_append_element(open, next);
-      m_put_value(visited, (map_key_t) next, 1);
+    if (next != NULL && !m_contains_key(visited, (map_key_t) next)) {
+      q_push_element(open, next);
+      m_put_value(visited, (void*) 1, (map_key_t) next);
     }
     wmpos.x += 2;
     wmpos.y -= 1;
     next = get_world_region(wm, &wmpos);
-    if (!m_contains_key(visited, (map_key_t) next)) {
-      l_append_element(open, next);
-      m_put_value(visited, (map_key_t) next, 1);
+    if (next != NULL && !m_contains_key(visited, (map_key_t) next)) {
+      q_push_element(open, next);
+      m_put_value(visited, (void*) 1, (map_key_t) next);
     }
     wmpos.y += 2;
     next = get_world_region(wm, &wmpos);
-    if (!m_contains_key(visited, (map_key_t) next)) {
-      l_append_element(open, next);
-      m_put_value(visited, (map_key_t) next, 1);
+    if (next != NULL && !m_contains_key(visited, (map_key_t) next)) {
+      q_push_element(open, next);
+      m_put_value(visited, (void*) 1, (map_key_t) next);
     }
   }
-  if (!l_is_empty(open)) {
-    // we hit the size limit: cleanup and return 0
-    cleanup_list(open);
+  if ((max_size >= 0 && size > max_size) || size < min_size) {
+    // we hit one of the size limits: cleanup and return 0
+    cleanup_queue(open);
     cleanup_list(interior);
     cleanup_list(shore);
     cleanup_map(visited);
