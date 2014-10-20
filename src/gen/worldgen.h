@@ -9,9 +9,11 @@
 #include "noise/noise.h"
 #include "world/blocks.h"
 #include "jobs/jobs.h"
-#include "gen/terrain.h"
+#include "datatypes/list.h"
 
+#include "terrain.h"
 #include "geology.h"
+#include "climate.h"
 
 /************************
  * Types and Structures *
@@ -61,11 +63,11 @@ typedef struct world_map_s world_map;
 //#define WORLD_WIDTH 768
 //#define WORLD_HEIGHT 512
 // 400*320 = 128000 regions
-#define WORLD_WIDTH 400
-#define WORLD_HEIGHT 320
+//#define WORLD_WIDTH 400
+//#define WORLD_HEIGHT 320
 // 128*96 = 12288 regions
-//#define WORLD_WIDTH 128
-//#define WORLD_HEIGHT 96
+#define WORLD_WIDTH 128
+#define WORLD_HEIGHT 96
 
 // Bits per world region (8 -> 256x256 chunks).
 // 128*96 = 12288 regions
@@ -90,8 +92,16 @@ typedef struct world_map_s world_map;
 // Maximum number of biomes that can overlap in the same world region
 #define MAX_BIOME_OVERLAP 4
 
-// Number of seasons in the year
-#define N_SEASONS 5
+// Beach height above sea level:
+#define BEACH_BASE_HEIGHT 7
+#define BEACH_HEIGHT_VAR 6
+#define BEACH_HEIGHT_NOISE_SCALE (1.0 / 70.0)
+
+// Soil alt base scale
+#define SOIL_ALT_NOISE_SCALE (1.0 / 120.0)
+
+// Soil alternate threshold:
+#define SOIL_ALT_THRESHOLD 0.5
 
 // Biome plant variant caps
 #define MAX_BIOME_MUSHROOMS 16
@@ -113,14 +123,19 @@ extern char const * const WORLD_MAP_FILE;
   TR_MAX_HEIGHT * 0.6 * TR_MAX_HEIGHT * 0.6 \
 )
 
+// The strength and base scale of the noise that affects region contenders:
+#define REGION_CONTENTION_NOISE_STRENGTH 0.4
+#define REGION_CONTENTION_NOISE_SCALE (1.0 / 50.0)
+
 // The variance and frequency of noise used to determine which region's stratum
 // information is used when generating terrain.
-#define REGION_GEO_STRENGTH_VARIANCE 0.4
-#define REGION_GEO_STRENGTH_FREQUENCY 2.0
+#define REGION_GEO_STRENGTH_VARIANCE 0.5
+#define REGION_GEO_STRENGTH_FREQUENCY 1.6
 
 // The strength and base scale of the noise that distorts strata boundaries:
 #define STRATA_FRACTION_NOISE_STRENGTH 16
 #define STRATA_FRACTION_NOISE_SCALE (1.0 / 40.0)
+
 
 /***********
  * Globals *
@@ -144,16 +159,10 @@ struct strata_info_s { // indexed starting from the bottom
   float bottoms[MAX_STRATA_LAYERS]; // the bottom of each layer on [0, 1]
 };
 
-struct hydrology_info_s { // info on rivers, lakes, and the ocean
-  size_t water_table; // how high the water table is, in blocks
-  uint8_t water_salinity; // the salinity of local groundwater
-};
-
 struct climate_info_s {
-  float rainfall[N_SEASONS]; // rainfall per season
-  float temp_low[N_SEASONS]; // temperature low, mean and high throughout the
-  float temp_mean[N_SEASONS]; // day, in each season
-  float temp_high[N_SEASONS];
+  hydrology water;
+  weather atmosphere;
+  soil_composition soil;
 };
 
 struct biome_info_s {
@@ -196,8 +205,10 @@ struct world_region_s {
   world_map_pos pos;
   region_pos anchor;
   // topology info:
-  r_pos_t terrain_height;
-  float downhill; // the local downhill direction in radians
+  r_pos_t min_height;
+  r_pos_t mean_height;
+  r_pos_t max_height;
+  manifold_point gross_height; // an averaged local manifold
   // various info modules:
   strata_info geology;
   climate_info climate;
@@ -212,6 +223,8 @@ struct world_map_s {
   wm_pos_t width, height;
   world_region *regions;
   list *all_strata;
+  list *all_oceans;
+  list *all_lakes;
   list *all_biomes;
   list *all_civs;
 };
@@ -340,7 +353,7 @@ void world_cell(world_map *wm, region_pos *pos, cell *result);
 // Generates geology for the given world.
 void generate_geology(world_map *wm);
 
-// Generates hydrology (rivers, lakes, and the ocean) for the given world.
+// Generates hydrology (rivers, lakes, and the oceans) for the given world.
 void generate_hydrology(world_map *wm);
 
 // Generates climate for the given world.
@@ -365,8 +378,8 @@ void stone_cell(
 // Computes a dirt cell from the dirt layer.
 void dirt_cell(
   world_map *wm, region_pos *rpos,
-  float ceiling,
-  world_region *best, world_region *secondbest, float strbest, float strsecond,
+  float h, float elev,
+  world_region *wr,
   cell *result
 );
 
@@ -381,16 +394,16 @@ void compute_region_contenders(
   float *strbest, float *strsecond
 );
 
-/********
- * Jobs *
- ********/
-
-// The 'gencolumn' job generates a single column of chunks, starting at z=0 and
-// generating one chunk per step until enough chunks have been generated
-// vertically that remaining chunks in that column are just air.
-void launch_job_gencolumn(world_map *world, region_chunk_pos *target_chunk);
-void (*job_gencolumn(void *jmem)) () ;
-void (*job_gencolumn__init_column(void *jmem)) () ;
-void (*job_gencolumn__fill_column(void *jmem)) () ;
+// Takes an origin point and a water body and fills ares of the given world map
+// as part of that water body up to the given size limit. If the size limit is
+// exceeded, the entire operation is cancelled, and the return value will be 0.
+// Otherwise, the return value is 1 and the regions filled will have their
+// hydrology info set to point to the given water body.
+int fill_water(
+  world_map *wm,
+  body_of_water *body,
+  world_map_pos *origin,
+  size_t size_limit
+);
 
 #endif // ifndef WORLDGEN_H

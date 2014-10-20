@@ -77,7 +77,9 @@
 #define     TR_SCALE_DETAILS 6
 #define       TR_SCALE_BUMPS 0.7
 
-// Max height:
+// Min/max height:
+// TODO: is this correct?
+#define TR_MIN_HEIGHT 0
 #define TR_MAX_HEIGHT (\
   TR_HEIGHT_MOUNTAIN_TOPS +\
   TR_SCALE_HILLS +\

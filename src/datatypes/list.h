@@ -76,8 +76,8 @@ void * l_get_item(list *l, size_t i);
 // name.
 void ** _l_get_pointer(list *l, size_t i);
 
-// Replaces the element at index i with the given element, returning the
-// replaced value. If i is out-of-range, it does nothing and returns NULL.
+// Removes the element at index i, returning the removed value. If i is
+// out-of-range, it does nothing and returns NULL.
 void * l_remove_item(list *l, size_t i);
 
 // Removes the given number of items starting at the given index. The delete

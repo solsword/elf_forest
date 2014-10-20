@@ -2,6 +2,8 @@
 // World map generation.
 
 #include "datatypes/bitmap.h"
+#include "datatypes/list.h"
+#include "datatypes/map.h"
 #include "noise/noise.h"
 #include "world/blocks.h"
 #include "data/data.h"
@@ -13,6 +15,7 @@
 
 #include "worldgen.h"
 #include "terrain.h"
+#include "climate.h"
 
 /*************
  * Constants *
@@ -31,54 +34,92 @@ world_map* THE_WORLD = NULL;
  ******************************/
 
 world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
-  manifold_point dontcare, th;
+  size_t sofar;
+  manifold_point gross, stone, dirt;
   world_map *result = (world_map*) malloc(sizeof(world_map));
   world_map_pos xy;
   world_region* wr;
+  region_pos sample_point;
   result->seed = seed;
   result->width = width;
   result->height = height;
   result->regions = (world_region *) calloc(width*height, sizeof(world_region));
   result->all_strata = create_list();
+  result->all_oceans = create_list();
+  result->all_lakes = create_list();
   result->all_biomes = create_list();
   result->all_civs = create_list();
+  sofar = 0;
   for (xy.x = 0; xy.x < result->width; xy.x += 1) {
     for (xy.y = 0; xy.y < result->height; xy.y += 1) {
+      sofar += 1;
       wr = get_world_region(result, &xy); // no need to worry about NULL here
       // Set position information:
       wr->pos.x = xy.x;
       wr->pos.y = xy.y;
-      // Average the heights at the corners of the world region:
-      wmpos__rpos(&xy, &(wr->anchor));
-      compute_terrain_height(&(wr->anchor), &dontcare, &dontcare, &th);
-      // DEBUG:
-      // printf("th1: %.3f\n", th.z);
-      wr->terrain_height += th.z;
-      wr->anchor.y += (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
-      compute_terrain_height(&(wr->anchor), &dontcare, &dontcare, &th);
-      // DEBUG:
-      // printf("th2: %.3f\n", th.z);
-      wr->terrain_height += th.z;
-      wr->anchor.x += (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
-      compute_terrain_height(&(wr->anchor), &dontcare, &dontcare, &th);
-      // DEBUG:
-      // printf("th3: %.3f\n", th.z);
-      wr->terrain_height += th.z;
-      wr->anchor.y -= (WORLD_REGION_SIZE * CHUNK_SIZE) - 1;
-      // DEBUG:
-      // printf("th4: %.3f\n", th.z);
-      compute_terrain_height(&(wr->anchor), &dontcare, &dontcare, &th);
-      wr->terrain_height += th.z;
-      wr->terrain_height /= 4;
-      // DEBUG:
-      // printf("th final: %d\n\n\n", wr->terrain_height);
+      // Initialize body of water to NULL:
+      wr->climate.water.body = NULL;
+      // Probe chunk heights in the region to get min/max and average:
+      wmpos__rpos(&xy, &sample_point);
+      copy_rpos(&sample_point, &(wr->anchor));
+      wr->min_height = TR_MIN_HEIGHT;
+      wr->mean_height = 0;
+      wr->max_height = TR_MAX_HEIGHT;
+      wr->gross_height.z = 0;
+      wr->gross_height.dx = 0;
+      wr->gross_height.dy = 0;
+      for (
+        ;
+        sample_point.x < wr->anchor.x + WORLD_REGION_SIZE * CHUNK_SIZE;
+        sample_point.x += CHUNK_SIZE
+      ) {
+        for (
+          ;
+          sample_point.y < wr->anchor.y + WORLD_REGION_SIZE * CHUNK_SIZE;
+          sample_point.y += CHUNK_SIZE
+        ) {
+          compute_terrain_height(&sample_point, &gross, &stone, &dirt);
+
+          // update min
+          if (dirt.z < wr->min_height) {
+            wr->min_height = dirt.z;
+          }
+          // update max
+          if (dirt.z > wr->max_height) {
+            wr->max_height = dirt.z;
+          }
+
+          // update mean
+          wr->mean_height += dirt.z / (WORLD_REGION_SIZE * WORLD_REGION_SIZE);
+
+          // update gross
+          wr->gross_height.z += gross.z/(WORLD_REGION_SIZE*WORLD_REGION_SIZE);
+          wr->gross_height.dx += gross.dx/(WORLD_REGION_SIZE*WORLD_REGION_SIZE);
+          wr->gross_height.dy += gross.dy/(WORLD_REGION_SIZE*WORLD_REGION_SIZE);
+        }
+      }
 
       // Pick a seed for this world region:
       wr->seed = hash_3d(xy.x, xy.y, seed + 8731);
       // Randomize the anchor position:
       compute_region_anchor(result, &xy, &(wr->anchor));
+
+      // Print a progress message:
+      if (sofar % 100 == 0) {
+        printf(
+          "    ...%zu / %zu regions initialized...\r",
+          sofar,
+          (size_t) (result->width * result->height)
+        );
+      }
     }
   }
+  printf(
+    "    ...%zu / %zu regions initialized...\r",
+    (size_t) (result->width * result->height),
+    (size_t) (result->width * result->height)
+  );
+  printf("\n");
   return result;
 }
 
@@ -88,6 +129,24 @@ void cleanup_world_map(world_map *wm) {
   destroy_list(wm->all_civs);
   free(wm->regions);
   free(wm);
+}
+
+/*********************
+ * Private Functions *
+ *********************/
+
+void _iter_flag_as_water_interior(void *v_region, void *v_body) {
+  world_region *region = (world_region*) v_region;
+  body_of_water *body = (body_of_water*) v_body;
+  region->climate.water.state = HYDRO_WATER;
+  region->climate.water.body = body;
+}
+
+void _iter_flag_as_water_shore(void *v_region, void *v_body) {
+  world_region *region = (world_region*) v_region;
+  body_of_water *body = (body_of_water*) v_body;
+  region->climate.water.state = HYDRO_SHORE;
+  region->climate.water.body = body;
 }
 
 /*************
@@ -233,43 +292,65 @@ void generate_geology(world_map *wm) {
         }
       }
     }
-    printf(
-      "    ...%zu / %zu strata done...\r",
-      i,
-      (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
-    );
+    if (i % 10 == 0) {
+      printf(
+        "    ...%zu / %zu strata done...\r",
+        i,
+        (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
+      );
+    }
   }
+  printf(
+    "    ...%zu / %zu strata done...\r",
+    (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY),
+    (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
+  );
   printf("\n");
 }
 
 void generate_hydrology(world_map *wm) {
-  /*
-   * TODO: HERE!
   world_map_pos xy;
   world_region *wr;
 
   for (xy.x = 0; xy.x < wm->width; ++xy.x) {
     for (xy.y = 0; xy.y < wm->height; ++xy.y) {
-      wr = get_world_region(result, &xy); // no need to worry about NULL here
-      wr->climate->
+      wr = get_world_region(wm, &xy); // no need to worry about NULL here
+      //wr->hydrology->
     }
   }
-  */
 }
 
 void generate_climate(world_map *wm) {
-  /*
-   * TODO: HERE!
   world_map_pos xy;
   world_region *wr;
+  size_t i;
 
   for (xy.x = 0; xy.x < wm->width; ++xy.x) {
     for (xy.y = 0; xy.y < wm->height; ++xy.y) {
-      wr = get_world_region(result, &xy); // no need to worry about NULL here
-      wr->climate->
+      wr = get_world_region(wm, &xy); // no need to worry about NULL here
+      // TODO: Real generation here!
+      for (i = 0; i < N_SEASONS; ++i) {
+        wr->climate.atmosphere.rainfall[i] = MEAN_AVG_PRECIPITATION;
+        wr->climate.atmosphere.temp_low[i] = 16;
+        wr->climate.atmosphere.temp_mean[i] = 24;
+        wr->climate.atmosphere.temp_high[i] = 32;
+      }
+      wr->climate.soil.base_dirt = 0;
+      for (i = 0; i < MAX_ALT_DIRTS; ++i) {
+        wr->climate.soil.alt_dirt_blocks[i] = B_DIRT;
+        wr->climate.soil.alt_dirt_species[i] = 0;
+        wr->climate.soil.alt_dirt_strengths[i] = 0;
+        wr->climate.soil.alt_dirt_hdeps[i] = 0;
+      }
+      wr->climate.soil.base_sand = 0;
+      for (i = 0; i < MAX_ALT_SANDS; ++i) {
+        wr->climate.soil.alt_sand_blocks[i] = B_SAND;
+        wr->climate.soil.alt_sand_species[i] = 0;
+        wr->climate.soil.alt_sand_strengths[i] = 0;
+        wr->climate.soil.alt_sand_hdeps[i] = 0;
+      }
     }
   }
-  */
 }
 
 void strata_cell(
@@ -349,12 +430,18 @@ void strata_cell(
   } else if (h <= dirt_height.z / stone_height.z) { // we're in dirt
     dirt_cell(
       wm, rpos,
+      (rpos->z - stone_height.z) / (dirt_height.z - stone_height.z),
       dirt_height.z,
-      best, secondbest, strbest, strsecond,
+      best,
       result
     );
+  } else if (rpos->z <= TR_HEIGHT_SEA_LEVEL) { // under the ocean
+    result->primary = b_make_block(B_WATER);
+    result->secondary = b_make_block(B_VOID);
   } else { // we're above the ground
     // TODO: HERE!
+    result->primary = b_make_block(B_AIR);
+    result->secondary = b_make_block(B_VOID);
   }
 }
 
@@ -411,15 +498,84 @@ void stone_cell(
 
 void dirt_cell(
   world_map *wm, region_pos *rpos,
-  float ceiling,
-  world_region *best, world_region *secondbest, float strbest, float strsecond,
+  float h,
+  float elev,
+  world_region *wr,
   cell *result
 ) {
-  if (rpos->z > ceiling) {
-    return;
+  size_t i, max_alts;
+  block soil_type;
+  species soil_species;
+  float beach_height, rel_h, str, beststr;
+  float *alt_strengths;
+  float *alt_hdeps;
+  block *alt_blocks;
+  species *alt_species;
+
+  // compute beach height:
+  beach_height = BEACH_BASE_HEIGHT;
+  beach_height += BEACH_HEIGHT_VAR * sxnoise_2d(
+    rpos->x * BEACH_HEIGHT_NOISE_SCALE,
+    rpos->y * BEACH_HEIGHT_NOISE_SCALE,
+    wr->seed + 18294
+  );
+
+  rel_h = elev - TR_HEIGHT_SEA_LEVEL + beach_height;
+  beststr = SOIL_ALT_THRESHOLD;
+  if (
+    rel_h > 0
+  ||
+    h < 1 - (-rel_h / BEACH_HEIGHT_VAR)
+    // TODO: Test this!
+  ) { // TODO: lakes!
+    soil_type = B_DIRT;
+    soil_species = wr->climate.soil.base_dirt;
+    alt_strengths = wr->climate.soil.alt_dirt_strengths;
+    alt_hdeps = wr->climate.soil.alt_dirt_hdeps;
+    alt_blocks = wr->climate.soil.alt_dirt_blocks;
+    alt_species = wr->climate.soil.alt_dirt_species;
+    max_alts = MAX_ALT_DIRTS;
+  } else {
+    soil_type = B_SAND;
+    soil_species = wr->climate.soil.base_sand;
+    alt_strengths = wr->climate.soil.alt_sand_strengths;
+    alt_hdeps = wr->climate.soil.alt_sand_hdeps;
+    alt_blocks = wr->climate.soil.alt_sand_blocks;
+    alt_species = wr->climate.soil.alt_sand_species;
+    max_alts = MAX_ALT_SANDS;
   }
-  // TODO: THIS FUNCTION!
-  result->primary = b_make_block(B_DIRT);
+  for (i = 0; i < max_alts; ++i) {
+    // TODO: Moisture dependence?
+    str = sxnoise_3d(
+      rpos->x * SOIL_ALT_NOISE_SCALE,
+      rpos->y * SOIL_ALT_NOISE_SCALE,
+      rpos->z * SOIL_ALT_NOISE_SCALE,
+      wr->seed + 4920 * i
+    ) + 0.7 * sxnoise_3d(
+      rpos->x * SOIL_ALT_NOISE_SCALE * 2.4,
+      rpos->y * SOIL_ALT_NOISE_SCALE * 2.4,
+      rpos->z * SOIL_ALT_NOISE_SCALE * 2.4,
+      wr->seed + 7482 * i
+    ) + 0.3 * sxnoise_3d(
+      rpos->x * SOIL_ALT_NOISE_SCALE * 3.8,
+      rpos->y * SOIL_ALT_NOISE_SCALE * 3.8,
+      rpos->z * SOIL_ALT_NOISE_SCALE * 3.8,
+      wr->seed + 3194 * i
+    );
+    str = (2 + str)/4.0; // [0, 1]
+    str *= alt_strengths[i];
+    if (alt_hdeps[i] > 0) {
+      str *= pow(h, alt_hdeps[i]);
+    } else {
+      str *= pow((1 - h), -alt_hdeps[i]);
+    }
+    if (str > beststr) {
+      beststr = str;
+      soil_type = alt_blocks[i];
+      soil_species = alt_species[i];
+    }
+  }
+  result->primary = b_make_species(soil_type, soil_species);
 }
 
 void compute_region_contenders(
@@ -434,7 +590,7 @@ void compute_region_contenders(
   int i;
   region_pos anchor;
   vector v, vbest, vsecond;
-  float str;
+  float str, noise;
   ptrdiff_t bestseed, secondseed; // seeds for polar noise
   world_map_pos wmpos;
 
@@ -445,12 +601,12 @@ void compute_region_contenders(
   vbest.x = WORLD_REGION_SIZE * CHUNK_SIZE;
   vbest.y = WORLD_REGION_SIZE * CHUNK_SIZE;
   vbest.z = BASE_STRATUM_THICKNESS * MAX_STRATA_LAYERS;
-  *strbest = 1 - (vmag(&vbest) / MAX_REGION_ANCHOR_DISTANCE);
+  *strbest = 0;
   bestseed = 0;
   vsecond.x = WORLD_REGION_SIZE * CHUNK_SIZE;
   vsecond.y = WORLD_REGION_SIZE * CHUNK_SIZE;
   vsecond.z = BASE_STRATUM_THICKNESS * MAX_STRATA_LAYERS;
-  *strsecond = 1 - (vmag(&vsecond) / MAX_REGION_ANCHOR_DISTANCE);
+  *strsecond = 0;
   secondseed = 0;
 
   *secondbest = NULL;
@@ -470,6 +626,26 @@ void compute_region_contenders(
     v.y = rpos->y - anchor.y;
     v.z = rpos->z - anchor.z;
     str = 1 - (vmag(&v) / MAX_REGION_ANCHOR_DISTANCE);
+    noise = (
+      sxnoise_3d(
+        v.x * REGION_CONTENTION_NOISE_SCALE,
+        v.y * REGION_CONTENTION_NOISE_SCALE,
+        v.z * REGION_CONTENTION_NOISE_SCALE,
+        9123
+      ) + 
+      0.6 * sxnoise_3d(
+        v.x * REGION_CONTENTION_NOISE_SCALE * 2.1,
+        v.y * REGION_CONTENTION_NOISE_SCALE * 2.1,
+        v.z * REGION_CONTENTION_NOISE_SCALE * 2.1,
+        9124
+      )
+    ) / 1.6;
+    noise = (1 + noise * REGION_CONTENTION_NOISE_STRENGTH) / 2.0;
+    // [
+    //   0.5 - REGION_CONTENTION_NOISE_STRENGTH/2,
+    //   0.5 + R REGION_CONTENTION_NOISE_STRENGTH/2
+    // ]
+    str *= noise;
     if (str > *strbest) {
       vcopy(&vsecond, &vbest);
       *strsecond = *strbest;
@@ -512,7 +688,7 @@ void compute_region_contenders(
       v.z * REGION_GEO_STRENGTH_FREQUENCY,
       bestseed + salt
     )
-  );
+  ); // result is in [0, 1 + REGION_GEO_STRENGTH_VARIANCE]
   vxyz__polar(&vsecond, &v);
   *strsecond *= (
     1 + REGION_GEO_STRENGTH_VARIANCE * sxnoise_2d(
@@ -520,191 +696,97 @@ void compute_region_contenders(
       v.z * REGION_GEO_STRENGTH_FREQUENCY,
       secondseed + salt
     )
-  );
+  ); // result is in [0, 1 + REGION_GEO_STRENGTH_VARIANCE]
 }
 
-/********
- * Jobs *
- ********/
-
-/*
- * TODO: Get rid of this
-struct jm_gencolumn_s {
-  // External inputs:
-  world_map *world;
-  region_chunk_pos target_chunk;
-
-  // Internal variables:
-  world_region *current_region;
-  chunk *current_chunk;
-  region_pos origin;
-  region_pos current_cell;
-  chunk_index current_index;
-  r_pos_t stratum_heights[CHUNK_SIZE*CHUNK_SIZE*MAX_STRATA_LAYERS];
-    // this is roughly 256k at 4 bytes per r_pos_t
-  stratum* strata[CHUNK_SIZE*CHUNK_SIZE];
-    // this holds the current stratum at each x/y position
-  size_t hindices[CHUNK_SIZE*CHUNK_SIZE];
-    // holds our indices within each heights column
-  r_cpos_t hsofar[CHUNK_SIZE*CHUNK_SIZE];
-    // holds the height so far within each column
-};
-typedef struct jm_gencolumn_s jm_gencolumn;
-
-void launch_job_gencolumn(world_map *world, region_chunk_pos *target_chunk) {
-  jm_gencolumn *mem = (jm_gencolumn *) malloc(sizeof(jm_gencolumn));
-  mem->world = world;
-  mem->target_chunk.x = target_chunk->x;
-  mem->target_chunk.y = target_chunk->y;
-  mem->target_chunk.z = target_chunk->z;
-  mem->current_region = NULL;
-  mem->current_chunk = NULL;
-  mem->current_cell.x = 0;
-  mem->current_cell.y = 0;
-  mem->current_cell.z = 0;
-  rpos__cidx(&(mem->current_cell), &(mem->current_index));
-  rcpos__rpos(&(mem->target_chunk), &(mem->origin));
-  start_job(&job_gencolumn, mem, NULL);
-}
-
-void (*job_gencolumn(void *jmem)) () {
-  jm_gencolumn *mem = (jm_gencolumn *) jmem;
+int fill_water_body(
+  world_map *wm,
+  body_of_water *body,
+  world_map_pos *origin,
+  size_t size_limit
+) {
   world_map_pos wmpos;
-  rcpos__wmpos(&(mem->target_chunk), &wmpos);
-  // Figure out the relevant region and make sure we're at the bottom of the
-  // world:
-  mem->current_region = get_world_region(mem->world, &wmpos);
-  if (mem->current_region == NULL) {
-    // TODO: Something more sophisticated here.
-    return NULL;
-  }
-  mem->target_chunk.z = 0;
-  // Start at the very beginning of the target chunk:
-  rcpos__rpos(&(mem->target_chunk), &(mem->current_cell));
-  rpos__cidx(&(mem->current_cell), &(mem->current_index));
-  return (void (*) ()) &job_gencolumn__init_column;
-}
+  list *open = create_list();
+  list *interior = create_list();
+  list *shore = create_list();
+  map *visited = create_map(1, 2048);
+  world_region *this, *next;
 
-void (*job_gencolumn__init_column(void *jmem)) () {
-  jm_gencolumn *mem = (jm_gencolumn *) jmem;
-  stratum *st;
-  size_t i;
-  // Compute stratum heights for the current column:
-  for (i = 0; i < mem->current_region->geology.stratum_count; ++i) {
-    st = mem->current_region->geology.strata[i];
-    if (st != NULL) {
-      mem->stratum_heights[
-        mem->current_index.x +
-        mem->current_index.y*CHUNK_SIZE +
-        i*CHUNK_SIZE*CHUNK_SIZE
-      ] = compute_stratum_height(st, &(mem->current_cell));
-    } else {
-      mem->stratum_heights[
-        mem->current_index.x +
-        mem->current_index.y*CHUNK_SIZE +
-        i*CHUNK_SIZE*CHUNK_SIZE
-      ] = 0;
-    }
+  this = get_world_region(wm, origin);
+  if (this != NULL) {
+    l_append_element(open, this);
+    m_put_value(visited, (map_key_t) this, 1);
   }
-  // Set up our iteration variables:
-  mem->strata[
-    mem->current_index.x +
-    mem->current_index.y*CHUNK_SIZE
-  ] = mem->current_region->geology.strata[0];
-  mem->hindices[mem->current_index.x + mem->current_index.y*CHUNK_SIZE] = 0;
-  mem->hsofar[
-    mem->current_index.x +
-    mem->current_index.y*CHUNK_SIZE
-  ] = mem->stratum_heights[
-        mem->current_index.x +
-        mem->current_index.y*CHUNK_SIZE +
-        0
-      ];
-  // Check whether to compute a new column or continue to the column fill
-  // process:
-  if (
-    (mem->current_cell.x == mem->origin.x + CHUNK_SIZE)
+
+  while (
+    !l_is_empty(open)
   &&
-    (mem->current_cell.y == mem->origin.y + CHUNK_SIZE)
+    (l_get_length(interior) + l_get_length(shore)) <= size_limit
   ) {
-    // Start the column fill process:
-    mem->current_cell.x -= CHUNK_SIZE;
-    mem->current_cell.y -= CHUNK_SIZE;
-    return (void (*) ()) &job_gencolumn__fill_column;
-  } else if (mem->current_cell.x == mem->origin.x + CHUNK_SIZE) {
-    mem->current_cell.y += 1;
-    mem->current_cell.x -= CHUNK_SIZE;
-  } else {
-    mem->current_cell.x += 1;
-  }
-  // Compute the next strata stack:
-  return (void (*) ()) &job_gencolumn__init_column;
-}
-
-void (*job_gencolumn__fill_column(void *jmem)) () {
-  // Fills all of the cells in a single chunk
-  jm_gencolumn *mem = (jm_gencolumn *) jmem;
-  chunk *c = create_chunk(&(mem->target_chunk)); // chunk to fill in
-  chunk_or_approx coa; // for passing the chunk tot he compile queue
-  cell *cell; // cell to fill in
-  r_pos_t absheight; // absolute height of a cell
-  size_t xyidx; // cached x/y index value
-  uint8_t finished = 1; // are we done with this column entirely?
-  chunk_index idx = {.x = 0, .y = 0, .z = 0}; // position with this chunk
-  // Compute the current chunk index and region chunk position:
-  rcpos__rpos(&(mem->target_chunk), &(mem->current_cell));
-  // Loop through the chunk filling in cells:
-  for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
-    for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
-      // Cache this computation:
-      xyidx = idx.x + idx.y*CHUNK_SIZE;
-      if (mem->strata[xyidx] == NULL) {
-        // we're done with this column
-        continue;
-      }
-      for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
-        // Compute absolute height:
-        absheight = mem->current_cell.z + idx.z;
-        // Iterate through strata in this column until either the total height
-        // so far is above the current height, or there are no more strata
-        // left:
-        while (mem->hsofar[xyidx] <= absheight && mem->strata[xyidx] != NULL) {
-          mem->hindices[xyidx] += 1;
-          mem->strata[xyidx] = mem->current_region->geology.strata[
-            mem->hindices[xyidx]
-          ];
-          mem->hsofar[xyidx] += mem->stratum_heights[
-            xyidx + mem->hindices[xyidx]*CHUNK_SIZE*CHUNK_SIZE
-          ];
-        }
-        // Set the value of the current cell:
-        cell = c_cell(c, idx);
-        if (mem->strata[xyidx] != NULL) {
-          // TODO: Different stone types here
-          cell->primary = b_make_block(B_STONE);
-          cell->secondary = b_make_block(B_VOID);
-        } else {
-          cell->primary = b_make_block(B_AIR);
-          cell->secondary = b_make_block(B_VOID);
-        }
-      }
-      // If any column still has strata, the next chunk upwards needs to be
-      // generated:
-      if (mem->strata[xyidx] != NULL) {
-        finished = 0;
-      }
+    // Grab the next open region:
+    this = (world_region*) l_remove_item(open, 0);
+    if (this->climate.water.body != NULL) {
+      // We've hit another body of water (shouldn't be possible?)!
+      // All we can do is abort at this point.
+      cleanup_list(open);
+      cleanup_list(interior);
+      cleanup_list(shore);
+      cleanup_map(visited);
+      return 0;
+    }
+    if (
+      this->min_height - (TR_SCALE_MOUNDS + TR_SCALE_DETAILS + TR_SCALE_BUMPS)
+    >
+      body->level
+    ) {
+      // This is a pure land region: do nothing
+      continue;
+    } else if (this->max_height > body->level) {
+      // This is an interior region
+      l_append_element(interior, this);
+    } else {
+      // This is a shore region
+      l_append_element(shore, this);
+    }
+    // Add our neighbors to the open list:
+    wmpos.x = this->pos.x + 1;
+    wmpos.y = this->pos.y;
+    next = get_world_region(wm, &wmpos);
+    if (!m_contains_key(visited, (map_key_t) next)) {
+      l_append_element(open, next);
+      m_put_value(visited, (map_key_t) next, 1);
+    }
+    wmpos.x -= 2;
+    next = get_world_region(wm, &wmpos);
+    if (!m_contains_key(visited, (map_key_t) next)) {
+      l_append_element(open, next);
+      m_put_value(visited, (map_key_t) next, 1);
+    }
+    wmpos.x += 2;
+    wmpos.y -= 1;
+    next = get_world_region(wm, &wmpos);
+    if (!m_contains_key(visited, (map_key_t) next)) {
+      l_append_element(open, next);
+      m_put_value(visited, (map_key_t) next, 1);
+    }
+    wmpos.y += 2;
+    next = get_world_region(wm, &wmpos);
+    if (!m_contains_key(visited, (map_key_t) next)) {
+      l_append_element(open, next);
+      m_put_value(visited, (map_key_t) next, 1);
     }
   }
-  // Yield the generated chunk to the data subsystem for compilation:
-  c->chunk_flags |= CF_LOADED;
-  ch__coa(c, &coa);
-  mark_for_compilation(&coa);
-  // Target the next-higher chunk:
-  mem->target_chunk.z += 1;
-  if (finished) {
-    return (void (*) ()) NULL;
-  } else {
-    return (void (*) ()) &job_gencolumn__fill_column;
+  if (!l_is_empty(open)) {
+    // we hit the size limit: cleanup and return 0
+    cleanup_list(open);
+    cleanup_list(interior);
+    cleanup_list(shore);
+    cleanup_map(visited);
+    return 0;
   }
+  // Otherwise we should flag each region as belonging to this body of water
+  // and return 1.
+  l_witheach(interior, (void*) body, &_iter_flag_as_water_interior);
+  l_witheach(shore, (void*) body, &_iter_flag_as_water_shore);
+  return 1;
 }
-*/

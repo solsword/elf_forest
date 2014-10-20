@@ -67,7 +67,7 @@ r_pos_t world_map_height(world_map *wm, float x, float y) {
   if (wr == NULL) { // out-of-bounds
     return 0;
   }
-  return wr->terrain_height;
+  return wr->mean_height;
 }
 
 void render_map(world_map *wm, texture *tx) {
