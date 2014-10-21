@@ -63,14 +63,14 @@ typedef struct world_map_s world_map;
 //#define WORLD_WIDTH 768
 //#define WORLD_HEIGHT 512
 // 400*320 = 128000 regions
-//#define WORLD_WIDTH 400
-//#define WORLD_HEIGHT 320
+#define WORLD_WIDTH 400
+#define WORLD_HEIGHT 320
 // 128*96 = 12288 regions
 //#define WORLD_WIDTH 128
 //#define WORLD_HEIGHT 96
 // 32*32 = 1024 regions
-#define WORLD_WIDTH 32
-#define WORLD_HEIGHT 32
+//#define WORLD_WIDTH 32
+//#define WORLD_HEIGHT 32
 
 // Bits per world region (8 -> 256x256 chunks).
 // 128*96 = 12288 regions
@@ -81,6 +81,13 @@ typedef struct world_map_s world_map;
 // 512*256*32 = 4194304 blocks ~= 2796000 meters ~= 2800 km
 #define WORLD_REGION_BITS 8
 #define WORLD_REGION_SIZE (1 << WORLD_REGION_BITS)
+#define WORLD_REGION_BLOCKS (WORLD_REGION_SIZE * CHUNK_SIZE)
+
+// How often to sample world regions (in chunks) to determine approximate
+// min/max/mean height data. This should be a power of 2, and of course should
+// be less than WORLD_REGION_SIZE.
+//#define REGION_HEIGHT_SAMPLE_FREQUENCY 16
+#define REGION_HEIGHT_SAMPLE_FREQUENCY 32
 
 // Controls the size of strata relative to the world map size.
 #define STRATA_AVG_SIZE 0.25
@@ -121,8 +128,8 @@ extern char const * const WORLD_MAP_FILE;
 
 // Maximum distance between two world region anchors:
 #define MAX_REGION_ANCHOR_DISTANCE sqrtf( \
-  (WORLD_REGION_SIZE * CHUNK_SIZE) * (WORLD_REGION_SIZE * CHUNK_SIZE) + \
-  (WORLD_REGION_SIZE * CHUNK_SIZE) * (WORLD_REGION_SIZE * CHUNK_SIZE) + \
+  WORLD_REGION_BLOCKS * WORLD_REGION_BLOCKS + \
+  WORLD_REGION_BLOCKS * WORLD_REGION_BLOCKS + \
   TR_MAX_HEIGHT * 0.6 * TR_MAX_HEIGHT * 0.6 \
 )
 
@@ -208,9 +215,9 @@ struct world_region_s {
   world_map_pos pos;
   region_pos anchor;
   // topology info:
-  r_pos_t min_height;
-  r_pos_t mean_height;
-  r_pos_t max_height;
+  float min_height;
+  float mean_height;
+  float max_height;
   manifold_point gross_height; // an averaged local manifold
   // various info modules:
   strata_info geology;
@@ -302,9 +309,9 @@ static inline void compute_region_anchor(
 ) {
   ptrdiff_t hash = hash_3d(wmpos->x, wmpos->y, wm->seed + 71);
   wmpos__rpos(wmpos, anchor);
-  anchor->x += float_hash_1d(hash) * (WORLD_REGION_SIZE * CHUNK_SIZE - 1);
+  anchor->x += float_hash_1d(hash) * (WORLD_REGION_BLOCKS - 1);
   hash += 1;
-  anchor->y += float_hash_1d(hash) * (WORLD_REGION_SIZE * CHUNK_SIZE - 1);
+  anchor->y += float_hash_1d(hash) * (WORLD_REGION_BLOCKS - 1);
   hash += 1;
   anchor->z = TR_MAX_HEIGHT * ( 0.2 + 0.6 * float_hash_1d(hash));
 }
@@ -344,7 +351,7 @@ void cleanup_world_map(world_map *wm);
  *************/
 
 // Sets up the world map system, including generating the main world map.
-void setup_worldgen();
+void setup_worldgen(ptrdiff_t seed);
 
 // Cleans up the world map system.
 void cleanup_worldgen();
@@ -409,5 +416,12 @@ int fill_water(
   int min_size,
   int max_size
 );
+
+/*
+ * TODO: HERE
+void find_valley(
+  world_map *wm,
+);
+*/
 
 #endif // ifndef WORLDGEN_H

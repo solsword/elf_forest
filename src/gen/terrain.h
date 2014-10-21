@@ -28,7 +28,7 @@
 
 // Distortion frequencies:
 #define   TR_DFQ_CONTINENTS 0.0000004 // 1/5 of base
-#define    TR_DFQ_PGEOFORMS 0.0000006 // 1/5 of base
+#define    TR_DFQ_PGEOFORMS 0.00000075 // 1/4 of base
 #define    TR_DFQ_SGEOFORMS 0.0000008 // 1/5 of base
 #define    TR_DFQ_GEODETAIL 0.000004 // 1/5 of base
 #define    TR_DFQ_MOUNTAINS 0.00002 // 1/5 of base
@@ -40,7 +40,7 @@
 
 // Distortion strengths:
 #define   TR_DS_CONTINENTS 1500000.0 // ~1.5 periods
-#define    TR_DS_PGEOFORMS 1200000.0 // ???
+#define    TR_DS_PGEOFORMS 900000.0 // ???
 #define    TR_DS_SGEOFORMS 400000.0 // 1.6 periods
 #define    TR_DS_GEODETAIL 37500.0 // ~3/4 period
 #define    TR_DS_MOUNTAINS 5000.0 // ~1/2 period
@@ -54,11 +54,11 @@
 // Geoform parameters:
 
 // Noise->geoform mapping (see compute_geoforms):
-#define       TR_GEOMAP_SHELF 0.38
-#define       TR_GEOMAP_SHORE 0.55
-#define      TR_GEOMAP_PLAINS 0.6
-#define       TR_GEOMAP_HILLS 0.68
-#define   TR_GEOMAP_MOUNTAINS 0.7
+#define       TR_GEOMAP_SHELF 0.32
+#define       TR_GEOMAP_SHORE 0.44
+#define      TR_GEOMAP_PLAINS 0.55
+#define       TR_GEOMAP_HILLS 0.61
+#define   TR_GEOMAP_MOUNTAINS 0.68
 
 // Geoform heights:
 #define        TR_HEIGHT_OCEAN_DEPTHS 1500

@@ -36,11 +36,13 @@ world_map* THE_WORLD = NULL;
 
 world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
   size_t sofar;
+  float samples_per_region;
   manifold_point gross, stone, dirt;
   world_map *result = (world_map*) malloc(sizeof(world_map));
   world_map_pos xy;
   world_region* wr;
   region_pos sample_point;
+
   result->seed = seed;
   result->width = width;
   result->height = height;
@@ -49,7 +51,13 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
   result->all_water = create_list();
   result->all_biomes = create_list();
   result->all_civs = create_list();
+
   sofar = 0;
+  samples_per_region = (
+    WORLD_REGION_SIZE * WORLD_REGION_SIZE
+  /
+    (REGION_HEIGHT_SAMPLE_FREQUENCY * REGION_HEIGHT_SAMPLE_FREQUENCY)
+  );
   for (xy.x = 0; xy.x < result->width; xy.x += 1) {
     for (xy.y = 0; xy.y < result->height; xy.y += 1) {
       sofar += 1;
@@ -58,23 +66,22 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
       wr->pos.x = xy.x;
       wr->pos.y = xy.y;
       // Probe chunk heights in the region to get min/max and average:
-      wmpos__rpos(&xy, &sample_point);
-      copy_rpos(&sample_point, &(wr->anchor));
-      wr->min_height = TR_MIN_HEIGHT;
+      wmpos__rpos(&xy, &(wr->anchor));
+      wr->min_height = TR_MAX_HEIGHT;
       wr->mean_height = 0;
-      wr->max_height = TR_MAX_HEIGHT;
+      wr->max_height = TR_MIN_HEIGHT;
       wr->gross_height.z = 0;
       wr->gross_height.dx = 0;
       wr->gross_height.dy = 0;
       for (
-        ;
-        sample_point.x < wr->anchor.x + WORLD_REGION_SIZE * CHUNK_SIZE;
-        sample_point.x += CHUNK_SIZE
+        sample_point.x = wr->anchor.x;
+        sample_point.x < wr->anchor.x + WORLD_REGION_BLOCKS;
+        sample_point.x += CHUNK_SIZE * REGION_HEIGHT_SAMPLE_FREQUENCY
       ) {
         for (
-          ;
-          sample_point.y < wr->anchor.y + WORLD_REGION_SIZE * CHUNK_SIZE;
-          sample_point.y += CHUNK_SIZE
+          sample_point.y = wr->anchor.y;
+          sample_point.y < wr->anchor.y + WORLD_REGION_BLOCKS;
+          sample_point.y += CHUNK_SIZE * REGION_HEIGHT_SAMPLE_FREQUENCY
         ) {
           compute_terrain_height(&sample_point, &gross, &stone, &dirt);
 
@@ -88,12 +95,12 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
           }
 
           // update mean
-          wr->mean_height += dirt.z / (WORLD_REGION_SIZE * WORLD_REGION_SIZE);
+          wr->mean_height += dirt.z / samples_per_region;
 
           // update gross
-          wr->gross_height.z += gross.z/(WORLD_REGION_SIZE*WORLD_REGION_SIZE);
-          wr->gross_height.dx += gross.dx/(WORLD_REGION_SIZE*WORLD_REGION_SIZE);
-          wr->gross_height.dy += gross.dy/(WORLD_REGION_SIZE*WORLD_REGION_SIZE);
+          wr->gross_height.z += gross.z / samples_per_region;
+          wr->gross_height.dx += gross.dx / samples_per_region;
+          wr->gross_height.dy += gross.dy / samples_per_region;
         }
       }
 
@@ -224,7 +231,7 @@ void generate_geology(world_map *wm) {
 
   float avg_size = sqrtf(wm->width*wm->height);
   avg_size *= STRATA_AVG_SIZE;
-  avg_size *= WORLD_REGION_SIZE * CHUNK_SIZE;
+  avg_size *= WORLD_REGION_BLOCKS;
 
   map_function profile = MFN_SPREAD_UP;
   geologic_source source = GEO_SEDIMENTAY;
@@ -395,13 +402,13 @@ void strata_cell(
     (
       abs(
         rpos->x -
-        ((WORLD_WIDTH / 2.0) * WORLD_REGION_SIZE * CHUNK_SIZE + 2*CHUNK_SIZE)
+        ((WORLD_WIDTH / 2.0) * WORLD_REGION_BLOCKS + 2*CHUNK_SIZE)
       ) < CHUNK_SIZE
     ) && (
       rpos->z > (
-        rpos->y - (WORLD_HEIGHT/2.0) * WORLD_REGION_SIZE * CHUNK_SIZE
+        rpos->y - (WORLD_HEIGHT/2.0) * WORLD_REGION_BLOCKS
       ) + 8000
-      //rpos->z > (rpos->y - (WORLD_HEIGHT*WORLD_REGION_SIZE*CHUNK_SIZE)/2)
+      //rpos->z > (rpos->y - (WORLD_HEIGHT*WORLD_REGION_BLOCKS)/2)
     )
   ) {
   //if (abs(rpos->x - 32770) < CHUNK_SIZE) {
@@ -622,13 +629,13 @@ void compute_region_contenders(
 
  // Figure out the two nearest world regions:
   // Setup worst-case defaults:
-  vbest.x = WORLD_REGION_SIZE * CHUNK_SIZE;
-  vbest.y = WORLD_REGION_SIZE * CHUNK_SIZE;
+  vbest.x = WORLD_REGION_BLOCKS;
+  vbest.y = WORLD_REGION_BLOCKS;
   vbest.z = BASE_STRATUM_THICKNESS * MAX_STRATA_LAYERS;
   *strbest = 0;
   bestseed = 0;
-  vsecond.x = WORLD_REGION_SIZE * CHUNK_SIZE;
-  vsecond.y = WORLD_REGION_SIZE * CHUNK_SIZE;
+  vsecond.x = WORLD_REGION_BLOCKS;
+  vsecond.y = WORLD_REGION_BLOCKS;
   vsecond.z = BASE_STRATUM_THICKNESS * MAX_STRATA_LAYERS;
   *strsecond = 0;
   secondseed = 0;

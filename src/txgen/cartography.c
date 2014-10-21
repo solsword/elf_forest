@@ -67,6 +67,10 @@ r_pos_t world_map_height(world_map *wm, float x, float y) {
   if (wr == NULL) { // out-of-bounds
     return 0;
   }
+  // DEBUG:
+  if (wr->climate.water.body != NULL) {
+    return 0;
+  }
   return wr->mean_height;
 }
 
