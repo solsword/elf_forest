@@ -29,6 +29,8 @@
 #include "tick/tick.h"
 #include "ui/ui.h"
 
+#include "util.h"
+
 /*************
  * Constants *
  *************/
@@ -36,7 +38,7 @@
 // Center of the world:
 world_map_pos WORLD_ORIGIN = { .x = WORLD_WIDTH/2, .y=WORLD_HEIGHT/2 };
 
-ptrdiff_t SEED = 18234244;
+ptrdiff_t SEED = 18234252;
 
 /********
  * Main *
@@ -50,6 +52,8 @@ int main(int argc, char** argv) {
   origin.x += 2;
   origin.y += 2;
   // note origin.z is ignored by start_game
+
+  SEED = prng(prng(prng(SEED)));
 
   // Start the game:
   //start_game(SEED, argc, argv, "tester", &origin);

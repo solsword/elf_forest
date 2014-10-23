@@ -63,11 +63,11 @@ typedef struct world_map_s world_map;
 //#define WORLD_WIDTH 768
 //#define WORLD_HEIGHT 512
 // 400*320 = 128000 regions
-#define WORLD_WIDTH 400
-#define WORLD_HEIGHT 320
+//#define WORLD_WIDTH 400
+//#define WORLD_HEIGHT 320
 // 128*96 = 12288 regions
-//#define WORLD_WIDTH 128
-//#define WORLD_HEIGHT 96
+#define WORLD_WIDTH 128
+#define WORLD_HEIGHT 96
 // 32*32 = 1024 regions
 //#define WORLD_WIDTH 32
 //#define WORLD_HEIGHT 32
@@ -212,6 +212,7 @@ struct biome_s {
 // somewhere within the region and an estimate of local terrain height.
 struct world_region_s {
   ptrdiff_t seed;
+  world_map *world;
   world_map_pos pos;
   region_pos anchor;
   // topology info:
@@ -219,6 +220,7 @@ struct world_region_s {
   float mean_height;
   float max_height;
   manifold_point gross_height; // an averaged local manifold
+  world_region *downhill;
   // various info modules:
   strata_info geology;
   climate_info climate;
@@ -417,11 +419,8 @@ int fill_water(
   int max_size
 );
 
-/*
- * TODO: HERE
-void find_valley(
-  world_map *wm,
-);
-*/
+// Takes a world map position and uses downhill information to find a terrain
+// local minimum. The input position is edited directly.
+void find_valley(world_map *wm, world_map_pos *pos);
 
 #endif // ifndef WORLDGEN_H

@@ -6,6 +6,8 @@
 #include "tex/draw.h"
 #include "world/species.h"
 
+#include "util.h"
+
 #include "txgen.h"
 
 #include "txg_minerals.h"
@@ -44,13 +46,13 @@ void fltr_stone(texture *tx, void const * const fargs) {
   rgb__hsv(sfargs->base_color, &base_hsv);
   rgb__hsv(sfargs->alt_color, &alt_hsv);
 
-  salt1 = expanded_hash_1d(expanded_hash_1d(sfargs->seed-5));
-  salt2 = expanded_hash_1d(salt1);
-  salt3 = expanded_hash_1d(salt2);
-  salt4 = expanded_hash_1d(salt3);
-  salt5 = expanded_hash_1d(salt4);
-  salt6 = expanded_hash_1d(salt5);
-  salt7 = expanded_hash_1d(salt6);
+  salt1 = prng(prng(sfargs->seed-5));
+  salt2 = prng(salt1);
+  salt3 = prng(salt2);
+  salt4 = prng(salt3);
+  salt5 = prng(salt4);
+  salt6 = prng(salt5);
+  salt7 = prng(salt6);
 
   // Round all scale values so that the scaled coordinate-space texture
   // boundaries are integers (for simplex noise wrapping purposes):

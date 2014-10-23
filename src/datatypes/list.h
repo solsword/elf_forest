@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stddef.h>
 
 /***********
  * Globals *
@@ -54,7 +55,6 @@ void l_unlock(list *l);
 // Frees the memory associated with a list, and also calls free on each element
 // in the list.
 void destroy_list(list *l);
-
 
 // Tests whether the given list is empty.
 inline int l_is_empty(list *l);
@@ -109,6 +109,10 @@ int l_remove_all_elements(list *l, void *element);
 
 // Reverses the given list. Doesn't allocate or free any memory.
 void l_reverse(list *l);
+
+// Shuffles the given list using the given seed. The shuffle is notably not
+// cryptographically sound.
+void l_shuffle(list *l, ptrdiff_t seed);
 
 // Runs the given function sequentially on each element in the list. Note that
 // this locks the list, so the iteration function shouldn't try to call any

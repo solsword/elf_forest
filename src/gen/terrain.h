@@ -9,6 +9,7 @@
 #include "noise/noise.h"
 #include "world/world.h"
 #include "math/manifold.h"
+#include "util.h"
 
 /**************
  * Parameters *
@@ -145,7 +146,7 @@ static inline void simplex_component(
     x * frequency,
     y * frequency,
     *salt
-  ); *salt = expanded_hash_1d(*salt);
+  ); *salt = prng(*salt);
   // DEBUG:
   // printf("simp-comp-base: %.3f\n", result->z);
   mani_compose_simple(
@@ -170,7 +171,7 @@ static inline void worley_component(
     *salt,
     0, 0,
     flags
-  ); *salt = expanded_hash_1d(*salt);
+  ); *salt = prng(*salt);
   mani_compose_simple(
     result,
     dx * frequency,
@@ -221,6 +222,8 @@ static inline void get_noise(
   manifold_point geodetailed, mountainous, hilly, ridged;
   manifold_point mounded, detailed, bumpy;
 
+  float trig_salt;
+
   // continents
   // ----------
   get_standard_distortion(
@@ -245,29 +248,33 @@ static inline void get_noise(
   // printf("cont-scint: %.3f\n", scaleinterp.z);
 
     // large-scale cos part:
-  cos_part.z = cosf((x + dst_x.z) * TR_FREQUENCY_CONTINENTS);
+  trig_salt = 2 * M_PI * ptrf(*salt);
+  *salt = prng(*salt);
+  cos_part.z = cosf(trig_salt + (x + dst_x.z) * TR_FREQUENCY_CONTINENTS);
   cos_part.dx = (
     TR_FREQUENCY_CONTINENTS * (1 + dst_x.dx)
   *
-    (-sinf((x + dst_x.z) * TR_FREQUENCY_CONTINENTS))
+    (-sinf(trig_salt + (x + dst_x.z) * TR_FREQUENCY_CONTINENTS))
   );
   cos_part.dy = (
     TR_FREQUENCY_CONTINENTS * dst_x.dy
   *
-    (-sinf((x + dst_x.z) * TR_FREQUENCY_CONTINENTS))
+    (-sinf(trig_salt + (x + dst_x.z) * TR_FREQUENCY_CONTINENTS))
   );
 
     // large-scale sin part:
-  sin_part.z = sinf((y + dst_y.z) * TR_FREQUENCY_CONTINENTS);
+  trig_salt = 2 * M_PI * ptrf(*salt);
+  *salt = prng(*salt);
+  sin_part.z = sinf(trig_salt + (y + dst_y.z) * TR_FREQUENCY_CONTINENTS);
   sin_part.dx = (
     TR_FREQUENCY_CONTINENTS * dst_y.dx
   *
-    cosf((y + dst_y.z) * TR_FREQUENCY_CONTINENTS)
+    cosf(trig_salt + (y + dst_y.z) * TR_FREQUENCY_CONTINENTS)
   );
   sin_part.dy = (
     TR_FREQUENCY_CONTINENTS * (1 + dst_y.dy)
   *
-    cosf((y + dst_y.z) * TR_FREQUENCY_CONTINENTS)
+    cosf(trig_salt + (y + dst_y.z) * TR_FREQUENCY_CONTINENTS)
   );
 
   // DEBUG:
@@ -283,29 +290,33 @@ static inline void get_noise(
   // printf("cont-base: %.3f\n", continents->z);
 
     // small-scale cos part:
-  cos_part.z = cosf((x + 0.8 * dst_y.z) * TR_FREQUENCY_CONTINENTS * 1.6);
+  trig_salt = 2 * M_PI * ptrf(*salt);
+  *salt = prng(*salt);
+  cos_part.z = cosf(trig_salt + (x + 0.8*dst_y.z)*TR_FREQUENCY_CONTINENTS*1.6);
   cos_part.dx = (
     TR_FREQUENCY_CONTINENTS * 1.6 * (1 + 0.8 * dst_y.dx)
   *
-    (-sinf((x + 0.8 * dst_y.z) * TR_FREQUENCY_CONTINENTS * 1.6))
+    (-sinf(trig_salt + (x + 0.8 * dst_y.z) * TR_FREQUENCY_CONTINENTS * 1.6))
   );
   cos_part.dy = (
     TR_FREQUENCY_CONTINENTS * 1.6 * 0.8 * dst_y.dy
   *
-    (-sinf((x + 0.8 * dst_y.z) * TR_FREQUENCY_CONTINENTS * 1.6))
+    (-sinf(trig_salt + (x + 0.8 * dst_y.z) * TR_FREQUENCY_CONTINENTS * 1.6))
   );
 
     // small-scale sin part:
-  sin_part.z = sinf((y - 0.8 * dst_x.z) * TR_FREQUENCY_CONTINENTS * 1.6);
+  trig_salt = 2 * M_PI * ptrf(*salt);
+  *salt = prng(*salt);
+  sin_part.z = sinf(trig_salt + (y - 0.8*dst_x.z)*TR_FREQUENCY_CONTINENTS*1.6);
   sin_part.dx = (
     -TR_FREQUENCY_CONTINENTS * 1.6 * 0.8 * dst_x.dx
   *
-    cosf((y - 0.8 * dst_x.z) * TR_FREQUENCY_CONTINENTS * 1.6)
+    cosf(trig_salt + (y - 0.8 * dst_x.z) * TR_FREQUENCY_CONTINENTS * 1.6)
   );
   sin_part.dy = (
     TR_FREQUENCY_CONTINENTS * 1.6 * (1 - 0.8 * dst_x.dy)
   *
-    cosf((y - 0.8 * dst_x.z) * TR_FREQUENCY_CONTINENTS * 1.6)
+    cosf(trig_salt + (y - 0.8 * dst_x.z) * TR_FREQUENCY_CONTINENTS * 1.6)
   );
 
   // DEBUG:
@@ -909,7 +920,7 @@ static inline void compute_base_geoforms(
     geodetails, mountains,
     hills, ridges, mounds, details, bumps
   );
-  *salt = expanded_hash_1d(*salt);
+  *salt = prng(*salt);
 
   // DEBUG: print noise
   //*

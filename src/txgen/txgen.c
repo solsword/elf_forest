@@ -12,6 +12,8 @@
 #include "tex/tex.h"
 #include "world/blocks.h"
 
+#include "util.h"
+
 #include "txg_plants.h"
 #include "txg_minerals.h"
 #include "txgen.h"
@@ -293,9 +295,9 @@ void ateach_scattered(
   for (xi = x_min/x_scale; xi <= x_max/x_scale; xi += 1) {
     for (yi = y_min/y_scale; yi <= y_max/y_scale; yi += 1) {
       x = xi*x_scale;
-      x += (expanded_hash_1d(seed*xi + xi + yi) % (2*x_strength)) - x_strength;
+      x += (prng(seed*xi + xi + yi) % (2*x_strength)) - x_strength;
       y = yi*y_scale;
-      y += (expanded_hash_1d(seed*yi + xi + yi) % (2*y_strength))- y_strength;
+      y += (prng(seed*yi + xi + yi) % (2*y_strength))- y_strength;
       if (x >= x_min && x < x_max && y >= x_min && y < y_max) {
         f(x, y, arg);
       }
@@ -360,7 +362,7 @@ void fltr_worley(texture *tx, void const * const fargs) {
   float dontcare;
   ptrdiff_t salt;
   worley_filter_args *wfargs = (worley_filter_args *) fargs;
-  salt = expanded_hash_1d(wfargs->seed);
+  salt = prng(wfargs->seed);
   for (col = 0; col < tx->width; col += 1) {
     for (row = 0; row < tx->height; row += 1) {
       noise = wrnoise_2d_fancy(

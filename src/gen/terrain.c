@@ -9,6 +9,8 @@
 #include "world/world.h"
 #include "noise/noise.h"
 
+#include "util.h"
+
 /***********
  * Globals *
  ***********/
@@ -83,7 +85,7 @@ void compute_terrain_height(
     &tr_interp,
     &rocks_height
   );
-  salt = expanded_hash_1d(salt);
+  salt = prng(salt);
 
   // DEBUG: print base geoforms:
   //*

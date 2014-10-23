@@ -58,7 +58,7 @@ pixel const LAND_COLORS[EC_LAND_COLORS] = {
  * Functions *
  *************/
 
-r_pos_t world_map_height(world_map *wm, float x, float y) {
+float world_map_height(world_map *wm, float x, float y) {
   world_map_pos wmpos;
   world_region *wr;
   wmpos.x = (wm_pos_t) ffloor(x * wm->width);
@@ -67,18 +67,28 @@ r_pos_t world_map_height(world_map *wm, float x, float y) {
   if (wr == NULL) { // out-of-bounds
     return 0;
   }
-  // DEBUG:
-  if (wr->climate.water.body != NULL) {
+  return wr->mean_height;
+}
+
+float water_depth(world_map *wm, float x, float y) {
+  world_map_pos wmpos;
+  world_region *wr;
+  wmpos.x = (wm_pos_t) ffloor(x * wm->width);
+  wmpos.y = (wm_pos_t) ffloor(y * wm->height);
+  wr = get_world_region(THE_WORLD, &wmpos);
+  if (wr == NULL) { // out-of-bounds
     return 0;
   }
-  return wr->mean_height;
+  if (wr->climate.water.body == NULL) {
+    return 0;
+  }
+  return wr->climate.water.body->level - wr->min_height;
 }
 
 void render_map(world_map *wm, texture *tx) {
   size_t row, col;
   float x, y;
-  r_pos_t h;
-  float hf;
+  float h, wd, hf;
   float cinterp;
   size_t i;
   pixel color;
@@ -87,13 +97,14 @@ void render_map(world_map *wm, texture *tx) {
       x = col / ((float) tx->width);
       y = row / ((float) tx->height);
       h = world_map_height(wm, x, y);
+      wd = water_depth(wm, x, y);
       //hf = h / (float) (TR_MAX_HEIGHT);
       //hf *= 1.3;
       //color = float_color(hf, hf, hf, 1);
       //tx_set_px(tx, color, col, row);
       //*
-      if (h < TR_HEIGHT_SEA_LEVEL) {
-        hf = h / (float) (TR_HEIGHT_SEA_LEVEL);
+      if (wd > 0) {
+        hf = 1 - (wd / (float) (TR_HEIGHT_SEA_LEVEL));
         i = (size_t) (hf*(EC_SEA_COLORS - 1));
         cinterp = (hf*(EC_SEA_COLORS - 1)) - i;
         if (hf < 0 || hf > 1) {

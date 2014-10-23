@@ -37,7 +37,7 @@ enum salinity_e {
   SALINITY_FRESH = 0,
   SALINITY_BRACKISH = 1,
   SALINITY_SALINE = 2,
-  SALINITY_BRINE = 3,
+  SALINITY_BRINY = 3,
 };
 typedef enum salinity_e salinity;
 
@@ -45,9 +45,23 @@ typedef enum salinity_e salinity;
  * Constants *
  *************/
 
-// Ocean and lake size limits:
+// Ocean size limits:
 #define MIN_OCEAN_SIZE 20
 #define MAX_OCEAN_SIZE (-1)
+
+// Lake parameters:
+#define MIN_LAKE_SIZE 2
+#define MAX_LAKE_SIZE 320
+
+#define LAKE_PROBABILITY 0.4
+
+#define MIN_LAKE_DEPTH 18.0
+#define MAX_LAKE_DEPTH 250.0
+#define LAKE_DEPTH_DIST_SQUASH 4.0
+
+#define LAKE_SALINITY_THRESHOLD_BRACKISH 0.03
+#define LAKE_SALINITY_THRESHOLD_SALINE 0.025
+#define LAKE_SALINITY_THRESHOLD_BRINY 0.02
 
 // Number of seasons in the year
 #define N_SEASONS 5
@@ -127,7 +141,7 @@ typedef enum salinity_e salinity;
  *************************/
 
 struct body_of_water_s {
-  r_pos_t level;
+  float level;
   salinity salt;
 };
 
@@ -163,7 +177,7 @@ struct weather_s {
  ******************************/
 
 // Allocates and returns a new body of water.
-body_of_water* create_body_of_water(r_pos_t level, salinity salt);
+body_of_water* create_body_of_water(float level, salinity salt);
 
 // Frees the memory associated with the given body of water.
 void cleanup_body_of_water(body_of_water *body);

@@ -33,7 +33,11 @@ extern pixel const LAND_COLORS[EC_LAND_COLORS];
 
 // Returns the terrain height of the given world at the given x/y coordinates
 // with [0, 1] mapped to [0, wm->width/height].
-r_pos_t world_map_height(world_map *wm, float x, float y);
+float world_map_height(world_map *wm, float x, float y);
+
+// Works like world_map_height, but returns the depth below the local water
+// surface for the given coordinates, or 0 if there is no local water.
+float water_depth(world_map *wm, float x, float y);
 
 // Renders a map of the given world into the given texture.
 void render_map(world_map *wm, texture *tx);

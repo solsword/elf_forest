@@ -283,6 +283,21 @@ void l_reverse(list *l) {
   }
 }
 
+// A simple in-place Fisher-Yates shuffle using a weak in-place PRNG.
+void l_shuffle(list *l, ptrdiff_t seed) {
+  size_t i;
+  size_t j;
+  ptrdiff_t rng = seed;
+  void *phased;
+  for (i = l->count - 1; i > 0; --i) {
+    rng = (rng * 39181 + 19991); // <- both are primes
+    j = rng % (i+1);
+    phased = l->elements[i];
+    l->elements[i] = l->elements[j];
+    l->elements[j] = phased;
+  }
+}
+
 void l_foreach(list *l, void (*f)(void *)) {
   size_t i;
   for (i = 0; i < l->count; ++i) {

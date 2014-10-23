@@ -70,6 +70,17 @@ static inline float randf(float min, float max) {
   return min + result*(max - min);;
 }
 
+// Stupid-simple PRNG:
+static inline ptrdiff_t prng(ptrdiff_t seed) {
+  return (seed * 49103) + 2147483659; // both are primes
+}
+
+// Simple ptrdiff_t->float
+// Note that resolution is less than roughly 1/2^31, so don't expect too much.
+static inline float ptrf(ptrdiff_t seed) {
+  return (seed % 3758096411) / 3758096410.0;
+}
+
 // Normalizes the given angle to be between -M_PI and M_PI.
 static inline void norm_angle(float *angle) {
     while (*angle > M_PI) {

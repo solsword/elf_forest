@@ -7,6 +7,8 @@
 #include "world/world.h"
 #include "world/species.h"
 
+#include "util.h"
+
 #include "worldgen.h"
 
 #include "geology.h"
@@ -44,43 +46,43 @@ stratum *create_stratum(
   result->profile = profile;
   result->source = source;
 
-  seed = expanded_hash_1d(seed + hash_2d(seed, seed));
+  seed = prng(seed + hash_2d(seed, seed));
 
   switch (source) {
     case GEO_IGNEOUS:
       result->base_species = create_new_igneous_species(seed);
 
       result->persistence = 1.2 + 0.4 * float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->scale_bias = 0.7 + 0.4 * float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->radial_frequency = M_PI/(2.4 + 1.6*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->radial_variance = 0.1 + 0.3*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->gross_distortion = 900 + 500.0*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->fine_distortion = 110 + 40.0*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->large_var = result->thickness * (0.6 + 0.3*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->med_var = result->thickness * (0.4 + 0.25*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->small_var = result->thickness * (0.17 + 0.05*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->tiny_var = result->thickness * (0.04 + 0.06*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->detail_var = 1.0 + 2.0*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->ridges = 2.0 + 3.0*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->smoothing = 0.15 + 0.2*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       for (i = 0; i < N_VEIN_TYPES; ++i) {
         result->vein_scale[i] = 0; // 23.4;
@@ -98,36 +100,36 @@ stratum *create_stratum(
       result->base_species = create_new_metamorphic_species(seed);
 
       result->persistence = 0.8 + 0.5 * float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->scale_bias = 0.8 + 0.4 * float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->radial_frequency = M_PI/(2.8 + 2.0*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->radial_variance = 0.4 + 0.4*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->gross_distortion = 1200 + 900.0*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->fine_distortion = 180 + 110.0*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->large_var = result->thickness * (0.5 + 0.3*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->med_var = result->thickness * (0.3 + 0.25*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->small_var = result->thickness * (0.16 + 0.06*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->tiny_var = result->thickness * (0.02 + 0.03*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->detail_var = 0.3 + 1.8*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->ridges = 0.4 + 3.4*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->smoothing = 0.15 + 0.45*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       for (i = 0; i < N_VEIN_TYPES; ++i) {
         result->vein_scale[i] = 0; // 23.4;
@@ -146,36 +148,36 @@ stratum *create_stratum(
       result->base_species = create_new_sedimentary_species(seed);
 
       result->persistence = 1.3 + 0.5 * float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->scale_bias = 1.1 + 0.3 * float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->radial_frequency = M_PI/(2.1 + 1.2*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->radial_variance = 0.05 + 0.2*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->gross_distortion = 700 + 400.0*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->fine_distortion = 30 + 30.0*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->large_var = result->thickness * (0.4 + 0.25*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->med_var = result->thickness * (0.2 + 0.15*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->small_var = result->thickness * (0.11 + 0.05*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->tiny_var = result->thickness * (0.03 + 0.07*float_hash_1d(seed));
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->detail_var = 0.7 + 3.2*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
       result->ridges = 0.8 + 4.5*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       result->smoothing = 0.12 + 0.4*float_hash_1d(seed);
-      seed = expanded_hash_1d(seed);
+      seed = prng(seed);
 
       for (i = 0; i < N_VEIN_TYPES; ++i) {
         result->vein_scale[i] = 0; // 23.4;
@@ -237,12 +239,12 @@ species create_new_igneous_species(ptrdiff_t seed) {
   species result = create_stone_species();
   stone_species* ssp = get_stone_species(result);
 
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   float base_density = pow(norm_hash_1d(seed), 0.8);
 
   determine_new_igneous_material(&(ssp->material), seed, base_density);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   determine_new_igneous_appearance(&(ssp->appearance), seed, base_density);
 
   return result;
@@ -252,12 +254,12 @@ species create_new_metamorphic_species(ptrdiff_t seed) {
   species result = create_stone_species();
   stone_species* ssp = get_stone_species(result);
 
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   float base_density = norm_hash_1d(seed);
 
   determine_new_metamorphic_material(&(ssp->material), seed, base_density);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   determine_new_metamorphic_appearance(&(ssp->appearance), seed, base_density);
 
   return result;
@@ -267,12 +269,12 @@ species create_new_sedimentary_species(ptrdiff_t seed) {
   species result = create_stone_species();
   stone_species* ssp = get_stone_species(result);
 
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   float base_density = pow(norm_hash_1d(seed), 0.8);
 
   determine_new_sedimentary_material(&(ssp->material), seed, base_density);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   determine_new_sedimentary_appearance(&(ssp->appearance), seed, base_density);
 
   return result;
@@ -285,7 +287,7 @@ void determine_new_igneous_material(
 ) {
   target->origin = MO_IGNEOUS_MINERAL;
 
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Base density is taken from the external argument:
   target->solid_density = mat_density(0.25 + 4.75 * base_density);
@@ -296,7 +298,7 @@ void determine_new_igneous_material(
   // density:
   float base_specific_heat = (norm_hash_1d(seed) + norm_hash_1d(seed))/2.0;
   base_specific_heat = 0.7*base_specific_heat + 0.3*(1 - base_density);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   target->solid_specific_heat = mat_specific_heat(
     0.3 + 1.1*base_specific_heat
@@ -313,11 +315,11 @@ void determine_new_igneous_material(
   // A flat distribution of melting points, slightly correlated with density:
   float base_transition_temp = float_hash_1d(seed);
   base_transition_temp = 0.8*base_transition_temp + 0.2*base_density;
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   target->solidus = 550 + 700 * base_transition_temp;
   target->liquidus = target->solidus + 50 + norm_hash_1d(seed) * 200;
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   target->boiling_point = 1800 + base_transition_temp * 600;
 
@@ -327,11 +329,11 @@ void determine_new_igneous_material(
 
   // it is generally not very malleable, and may be as brittle as glass:
   target->malleability = 80 * norm_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // magma is extremely viscous:
   target->viscosity = pow(10.0, 6.0 + 10.0*float_hash_1d(seed));
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // igneous rocks are pretty hard (and again this correlates with density):
   target->hardness = 100+120*(0.8*norm_hash_1d(seed) + 0.2*base_density);
@@ -344,7 +346,7 @@ void determine_new_metamorphic_material(
 ) {
   target->origin = MO_METAMORPHIC_MINERAL;
 
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Base density is taken from the external argument:
   target->solid_density = mat_density(0.9 + 4.8 * base_density);
@@ -355,7 +357,7 @@ void determine_new_metamorphic_material(
   // density:
   float base_specific_heat = norm_hash_1d(seed);
   base_specific_heat = 0.7*base_specific_heat + 0.3*(1 - base_density);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   target->solid_specific_heat = mat_specific_heat(
     0.2 + 1.3*base_specific_heat
@@ -372,11 +374,11 @@ void determine_new_metamorphic_material(
   // A flat distribution of melting points, slightly correlated with density:
   float base_transition_temp = float_hash_1d(seed);
   base_transition_temp = 0.8*base_transition_temp + 0.2*base_density;
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   target->solidus = 520 + 760 * base_transition_temp;
   target->liquidus = target->solidus + 20 + norm_hash_1d(seed) * 300;
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   target->boiling_point = 1700 + base_transition_temp * 800;
 
@@ -387,11 +389,11 @@ void determine_new_metamorphic_material(
 
   // it may be somewhat malleable, and is never completely brittle
   target->malleability = 10 + 90 * norm_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // magma is extremely viscous:
   target->viscosity = pow(10.0, 6.0 + 10.0*float_hash_1d(seed));
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // metamorphic rocks can be pretty soft, but are mostly hard (again this
   // correlates with density):
@@ -407,7 +409,7 @@ void determine_new_sedimentary_material(
 ) {
   target->origin = MO_SEDIMENTARY_MINERAL;
 
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Base density is taken from the external argument:
   target->solid_density = mat_density(1.2 + 3.7 * base_density);
@@ -418,7 +420,7 @@ void determine_new_sedimentary_material(
   // density:
   float base_specific_heat = norm_hash_1d(seed);
   base_specific_heat = 0.7*base_specific_heat + 0.3*(1 - base_density);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   target->solid_specific_heat = mat_specific_heat(
     0.4 + 1.4*base_specific_heat
@@ -435,11 +437,11 @@ void determine_new_sedimentary_material(
   // A flat distribution of melting points, slightly correlated with density:
   float base_transition_temp = float_hash_1d(seed);
   base_transition_temp = 0.8*base_transition_temp + 0.2*base_density;
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   target->solidus = 440 + 780 * base_transition_temp;
   target->liquidus = target->solidus + 10 + norm_hash_1d(seed) * 180;
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   target->boiling_point = 1550 + base_transition_temp * 600;
 
@@ -451,11 +453,11 @@ void determine_new_sedimentary_material(
 
   // it may be somewhat malleable, but it can also be quite brittle
   target->malleability = 5 + 110 * norm_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // sedimentary magma is generally more viscous than other types (says I):
   target->viscosity = pow(10.0, 5.0 + 8.0*float_hash_1d(seed));
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // sedimentary rocks are generally a bit softer than other types:
   target->hardness = 30 + 150*(
@@ -469,52 +471,52 @@ void determine_new_igneous_appearance(
   ptrdiff_t seed,
   float base_density
 ) {
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   target->seed = seed;
 
   // Lighter rocks tend to have smaller noise scales.
   target->scale = 0.1 + 0.08*(0.8*float_hash_1d(seed) + 0.2*base_density);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Igneous rock types are relatively gritty. Denser rocks tend to be slightly
   // less gritty though.
   target->gritty = 1.4 + 2.3*(0.7*float_hash_1d(seed) + 0.3*(1-base_density));
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Denser rocks tend to be more contoured.
   target->contoured = 3.5 + 3.5*(0.8*float_hash_1d(seed) + 0.2*base_density);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Lighter igneous rocks are far more porous.
   target->porous = 2.0 + 8.5*(0.5*float_hash_1d(seed) + 0.5*(1-base_density));
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Igneous rocks don't tend to be very bumpy.
   target->bumpy = 1.0 + 4.0*float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Igneous rocks rarely have significant inclusions.
   target->inclusions = pow(norm_hash_1d(seed), 2.5);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // The distortion scale is within 10% of the base scale.
   target->dscale = target->scale * 1 + 0.2*(float_hash_1d(seed) - 0.5);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Igneous rocks can have at most moderate distortion, and largely have very
   // little distortion.
   target->distortion = 4.4*pow(norm_hash_1d(seed), 2);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Igneous rocks can be squashed in either direction
   target->squash = 0.7 + 0.6*norm_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   target->squash /= 0.7 + 0.6*norm_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Hues range from blue to orange:
   float hue = -0.2 + 0.3*float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   if (hue < 0) {
     hue = 1 + hue;
   }
@@ -522,17 +524,17 @@ void determine_new_igneous_appearance(
   // Saturation is usually negligible though:
   float sat = 0;
   if (float_hash_1d(seed) < 0.7) {
-    seed = expanded_hash_1d(seed);
+    seed = prng(seed);
     sat = 0.05*float_hash_1d(seed);
   } else {
-    seed = expanded_hash_1d(seed);
+    seed = prng(seed);
     sat = 0.3*float_hash_1d(seed);
   }
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Base values are correlated with density, and are mostly dark:
   float val = 0.6*float_hash_1d(seed) + 0.4*(1-base_density);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   val *= val;
 
   // Construct the base color:
@@ -552,61 +554,61 @@ void determine_new_metamorphic_appearance(
   ptrdiff_t seed,
   float base_density
 ) {
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   target->seed = seed;
 
   // Metamorphic rocks exhibit a wide range of noise scales:
   target->scale = 0.08 + 0.12*float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Metamorphic rock types are usually not very gritty, especially when
   // they're very dense.
   target->gritty = 0.8 + 2.5*(0.7*float_hash_1d(seed) + 0.3*(1-base_density));
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Denser rocks tend to be more contoured.
   target->contoured = 1.5 + 7.5*(0.8*float_hash_1d(seed) + 0.2*base_density);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Lighter metamorphic rocks are a bit more porous.
   target->porous = 1.0 + 8.0*(0.7*float_hash_1d(seed) + 0.3*(1-base_density));
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Metamorphic rocks can be quite bumpy, especially when less dense.
   target->bumpy = 1.0 + 9.0*(0.6*float_hash_1d(seed) + 0.4*(1-base_density));
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Metamorphic rocks often have significant inclusions.
   target->inclusions = pow(float_hash_1d(seed), 1.3);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // The distortion scale is within 10% of the base scale.
   target->dscale = target->scale * 1 + 0.2*(float_hash_1d(seed) - 0.5);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Metamorphic rocks can have quite a bit of distortion.
   target->distortion = 6.5*norm_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // And they can be squashed quite a bit.
   target->squash = 0.6 + 0.8*norm_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   target->squash /= 0.6 + 0.8*norm_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // All kinds of hues are possible.
   float hue = float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Saturation is usually small.
   float sat = norm_hash_1d(seed);
   sat *= sat;
   sat *= 0.4;
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Base values have a wide range:
   float val = 0.2 + 0.6*float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Construct the base color:
   pixel hsv = float_color(hue, sat, val, 1.0);
@@ -615,11 +617,11 @@ void determine_new_metamorphic_appearance(
   // Metamorphic inclusions use the same distributions as the base rock, but
   // have a wider range of saturations:
   hue = float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   sat = 0.6*pow(norm_hash_1d(seed), 1.5);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   val = 0.2 + 0.6*float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   hsv = float_color(hue, sat, val, 1.0);
   hsv__rgb(hsv, &(target->alt_color));
@@ -633,64 +635,64 @@ void determine_new_sedimentary_appearance(
   ptrdiff_t seed,
   float base_density
 ) {
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   target->seed = seed;
 
   // Sedimentary rocks often have smaller scales than other rocks.
   target->scale = 0.07 + 0.07*float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Sedimentary rock types are usually gritty.
   target->gritty = 3.1 + 2.5*float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Denser rocks tend to be more contoured.
   target->contoured = 1.5 + 9.5*(0.7*float_hash_1d(seed) + 0.3*base_density);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Lighter sedimentary rocks are a bit more porous.
   target->porous = 3.0 + 5.0*(0.7*float_hash_1d(seed) + 0.3*(1-base_density));
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Sedimentary rocks can be quite bumpy.
   target->bumpy = 3.0 + 6.0*float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Sedimentary rocks usually don't have inclusions.
   target->inclusions = pow(norm_hash_1d(seed), 2.5);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // The distortion scale is within 20% of the base scale.
   target->dscale = target->scale * 1 + 0.4*(float_hash_1d(seed) - 0.5);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Sedimentary rocks can have little to medium distortion.
   target->distortion = 4.5*pow(norm_hash_1d(seed), 1.4);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Sedimentary rocks are usually squashed horizontally.
   target->squash = 0.6 + 0.6*norm_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   target->squash /= 0.8 + 0.6*norm_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Sedimentary rocks can be yellowish to bluish, or just gray:
   float hue = 0.15 + 0.5*float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Saturation is usually small.
   float sat = norm_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   if (float_hash_1d(seed) < 0.4) {
     sat = 0;
   }
   sat *= sat;
   sat *= 0.3;
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Base values have a wide range:
   float val = 0.1 + 0.8*float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   // Construct the base color:
   pixel hsv = float_color(hue, sat, val, 1.0);
@@ -699,11 +701,11 @@ void determine_new_sedimentary_appearance(
   // Sedimentary inclusions use the same distributions as the base rock, but
   // have a wider range of saturations:
   hue = float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   sat = 0.5*pow(norm_hash_1d(seed), 1.2);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
   val = 0.1 + 0.8*float_hash_1d(seed);
-  seed = expanded_hash_1d(seed);
+  seed = prng(seed);
 
   hsv = float_color(hue, sat, val, 1.0);
   hsv__rgb(hsv, &(target->alt_color));

@@ -8,6 +8,8 @@
 #include "tex/draw.h"
 #include "math/curve.h"
 
+#include "util.h"
+
 #include "txgen.h"
 
 #include "txg_plants.h"
@@ -105,7 +107,7 @@ struct leaves_helper_args_s {
 void fltr_leaves_helper(int x, int y, void * arg) {
   struct leaves_helper_args_s *lhargs = (struct leaves_helper_args_s *) arg;
   // Scramble the leaf filter seed:
-  lhargs->lfargs->seed = expanded_hash_1d(lhargs->lfargs->seed * x * y);
+  lhargs->lfargs->seed = prng(lhargs->lfargs->seed * x * y);
   // Render a single randomized leaf into the leaf texture:
   fltr_leaf(lhargs->leaf, lhargs->lfargs);
   // Draw the fresh leaf onto the main texture at the given position:
@@ -124,9 +126,9 @@ void fltr_branches(texture *tx, void const * const fargs) {
   ptrdiff_t salt1, salt2, salt3;
   gradient_map grmap;
   branch_filter_args *bfargs = (branch_filter_args *) fargs;
-  salt1 = expanded_hash_1d(bfargs->seed+73);
-  salt2 = expanded_hash_1d(salt1);
-  salt3 = expanded_hash_1d(salt2);
+  salt1 = prng(bfargs->seed+73);
+  salt2 = prng(salt1);
+  salt3 = prng(salt2);
   grmap.colors[0] = bfargs->center_color;
   grmap.colors[1] = bfargs->mid_color;
   grmap.colors[2] = bfargs->outer_color;

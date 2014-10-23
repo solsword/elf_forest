@@ -12,6 +12,8 @@
 #include "world/materials.h"
 #include "world/world.h"
 
+#include "util.h"
+
 /*********
  * Enums *
  *********/
@@ -140,7 +142,7 @@ static inline void stratum_base_thickness(
     1 + st->radial_variance * sxnoise_2d(
       theta / st->radial_frequency,
       0,
-      expanded_hash_1d(st->seed)
+      prng(st->seed)
     )
   );
   *thickness = fmap(1 - d/r, st->profile); // base thickness (possibly < 0)
@@ -156,11 +158,11 @@ static inline void stratum_lf_distortion(
   float scale = GN_DISTORTION_SCALE * st->scale_bias;
   *dx = st->gross_distortion * sxnoise_2d(
     x/scale, y/scale,
-    expanded_hash_1d(st->seed+1)
+    prng(st->seed+1)
   );
   *dy = st->gross_distortion * sxnoise_2d(
     x/scale, y/scale,
-    expanded_hash_1d(st->seed+2)
+    prng(st->seed+2)
   );
 }
 
@@ -174,12 +176,12 @@ static inline void stratum_lf_noise(
   float scale = GN_LARGE_VAR_SCALE * st->scale_bias;
   *noise = st->large_var * sxnoise_2d(
     x/scale, y/scale,
-    expanded_hash_1d(st->seed+5)
+    prng(st->seed+5)
   );
   scale = GN_MED_VAR_SCALE * st->scale_bias;
   *noise += st->med_var * sxnoise_2d(
     x/scale, y/scale,
-    expanded_hash_1d(st->seed+6)
+    prng(st->seed+6)
   );
 }
 

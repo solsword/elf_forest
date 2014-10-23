@@ -1,6 +1,8 @@
 // worldgen.c
 // World map generation.
 
+#include <math.h>
+
 #include "datatypes/bitmap.h"
 #include "datatypes/list.h"
 #include "datatypes/queue.h"
@@ -11,6 +13,7 @@
 #include "txgen/cartography.h"
 #include "tex/tex.h"
 #include "math/manifold.h"
+#include "util.h"
 
 #include "geology.h"
 
@@ -36,14 +39,14 @@ world_map* THE_WORLD = NULL;
 
 world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
   size_t sofar;
-  float samples_per_region;
+  float samples_per_region, min_neighbor_height;
   manifold_point gross, stone, dirt;
   world_map *result = (world_map*) malloc(sizeof(world_map));
-  world_map_pos xy;
-  world_region* wr;
+  world_map_pos xy, iter;
+  world_region *wr, *dh;
   region_pos sample_point;
 
-  result->seed = seed;
+  result->seed = prng(seed);
   result->width = width;
   result->height = height;
   result->regions = (world_region *) calloc(width*height, sizeof(world_region));
@@ -131,11 +134,33 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
     (size_t) (result->width * result->height)
   );
   printf("\n");
+  // Loop again now that heights are known to find downhill links:
+  for (xy.x = 0; xy.x < result->width; xy.x += 1) {
+    for (xy.y = 0; xy.y < result->height; xy.y += 1) {
+      wr = get_world_region(result, &xy); // no need to worry about NULL here
+      wr->downhill = NULL;
+      min_neighbor_height = wr->min_height;
+      for (iter.x = xy.x - 1; iter.x <= xy.x + 1; iter.x += 1) {
+        for (iter.y = xy.y - 1; iter.y <= xy.y + 1; iter.y += 1) {
+          if (iter.x == xy.x && iter.y == xy.y) {
+            continue;
+          }
+          dh = get_world_region(result, &iter);
+          if (dh != NULL && dh->min_height < min_neighbor_height) {
+            wr->downhill = dh;
+            min_neighbor_height = dh->min_height;
+          }
+        }
+      }
+    }
+  }
   return result;
 }
 
 void cleanup_world_map(world_map *wm) {
+  // none of these need special cleanup beyond a free()
   destroy_list(wm->all_strata);
+  destroy_list(wm->all_water);
   destroy_list(wm->all_biomes);
   destroy_list(wm->all_civs);
   free(wm->regions);
@@ -167,12 +192,74 @@ void _iter_flag_as_water_shore(void *v_region, void *v_body) {
   }
 }
 
+void _iter_fill_lake_site(void *v_wr, void *v_seed) {
+  world_region *wr = (world_region*) v_wr;
+  ptrdiff_t *seed = (ptrdiff_t*) v_seed;
+  float f;
+  body_of_water *water;
+  salinity salt;
+
+  // Test for existing water:
+  if (wr->climate.water.body != NULL) { return; }
+
+  // Test against base lake probability:
+  *seed = prng(*seed);
+  f = ptrf(*seed); // random on [0, 1]
+  if (f > LAKE_PROBABILITY) { // Not our lucky day
+    return;
+  }
+
+  // Determine salinity:
+  *seed = prng(*seed);
+  f = ptrf(*seed); // random on [0, 1]
+  if (f < LAKE_SALINITY_THRESHOLD_BRINY) {
+    salt = SALINITY_BRINY;
+  } else if (f < LAKE_SALINITY_THRESHOLD_SALINE) {
+    salt = SALINITY_SALINE;
+  } else if (f < LAKE_SALINITY_THRESHOLD_BRACKISH) {
+    salt = SALINITY_BRACKISH;
+  } else {
+    salt = SALINITY_FRESH;
+  }
+
+  // Determine base depth:
+  *seed = prng(*seed);
+  f = ptrf(*seed); // random on [0, 1]
+  // exponential redistribution over [MIN_LAKE_DEPTH, MAX_LAKE_DEPTH]:
+  // average for 22, 250, 4 is: 83.4
+  f = MIN_LAKE_DEPTH + MAX_LAKE_DEPTH * exp(LAKE_DEPTH_DIST_SQUASH * (f-1));
+
+  // Create a body of water and attempt to fill with it:
+  water = create_body_of_water(wr->min_height + f, salt);
+  while (
+    water->level >= wr->min_height + MIN_LAKE_DEPTH
+  &&
+    !fill_water(
+      wr->world,
+      water,
+      &(wr->pos),
+      MIN_LAKE_SIZE,
+      MAX_LAKE_SIZE
+    )
+  ) {
+    f *= 0.9;
+    water->level = wr->min_height + f;
+  }
+  if (water->level < wr->min_height + MIN_LAKE_DEPTH) {
+    // we failed to make a lake here
+    cleanup_body_of_water(water);
+  } else {
+    l_append_element(wr->world->all_water, water);
+  }
+}
+
 /*************
  * Functions *
  *************/
 
 void setup_worldgen(ptrdiff_t seed) {
   setup_terrain_gen(seed);
+  seed = prng(seed);
   THE_WORLD = create_world_map(seed, WORLD_WIDTH, WORLD_HEIGHT);
   printf("  ...generating geology...\n");
   generate_geology(THE_WORLD);
@@ -239,7 +326,7 @@ void generate_geology(world_map *wm) {
   world_region *wr;
   for (i = 0; i < MAX_STRATA_LAYERS * STRATA_COMPLEXITY; ++i) {
     // Create a stratum and append it to the list of all strata:
-    hash = expanded_hash_1d(wm->seed + 567*i);
+    hash = prng(wm->seed + 567*i);
     h1 = hash_1d(hash);
     h2 = hash_1d(h1);
     h3 = hash_1d(h2);
@@ -330,13 +417,16 @@ void generate_hydrology(world_map *wm) {
   world_map_pos xy;
   world_region *wr;
   body_of_water *next_water;
+  list *lake_sites = create_list();
+  ptrdiff_t lakes_seed = wm->seed + 8177342;
 
   next_water = create_body_of_water(TR_HEIGHT_SEA_LEVEL, SALINITY_SALINE);
 
-  // First generate world oceans:
+  // First generate world oceans and take note of potential lake sites:
   for (xy.x = 0; xy.x < wm->width; ++xy.x) {
     for (xy.y = 0; xy.y < wm->height; ++xy.y) {
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
+      wr->world = wm;
       // Note that hydrology defaults are set up in create_world_map
       if (
         wr->climate.water.body == NULL
@@ -346,9 +436,17 @@ void generate_hydrology(world_map *wm) {
         l_append_element(wm->all_water, next_water);
         next_water = create_body_of_water(TR_HEIGHT_SEA_LEVEL, SALINITY_SALINE);
       }
+      if (wr->climate.water.body == NULL && wr->downhill == NULL) {
+        l_append_element(lake_sites, wr);
+      }
     }
   }
-  // TODO: lakes!
+  // Clean up the extra body of water:
+  cleanup_body_of_water(next_water);
+
+  // Now probabilistically fill every valley with a lake:
+  l_witheach(lake_sites, (void*) &lakes_seed, &_iter_fill_lake_site);
+  cleanup_list(lake_sites);
 }
 
 void generate_climate(world_map *wm) {
@@ -743,7 +841,7 @@ int fill_water(
   list *shore = create_list();
   map *visited = create_map(1, 2048);
   world_region *this, *next;
-  size_t size = 0;
+  int size = 0;
 
   this = get_world_region(wm, origin);
   if (this != NULL) {
@@ -820,4 +918,17 @@ int fill_water(
   l_witheach(interior, (void*) body, &_iter_flag_as_water_interior);
   l_witheach(shore, (void*) body, &_iter_flag_as_water_shore);
   return 1;
+}
+
+void find_valley(world_map *wm, world_map_pos *pos) {
+  world_region *wr;
+  wr = get_world_region(wm, pos);
+  if (wr == NULL) {
+    return;
+  }
+
+  while (wr->downhill != NULL) {
+    wr = wr->downhill;
+  }
+  copy_wmpos(&(wr->pos), pos);
 }
