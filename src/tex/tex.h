@@ -245,6 +245,16 @@ static inline void px_set_gray(pixel *p, channel gray) {
   *p |= ((pixel) gray) << BLUE_SHIFT;
 }
 
+// Takes two pixels and a floating point interpolant and returns a color
+// between the two.
+static inline pixel px_interp(pixel from, pixel to, float interp) {
+  pixel result = 0xff000000;
+  px_set_red(&result, interp * px_red(to) + (1 - interp) * px_red(from));
+  px_set_green(&result, interp * px_green(to) + (1 - interp) * px_green(from));
+  px_set_blue(&result, interp * px_blue(to) + (1 - interp) * px_blue(from));
+  return result;
+}
+
 
 // Takes RGBA floating point values in [0, 1] and returns a pixel.
 static inline pixel float_color(float r, float g, float b, float a) {

@@ -166,6 +166,8 @@ struct soil_composition_s {
 };
 
 struct weather_s {
+  // TODO: wind chaos?
+  float wind_strength, wind_direction; // wind strength & direction
   float rainfall[N_SEASONS]; // rainfall per season
   float temp_low[N_SEASONS]; // temperature low, mean and high throughout the
   float temp_mean[N_SEASONS]; // day, in each season

@@ -111,6 +111,34 @@ void draw_line(
   }
 }
 
+void draw_line_gradient(
+  texture *tx,
+  vector *from,
+  vector *to,
+  pixel start_color,
+  pixel end_color
+) {
+  vector line, here;
+  float t, length;
+  size_t row, col;
+  vcopy(&line, to);
+  vsub(&line, from);
+  line.z = 0;
+  length = vmag(&line);
+  for (t = 0; t < 1; t += LINE_DRAWING_RESOLUTION / length) {
+    vlerp(from, to, t, &here);
+    col = (size_t) here.x;
+    row = (size_t) here.y;
+    if (
+      ((col % tx->width) == col)
+    &&
+      ((row % tx->height) == row)
+    ) {
+      tx_set_px(tx, px_interp(start_color, end_color, t), col, row);
+    }
+  }
+}
+
 void draw_curve(
   texture *tx,
   curve *c,

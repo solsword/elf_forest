@@ -108,8 +108,6 @@ void render_map(world_map *wm, texture *tx) {
         i = (size_t) (hf*(EC_SEA_COLORS - 1));
         cinterp = (hf*(EC_SEA_COLORS - 1)) - i;
         if (hf < 0 || hf > 1) {
-          // DEBUG:
-          printf("hf! %.3f\n", hf);
           tx_set_px(tx, 0xff0088ff, col, row);
         } else {
           color = SEA_COLORS[i];
@@ -155,26 +153,38 @@ void render_map(world_map *wm, texture *tx) {
     }
   }
   // DEBUG:
-  // Draw downhill vectors:
-  /*
+  // Draw wind/downhill vectors:
+  //*
   region_pos rpos;
+  world_map_pos wmpos;
   manifold_point gross, dontcare;
-  float dh;
+  float r, theta;
   vector from, to;
+  world_region *wr;
   color = 0xffffffff; // white
-  for (col = 0; col < tx->width; col += 16) {
-    for (row = 0; row < tx->height; row += 16) {
+  pixel end_color = 0x00000000; // black
+  for (col = 0; col < tx->width; col += 8) {
+    for (row = 0; row < tx->height; row += 8) {
       x = col / ((float) tx->width);
       y = row / ((float) tx->height);
       rpos.x = WORLD_REGION_SIZE * CHUNK_SIZE * wm->width * x;
       rpos.y = WORLD_REGION_SIZE * CHUNK_SIZE * wm->height * y;
+      rpos__wmpos(&rpos, &wmpos);
+      /* Downhill direction
       compute_terrain_height(&rpos, &gross, &dontcare, &dontcare);
-      dh = mani_downhill(&gross);
+      r = 4;
+      theta = mani_downhill(&gross);
+      // */
+      //* Wind vector
+      wr = get_world_region(wm, &wmpos);
+      r = wr->climate.atmosphere.wind_strength;
+      theta = wr->climate.atmosphere.wind_direction;
+      // */
       from.x = col;
       from.y = row;
-      to.x = from.x + 4 * cos(dh);
-      to.y = from.y + 4 * sin(dh);
-      draw_line(tx, &from, &to, color);
+      to.x = from.x + r * cos(theta);
+      to.y = from.y + r * sin(theta);
+      draw_line_gradient(tx, &from, &to, color, end_color);
     }
   }
   // */

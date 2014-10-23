@@ -83,7 +83,8 @@ static inline void mani_scale_const(manifold_point *point, float factor) {
   point->dy *= factor;
 }
 
-// Raises the manifold to the given constant exponent.
+// Raises the manifold to the given constant exponent. Note that this is a bit
+// dangerous around values <= 0 if the exponent is < 1.
 static inline void mani_pow_const(manifold_point *point, float exponent) {
   point->dx = exponent * pow(point->z, exponent - 1) * point->dx;
   point->dy = exponent * pow(point->z, exponent - 1) * point->dy;

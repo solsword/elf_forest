@@ -62,6 +62,16 @@ void draw_thick_curve_segment(float t, vector *pos, vector *dir, void *args);
 // Draws the line between the given points using the given color.
 void draw_line(texture *tx, vector *from, vector *to, pixel color);
 
+// Draws the line between the given points using a gradient between the given
+// colors.
+void draw_line_gradient(
+  texture *tx,
+  vector *from,
+  vector *to,
+  pixel start_color,
+  pixel end_color
+);
+
 // Draws the given curve onto the given texture using the given color:
 void draw_curve(texture *tx, curve *c, pixel color);
 

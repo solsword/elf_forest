@@ -101,6 +101,10 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
           wr->mean_height += dirt.z / samples_per_region;
 
           // update gross
+          if (isnan(gross.dx) || isnan(gross.dy)) {
+            printf("nan gross\n");
+            exit(1);
+          }
           wr->gross_height.z += gross.z / samples_per_region;
           wr->gross_height.dx += gross.dx / samples_per_region;
           wr->gross_height.dy += gross.dy / samples_per_region;
@@ -453,11 +457,61 @@ void generate_climate(world_map *wm) {
   world_map_pos xy;
   world_region *wr;
   size_t i;
+  float r, theta, r2, theta2;
+  manifold_point winds_base, dst_x, dst_y;
+
+  ptrdiff_t seed = prng(wm->seed) + 12810;
+  ptrdiff_t salt = seed;
 
   for (xy.x = 0; xy.x < wm->width; ++xy.x) {
     for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+      salt = seed;
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
-      // TODO: Real generation here!
+      // Winds:
+      get_standard_distortion(
+        wr->anchor.x, wr->anchor.y, &salt,
+        TR_DFQ_CONTINENTS * 1.2,
+        TR_DS_CONTINENTS * 0.5,
+        &dst_x, &dst_y
+      );
+      trig_component(
+        &winds_base,
+        wr->anchor.x + dst_x.z, wr->anchor.y + dst_y.z,
+        1 + dst_x.dx, dst_x.dy,
+        dst_y.dx, 1 + dst_y.dy,
+        TR_FREQUENCY_CONTINENTS * 2.1,
+        &salt
+      );
+      mani_offset_const(&winds_base, 1);
+      mani_scale_const(&winds_base, 0.5);
+
+      // Put slopes at around a comparable magnitude with the actual terrain:
+      mani_scale_const(&winds_base, (1.0 / (TR_FREQUENCY_CONTINENTS * 2.1)));
+      mani_scale_const(&winds_base, 4.0);
+
+      // DEBUG:
+      /*
+      wr->mean_height = TR_HEIGHT_SEA_LEVEL + (TR_HEIGHT_MOUNTAIN_TOPS - TR_HEIGHT_SEA_LEVEL) * winds_base.z;
+      wr->climate.water.body = NULL;
+      // */
+
+      // Compute wind strength and direction:
+      r = mani_slope(&winds_base);
+      theta = mani_contour(&winds_base);
+      if (wr->min_height > TR_HEIGHT_SEA_LEVEL) {
+        r2 = mani_slope(&(wr->gross_height));
+        theta2 = mani_contour(&(wr->gross_height));
+        // Note we're not changing magnitude here:
+        theta = (
+          (r / (r + r2)) * theta
+        +
+          (r2 / (r + r2)) * theta2
+        );
+      }
+      wr->climate.atmosphere.wind_strength = r;
+      wr->climate.atmosphere.wind_direction = theta;
+
+      // TODO: Real generation past this point!
       for (i = 0; i < N_SEASONS; ++i) {
         wr->climate.atmosphere.rainfall[i] = MEAN_AVG_PRECIPITATION;
         wr->climate.atmosphere.temp_low[i] = 16;

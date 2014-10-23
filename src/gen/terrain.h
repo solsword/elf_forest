@@ -179,7 +179,14 @@ static inline void simplex_component(
     *salt
   ); *salt = prng(*salt);
   // DEBUG:
-  // printf("simp-comp-base: %.3f\n", result->z);
+  // printf("simp-comp-base x y freq: %.3f %.3f %.8f\n", x, y, frequency);
+  // printf("simp-comp-base salt: %zu\n", *salt);
+  // printf(
+  //   "simp-comp-base: %.3f :: %.4f, %.4f\n",
+  //   result->z,
+  //   result->dx,
+  //   result->dy
+  // );
   mani_compose_double_simple(
     result,
     dxx * frequency,
@@ -256,6 +263,11 @@ static inline void get_noise(
   manifold_point scaleinterp;
   manifold_point geodetailed, mountainous, hilly, ridged;
   manifold_point mounded, detailed, bumpy;
+
+  // pre-salt our x/y values just a bit to avoid the noise=0 at origin problem.
+  x += *salt % 439;
+  y += *salt % 752;
+  *salt = prng(*salt);
 
   // continents
   // ----------
@@ -427,7 +439,7 @@ static inline void get_noise(
   } else {
     mani_copy(&hilly, primary_geoforms);
   }
-  mani_pow_const(&hilly, 0.7);
+  mani_smooth(&hilly, 1.4, 0.1);
   simplex_component(
     &temp,
     x + dst_x.z * 0.6,
@@ -467,7 +479,7 @@ static inline void get_noise(
     mani_copy(&ridged, primary_geoforms);
     mani_offset_const(&ridged, 0.05);
   }
-  mani_pow_const(&ridged, 0.6);
+  mani_smooth(&ridged, 1.7, 0.1);
   simplex_component(
     &temp,
     x + dst_x.z*0.4,
@@ -904,19 +916,69 @@ static inline void compute_base_geoforms(
   *salt = prng(*salt);
 
   // DEBUG: print noise
-  //*
-  // printf("Base geoforms noise!\n");
-  // printf("continents: %.8f\n", continents->z);
-  // printf("primary_geoforms: %.8f\n", primary_geoforms->z);
-  // printf("secondary_geoforms: %.8f\n", secondary_geoforms->z);
-  // printf("geodetails: %.8f\n", geodetails->z);
-  // printf("mountains: %.8f\n", mountains->z);
-  // printf("hills: %.8f\n", hills->z);
-  // printf("ridges: %.8f\n", ridges->z);
-  // printf("mounds: %.8f\n", mounds->z);
-  // printf("details: %.8f\n", details->z);
-  // printf("bumps: %.8f\n", bumps->z);
-  // printf("\n\n\n");
+  /*
+  printf("Base geoforms noise!\n");
+  printf(
+    "continents: %.3f :: %.2f, %.2f\n",
+    continents->z,
+    continents->dx,
+    continents->dy
+  );
+  printf(
+    "primary_geoforms: %.3f :: %.2f, %.2f\n",
+    primary_geoforms->z,
+    primary_geoforms->dx,
+    primary_geoforms->dy
+  );
+  printf(
+    "secondary_geoforms: %.3f :: %.2f, %.2f\n",
+    secondary_geoforms->z,
+    secondary_geoforms->dx,
+    secondary_geoforms->dy
+  );
+  printf(
+    "geodetails: %.3f :: %.2f, %.2f\n",
+    geodetails->z,
+    geodetails->dx,
+    geodetails->dy
+  );
+  printf(
+    "mountains: %.3f :: %.2f, %.2f\n",
+    mountains->z,
+    mountains->dx,
+    mountains->dy
+  );
+  printf(
+    "hills: %.3f :: %.2f, %.2f\n",
+    hills->z,
+    hills->dx,
+    hills->dy
+  );
+  printf(
+    "ridges: %.3f :: %.2f, %.2f\n",
+    ridges->z,
+    ridges->dx,
+    ridges->dy
+  );
+  printf(
+    "mounds: %.3f :: %.2f, %.2f\n",
+    mounds->z,
+    mounds->dx,
+    mounds->dy
+  );
+  printf(
+    "details: %.3f :: %.2f, %.2f\n",
+    details->z,
+    details->dx,
+    details->dy
+  );
+  printf(
+    "bumps: %.3f :: %.2f, %.2f\n",
+    bumps->z,
+    bumps->dx,
+    bumps->dy
+  );
+  printf("\n\n\n");
   // */
 
   base->z = 0;

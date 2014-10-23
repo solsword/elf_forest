@@ -3,6 +3,8 @@
 
 #include <math.h>
 #include <stdlib.h>
+// DEBUG:
+#include <stdio.h>
 
 #include "noise.h"
 
@@ -670,9 +672,9 @@ float sxnoise_2d(float x, float y, ptrdiff_t salt) {
   j2 += salt;
 
   // Compute gradient indices for each simplex corner:
-  ptrdiff_t g0 = ((mixed_hash_1d(i0) ^ mixed_hash_1d(j0)) & 0x3f) << 1;
-  ptrdiff_t g1 = ((mixed_hash_1d(i1) ^ mixed_hash_1d(j1)) & 0x3f) << 1;
-  ptrdiff_t g2 = ((mixed_hash_1d(i2) ^ mixed_hash_1d(j2)) & 0x3f) << 1;
+  ptrdiff_t g0 = (((mixed_hash_1d(i0) ^ expanded_hash_1d(j0))+i0) & 0x3f) << 1;
+  ptrdiff_t g1 = (((mixed_hash_1d(i1) ^ expanded_hash_1d(j1))+i1) & 0x3f) << 1;
+  ptrdiff_t g2 = (((mixed_hash_1d(i2) ^ expanded_hash_1d(j2))+i2) & 0x3f) << 1;
 
   // Surflet values:
   float srf0 = compute_surflet_value_2d(g0, x - cx0, y - cy0);
@@ -724,9 +726,9 @@ float sxnoise_grad_2d(float x, float y, ptrdiff_t salt, float *dx, float *dy) {
   i2 += salt;
   j2 += salt;
 
-  ptrdiff_t g0 = ((mixed_hash_1d(i0) ^ mixed_hash_1d(j0)) & 0x3f) << 1;
-  ptrdiff_t g1 = ((mixed_hash_1d(i1) ^ mixed_hash_1d(j1)) & 0x3f) << 1;
-  ptrdiff_t g2 = ((mixed_hash_1d(i2) ^ mixed_hash_1d(j2)) & 0x3f) << 1;
+  ptrdiff_t g0 = (((mixed_hash_1d(i0) ^ expanded_hash_1d(j0))+i0) & 0x3f) << 1;
+  ptrdiff_t g1 = (((mixed_hash_1d(i1) ^ expanded_hash_1d(j1))+i1) & 0x3f) << 1;
+  ptrdiff_t g2 = (((mixed_hash_1d(i2) ^ expanded_hash_1d(j2))+i2) & 0x3f) << 1;
 
   // Here we start getting gradient information:
   float tdx = 0, tdy = 0;

@@ -395,7 +395,8 @@ static inline float stretch(float n, float stretch) {
 
 // Takes a value in [-1, 1] and maps it through a sigmoid function centered on
 // (center, center) with an exponent of strength. Negative values are flipped
-// first and flopped afterwards, so it's really a double sigmoid.
+// first and flopped afterwards, so it's really a double sigmoid. Note that for
+// strengths less than 1, there's a discontinuity at 0.
 static inline float smooth(float n, float strength, float center) {
   float sign = 1;
   float result = 0;
@@ -414,7 +415,8 @@ static inline float smooth(float n, float strength, float center) {
 // Takes the same arguments as smooth() and edits the extra gradient arguments
 // (which should be gradient values for the function underlying the value n
 // pre-smoothing). Afterwards, the gradient values are accurate for the
-// smoothed function.
+// smoothed function. Note that strength should be >= 1, or else n must be > 0,
+// because the derivatives goes to infinity as n goes to 0 for strength < 1.
 static inline void smooth_grad(
   float n,
   float strength, float center,
