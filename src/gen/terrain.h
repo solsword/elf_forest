@@ -134,10 +134,41 @@ extern char const * const TR_REGION_NAMES[];
  * Inline Functions *
  ********************/
 
+static inline void trig_component(
+  manifold_point *result,
+  float x, float y,
+  float dxx, float dxy,
+  float dyx, float dyy,
+  float frequency,
+  ptrdiff_t *salt
+) {
+  manifold_point cos_part, sin_part;
+  float phase;
+
+  // cos part:
+  phase = 2 * M_PI * ptrf(*salt);
+  *salt = prng(*salt);
+  cos_part.z = cosf(phase + x * frequency);
+  cos_part.dx = (1 + dxx) * frequency * (-sinf(phase + x * frequency));
+  cos_part.dy = dxy * frequency * (-sinf(phase + x * frequency));
+
+  // sin part:
+  phase = 2 * M_PI * ptrf(*salt);
+  *salt = prng(*salt);
+  sin_part.z = sinf(phase + y * frequency);
+  sin_part.dx = dyx * frequency * cosf(phase + y * frequency);
+  sin_part.dy = (1 + dyy) * frequency * cosf(phase + y * frequency);
+
+  // result:
+  mani_copy(result, &cos_part);
+  mani_multiply(result, &sin_part);
+}
+
 static inline void simplex_component(
   manifold_point *result,
   float x, float y,
-  float dx, float dy,
+  float dxx, float dxy,
+  float dyx, float dyy,
   float frequency,
   ptrdiff_t *salt
 ) {
@@ -149,17 +180,20 @@ static inline void simplex_component(
   ); *salt = prng(*salt);
   // DEBUG:
   // printf("simp-comp-base: %.3f\n", result->z);
-  mani_compose_simple(
+  mani_compose_double_simple(
     result,
-    dx * frequency,
-    dy * frequency
+    dxx * frequency,
+    dxy * frequency,
+    dyx * frequency,
+    dyy * frequency
   );
 }
 
 static inline void worley_component(
   manifold_point *result,
   float x, float y,
-  float dx, float dy,
+  float dxx, float dxy,
+  float dyx, float dyy,
   float frequency,
   ptrdiff_t *salt,
   uint32_t flags
@@ -172,10 +206,10 @@ static inline void worley_component(
     0, 0,
     flags
   ); *salt = prng(*salt);
-  mani_compose_simple(
+  mani_compose_double_simple(
     result,
-    dx * frequency,
-    dy * frequency
+    dxx * frequency, dxy * frequency,
+    dyx * frequency, dyy * frequency
   );
 }
 
@@ -190,7 +224,8 @@ static inline void get_standard_distortion(
   simplex_component(
     result_x,
     x, y,
-    1, 1,
+    1, 0,
+    0, 1,
     frequency,
     salt
   );
@@ -199,7 +234,8 @@ static inline void get_standard_distortion(
   simplex_component(
     result_y,
     x, y,
-    1, 1,
+    1, 0,
+    0, 1,
     frequency,
     salt
   );
@@ -216,13 +252,10 @@ static inline void get_noise(
 ) {
   manifold_point temp; // temporary manifold point for intermediates
   manifold_point dst_x, dst_y; //distortion values
-  manifold_point cos_part, sin_part; // cos and sin components of continents
 
   manifold_point scaleinterp;
   manifold_point geodetailed, mountainous, hilly, ridged;
   manifold_point mounded, detailed, bumpy;
-
-  float trig_salt;
 
   // continents
   // ----------
@@ -236,7 +269,8 @@ static inline void get_noise(
   simplex_component(
     &scaleinterp,
     x, y,
-    1, 1,
+    1, 0,
+    0, 1,
     TR_DFQ_CONTINENTS,
     salt
   );
@@ -247,92 +281,39 @@ static inline void get_noise(
   // DEBUG:
   // printf("cont-scint: %.3f\n", scaleinterp.z);
 
-    // large-scale cos part:
-  trig_salt = 2 * M_PI * ptrf(*salt);
-  *salt = prng(*salt);
-  cos_part.z = cosf(trig_salt + (x + dst_x.z) * TR_FREQUENCY_CONTINENTS);
-  cos_part.dx = (
-    TR_FREQUENCY_CONTINENTS * (1 + dst_x.dx)
-  *
-    (-sinf(trig_salt + (x + dst_x.z) * TR_FREQUENCY_CONTINENTS))
-  );
-  cos_part.dy = (
-    TR_FREQUENCY_CONTINENTS * dst_x.dy
-  *
-    (-sinf(trig_salt + (x + dst_x.z) * TR_FREQUENCY_CONTINENTS))
-  );
-
-    // large-scale sin part:
-  trig_salt = 2 * M_PI * ptrf(*salt);
-  *salt = prng(*salt);
-  sin_part.z = sinf(trig_salt + (y + dst_y.z) * TR_FREQUENCY_CONTINENTS);
-  sin_part.dx = (
-    TR_FREQUENCY_CONTINENTS * dst_y.dx
-  *
-    cosf(trig_salt + (y + dst_y.z) * TR_FREQUENCY_CONTINENTS)
-  );
-  sin_part.dy = (
-    TR_FREQUENCY_CONTINENTS * (1 + dst_y.dy)
-  *
-    cosf(trig_salt + (y + dst_y.z) * TR_FREQUENCY_CONTINENTS)
-  );
-
-  // DEBUG:
-  // printf("cont-lfcos: %.3f\n", cos_part.z);
-  // printf("cont-lfsin: %.3f\n", sin_part.z);
-
     // large-scale part of continents
+  trig_component(
+    &temp,
+    x + dst_x.z, y + dst_y.z,
+    1 + dst_x.dx, dst_x.dy,
+    dst_y.dx, 1 + dst_y.dy,
+    TR_FREQUENCY_CONTINENTS,
+    salt
+  );
+
   mani_copy(continents, &scaleinterp);
-  mani_multiply(continents, &cos_part);
-  mani_multiply(continents, &sin_part);
+  mani_multiply(continents, &temp);
 
   // DEBUG:
   // printf("cont-base: %.3f\n", continents->z);
 
-    // small-scale cos part:
-  trig_salt = 2 * M_PI * ptrf(*salt);
-  *salt = prng(*salt);
-  cos_part.z = cosf(trig_salt + (x + 0.8*dst_y.z)*TR_FREQUENCY_CONTINENTS*1.6);
-  cos_part.dx = (
-    TR_FREQUENCY_CONTINENTS * 1.6 * (1 + 0.8 * dst_y.dx)
-  *
-    (-sinf(trig_salt + (x + 0.8 * dst_y.z) * TR_FREQUENCY_CONTINENTS * 1.6))
+    // small-scale part of continents
+  trig_component(
+    &temp,
+    x + 0.8 * dst_y.z, y - 0.8 * dst_x.z,
+    1 + 0.8 * dst_y.dx, 0.8 * dst_y.dy,
+    0.8 * dst_x.dx, 1 - 0.8 * dst_x.dy,
+    TR_FREQUENCY_CONTINENTS * 1.6,
+    salt
   );
-  cos_part.dy = (
-    TR_FREQUENCY_CONTINENTS * 1.6 * 0.8 * dst_y.dy
-  *
-    (-sinf(trig_salt + (x + 0.8 * dst_y.z) * TR_FREQUENCY_CONTINENTS * 1.6))
-  );
-
-    // small-scale sin part:
-  trig_salt = 2 * M_PI * ptrf(*salt);
-  *salt = prng(*salt);
-  sin_part.z = sinf(trig_salt + (y - 0.8*dst_x.z)*TR_FREQUENCY_CONTINENTS*1.6);
-  sin_part.dx = (
-    -TR_FREQUENCY_CONTINENTS * 1.6 * 0.8 * dst_x.dx
-  *
-    cosf(trig_salt + (y - 0.8 * dst_x.z) * TR_FREQUENCY_CONTINENTS * 1.6)
-  );
-  sin_part.dy = (
-    TR_FREQUENCY_CONTINENTS * 1.6 * (1 - 0.8 * dst_x.dy)
-  *
-    cosf(trig_salt + (y - 0.8 * dst_x.z) * TR_FREQUENCY_CONTINENTS * 1.6)
-  );
-
-  // DEBUG:
-  // printf("cont-hfcos: %.3f\n", cos_part.z);
-  // printf("cont-hfsin: %.3f\n", sin_part.z);
 
   // we'll use the small cos part to accumulate the other half of the
   // continents manifold and then add it back in:
   mani_scale_const(&scaleinterp, -1);
   mani_offset_const(&scaleinterp, 1);
-  mani_multiply(&cos_part, &sin_part);
-  mani_multiply(&cos_part, &scaleinterp);
-  // DEBUG:
-  // printf("cont-hf-base: %.3f\n", cos_part.z);
+  mani_multiply(&temp, &scaleinterp);
 
-  mani_add(continents, &cos_part);
+  mani_add(continents, &temp);
 
   // DEBUG:
   // printf("cont-full: %.3f\n", continents->z);
@@ -356,8 +337,8 @@ static inline void get_noise(
     &geodetailed,
     x - dst_y.z,
     y - dst_x.z,
-    1 - dst_y.dx,
-    1 - dst_x.dy,
+    1 - dst_y.dx, -dst_y.dy,
+    -dst_x.dx, 1 - dst_x.dy,
     TR_FREQUENCY_CONTINENTS * 1.7,
     salt
   );
@@ -379,8 +360,8 @@ static inline void get_noise(
     primary_geoforms,
     x + dst_x.z,
     y + dst_y.z,
-    1 + dst_x.dx,
-    1 + dst_y.dy,
+    1 + dst_x.dx, dst_x.dy,
+    dst_y.dx, 1 + dst_y.dy,
     TR_FREQUENCY_PGEOFORMS * 0.7,
     salt
   );
@@ -390,8 +371,8 @@ static inline void get_noise(
     &temp,
     x - dst_y.z,
     y + dst_x.z,
-    1 - dst_y.dx,
-    1 + dst_x.dy,
+    1 - dst_y.dx, -dst_y.dy,
+    dst_x.dx, 1 + dst_x.dy,
     TR_FREQUENCY_PGEOFORMS * 0.8,
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
@@ -421,8 +402,8 @@ static inline void get_noise(
     &temp,
     x + dst_y.z,
     y - dst_x.z,
-    1 + dst_y.dx,
-    1 - dst_x.dy,
+    1 + dst_y.dx, dst_y.dy,
+    -dst_x.dx, 1 - dst_x.dy,
     TR_FREQUENCY_SGEOFORMS * 0.7,
     salt
   );
@@ -451,8 +432,8 @@ static inline void get_noise(
     &temp,
     x + dst_x.z * 0.6,
     y - dst_y.z * 0.6,
-    1 + dst_x.dx * 0.6,
-    1 - dst_y.dy * 0.6,
+    1 + dst_x.dx * 0.6, dst_x.dy * 0.6,
+    -dst_y.dx * 0.6, 1 - dst_y.dy * 0.6,
     TR_FREQUENCY_SGEOFORMS * 0.8,
     salt
   );
@@ -461,8 +442,8 @@ static inline void get_noise(
     &temp,
     x - dst_y.z * 0.4,
     y + dst_x.z * 0.4,
-    1 - dst_y.dx * 0.4,
-    1 + dst_x.dy * 0.4,
+    1 - dst_y.dx * 0.4, -dst_y.dy * 0.4,
+    dst_x.dx * 0.4, 1 + dst_x.dy * 0.4,
     TR_FREQUENCY_GEODETAIL * 0.3,
     salt
   );
@@ -491,8 +472,8 @@ static inline void get_noise(
     &temp,
     x + dst_x.z*0.4,
     y - dst_y.z*0.4,
-    1 + dst_x.dx*0.4,
-    1 - dst_y.dy*0.4,
+    1 + dst_x.dx*0.4, dst_x.dy * 0.4,
+    -dst_y.dx * 0.4, 1 - dst_y.dy * 0.4,
     TR_FREQUENCY_SGEOFORMS * 0.9,
     salt
   );
@@ -502,8 +483,8 @@ static inline void get_noise(
     &temp,
     x - dst_y.z,
     y + dst_x.z,
-    1 - dst_y.dx,
-    1 + dst_x.dy,
+    1 - dst_y.dx, -dst_y.dy,
+    dst_x.dx, 1 + dst_x.dy,
     TR_FREQUENCY_GEODETAIL * 0.4,
     salt
   );
@@ -528,8 +509,8 @@ static inline void get_noise(
     secondary_geoforms,
     x + dst_x.z,
     y + dst_y.z,
-    1 + dst_x.dx,
-    1 + dst_y.dy,
+    1 + dst_x.dx, dst_x.dy,
+    dst_y.dx, 1 + dst_y.dy,
     TR_FREQUENCY_SGEOFORMS,
     salt
   );
@@ -539,8 +520,8 @@ static inline void get_noise(
     &temp,
     x - dst_y.z,
     y + dst_x.z,
-    1 - dst_y.dx,
-    1 + dst_x.dy,
+    1 - dst_y.dx, -dst_y.dy,
+    dst_x.dx, 1 + dst_x.dy,
     TR_FREQUENCY_SGEOFORMS,
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
@@ -563,8 +544,8 @@ static inline void get_noise(
     geodetails,
     x + dst_x.z,
     y + dst_y.z,
-    1 + dst_x.dx,
-    1 + dst_y.dy,
+    1 + dst_x.dx, dst_x.dy,
+    dst_y.dx, 1 + dst_y.dy,
     TR_FREQUENCY_GEODETAIL,
     salt
   );
@@ -575,8 +556,8 @@ static inline void get_noise(
     &temp,
     x + dst_y.z,
     y - dst_x.z,
-    1 + dst_y.dx,
-    1 - dst_x.dy,
+    1 + dst_y.dx, dst_y.dy,
+    -dst_x.dx, 1 - dst_x.dy,
     TR_FREQUENCY_GEODETAIL,
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
@@ -601,8 +582,8 @@ static inline void get_noise(
     mountains,
     x + dst_x.z,
     y + dst_y.z,
-    1 + dst_x.dx,
-    1 + dst_y.dy,
+    1 + dst_x.dx, dst_x.dy,
+    dst_y.dx, 1 + dst_y.dy,
     TR_FREQUENCY_MOUNTAINS,
     salt
   );
@@ -615,8 +596,8 @@ static inline void get_noise(
     &temp,
     x + dst_y.z,
     y + dst_x.z,
-    1 + dst_y.dx,
-    1 + dst_x.dy,
+    1 + dst_y.dx, dst_y.dy,
+    dst_x.dx, 1 + dst_x.dy,
     TR_FREQUENCY_MOUNTAINS,
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
@@ -630,8 +611,8 @@ static inline void get_noise(
     &temp,
     x - dst_x.z,
     y - dst_y.z,
-    1 - dst_x.dx,
-    1 - dst_y.dy,
+    1 - dst_x.dx, -dst_x.dy,
+    -dst_y.dx, 1 - dst_y.dy,
     TR_FREQUENCY_MOUNTAINS,
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
@@ -648,8 +629,8 @@ static inline void get_noise(
     &mounded,
     x - dst_y.z,
     y + dst_x.z,
-    1 - dst_y.dx,
-    1 + dst_x.dy,
+    1 - dst_y.dx, -dst_y.dy,
+    dst_x.dx, 1 + dst_x.dy,
     TR_FREQUENCY_MOUNTAINS * 0.6,
     salt
   );
@@ -671,8 +652,8 @@ static inline void get_noise(
     hills,
     x + dst_x.z,
     y + dst_y.z,
-    1 + dst_x.dx,
-    1 + dst_y.dy,
+    1 + dst_x.dx, dst_x.dy,
+    dst_y.dx, 1 + dst_y.dy,
     TR_FREQUENCY_HILLS,
     salt
   );
@@ -685,8 +666,8 @@ static inline void get_noise(
     &detailed,
     x - dst_y.z,
     y + dst_x.z,
-    1 - dst_y.dx,
-    1 + dst_x.dy,
+    1 - dst_y.dx, -dst_y.dy,
+    dst_x.dx, 1 + dst_x.dy,
     TR_FREQUENCY_HILLS * 0.5,
     salt
   );
@@ -708,8 +689,8 @@ static inline void get_noise(
     ridges,
     x + dst_x.z,
     y + dst_y.z,
-    1 + dst_x.dx,
-    1 + dst_y.dy,
+    1 + dst_x.dx, dst_x.dy,
+    dst_y.dx, 1 + dst_y.dy,
     TR_FREQUENCY_RIDGES,
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST
@@ -719,8 +700,8 @@ static inline void get_noise(
     &temp,
     x + dst_y.z,
     y - dst_x.z,
-    1 + dst_y.dx,
-    1 - dst_x.dy,
+    1 + dst_y.dx, dst_y.dy,
+    -dst_x.dx, 1 - dst_x.dy,
     TR_FREQUENCY_RIDGES * 1.8,
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST
@@ -737,8 +718,8 @@ static inline void get_noise(
     &bumpy,
     x - dst_y.z,
     y + dst_x.z,
-    1 - dst_y.dx,
-    1 + dst_x.dy,
+    1 - dst_y.dx, -dst_y.dy,
+    dst_x.dx, 1 + dst_x.dy,
     TR_FREQUENCY_RIDGES * 0.2,
     salt
   );
@@ -760,8 +741,8 @@ static inline void get_noise(
     mounds,
     x + dst_x.z,
     y + dst_y.z,
-    1 + dst_x.dx,
-    1 + dst_y.dy,
+    1 + dst_x.dx, dst_x.dy,
+    dst_y.dx, 1 + dst_y.dy,
     TR_FREQUENCY_MOUNDS,
     salt
   );
@@ -781,8 +762,8 @@ static inline void get_noise(
     details,
     x + dst_x.z,
     y + dst_y.z,
-    1 + dst_x.dx,
-    1 + dst_y.dy,
+    1 + dst_x.dx, dst_x.dy,
+    dst_y.dx, 1 + dst_y.dy,
     TR_FREQUENCY_DETAILS,
     salt
   );
@@ -801,8 +782,8 @@ static inline void get_noise(
     bumps,
     x + dst_x.z,
     y + dst_y.z,
-    1 + dst_x.dx,
-    1 + dst_y.dy,
+    1 + dst_x.dx, dst_x.dy,
+    dst_y.dx, 1 + dst_y.dy,
     TR_FREQUENCY_BUMPS,
     salt
   );

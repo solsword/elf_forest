@@ -136,6 +136,22 @@ static inline void mani_compose(manifold_point *outer, manifold_point *inner) {
   outer->dy *= inner->dy;
 }
 
+// Takes three manifold points: one representing a function value computed
+// using f(g(x), h(y)), but whose derivatives are just f'(g(x), h(y)), and two
+// more representing g(x) and h(x) accurately. Edits the f(g(x), h(y)) manifold
+// to correctly represent the partial derivatives of the composition. The chain
+// rule in this case comes out to:
+//
+//   f'x(g(x), h(y)) = f'x(g(x), h(y)) * g'x(x) + f'y(g(x), h(y)) * h'x(y)
+static inline void mani_compose_double(
+  manifold_point *outer,
+  manifold_point *first,
+  manifold_point *second
+) {
+  outer->dx = outer->dx * first->dx + outer->dy * second->dx;
+  outer->dy = outer->dx * first->dy + outer->dy * second->dy;
+}
+
 // Works like mani_compose, but just takes floating point dx/dy values for the
 // inner function instead of a whole manifold point.
 static inline void mani_compose_simple(
@@ -144,6 +160,17 @@ static inline void mani_compose_simple(
 ) {
   outer->dx *= dx;
   outer->dy *= dy;
+}
+
+// Works like mani_compose_double, but just takes floating point dx/dy values
+// for the inner functions instead of whole manifold points.
+static inline void mani_compose_double_simple(
+  manifold_point *outer,
+  float d1x, float d1y,
+  float d2x, float d2y
+) {
+  outer->dx = outer->dx * d1x + outer->dy * d2x;
+  outer->dy = outer->dx * d1y + outer->dy * d2y;
 }
 
 // Smooths a manifold using the smooth function from noise.h.

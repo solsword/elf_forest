@@ -277,14 +277,16 @@ void alter_terrain_values(
   simplex_component(
     &flatten,
     pos->x, pos->y,
-    1, 1,
+    1, 0,
+    0, 1,
     TR_FREQUENCY_SGEOFORMS * 1.3,
     salt
   );
   simplex_component(
     &temp,
     pos->x, pos->y,
-    1, 1,
+    1, 0,
+    0, 1,
     TR_FREQUENCY_SGEOFORMS * 2.4,
     salt
   );
@@ -380,14 +382,16 @@ void compute_dirt_height(
   simplex_component(
     &var,
     pos->x, pos->y,
-    1, 1,
+    1, 0,
+    0, 1,
     TR_DIRT_NOISE_SCALE,
     salt
   );
   simplex_component(
     &temp,
     pos->x, pos->y,
-    1, 1,
+    1, 0,
+    0, 1,
     TR_DIRT_NOISE_SCALE * 2.5,
     salt
   );
@@ -407,7 +411,8 @@ void compute_dirt_height(
   simplex_component(
     &temp,
     pos->x, pos->y,
-    1, 1,
+    1, 0,
+    0, 1,
     TR_DIRT_EROSION_SCALE,
     salt
   );
@@ -422,7 +427,8 @@ void compute_dirt_height(
   simplex_component(
     &temp,
     pos->x, pos->y,
-    1, 1,
+    1, 0,
+    0, 1,
     TR_DIRT_EROSION_SCALE * 1.6,
     salt
   );
