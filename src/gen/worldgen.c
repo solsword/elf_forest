@@ -101,10 +101,6 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
           wr->mean_height += dirt.z / samples_per_region;
 
           // update gross
-          if (isnan(gross.dx) || isnan(gross.dy)) {
-            printf("nan gross\n");
-            exit(1);
-          }
           wr->gross_height.z += gross.z / samples_per_region;
           wr->gross_height.dx += gross.dx / samples_per_region;
           wr->gross_height.dy += gross.dy / samples_per_region;
@@ -254,6 +250,192 @@ void _iter_fill_lake_site(void *v_wr, void *v_seed) {
     cleanup_body_of_water(water);
   } else {
     l_append_element(wr->world->all_water, water);
+  }
+}
+
+// Computes base evaporation for the given world region.
+static inline float _base_evap(world_region *wr) {
+  float temp, elev, slope;
+  temp = EVAPORATION_TEMP_SCALING * wr->climate.atmosphere.mean_temp;
+  temp = 0.7 + 0.4 * temp;
+  if (temp < 0) {
+    temp = 0;
+  }
+  if (wr->climate.water.body != NULL) {
+    return BASE_WATER_CLOUD_POTENTIAL * temp;
+    // TODO: depth/size-based differentials?
+  } else {
+    elev = (
+      (wr->mean_height - TR_HEIGHT_SEA_LEVEL)
+    /
+      (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL)
+    );
+    if (elev < 0) { elev = 0; }
+    elev *= elev;
+    slope = mani_slope(&(wr->gross_height));
+    if (slope > 1.5) { slope = 1.5; }
+    slope /= 1.5;
+    slope = pow(slope, 0.8);
+    return BASE_LAND_CLOUD_POTENTIAL * temp * (1 - elev) * (1 - slope);
+  }
+}
+
+// Simulates cloud movement to compute precipitation (cloud_potential) values.
+/* The averaging method
+static inline void _water_sim_step(world_region *wr) {
+  world_region *neighbor;
+  world_map_pos iter;
+  size_t i = 0;
+  float nbdir, nbwind, nbwindstr;
+  float avg = 0, divisor = 9.0;
+  float base_evap;
+  // Iterate over our neighbors:
+  for (iter.x = wr->pos.x - 1; iter.x <= wr->pos.x + 1; iter.x += 1) {
+    for (iter.y = wr->pos.y - 1; iter.y <= wr->pos.y + 1; iter.y += 1) {
+      neighbor = get_world_region(wr->world, &iter); // might be NULL
+      i += 1;
+      if (neighbor == NULL) {
+        divisor -= 1.0;
+        continue;
+      }
+      if (wr == neighbor) {
+        // Our own previous cloud potential is reduced by precipitation:
+        avg += (
+          wr->climate.atmosphere.cloud_potential
+        *
+          (1 - wr->climate.atmosphere.precipitation_quotient)
+        );
+      } else {
+        // Direction from our neighbor to us:
+        nbdir = atan2(
+          wr->pos.y - neighbor->pos.y,
+          wr->pos.x - neighbor->pos.x
+        );
+        // Our neighbor's wind direction:
+        nbwind = (
+          1 + cosf(neighbor->climate.atmosphere.wind_direction - nbdir)
+        ) / 2.0;
+        // Our neighbor's wind strength:
+        nbwindstr = sqrtf(
+          neighbor->climate.atmosphere.wind_strength / WIND_UPPER_STRENGTH
+        );
+        if (nbwindstr > 1.0) {
+          nbwindstr = 1.0;
+        }
+        nbwind = nbwindstr * nbwind + (1 - nbwindstr) * 1.0;
+        // Add in our neighbor's cloud potential:
+        avg += nbwind * neighbor->climate.atmosphere.cloud_potential;
+      }
+    }
+  }
+  // Divide to get a local "weighted average:"
+  avg /= divisor;
+
+  // Recharge based on evaporation:
+  base_evap = _base_evap(wr);
+  if (avg < base_evap) {
+    wr->climate.atmosphere.cloud_potential = (
+      CLOUD_RECHARGE_RATE * base_evap
+    +
+      (1 - CLOUD_RECHARGE_RATE) * avg
+    );
+  } else {
+    wr->climate.atmosphere.cloud_potential = avg;
+  }
+}
+// */
+
+//* The cloud-pushing method
+static inline void _water_sim_step(world_region *wr) {
+  world_region *neighbors[9];
+  world_region *neighbor;
+  float nbweights[9];
+  float wtotal = 0;
+  world_map_pos iter;
+  size_t i = 0;
+  float nbdir, nbwind, nbelev;
+  float potential = wr->climate.atmosphere.cloud_potential;
+  float windstr = (wr->climate.atmosphere.wind_strength / WIND_UPPER_STRENGTH);
+  if (windstr > 1) { windstr = 1; }
+  // Store our neighbors in an array:
+  for (iter.x = wr->pos.x - 1; iter.x <= wr->pos.x + 1; iter.x += 1) {
+    for (iter.y = wr->pos.y - 1; iter.y <= wr->pos.y + 1; iter.y += 1) {
+      neighbors[i] = get_world_region(wr->world, &iter); // might be NULL
+      if (i == 4) { // ourself
+        nbweights[i] = 1 - windstr;
+        // focus on moving clouds around:
+        nbweights[i] *= nbweights[i];
+      } else if (neighbors[i] == NULL) {
+        nbweights[i] = 0;
+      } else {
+        // Direction to our neighbor:
+        nbdir = atan2(
+          iter.y - wr->pos.y,
+          iter.x - wr->pos.x
+        );
+        // Our wind direction with respect to our neighbor:
+        nbwind = (
+          1 + cosf(wr->climate.atmosphere.wind_direction - nbdir)
+        ) / 2.0;
+        nbwind *= nbwind; // tighten the envelope a bit
+        nbwind *= WIND_FOCUS;
+        // Our neighbor's elevation with respect to us:
+        nbelev = neighbors[i]->mean_height - wr->mean_height;
+        // Convert to a slope:
+        nbelev /= (float) (WORLD_REGION_BLOCKS);
+        // truncate:
+        if (nbelev < -1.5) {
+          nbelev = -1.5;
+        } else if (nbelev > 1.5) {
+          nbelev = 1.5;
+        }
+        nbelev = (1.5 + nbelev) * WIND_ELEVATION_FORCING;
+        if (wr->mean_height < TR_HEIGHT_SEA_LEVEL) {
+          nbelev = 1.0;
+        }
+        nbweights[i] = windstr * nbwind * nbelev;
+      }
+      wtotal += nbweights[i];
+      i += 1;
+    }
+  }
+  // Now that we've got weights, divy up our cloud potential between our
+  // neighbors:
+  i = 0;
+  for (iter.x = wr->pos.x - 1; iter.x <= wr->pos.x + 1; iter.x += 1) {
+    for (iter.y = wr->pos.y - 1; iter.y <= wr->pos.y + 1; iter.y += 1) {
+      neighbor = get_world_region(wr->world, &iter); // might be NULL
+      if (neighbor != NULL) {
+        neighbor->climate.atmosphere.next_cloud_potential += (
+          potential * (nbweights[i] / wtotal)
+        );
+      }
+      i += 1;
+    }
+  }
+}
+// */
+
+static inline void _water_sim_next(world_region *wr) {
+  float evap = _base_evap(wr);
+  // Flip states:
+  wr->climate.atmosphere.cloud_potential =
+    wr->climate.atmosphere.next_cloud_potential;
+  wr->climate.atmosphere.next_cloud_potential = 0;
+  // Precipitation:
+  // DEBUG:
+  // wr->climate.atmosphere.cloud_potential *= 0.95;
+  //*
+  wr->climate.atmosphere.cloud_potential *=
+    1 - wr->climate.atmosphere.precipitation_quotient;
+  // */
+  // Evaporation recharge:
+  if (wr->climate.atmosphere.cloud_potential < evap) {
+    wr->climate.atmosphere.cloud_potential = (
+      CLOUD_RECHARGE_RATE * evap
+    +
+      (1 - CLOUD_RECHARGE_RATE) * wr->climate.atmosphere.cloud_potential
+    );
   }
 }
 
@@ -457,21 +639,28 @@ void generate_climate(world_map *wm) {
   world_map_pos xy;
   world_region *wr;
   size_t i;
+  float lat, lon;
   float r, theta, r2, theta2;
+  float base_temp, elev, elev2, windstr, pq;
   manifold_point winds_base, dst_x, dst_y;
 
   ptrdiff_t seed = prng(wm->seed) + 12810;
   ptrdiff_t salt = seed;
 
+  // Loop over the world and compute base climate values:
   for (xy.x = 0; xy.x < wm->width; ++xy.x) {
     for (xy.y = 0; xy.y < wm->height; ++xy.y) {
-      salt = seed;
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
+      lon = xy.x / (float) (wm->width);
+      lat = xy.y / (float) (wm->height);
+      salt = seed;
+
       // Winds:
+      // ------
       get_standard_distortion(
         wr->anchor.x, wr->anchor.y, &salt,
-        TR_DFQ_CONTINENTS * 1.2,
-        TR_DS_CONTINENTS * 0.5,
+        TR_DFQ_CONTINENTS * WIND_CELL_DISTORTION_SIZE,
+        TR_DS_CONTINENTS * WIND_CELL_DISTORTION_STRENGTH,
         &dst_x, &dst_y
       );
       trig_component(
@@ -479,27 +668,32 @@ void generate_climate(world_map *wm) {
         wr->anchor.x + dst_x.z, wr->anchor.y + dst_y.z,
         1 + dst_x.dx, dst_x.dy,
         dst_y.dx, 1 + dst_y.dy,
-        TR_FREQUENCY_CONTINENTS * 2.1,
+        TR_FREQUENCY_CONTINENTS * WIND_CELL_SIZE,
         &salt
       );
       mani_offset_const(&winds_base, 1);
       mani_scale_const(&winds_base, 0.5);
 
-      // Put slopes at around a comparable magnitude with the actual terrain:
-      mani_scale_const(&winds_base, (1.0 / (TR_FREQUENCY_CONTINENTS * 2.1)));
-      mani_scale_const(&winds_base, 4.0);
-
       // DEBUG:
       /*
-      wr->mean_height = TR_HEIGHT_SEA_LEVEL + (TR_HEIGHT_MOUNTAIN_TOPS - TR_HEIGHT_SEA_LEVEL) * winds_base.z;
+      wr->mean_height = TR_HEIGHT_SEA_LEVEL + (
+        TR_HEIGHT_MOUNTAIN_TOPS - TR_HEIGHT_SEA_LEVEL
+      ) * winds_base.z;
       wr->climate.water.body = NULL;
       // */
+
+      // Put slopes at around a comparable magnitude with the actual terrain:
+      mani_scale_const(
+        &winds_base,
+        (1.0 / (TR_FREQUENCY_CONTINENTS * WIND_CELL_SIZE))
+      );
+      mani_scale_const(&winds_base, WIND_BASE_STRENGTH);
 
       // Compute wind strength and direction:
       r = mani_slope(&winds_base);
       theta = mani_contour(&winds_base);
       if (wr->min_height > TR_HEIGHT_SEA_LEVEL) {
-        r2 = mani_slope(&(wr->gross_height));
+        r2 = mani_slope(&(wr->gross_height)) * WIND_LAND_INFLUENCE;
         theta2 = mani_contour(&(wr->gross_height));
         // Note we're not changing magnitude here:
         theta = (
@@ -510,6 +704,122 @@ void generate_climate(world_map *wm) {
       }
       wr->climate.atmosphere.wind_strength = r;
       wr->climate.atmosphere.wind_direction = theta;
+      windstr = (wr->climate.atmosphere.wind_strength / WIND_UPPER_STRENGTH);
+      if (windstr > 1) { windstr = 1; }
+
+      // Base temperatures:
+      // ------------------
+      // Start with a cosine curve modulated by some simplex noise:
+      base_temp = (1 - cosf(lat * 2 * M_PI)) / 2.0;
+      base_temp = pow(base_temp, 0.8);
+      base_temp += GLOBAL_TEMP_DISTORTION_STRENGTH * sxnoise_2d(
+        lat * GLOBAL_TEMP_DISTORTION_SCALE,
+        lon * GLOBAL_TEMP_DISTORTION_SCALE,
+        salt
+      );
+      salt = prng(salt);
+      // Scale the result to fit between arctic and equatorial temperatures
+      // (note that the simplex noise may push it slightly outside of the
+      // strict range):
+      base_temp = (
+        ARCTIC_BASE_TEMP
+      +
+        (EQUATOR_BASE_TEMP - ARCTIC_BASE_TEMP) * base_temp
+      );
+      // Now adjust for elevation:
+      elev = (
+        (wr->mean_height - TR_HEIGHT_SEA_LEVEL)
+      /
+        (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL)
+      );
+      if (elev < 0) { elev = 0; }
+      elev2 = elev * elev;
+      base_temp += ELEVATION_TEMP_ADJUST * elev2;
+      // Reign-in ultra-cold temperatures:
+      if (base_temp < ARCTIC_BASE_TEMP) {
+        base_temp = ARCTIC_BASE_TEMP - sqrtf(ARCTIC_BASE_TEMP - base_temp);
+      }
+      // Set the mean_temp value:
+      wr->climate.atmosphere.mean_temp = base_temp;
+      // DEBUG:
+      /*
+      wr->mean_height = (
+        TR_HEIGHT_SEA_LEVEL
+      +
+        (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL) * (
+          (
+            ((wr->climate.atmosphere.mean_temp) - ARCTIC_BASE_TEMP)
+          /
+            (EQUATOR_BASE_TEMP - ARCTIC_BASE_TEMP)
+          )
+        )
+      );
+      // */
+
+      // Precipitation:
+      // --------------
+      // First handle the precipitation quotient.
+      // Wind direction component:
+      if (elev > 0) {
+        pq = (
+          1 + cosf(
+            wr->climate.atmosphere.wind_direction
+          -
+            mani_uphill(&(wr->gross_height))
+          )
+        ) / 2.0;
+        pq = pq * sqrtf(windstr) + 0.25 * (1 - sqrtf(windstr));
+      } else {
+        pq = OCEAN_PRECIPITATION_QUOTIENT;
+      }
+      // Straight elevation component:
+      pq += ELEVATION_PRECIPITATION_QUOTIENT * elev2 * elev;
+      pq /= 2.0; // average the effects
+      if (pq > 1.0) { pq = 1.0; } // truncate into [0, 1]
+      pq *= pq;
+      wr->climate.atmosphere.precipitation_quotient = pq;
+      // Set base cloud potentials:
+      wr->climate.atmosphere.cloud_potential = _base_evap(wr);
+      wr->climate.atmosphere.next_cloud_potential = 0;
+    }
+  }
+
+  // Now that most of the climate values have been determined, simulate the
+  // water cycle to get precipitation values:
+  simulate_water_cycle(wm);
+
+  // Loop over the world again to compute precipitation-dependent values:
+  for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+    for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+      wr = get_world_region(wm, &xy); // no need to worry about NULL here
+      // DEBUG -- remap:
+      /* cloud potential
+      wr->mean_height = (
+        TR_HEIGHT_SEA_LEVEL
+      +
+        (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL) * (
+          12
+        *
+          wr->climate.atmosphere.precipitation_quotient
+        *
+          (
+            wr->climate.atmosphere.cloud_potential
+          /
+            BASE_WATER_CLOUD_POTENTIAL
+          )
+        )
+      );
+      // */
+      /* gross slope
+      wr->mean_height = (
+        TR_HEIGHT_SEA_LEVEL
+      +
+        (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL) * mani_slope(&(wr->gross_height))
+      );
+      // */
+      /* gross height
+      wr->mean_height = wr->gross_height.z;
+      // */
 
       // TODO: Real generation past this point!
       for (i = 0; i < N_SEASONS; ++i) {
@@ -534,6 +844,64 @@ void generate_climate(world_map *wm) {
       }
     }
   }
+}
+
+void simulate_water_cycle(world_map *wm) {
+  world_map_pos xy;
+  world_region *wr;
+  size_t step;
+
+  for (step = 0; step < WATER_CYCLE_SIM_STEPS; ++step) {
+    // Each cycle has four iteration phases with different orientations, which
+    // should balance each other out in terms of running updates. The running
+    // updates in turn allow precipitation information to reach far inland in
+    // only a few cycles.
+
+    // Safe order-independent updates:
+    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+        wr = get_world_region(wm, &xy);
+        _water_sim_step(wr);
+      }
+    }
+    // State flopping and water recharge:
+    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+        wr = get_world_region(wm, &xy);
+        _water_sim_next(wr);
+      }
+    }
+    /*
+    for (xy.y = wm->height - 1; xy.y > -1; --xy.y) {
+      for (xy.x = wm->width - 1; xy.x > -1; --xy.x) {
+        wr = get_world_region(wm, &xy);
+        _water_sim_step(wr);
+      }
+    }
+    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+      for (xy.y = wm->height - 1; xy.y > -1; --xy.y) {
+        wr = get_world_region(wm, &xy);
+        _water_sim_step(wr);
+      }
+    }
+    for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+      for (xy.x = wm->width - 1; xy.x > -1; --xy.x) {
+        wr = get_world_region(wm, &xy);
+        _water_sim_step(wr);
+      }
+    }
+    */
+    printf(
+      "    ...%zu / %d water cycle simulation steps completed...\r",
+      step,
+      WATER_CYCLE_SIM_STEPS
+    );
+  }
+  printf(
+    "    ...%zu / %d water cycle simulation steps completed...\n",
+    step,
+    WATER_CYCLE_SIM_STEPS
+  );
 }
 
 void strata_cell(

@@ -62,12 +62,12 @@ typedef struct world_map_s world_map;
 // 768*512 = 393216 regions
 //#define WORLD_WIDTH 768
 //#define WORLD_HEIGHT 512
-// 400*320 = 128000 regions
+// 400*320 = 144000 regions
 //#define WORLD_WIDTH 400
-//#define WORLD_HEIGHT 320
-// 128*96 = 12288 regions
+//#define WORLD_HEIGHT 360
+// 128*108 = 13824 regions
 #define WORLD_WIDTH 128
-#define WORLD_HEIGHT 96
+#define WORLD_HEIGHT 108
 // 32*32 = 1024 regions
 //#define WORLD_WIDTH 32
 //#define WORLD_HEIGHT 32
@@ -146,6 +146,8 @@ extern char const * const WORLD_MAP_FILE;
 #define STRATA_FRACTION_NOISE_STRENGTH 16
 #define STRATA_FRACTION_NOISE_SCALE (1.0 / 40.0)
 
+// How long the water cycle should be simulated:
+#define WATER_CYCLE_SIM_STEPS 128
 
 /***********
  * Globals *
@@ -369,6 +371,10 @@ void generate_hydrology(world_map *wm);
 
 // Generates climate for the given world.
 void generate_climate(world_map *wm);
+
+// Once base climate generation is complete, this will (crudely) simulate the
+// water cycle, populating precipitation information.
+void simulate_water_cycle(world_map *wm);
 
 // Computes the cell contents at the given position based on strata.
 void strata_cell(

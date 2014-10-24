@@ -209,6 +209,7 @@ void compute_terrain_height(
   // */
 
   // TODO: attenuate mountains near the beach?
+  //* DEBUG
   mani_scale_const(&mountains, TR_SCALE_MOUNTAINS);
   mani_add(&rocks_height, &mountains);
 
@@ -229,6 +230,7 @@ void compute_terrain_height(
 
   mani_scale_const(&bumps, TR_SCALE_BUMPS);
   mani_add(&rocks_height, &bumps);
+  // */
 
   // DEBUG:
   //*
@@ -345,74 +347,74 @@ void alter_terrain_values(
 
   if (region == TR_REGION_DEPTHS) {
     // amplify *bumps, *ridges, and *details; attenuate *hills and *mountains
-    alter_value(mountains, tr_interp, 1.5, 0.6, 3, 0.75, &nofl, &nofl);
-    alter_value(hills, tr_interp, 2, 0.7, 1.5, 0.65, &nofl, &nofl);
-    alter_value(ridges, tr_interp, 4, 0.2, 3, 0.8, &nofl, &nofl);
-    alter_value(mounds, tr_interp, 1, 1, 1.3, 0.6, &nofl, &nofl);
-    alter_value(details, tr_interp, 2, 0.2, 2, 0.6, &nofl, &nofl);
-    alter_value(bumps, tr_interp, 3, 0.3, 3, 0.8, &nofl, &nofl);
+    alter_value(mountains, tr_interp, 2.3, 0.6, 3.8, 0.75, &nofl, &nofl);
+    alter_value(hills, tr_interp, 2.8, 0.7, 2.3, 0.65, &nofl, &nofl);
+    alter_value(ridges, tr_interp, 4.9, 0.2, 3.7, 0.8, &nofl, &nofl);
+    alter_value(mounds, tr_interp, 0, 1, 1.9, 0.6, &nofl, &nofl);
+    alter_value(details, tr_interp, 2.8, 0.2, 2.8, 0.6, &nofl, &nofl);
+    alter_value(bumps, tr_interp, 3.7, 0.3, 3.7, 0.8, &nofl, &nofl);
   } else if (region == TR_REGION_SHELF) {
     // gently attenuate most features; strongly attenuate *ridges:
     mani_scale_const(&flatten, 0.8);
 
-    alter_value(mountains, tr_interp, 3, 0.75, 1.7, 0.6, &nofl, &flatten);
-    alter_value(hills, tr_interp, 1.5, 0.65, 1.5, 0.7, &nofl, &flatten);
-    alter_value(ridges, tr_interp, 3, 0.8, 1.3, 0.6, &nofl, &flatten);
-    alter_value(mounds, tr_interp, 1.3, 0.6, 1.3, 0.6, &nofl, &flatten);
-    alter_value(details, tr_interp, 2, 0.6, 1.4, 0.6, &nofl, &flatten);
-    alter_value(bumps, tr_interp, 3, 0.8, 3, 0.9, &nofl, &flatten);
+    alter_value(mountains, tr_interp, 3.8, 0.75, 2.9, 0.6, &nofl, &flatten);
+    alter_value(hills, tr_interp, 2.3, 0.65, 2.3, 0.7, &nofl, &flatten);
+    alter_value(ridges, tr_interp, 3.7, 0.8, 1.9, 0.6, &nofl, &flatten);
+    alter_value(mounds, tr_interp, 1.9, 0.6, 1.9, 0.6, &nofl, &flatten);
+    alter_value(details, tr_interp, 2.8, 0.6, 2.0, 0.6, &nofl, &flatten);
+    alter_value(bumps, tr_interp, 3.7, 0.8, 3.7, 0.9, &nofl, &flatten);
   } else if (region == TR_REGION_PLAINS) {
     // attenuate everything; create some superflat regions:
     mani_scale_const(&flatten, 0.8);
 
-    alter_value(mountains, tr_interp, 1.7, 0.6, 1, 1, &flatten, &nofl);
-    alter_value(hills, tr_interp, 1.5, 0.7, 1.8, 0.3, &flatten, &nofl);
-    alter_value(ridges, tr_interp, 1.3, 0.6, 1.5, 0.35, &flatten, &nofl);
-    alter_value(mounds, tr_interp, 1.3, 0.6, 1, 1, &flatten, &nofl);
-    alter_value(details, tr_interp, 1.4, 0.6, 1, 1, &flatten, &nofl);
-    alter_value(bumps, tr_interp, 3, 0.9, 1, 1, &flatten, &nofl);
+    alter_value(mountains, tr_interp, 2.9, 0.6, 0, 1, &flatten, &nofl);
+    alter_value(hills, tr_interp, 2.3, 0.7, 2.8, 0.3, &flatten, &nofl);
+    alter_value(ridges, tr_interp, 1.9, 0.6, 2.1, 0.35, &flatten, &nofl);
+    alter_value(mounds, tr_interp, 1.9, 0.6, 0, 1, &flatten, &nofl);
+    alter_value(details, tr_interp, 2.0, 0.6, 0, 1, &flatten, &nofl);
+    alter_value(bumps, tr_interp, 3.7, 0.9, 0, 1, &flatten, &nofl);
 
   } else if (region == TR_REGION_HILLS) {
     // slightly accentuate *hills and *ridges:
-    mani_smooth(&flatten, 1.2, 0.5);
+    mani_smooth(&flatten, 1.9, 0.5);
     mani_scale_const(&flatten, 0.9);
     mani_offset_const(&flatten, 0.1);
 
-    alter_value(mountains, tr_interp, 1, 1, 1.2, 0.3, &nofl, &nofl);
-    alter_value(hills, tr_interp, 1.8, 0.3, 1.3, 0.55, &nofl, &nofl);
-    alter_value(ridges, tr_interp, 1.5, 0.35, 1.6, 0.4, &nofl, &flatten);
-    alter_value(mounds, tr_interp, 1, 1, 1, 1, &nofl, &flatten);
+    alter_value(mountains, tr_interp, 0, 1, 1.8, 0.3, &nofl, &nofl);
+    alter_value(hills, tr_interp, 2.7, 0.3, 1.9, 0.55, &nofl, &nofl);
+    alter_value(ridges, tr_interp, 2.1, 0.35, 2.4, 0.4, &nofl, &flatten);
+    alter_value(mounds, tr_interp, 0, 1, 0, 1, &nofl, &flatten);
 
     mani_scale_const(&flatten, 0.5);
     mani_offset_const(&flatten, 0.25);
-    alter_value(details, tr_interp, 1, 1, 1, 1, &nofl, &flatten);
-    alter_value(bumps, tr_interp, 1, 1, 1, 1, &nofl, &flatten);
+    alter_value(details, tr_interp, 0, 1, 0, 1, &nofl, &flatten);
+    alter_value(bumps, tr_interp, 0, 1, 0, 1, &nofl, &flatten);
 
   } else if (region == TR_REGION_HIGHLANDS) {
     // accentuate *mountains; attenuate *hills and *ridges slightly; create some
     // flatter regions:
-    mani_smooth(&flatten, 1.2, 0.5);
+    mani_smooth(&flatten, 1.9, 0.5);
     mani_scale_const(&flatten, 0.9);
     mani_offset_const(&flatten, 0.1);
 
-    alter_value(mountains, tr_interp, 1.2, 0.3, 1.7, 0.2, &nofl, &nofl);
-    alter_value(hills, tr_interp, 1.3, 0.55, 1.5, 0.4, &nofl, &nofl);
-    alter_value(ridges, tr_interp, 1.6, 0.4, 0.5, 0.7, &flatten, &nofl);
-    alter_value(mounds, tr_interp, 1, 1, 1.3, 0.3, &flatten, &nofl);
+    alter_value(mountains, tr_interp, 1.8, 0.3, 2.9, 0.2, &nofl, &nofl);
+    alter_value(hills, tr_interp, 1.9, 0.55, 2.6, 0.4, &nofl, &nofl);
+    alter_value(ridges, tr_interp, 2.4, 0.4, 2.4, 0.15, &flatten, &nofl);
+    alter_value(mounds, tr_interp, 0, 1, 1.9, 0.3, &flatten, &nofl);
 
     mani_scale_const(&flatten, 0.5);
     mani_offset_const(&flatten, 0.25);
-    alter_value(details, tr_interp, 1, 1, 1.5, 0.4, &flatten, &nofl);
-    alter_value(bumps, tr_interp, 1, 1, 1.5, 0.3, &flatten, &nofl);
+    alter_value(details, tr_interp, 0, 1, 2.3, 0.4, &flatten, &nofl);
+    alter_value(bumps, tr_interp, 0, 1, 2.3, 0.3, &flatten, &nofl);
 
   } else if (region == TR_REGION_MOUNTAINS) {
     // amplify most things:
-    mani_smooth(mountains, 1.7, 0.2);
-    mani_smooth(hills, 1.5, 0.4);
-    mani_smooth(ridges, 1.6, 0.15);
-    mani_smooth(mounds, 1.3, 0.3);
-    mani_smooth(details, 1.5, 0.4);
-    mani_smooth(bumps, 1.5, 0.3);
+    mani_smooth(mountains, 2.9, 0.2);
+    mani_smooth(hills, 2.6, 0.4);
+    mani_smooth(ridges, 2.4, 0.15);
+    mani_smooth(mounds, 1.9, 0.3);
+    mani_smooth(details, 2.3, 0.4);
+    mani_smooth(bumps, 2.3, 0.3);
   }
 }
 
@@ -494,10 +496,10 @@ void compute_dirt_height(
   mani_offset_const(&temp, -TR_HEIGHT_SEA_LEVEL);
   if (temp.z > 0) {
     mani_scale_const(&temp, 1.0/(TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL));
-    mani_smooth(&temp, 2.3, 0.8);
+    mani_smooth(&temp, 3.1, 0.8);
   } else {
     mani_scale_const(&temp, 1.0/TR_HEIGHT_SEA_LEVEL);
-    mani_smooth(&temp, 1.4, 0.5);
+    mani_smooth(&temp, 2.0, 0.5);
   }
 
   mani_scale_const(&temp, -TR_ALTITUDE_EROSION_STRENGTH);
@@ -511,11 +513,11 @@ void compute_dirt_height(
   steepness = mani_slope(&temp);
   steepness = fmin(1.5, steepness); // slopes above 1.5 are treated identically
   steepness /= 1.5;
-  smooth(steepness, 2.0, 0.25);
+  smooth(steepness, 2.8, 0.25);
   steepness -= 0.25;
 
   mani_scale_const(&temp, 1.0/TR_MAX_HEIGHT);
-  mani_smooth(&temp, 1.5, 0.65);
+  mani_smooth(&temp, 2.4, 0.65);
   mani_scale_const(&temp, steepness * -TR_SLOPE_EROSION_STRENGTH);
     // Note: this is incorrect: for a correct erosion manifold you'd need to
     // know the second derivative of rocks_height, but we don't so we're

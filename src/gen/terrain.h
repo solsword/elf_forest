@@ -56,10 +56,10 @@
 
 // Noise->geoform mapping (see compute_geoforms):
 #define       TR_GEOMAP_SHELF 0.32
-#define       TR_GEOMAP_SHORE 0.44
-#define      TR_GEOMAP_PLAINS 0.55
-#define       TR_GEOMAP_HILLS 0.61
-#define   TR_GEOMAP_MOUNTAINS 0.68
+#define       TR_GEOMAP_SHORE 0.42
+#define      TR_GEOMAP_PLAINS 0.58
+#define       TR_GEOMAP_HILLS 0.66
+#define   TR_GEOMAP_MOUNTAINS 0.71
 
 // Geoform heights:
 #define        TR_HEIGHT_OCEAN_DEPTHS 1500
@@ -70,7 +70,20 @@
 #define      TR_HEIGHT_MOUNTAIN_BASES 18500
 #define       TR_HEIGHT_MOUNTAIN_TOPS 27000
 
-// Terrain noise contributions:
+// Low-frequency terrain noise contributions:
+#define   TR_SHARE_CONTINENTS 2.8
+#define    TR_SHARE_PGEOFORMS 2.2
+#define    TR_SHARE_SGEOFORMS 1.7
+#define   TR_SHARE_GEODETAILS 1.3
+
+#define TR_TOTAL_SHARES (\
+  TR_SHARE_CONTINENTS +\
+  TR_SHARE_PGEOFORMS +\
+  TR_SHARE_SGEOFORMS +\
+  TR_SHARE_GEODETAILS\
+)
+
+// High-frequency terrain noise contributions:
 #define   TR_SCALE_MOUNTAINS 6000
 #define       TR_SCALE_HILLS 900
 #define      TR_SCALE_RIDGES 60
@@ -158,6 +171,8 @@ static inline void trig_component(
   sin_part.z = sinf(phase + y * frequency);
   sin_part.dx = dyx * frequency * cosf(phase + y * frequency);
   sin_part.dy = (1 + dyy) * frequency * cosf(phase + y * frequency);
+
+  sin_part.z = 0.5;
 
   // result:
   mani_copy(result, &cos_part);
@@ -302,9 +317,20 @@ static inline void get_noise(
     TR_FREQUENCY_CONTINENTS,
     salt
   );
+  /*
+  printf(
+    "conts-trig: %zu, %zu :: %.3f, %.3f\n",
+    x, y,
+    dst_x.z, dst_y.z
+  );
+  */
 
   mani_copy(continents, &scaleinterp);
   mani_multiply(continents, &temp);
+  // DEBUG:
+  // mani_copy(continents, &temp);
+
+  // return;
 
   // DEBUG:
   // printf("cont-base: %.3f\n", continents->z);
@@ -334,7 +360,7 @@ static inline void get_noise(
   mani_offset_const(continents, 1);
   mani_scale_const(continents, 0.5);
 
-  mani_smooth(continents, 3, 0.5);
+  mani_smooth(continents, -0.8, 0.35);
 
   mani_scale_const(continents, 2.0);
   mani_offset_const(continents, -1);
@@ -394,7 +420,7 @@ static inline void get_noise(
   mani_scale_const(primary_geoforms, 0.5);
   mani_offset_const(primary_geoforms, 1);
   mani_scale_const(primary_geoforms, 0.5);
-  mani_smooth(primary_geoforms, 2, 0.5);
+  mani_smooth(primary_geoforms, 3.1, 0.5);
   mani_multiply(primary_geoforms, primary_geoforms);
   mani_scale_const(primary_geoforms, 2.0);
   mani_offset_const(primary_geoforms, -1);
@@ -409,7 +435,7 @@ static inline void get_noise(
   } else {
     mani_copy(&mountainous, primary_geoforms);
   }
-  mani_smooth(&mountainous, 2, 0.7);
+  mani_smooth(&mountainous, 3.6, 0.7);
   simplex_component(
     &temp,
     x + dst_y.z,
@@ -439,7 +465,7 @@ static inline void get_noise(
   } else {
     mani_copy(&hilly, primary_geoforms);
   }
-  mani_smooth(&hilly, 1.4, 0.1);
+  mani_smooth(&hilly, 2.4, 0.1);
   simplex_component(
     &temp,
     x + dst_x.z * 0.6,
@@ -479,7 +505,7 @@ static inline void get_noise(
     mani_copy(&ridged, primary_geoforms);
     mani_offset_const(&ridged, 0.05);
   }
-  mani_smooth(&ridged, 1.7, 0.1);
+  mani_smooth(&ridged, 2.9, 0.1);
   simplex_component(
     &temp,
     x + dst_x.z*0.4,
@@ -614,7 +640,7 @@ static inline void get_noise(
     salt,
     WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
   );
-  mani_smooth(&temp, 2, 0.5);
+  mani_smooth(&temp, 2.4, 0.5);
   mani_scale_const(&temp, 2.0);
   mani_add(mountains, &temp);
 
@@ -843,7 +869,7 @@ static inline void geomap(
     *region = TR_REGION_DEPTHS;
     geomap_segment(
       result, base, interp,
-      0.5, 0.5,
+      -2.3, 0.6,
       0, TR_GEOMAP_SHELF,
       TR_HEIGHT_OCEAN_DEPTHS, TR_HEIGHT_CONTINENTAL_SHELF
     );
@@ -851,7 +877,7 @@ static inline void geomap(
     *region = TR_REGION_SHELF;
     geomap_segment(
       result, base, interp,
-      1.6, 0.2,
+      -2.1, 0.2,
       TR_GEOMAP_SHELF, TR_GEOMAP_SHORE,
       TR_HEIGHT_CONTINENTAL_SHELF, TR_HEIGHT_SEA_LEVEL
     );
@@ -860,7 +886,7 @@ static inline void geomap(
     *region = TR_REGION_PLAINS;
     geomap_segment(
       result, base, interp,
-      0.8, 0.5,
+      -2, 0.5,
       TR_GEOMAP_SHORE, TR_GEOMAP_PLAINS,
       TR_HEIGHT_SEA_LEVEL, TR_HEIGHT_COASTAL_PLAINS
     );
@@ -868,7 +894,7 @@ static inline void geomap(
     *region = TR_REGION_HILLS;
     geomap_segment(
       result, base, interp,
-      1.4, 0.35,
+      1.9, 0.35,
       TR_GEOMAP_PLAINS, TR_GEOMAP_HILLS,
       TR_HEIGHT_COASTAL_PLAINS, TR_HEIGHT_HIGHLANDS
     );
@@ -876,7 +902,7 @@ static inline void geomap(
     *region = TR_REGION_HIGHLANDS;
     geomap_segment(
       result, base, interp,
-      1.3, 0.5,
+      1.8, 0.5,
       TR_GEOMAP_HILLS, TR_GEOMAP_MOUNTAINS,
       TR_HEIGHT_HIGHLANDS, TR_HEIGHT_MOUNTAIN_BASES
     );
@@ -884,7 +910,7 @@ static inline void geomap(
     *region = TR_REGION_MOUNTAINS;
     geomap_segment(
       result, base, interp,
-      1.6, 1.0,
+      2.1, 1.0,
       TR_GEOMAP_MOUNTAINS, 1.0,
       TR_HEIGHT_MOUNTAIN_BASES, TR_HEIGHT_MOUNTAIN_TOPS
     );
@@ -986,25 +1012,35 @@ static inline void compute_base_geoforms(
   base->dy = 0;
 
   mani_copy(&temp, continents);
-  mani_scale_const(&temp, 2.5);
+  mani_scale_const(&temp, TR_SHARE_CONTINENTS);
   mani_add(base, &temp);
 
+  // DEBUG:
+  // printf("base-c: %.8f :: %.8f %.8f\n", base->z, base->dx, base->dy);
+
+  //* DEBUG:
   mani_copy(&temp, primary_geoforms);
-  mani_scale_const(&temp, 2);
+  mani_scale_const(&temp, TR_SHARE_PGEOFORMS);
   mani_add(base, &temp);
 
   mani_copy(&temp, secondary_geoforms);
-  mani_scale_const(&temp, 1.5);
+  mani_scale_const(&temp, TR_SHARE_SGEOFORMS);
   mani_add(base, &temp);
 
-  mani_add(base, geodetails);
+  mani_copy(&temp, geodetails);
+  mani_scale_const(&temp, TR_SHARE_GEODETAILS);
+  mani_add(base, &temp);
 
-  mani_scale_const(base, 1.0/7.0);
+  mani_scale_const(base, 1.0/TR_TOTAL_SHARES);
+  // */
 
   mani_offset_const(base, 1);
   mani_scale_const(base, 0.5); // squash into [0, 1]
 
-  mani_smooth(base, 2, 0.5); // spread things out
+  mani_smooth(base, 1.8, 0.5); // spread things out
+
+  // DEBUG:
+  // printf("base: %.8f :: %.8f %.8f\n", base->z, base->dx, base->dy);
 
   // remap everything:
   geomap(height, base, region, tr_interp);

@@ -82,6 +82,8 @@ float water_depth(world_map *wm, float x, float y) {
   if (wr->climate.water.body == NULL) {
     return 0;
   }
+  // DEBUG:
+  // return 0;
   return wr->climate.water.body->level - wr->min_height;
 }
 
@@ -154,15 +156,15 @@ void render_map(world_map *wm, texture *tx) {
   }
   // DEBUG:
   // Draw wind/downhill vectors:
-  //*
+  /*
   region_pos rpos;
   world_map_pos wmpos;
   manifold_point gross, dontcare;
   float r, theta;
   vector from, to;
   world_region *wr;
-  color = 0xffffffff; // white
-  pixel end_color = 0x00000000; // black
+  color = 0xff000000; // black
+  pixel end_color = 0xffffffff; // white
   for (col = 0; col < tx->width; col += 8) {
     for (row = 0; row < tx->height; row += 8) {
       x = col / ((float) tx->width);
@@ -170,16 +172,14 @@ void render_map(world_map *wm, texture *tx) {
       rpos.x = WORLD_REGION_SIZE * CHUNK_SIZE * wm->width * x;
       rpos.y = WORLD_REGION_SIZE * CHUNK_SIZE * wm->height * y;
       rpos__wmpos(&rpos, &wmpos);
-      /* Downhill direction
-      compute_terrain_height(&rpos, &gross, &dontcare, &dontcare);
-      r = 4;
-      theta = mani_downhill(&gross);
-      // */
-      //* Wind vector
+      // Downhill direction
+      // compute_terrain_height(&rpos, &gross, &dontcare, &dontcare);
+      // r = 4;
+      // theta = mani_downhill(&gross);
+      // Wind vector
       wr = get_world_region(wm, &wmpos);
       r = wr->climate.atmosphere.wind_strength;
       theta = wr->climate.atmosphere.wind_direction;
-      // */
       from.x = col;
       from.y = row;
       to.x = from.x + r * cos(theta);

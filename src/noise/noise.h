@@ -395,8 +395,11 @@ static inline float stretch(float n, float stretch) {
 
 // Takes a value in [-1, 1] and maps it through a sigmoid function centered on
 // (center, center) with an exponent of strength. Negative values are flipped
-// first and flopped afterwards, so it's really a double sigmoid. Note that for
-// strengths less than 1, there's a discontinuity at 0.
+// first and flopped afterwards, so it's really a double sigmoid. Note that
+// there's a slight discontinuity at 0 which is exaggerated if the strength is
+// low. A strength of 0 is just a straight line; negative strengths pull values
+// towards the given center while positive strengths push them away from it.
+// Strengths in about [-4, 4] are usually reasonable.
 static inline float smooth(float n, float strength, float center) {
   float sign = 1;
   float result = 0;
@@ -404,10 +407,19 @@ static inline float smooth(float n, float strength, float center) {
     sign = -1;
     n = -n;
   }
+  if (strength == 0) {
+    return n;
+  }
   if (n < center) {
-    result = center * pow(n/center, strength);
+    result = center * (exp(strength * n/center) - 1) / (exp(strength) - 1);
   } else {
-    result = 1 - (1 - center) * pow(1 - (n - center)/(1 - center), strength);
+    result = 1 - (
+      (1 - center)
+    *
+      (exp(strength * (1 - n) / (1 - center)) - 1)
+    /
+      (exp(strength) - 1)
+    );
   }
   return sign * result;
 }
@@ -415,22 +427,40 @@ static inline float smooth(float n, float strength, float center) {
 // Takes the same arguments as smooth() and edits the extra gradient arguments
 // (which should be gradient values for the function underlying the value n
 // pre-smoothing). Afterwards, the gradient values are accurate for the
-// smoothed function. Note that strength should be >= 1, or else n must be > 0,
-// because the derivatives goes to infinity as n goes to 0 for strength < 1.
+// smoothed function.
 static inline void smooth_grad(
   float n,
   float strength, float center,
   float *grx, float *gry
 ) {
   if (n < 0) {
-    n = -n;
+    n = -n; // TODO: Is this okay? No need to flop gradients?
+  }
+  if (strength == 0) {
+    return;
   }
   if (n < center) {
-    *grx = strength * (*grx) * pow(n / center, strength - 1);
-    *gry = strength * (*gry) * pow(n / center, strength - 1);
+    *grx = strength * (*grx) * exp(strength * n / center) / (exp(strength) - 1);
+    *gry = strength * (*gry) * exp(strength * n / center) / (exp(strength) - 1);
   } else {
-    *grx = strength * (*grx) * pow((n - 1) / (center - 1), strength - 1);
-    *gry = strength * (*gry) * pow((n - 1) / (center - 1), strength - 1);
+    *grx = (
+      strength
+    *
+      (*grx)
+    *
+      exp(strength * (n - 1) / (center - 1))
+    / 
+      (exp(strength) - 1)
+    );
+    *gry = (
+      strength
+    *
+      (*gry)
+    *
+      exp(strength * (n - 1) / (center - 1))
+    / 
+      (exp(strength) - 1)
+    );
   }
 }
 

@@ -45,6 +45,9 @@ typedef enum salinity_e salinity;
  * Constants *
  *************/
 
+// Number of seasons in the year
+#define N_SEASONS 4
+
 // Ocean size limits:
 #define MIN_OCEAN_SIZE 20
 #define MAX_OCEAN_SIZE (-1)
@@ -57,14 +60,49 @@ typedef enum salinity_e salinity;
 
 #define MIN_LAKE_DEPTH 18.0
 #define MAX_LAKE_DEPTH 250.0
-#define LAKE_DEPTH_DIST_SQUASH 4.0
+#define LAKE_DEPTH_DIST_SQUASH 2.5
 
 #define LAKE_SALINITY_THRESHOLD_BRACKISH 0.03
 #define LAKE_SALINITY_THRESHOLD_SALINE 0.025
 #define LAKE_SALINITY_THRESHOLD_BRINY 0.02
 
-// Number of seasons in the year
-#define N_SEASONS 5
+// Wind parameters (base values from corresponding continent parameters):
+#define WIND_CELL_DISTORTION_SIZE 1.2
+#define WIND_CELL_DISTORTION_STRENGTH 0.6
+#define WIND_CELL_SIZE 1.3
+
+// should be roughly the median wind strength
+#define WIND_BASE_STRENGTH 3.0
+
+#define WIND_UPPER_STRENGTH 5.0
+
+// how much land slopes affect wind direction
+#define WIND_LAND_INFLUENCE 43.0
+
+// Temperature parameters:
+#define GLOBAL_TEMP_DISTORTION_SCALE 4.5
+#define GLOBAL_TEMP_DISTORTION_STRENGTH 0.15
+
+#define ELEVATION_TEMP_ADJUST (-28.0)
+
+#define ARCTIC_BASE_TEMP (-20)
+#define EQUATOR_BASE_TEMP 30
+
+// Cloud and rainfall parameters:
+#define OCEAN_PRECIPITATION_QUOTIENT 0.35
+#define ELEVATION_PRECIPITATION_QUOTIENT 0.4
+
+#define BASE_WATER_CLOUD_POTENTIAL 2500.0
+#define BASE_LAND_CLOUD_POTENTIAL 1200.0
+
+#define EVAPORATION_TEMP_SCALING (1.3/30.0)
+
+#define CLOUD_RECHARGE_RATE 0.05
+
+#define WIND_FOCUS 4.5
+
+#define WIND_ELEVATION_FORCING 2.0
+
 
 // Some rainfall numbers in mm/year:
 //
@@ -168,7 +206,11 @@ struct soil_composition_s {
 struct weather_s {
   // TODO: wind chaos?
   float wind_strength, wind_direction; // wind strength & direction
-  float rainfall[N_SEASONS]; // rainfall per season
+  float mean_temp; // overall average temperature
+  float cloud_potential; // average annual precipitation potential in mm/year
+  float next_cloud_potential; // next iteration cloud potential
+  float precipitation_quotient; // How much of local clouds rains here
+  float rainfall[N_SEASONS]; // rainfall per season in mm/year
   float temp_low[N_SEASONS]; // temperature low, mean and high throughout the
   float temp_mean[N_SEASONS]; // day, in each season
   float temp_high[N_SEASONS];

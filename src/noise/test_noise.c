@@ -128,7 +128,7 @@ float terrain_noise(float x, float y, ptrdiff_t salt) {
       &dontcare, &dontcare,
       WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
     ),
-    1.7,
+    2.1,
     0.5
   );
   result += 0.25 * smooth(
@@ -139,7 +139,7 @@ float terrain_noise(float x, float y, ptrdiff_t salt) {
       &dontcare, &dontcare,
       WORLEY_FLAG_INCLUDE_NEXTBEST | WORLEY_FLAG_SMOOTH_SIDES
     ),
-    1.7,
+    2.1,
     0.5
   );
 
@@ -174,18 +174,18 @@ float terrain_noise(float x, float y, ptrdiff_t salt) {
   //result = 0;
 
   // Stretching the result to establish sea level around 0.28:
-  result = smooth((result + 1)/2.0, 2.4, 0.7) * 2 - 1;
+  result = smooth((result + 1)/2.0, 3.2, 0.7) * 2 - 1;
   //result = stretch((1 + result)/2.0, 1.6) * 2 - 1;
 
   // Terrace the oceans, continental shelves, and land:
   result = (1 + result)/2.0;
-  float depths = smooth(result/0.15, 2.6, 0.8)*0.19;
+  float depths = smooth(result/0.15, 3.3, 0.8)*0.19;
   float cshelves = (result - 0.15) / (0.281 - 0.15);
-  cshelves = 0.19 + smooth(cshelves, 1.8, 0.6) * (0.281 - 0.19);
+  cshelves = 0.19 + smooth(cshelves, 2.4, 0.6) * (0.281 - 0.19);
   float plains = (result - 0.281)/(0.63-0.281);
-  plains = 0.281 + smooth(plains, 2, 0.7) * (0.63 - 0.281);
+  plains = 0.281 + smooth(plains, 2.5, 0.7) * (0.63 - 0.281);
   float mountains = (result - 0.63)/(1-0.63);
-  mountains = 0.63 + smooth(mountains, 1.3, 0.8)*(1 - 0.63);
+  mountains = 0.63 + smooth(mountains, 1.8, 0.8)*(1 - 0.63);
   if (result < 0.15) {
     result = depths;
     //result = 0;
