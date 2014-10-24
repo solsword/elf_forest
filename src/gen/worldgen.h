@@ -124,7 +124,9 @@ typedef struct world_map_s world_map;
 #define MAX_BIOME_TREES 64
 
 // The name of the file to write a copy of the world map into:
-extern char const * const WORLD_MAP_FILE;
+extern char const * const WORLD_MAP_FILE_BASE;
+extern char const * const WORLD_MAP_FILE_WIND;
+extern char const * const WORLD_MAP_FILE_RAIN;
 
 // Maximum distance between two world region anchors:
 #define MAX_REGION_ANCHOR_DISTANCE sqrtf( \
@@ -148,6 +150,7 @@ extern char const * const WORLD_MAP_FILE;
 
 // How long the water cycle should be simulated:
 #define WATER_CYCLE_SIM_STEPS 128
+#define WATER_CYCLE_FINISH_STEPS 1
 
 /***********
  * Globals *

@@ -351,7 +351,7 @@ void fltr_apply_gradient_map(texture *tx, void const * const fargs) {
   for (col = 0; col < tx->width; col += 1) {
     for (row = 0; row < tx->height; row += 1) {
       p = tx_get_px(tx, col, row);
-      tx_set_px(tx, gradient_result(grmap, p), col, row);
+      tx_set_px(tx, gradient_map_result(grmap, p), col, row);
     }
   }
 }
@@ -373,7 +373,7 @@ void fltr_worley(texture *tx, void const * const fargs) {
       );
       tx_set_px(
         tx,
-        gradient_result(wfargs->grmap, noise),
+        gradient_map_result(wfargs->grmap, noise),
         col,
         row
       );

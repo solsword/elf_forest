@@ -184,7 +184,7 @@ void fltr_branches(texture *tx, void const * const fargs) {
       if (noise > 1) { noise = 1; }
       tx_set_px(
         tx,
-        gradient_result(&grmap, noise),
+        gradient_map_result(&grmap, noise),
         col,
         row
       );

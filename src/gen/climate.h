@@ -210,6 +210,7 @@ struct weather_s {
   float cloud_potential; // average annual precipitation potential in mm/year
   float next_cloud_potential; // next iteration cloud potential
   float precipitation_quotient; // How much of local clouds rains here
+  float next_precipitation_quotient; // next iteration precipitation quotient
   float rainfall[N_SEASONS]; // rainfall per season in mm/year
   float temp_low[N_SEASONS]; // temperature low, mean and high throughout the
   float temp_mean[N_SEASONS]; // day, in each season

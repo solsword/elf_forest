@@ -5,21 +5,21 @@
 // Map drawing functions.
 
 #include "tex/tex.h"
+#include "txgen/txgen.h"
 #include "gen/worldgen.h"
 
 /*************
  * Constants *
  *************/
 
-// The number of sea elevation colors
-#define EC_SEA_COLORS 16
+#define CART_VECTOR_SPACING 8
+#define CART_MAX_VECTOR_LENGTH 6.0
 
-// The number of land elevation colors
-#define EC_LAND_COLORS 19
-
-// Elevation colors for coloring maps:
-extern pixel const SEA_COLORS[EC_SEA_COLORS];
-extern pixel const LAND_COLORS[EC_LAND_COLORS];
+// Gradients for coloring maps:
+extern gradient const BW_GRADIENT;
+extern gradient const SEA_GRADIENT;
+extern gradient const LAND_GRADIENT;
+extern gradient const RAIN_GRADIENT;
 
 /********************
  * Inline Functions *
@@ -31,15 +31,33 @@ extern pixel const LAND_COLORS[EC_LAND_COLORS];
  * Functions *
  *************/
 
-// Returns the terrain height of the given world at the given x/y coordinates
-// with [0, 1] mapped to [0, wm->width/height].
-float world_map_height(world_map *wm, float x, float y);
+// Renders a map of the given layer of the given world into the given texture.
+void render_map_layer(
+  world_map *wm,
+  texture *tx,
+  pixel (*layer_fn)(world_region*)
+);
 
-// Works like world_map_height, but returns the depth below the local water
-// surface for the given coordinates, or 0 if there is no local water.
-float water_depth(world_map *wm, float x, float y);
+// Like render_map_layer but renders spaced-out vectors instead of a color for
+// every pixel.
+void render_map_vectors(
+  world_map *wm,
+  texture *tx,
+  pixel start, pixel end,
+  void (*vector_layer_fn)(world_region*, float*, float*)
+);
 
-// Renders a map of the given world into the given texture.
-void render_map(world_map *wm, texture *tx);
+/*******************
+ * Layer Functions *
+ *******************/
+
+// Draws land and water using blues, greens, yellows, and whites
+pixel ly_terrain_height(world_region *wr);
+
+// Draws precipitation using 
+pixel ly_precipitation(world_region *wr);
+
+// Draws wind vectors
+void vly_wind_vectors(world_region *wr, float *r, float *theta);
 
 #endif // ifndef CARTOGRAPHY_H

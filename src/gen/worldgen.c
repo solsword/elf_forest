@@ -25,7 +25,9 @@
  * Constants *
  *************/
 
-char const * const WORLD_MAP_FILE = "out/world_map.png";
+char const * const WORLD_MAP_FILE_BASE = "out/world_map.png";
+char const * const WORLD_MAP_FILE_WIND = "out/world_map_wind.png";
+char const * const WORLD_MAP_FILE_RAIN = "out/world_map_rain.png";
 
 /***********
  * Globals *
@@ -416,6 +418,8 @@ static inline void _water_sim_step(world_region *wr) {
 }
 // */
 
+// Water simulation next-step adjustment: flips states and handles
+// precipitation and evaporation.
 static inline void _water_sim_next(world_region *wr) {
   float evap = _base_evap(wr);
   // Flip states:
@@ -439,6 +443,41 @@ static inline void _water_sim_next(world_region *wr) {
   }
 }
 
+// Water sim finishing: a final averaging pass to smooth out high-frequency
+// variation in both cloud potential and precipitation quotients:
+static inline void _water_sim_finish(world_region *wr) {
+  world_region *neighbor;
+  world_map_pos iter;
+  float cloud_avg = 0, precip_avg = 0, divisor = 9.0;
+  // Iterate over our neighbors:
+  for (iter.x = wr->pos.x - 1; iter.x <= wr->pos.x + 1; iter.x += 1) {
+    for (iter.y = wr->pos.y - 1; iter.y <= wr->pos.y + 1; iter.y += 1) {
+      neighbor = get_world_region(wr->world, &iter); // might be NULL
+      if (neighbor == NULL) {
+        divisor -= 1.0;
+        continue;
+      }
+      cloud_avg += neighbor->climate.atmosphere.cloud_potential;
+      precip_avg += neighbor->climate.atmosphere.precipitation_quotient;
+    }
+  }
+  // Divide to get a local averages:
+  wr->climate.atmosphere.next_cloud_potential = cloud_avg / divisor;
+  wr->climate.atmosphere.next_precipitation_quotient = precip_avg / divisor;
+}
+
+// Just flips states:
+static inline void _water_sim_finish_next(world_region *wr) {
+  // Flip states:
+  wr->climate.atmosphere.cloud_potential =
+    wr->climate.atmosphere.next_cloud_potential;
+  wr->climate.atmosphere.next_cloud_potential = 0;
+  wr->climate.atmosphere.precipitation_quotient =
+    wr->climate.atmosphere.next_precipitation_quotient;
+  wr->climate.atmosphere.next_precipitation_quotient = 0;
+}
+
+
 /*************
  * Functions *
  *************/
@@ -453,11 +492,25 @@ void setup_worldgen(ptrdiff_t seed) {
   generate_hydrology(THE_WORLD);
   printf("  ...generating climate...\n");
   generate_climate(THE_WORLD);
-  printf("  ...writing world map to '%s'...\n", WORLD_MAP_FILE);
-  texture *tx = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
-  render_map(THE_WORLD, tx);
-  write_texture_to_png(tx, WORLD_MAP_FILE);
-  cleanup_texture(tx);
+  printf(
+    "  ...writing world map tos '%s,' '%s,' and '%s'...\n",
+    WORLD_MAP_FILE_BASE,
+    WORLD_MAP_FILE_WIND,
+    WORLD_MAP_FILE_RAIN
+  );
+  texture *base_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
+  texture *wind_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
+  texture *rain_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
+  render_map_layer(THE_WORLD, base_map, &ly_terrain_height);
+  render_map_layer(THE_WORLD, wind_map, &ly_terrain_height);
+  render_map_vectors(THE_WORLD, wind_map, PX_BLACK,PX_WHITE, &vly_wind_vectors);
+  render_map_layer(THE_WORLD, rain_map, &ly_precipitation);
+  write_texture_to_png(base_map, WORLD_MAP_FILE_BASE);
+  write_texture_to_png(wind_map, WORLD_MAP_FILE_WIND);
+  write_texture_to_png(rain_map, WORLD_MAP_FILE_RAIN);
+  cleanup_texture(base_map);
+  cleanup_texture(wind_map);
+  cleanup_texture(rain_map);
 }
 
 void cleanup_worldgen() {
@@ -674,14 +727,6 @@ void generate_climate(world_map *wm) {
       mani_offset_const(&winds_base, 1);
       mani_scale_const(&winds_base, 0.5);
 
-      // DEBUG:
-      /*
-      wr->mean_height = TR_HEIGHT_SEA_LEVEL + (
-        TR_HEIGHT_MOUNTAIN_TOPS - TR_HEIGHT_SEA_LEVEL
-      ) * winds_base.z;
-      wr->climate.water.body = NULL;
-      // */
-
       // Put slopes at around a comparable magnitude with the actual terrain:
       mani_scale_const(
         &winds_base,
@@ -741,20 +786,6 @@ void generate_climate(world_map *wm) {
       }
       // Set the mean_temp value:
       wr->climate.atmosphere.mean_temp = base_temp;
-      // DEBUG:
-      /*
-      wr->mean_height = (
-        TR_HEIGHT_SEA_LEVEL
-      +
-        (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL) * (
-          (
-            ((wr->climate.atmosphere.mean_temp) - ARCTIC_BASE_TEMP)
-          /
-            (EQUATOR_BASE_TEMP - ARCTIC_BASE_TEMP)
-          )
-        )
-      );
-      // */
 
       // Precipitation:
       // --------------
@@ -792,34 +823,6 @@ void generate_climate(world_map *wm) {
   for (xy.x = 0; xy.x < wm->width; ++xy.x) {
     for (xy.y = 0; xy.y < wm->height; ++xy.y) {
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
-      // DEBUG -- remap:
-      /* cloud potential
-      wr->mean_height = (
-        TR_HEIGHT_SEA_LEVEL
-      +
-        (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL) * (
-          12
-        *
-          wr->climate.atmosphere.precipitation_quotient
-        *
-          (
-            wr->climate.atmosphere.cloud_potential
-          /
-            BASE_WATER_CLOUD_POTENTIAL
-          )
-        )
-      );
-      // */
-      /* gross slope
-      wr->mean_height = (
-        TR_HEIGHT_SEA_LEVEL
-      +
-        (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL) * mani_slope(&(wr->gross_height))
-      );
-      // */
-      /* gross height
-      wr->mean_height = wr->gross_height.z;
-      // */
 
       // TODO: Real generation past this point!
       for (i = 0; i < N_SEASONS; ++i) {
@@ -871,26 +874,6 @@ void simulate_water_cycle(world_map *wm) {
         _water_sim_next(wr);
       }
     }
-    /*
-    for (xy.y = wm->height - 1; xy.y > -1; --xy.y) {
-      for (xy.x = wm->width - 1; xy.x > -1; --xy.x) {
-        wr = get_world_region(wm, &xy);
-        _water_sim_step(wr);
-      }
-    }
-    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
-      for (xy.y = wm->height - 1; xy.y > -1; --xy.y) {
-        wr = get_world_region(wm, &xy);
-        _water_sim_step(wr);
-      }
-    }
-    for (xy.y = 0; xy.y < wm->height; ++xy.y) {
-      for (xy.x = wm->width - 1; xy.x > -1; --xy.x) {
-        wr = get_world_region(wm, &xy);
-        _water_sim_step(wr);
-      }
-    }
-    */
     printf(
       "    ...%zu / %d water cycle simulation steps completed...\r",
       step,
@@ -902,6 +885,21 @@ void simulate_water_cycle(world_map *wm) {
     step,
     WATER_CYCLE_SIM_STEPS
   );
+  // Finish the water simulation with some final averaging:
+  for (step = 0; step < WATER_CYCLE_FINISH_STEPS; ++step) {
+    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+        wr = get_world_region(wm, &xy);
+        _water_sim_finish(wr);
+      }
+    }
+    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+        wr = get_world_region(wm, &xy);
+        _water_sim_finish_next(wr);
+      }
+    }
+  }
 }
 
 void strata_cell(

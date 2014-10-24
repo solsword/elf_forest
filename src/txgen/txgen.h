@@ -44,6 +44,13 @@ typedef struct tx_grammar_expansion_site_s tx_grammar_expansion_site;
 struct gradient_map_s;
 typedef struct gradient_map_s gradient_map;
 
+// A gradient is simpler than a gradient map: it just contains up to
+// GRADIENT_MAX_SIZE colors, and implicitly maps them evenly to the range
+// [0, 1]. It also has colors for out-of-bounds both below and above the
+// gradient. Unlike a gradient map, it interpolates between adjacent colors.
+struct gradient_s;
+typedef struct gradient_s gradient;
+
 /******************************
  * Filter Argument Structures *
  ******************************/
@@ -75,6 +82,8 @@ extern pixel const GRAMMAR_KEYS[N_GRAMMAR_KEYS];
 
 #define GRADIENT_MAP_MAX_SIZE 16
 
+#define GRADIENT_MAX_SIZE 64
+
 /*************************
  * Structure Definitions *
  *************************/
@@ -102,6 +111,13 @@ struct tx_grammar_expansion_site_s {
 struct gradient_map_s {
   pixel colors[GRADIENT_MAP_MAX_SIZE];
   float thresholds[GRADIENT_MAP_MAX_SIZE];
+};
+
+struct gradient_s {
+  size_t count;
+  pixel colors[GRADIENT_MAX_SIZE];
+  pixel oob_below;
+  pixel oob_above;
 };
 
 struct scatter_filter_args_s {
@@ -166,7 +182,7 @@ struct worley_filter_args_s {
  * Inline Functions *
  ********************/
 
-static inline pixel gradient_result(gradient_map *grmap, float in) {
+static inline pixel gradient_map_result(gradient_map *grmap, float in) {
   size_t i = 0;
   for (i = 0; i < GRADIENT_MAP_MAX_SIZE - 1; ++i) {
     if (in <= grmap->thresholds[i]) {
@@ -176,8 +192,23 @@ static inline pixel gradient_result(gradient_map *grmap, float in) {
   return grmap->colors[i];
 }
 
-static inline pixel px_gradient_result(gradient_map *grmap, pixel in) {
-  return gradient_result(grmap, px_luma_f(in));
+static inline pixel px_gradient_map_result(gradient_map *grmap, pixel in) {
+  return gradient_map_result(grmap, px_luma_f(in));
+}
+
+static inline pixel gradient_result(gradient const * const gr, float t) {
+  float f;
+  size_t lower, upper;
+  if (t < 0) {
+    return gr->oob_below;
+  } else if (t > 1) {
+    return gr->oob_above;
+  } else {
+    lower = fastfloor((gr->count - 1) * t);
+    upper = fastceil((gr->count - 1) * t);
+    f = ( ( (gr->count - 1) * t) - lower) / (upper - lower);
+    return px_interp(gr->colors[lower], gr->colors[upper], f);
+  }
 }
 
 // Tints the given pixel, darkening it if the given tint amount is less than 0

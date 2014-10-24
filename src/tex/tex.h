@@ -55,6 +55,9 @@ typedef struct tcoords_s tcoords;
 // A black opaque pixel value:
 #define PX_BLACK 0xff000000
 
+// A white opaque pixel value:
+#define PX_WHITE 0xffffffff
+
 /********************
  * Global variables *
  ********************/
