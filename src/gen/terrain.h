@@ -28,7 +28,7 @@
 #define        TR_FREQUENCY_BUMPS 0.25 // ~4-cell ~= 2.5 m variance
 
 // Distortion frequencies:
-#define   TR_DFQ_CONTINENTS 0.0000004 // 1/5 of base
+#define   TR_DFQ_CONTINENTS 0.0000005 // 1/4 of base
 #define    TR_DFQ_PGEOFORMS 0.00000075 // 1/4 of base
 #define    TR_DFQ_SGEOFORMS 0.0000008 // 1/5 of base
 #define    TR_DFQ_GEODETAIL 0.000004 // 1/5 of base
@@ -172,8 +172,6 @@ static inline void trig_component(
   sin_part.dx = dyx * frequency * cosf(phase + y * frequency);
   sin_part.dy = (1 + dyy) * frequency * cosf(phase + y * frequency);
 
-  sin_part.z = 0.5;
-
   // result:
   mani_copy(result, &cos_part);
   mani_multiply(result, &sin_part);
@@ -280,6 +278,7 @@ static inline void get_noise(
   manifold_point mounded, detailed, bumpy;
 
   // pre-salt our x/y values just a bit to avoid the noise=0 at origin problem.
+  *salt = prng(*salt);
   x += *salt % 439;
   y += *salt % 752;
   *salt = prng(*salt);
@@ -327,10 +326,6 @@ static inline void get_noise(
 
   mani_copy(continents, &scaleinterp);
   mani_multiply(continents, &temp);
-  // DEBUG:
-  // mani_copy(continents, &temp);
-
-  // return;
 
   // DEBUG:
   // printf("cont-base: %.3f\n", continents->z);
@@ -1031,11 +1026,11 @@ static inline void compute_base_geoforms(
   mani_scale_const(&temp, TR_SHARE_GEODETAILS);
   mani_add(base, &temp);
 
-  mani_scale_const(base, 1.0/TR_TOTAL_SHARES);
+  mani_scale_const(base, 1.0/(float) (TR_TOTAL_SHARES));
   // */
 
   mani_offset_const(base, 1);
-  mani_scale_const(base, 0.5); // squash into [0, 1]
+  mani_scale_const(base, 0.4999999); // squash into [0, 1]
 
   mani_smooth(base, 1.8, 0.5); // spread things out
 

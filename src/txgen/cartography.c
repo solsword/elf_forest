@@ -96,8 +96,8 @@ void render_map(world_map *wm, texture *tx) {
   pixel color;
   for (col = 0; col < tx->width; ++col) {
     for (row = 0; row < tx->height; ++row) {
-      x = col / ((float) tx->width);
-      y = row / ((float) tx->height);
+      x = (col + 0.5) / ((float) tx->width);
+      y = (row + 0.5) / ((float) tx->height);
       h = world_map_height(wm, x, y);
       wd = water_depth(wm, x, y);
       //hf = h / (float) (TR_MAX_HEIGHT);

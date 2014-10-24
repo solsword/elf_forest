@@ -41,7 +41,7 @@ omp_lock_t TERRAIN_HEIGHT_LOCK;
 
 void setup_terrain_gen(ptrdiff_t seed) {
   omp_init_lock(&TERRAIN_HEIGHT_LOCK);
-  TR_NOISE_SALT = seed + 719102;
+  TR_NOISE_SALT = prng(seed + 719102);
 }
 
 void compute_terrain_height(

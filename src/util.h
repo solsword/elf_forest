@@ -76,9 +76,9 @@ static inline ptrdiff_t prng(ptrdiff_t seed) {
 }
 
 // Simple ptrdiff_t->float
-// Note that resolution is less than roughly 1/2^31, so don't expect too much.
+// Note that resolution is roughly 1/2^19, so don't expect too much.
 static inline float ptrf(ptrdiff_t seed) {
-  return (seed % 3758096411) / 3758096410.0;
+  return (seed % 524309) / 524308.0;
 }
 
 // Normalizes the given angle to be between -M_PI and M_PI.
