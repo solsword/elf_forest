@@ -121,7 +121,7 @@ void start_game(
   region_pos *spawn_point
 ) {
   int thread_id = 0;
-  region_chunk_pos rcpos, last_rcpos;
+  region_chunk_pos area_origin, last_origin;
 
   // Start the main threads:
 #pragma omp parallel num_threads(2) firstprivate(thread_id)
@@ -133,8 +133,8 @@ void start_game(
       _spawn_the_player(player_entity_type, ACTIVE_AREA, spawn_point);
       // A couple of sequential cycles to start things off smoothly:
       tick(2);
-      rpos__rcpos(&(ACTIVE_AREA->origin), &rcpos);
-      tick_load_chunks();
+      rpos__rcpos(&(ACTIVE_AREA->origin), &area_origin);
+      tick_load_chunks(&area_origin);
       tick_compile_chunks();
       render(WINDOW);
       glfwPollEvents();
@@ -153,7 +153,7 @@ void start_game(
         tick_compile_chunks();
         tick(ticks_expected());
         omp_set_lock(&POSITION_LOCK);
-        rpos__rcpos(&(ACTIVE_AREA->origin), &rcpos);
+        rpos__rcpos(&(ACTIVE_AREA->origin), &area_origin);
         omp_unset_lock(&POSITION_LOCK);
         if (RENDER) {
           render(WINDOW);
@@ -174,12 +174,12 @@ void start_game(
       while (!SHUTDOWN) {
         if (TICK_AUTOLOAD) {
           omp_set_lock(&POSITION_LOCK);
-          last_rcpos.x = rcpos.x;
-          last_rcpos.y = rcpos.y;
-          last_rcpos.z = rcpos.z;
+          last_origin.x = area_origin.x;
+          last_origin.y = area_origin.y;
+          last_origin.z = area_origin.z;
           omp_unset_lock(&POSITION_LOCK);
-          load_surroundings(&last_rcpos);
-          tick_load_chunks();
+          load_surroundings(&last_origin);
+          tick_load_chunks(&last_origin);
         }
         nap(10);
       }

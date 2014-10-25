@@ -204,7 +204,7 @@ void load_surroundings(region_chunk_pos *rcpos);
 
 // Ticks the chunk loading system, loading/unloading as many chunks as allowed
 // and appropriate. Prioritizes more-detailed areas when loading data.
-void tick_load_chunks(void);
+void tick_load_chunks(region_chunk_pos *load_center);
 
 // Ticks the chunk compilation system, compiling as many chunks as allowed and
 // appropriate. Prioritizes more-detailed areas when loading data. This should

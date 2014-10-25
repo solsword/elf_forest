@@ -410,21 +410,16 @@ void load_surroundings(region_chunk_pos *center) {
   }
 }
 
-void tick_load_chunks(void) {
+void tick_load_chunks(region_chunk_pos *load_center) {
   int n = 0;
   chunk *c = NULL;
   chunk *old_chunk = NULL;
   chunk_approximation *ca = NULL;
   chunk_approximation *old_approx = NULL;
-  region_pos player_pos;
-  region_chunk_pos load_center;
   lod detail = LOD_BASE;
 
   queue *q = LOAD_QUEUES->levels[LOD_BASE];
   map *m = LOAD_QUEUES->maps[LOD_BASE];
-
-  get_head_rpos(PLAYER, &player_pos);
-  rpos__rcpos(&player_pos, &load_center);
 
   while (n < LOAD_CAP && q_get_length(q) > 0) {
     c = (chunk *) q_pop_element(q);
@@ -435,7 +430,7 @@ void tick_load_chunks(void) {
       (map_key_t) c->rcpos.y,
       (map_key_t) c->rcpos.z
     );
-    if (desired_detail_at(&load_center, &(c->rcpos)) > LOD_BASE) {
+    if (desired_detail_at(load_center, &(c->rcpos)) > LOD_BASE) {
       // discard this chunk and don't load it.
       cleanup_chunk(c);
       continue;
@@ -472,7 +467,7 @@ void tick_load_chunks(void) {
         (map_key_t) ca->rcpos.z
       );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
-      if (desired_detail_at(&load_center, &(ca->rcpos)) > detail) {
+      if (desired_detail_at(load_center, &(ca->rcpos)) > detail) {
         // discard this chunk and don't load it.
         cleanup_chunk_approximation(ca);
         continue;
