@@ -149,7 +149,7 @@ extern char const * const WORLD_MAP_FILE_RAIN;
 #define STRATA_FRACTION_NOISE_SCALE (1.0 / 40.0)
 
 // How long the water cycle should be simulated:
-#define WATER_CYCLE_SIM_STEPS 128
+#define WATER_CYCLE_SIM_STEPS 256
 #define WATER_CYCLE_FINISH_STEPS 1
 
 /***********
@@ -341,6 +341,37 @@ static inline stratum* get_stratum(
     result = wr->geology.strata[i];
   }
   return result;
+}
+
+// Temperature influence on evaporation.
+static inline float temp_evap_influence(float temp) {
+  temp *= EVAPORATION_TEMP_SCALING;
+  temp = 0.5 + 0.6 * temp;
+  if (temp < 0) { temp = 0; }
+  return temp;
+}
+
+// Computes base evaporation for the given world region.
+static inline float evaporation(world_region *wr) {
+  float temp, elev, slope;
+  temp = temp_evap_influence(wr->climate.atmosphere.mean_temp);
+  if (wr->climate.water.body != NULL) {
+    return BASE_WATER_CLOUD_POTENTIAL * temp;
+    // TODO: depth/size-based differentials?
+  } else {
+    elev = (
+      (wr->mean_height - TR_HEIGHT_SEA_LEVEL)
+    /
+      (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL)
+    );
+    if (elev < 0) { elev = 0; }
+    elev *= elev;
+    slope = mani_slope(&(wr->gross_height));
+    if (slope > 1.5) { slope = 1.5; }
+    slope /= 1.5;
+    slope = pow(slope, 0.4);
+    return BASE_LAND_CLOUD_POTENTIAL * temp * (1 - elev) * (1 - slope);
+  }
 }
 
 /******************************

@@ -26,7 +26,11 @@
  *************/
 
 char const * const WORLD_MAP_FILE_BASE = "out/world_map.png";
+char const * const WORLD_MAP_FILE_TEMP = "out/world_map_temp.png";
 char const * const WORLD_MAP_FILE_WIND = "out/world_map_wind.png";
+char const * const WORLD_MAP_FILE_EVAP = "out/world_map_evaporation.png";
+char const * const WORLD_MAP_FILE_CLOUDS = "out/world_map_clouds.png";
+char const * const WORLD_MAP_FILE_PQ = "out/world_map_pq.png";
 char const * const WORLD_MAP_FILE_RAIN = "out/world_map_rain.png";
 
 /***********
@@ -255,99 +259,7 @@ void _iter_fill_lake_site(void *v_wr, void *v_seed) {
   }
 }
 
-// Computes base evaporation for the given world region.
-static inline float _base_evap(world_region *wr) {
-  float temp, elev, slope;
-  temp = EVAPORATION_TEMP_SCALING * wr->climate.atmosphere.mean_temp;
-  temp = 0.7 + 0.4 * temp;
-  if (temp < 0) {
-    temp = 0;
-  }
-  if (wr->climate.water.body != NULL) {
-    return BASE_WATER_CLOUD_POTENTIAL * temp;
-    // TODO: depth/size-based differentials?
-  } else {
-    elev = (
-      (wr->mean_height - TR_HEIGHT_SEA_LEVEL)
-    /
-      (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL)
-    );
-    if (elev < 0) { elev = 0; }
-    elev *= elev;
-    slope = mani_slope(&(wr->gross_height));
-    if (slope > 1.5) { slope = 1.5; }
-    slope /= 1.5;
-    slope = pow(slope, 0.8);
-    return BASE_LAND_CLOUD_POTENTIAL * temp * (1 - elev) * (1 - slope);
-  }
-}
-
 // Simulates cloud movement to compute precipitation (cloud_potential) values.
-/* The averaging method
-static inline void _water_sim_step(world_region *wr) {
-  world_region *neighbor;
-  world_map_pos iter;
-  size_t i = 0;
-  float nbdir, nbwind, nbwindstr;
-  float avg = 0, divisor = 9.0;
-  float base_evap;
-  // Iterate over our neighbors:
-  for (iter.x = wr->pos.x - 1; iter.x <= wr->pos.x + 1; iter.x += 1) {
-    for (iter.y = wr->pos.y - 1; iter.y <= wr->pos.y + 1; iter.y += 1) {
-      neighbor = get_world_region(wr->world, &iter); // might be NULL
-      i += 1;
-      if (neighbor == NULL) {
-        divisor -= 1.0;
-        continue;
-      }
-      if (wr == neighbor) {
-        // Our own previous cloud potential is reduced by precipitation:
-        avg += (
-          wr->climate.atmosphere.cloud_potential
-        *
-          (1 - wr->climate.atmosphere.precipitation_quotient)
-        );
-      } else {
-        // Direction from our neighbor to us:
-        nbdir = atan2(
-          wr->pos.y - neighbor->pos.y,
-          wr->pos.x - neighbor->pos.x
-        );
-        // Our neighbor's wind direction:
-        nbwind = (
-          1 + cosf(neighbor->climate.atmosphere.wind_direction - nbdir)
-        ) / 2.0;
-        // Our neighbor's wind strength:
-        nbwindstr = sqrtf(
-          neighbor->climate.atmosphere.wind_strength / WIND_UPPER_STRENGTH
-        );
-        if (nbwindstr > 1.0) {
-          nbwindstr = 1.0;
-        }
-        nbwind = nbwindstr * nbwind + (1 - nbwindstr) * 1.0;
-        // Add in our neighbor's cloud potential:
-        avg += nbwind * neighbor->climate.atmosphere.cloud_potential;
-      }
-    }
-  }
-  // Divide to get a local "weighted average:"
-  avg /= divisor;
-
-  // Recharge based on evaporation:
-  base_evap = _base_evap(wr);
-  if (avg < base_evap) {
-    wr->climate.atmosphere.cloud_potential = (
-      CLOUD_RECHARGE_RATE * base_evap
-    +
-      (1 - CLOUD_RECHARGE_RATE) * avg
-    );
-  } else {
-    wr->climate.atmosphere.cloud_potential = avg;
-  }
-}
-// */
-
-//* The cloud-pushing method
 static inline void _water_sim_step(world_region *wr) {
   world_region *neighbors[9];
   world_region *neighbor;
@@ -367,8 +279,6 @@ static inline void _water_sim_step(world_region *wr) {
         nbweights[i] = 1 - windstr;
         // focus on moving clouds around:
         nbweights[i] *= nbweights[i];
-      } else if (neighbors[i] == NULL) {
-        nbweights[i] = 0;
       } else {
         // Direction to our neighbor:
         nbdir = atan2(
@@ -379,23 +289,44 @@ static inline void _water_sim_step(world_region *wr) {
         nbwind = (
           1 + cosf(wr->climate.atmosphere.wind_direction - nbdir)
         ) / 2.0;
-        nbwind *= nbwind; // tighten the envelope a bit
-        nbwind *= WIND_FOCUS;
-        // Our neighbor's elevation with respect to us:
-        nbelev = neighbors[i]->mean_height - wr->mean_height;
-        // Convert to a slope:
-        nbelev /= (float) (WORLD_REGION_BLOCKS);
-        // truncate:
-        if (nbelev < -1.5) {
-          nbelev = -1.5;
-        } else if (nbelev > 1.5) {
-          nbelev = 1.5;
-        }
-        nbelev = (1.5 + nbelev) * WIND_ELEVATION_FORCING;
-        if (wr->mean_height < TR_HEIGHT_SEA_LEVEL) {
+        nbwind = pow(nbwind, WIND_FOCUS_EXP); // tighten the envelope a bit
+        if (neighbors[i] != NULL) {
+          // Our neighbor's elevation with respect to us:
+          nbelev = neighbors[i]->mean_height - wr->mean_height;
+          // Convert to a slope:
+          nbelev /= (float) (WORLD_REGION_BLOCKS);
+          // truncate:
+          if (nbelev < -1.5) {
+            nbelev = -1.5;
+          } else if (nbelev > 1.5) {
+            nbelev = 1.5;
+          }
+          nbelev = (1.5 + nbelev) * WIND_ELEVATION_FORCING;
+          if (wr->mean_height < TR_HEIGHT_SEA_LEVEL) {
+            nbelev = 1.0;
+          }
+        } else {
+          // out-of-bounds neighbors are considered to have an equal elevation
           nbelev = 1.0;
+          // if our wind is blowing away from an out-of-bounds neighbor, we
+          // want to grab some extra cloud as if they were sending some our way
+          //*
+          wr->climate.atmosphere.next_cloud_potential += (
+            (1 - nbwind)
+          * 
+            windstr
+          *
+            temp_evap_influence(wr->climate.atmosphere.mean_temp)
+          *
+            EDGE_CLOUD_POTENTIAL
+          );
         }
-        nbweights[i] = windstr * nbwind * nbelev;
+        nbwind *= WIND_FOCUS;
+        nbweights[i] = nbelev * (
+          windstr * nbwind
+        +
+          (1 - windstr) * CALM_CLOUD_DIFFUSION_RATE
+        );
       }
       wtotal += nbweights[i];
       i += 1;
@@ -416,12 +347,11 @@ static inline void _water_sim_step(world_region *wr) {
     }
   }
 }
-// */
 
 // Water simulation next-step adjustment: flips states and handles
 // precipitation and evaporation.
 static inline void _water_sim_next(world_region *wr) {
-  float evap = _base_evap(wr);
+  float evap = evaporation(wr);
   // Flip states:
   wr->climate.atmosphere.cloud_potential =
     wr->climate.atmosphere.next_cloud_potential;
@@ -430,6 +360,13 @@ static inline void _water_sim_next(world_region *wr) {
   // DEBUG:
   // wr->climate.atmosphere.cloud_potential *= 0.95;
   //*
+  if (
+    1 - wr->climate.atmosphere.precipitation_quotient > 1
+  ||
+    1 - wr->climate.atmosphere.precipitation_quotient < 0
+  ) {
+    printf("Bad pq: %.3f\n", wr->climate.atmosphere.precipitation_quotient);
+  }
   wr->climate.atmosphere.cloud_potential *=
     1 - wr->climate.atmosphere.precipitation_quotient;
   // */
@@ -492,24 +429,42 @@ void setup_worldgen(ptrdiff_t seed) {
   generate_hydrology(THE_WORLD);
   printf("  ...generating climate...\n");
   generate_climate(THE_WORLD);
-  printf(
-    "  ...writing world map tos '%s,' '%s,' and '%s'...\n",
-    WORLD_MAP_FILE_BASE,
-    WORLD_MAP_FILE_WIND,
-    WORLD_MAP_FILE_RAIN
-  );
+  printf("  ...writing world maps...\n");
   texture *base_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
+  texture *temp_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
   texture *wind_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
+  texture *evap_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
+  texture *cloud_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
+  texture *pq_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
   texture *rain_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
   render_map_layer(THE_WORLD, base_map, &ly_terrain_height);
+  render_map_layer(THE_WORLD, temp_map, &ly_temperature);
   render_map_layer(THE_WORLD, wind_map, &ly_terrain_height);
   render_map_vectors(THE_WORLD, wind_map, PX_BLACK,PX_WHITE, &vly_wind_vectors);
+  render_map_layer(THE_WORLD, evap_map, &ly_evaporation);
+  render_map_layer(THE_WORLD, cloud_map, &ly_cloud_cover);
+  render_map_layer(THE_WORLD, pq_map, &ly_precipitation_quotient);
   render_map_layer(THE_WORLD, rain_map, &ly_precipitation);
   write_texture_to_png(base_map, WORLD_MAP_FILE_BASE);
+  printf("    ...elevation...\n");
+  write_texture_to_png(temp_map, WORLD_MAP_FILE_TEMP);
+  printf("    ...temperature...\n");
   write_texture_to_png(wind_map, WORLD_MAP_FILE_WIND);
+  printf("    ...wind...\n");
+  write_texture_to_png(evap_map, WORLD_MAP_FILE_EVAP);
+  printf("    ...evaporation...\n");
+  write_texture_to_png(cloud_map, WORLD_MAP_FILE_CLOUDS);
+  printf("    ...clouds...\n");
+  write_texture_to_png(pq_map, WORLD_MAP_FILE_PQ);
+  printf("    ...precipitation_quotient...\n");
   write_texture_to_png(rain_map, WORLD_MAP_FILE_RAIN);
+  printf("    ...precipitation...\n");
   cleanup_texture(base_map);
+  cleanup_texture(temp_map);
   cleanup_texture(wind_map);
+  cleanup_texture(evap_map);
+  cleanup_texture(cloud_map);
+  cleanup_texture(pq_map);
   cleanup_texture(rain_map);
 }
 
@@ -694,7 +649,7 @@ void generate_climate(world_map *wm) {
   size_t i;
   float lat, lon;
   float r, theta, r2, theta2;
-  float base_temp, elev, elev2, windstr, pq;
+  float base_temp, elev, windstr, pq;
   manifold_point winds_base, dst_x, dst_y;
 
   ptrdiff_t seed = prng(wm->seed) + 12810;
@@ -778,8 +733,7 @@ void generate_climate(world_map *wm) {
         (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL)
       );
       if (elev < 0) { elev = 0; }
-      elev2 = elev * elev;
-      base_temp += ELEVATION_TEMP_ADJUST * elev2;
+      base_temp += ELEVATION_TEMP_ADJUST * elev;
       // Reign-in ultra-cold temperatures:
       if (base_temp < ARCTIC_BASE_TEMP) {
         base_temp = ARCTIC_BASE_TEMP - sqrtf(ARCTIC_BASE_TEMP - base_temp);
@@ -804,13 +758,13 @@ void generate_climate(world_map *wm) {
         pq = OCEAN_PRECIPITATION_QUOTIENT;
       }
       // Straight elevation component:
-      pq += ELEVATION_PRECIPITATION_QUOTIENT * elev2 * elev;
+      pq += ELEVATION_PRECIPITATION_QUOTIENT * elev;
       pq /= 2.0; // average the effects
       if (pq > 1.0) { pq = 1.0; } // truncate into [0, 1]
       pq *= pq;
       wr->climate.atmosphere.precipitation_quotient = pq;
       // Set base cloud potentials:
-      wr->climate.atmosphere.cloud_potential = _base_evap(wr);
+      wr->climate.atmosphere.cloud_potential = evaporation(wr);
       wr->climate.atmosphere.next_cloud_potential = 0;
     }
   }

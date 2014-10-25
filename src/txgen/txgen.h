@@ -206,6 +206,9 @@ static inline pixel gradient_result(gradient const * const gr, float t) {
   } else {
     lower = fastfloor((gr->count - 1) * t);
     upper = fastceil((gr->count - 1) * t);
+    if (lower == upper) {
+      upper = lower + 1;
+    }
     f = ( ( (gr->count - 1) * t) - lower) / (upper - lower);
     return px_interp(gr->colors[lower], gr->colors[upper], f);
   }

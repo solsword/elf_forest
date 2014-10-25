@@ -85,8 +85,11 @@ typedef enum salinity_e salinity;
 
 #define ELEVATION_TEMP_ADJUST (-28.0)
 
-#define ARCTIC_BASE_TEMP (-20)
-#define EQUATOR_BASE_TEMP 30
+#define ARCTIC_BASE_TEMP (-20.0)
+#define EQUATOR_BASE_TEMP 30.0
+
+#define TEMP_HIGH 37.0
+#define TEMP_LOW (-30.0)
 
 // Cloud and rainfall parameters:
 #define OCEAN_PRECIPITATION_QUOTIENT 0.35
@@ -97,9 +100,20 @@ typedef enum salinity_e salinity;
 
 #define EVAPORATION_TEMP_SCALING (1.3/30.0)
 
+#define HUGE_CLOUD_POTENTIAL (\
+  34 *\
+  EVAPORATION_TEMP_SCALING *\
+  BASE_WATER_CLOUD_POTENTIAL\
+)
+
 #define CLOUD_RECHARGE_RATE 0.05
 
-#define WIND_FOCUS 4.5
+#define WIND_FOCUS_EXP 2.8
+#define WIND_FOCUS 9.5
+
+#define CALM_CLOUD_DIFFUSION_RATE 2.0
+
+#define EDGE_CLOUD_POTENTIAL 400.0
 
 #define WIND_ELEVATION_FORCING 2.0
 

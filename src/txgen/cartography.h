@@ -20,6 +20,8 @@ extern gradient const BW_GRADIENT;
 extern gradient const SEA_GRADIENT;
 extern gradient const LAND_GRADIENT;
 extern gradient const RAIN_GRADIENT;
+extern gradient const CLOUDS_GRADIENT;
+extern gradient const TEMPERATURE_GRADIENT;
 
 /********************
  * Inline Functions *
@@ -51,10 +53,13 @@ void render_map_vectors(
  * Layer Functions *
  *******************/
 
-// Draws land and water using blues, greens, yellows, and whites
+// Layer functions return a color for each world region. render_map_layer can
+// be used to draw an entire world map using colors from a particular layer.
 pixel ly_terrain_height(world_region *wr);
-
-// Draws precipitation using 
+pixel ly_temperature(world_region *wr);
+pixel ly_evaporation(world_region *wr);
+pixel ly_cloud_cover(world_region *wr);
+pixel ly_precipitation_quotient(world_region *wr);
 pixel ly_precipitation(world_region *wr);
 
 // Draws wind vectors

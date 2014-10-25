@@ -43,7 +43,7 @@ gradient const SEA_GRADIENT = {
     0xffffbb88,
     0xffffcc88, // 16
   },
-  .oob_below = 0xff000000, // black
+  .oob_below = 0xff0000ff, // red
   .oob_above = 0xff8800ff, // pink
 };
 
@@ -75,27 +75,56 @@ gradient const LAND_GRADIENT = {
 };
 
 gradient const RAIN_GRADIENT = {
-  .count = 16,
+  .count = 24,
   .colors = {
-    0xff6688ff, // 1
-    0xff77aaff,
-    0xff88ccff,
-    0xff99ffff, // 4
-    0xff77ffee,
-    0xff66ffdd,
-    0xff55eecc,
-    0xff44ddaa, // 8
+    0xff88ddff, // 1
+    0xff77dddd,
+    0xff66cccc,
+    0xff55ccbb, // 4
     0xff44cc99,
-    0xff44bb77,
-    0xff339955,
-    0xff338833, // 12
-    0xff227711,
-    0xff116600, // last yellow
-    0xff005500,
-    0xff004400, // 16
+    0xff33cc77,
+    0xff22c466,
+    0xff22bb55, // 8
+    0xff22b444,
+    0xff22aa33,
+    0xff22a428,
+    0xff229922, // 12
+    0xff229018,
+    0xff228811,
+    0xff228808,
+    0xff228800, // 16
+    0xff228000,
+    0xff227700,
+    0xff287000,
+    0xff337000, // 20
+    0xff226600,
+    0xff115500,
+    0xff004400,
+    0xff004400, // 24
   },
   .oob_below = 0xff0088ff, // orange
   .oob_above = 0xffff0088, // purple
+};
+
+gradient const CLOUDS_GRADIENT = {
+  .count = 2,
+  .colors = {
+    0xff883300, // deep blue
+    0xffffffff, // "cloud" white
+  },
+  .oob_below = 0xff000000, // black
+  .oob_above = 0xff888888, // gray
+};
+
+gradient const TEMPERATURE_GRADIENT = {
+  .count = 3,
+  .colors = {
+    0xff000000, // black
+    0xff777777, // grey
+    0xff77ffff, // light yellow
+  },
+  .oob_below = 0xff000000, // black
+  .oob_above = 0xff888888, // gray
 };
 
 /*************
@@ -177,8 +206,8 @@ pixel ly_terrain_height(world_region *wr) {
     /
       (float) (TR_HEIGHT_SEA_LEVEL)
     );
-    if (h <= 0) {
-      h = 0.00001; // TODO: Fix this!
+    if (h < 0) {
+      h = 0;
     }
     h = 1 - h;
     return gradient_result(&SEA_GRADIENT, h);
@@ -193,9 +222,34 @@ pixel ly_terrain_height(world_region *wr) {
   }
 }
 
+pixel ly_temperature(world_region *wr) {
+  float t = (
+    (wr->climate.atmosphere.mean_temp - TEMP_LOW)
+  /
+    (TEMP_HIGH - TEMP_LOW)
+  );
+  return gradient_result(&TEMPERATURE_GRADIENT, t);
+}
+
+pixel ly_evaporation(world_region *wr) {
+  float t = evaporation(wr) / HUGE_CLOUD_POTENTIAL;
+  return gradient_result(&CLOUDS_GRADIENT, t);
+}
+
+pixel ly_cloud_cover(world_region *wr) {
+  float t = wr->climate.atmosphere.cloud_potential / HUGE_CLOUD_POTENTIAL;
+  return gradient_result(&CLOUDS_GRADIENT, t);
+}
+
+pixel ly_precipitation_quotient(world_region *wr) {
+  float t = wr->climate.atmosphere.precipitation_quotient;
+  return gradient_result(&BW_GRADIENT, t);
+}
+
 pixel ly_precipitation(world_region *wr) {
-  float t = wr->climate.atmosphere.cloud_potential / BASE_WATER_CLOUD_POTENTIAL;
+  float t = wr->climate.atmosphere.cloud_potential;
   t *= wr->climate.atmosphere.precipitation_quotient;
+  t /= HUGE_CLOUD_POTENTIAL;
   t *= 12; // TODO: GET RID OF THIS!
   return gradient_result(&RAIN_GRADIENT, t);
 }
