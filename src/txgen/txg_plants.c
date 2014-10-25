@@ -134,23 +134,30 @@ void fltr_branches(texture *tx, void const * const fargs) {
   grmap.colors[2] = bfargs->outer_color;
   grmap.colors[3] = PX_EMPTY;
   if (bfargs->rough) {
-    grmap.thresholds[0] = 0.43;
-    grmap.thresholds[1] = 0.61;
-    grmap.thresholds[2] = 0.72;
+    grmap.thresholds[0] = 0.63;
+    grmap.thresholds[1] = 0.76;
+    grmap.thresholds[2] = 0.81;
   } else {
-    grmap.thresholds[0] = 0.08;
-    grmap.thresholds[1] = 0.14;
-    grmap.thresholds[2] = 0.19;
+    // grmap.thresholds[0] = 0.011;
+    // grmap.thresholds[1] = 0.019;
+    // grmap.thresholds[2] = 0.031;
+    grmap.thresholds[0] = 0.0025;
+    grmap.thresholds[1] = 0.009;
+    grmap.thresholds[2] = 0.016;
   }
   grmap.thresholds[3] = 1.0;
 #ifdef DEBUG
-  // Use orange for out-of-range noise results:
+  // Use orange for out-of-range noise results.
   grmap.colors[4] = 0xff0088ff;
-  grmap.thresholds[4] = 1000.0;
+#else
+  // Ignore out-of-range results (make them transparent).
+  grmap.colors[4] = 0xff000000;
 #endif
+  grmap.thresholds[4] = 1000.0;
   for (col = 0; col < tx->width; col += 1) {
     for (row = 0; row < tx->height; row += 1) {
       // TODO: properly wrapped simplex noise.
+      // TODO: wrap w/ squash taken into account
       dx = tiled_func(
         &sxnoise_2d,
         col * bfargs->dscale,
@@ -175,16 +182,18 @@ void fltr_branches(texture *tx, void const * const fargs) {
         &dontcare, &dontcare,
         (!bfargs->rough) * WORLEY_FLAG_INCLUDE_NEXTBEST
       );
-      noise = pow(noise, 1.6);
+      if (noise > 1) { noise = 1; }
       if (bfargs->rough) {
         noise = 1 - noise;
-        // TODO: a sigmoid for organizing branches
+        noise = pow(noise, 2.6);
+      } else {
+        noise = pow(noise, 1.6);
+        noise = smooth(noise, 2.3, 0.04);
       }
       noise *= (2 - bfargs->width);
-      if (noise > 1) { noise = 1; }
       tx_set_px(
         tx,
-        gradient_map_result(&grmap, noise),
+        gradient_map_result_sharp(&grmap, noise),
         col,
         row
       );

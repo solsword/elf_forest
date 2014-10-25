@@ -47,7 +47,7 @@ typedef struct gradient_map_s gradient_map;
 // A gradient is simpler than a gradient map: it just contains up to
 // GRADIENT_MAX_SIZE colors, and implicitly maps them evenly to the range
 // [0, 1]. It also has colors for out-of-bounds both below and above the
-// gradient. Unlike a gradient map, it interpolates between adjacent colors.
+// gradient.
 struct gradient_s;
 typedef struct gradient_s gradient;
 
@@ -80,7 +80,7 @@ extern pixel const GRAMMAR_KEYS[N_GRAMMAR_KEYS];
 #define GRAMMAR_KEY_4 0xff80fffe
 #define GRAMMAR_KEY_5 0xfffe8080
 
-#define GRADIENT_MAP_MAX_SIZE 16
+#define GRADIENT_MAP_MAX_SIZE 32
 
 #define GRADIENT_MAX_SIZE 64
 
@@ -182,20 +182,42 @@ struct worley_filter_args_s {
  * Inline Functions *
  ********************/
 
-static inline pixel gradient_map_result(gradient_map *grmap, float in) {
+// Returns an interpolation between the two nearest colors in the given
+// gradient map.
+static inline pixel gradient_map_result(gradient_map *grmap, float t) {
+  size_t i = 0, j;
+  float f;
+  for (i = 0; i < GRADIENT_MAP_MAX_SIZE - 1; ++i) {
+    if (t <= grmap->thresholds[i]) {
+      if (i > 0) {
+        j = i - 1;
+        f = (
+          (t - grmap->thresholds[j])
+        /
+          (grmap->thresholds[i] - grmap->thresholds[j])
+        );
+        return px_interp(grmap->colors[j], grmap->colors[i], f);
+      } else {
+        return grmap->colors[i];
+      }
+    }
+  }
+  return grmap->colors[i];
+}
+
+// Returns the first color in the gradient map that has a threshold higher than
+// the given value.
+static inline pixel gradient_map_result_sharp(gradient_map *grmap, float t) {
   size_t i = 0;
   for (i = 0; i < GRADIENT_MAP_MAX_SIZE - 1; ++i) {
-    if (in <= grmap->thresholds[i]) {
+    if (t <= grmap->thresholds[i]) {
       return grmap->colors[i];
     }
   }
   return grmap->colors[i];
 }
 
-static inline pixel px_gradient_map_result(gradient_map *grmap, pixel in) {
-  return gradient_map_result(grmap, px_luma_f(in));
-}
-
+// Returns a color from the given gradient.
 static inline pixel gradient_result(gradient const * const gr, float t) {
   float f;
   size_t lower, upper;
