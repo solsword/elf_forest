@@ -255,6 +255,7 @@ static inline pixel px_interp(pixel from, pixel to, float interp) {
   px_set_red(&result, interp * px_red(to) + (1 - interp) * px_red(from));
   px_set_green(&result, interp * px_green(to) + (1 - interp) * px_green(from));
   px_set_blue(&result, interp * px_blue(to) + (1 - interp) * px_blue(from));
+  px_set_alpha(&result, interp * px_alpha(to) + (1 - interp) * px_alpha(from));
   return result;
 }
 

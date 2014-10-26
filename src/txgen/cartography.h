@@ -23,6 +23,8 @@ extern gradient const RAIN_GRADIENT;
 extern gradient const CLOUDS_GRADIENT;
 extern gradient const TEMPERATURE_GRADIENT;
 
+extern gradient_map const GEOREGIONS_GRADIENT;
+
 /********************
  * Inline Functions *
  ********************/
@@ -56,6 +58,7 @@ void render_map_vectors(
 // Layer functions return a color for each world region. render_map_layer can
 // be used to draw an entire world map using colors from a particular layer.
 pixel ly_terrain_height(world_region *wr);
+pixel ly_georegions(world_region *wr);
 pixel ly_temperature(world_region *wr);
 pixel ly_evaporation(world_region *wr);
 pixel ly_cloud_cover(world_region *wr);

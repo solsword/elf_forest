@@ -184,7 +184,10 @@ struct worley_filter_args_s {
 
 // Returns an interpolation between the two nearest colors in the given
 // gradient map.
-static inline pixel gradient_map_result(gradient_map *grmap, float t) {
+static inline pixel gradient_map_result(
+  gradient_map const * const grmap,
+  float t
+) {
   size_t i = 0, j;
   float f;
   for (i = 0; i < GRADIENT_MAP_MAX_SIZE - 1; ++i) {
@@ -207,7 +210,10 @@ static inline pixel gradient_map_result(gradient_map *grmap, float t) {
 
 // Returns the first color in the gradient map that has a threshold higher than
 // the given value.
-static inline pixel gradient_map_result_sharp(gradient_map *grmap, float t) {
+static inline pixel gradient_map_result_sharp(
+  gradient_map const * const grmap,
+  float t
+) {
   size_t i = 0;
   for (i = 0; i < GRADIENT_MAP_MAX_SIZE - 1; ++i) {
     if (t <= grmap->thresholds[i]) {

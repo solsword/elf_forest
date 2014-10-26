@@ -252,21 +252,6 @@ static inline ptrdiff_t mixed_hash_1d(ptrdiff_t x) {
       ((x >> HASH_BITS) & HASH_MASK)
     ]
   ];
-// */
-/*
-  return HASH[
-    (x & HASH_MASK) +
-    HASH[
-      ((x >> HASH_BITS) & HASH_MASK) +
-      HASH[
-        ((x >> (HASH_BITS*2)) & HASH_MASK) +
-        HASH[
-          (x >> (HASH_BITS*3)) & HASH_MASK
-        ]
-      ]
-    ]
-  ];
-// */
 }
 
 // Returns a floating point value in [0, 1] rather than an integer in

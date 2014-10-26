@@ -8,7 +8,6 @@
 
 #include "noise/noise.h"
 #include "world/blocks.h"
-#include "jobs/jobs.h"
 #include "datatypes/list.h"
 
 #include "terrain.h"
@@ -68,6 +67,9 @@ typedef struct world_map_s world_map;
 // 128*108 = 13824 regions
 #define WORLD_WIDTH 128
 #define WORLD_HEIGHT 108
+// 96*96 = 9216 regions
+//#define WORLD_WIDTH 96
+//#define WORLD_HEIGHT 96
 // 32*32 = 1024 regions
 //#define WORLD_WIDTH 32
 //#define WORLD_HEIGHT 32
@@ -149,7 +151,7 @@ extern char const * const WORLD_MAP_FILE_RAIN;
 #define STRATA_FRACTION_NOISE_SCALE (1.0 / 40.0)
 
 // How long the water cycle should be simulated:
-#define WATER_CYCLE_SIM_STEPS 256
+#define WATER_CYCLE_SIM_STEPS 64
 #define WATER_CYCLE_FINISH_STEPS 1
 
 /***********

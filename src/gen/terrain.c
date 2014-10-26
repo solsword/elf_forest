@@ -15,9 +15,7 @@
  * Globals *
  ***********/
 
-float TR_NOISE_SALT = 7300845;
-
-float TR_TERRAIN_HEIGHT_AMP = 1.0;
+ptrdiff_t TR_NOISE_SALT = 7300845;
 
 char const * const TR_REGION_NAMES[] = {
   "ocean depths",
@@ -41,7 +39,7 @@ omp_lock_t TERRAIN_HEIGHT_LOCK;
 
 void setup_terrain_gen(ptrdiff_t seed) {
   omp_init_lock(&TERRAIN_HEIGHT_LOCK);
-  TR_NOISE_SALT = prng(seed + 719102);
+  TR_NOISE_SALT = prng(prng(seed) + 719102);
 }
 
 void compute_terrain_height(

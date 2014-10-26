@@ -17,7 +17,7 @@
 
 // Basic frequencies:
 #define   TR_FREQUENCY_CONTINENTS 0.000002 // 15625-chunk ~= 330 km features
-#define    TR_FREQUENCY_PGEOFORMS 0.000003 // ???
+#define    TR_FREQUENCY_PGEOFORMS 0.0000025 // ???
 #define    TR_FREQUENCY_SGEOFORMS 0.000004 // 7812.5-chunk ~= 170 km features
 #define    TR_FREQUENCY_GEODETAIL 0.00002 // 1562.5-chunk ~= 33 km features
 #define    TR_FREQUENCY_MOUNTAINS 0.0001 // 312.5-chunk ~= 6.7 km features
@@ -29,7 +29,7 @@
 
 // Distortion frequencies:
 #define   TR_DFQ_CONTINENTS 0.0000005 // 1/4 of base
-#define    TR_DFQ_PGEOFORMS 0.00000075 // 1/4 of base
+#define    TR_DFQ_PGEOFORMS 0.000000625 // 1/4 of base
 #define    TR_DFQ_SGEOFORMS 0.0000008 // 1/5 of base
 #define    TR_DFQ_GEODETAIL 0.000004 // 1/5 of base
 #define    TR_DFQ_MOUNTAINS 0.00002 // 1/5 of base
@@ -41,7 +41,7 @@
 
 // Distortion strengths:
 #define   TR_DS_CONTINENTS 1500000.0 // ~1.5 periods
-#define    TR_DS_PGEOFORMS 900000.0 // ???
+#define    TR_DS_PGEOFORMS 800000.0 // ???
 #define    TR_DS_SGEOFORMS 400000.0 // 1.6 periods
 #define    TR_DS_GEODETAIL 37500.0 // ~3/4 period
 #define    TR_DS_MOUNTAINS 5000.0 // ~1/2 period
@@ -55,11 +55,31 @@
 // Geoform parameters:
 
 // Noise->geoform mapping (see compute_geoforms):
-#define       TR_GEOMAP_SHELF 0.32
-#define       TR_GEOMAP_SHORE 0.42
+/*
+#define       TR_GEOMAP_SHELF 0.38
+#define       TR_GEOMAP_SHORE 0.47
 #define      TR_GEOMAP_PLAINS 0.58
-#define       TR_GEOMAP_HILLS 0.66
-#define   TR_GEOMAP_MOUNTAINS 0.71
+#define       TR_GEOMAP_HILLS 0.73
+#define   TR_GEOMAP_MOUNTAINS 0.80
+*/
+#define       TR_GEOMAP_SHELF 0.38
+#define       TR_GEOMAP_SHORE 0.46
+#define      TR_GEOMAP_PLAINS 0.55
+#define       TR_GEOMAP_HILLS 0.68
+#define   TR_GEOMAP_MOUNTAINS 0.75
+
+#define TR_GMS_DEPTHS (-4.1)
+#define TR_GMC_DEPTHS 0.4
+#define TR_GMS_SHELF (-1.8)
+#define TR_GMC_SHELF 0.4
+#define TR_GMS_PLAINS (-1.4)
+#define TR_GMC_PLAINS 0.5
+#define TR_GMS_HILLS 1.9
+#define TR_GMC_HILLS 0.35
+#define TR_GMS_HIGHLANDS (-1.3)
+#define TR_GMC_HIGHLANDS 0.7
+#define TR_GMS_MOUNTAINS 1.2
+#define TR_GMC_MOUNTAINS 1.0
 
 // Geoform heights:
 #define        TR_HEIGHT_OCEAN_DEPTHS 1500
@@ -72,9 +92,9 @@
 
 // Low-frequency terrain noise contributions:
 #define   TR_SHARE_CONTINENTS 2.8
-#define    TR_SHARE_PGEOFORMS 2.2
-#define    TR_SHARE_SGEOFORMS 1.7
-#define   TR_SHARE_GEODETAILS 1.3
+#define    TR_SHARE_PGEOFORMS 1.7
+#define    TR_SHARE_SGEOFORMS 1.6
+#define   TR_SHARE_GEODETAILS 1.2
 
 #define TR_TOTAL_SHARES (\
   TR_SHARE_CONTINENTS +\
@@ -135,10 +155,7 @@ typedef enum terrain_region_e terrain_region;
  ***********/
 
 // A base salt for terrain noise:
-extern float TR_NOISE_SALT;
-
-// Amplification factor for terrain height:
-extern float TR_TERRAIN_HEIGHT_AMP;
+extern ptrdiff_t TR_NOISE_SALT;
 
 // An array of names for each terrain region:
 extern char const * const TR_REGION_NAMES[];
@@ -193,7 +210,7 @@ static inline void simplex_component(
   ); *salt = prng(*salt);
   // DEBUG:
   // printf("simp-comp-base x y freq: %.3f %.3f %.8f\n", x, y, frequency);
-  // printf("simp-comp-base salt: %zu\n", *salt);
+  // printf("simp-comp-base salt: %td\n", *salt);
   // printf(
   //   "simp-comp-base: %.3f :: %.4f, %.4f\n",
   //   result->z,
@@ -318,7 +335,7 @@ static inline void get_noise(
   );
   /*
   printf(
-    "conts-trig: %zu, %zu :: %.3f, %.3f\n",
+    "conts-trig: %td, %td :: %.3f, %.3f\n",
     x, y,
     dst_x.z, dst_y.z
   );
@@ -388,17 +405,28 @@ static inline void get_noise(
     &dst_x, &dst_y
   );
 
+    // trig component
+  trig_component(
+    primary_geoforms,
+    x + 0.7 * dst_y.z, y - 0.7 * dst_x.z,
+    1 + 0.7 * dst_y.dx, 0.7 * dst_y.dy,
+    0.7 * dst_x.dx, 1 - 0.7 * dst_x.dy,
+    TR_FREQUENCY_PGEOFORMS * 1.4,
+    salt
+  );
+
     // simplex noise component
   simplex_component(
-    primary_geoforms,
+    &temp,
     x + dst_x.z,
     y + dst_y.z,
     1 + dst_x.dx, dst_x.dy,
     dst_y.dx, 1 + dst_y.dy,
-    TR_FREQUENCY_PGEOFORMS * 0.7,
+    TR_FREQUENCY_PGEOFORMS,
     salt
   );
-  // TODO: is it really okay to ignore the effects of off-axis distortion?
+  mani_add(primary_geoforms, &temp);
+
     // worley noise component
   worley_component(
     &temp,
@@ -412,10 +440,10 @@ static inline void get_noise(
   );
   mani_add(primary_geoforms, &temp);
 
-  mani_scale_const(primary_geoforms, 0.5);
+  mani_scale_const(primary_geoforms, (1.0/3.0));
   mani_offset_const(primary_geoforms, 1);
   mani_scale_const(primary_geoforms, 0.5);
-  mani_smooth(primary_geoforms, 3.1, 0.5);
+  mani_smooth(primary_geoforms, 3.1, 0.35);
   mani_multiply(primary_geoforms, primary_geoforms);
   mani_scale_const(primary_geoforms, 2.0);
   mani_offset_const(primary_geoforms, -1);
@@ -864,7 +892,7 @@ static inline void geomap(
     *region = TR_REGION_DEPTHS;
     geomap_segment(
       result, base, interp,
-      -2.3, 0.6,
+      TR_GMS_DEPTHS, TR_GMC_DEPTHS,
       0, TR_GEOMAP_SHELF,
       TR_HEIGHT_OCEAN_DEPTHS, TR_HEIGHT_CONTINENTAL_SHELF
     );
@@ -872,7 +900,7 @@ static inline void geomap(
     *region = TR_REGION_SHELF;
     geomap_segment(
       result, base, interp,
-      -2.1, 0.2,
+      TR_GMS_SHELF, TR_GMC_SHELF,
       TR_GEOMAP_SHELF, TR_GEOMAP_SHORE,
       TR_HEIGHT_CONTINENTAL_SHELF, TR_HEIGHT_SEA_LEVEL
     );
@@ -881,7 +909,7 @@ static inline void geomap(
     *region = TR_REGION_PLAINS;
     geomap_segment(
       result, base, interp,
-      -2, 0.5,
+      TR_GMS_PLAINS, TR_GMC_PLAINS,
       TR_GEOMAP_SHORE, TR_GEOMAP_PLAINS,
       TR_HEIGHT_SEA_LEVEL, TR_HEIGHT_COASTAL_PLAINS
     );
@@ -889,7 +917,7 @@ static inline void geomap(
     *region = TR_REGION_HILLS;
     geomap_segment(
       result, base, interp,
-      1.9, 0.35,
+      TR_GMS_HILLS, TR_GMC_HILLS,
       TR_GEOMAP_PLAINS, TR_GEOMAP_HILLS,
       TR_HEIGHT_COASTAL_PLAINS, TR_HEIGHT_HIGHLANDS
     );
@@ -897,7 +925,7 @@ static inline void geomap(
     *region = TR_REGION_HIGHLANDS;
     geomap_segment(
       result, base, interp,
-      1.8, 0.5,
+      TR_GMS_HIGHLANDS, TR_GMC_HIGHLANDS,
       TR_GEOMAP_HILLS, TR_GEOMAP_MOUNTAINS,
       TR_HEIGHT_HIGHLANDS, TR_HEIGHT_MOUNTAIN_BASES
     );
@@ -905,7 +933,7 @@ static inline void geomap(
     *region = TR_REGION_MOUNTAINS;
     geomap_segment(
       result, base, interp,
-      2.1, 1.0,
+      TR_GMS_MOUNTAINS, TR_GMC_MOUNTAINS,
       TR_GEOMAP_MOUNTAINS, 1.0,
       TR_HEIGHT_MOUNTAIN_BASES, TR_HEIGHT_MOUNTAIN_TOPS
     );
@@ -1032,7 +1060,10 @@ static inline void compute_base_geoforms(
   mani_offset_const(base, 1);
   mani_scale_const(base, 0.4999999); // squash into [0, 1]
 
-  mani_smooth(base, 1.8, 0.5); // spread things out
+  // spread things out:
+  mani_smooth(base, 0.8, TR_GEOMAP_MOUNTAINS);
+  mani_smooth(base, 1.2, TR_GEOMAP_SHORE);
+  //mani_smooth(base, -1.4, TR_GEOMAP_SHELF);
 
   // DEBUG:
   // printf("base: %.8f :: %.8f %.8f\n", base->z, base->dx, base->dy);

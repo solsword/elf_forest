@@ -127,6 +127,33 @@ gradient const TEMPERATURE_GRADIENT = {
   .oob_above = 0xff888888, // gray
 };
 
+gradient_map const GEOREGIONS_GRADIENT = {
+  .colors = {
+    0xff440000, // navy
+    0xff991100, // dark blue
+    0xffffaaaa, // light blue
+    0xff006600, // dark green (only visible if smooth is used)
+    0xff229911, // mid green
+    0xff33cc44, // light green
+    0xff99ffff, // light yellow
+    0xffcccccc, // gray
+    0xffffffff, // white
+    0xff0000ff  // red
+  },
+  .thresholds = {
+    TR_HEIGHT_OCEAN_DEPTHS,       // navy
+    TR_HEIGHT_CONTINENTAL_SHELF,  // dark blue
+    TR_HEIGHT_SEA_LEVEL,          // light blue
+    TR_HEIGHT_SEA_LEVEL + 1,      // dark green (only visible if smooth is used)
+    TR_HEIGHT_COASTAL_PLAINS,     // mid green
+    TR_HEIGHT_HIGHLANDS,          // light green
+    TR_HEIGHT_MOUNTAIN_BASES,     // light yellow
+    TR_HEIGHT_MOUNTAIN_TOPS,      // gray
+    TR_MAX_HEIGHT,                // white
+    2 * TR_MAX_HEIGHT             // red
+  }
+};
+
 /*************
  * Functions *
  *************/
@@ -218,8 +245,14 @@ pixel ly_terrain_height(world_region *wr) {
     /
       (float) (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL)
     );
-    return gradient_result(&LAND_GRADIENT, h);
+    //return gradient_result(&LAND_GRADIENT, h);
+    // TODO: Clean this up!
+    return gradient_map_result(&GEOREGIONS_GRADIENT, wr->mean_height);
   }
+}
+
+pixel ly_georegions(world_region *wr) {
+  return gradient_map_result_sharp(&GEOREGIONS_GRADIENT, wr->mean_height);
 }
 
 pixel ly_temperature(world_region *wr) {
@@ -247,11 +280,16 @@ pixel ly_precipitation_quotient(world_region *wr) {
 }
 
 pixel ly_precipitation(world_region *wr) {
+  float t = wr->climate.atmosphere.total_precipitation;
+  t /= HUGE_CLOUD_POTENTIAL;
+  return gradient_result(&BW_GRADIENT, t);
+  /*
   float t = wr->climate.atmosphere.cloud_potential;
   t *= wr->climate.atmosphere.precipitation_quotient;
   t /= HUGE_CLOUD_POTENTIAL;
   t *= 12; // TODO: GET RID OF THIS!
   return gradient_result(&RAIN_GRADIENT, t);
+  */
 }
 
 void vly_wind_vectors(world_region *wr, float *r, float *theta) {

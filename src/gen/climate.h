@@ -16,11 +16,11 @@ typedef struct body_of_water_s body_of_water;
 struct hydrology_s;
 typedef struct hydrology_s hydrology;
 
-struct soil_composition_s;
-typedef struct soil_composition_s soil_composition;
-
 struct weather_s;
 typedef struct weather_s weather;
+
+struct soil_composition_s;
+typedef struct soil_composition_s soil_composition;
 
 /*********
  * Enums *
@@ -56,7 +56,7 @@ typedef enum salinity_e salinity;
 #define MIN_LAKE_SIZE 2
 #define MAX_LAKE_SIZE 320
 
-#define LAKE_PROBABILITY 0.4
+#define LAKE_PROBABILITY 0.15
 
 #define MIN_LAKE_DEPTH 18.0
 #define MAX_LAKE_DEPTH 250.0
@@ -92,7 +92,7 @@ typedef enum salinity_e salinity;
 #define TEMP_LOW (-30.0)
 
 // Cloud and rainfall parameters:
-#define OCEAN_PRECIPITATION_QUOTIENT 0.35
+#define OCEAN_PRECIPITATION_QUOTIENT 0.2
 #define ELEVATION_PRECIPITATION_QUOTIENT 0.4
 
 #define BASE_WATER_CLOUD_POTENTIAL 2500.0
@@ -106,14 +106,14 @@ typedef enum salinity_e salinity;
   BASE_WATER_CLOUD_POTENTIAL\
 )
 
-#define CLOUD_RECHARGE_RATE 0.05
+#define CLOUD_RECHARGE_RATE 0.03
 
 #define WIND_FOCUS_EXP 2.8
 #define WIND_FOCUS 9.5
 
 #define CALM_CLOUD_DIFFUSION_RATE 2.0
 
-#define EDGE_CLOUD_POTENTIAL 400.0
+#define EDGE_CLOUD_POTENTIAL 200.0
 
 #define WIND_ELEVATION_FORCING 2.0
 
@@ -204,6 +204,21 @@ struct hydrology_s {
   salinity salt; // the salinity of local groundwater
 };
 
+struct weather_s {
+  // TODO: wind chaos?
+  float wind_strength, wind_direction; // wind strength & direction
+  float mean_temp; // overall average temperature
+  float cloud_potential; // average annual precipitation potential in mm/year
+  float next_cloud_potential; // next iteration cloud potential
+  float precipitation_quotient; // How much of local clouds rains here
+  float total_precipitation; // summed precipitation during simulation
+  float next_total_precipitation; // next iteration precipitation
+  float rainfall[N_SEASONS]; // rainfall per season in mm/year
+  float temp_low[N_SEASONS]; // temperature low, mean and high throughout the
+  float temp_mean[N_SEASONS]; // day, in each season
+  float temp_high[N_SEASONS];
+};
+
 struct soil_composition_s {
   species base_dirt; // dirt (/sand/mud) species for normal soil
   block alt_dirt_blocks[MAX_ALT_DIRTS];
@@ -215,20 +230,6 @@ struct soil_composition_s {
   species alt_sand_species[MAX_ALT_SANDS];
   float alt_sand_strengths[MAX_ALT_SANDS];
   float alt_sand_hdeps[MAX_ALT_SANDS]; // height-dependence
-};
-
-struct weather_s {
-  // TODO: wind chaos?
-  float wind_strength, wind_direction; // wind strength & direction
-  float mean_temp; // overall average temperature
-  float cloud_potential; // average annual precipitation potential in mm/year
-  float next_cloud_potential; // next iteration cloud potential
-  float precipitation_quotient; // How much of local clouds rains here
-  float next_precipitation_quotient; // next iteration precipitation quotient
-  float rainfall[N_SEASONS]; // rainfall per season in mm/year
-  float temp_low[N_SEASONS]; // temperature low, mean and high throughout the
-  float temp_mean[N_SEASONS]; // day, in each season
-  float temp_high[N_SEASONS];
 };
 
 /******************************

@@ -198,8 +198,6 @@ static inline void mani_get_sxnoise_2d(
     salt,
     &(point->dx), &(point->dy)
   );
-  // DEBUG:
-  // printf("mnoise: %.3f %.3f\n", point->z, sxnoise_2d(x, y, salt));
 }
 
 // worley noise
