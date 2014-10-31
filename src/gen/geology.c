@@ -6,10 +6,9 @@
 #include "datatypes/vector.h"
 #include "world/world.h"
 #include "world/species.h"
+#include "world/world_map.h"
 
 #include "util.h"
-
-#include "worldgen.h"
 
 #include "geology.h"
 
@@ -194,13 +193,113 @@ stratum *create_stratum(
   return result;
 }
 
-/********************
- * Inline Functions *
- ********************/
-
 /*************
  * Functions *
  *************/
+
+void generate_geology(world_map *wm) {
+  size_t i, j;
+  world_map_pos xy;
+  region_pos anchor;
+  r_pos_t t;
+  stratum *s;
+
+  float avg_size = sqrtf(wm->width*wm->height);
+  avg_size *= STRATA_AVG_SIZE;
+  avg_size *= WORLD_REGION_BLOCKS;
+
+  map_function profile = MFN_SPREAD_UP;
+  geologic_source source = GEO_SEDIMENTAY;
+  ptrdiff_t hash, h1, h2, h3, h4, h5;
+  world_region *wr;
+  for (i = 0; i < MAX_STRATA_LAYERS * STRATA_COMPLEXITY; ++i) {
+    // Create a stratum and append it to the list of all strata:
+    hash = prng(wm->seed + 567*i);
+    h1 = hash_1d(hash);
+    h2 = hash_1d(h1);
+    h3 = hash_1d(h2);
+    h4 = hash_1d(h3);
+    h5 = hash_1d(h4);
+    switch (h4 % 3) {
+      case 0:
+        profile = MFN_SPREAD_UP;
+        break;
+      case 1:
+        profile = MFN_TERRACE;
+        break;
+      case 2:
+      default:
+        profile = MFN_HILL;
+        break;
+    }
+    switch (h5 % 3) {
+      case 0:
+        source = GEO_IGNEOUS;
+        break;
+      case 1:
+        source = GEO_METAMORPHIC;
+        break;
+      case 2:
+      default:
+        source = GEO_SEDIMENTAY;
+        break;
+    }
+    s = create_stratum(
+      hash,
+      float_hash_1d(hash)*wm->width, float_hash_1d(h1)*wm->height,
+      avg_size * (0.6 + float_hash_1d(h2)*0.8), // size
+      BASE_STRATUM_THICKNESS * exp(-0.5 + float_hash_1d(h3)*3.5), // thickness
+      profile, // profile
+      source
+    );
+    l_append_element(wm->all_strata, (void*) s);
+    // Render the stratum into the various regions:
+    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+        // Compute thickness to determine if this region needs to be aware of
+        // this stratum:
+        compute_region_anchor(wm, &xy, &anchor);
+        t = compute_stratum_height(s, &anchor);
+        // If any corner has material, add this stratum to this region:
+        if (t > 0) {
+          //TODO: Real logging/debugging
+          wr = get_world_region(wm, &xy); // no need to worry about NULL here
+          if (wr->geology.stratum_count < MAX_STRATA_LAYERS) {
+            // adjust existing strata:
+            for (j = 0; j < wr->geology.stratum_count; ++j) {
+              wr->geology.bottoms[j] *= (
+                wr->geology.total_height
+              ) / (
+                wr->geology.total_height + t
+              );
+            }
+            wr->geology.total_height += t;
+            wr->geology.bottoms[wr->geology.stratum_count] = 1 - (
+              t / fmax(BASE_STRATUM_THICKNESS*6, wr->geology.total_height)
+              // the higher of the new total height or approximately 6 strata
+              // of height
+            );
+            wr->geology.strata[wr->geology.stratum_count] = s;
+            wr->geology.stratum_count += 1;
+          } // it's okay if some strata are zoned out by the layers limit
+        }
+      }
+    }
+    if (i % 10 == 0) {
+      printf(
+        "    ...%zu / %zu strata done...\r",
+        i,
+        (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
+      );
+    }
+  }
+  printf(
+    "    ...%zu / %zu strata done...\r",
+    (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY),
+    (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
+  );
+  printf("\n");
+}
 
 r_pos_t compute_stratum_height(stratum *st, region_pos *rpos) {
   // static variables:

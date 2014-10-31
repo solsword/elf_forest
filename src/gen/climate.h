@@ -6,116 +6,96 @@
 
 #include <stdint.h>
 
-/************************
- * Types and Structures *
- ************************/
-
-struct body_of_water_s;
-typedef struct body_of_water_s body_of_water;
-
-struct hydrology_s;
-typedef struct hydrology_s hydrology;
-
-struct weather_s;
-typedef struct weather_s weather;
-
-struct soil_composition_s;
-typedef struct soil_composition_s soil_composition;
-
-/*********
- * Enums *
- *********/
-
-enum hydro_state_e {
-  HYDRO_LAND = 0,
-  HYDRO_WATER = 1,
-  HYDRO_SHORE = 2,
-};
-typedef enum hydro_state_e hydro_state;
-
-enum salinity_e {
-  SALINITY_FRESH = 0,
-  SALINITY_BRACKISH = 1,
-  SALINITY_SALINE = 2,
-  SALINITY_BRINY = 3,
-};
-typedef enum salinity_e salinity;
+#include "world/world_map.h"
+#include "terrain.h"
 
 /*************
  * Constants *
  *************/
 
-// Number of seasons in the year
-#define N_SEASONS 4
-
 // Ocean size limits:
-#define MIN_OCEAN_SIZE 20
-#define MAX_OCEAN_SIZE (-1)
+#define CL_MIN_OCEAN_SIZE 20
+#define CL_MAX_OCEAN_SIZE (-1)
 
 // Lake parameters:
-#define MIN_LAKE_SIZE 2
-#define MAX_LAKE_SIZE 320
+#define CL_MIN_LAKE_SIZE 2
+#define CL_MAX_LAKE_SIZE 320
 
-#define LAKE_PROBABILITY 0.15
+#define CL_LAKE_PROBABILITY 0.15
 
-#define MIN_LAKE_DEPTH 18.0
-#define MAX_LAKE_DEPTH 250.0
-#define LAKE_DEPTH_DIST_SQUASH 2.5
+#define CL_MIN_LAKE_DEPTH 18.0
+#define CL_MAX_LAKE_DEPTH 250.0
+#define CL_LAKE_DEPTH_DIST_SQUASH 2.5
 
-#define LAKE_SALINITY_THRESHOLD_BRACKISH 0.03
-#define LAKE_SALINITY_THRESHOLD_SALINE 0.025
-#define LAKE_SALINITY_THRESHOLD_BRINY 0.02
+#define CL_LAKE_SALINITY_THRESHOLD_BRACKISH 0.03
+#define CL_LAKE_SALINITY_THRESHOLD_SALINE 0.025
+#define CL_LAKE_SALINITY_THRESHOLD_BRINY 0.02
+
+// Elevation remapping:
+#define CL_ELEV_REMAP_MID 0.4
+#define CL_ELEV_REMAP_POWER 1.6
+#define CL_ELEV_REMAP_TO 0.7
 
 // Wind parameters (base values from corresponding continent parameters):
-#define WIND_CELL_DISTORTION_SIZE 1.2
-#define WIND_CELL_DISTORTION_STRENGTH 0.6
-#define WIND_CELL_SIZE 1.3
+#define CL_WIND_CELL_DISTORTION_SIZE 1.2
+#define CL_WIND_CELL_DISTORTION_STRENGTH 0.6
+#define CL_WIND_CELL_SIZE 1.3
 
 // should be roughly the median wind strength
-#define WIND_BASE_STRENGTH 3.0
+#define CL_WIND_BASE_STRENGTH 3.0
 
-#define WIND_UPPER_STRENGTH 5.0
+#define CL_WIND_UPPER_STRENGTH 5.0
 
 // how much land slopes affect wind direction
-#define WIND_LAND_INFLUENCE 43.0
+#define CL_WIND_LAND_INFLUENCE 43.0
 
 // Temperature parameters:
-#define GLOBAL_TEMP_DISTORTION_SCALE 4.5
-#define GLOBAL_TEMP_DISTORTION_STRENGTH 0.15
+#define CL_GLOBAL_TEMP_DISTORTION_SCALE 4.5
+#define CL_GLOBAL_TEMP_DISTORTION_STRENGTH 0.15
 
-#define ELEVATION_TEMP_ADJUST (-28.0)
+#define CL_ELEVATION_TEMP_ADJUST (-38.0)
 
-#define ARCTIC_BASE_TEMP (-20.0)
-#define EQUATOR_BASE_TEMP 30.0
+#define CL_ARCTIC_BASE_TEMP (-20.0)
+#define CL_EQUATOR_BASE_TEMP 30.0
 
-#define TEMP_HIGH 37.0
-#define TEMP_LOW (-30.0)
+#define CL_TEMP_HIGH 37.0
+#define CL_TEMP_LOW (-30.0)
 
 // Cloud and rainfall parameters:
-#define OCEAN_PRECIPITATION_QUOTIENT 0.2
-#define ELEVATION_PRECIPITATION_QUOTIENT 0.4
+#define CL_LAND_PRECIPITATION_QUOTIENT 0.1
+#define CL_WATER_PRECIPITATION_QUOTIENT 0.1
 
-#define BASE_WATER_CLOUD_POTENTIAL 2500.0
-#define BASE_LAND_CLOUD_POTENTIAL 1200.0
+#define CL_ELEVATION_PRECIPITATION_QUOTIENT 0.45
 
-#define EVAPORATION_TEMP_SCALING (1.3/30.0)
+//#define CL_BASE_WATER_CLOUD_POTENTIAL 2500.0
+//#define CL_BASE_WATER_CLOUD_POTENTIAL 1200.0
+#define CL_BASE_WATER_CLOUD_POTENTIAL 3000.0
+#define CL_BASE_LAND_CLOUD_POTENTIAL 1400.0
 
-#define HUGE_CLOUD_POTENTIAL (\
+#define CL_EVAPORATION_TEMP_SCALING (1.3/30.0)
+
+#define CL_HUGE_CLOUD_POTENTIAL (\
   34 *\
-  EVAPORATION_TEMP_SCALING *\
-  BASE_WATER_CLOUD_POTENTIAL\
+  CL_EVAPORATION_TEMP_SCALING *\
+  CL_BASE_WATER_CLOUD_POTENTIAL\
 )
 
-#define CLOUD_RECHARGE_RATE 0.03
+//#define CL_CLOUD_RECHARGE_RATE 0.03
+#define CL_CLOUD_RECHARGE_RATE 0.07
 
-#define WIND_FOCUS_EXP 2.8
-#define WIND_FOCUS 9.5
+#define CL_WIND_FOCUS_EXP 2.8
+#define CL_WIND_FOCUS 9.5
 
-#define CALM_CLOUD_DIFFUSION_RATE 2.0
+#define CL_CALM_CLOUD_DIFFUSION_RATE 2.0
 
-#define EDGE_CLOUD_POTENTIAL 200.0
+#define CL_EDGE_CLOUD_POTENTIAL 200.0
 
-#define WIND_ELEVATION_FORCING 2.0
+#define CL_WIND_ELEVATION_FORCING 2.0
+
+
+// Water cycle simulation parameters:
+#define CL_WATER_CYCLE_SIM_STEPS 64
+#define CL_WATER_CYCLE_FINISH_STEPS 1
 
 
 // Some rainfall numbers in mm/year:
@@ -179,58 +159,82 @@ typedef enum salinity_e salinity;
 // Standard temperature numbers (degrees Celsius):
 // TODO: THESE NUMBERS
 
-// Maximum alternate dirt/sand types:
-#define MAX_ALT_DIRTS 5
-#define MAX_ALT_SANDS 3
 
+/********************
+ * Inline Functions *
+ ********************/
 
-/***********
- * Globals *
- ***********/
+// Takes a height in blocks and returns an "elevation" number in [-1, 1].
+// Heights above TR_MAX_HEIGHT or below 0 are truncated.
+static inline float elevation(float height) {
+  float result = 0;
+  if (height > TR_HEIGHT_SEA_LEVEL) {
+    result = (
+      (height - TR_HEIGHT_SEA_LEVEL)
+    /
+      (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL)
+    );
+  } else {
+    result = (
+      (height - TR_HEIGHT_SEA_LEVEL)
+    /
+      TR_HEIGHT_SEA_LEVEL
+    );
+  }
+  if (result < -1) {
+    result = -1;
+  } else if (result > 1) {
+    result = 1;
+  } else if (result < 0) {
+    result = result;
+    result = smooth(
+      result,
+      0.7,
+      (
+        (TR_HEIGHT_CONTINENTAL_SHELF - TR_HEIGHT_SEA_LEVEL)
+      /
+        ((float) TR_HEIGHT_SEA_LEVEL)
+      )
+    );
+  } else if (result < CL_ELEV_REMAP_MID) {
+    result /= CL_ELEV_REMAP_MID;
+    result = pow(result, CL_ELEV_REMAP_POWER);
+    result *= CL_ELEV_REMAP_TO;
+  } else {
+    result = (result - CL_ELEV_REMAP_MID) / (1.0 - CL_ELEV_REMAP_MID);
+    result = (1.0 - CL_ELEV_REMAP_TO) * pow(result, -CL_ELEV_REMAP_POWER);
+    result += CL_ELEV_REMAP_TO;
+  }
+  return result;
+}
 
-/*************************
- * Structure Definitions *
- *************************/
+// Temperature influence on evaporation.
+static inline float temp_evap_influence(float temp) {
+  temp *= CL_EVAPORATION_TEMP_SCALING;
+  temp = 0.5 + 0.6 * temp;
+  if (temp < 0) { temp = 0; }
+  return temp;
+}
 
-struct body_of_water_s {
-  float level;
-  salinity salt;
-};
-
-struct hydrology_s {
-  hydro_state state; // what kind of region this is
-  body_of_water *body; // what body of water this region belongs to
-  r_pos_t water_table; // how high the water table is, in blocks
-  salinity salt; // the salinity of local groundwater
-};
-
-struct weather_s {
-  // TODO: wind chaos?
-  float wind_strength, wind_direction; // wind strength & direction
-  float mean_temp; // overall average temperature
-  float cloud_potential; // average annual precipitation potential in mm/year
-  float next_cloud_potential; // next iteration cloud potential
-  float precipitation_quotient; // How much of local clouds rains here
-  float total_precipitation; // summed precipitation during simulation
-  float next_total_precipitation; // next iteration precipitation
-  float rainfall[N_SEASONS]; // rainfall per season in mm/year
-  float temp_low[N_SEASONS]; // temperature low, mean and high throughout the
-  float temp_mean[N_SEASONS]; // day, in each season
-  float temp_high[N_SEASONS];
-};
-
-struct soil_composition_s {
-  species base_dirt; // dirt (/sand/mud) species for normal soil
-  block alt_dirt_blocks[MAX_ALT_DIRTS];
-  species alt_dirt_species[MAX_ALT_DIRTS];
-  float alt_dirt_strengths[MAX_ALT_DIRTS];
-  float alt_dirt_hdeps[MAX_ALT_DIRTS]; // height-dependence
-  species base_sand; // sand species (for beaches, rivers, & oceans)
-  block alt_sand_blocks[MAX_ALT_SANDS];
-  species alt_sand_species[MAX_ALT_SANDS];
-  float alt_sand_strengths[MAX_ALT_SANDS];
-  float alt_sand_hdeps[MAX_ALT_SANDS]; // height-dependence
-};
+// Computes base evaporation for the given world region.
+static inline float evaporation(world_region *wr) {
+  float temp, elev, slope;
+  temp = temp_evap_influence(wr->climate.atmosphere.mean_temp);
+  if (wr->climate.water.body != NULL) {
+    return CL_BASE_WATER_CLOUD_POTENTIAL * temp;
+    // TODO: depth/size-based differentials?
+  } else {
+    elev = elevation(wr->mean_height);
+    if (elev < 0) {
+      elev = 0;
+    }
+    slope = mani_slope(&(wr->gross_height));
+    if (slope > 1.5) { slope = 1.5; }
+    slope /= 1.5;
+    slope = pow(slope, 0.4);
+    return CL_BASE_LAND_CLOUD_POTENTIAL * temp * (1 - elev) * (1 - slope);
+  }
+}
 
 /******************************
  * Constructors & Destructors *
@@ -245,5 +249,29 @@ void cleanup_body_of_water(body_of_water *body);
 /*************
  * Functions *
  *************/
+
+// Generates hydrology (rivers, lakes, and the oceans) for the given world.
+void generate_hydrology(world_map *wm);
+
+// Generates climate for the given world.
+void generate_climate(world_map *wm);
+
+// Once base climate generation is complete, this will (crudely) simulate the
+// water cycle, populating precipitation information.
+void simulate_water_cycle(world_map *wm);
+
+// Takes an origin point and a water body and fills ares of the given world map
+// as part of that water body between the given size limits. The size limits
+// will be ignored if they are negative. If the body of water turns out to be
+// too small or too large, the entire operation is cancelled, and the return
+// value will be 0. Otherwise, the return value is 1 and the regions filled
+// will have their hydrology info set to point to the given body of water.
+int fill_water(
+  world_map *wm,
+  body_of_water *body,
+  world_map_pos *origin,
+  int min_size,
+  int max_size
+);
 
 #endif // ifndef CLIMATE_H

@@ -3,13 +3,16 @@
 
 #include <math.h>
 
-#include "terrain.h"
-
 #include "world/blocks.h"
 #include "world/world.h"
+#include "world/world_map.h"
 #include "noise/noise.h"
 
 #include "util.h"
+
+#include "geology.h"
+
+#include "terrain.h"
 
 /***********
  * Globals *
@@ -582,4 +585,229 @@ void geoform_info(
   );
   *region = my_region;
   *tr_interp = my_tr_interp.z;
+}
+
+void terrain_cell(
+  world_map *wm,
+  world_region* neighborhood[],
+  region_pos *rpos,
+  cell *result
+) {
+  static manifold_point dontcare, stone_height, dirt_height;
+  static region_pos pr_rpos = { .x = -1, .y = -1, .z = -1 };
+  float h;
+  world_region *best, *secondbest; // best and second-best regions
+  float strbest, strsecond; // their respective strengths
+
+  // DEBUG: (to show the strata)
+  /*
+  if (
+    (
+      abs(
+        rpos->x -
+        ((WORLD_WIDTH / 2.0) * WORLD_REGION_BLOCKS + 2*CHUNK_SIZE)
+      ) < CHUNK_SIZE
+    ) && (
+      rpos->z > (
+        rpos->y - (WORLD_HEIGHT/2.0) * WORLD_REGION_BLOCKS
+      ) + 8000
+      //rpos->z > (rpos->y - (WORLD_HEIGHT*WORLD_REGION_BLOCKS)/2)
+    )
+  ) {
+  //if (abs(rpos->x - 32770) < CHUNK_SIZE) {
+    result->primary = b_make_block(B_AIR);
+    result->secondary = b_make_block(B_VOID);
+    return;
+  }
+  // */
+
+  // DEBUG: Caves to show things off more:
+  /*
+  if (
+    sxnoise_3d(rpos->x*1/12.0, rpos->y*1/12.0, rpos->z*1/12.0, 17) >
+      sxnoise_3d(rpos->x*1/52.0, rpos->y*1/52.0, rpos->z*1/52.0, 18)
+  ) {
+    result->primary = b_make_block(B_AIR);
+    result->secondary = b_make_block(B_VOID);
+    return;
+  }
+  // */
+
+  if (pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
+    // No need to recompute the surface height if we're at the same x/y.
+    // TODO: Get rid of double-caching here?
+    compute_terrain_height(rpos, &dontcare, &stone_height, &dirt_height);
+  }
+
+  // Keep track of our previous position:
+  copy_rpos(rpos, &pr_rpos);
+
+  // Compute our fractional height:
+  h = rpos->z / stone_height.z;
+
+  // Figure out the nearest regions:
+  compute_region_contenders(
+    wm,
+    neighborhood,
+    rpos,
+    &best, &secondbest, 
+    &strbest, &strsecond
+  );
+
+  if (h <= 1.0) { // we're in the stone layers
+    stone_cell(
+      wm, rpos,
+      h, stone_height.z,
+      best, secondbest, strbest, strsecond,
+      result
+    );
+  } else if (h <= dirt_height.z / stone_height.z) { // we're in dirt
+    dirt_cell(
+      wm, rpos,
+      (rpos->z - stone_height.z) / (dirt_height.z - stone_height.z),
+      dirt_height.z,
+      best,
+      result
+    );
+  } else if (rpos->z <= TR_HEIGHT_SEA_LEVEL) { // under the ocean
+    result->primary = b_make_block(B_WATER);
+    result->secondary = b_make_block(B_VOID);
+  } else { // we're above the ground
+    // TODO: HERE!
+    result->primary = b_make_block(B_AIR);
+    result->secondary = b_make_block(B_VOID);
+  }
+}
+
+void stone_cell(
+  world_map *wm, region_pos *rpos,
+  float h, float ceiling,
+  world_region *best, world_region *secondbest, float strbest, float strsecond,
+  cell *result
+) {
+  stratum *st;
+  // Add some noise to distort the base height:
+  // TODO: more spatial variance in noise strength?
+  h += (TR_STRATA_FRACTION_NOISE_STRENGTH / ceiling) * (
+    sxnoise_3d(
+      rpos->x * TR_STRATA_FRACTION_NOISE_SCALE,
+      rpos->y * TR_STRATA_FRACTION_NOISE_SCALE,
+      rpos->z * TR_STRATA_FRACTION_NOISE_SCALE,
+      7193
+    ) + 
+    0.5 * sxnoise_3d(
+      rpos->x * TR_STRATA_FRACTION_NOISE_SCALE * 1.7,
+      rpos->y * TR_STRATA_FRACTION_NOISE_SCALE * 1.7,
+      rpos->z * TR_STRATA_FRACTION_NOISE_SCALE * 1.7,
+      7194
+    )
+  ) / 1.5;
+  // Clamp out-of-range values after noise:
+  // TODO: some low-frequency un-clamped noise?
+  if (h > 1.0) { h = 1.0; } else if (h < 0.0) { h = 0.0; }
+
+  // Where available, persistence values are also a factor:
+  if (best != NULL) {
+    st = get_stratum(best, h);
+    strbest *= st->persistence;
+  }
+  if (secondbest != NULL) {
+    st = get_stratum(secondbest, h);
+    strsecond *= st->persistence;
+  }
+
+ // Now that we know which stratum to use, set the cell's block data:
+  if (strsecond > strbest) {
+    best = secondbest;
+  }
+  if (best == NULL) {
+    // TODO: Various edge types here?
+    result->primary = b_make_block(B_STONE);
+  } else {
+    st = get_stratum(best, h);
+    // TODO: veins and inclusions here!
+    result->primary = b_make_species(B_STONE, st->base_species);
+  }
+}
+
+void dirt_cell(
+  world_map *wm, region_pos *rpos,
+  float h,
+  float elev,
+  world_region *wr,
+  cell *result
+) {
+  size_t i, max_alts;
+  block soil_type;
+  species soil_species;
+  float beach_height, rel_h, str, beststr;
+  float *alt_strengths;
+  float *alt_hdeps;
+  block *alt_blocks;
+  species *alt_species;
+
+  // compute beach height:
+  beach_height = TR_BEACH_BASE_HEIGHT;
+  beach_height += TR_BEACH_HEIGHT_VAR * sxnoise_2d(
+    rpos->x * TR_BEACH_HEIGHT_NOISE_SCALE,
+    rpos->y * TR_BEACH_HEIGHT_NOISE_SCALE,
+    wr->seed + 18294
+  );
+
+  rel_h = elev - TR_HEIGHT_SEA_LEVEL + beach_height;
+  beststr = TR_SOIL_ALT_THRESHOLD;
+  if (
+    rel_h > 0
+  ||
+    h < 1 - (-rel_h / TR_BEACH_HEIGHT_VAR)
+    // TODO: Test this!
+  ) { // TODO: lakes!
+    soil_type = B_DIRT;
+    soil_species = wr->climate.soil.base_dirt;
+    alt_strengths = wr->climate.soil.alt_dirt_strengths;
+    alt_hdeps = wr->climate.soil.alt_dirt_hdeps;
+    alt_blocks = wr->climate.soil.alt_dirt_blocks;
+    alt_species = wr->climate.soil.alt_dirt_species;
+    max_alts = MAX_ALT_DIRTS;
+  } else {
+    soil_type = B_SAND;
+    soil_species = wr->climate.soil.base_sand;
+    alt_strengths = wr->climate.soil.alt_sand_strengths;
+    alt_hdeps = wr->climate.soil.alt_sand_hdeps;
+    alt_blocks = wr->climate.soil.alt_sand_blocks;
+    alt_species = wr->climate.soil.alt_sand_species;
+    max_alts = MAX_ALT_SANDS;
+  }
+  for (i = 0; i < max_alts; ++i) {
+    // TODO: Moisture dependence?
+    str = sxnoise_3d(
+      rpos->x * TR_SOIL_ALT_NOISE_SCALE,
+      rpos->y * TR_SOIL_ALT_NOISE_SCALE,
+      rpos->z * TR_SOIL_ALT_NOISE_SCALE,
+      wr->seed + 4920 * i
+    ) + 0.7 * sxnoise_3d(
+      rpos->x * TR_SOIL_ALT_NOISE_SCALE * 2.4,
+      rpos->y * TR_SOIL_ALT_NOISE_SCALE * 2.4,
+      rpos->z * TR_SOIL_ALT_NOISE_SCALE * 2.4,
+      wr->seed + 7482 * i
+    ) + 0.3 * sxnoise_3d(
+      rpos->x * TR_SOIL_ALT_NOISE_SCALE * 3.8,
+      rpos->y * TR_SOIL_ALT_NOISE_SCALE * 3.8,
+      rpos->z * TR_SOIL_ALT_NOISE_SCALE * 3.8,
+      wr->seed + 3194 * i
+    );
+    str = (2 + str)/4.0; // [0, 1]
+    str *= alt_strengths[i];
+    if (alt_hdeps[i] > 0) {
+      str *= pow(h, alt_hdeps[i]);
+    } else {
+      str *= pow((1 - h), -alt_hdeps[i]);
+    }
+    if (str > beststr) {
+      beststr = str;
+      soil_type = alt_blocks[i];
+      soil_species = alt_species[i];
+    }
+  }
+  result->primary = b_make_species(soil_type, soil_species);
 }

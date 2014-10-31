@@ -119,9 +119,9 @@ gradient const CLOUDS_GRADIENT = {
 gradient const TEMPERATURE_GRADIENT = {
   .count = 3,
   .colors = {
-    0xff000000, // black
-    0xff777777, // grey
-    0xff77ffff, // light yellow
+    0xff440000, // navy
+    0xffaa4499, // lavender
+    0xffffffff, // white
   },
   .oob_below = 0xff000000, // black
   .oob_above = 0xff888888, // gray
@@ -257,20 +257,20 @@ pixel ly_georegions(world_region *wr) {
 
 pixel ly_temperature(world_region *wr) {
   float t = (
-    (wr->climate.atmosphere.mean_temp - TEMP_LOW)
+    (wr->climate.atmosphere.mean_temp - CL_TEMP_LOW)
   /
-    (TEMP_HIGH - TEMP_LOW)
+    (CL_TEMP_HIGH - CL_TEMP_LOW)
   );
   return gradient_result(&TEMPERATURE_GRADIENT, t);
 }
 
 pixel ly_evaporation(world_region *wr) {
-  float t = evaporation(wr) / HUGE_CLOUD_POTENTIAL;
+  float t = evaporation(wr) / CL_HUGE_CLOUD_POTENTIAL;
   return gradient_result(&CLOUDS_GRADIENT, t);
 }
 
 pixel ly_cloud_cover(world_region *wr) {
-  float t = wr->climate.atmosphere.cloud_potential / HUGE_CLOUD_POTENTIAL;
+  float t = wr->climate.atmosphere.cloud_potential / CL_HUGE_CLOUD_POTENTIAL;
   return gradient_result(&CLOUDS_GRADIENT, t);
 }
 
@@ -281,18 +281,18 @@ pixel ly_precipitation_quotient(world_region *wr) {
 
 pixel ly_precipitation(world_region *wr) {
   float t = wr->climate.atmosphere.total_precipitation;
-  t /= HUGE_CLOUD_POTENTIAL;
+  t /= CL_HUGE_CLOUD_POTENTIAL;
   return gradient_result(&BW_GRADIENT, t);
   /*
   float t = wr->climate.atmosphere.cloud_potential;
   t *= wr->climate.atmosphere.precipitation_quotient;
-  t /= HUGE_CLOUD_POTENTIAL;
+  t /= CL_HUGE_CLOUD_POTENTIAL;
   t *= 12; // TODO: GET RID OF THIS!
   return gradient_result(&RAIN_GRADIENT, t);
   */
 }
 
 void vly_wind_vectors(world_region *wr, float *r, float *theta) {
-  *r = wr->climate.atmosphere.wind_strength / WIND_UPPER_STRENGTH;
+  *r = wr->climate.atmosphere.wind_strength / CL_WIND_UPPER_STRENGTH;
   *theta = wr->climate.atmosphere.wind_direction;
 }

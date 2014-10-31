@@ -393,7 +393,7 @@ static inline float smooth(float n, float strength, float center) {
     n = -n;
   }
   if (strength == 0) {
-    return n;
+    return sign * n;
   }
   if (n < center) {
     result = center * (exp(strength * n/center) - 1) / (exp(strength) - 1);

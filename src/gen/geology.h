@@ -11,42 +11,23 @@
 #include "txgen/txg_minerals.h"
 #include "world/materials.h"
 #include "world/world.h"
+#include "world/world_map.h"
 
 #include "util.h"
-
-/*********
- * Enums *
- *********/
-
-// Geologic sources influence how material types and other stratum parameters
-// are chosen.
-enum geologic_source_e {
-  GEO_IGNEOUS,
-  GEO_METAMORPHIC,
-  GEO_SEDIMENTAY
-};
-typedef enum geologic_source_e geologic_source;
-
-/************************
- * Types and Structures *
- ************************/
-
-// A layer of material that encompasses some region of the world.
-struct stratum_s;
-typedef struct stratum_s stratum;
 
 /*************
  * Constants *
  *************/
 
-// Maximum number of stone layers per world region
-#define MAX_STRATA_LAYERS 256
+// Controls the size of strata relative to the world map size.
+#define STRATA_AVG_SIZE 0.25
 
-// Maximum number of material types present in other layers as veins
-#define N_VEIN_TYPES 2
+// Controls how many strata to generate (a multiple of MAX_STRATA_LAYERS).
+//#define STRATA_COMPLEXITY 3.0
+#define STRATA_COMPLEXITY (1/32.0)
 
-// Maximum number of material types included in other layers
-#define N_INCLUSION_TYPES 8
+// The base stratum thickness (before an exponential distribution).
+#define BASE_STRATUM_THICKNESS 10.0
 
 /***********
  * Globals *
@@ -54,6 +35,7 @@ typedef struct stratum_s stratum;
 
 // The seed for geothermal information, which both helps determine strata
 // placement and contributes to metamorphosis.
+// TODO: Actualize this!
 extern ptrdiff_t const GEOTHERMAL_SEED;
 
 // Various GN_ (geology noise) constants used for defining default noise
@@ -61,61 +43,6 @@ extern ptrdiff_t const GEOTHERMAL_SEED;
 extern float const GN_DISTORTION_SCALE;
 extern float const GN_LARGE_VAR_SCALE;
 extern float const GN_MED_VAR_SCALE;
-
-/*************************
- * Structure Definitions *
- *************************/
-
-struct stratum_s {
-  ptrdiff_t seed; // seed for various noise sources
-
- // Base parameters:
- // ----------------
-  float cx, cy; // center x/y
-  float size; // base radius
-  float thickness; // base thickness
-  map_function profile; // base profile shape
-  geologic_source source; // where the material for this layer comes from
-
- // Derived noise parameters:
- // -------------------------
-  float persistence; // how much this layer extends at the expense of others
-   // Note that larger values are stronger; [0.5, 2] is reasonable.
-  float scale_bias; // biases the noise scales
-
-  // radial variance:
-  float radial_frequency;
-  float radial_variance;
-
-  // distortion:
-  float gross_distortion; // large-scale distortion
-  float fine_distortion; // small-scale distortion
-
-  // core variation (expressed in max blocks)
-  float large_var; // large-scale variation
-  float med_var; // medium-scale variation
-  float small_var; // small-scale variation
-  float tiny_var; // tiny-scale variation
-
-  // positive detail (expressed in max blocks)
-  float detail_var; // detail-scale variation
-  float ridges; // amplitude of ridges
-
-  // negative detail:
-  float smoothing; // amount of smooth weathering (fraction of detail removed)
-
- // Derived vein and inclusion information:
- // ---------------------------------------
-  float vein_scale[N_VEIN_TYPES]; // scale of different veins (in blocks)
-  float vein_strength[N_VEIN_TYPES]; // thickness and frequency of veins (0-1)
-  float inclusion_frequency[N_INCLUSION_TYPES]; // frequency of inclusions (0-1)
-
- // Derived species information:
- // ----------------------------------
-  species base_species; // exact material type for main mass
-  species vein_species[N_VEIN_TYPES]; // types for veins
-  species inclusion_species[N_INCLUSION_TYPES]; // types for inclusions
-};
 
 /********************
  * Inline Functions *
@@ -185,6 +112,26 @@ static inline void stratum_lf_noise(
   );
 }
 
+// Given a world region and a fractional height between 0 and 1, returns the
+// stratum in that region at that height. If h is less than 0, it returns the
+// bottom stratum in the given region, and likewise if h is greater than 1, it
+// returns the top stratum.
+static inline stratum* get_stratum(
+  world_region* wr,
+  float h
+) {
+  int i;
+  stratum *result = wr->geology.strata[0];
+  // Find out which layer we're in:
+  for (i = 1; i < wr->geology.stratum_count; i += 1) {
+    if (h < wr->geology.bottoms[i]) { // might not happen at all
+      break;
+    }
+    result = wr->geology.strata[i];
+  }
+  return result;
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -201,6 +148,9 @@ stratum *create_stratum(
 /*************
  * Functions *
  *************/
+
+// Generates geology for the given world.
+void generate_geology(world_map *wm);
 
 // Computes the heigh of the given stratum at the given coordinates (ignores z):
 r_pos_t compute_stratum_height(stratum *st, region_pos *rpos);

@@ -8,6 +8,7 @@
 
 #include "noise/noise.h"
 #include "world/world.h"
+#include "world/world_map.h"
 #include "math/manifold.h"
 #include "util.h"
 
@@ -123,7 +124,7 @@
   TR_SCALE_BUMPS \
 )
 
-// Soil parameters
+// Base soil parameters
 #define    TR_DIRT_NOISE_SCALE 0.0004
 #define  TR_DIRT_EROSION_SCALE 0.003
 
@@ -135,6 +136,21 @@
 #define TR_ALTITUDE_EROSION_STRENGTH 6
 
 #define TR_SLOPE_EROSION_STRENGTH 12
+
+// Beach height above sea level:
+#define TR_BEACH_BASE_HEIGHT 7
+#define TR_BEACH_HEIGHT_VAR 6
+#define TR_BEACH_HEIGHT_NOISE_SCALE (1.0 / 70.0)
+
+// Soil alt base scale
+#define TR_SOIL_ALT_NOISE_SCALE (1.0 / 120.0)
+
+// Soil alternate threshold:
+#define TR_SOIL_ALT_THRESHOLD 0.5
+
+// The strength and base scale of the noise that distorts strata boundaries:
+#define TR_STRATA_FRACTION_NOISE_STRENGTH 16
+#define TR_STRATA_FRACTION_NOISE_SCALE (1.0 / 40.0)
 
 /*********
  * Enums *
@@ -1072,20 +1088,6 @@ static inline void compute_base_geoforms(
   geomap(height, base, region, tr_interp);
 }
 
-static inline float oabs(float noise) {
-  return (0.999 - fabs(noise));
-}
-
-static inline float oabssq(float noise) {
-  noise = oabs(noise);
-  return noise * noise;
-}
-
-static inline float oabscb(float noise) {
-  noise = oabs(noise);
-  return noise * noise * noise;
-}
-
 /*************
  * Functions *
  *************/
@@ -1123,4 +1125,29 @@ void compute_dirt_height(
 
 // Computes the terrain region and interpolation values at the given position.
 void geoform_info(region_pos *pos, terrain_region* region, float* tr_interp);
+
+// Computes the cell contents at the given position based on the terrain.
+void terrain_cell(
+  world_map *wm,
+  world_region* neighborhood[],
+  region_pos* rpos,
+  cell* result
+);
+
+// Computes a stone cell from within the base strata layers.
+void stone_cell(
+  world_map *wm, region_pos *rpos,
+  float h, float ceiling,
+  world_region *best, world_region *secondbest, float strbest, float strsecond,
+  cell *result
+);
+
+// Computes a dirt cell from the dirt layer.
+void dirt_cell(
+  world_map *wm, region_pos *rpos,
+  float h, float elev,
+  world_region *wr,
+  cell *result
+);
+
 #endif // ifndef TERRAIN_H
