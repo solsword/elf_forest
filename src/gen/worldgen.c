@@ -32,6 +32,7 @@ char const * const WORLD_MAP_FILE_EVAP = "out/world_map_evaporation.png";
 char const * const WORLD_MAP_FILE_CLOUDS = "out/world_map_clouds.png";
 char const * const WORLD_MAP_FILE_PQ = "out/world_map_pq.png";
 char const * const WORLD_MAP_FILE_RAIN = "out/world_map_rain.png";
+char const * const WORLD_MAP_FILE_LRAIN = "out/world_map_land_rain.png";
 
 /*************
  * Functions *
@@ -50,6 +51,7 @@ void setup_worldgen(ptrdiff_t seed) {
   printf("  ...generating climate...\n");
   generate_climate(THE_WORLD);
   printf("  ...writing world maps...\n");
+
   texture *base_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
   texture *regions_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
   texture *temp_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
@@ -58,6 +60,8 @@ void setup_worldgen(ptrdiff_t seed) {
   texture *cloud_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
   texture *pq_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
   texture *rain_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
+  texture *lrain_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
+
   render_map_layer(THE_WORLD, base_map, &ly_terrain_height);
   render_map_layer(THE_WORLD, regions_map, &ly_georegions);
   render_map_layer(THE_WORLD, temp_map, &ly_temperature);
@@ -67,22 +71,27 @@ void setup_worldgen(ptrdiff_t seed) {
   render_map_layer(THE_WORLD, cloud_map, &ly_cloud_cover);
   render_map_layer(THE_WORLD, pq_map, &ly_precipitation_quotient);
   render_map_layer(THE_WORLD, rain_map, &ly_precipitation);
-  write_texture_to_png(base_map, WORLD_MAP_FILE_BASE);
+  render_map_layer(THE_WORLD, lrain_map, &ly_land_precipitation);
+
   printf("    ...elevation...\n");
-  write_texture_to_png(regions_map, WORLD_MAP_FILE_REGIONS);
+  write_texture_to_png(base_map, WORLD_MAP_FILE_BASE);
   printf("    ...geographic regions...\n");
-  write_texture_to_png(temp_map, WORLD_MAP_FILE_TEMP);
+  write_texture_to_png(regions_map, WORLD_MAP_FILE_REGIONS);
   printf("    ...temperature...\n");
-  write_texture_to_png(wind_map, WORLD_MAP_FILE_WIND);
+  write_texture_to_png(temp_map, WORLD_MAP_FILE_TEMP);
   printf("    ...wind...\n");
-  write_texture_to_png(evap_map, WORLD_MAP_FILE_EVAP);
+  write_texture_to_png(wind_map, WORLD_MAP_FILE_WIND);
   printf("    ...evaporation...\n");
-  write_texture_to_png(cloud_map, WORLD_MAP_FILE_CLOUDS);
+  write_texture_to_png(evap_map, WORLD_MAP_FILE_EVAP);
   printf("    ...clouds...\n");
-  write_texture_to_png(pq_map, WORLD_MAP_FILE_PQ);
+  write_texture_to_png(cloud_map, WORLD_MAP_FILE_CLOUDS);
   printf("    ...precipitation_quotient...\n");
-  write_texture_to_png(rain_map, WORLD_MAP_FILE_RAIN);
+  write_texture_to_png(pq_map, WORLD_MAP_FILE_PQ);
   printf("    ...precipitation...\n");
+  write_texture_to_png(rain_map, WORLD_MAP_FILE_RAIN);
+  printf("    ...land precipitation...\n");
+  write_texture_to_png(lrain_map, WORLD_MAP_FILE_LRAIN);
+
   cleanup_texture(base_map);
   cleanup_texture(regions_map);
   cleanup_texture(temp_map);
@@ -91,6 +100,7 @@ void setup_worldgen(ptrdiff_t seed) {
   cleanup_texture(cloud_map);
   cleanup_texture(pq_map);
   cleanup_texture(rain_map);
+  cleanup_texture(lrain_map);
 }
 
 void cleanup_worldgen() {

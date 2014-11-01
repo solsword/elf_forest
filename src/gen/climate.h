@@ -62,22 +62,24 @@
 #define CL_TEMP_LOW (-30.0)
 
 // Cloud and rainfall parameters:
-#define CL_LAND_PRECIPITATION_QUOTIENT 0.1
-#define CL_WATER_PRECIPITATION_QUOTIENT 0.1
+#define CL_LAND_PRECIPITATION_QUOTIENT 0.085
+#define CL_WATER_PRECIPITATION_QUOTIENT 0.085
 
 #define CL_ELEVATION_PRECIPITATION_QUOTIENT 0.45
 
-//#define CL_BASE_WATER_CLOUD_POTENTIAL 2500.0
-//#define CL_BASE_WATER_CLOUD_POTENTIAL 1200.0
-#define CL_BASE_WATER_CLOUD_POTENTIAL 3000.0
-#define CL_BASE_LAND_CLOUD_POTENTIAL 1400.0
+#define CL_BASE_WATER_CLOUD_POTENTIAL 1500.0
+#define CL_BASE_LAND_CLOUD_POTENTIAL 600.0
+
+#define CL_EVAPORATION_NOISE_SCALE 2.4
+#define CL_EVAPORATION_NOISE_BASE 1900
 
 #define CL_EVAPORATION_TEMP_SCALING (1.3/30.0)
+#define CL_EVAPORATION_TEMP_INFLUENCE 0.6
 
 #define CL_HUGE_CLOUD_POTENTIAL (\
-  34 *\
+  CL_TEMP_HIGH *\
   CL_EVAPORATION_TEMP_SCALING *\
-  CL_BASE_WATER_CLOUD_POTENTIAL\
+  (CL_BASE_WATER_CLOUD_POTENTIAL + CL_EVAPORATION_NOISE_BASE)\
 )
 
 //#define CL_CLOUD_RECHARGE_RATE 0.03
@@ -88,7 +90,7 @@
 
 #define CL_CALM_CLOUD_DIFFUSION_RATE 2.0
 
-#define CL_EDGE_CLOUD_POTENTIAL 200.0
+#define CL_EDGE_CLOUD_POTENTIAL 400.0
 
 #define CL_WIND_ELEVATION_FORCING 2.0
 
@@ -97,6 +99,7 @@
 #define CL_WATER_CYCLE_SIM_STEPS 64
 #define CL_WATER_CYCLE_FINISH_STEPS 1
 
+#define CL_WATER_CYCLE_AVG_ADJ 14.0
 
 // Some rainfall numbers in mm/year:
 //
@@ -211,29 +214,38 @@ static inline float elevation(float height) {
 // Temperature influence on evaporation.
 static inline float temp_evap_influence(float temp) {
   temp *= CL_EVAPORATION_TEMP_SCALING;
-  temp = 0.5 + 0.6 * temp;
+  temp = 0.5 + CL_EVAPORATION_TEMP_INFLUENCE * temp;
   if (temp < 0) { temp = 0; }
   return temp;
 }
 
 // Computes base evaporation for the given world region.
 static inline float evaporation(world_region *wr) {
-  float temp, elev, slope;
+  float result, temp, elev;
+  float lat, lon;
+  lon = wr->pos.x / ((float) (wr->world->width));
+  lat = wr->pos.y / ((float) (wr->world->height));
+  // Temperature scaling:
   temp = temp_evap_influence(wr->climate.atmosphere.mean_temp);
+  // Elevation scaling:
+  elev = elevation(wr->mean_height);
+  if (elev < 0) { elev = 0; }
+  // The noise component:
+  result = sxnoise_2d(
+    lat * CL_EVAPORATION_NOISE_SCALE,
+    lon * CL_EVAPORATION_NOISE_SCALE,
+    prng(wr->world->seed + 71182)
+  );
+  result = (1 + result) / 2.0;
+  result *= CL_EVAPORATION_NOISE_BASE;
+  result = result * (1 + temp) * 0.5;
+  // The base component:
   if (wr->climate.water.body != NULL) {
-    return CL_BASE_WATER_CLOUD_POTENTIAL * temp;
-    // TODO: depth/size-based differentials?
+    result += CL_BASE_WATER_CLOUD_POTENTIAL * temp * (1 - elev);
   } else {
-    elev = elevation(wr->mean_height);
-    if (elev < 0) {
-      elev = 0;
-    }
-    slope = mani_slope(&(wr->gross_height));
-    if (slope > 1.5) { slope = 1.5; }
-    slope /= 1.5;
-    slope = pow(slope, 0.4);
-    return CL_BASE_LAND_CLOUD_POTENTIAL * temp * (1 - elev) * (1 - slope);
+    result += CL_BASE_LAND_CLOUD_POTENTIAL * temp * (1 - elev);
   }
+  return result;
 }
 
 /******************************

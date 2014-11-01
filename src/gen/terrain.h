@@ -17,10 +17,10 @@
  **************/
 
 // Basic frequencies:
-#define   TR_FREQUENCY_CONTINENTS 0.000002 // 15625-chunk ~= 330 km features
-#define    TR_FREQUENCY_PGEOFORMS 0.0000025 // ???
-#define    TR_FREQUENCY_SGEOFORMS 0.000004 // 7812.5-chunk ~= 170 km features
-#define    TR_FREQUENCY_GEODETAIL 0.00002 // 1562.5-chunk ~= 33 km features
+#define   TR_FREQUENCY_CONTINENTS 0.000001 // 15625-chunk ~= 330 km features
+#define    TR_FREQUENCY_PGEOFORMS 0.000002 // ???
+#define    TR_FREQUENCY_SGEOFORMS 0.000003 // 7812.5-chunk ~= 170 km features
+#define    TR_FREQUENCY_GEODETAIL 0.000015 // 1562.5-chunk ~= 33 km features
 #define    TR_FREQUENCY_MOUNTAINS 0.0001 // 312.5-chunk ~= 6.7 km features
 #define        TR_FREQUENCY_HILLS 0.0005 // 62.5-chunk ~= 1.3 km features
 #define       TR_FREQUENCY_RIDGES 0.003 // ~10-chunk ~= 220 m features

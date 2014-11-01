@@ -395,7 +395,7 @@ void generate_climate(world_map *wm) {
       // ------------------
       // Start with a cosine curve modulated by some simplex noise:
       base_temp = (1 - cosf(lat * 2 * M_PI)) / 2.0;
-      base_temp = pow(base_temp, 0.8);
+      base_temp = pow(base_temp, 0.6);
       base_temp += CL_GLOBAL_TEMP_DISTORTION_STRENGTH * sxnoise_2d(
         lat * CL_GLOBAL_TEMP_DISTORTION_SCALE,
         lon * CL_GLOBAL_TEMP_DISTORTION_SCALE,
@@ -518,19 +518,14 @@ void simulate_water_cycle(world_map *wm) {
     CL_WATER_CYCLE_SIM_STEPS
   );
   // Divide out precipitation totals:
-  //*
   for (xy.x = 0; xy.x < wm->width; ++xy.x) {
     for (xy.y = 0; xy.y < wm->height; ++xy.y) {
       wr = get_world_region(wm, &xy);
-      // wr->climate.atmosphere.total_precipitation /= 12.0;
-      wr->climate.atmosphere.total_precipitation = pow(
-        wr->climate.atmosphere.total_precipitation,
-        0.65
-      );
-      // (float) CL_WATER_CYCLE_SIM_STEPS;
+      wr->climate.atmosphere.total_precipitation /=
+        ((float) CL_WATER_CYCLE_SIM_STEPS);
+      wr->climate.atmosphere.total_precipitation *= CL_WATER_CYCLE_AVG_ADJ;
     }
   }
-  // */
   // Finish the water simulation with some final averaging:
   for (step = 0; step < CL_WATER_CYCLE_FINISH_STEPS; ++step) {
     for (xy.x = 0; xy.x < wm->width; ++xy.x) {

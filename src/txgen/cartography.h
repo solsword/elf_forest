@@ -64,6 +64,7 @@ pixel ly_evaporation(world_region *wr);
 pixel ly_cloud_cover(world_region *wr);
 pixel ly_precipitation_quotient(world_region *wr);
 pixel ly_precipitation(world_region *wr);
+pixel ly_land_precipitation(world_region *wr);
 
 // Draws wind vectors
 void vly_wind_vectors(world_region *wr, float *r, float *theta);

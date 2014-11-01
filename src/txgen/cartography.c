@@ -154,6 +154,33 @@ gradient_map const GEOREGIONS_GRADIENT = {
   }
 };
 
+gradient_map const PRECIPITATION_GRADIENT = {
+  .colors = {
+    0xff66bbff,  // orange
+    0xff55ffff,  // yellow
+    0xff00ff33,  // lime green
+    0xff22bb00,  // green
+    0xffaa9900,  // teal
+    0xffff4422,  // light blue
+    0xff990000,  // dark blue
+    0xff440000,  // navy
+    0xff330033,  // deep purple
+    0xff000000   // black
+  },
+  .thresholds = {
+    250,   // orange (desert)
+    500,   // yellow (dry)
+    1000,  // lime green (moderate)
+    1500,  // green (wet)
+    2000,  // teal (drenched)
+    2500,  // light blue (pouring)
+    3000,  // dark blue (constant rain)
+    3500,  // navy (flooded)
+    4000,  // deep purple (off-the-charts)
+    16000  // black (okay, actually off-the-charts)
+  }
+};
+
 /*************
  * Functions *
  *************/
@@ -280,16 +307,25 @@ pixel ly_precipitation_quotient(world_region *wr) {
 }
 
 pixel ly_precipitation(world_region *wr) {
-  float t = wr->climate.atmosphere.total_precipitation;
-  t /= CL_HUGE_CLOUD_POTENTIAL;
-  return gradient_result(&BW_GRADIENT, t);
-  /*
-  float t = wr->climate.atmosphere.cloud_potential;
-  t *= wr->climate.atmosphere.precipitation_quotient;
-  t /= CL_HUGE_CLOUD_POTENTIAL;
-  t *= 12; // TODO: GET RID OF THIS!
-  return gradient_result(&RAIN_GRADIENT, t);
-  */
+  //float t = wr->climate.atmosphere.total_precipitation;
+  //t /= CL_HUGE_CLOUD_POTENTIAL;
+  //return gradient_result(&BW_GRADIENT, t);
+  return gradient_map_result(
+    &PRECIPITATION_GRADIENT,
+    wr->climate.atmosphere.total_precipitation
+  );
+}
+
+pixel ly_land_precipitation(world_region *wr) {
+  pixel rain = gradient_map_result(
+    &PRECIPITATION_GRADIENT,
+    wr->climate.atmosphere.total_precipitation
+  );
+  if (wr->climate.water.body == NULL) {
+    return rain;
+  } else {
+    return 0xff000000;
+  }
 }
 
 void vly_wind_vectors(world_region *wr, float *r, float *theta) {
