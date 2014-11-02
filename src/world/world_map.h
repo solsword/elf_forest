@@ -36,6 +36,7 @@ enum hydro_state_e {
   HYDRO_LAND = 0,
   HYDRO_WATER = 1,
   HYDRO_SHORE = 2,
+  HYDRO_RIVER = 3,
 };
 typedef enum hydro_state_e hydro_state;
 
@@ -100,6 +101,9 @@ typedef struct stratum_s stratum;
 
 struct body_of_water_s;
 typedef struct body_of_water_s body_of_water;
+
+struct river_s;
+typedef struct river_s river;
 
 struct hydrology_s;
 typedef struct hydrology_s hydrology;
@@ -236,6 +240,14 @@ struct biome_s {
 struct body_of_water_s {
   float level;
   salinity salt;
+  size_t area;
+  size_t shore_area;
+  list *rivers;
+};
+
+struct river_s {
+  list *path;
+  list *control_points;
 };
 
 struct hydrology_s {

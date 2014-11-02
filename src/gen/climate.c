@@ -20,6 +20,8 @@ body_of_water* create_body_of_water(float level, salinity salt) {
   body_of_water *result = (body_of_water*) malloc(sizeof(body_of_water));
   result->level = level;
   result->salt = salt;
+  result->area = 0;
+  result->shore_area = 0;
   return result;
 }
 
@@ -321,6 +323,10 @@ void generate_hydrology(world_map *wm) {
   printf("    ...processing %zu lake sites...\n", l_get_length(lake_sites));
   l_witheach(lake_sites, (void*) &lakes_seed, &_iter_fill_lake_site);
   cleanup_list(lake_sites);
+
+  // Finally, run rivers upwards from shores:
+  printf("    ...generating rivers...\n");
+  k
 }
 
 void generate_climate(world_map *wm) {
@@ -568,7 +574,7 @@ int fill_water(
     // Grab the next open region:
     this = (world_region*) q_pop_element(open);
     if (this->climate.water.body != NULL) {
-      // We've hit another body of water (shouldn't be possible?)!
+      // We've hit another body of water!
       // All we can do is abort at this point.
       cleanup_queue(open);
       cleanup_list(interior);
@@ -632,5 +638,7 @@ int fill_water(
   // and return 1.
   l_witheach(interior, (void*) body, &_iter_flag_as_water_interior);
   l_witheach(shore, (void*) body, &_iter_flag_as_water_shore);
+  body->area = l_get_length(interior);
+  body->shore_area = l_get_length(shore);
   return 1;
 }

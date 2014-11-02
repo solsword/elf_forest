@@ -22,11 +22,11 @@
 //#define WORLD_WIDTH 768
 //#define WORLD_HEIGHT 512
 // 400*320 = 144000 regions
-#define WORLD_WIDTH 400
-#define WORLD_HEIGHT 360
+//#define WORLD_WIDTH 400
+//#define WORLD_HEIGHT 360
 // 128*108 = 13824 regions
-// #define WORLD_WIDTH 128
-// #define WORLD_HEIGHT 108
+#define WORLD_WIDTH 128
+#define WORLD_HEIGHT 108
 // 96*96 = 9216 regions
 //#define WORLD_WIDTH 96
 //#define WORLD_HEIGHT 96
