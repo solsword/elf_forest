@@ -25,6 +25,11 @@ extern gradient const TEMPERATURE_GRADIENT;
 
 extern gradient_map const GEOREGIONS_GRADIENT;
 
+extern pixel const RIVER_COLOR;
+
+#define SHORE_HUE_ADJUST (-20)
+#define SHORE_VAL_ADJUST (-10)
+
 /********************
  * Inline Functions *
  ********************/

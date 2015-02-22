@@ -520,7 +520,7 @@ static inline float compute_surflet_value_3d(
   } else {
     atten *= atten;
     return atten * grad_3d(
-      hash_3d(mixed_hash_1d(i), mixed_hash_1d(j), mixed_hash_1d(k)),
+      hash_3d(i, j, k),
       dx, dy, dz
     );
   }
@@ -535,14 +535,14 @@ static inline void compute_offset_grid_point_2d(
 ) {
   grn->x[idx] = (float) i + (
     hash_2d(
-      mixed_hash_1d(i + salt),
-      mixed_hash_1d(j + salt)
+      i + salt,
+      j + salt
     ) / ((float) HASH_MASK)
   );
   grn->y[idx] = (float) j + (
     hash_2d(
-      mixed_hash_1d(j + salt),
-      mixed_hash_1d(i + salt)
+      j + salt,
+      i + salt
     ) / ((float) HASH_MASK)
   );
 }
@@ -565,15 +565,15 @@ static inline void compute_offset_grid_point_2d_wrapped(
   if (height > 0) { jw = posmod(jw, height); }
   grn->x[idx] = (float) i + (
     hash_2d(
-      mixed_hash_1d(iw + salt),
-      mixed_hash_1d(jw + salt)
+      iw + salt,
+      jw + salt
     ) / ((float) HASH_MASK)
   );
   grn->y[idx] = (float) j + (
     hash_3d(
-      mixed_hash_1d(jw + salt),
-      mixed_hash_1d(iw + salt),
-      mixed_hash_1d(iw + salt)
+      jw + salt,
+      iw + salt,
+      iw + salt
     ) / ((float) HASH_MASK)
   );
 }
@@ -670,9 +670,9 @@ float sxnoise_2d(float x, float y, ptrdiff_t salt) {
   j2 += salt;
 
   // Compute gradient indices for each simplex corner:
-  ptrdiff_t g0 = (((mixed_hash_1d(i0) ^ expanded_hash_1d(j0))+i0) & 0x3f) << 1;
-  ptrdiff_t g1 = (((mixed_hash_1d(i1) ^ expanded_hash_1d(j1))+i1) & 0x3f) << 1;
-  ptrdiff_t g2 = (((mixed_hash_1d(i2) ^ expanded_hash_1d(j2))+i2) & 0x3f) << 1;
+  ptrdiff_t g0 = (((hash_1d(i0) ^ hash_1d(j0 + 3))+i0) & 0x3f) << 1;
+  ptrdiff_t g1 = (((hash_1d(i1) ^ hash_1d(j1 + 3))+i1) & 0x3f) << 1;
+  ptrdiff_t g2 = (((hash_1d(i2) ^ hash_1d(j2 + 3))+i2) & 0x3f) << 1;
 
   // Surflet values:
   float srf0 = compute_surflet_value_2d(g0, x - cx0, y - cy0);
@@ -724,9 +724,9 @@ float sxnoise_grad_2d(float x, float y, ptrdiff_t salt, float *dx, float *dy) {
   i2 += salt;
   j2 += salt;
 
-  ptrdiff_t g0 = (((mixed_hash_1d(i0) ^ expanded_hash_1d(j0))+i0) & 0x3f) << 1;
-  ptrdiff_t g1 = (((mixed_hash_1d(i1) ^ expanded_hash_1d(j1))+i1) & 0x3f) << 1;
-  ptrdiff_t g2 = (((mixed_hash_1d(i2) ^ expanded_hash_1d(j2))+i2) & 0x3f) << 1;
+  ptrdiff_t g0 = (((hash_1d(i0) ^ hash_1d(j0 + 3))+i0) & 0x3f) << 1;
+  ptrdiff_t g1 = (((hash_1d(i1) ^ hash_1d(j1 + 3))+i1) & 0x3f) << 1;
+  ptrdiff_t g2 = (((hash_1d(i2) ^ hash_1d(j2 + 3))+i2) & 0x3f) << 1;
 
   // Here we start getting gradient information:
   float tdx = 0, tdy = 0;

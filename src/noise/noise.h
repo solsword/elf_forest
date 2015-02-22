@@ -234,7 +234,41 @@ static inline ptrdiff_t ffloor(float x) {
   return ix - (ix > x);
 }
 
-// Hash functions using the hash table:
+// Hash functions:
+
+// Basic hash of a single value:
+static inline ptrdiff_t hash_1d(ptrdiff_t x) {
+  return ((x + 8911211) * 71817211) & HASH_MASK; // both are prime
+}
+
+static inline ptrdiff_t hash_2d(ptrdiff_t x, ptrdiff_t y) {
+  return hash_1d(x + hash_1d(y));
+}
+static inline ptrdiff_t hash_3d(ptrdiff_t x, ptrdiff_t y, ptrdiff_t z) {
+  return hash_1d(x + hash_1d(y + hash_1d(z)));
+}
+
+// Returns a floating point value in [0, 1] rather than an integer in
+// [0, HASH_MASK]. Uses hash_1d as the underlying hash function, so it only
+// has 256 possible outcomes.
+static inline float float_hash_1d(ptrdiff_t x) {
+  return ((float) hash_1d(x)) / ((float) HASH_MASK);
+}
+
+// Returns a floating point value in [0, 1] from a vaguely normal-ish
+// distribution (mean 0.5, variance ~0.25).
+static inline float norm_hash_1d(ptrdiff_t x) {
+  float result = float_hash_1d(x);
+  x = hash_1d(x);
+  result += ((float) x / ((float) HASH_MASK));
+  x = hash_1d(x);
+  result += ((float) x / ((float) HASH_MASK));
+  result /= 3.0;
+  return result;
+}
+
+// */
+/*
 
 // Basic hash of a single value, using only the first HASH_BITS bits:
 static inline ptrdiff_t hash_1d(ptrdiff_t x) {
@@ -245,7 +279,6 @@ static inline ptrdiff_t hash_1d(ptrdiff_t x) {
 // much larger period (given sufficient seed bits). It is of course much slower
 // as a result.
 static inline ptrdiff_t mixed_hash_1d(ptrdiff_t x) {
-//*
   return HASH[
     (x & HASH_MASK) +
     HASH[
@@ -297,6 +330,7 @@ static inline ptrdiff_t hash_2d(ptrdiff_t x, ptrdiff_t y) {
 static inline ptrdiff_t hash_3d(ptrdiff_t x, ptrdiff_t y, ptrdiff_t z) {
   return HASH[(x & HASH_MASK) + HASH[(y & HASH_MASK) + HASH[z & HASH_MASK]]];
 }
+// */
 
 /*************
  * Functions *
@@ -464,7 +498,7 @@ static inline float tiled_func(
   float ex, ey; // extended coordinates
   float mx, my; // mix parameters for x and y
 
-  ptrdiff_t salt = expanded_hash_1d(seed);
+  ptrdiff_t salt = hash_1d(seed);
 
   if (wrapx > 0) {
     wx = x - wrapx*ffloor(x/wrapx);

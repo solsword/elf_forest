@@ -83,13 +83,13 @@ stratum *create_stratum(
       result->smoothing = 0.15 + 0.2*float_hash_1d(seed);
       seed = prng(seed);
 
-      for (i = 0; i < N_VEIN_TYPES; ++i) {
+      for (i = 0; i < WM_N_VEIN_TYPES; ++i) {
         result->vein_scale[i] = 0; // 23.4;
         result->vein_strength[i] = 0; // 0.5;
         result->vein_species[i] = 0; // TODO: Pick a material here!
       }
 
-      for (i = 0; i < N_INCLUSION_TYPES; ++i) {
+      for (i = 0; i < WM_N_INCLUSION_TYPES; ++i) {
         result->inclusion_frequency[i] = 0; // 0.01;
         result->inclusion_species[i] = 0; // TODO: Pick a material here!
       }
@@ -130,13 +130,13 @@ stratum *create_stratum(
       result->smoothing = 0.15 + 0.45*float_hash_1d(seed);
       seed = prng(seed);
 
-      for (i = 0; i < N_VEIN_TYPES; ++i) {
+      for (i = 0; i < WM_N_VEIN_TYPES; ++i) {
         result->vein_scale[i] = 0; // 23.4;
         result->vein_strength[i] = 0; // 0.5;
         result->vein_species[i] = 0; // TODO: Pick a material here!
       }
 
-      for (i = 0; i < N_INCLUSION_TYPES; ++i) {
+      for (i = 0; i < WM_N_INCLUSION_TYPES; ++i) {
         result->inclusion_frequency[i] = 0; // 0.01;
         result->inclusion_species[i] = 0; // TODO: Pick a material here!
       }
@@ -178,13 +178,13 @@ stratum *create_stratum(
       result->smoothing = 0.12 + 0.4*float_hash_1d(seed);
       seed = prng(seed);
 
-      for (i = 0; i < N_VEIN_TYPES; ++i) {
+      for (i = 0; i < WM_N_VEIN_TYPES; ++i) {
         result->vein_scale[i] = 0; // 23.4;
         result->vein_strength[i] = 0; // 0.5;
         result->vein_species[i] = 0; // TODO: Pick a material here!
       }
 
-      for (i = 0; i < N_INCLUSION_TYPES; ++i) {
+      for (i = 0; i < WM_N_INCLUSION_TYPES; ++i) {
         result->inclusion_frequency[i] = 0; // 0.01;
         result->inclusion_species[i] = 0; // TODO: Pick a material here!
       }
@@ -212,7 +212,7 @@ void generate_geology(world_map *wm) {
   geologic_source source = GEO_SEDIMENTAY;
   ptrdiff_t hash, h1, h2, h3, h4, h5;
   world_region *wr;
-  for (i = 0; i < MAX_STRATA_LAYERS * STRATA_COMPLEXITY; ++i) {
+  for (i = 0; i < WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY; ++i) {
     // Create a stratum and append it to the list of all strata:
     hash = prng(wm->seed + 567*i);
     h1 = hash_1d(hash);
@@ -264,7 +264,7 @@ void generate_geology(world_map *wm) {
         if (t > 0) {
           //TODO: Real logging/debugging
           wr = get_world_region(wm, &xy); // no need to worry about NULL here
-          if (wr->geology.stratum_count < MAX_STRATA_LAYERS) {
+          if (wr->geology.stratum_count < WM_MAX_STRATA_LAYERS) {
             // adjust existing strata:
             for (j = 0; j < wr->geology.stratum_count; ++j) {
               wr->geology.bottoms[j] *= (
@@ -289,14 +289,14 @@ void generate_geology(world_map *wm) {
       printf(
         "    ...%zu / %zu strata done...\r",
         i,
-        (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
+        (size_t) (WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
       );
     }
   }
   printf(
     "    ...%zu / %zu strata done...\r",
-    (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY),
-    (size_t) (MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
+    (size_t) (WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY),
+    (size_t) (WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
   );
   printf("\n");
 }

@@ -32,6 +32,12 @@
 #define CL_LAKE_SALINITY_THRESHOLD_BRINY 0.02
 
 // River parameters:
+#define CL_RIVER_SEED_PROB_FLOOR 0.007
+#define CL_RIVER_SEED_PROB_CLIMB 1.2
+#define CL_RIVER_SEED_PROB_CEILING 0.35
+
+#define CL_RIVER_SEED_CPT_DIST 0.35
+
 #define CL_PRIMARY_RIVER_SEP_BASE 50
 #define CL_PRIMARY_RIVER_SEP_VAR 14
 
@@ -271,6 +277,12 @@ body_of_water* create_body_of_water(float level, salinity salt);
 // Frees the memory associated with the given body of water.
 void cleanup_body_of_water(body_of_water *body);
 
+// Allocates and returns a new river.
+river* create_river(void);
+
+// Frees the memory associated with the given river.
+void cleanup_river(river *r);
+
 /*************
  * Functions *
  *************/
@@ -285,18 +297,21 @@ void generate_climate(world_map *wm);
 // water cycle, populating precipitation information.
 void simulate_water_cycle(world_map *wm);
 
-// Takes an origin point and a water body and fills ares of the given world map
-// as part of that water body between the given size limits. The size limits
-// will be ignored if they are negative. If the body of water turns out to be
-// too small or too large, the entire operation is cancelled, and the return
-// value will be 0. Otherwise, the return value is 1 and the regions filled
-// will have their hydrology info set to point to the given body of water.
-int fill_water(
-  world_map *wm,
-  body_of_water *body,
-  world_map_pos *origin,
-  int min_size,
-  int max_size
+// A fill step function which takes a body of water and fills ares of the given
+// world map with it. If it succeeds, the regions filled will have their
+// hydrology info set to point to the given body of water.
+step_result fill_water(
+  search_step step,
+  world_region *wr,
+  void* v_body
+);
+
+// A fill step function which iterates over shore regions and randomly adds
+// river seeds to the world_map's all_rivers list.
+step_result seed_rivers(
+  search_step step,
+  world_region *wr,
+  void* ignored
 );
 
 #endif // ifndef CLIMATE_H

@@ -48,6 +48,24 @@ enum salinity_e {
 };
 typedef enum salinity_e salinity;
 
+// Search/fill iteration algorithm steps:
+enum search_step_e {
+  SSTEP_INIT = 0,
+  SSTEP_PROCESS = 1,
+  SSTEP_CLEANUP = 2,
+  SSTEP_FINISH = 3,
+};
+typedef enum search_step_e search_step;
+
+// Search/fill iteration algorithm results:
+enum step_result_e {
+  SRESULT_CONTINUE = 0,
+  SRESULT_FINISHED = 1,
+  SRESULT_ABORT = 2,
+  SRESULT_IGNORE = 3,
+};
+typedef enum step_result_e step_result;
+
 /************************
  * Types and Structures *
  ************************/
@@ -56,6 +74,11 @@ typedef enum salinity_e salinity;
 // -------
 
 typedef ptrdiff_t wm_pos_t;
+
+// Position within a world map using floats on [0, 1] packed into a pointer
+// using fxy__ptr from utils.h. It can't represent locations outside the world
+// map.
+typedef void* geopt;
 
 // Position within a world map.
 struct world_map_pos_s;
@@ -151,51 +174,56 @@ typedef struct biome_s biome;
 )
 
 // The strength and base scale of the noise that affects region contenders:
-#define REGION_CONTENTION_NOISE_STRENGTH 0.5
-#define REGION_CONTENTION_NOISE_SCALE (1.0 / 50.0)
-#define REGION_CONTENTION_POLAR_STRENGTH 0.7
-#define REGION_CONTENTION_POLAR_SCALE 1.6
+#define WM_REGION_CONTENTION_NOISE_STRENGTH 0.5
+#define WM_REGION_CONTENTION_NOISE_SCALE (1.0 / 50.0)
+#define WM_REGION_CONTENTION_POLAR_STRENGTH 0.7
+#define WM_REGION_CONTENTION_POLAR_SCALE 1.6
 
+// How far away from region boundaries "inner" points should be in fractions of
+// a world region.
+#define INNER_GEOPT_MARGIN 0.05
 
 // Geology
 // -------
 
 // Maximum number of stone layers per world region
-#define MAX_STRATA_LAYERS 256
+#define WM_MAX_STRATA_LAYERS 256
 
 // Maximum number of material types present in other layers as veins
-#define N_VEIN_TYPES 2
+#define WM_N_VEIN_TYPES 2
 
 // Maximum number of material types included in other layers
-#define N_INCLUSION_TYPES 8
+#define WM_N_INCLUSION_TYPES 8
 
 
 // Climate & Hydrology
 // -------------------
 
 // Number of seasons in the year
-#define N_SEASONS 4
+#define WM_N_SEASONS 4
 
 // Maximum alternate dirt/sand types:
-#define MAX_ALT_DIRTS 5
-#define MAX_ALT_SANDS 3
+#define WM_MAX_ALT_DIRTS 5
+#define WM_MAX_ALT_SANDS 3
 
+// Maximum rivers in a single region:
+#define WM_MAX_RIVERS 4
 
 // Biology
 // -------
 
 // Maximum number of biomes that can overlap in the same world region
-#define MAX_BIOME_OVERLAP 4
+#define WM_MAX_BIOME_OVERLAP 4
 
 // Biome plant variant caps
-#define MAX_BIOME_MUSHROOMS 16
-#define MAX_BIOME_MOSSES 16
-#define MAX_BIOME_GRASSES 32
-#define MAX_BIOME_VINES 16
-#define MAX_BIOME_HERBS 128
-#define MAX_BIOME_BUSHES 32
-#define MAX_BIOME_SHRUBS 32
-#define MAX_BIOME_TREES 64
+#define WM_MAX_BIOME_MUSHROOMS 16
+#define WM_MAX_BIOME_MOSSES 16
+#define WM_MAX_BIOME_GRASSES 32
+#define WM_MAX_BIOME_VINES 16
+#define WM_MAX_BIOME_HERBS 128
+#define WM_MAX_BIOME_BUSHES 32
+#define WM_MAX_BIOME_SHRUBS 32
+#define WM_MAX_BIOME_TREES 64
 
 /***********
  * Globals *
@@ -208,6 +236,13 @@ extern world_map* THE_WORLD;
  * Structure Definitions *
  *************************/
 
+// Pre
+// ---
+
+struct world_map_pos_s {
+  wm_pos_t x, y;
+};
+
 // Biology
 // -------
 
@@ -216,28 +251,30 @@ struct biome_s {
   // mushrooms, mosses, grasses, vines, herbs, bushes, shrubs, and trees
   // (aquatic grasses, plants and corals are stored as grasses, vines, and
   // bushes respectively)
-  species  mushroom_species[MAX_BIOME_MUSHROOMS];
-  float    mushroom_frequencies[MAX_BIOME_MUSHROOMS];
-  species  moss_species[MAX_BIOME_MOSSES];
-  float    moss_frequencies[MAX_BIOME_MOSSES];
-  species  grass_species[MAX_BIOME_GRASSES];
-  float    grass_frequencies[MAX_BIOME_GRASSES];
-  species  vine_species[MAX_BIOME_VINES];
-  float    vine_frequencies[MAX_BIOME_VINES];
-  species  herb_species[MAX_BIOME_HERBS];
-  float    herb_frequencies[MAX_BIOME_HERBS];
-  species  bush_species[MAX_BIOME_BUSHES];
-  float    bush_frequencies[MAX_BIOME_BUSHES];
-  species  shrub_species[MAX_BIOME_SHRUBS];
-  float    shrub_frequencies[MAX_BIOME_SHRUBS];
-  species  tree_species[MAX_BIOME_TREES];
-  float    tree_frequencies[MAX_BIOME_TREES];
+  species  mushroom_species[WM_MAX_BIOME_MUSHROOMS];
+  float    mushroom_frequencies[WM_MAX_BIOME_MUSHROOMS];
+  species  moss_species[WM_MAX_BIOME_MOSSES];
+  float    moss_frequencies[WM_MAX_BIOME_MOSSES];
+  species  grass_species[WM_MAX_BIOME_GRASSES];
+  float    grass_frequencies[WM_MAX_BIOME_GRASSES];
+  species  vine_species[WM_MAX_BIOME_VINES];
+  float    vine_frequencies[WM_MAX_BIOME_VINES];
+  species  herb_species[WM_MAX_BIOME_HERBS];
+  float    herb_frequencies[WM_MAX_BIOME_HERBS];
+  species  bush_species[WM_MAX_BIOME_BUSHES];
+  float    bush_frequencies[WM_MAX_BIOME_BUSHES];
+  species  shrub_species[WM_MAX_BIOME_SHRUBS];
+  float    shrub_frequencies[WM_MAX_BIOME_SHRUBS];
+  species  tree_species[WM_MAX_BIOME_TREES];
+  float    tree_frequencies[WM_MAX_BIOME_TREES];
 };
 
 // Climate & Hydrology
 // -------------------
 
 struct body_of_water_s {
+  world_map_pos origin;
+  world_map_pos shorigin; // an arbitrary point on the shore
   float level;
   salinity salt;
   size_t area;
@@ -253,6 +290,7 @@ struct river_s {
 struct hydrology_s {
   hydro_state state; // what kind of region this is
   body_of_water *body; // what body of water this region belongs to
+  river *rivers[WM_MAX_RIVERS]; // Which rivers flow through this region
   r_pos_t water_table; // how high the water table is, in blocks
   salinity salt; // the salinity of local groundwater
 };
@@ -266,23 +304,23 @@ struct weather_s {
   float precipitation_quotient; // How much of local clouds rains here
   float total_precipitation; // summed precipitation during simulation
   float next_total_precipitation; // next iteration precipitation
-  float rainfall[N_SEASONS]; // rainfall per season in mm/year
-  float temp_low[N_SEASONS]; // temperature low, mean and high throughout the
-  float temp_mean[N_SEASONS]; // day, in each season
-  float temp_high[N_SEASONS];
+  float rainfall[WM_N_SEASONS]; // rainfall per season in mm/year
+  float temp_low[WM_N_SEASONS]; // temperature low, mean and high throughout the
+  float temp_mean[WM_N_SEASONS]; // day, in each season
+  float temp_high[WM_N_SEASONS];
 };
 
 struct soil_composition_s {
   species base_dirt; // dirt (/sand/mud) species for normal soil
-  block alt_dirt_blocks[MAX_ALT_DIRTS];
-  species alt_dirt_species[MAX_ALT_DIRTS];
-  float alt_dirt_strengths[MAX_ALT_DIRTS];
-  float alt_dirt_hdeps[MAX_ALT_DIRTS]; // height-dependence
+  block alt_dirt_blocks[WM_MAX_ALT_DIRTS];
+  species alt_dirt_species[WM_MAX_ALT_DIRTS];
+  float alt_dirt_strengths[WM_MAX_ALT_DIRTS];
+  float alt_dirt_hdeps[WM_MAX_ALT_DIRTS]; // height-dependence
   species base_sand; // sand species (for beaches, rivers, & oceans)
-  block alt_sand_blocks[MAX_ALT_SANDS];
-  species alt_sand_species[MAX_ALT_SANDS];
-  float alt_sand_strengths[MAX_ALT_SANDS];
-  float alt_sand_hdeps[MAX_ALT_SANDS]; // height-dependence
+  block alt_sand_blocks[WM_MAX_ALT_SANDS];
+  species alt_sand_species[WM_MAX_ALT_SANDS];
+  float alt_sand_strengths[WM_MAX_ALT_SANDS];
+  float alt_sand_hdeps[WM_MAX_ALT_SANDS]; // height-dependence
 };
 
 // Geology
@@ -328,15 +366,15 @@ struct stratum_s {
 
  // Derived vein and inclusion information:
  // ---------------------------------------
-  float vein_scale[N_VEIN_TYPES]; // scale of different veins (in blocks)
-  float vein_strength[N_VEIN_TYPES]; // thickness and frequency of veins (0-1)
-  float inclusion_frequency[N_INCLUSION_TYPES]; // frequency of inclusions (0-1)
+  float vein_scale[WM_N_VEIN_TYPES]; // scale of different veins (in blocks)
+  float vein_strength[WM_N_VEIN_TYPES]; // thickness/frequency of veins (0-1)
+  float inclusion_frequency[WM_N_INCLUSION_TYPES]; // inclusion frequency (0-1)
 
  // Derived species information:
  // ----------------------------------
   species base_species; // exact material type for main mass
-  species vein_species[N_VEIN_TYPES]; // types for veins
-  species inclusion_species[N_INCLUSION_TYPES]; // types for inclusions
+  species vein_species[WM_N_VEIN_TYPES]; // types for veins
+  species inclusion_species[WM_N_INCLUSION_TYPES]; // types for inclusions
 };
 
 // Info
@@ -344,9 +382,9 @@ struct stratum_s {
 
 struct strata_info_s { // indexed starting from the bottom
   size_t stratum_count;
-  stratum* strata[MAX_STRATA_LAYERS]; // the layers that intersect this region
+  stratum* strata[WM_MAX_STRATA_LAYERS]; // the layers that touch this region
   float total_height; // cumulative height in blocks (as float for division)
-  float bottoms[MAX_STRATA_LAYERS]; // the bottom of each layer on [0, 1]
+  float bottoms[WM_MAX_STRATA_LAYERS]; // the bottom of each layer on [0, 1]
 };
 
 struct climate_info_s {
@@ -356,7 +394,7 @@ struct climate_info_s {
 };
 
 struct biome_info_s {
-  biome* biomes[MAX_BIOME_OVERLAP];
+  biome* biomes[WM_MAX_BIOME_OVERLAP];
 };
 
 struct civ_info_s {
@@ -366,10 +404,6 @@ struct civ_info_s {
 
 // General
 // -------
-
-struct world_map_pos_s {
-  wm_pos_t x, y;
-};
 
 // Each world region stores info on geology, climate, ecology, and
 // anthropoloogy, as well as an anchor position that's randomly placed
@@ -400,6 +434,7 @@ struct world_map_s {
   world_region *regions;
   list *all_strata;
   list *all_water;
+  list *all_rivers;
   list *all_biomes;
   list *all_civs;
 };
@@ -450,6 +485,77 @@ static inline void copy_wmpos(
   to->y = from->y;
 }
 
+static inline void wmpos__geopt(
+  world_map *wm,
+  world_map_pos const * const wmpos,
+  geopt *gpt
+) {
+  *gpt = fxy__ptr(
+    (wmpos->x) / ((float) wm->width),
+    (wmpos->y) / ((float) wm->height)
+  );
+}
+
+static inline void geopt__wmpos(
+  world_map *wm,
+  geopt const * const gpt,
+  world_map_pos *wmpos
+) {
+  wmpos->x = fastfloor(ptr__fx(*gpt) * wm->width);
+  wmpos->y = fastfloor(ptr__fy(*gpt) * wm->height);
+}
+
+// Ignores the z value.
+static inline void rpos__geopt(
+  world_map *wm,
+  region_pos const * const rpos,
+  geopt *gpt
+) {
+  *gpt = fxy__ptr(
+    (rpos->x) / ((float) (wm->width * WORLD_REGION_BLOCKS)),
+    (rpos->y) / ((float) (wm->height * WORLD_REGION_BLOCKS))
+  );
+}
+
+// Sets the z value to 0.
+static inline void geopt__rpos(
+  world_map *wm,
+  geopt const * const gpt,
+  region_pos *rpos
+) {
+  rpos->x = fastfloor(ptr__fx(*gpt) * wm->width * WORLD_REGION_BLOCKS);
+  rpos->y = fastfloor(ptr__fy(*gpt) * wm->height * WORLD_REGION_BLOCKS);
+  rpos->z = 0;
+}
+
+// Takes a world region and a seed and returns a random geopt within the
+// region, excluding some positions right at the edges. In the process it
+// scrambles the given seed.
+static inline geopt inner_pt(world_region *wr, ptrdiff_t *seed) {
+  float lat, lon;
+  float xmin, xmax, ymin, ymax;
+
+  xmin = wr->pos.x / ((float) (wr->world->width));
+  xmax = (wr->pos.x + 1) / ((float) (wr->world->width));
+  ymin = wr->pos.y / ((float) (wr->world->height));
+  ymax = (wr->pos.y + 1) / ((float) (wr->world->height));
+
+  lon = (
+    xmin + (xmax - xmin) * INNER_GEOPT_MARGIN
+  +
+    (xmax - xmin) * (1.0 - 2.0 * INNER_GEOPT_MARGIN) * ptrf(*seed)
+  );
+  *seed = prng(*seed);
+  lat = (
+    ymin + (ymax - ymin) * INNER_GEOPT_MARGIN
+  +
+    (ymax - ymin) * (1.0 - 2.0 * INNER_GEOPT_MARGIN) * ptrf(*seed)
+  );
+  *seed = prng(*seed);
+
+  return fxy__ptr(lon, lat);
+}
+
 
 // Returns the region of the given world at the given position, or NULL if the
 // given position is outside the given world.
@@ -468,6 +574,7 @@ static inline world_region* get_world_region(
   }
 }
 
+// Computes the region anchor for the given world map position.
 static inline void compute_region_anchor(
   world_map *wm,
   world_map_pos const * const wmpos,
@@ -510,5 +617,14 @@ void compute_region_contenders(
 // Takes a world map position and uses downhill information to find a terrain
 // local minimum. The input position is edited directly.
 void find_valley(world_map *wm, world_map_pos *pos);
+
+int breadth_first_iter(
+  world_map *wm,
+  world_map_pos *origin,
+  int min_size,
+  int max_size,
+  void *arg,
+  step_result (*process)(search_step, world_region*, void*)
+);
 
 #endif // ifndef WORLD_MAP_H

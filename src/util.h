@@ -7,6 +7,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 
 #include <GL/gl.h>
@@ -34,9 +35,9 @@
 // Max for signed is all 1s except the sign bit:
 #define smaxof(t) ( (t) (tull(t) | lull(t)) )
 
-#define HALF_PTR_BITS (bits(void*)/2)
-#define HALF_PTR_TOP (umaxof(void*)<<HALF_PTR_BITS)
-#define HALF_PTR_BOT ((void*) (~HALF_PTR_TOP))
+#define HALF_PTR_BITS (bits(uintptr_t)/2)
+#define HALF_PTR_TOP ((uintptr_t) (umaxof(uintptr_t)<<HALF_PTR_BITS))
+#define HALF_PTR_BOT ((uintptr_t) (~((uintptr_t) HALF_PTR_TOP)))
 
 /*************
  * Constants *
@@ -80,9 +81,10 @@ static inline ptrdiff_t prng(ptrdiff_t seed) {
 }
 
 // Simple ptrdiff_t->float
-// Note that resolution is roughly 1/2^19, so don't expect too much.
+// Note that resolution is roughly 1/2^20, so don't expect too much.
+// Returns a value in [0, 1)
 static inline float ptrf(ptrdiff_t seed) {
-  return (seed % 524309) / 524308.0;
+  return ((seed % 524309) + 524309) / 1048617.0;
 }
 
 // Packs two floats (both of which should be in [0, 1]) into a single void*.
@@ -94,28 +96,28 @@ static inline void* fxy__ptr(float x, float y) {
     printf("xyptr x/y out of range [0, 1]: (%.2f,%.2f)\n", x, y);
   }
 #endif
-  return (
-    (((void*) (x * HALF_PTR_BOT)) << HALF_PTR_BITS)
+  return (void*) (
+    (((uintptr_t) (x * HALF_PTR_BOT)) << HALF_PTR_BITS)
   +
-    ((void*) (y * HALF_PTR_BOT))
+    ((uintptr_t) (y * HALF_PTR_BOT))
   );
 }
 
 // The inverse of fxy__ptr; unpacks just the x component. Don't expect the
 // result to be equal to the value that was packed in, however, due to the
 // conversion. The value returned will always be in [0, 1] however.
-static inline float ptr__fx(void* ptr) {
+static inline float ptr__fx(void const * const ptr) {
   return (
-    ((ptr >> HALF_PTR_BITS) & HALF_PTR_BOT)
+    ((((uintptr_t) ptr) >> HALF_PTR_BITS) & HALF_PTR_BOT)
   /
     ((float) HALF_PTR_BOT)
   );
 }
 
 // See ptr__x: this just unpacks the y component instead of the x component.
-static inline float ptr__fy(void* ptr) {
+static inline float ptr__fy(void const * const ptr) {
   return (
-    (ptr & HALF_PTR_BOT)
+    (((uintptr_t) ptr) & HALF_PTR_BOT)
   /
     ((float) HALF_PTR_BOT)
   );
@@ -124,16 +126,16 @@ static inline float ptr__fy(void* ptr) {
 // These i[xy] pointer conversion functions work like the f- versions above but
 // for unsigned integers. Precision is of course not a problem, but truncation
 // could be.
-static inline (void*) ixy__ptr(size_t x, size_t y) {
-  return ((x & HALF_PTR_BOT) << HALF_PTR_BITS) + (y & HALF_PTR_BOT);
+static inline void* ixy__ptr(size_t x, size_t y) {
+  return (void*) (((x & HALF_PTR_BOT) << HALF_PTR_BITS) + (y & HALF_PTR_BOT));
 }
 
-static inline size_t ptr__ix(void* ptr) {
-  return (size_t) ((ptr >> HALF_PTR_BITS) & HALF_PTR_BOT);
+static inline size_t ptr__ix(void const * const ptr) {
+  return (size_t) ((((uintptr_t) ptr) >> HALF_PTR_BITS) & HALF_PTR_BOT);
 }
 
-static inline size_t ptr__iy(void* ptr) {
-  return (size_t) (ptr & HALF_PTR_BOT);
+static inline size_t ptr__iy(void const * const ptr) {
+  return (size_t) (((uintptr_t) ptr) & HALF_PTR_BOT);
 }
 
 // Normalizes the given angle to be between -M_PI and M_PI.

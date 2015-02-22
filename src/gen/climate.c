@@ -2,6 +2,9 @@
 // Hydrology and climate.
 
 #include <stdint.h>
+#ifdef DEBUG
+  #include <stdio.h>
+#endif
 
 #include "datatypes/list.h"
 #include "datatypes/queue.h"
@@ -27,6 +30,19 @@ body_of_water* create_body_of_water(float level, salinity salt) {
 
 void cleanup_body_of_water(body_of_water *body) {
   free(body);
+}
+
+river* create_river(void) {
+  river *result = (river*) malloc(sizeof(river));
+  result->path = create_list();
+  result->control_points = create_list();
+  return result;
+}
+
+void cleanup_river(river *r) {
+  cleanup_list(r->path);
+  cleanup_list(r->control_points);
+  free(r);
 }
 
 /*********************
@@ -100,12 +116,13 @@ void _iter_fill_lake_site(void *v_wr, void *v_seed) {
   while (
     water->level >= wr->min_height + CL_MIN_LAKE_DEPTH
   &&
-    !fill_water(
+    !breadth_first_iter(
       wr->world,
-      water,
       &(wr->pos),
       CL_MIN_LAKE_SIZE,
-      CL_MAX_LAKE_SIZE
+      CL_MAX_LAKE_SIZE,
+      (void*) water,
+      &fill_water
     )
   ) {
     f *= 0.9;
@@ -117,6 +134,19 @@ void _iter_fill_lake_site(void *v_wr, void *v_seed) {
   } else {
     l_append_element(wr->world->all_water, water);
   }
+}
+
+void _iter_seed_rivers(void *v_body, void *v_wm) {
+  body_of_water *body = (body_of_water*) v_body;
+  world_map *wm = (world_map*) v_wm;
+  breadth_first_iter(
+    wm,
+    &(body->shorigin),
+    0,
+    -1,
+    (void*) body,
+    &seed_rivers
+  );
 }
 
 // Simulates cloud movement to compute precipitation (cloud_potential) values.
@@ -306,7 +336,14 @@ void generate_hydrology(world_map *wm) {
       if (
         wr->climate.water.body == NULL
       &&
-        fill_water(wm, next_water, &xy, CL_MIN_OCEAN_SIZE, CL_MAX_OCEAN_SIZE)
+        breadth_first_iter(
+          wm,
+          &xy,
+          CL_MIN_OCEAN_SIZE,
+          CL_MAX_OCEAN_SIZE,
+          (void*) next_water,
+          &fill_water
+        )
       ) {
         l_append_element(wm->all_water, next_water);
         next_water = create_body_of_water(TR_HEIGHT_SEA_LEVEL, SALINITY_SALINE);
@@ -326,7 +363,8 @@ void generate_hydrology(world_map *wm) {
 
   // Finally, run rivers upwards from shores:
   printf("    ...generating rivers...\n");
-  k
+  l_witheach(wm->all_water, (void*) wm, &_iter_seed_rivers);
+  // TODO: Grow the river seeds!
 }
 
 void generate_climate(world_map *wm) {
@@ -463,21 +501,21 @@ void generate_climate(world_map *wm) {
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
 
       // TODO: Real generation past this point!
-      for (i = 0; i < N_SEASONS; ++i) {
+      for (i = 0; i < WM_N_SEASONS; ++i) {
         wr->climate.atmosphere.rainfall[i] = MEAN_AVG_PRECIPITATION;
         wr->climate.atmosphere.temp_low[i] = 16;
         wr->climate.atmosphere.temp_mean[i] = 24;
         wr->climate.atmosphere.temp_high[i] = 32;
       }
       wr->climate.soil.base_dirt = 0;
-      for (i = 0; i < MAX_ALT_DIRTS; ++i) {
+      for (i = 0; i < WM_MAX_ALT_DIRTS; ++i) {
         wr->climate.soil.alt_dirt_blocks[i] = B_DIRT;
         wr->climate.soil.alt_dirt_species[i] = 0;
         wr->climate.soil.alt_dirt_strengths[i] = 0;
         wr->climate.soil.alt_dirt_hdeps[i] = 0;
       }
       wr->climate.soil.base_sand = 0;
-      for (i = 0; i < MAX_ALT_SANDS; ++i) {
+      for (i = 0; i < WM_MAX_ALT_SANDS; ++i) {
         wr->climate.soil.alt_sand_blocks[i] = B_SAND;
         wr->climate.soil.alt_sand_species[i] = 0;
         wr->climate.soil.alt_sand_strengths[i] = 0;
@@ -549,96 +587,129 @@ void simulate_water_cycle(world_map *wm) {
   }
 }
 
-int fill_water(
-  world_map *wm,
-  body_of_water *body,
-  world_map_pos *origin,
-  int min_size,
-  int max_size
+step_result fill_water(
+  search_step step,
+  world_region *wr,
+  void* v_body
 ) {
-  world_map_pos wmpos;
-  queue *open = create_queue();
-  list *interior = create_list();
-  list *shore = create_list();
-  map *visited = create_map(1, 2048);
-  world_region *this, *next;
-  int size = 0;
-
-  this = get_world_region(wm, origin);
-  if (this != NULL) {
-    q_push_element(open, this);
-    m_put_value(visited, (void*) 1, (map_key_t) this);
-  }
-
-  while (!q_is_empty(open) && (max_size < 0 || size <= max_size) ) {
-    // Grab the next open region:
-    this = (world_region*) q_pop_element(open);
-    if (this->climate.water.body != NULL) {
-      // We've hit another body of water!
-      // All we can do is abort at this point.
-      cleanup_queue(open);
-      cleanup_list(interior);
-      cleanup_list(shore);
-      cleanup_map(visited);
-      return 0;
-    }
-    if (
-      this->min_height - (TR_SCALE_MOUNDS + TR_SCALE_DETAILS + TR_SCALE_BUMPS)
+  static list *interior, *shore;
+  body_of_water *body = (body_of_water*) v_body;
+  if (step == SSTEP_INIT) {
+    interior = create_list();
+    shore = create_list();
+    copy_wmpos(&(wr->pos), &(body->origin));
+    return SRESULT_CONTINUE;
+  } else if (step == SSTEP_CLEANUP) {
+    cleanup_list(interior);
+    cleanup_list(shore);
+    return SRESULT_CONTINUE;
+  } else if (step == SSTEP_FINISH) {
+    l_witheach(interior, v_body, &_iter_flag_as_water_interior);
+    l_witheach(shore, v_body, &_iter_flag_as_water_shore);
+    return SRESULT_CONTINUE;
+  } else if (step == SSTEP_PROCESS) {
+    if (wr->climate.water.body != NULL) {
+      return SRESULT_ABORT;
+    } else if (
+      wr->min_height - (TR_SCALE_MOUNDS + TR_SCALE_DETAILS + TR_SCALE_BUMPS)
     >
       body->level
     ) {
       // This is a pure land region: do nothing
-      continue;
-    } else if (this->max_height > body->level) {
+      return SRESULT_IGNORE;
+    } else if (wr->max_height < body->level) {
       // This is an interior region
-      size += 1;
-      l_append_element(interior, this);
+      l_append_element(interior, wr);
+      body->area += 1;
+      return SRESULT_CONTINUE;
     } else {
       // This is a shore region
-      size += 1;
-      l_append_element(shore, this);
+      if (l_get_length(shore) == 0) { // the first one becomes the shorigin
+        copy_wmpos(&(wr->pos), &(body->shorigin));
+      }
+      l_append_element(shore, wr);
+      body->shore_area += 1;
+      return SRESULT_CONTINUE;
     }
-    // Add our neighbors to the open list:
-    wmpos.x = this->pos.x + 1;
-    wmpos.y = this->pos.y;
-    next = get_world_region(wm, &wmpos);
-    if (next != NULL && !m_contains_key(visited, (map_key_t) next)) {
-      q_push_element(open, next);
-      m_put_value(visited, (void*) 1, (map_key_t) next);
-    }
-    wmpos.x -= 2;
-    next = get_world_region(wm, &wmpos);
-    if (next != NULL && !m_contains_key(visited, (map_key_t) next)) {
-      q_push_element(open, next);
-      m_put_value(visited, (void*) 1, (map_key_t) next);
-    }
-    wmpos.x += 2;
-    wmpos.y -= 1;
-    next = get_world_region(wm, &wmpos);
-    if (next != NULL && !m_contains_key(visited, (map_key_t) next)) {
-      q_push_element(open, next);
-      m_put_value(visited, (void*) 1, (map_key_t) next);
-    }
-    wmpos.y += 2;
-    next = get_world_region(wm, &wmpos);
-    if (next != NULL && !m_contains_key(visited, (map_key_t) next)) {
-      q_push_element(open, next);
-      m_put_value(visited, (void*) 1, (map_key_t) next);
-    }
+#ifdef DEBUG
+  } else {
+    printf("Unknown search/fill step: %d\n", step);
+    return SRESULT_ABORT;
+#endif
   }
-  if ((max_size >= 0 && size > max_size) || size < min_size) {
-    // we hit one of the size limits: cleanup and return 0
-    cleanup_queue(open);
-    cleanup_list(interior);
-    cleanup_list(shore);
-    cleanup_map(visited);
-    return 0;
+}
+
+step_result seed_rivers(
+  search_step step,
+  world_region *wr,
+  void* v_body
+) {
+  static float prob = 0;
+  static ptrdiff_t salt = 0;
+  geopt rseed;
+  region_pos rpos;
+  river *r;
+  float uph;
+  size_t i;
+  body_of_water *body = (body_of_water*) v_body;
+  // TODO: Use this variable!
+  if (step == SSTEP_INIT) {
+    prob = CL_RIVER_SEED_PROB_FLOOR;
+    salt = prng(wr->seed + 22192);
+    return SRESULT_CONTINUE;
+  } else if (step == SSTEP_CLEANUP) {
+    return SRESULT_CONTINUE;
+  } else if (step == SSTEP_FINISH) {
+    return SRESULT_CONTINUE;
+  } else if (step == SSTEP_PROCESS) {
+    if (wr->climate.water.body != body) {
+      return SRESULT_IGNORE;
+    } else if (wr->climate.water.state == HYDRO_LAND) {
+      return SRESULT_IGNORE;
+    } else if (wr->climate.water.state != HYDRO_SHORE) {
+      return SRESULT_CONTINUE;
+    }
+    salt = prng(salt);
+    if (ptrf(salt) < prob && wr->climate.water.rivers[WM_MAX_RIVERS-1] == NULL){
+      // Seed a new river here:
+      r = create_river();
+      rseed = inner_pt(wr, &salt);
+      l_append_element(r->path, rseed); // A random starting point
+      geopt__rpos(wr->world, &rseed, &rpos);
+      uph = mani_uphill(&(wr->gross_height)); // flow from uphill
+      // TODO: Add a random element here?
+      rpos.x += WORLD_REGION_BLOCKS * CL_RIVER_SEED_CPT_DIST * cosf(uph);
+      rpos.y += WORLD_REGION_BLOCKS * CL_RIVER_SEED_CPT_DIST * sinf(uph);
+      if (rpos.x < 0) { rpos.x = 0; } // snap in control point if necessary
+      if (rpos.y < 0) { rpos.y = 0; }
+      if (rpos.x > wr->world->width * WORLD_REGION_BLOCKS) {
+        rpos.x = wr->world->width * WORLD_REGION_BLOCKS;
+      }
+      if (rpos.y > wr->world->height * WORLD_REGION_BLOCKS) {
+        rpos.y = wr->world->height * WORLD_REGION_BLOCKS;
+      }
+      rpos__geopt(wr->world, &rpos, &rseed);
+      l_append_element(r->control_points, rseed);
+      for (i = 0; i < WM_MAX_RIVERS; ++i) {
+        if (wr->climate.water.rivers[i] == NULL) {
+          wr->climate.water.rivers[i] = r;
+        }
+      }
+      l_append_element(wr->world->all_rivers, r);
+
+      // Reset our probability:
+      prob = CL_RIVER_SEED_PROB_FLOOR;
+    } else {
+      // Slowly increase probability:
+      if (prob < CL_RIVER_SEED_PROB_CEILING) {
+        prob *= CL_RIVER_SEED_PROB_CLIMB;
+      }
+    }
+    return SRESULT_CONTINUE;
+#ifdef DEBUG
+  } else {
+    printf("Unknown search/fill step: %d\n", step);
+    return SRESULT_ABORT;
+#endif
   }
-  // Otherwise we should flag each region as belonging to this body of water
-  // and return 1.
-  l_witheach(interior, (void*) body, &_iter_flag_as_water_interior);
-  l_witheach(shore, (void*) body, &_iter_flag_as_water_shore);
-  body->area = l_get_length(interior);
-  body->shore_area = l_get_length(shore);
-  return 1;
 }

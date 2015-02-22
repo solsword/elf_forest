@@ -203,7 +203,7 @@ void fltr_branches(texture *tx, void const * const fargs) {
 
 void fltr_leaf(texture *tx, void const * const fargs) {
   leaf_filter_args *lfargs = (leaf_filter_args *) fargs;
-  ptrdiff_t mxhash = mixed_hash_1d(lfargs->seed);
+  ptrdiff_t hash = hash_1d(lfargs->seed);
   float noise = 0;
   float angle = 0, bend = 0;
   float mid = LEAF_TEXTURE_SIZE / 2.0;
@@ -215,7 +215,7 @@ void fltr_leaf(texture *tx, void const * const fargs) {
   tx_clear(tx);
   if (lfargs->type == LT_SIMPLE) {
     // pick an angle in [-1, 1] * lfargs->angle_var (0 will be straight down)
-    noise = -1 + 2.0 * float_hash_1d((mxhash + lfargs->seed)*lfargs->width);
+    noise = -1 + 2.0 * float_hash_1d((hash + lfargs->seed)*lfargs->width);
     angle = lfargs->angle + lfargs->angle_var * noise;
 
     // the leaf starts opposite that angle:
@@ -233,7 +233,7 @@ void fltr_leaf(texture *tx, void const * const fargs) {
     }
 
     // its endpoint bends:
-    noise = 0.7 + 0.6 * float_hash_1d((mxhash + 2)*noise); // [0.7, 1.3]
+    noise = 0.7 + 0.6 * float_hash_1d((hash + 2)*noise); // [0.7, 1.3]
     bend = lfargs->bend * noise;
     if ((angle > 0 && angle < M_PI) || (angle < -M_PI) ) {
       bend = angle - bend;
@@ -298,9 +298,9 @@ void fltr_leaves(texture *tx, void const * const fargs) {
 
 void fltr_bulb_leaves(texture *tx, void const * const fargs) {
   bulb_leaves_filter_args *blfargs = (bulb_leaves_filter_args *) fargs;
-  ptrdiff_t mxhash = mixed_hash_1d(blfargs->seed);
+  ptrdiff_t hash = hash_1d(blfargs->seed);
   int i = 0;
-  float noise = 0.7 + 0.6 * float_hash_1d(mxhash); // [0.7, 1.3]
+  float noise = 0.7 + 0.6 * float_hash_1d(hash); // [0.7, 1.3]
   int nstalks = (int) (blfargs->count * noise + 0.5);
   if (nstalks < 1) {
     nstalks = 1;
@@ -321,7 +321,7 @@ void fltr_bulb_leaves(texture *tx, void const * const fargs) {
   lfargs.shape = LS_DELTOID;
   float th_base = 0, th_mid = 0;
   float mid = (BLOCK_TEXTURE_SIZE / 2);
-  noise = 0.75 + 0.5 * float_hash_1d(mxhash); // [0.75, 1.25]
+  noise = 0.75 + 0.5 * float_hash_1d(hash); // [0.75, 1.25]
   float spread = blfargs->spread * noise;
   if (spread > MAX_BULB_SPREAD) {
     spread = MAX_BULB_SPREAD;
@@ -330,12 +330,12 @@ void fltr_bulb_leaves(texture *tx, void const * const fargs) {
   for (i = 0; i < nstalks; ++i) {
     // generate x in [mid - spread, mid + spread]
     c.from.x = mid - spread;
-    c.from.x += 2 * spread * float_hash_1d(spread * mxhash * c.from.x + i);
+    c.from.x += 2 * spread * float_hash_1d(spread * hash * c.from.x + i);
     // pick a starting angle in [-1, 1]
-    noise = 1.0 - 2 * float_hash_1d(c.from.x*noise*mxhash + i*c.from.x);
+    noise = 1.0 - 2 * float_hash_1d(c.from.x*noise*hash + i*c.from.x);
     th_base = blfargs->angle * noise;
     // pick a bend angle in [0.6, 1.4] of the specified angle
-    noise = 0.6 + 0.8 * float_hash_1d(c.from.x*noise*mxhash + i*c.from.x);
+    noise = 0.6 + 0.8 * float_hash_1d(c.from.x*noise*hash + i*c.from.x);
     th_mid = blfargs->bend * noise * th_base / blfargs->angle;
     th_mid += th_base;
     // compute midpiont and endpoint
@@ -368,7 +368,7 @@ void fltr_bulb_leaves(texture *tx, void const * const fargs) {
     printf("xy_end: %.2f, %.2f\n", c.to.x, c.to.y);
     // */
     // pick a base width in [0.75, 1.25]
-    noise = 0.75 + 0.5 * float_hash_1d(c.from.x * noise * mxhash);
+    noise = 0.75 + 0.5 * float_hash_1d(c.from.x * noise * hash);
     lfargs.width = blfargs->width * noise;
 
     // draw the leaf:

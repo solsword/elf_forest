@@ -50,7 +50,7 @@ static inline tx_grammar_literal *choose_child(
   rnd *= (float) (
     ((seed & HASH_MASK) << HASH_BITS)
   +
-    mixed_hash_1d((ptrdiff_t) head)
+    hash_1d((ptrdiff_t) head)
   );
   rnd /= (float) ((HASH_MASK << HASH_BITS) + HASH_MASK);
   dis = head;
@@ -255,7 +255,7 @@ void run_grammar(tx_grammar_literal *lit) {
         if (px == GRAMMAR_KEYS[i] && lit->children[i] != NULL) {
           chosen = choose_child(
             lit->children[i],
-            hash_3d(hash_2d(mixed_hash_1d((ptrdiff_t) lit), i), col, row)
+            hash_3d(hash_2d(hash_1d((ptrdiff_t) lit), i), col, row)
           );
           if (chosen->result == NULL) {
             run_grammar(chosen);

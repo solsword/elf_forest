@@ -181,6 +181,8 @@ gradient_map const PRECIPITATION_GRADIENT = {
   }
 };
 
+pixel const RIVER_COLOR = 0xffdd9955;
+
 /*************
  * Functions *
  *************/
@@ -253,7 +255,11 @@ void render_map_vectors(
 
 pixel ly_terrain_height(world_region *wr) {
   float h;
-  if (wr->climate.water.body != NULL) {
+  if (wr->climate.water.rivers[0] != NULL) {
+    // draw rivers
+    // DEBUG:
+    return RIVER_COLOR;
+  } else if (wr->climate.water.body != NULL) {
     // draw water depth
     h = (
       (wr->climate.water.body->level - wr->min_height)
@@ -264,7 +270,24 @@ pixel ly_terrain_height(world_region *wr) {
       h = 0;
     }
     h = 1 - h;
-    return gradient_result(&SEA_GRADIENT, h);
+    pixel result = gradient_result(&SEA_GRADIENT, h);
+    if (wr->climate.water.state == HYDRO_SHORE) {
+      // shores are a bit greener and a bit darker
+      pixel hsv;
+      rgb__hsv(result, &hsv);
+      channel hue = px_hue(hsv);
+      channel val = px_val(hsv);
+      hue += SHORE_HUE_ADJUST;
+      if (hue < 0) { hue = 0; }
+      else if (hue > CHANNEL_MAX) { hue = CHANNEL_MAX; }
+      val += SHORE_VAL_ADJUST;
+      if (val < 0) { val = 0; }
+      else if (val > CHANNEL_MAX) { val = CHANNEL_MAX; }
+      px_set_hue(&hsv, hue);
+      px_set_val(&hsv, val);
+      hsv__rgb(hsv, &result);
+    }
+    return result;
   } else {
     // draw land elevation
     h = (

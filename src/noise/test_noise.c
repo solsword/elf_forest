@@ -245,7 +245,12 @@ float zoomed_noise(float x, float y) {
 
 
 static inline void colormap(float n, int* color, float* fraction) {
-  float scaled = ((n+1)/2.0)*N_FALSE_COLORS;
+  float scaled;
+  if (n == 1.0) {
+    scaled = N_FALSE_COLORS - 1;
+  } else {
+    scaled = ((n+1)/2.0)*N_FALSE_COLORS;
+  }
   *color = (int) ffloor(scaled);
   *fraction = scaled - *color;
 }
@@ -338,11 +343,6 @@ void write_noise_ppm(
           b = (n+1)/2.0;
         }
       }
-      /*
-      r = 0.5;
-      g = 0.5;
-      b = 0.5;
-      // */
       if (light) {
         r *= lighting;
         g *= lighting;
@@ -563,7 +563,8 @@ void write_grad_ppm(
 }
 
 int main(int argc, char** argv) {
-  write_noise_ppm(&unsalt_2d_noise, "noise_test_2D.ppm", 0, 1);
+  write_noise_ppm(&unsalt_2d_noise, "noise_test_2D.ppm", 0, 0);
+  write_noise_ppm(&unsalt_2d_noise, "noise_test_2D_shaded.ppm", 0, 1);
   write_noise_ppm(&slice_3d_noise, "noise_test_3D.ppm", 1, 1);
   write_noise_ppm(&fractal_2d_noise, "noise_test_2D_F.ppm", 1, 1);
   write_noise_ppm(&slice_fractal_3d_noise, "noise_test_3D_F.ppm", 1, 1);
