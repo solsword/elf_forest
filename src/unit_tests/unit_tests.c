@@ -46,6 +46,8 @@
  * Test Suite Imports *
  **********************/
 
+#include "suites/test_util.h"
+DEFINE_IMPORTED_BUILDER
 #include "suites/test_list.h"
 DEFINE_IMPORTED_BUILDER
 #include "suites/test_queue.h"
@@ -79,6 +81,9 @@ void setup_unit_tests(void) {
   test_suite *ts;
   ALL_TEST_SUITES = create_list();
   // Note that these #includes must be reimports or their syntax will be wrong.
+  #include "suites/test_util.h"
+  ts = INVOKE_IMPORTED_BUILDER;
+  l_append_element(ALL_TEST_SUITES, ts);
   #include "suites/test_tex.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
