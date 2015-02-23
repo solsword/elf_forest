@@ -285,6 +285,8 @@ struct body_of_water_s {
 struct river_s {
   list *path;
   list *control_points;
+  list *widths;
+  float branch_prob;
 };
 
 struct hydrology_s {

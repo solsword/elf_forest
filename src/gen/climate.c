@@ -6,6 +6,8 @@
   #include <stdio.h>
 #endif
 
+#include <math.h>
+
 #include "datatypes/list.h"
 #include "datatypes/queue.h"
 #include "datatypes/map.h"
@@ -32,10 +34,11 @@ void cleanup_body_of_water(body_of_water *body) {
   free(body);
 }
 
-river* create_river(void) {
+river* create_river() {
   river *result = (river*) malloc(sizeof(river));
   result->path = create_list();
   result->control_points = create_list();
+  result->widths = create_list();
   return result;
 }
 
@@ -147,6 +150,170 @@ void _iter_seed_rivers(void *v_body, void *v_wm) {
     (void*) body,
     &seed_rivers
   );
+}
+
+void _iter_grow_rivers(void *v_river, void *v_wm) {
+  static ptrdiff_t salt = 18391204;
+  river *r = (river*) v_river;
+  world_map *wm = (world_map*) v_wm;
+  world_region *wr, *nextwr;
+  world_map_pos wmpos, iter;
+  region_pos last_rpos, ctrl_rpos;
+  float elev_here, elev_gain, lowest_gain;
+  float gross_uph, least_uph, cont_flow;
+  float next_dist;
+  intptr_t width, next_width;
+  region_pos gu_rpos, lu_rpos, cf_rpos, next;
+  geopt nextpt;
+  size_t do_branch = 0;
+  size_t i;
+
+  salt += wm->seed;
+  salt = prng(salt);
+
+  // Check the river's current width and compute its next width:
+  width = (intptr_t) l_get_item(
+    r->widths,
+    l_get_length(r->widths) - 1
+  );
+  if (width == 0) {
+    return; // This river has already reached its source
+  }
+  if (ptrf(salt) < CL_RIVER_SHRINK_PROB) {
+    next_width = width - 1;
+  } else {
+    next_width = width;
+  }
+  salt = prng(salt);
+  if (next_width <= 0) {
+    next_width = 0;
+  }
+  // Decide whether or not to branch:
+  do_branch = (ptrf(salt) < r->branch_prob);
+  salt = prng(salt);
+  if (do_branch) {
+    // TODO: How to do a branch?!?
+    // TODO: Manipulate width here!
+    r->branch_prob = CL_RIVER_BRANCH_PROB_BASE;
+  } else {
+    r->branch_prob *= CL_RIVER_BRANCH_PROB_CLIMB;
+    if (r->branch_prob >= CL_RIVER_BRANCH_PROB_MAX) {
+      r->branch_prob = CL_RIVER_BRANCH_PROB_MAX;
+    }
+  }
+
+  // Get the previous river point and control point:
+  geopt prev = (geopt) l_get_item(r->path, l_get_length(r->path) - 1);
+  geopt phandle = (geopt) l_get_item(
+    r->control_points,
+    l_get_length(r->control_points) - 1
+  );
+  geopt__wmpos(wm, &prev, &wmpos);
+  geopt__rpos(wm, &prev, &last_rpos);
+  geopt__rpos(wm, &phandle, &ctrl_rpos);
+  // Figure out three flow-from directions: gross uphill, least-uphill sample,
+  // and previous flow line:
+  // Gross uphill:
+  wr = get_world_region(wm, &wmpos);
+  // TODO: Handle river collisions!
+  if (wr == NULL) { // if we're off the map, finish off this river
+    l_append_element(r->widths, (void*) 0);
+    l_append_element(r->path, (void*) phandle);
+    l_append_element(r->control_points, (void*) phandle);
+    return;
+  }
+  gross_uph = mani_uphill(&(wr->gross_height)); // gross uphill
+  // Neighborhood least uphill:
+  elev_here = wr->mean_height;
+  lowest_gain = -1;
+  least_uph = 0;
+  for (iter.x = wmpos.x - 1; iter.x <= wmpos.x + 1; ++iter.x) {
+    for (iter.y = wmpos.y - 1; iter.y <= wmpos.y + 1; ++iter.y) {
+      if (iter.x == wmpos.x && iter.y == wmpos.y) {
+        continue;
+      }
+      wr = get_world_region(wm, &iter);
+      if (wr != NULL) {
+        elev_gain = wr->mean_height - elev_here;
+        if (elev_gain > 0 && (lowest_gain == -1 || elev_gain < lowest_gain)) {
+          lowest_gain = elev_gain;
+          least_uph = atan2(iter.y - wmpos.y, iter.x - wmpos.x);
+        }
+      }
+    }
+  }
+  // Reinstate the origin world region:
+  wr = get_world_region(wm, &wmpos);
+  if (lowest_gain == -1) { // we're at a peak...
+    // seal this river and remove the last node: rivers don't come from peaks
+    l_pop_element(r->widths);
+    l_pop_element(r->path);
+    l_pop_element(r->control_points);
+    l_pop_element(r->widths);
+    l_append_element(r->widths, (void*) 0);
+    return;
+  }
+  // Previous flow line:
+  // TODO: Investigate uniform flow continuation starting directions!
+  cont_flow = atan2(ctrl_rpos.y - last_rpos.y, ctrl_rpos.x - last_rpos.x);
+  // Compute the distance to the next control point:
+  next_dist = ptrf(salt) * CL_RIVER_SEP_VAR + CL_RIVER_SEP_BASE;
+  salt = prng(salt);
+  // Compute region positions from each angle:
+  gu_rpos.x = last_rpos.x + cosf(gross_uph) * next_dist;
+  gu_rpos.y = last_rpos.y + sinf(gross_uph) * next_dist;
+  lu_rpos.x = last_rpos.x + cosf(least_uph) * next_dist;
+  lu_rpos.y = last_rpos.y + sinf(least_uph) * next_dist;
+  cf_rpos.x = last_rpos.x + cosf(cont_flow) * next_dist;
+  cf_rpos.y = last_rpos.y + sinf(cont_flow) * next_dist;
+  // final flow direction:
+  next.x = 0.1 * gu_rpos.x + 0.4 * lu_rpos.x + 0.5 * cf_rpos.x;
+  next.y = 0.1 * gu_rpos.y + 0.4 * lu_rpos.y + 0.5 * cf_rpos.y;
+  // DEBUG:
+  //next.x = cf_rpos.x;
+  //next.y = cf_rpos.y;
+  // Make sure we travel a minimum distance:
+  next_dist = sqrtf(
+    (next.x - last_rpos.x) * (next.x - last_rpos.x) +
+    (next.y - last_rpos.y) * (next.y - last_rpos.y)
+  );
+  if (next_dist < CL_RIVER_SEP_MIN) {
+    next_dist = CL_RIVER_SEP_MIN;
+    cont_flow = atan2(next.y - last_rpos.y, next.x - last_rpos.x);
+    next.x = last_rpos.x + next_dist * cosf(cont_flow);
+    next.y = last_rpos.y + next_dist * sinf(cont_flow);
+  }
+  rpos__geopt(wm, &next, &nextpt);
+  l_append_element(r->path, (void*) nextpt);
+  // Update our new region if necessary:
+  geopt__wmpos(wm, &nextpt, &wmpos);
+  nextwr = get_world_region(wm, &wmpos);
+  if (nextwr != wr && nextwr != NULL) {
+    // TODO: Handle crossing of diagonals!
+    if (nextwr->climate.water.rivers[WM_MAX_RIVERS-1] == NULL) {
+      for (i = 0; i < WM_MAX_RIVERS; ++i) {
+        if (nextwr->climate.water.rivers[i] == r) {
+          break;
+        } else if (nextwr->climate.water.rivers[i] == NULL) {
+          nextwr->climate.water.rivers[i] = r;
+          break;
+        }
+      }
+    } else {
+      // Abort this expansion and set our previous node's width to 0:
+      l_pop_element(r->path);
+      l_pop_element(r->widths);
+      l_append_element(r->widths, (void*) 0);
+      return;
+    }
+  }
+  // Now add a symmetric control point:
+  next.x += next.x - ctrl_rpos.x;
+  next.y += next.y - ctrl_rpos.y;
+  rpos__geopt(wm, &next, &nextpt);
+  l_append_element(r->control_points, (void*) nextpt);
+  // Add our width value:
+  l_append_element(r->widths, (void*) next_width);
 }
 
 // Simulates cloud movement to compute precipitation (cloud_potential) values.
@@ -323,6 +490,7 @@ void generate_hydrology(world_map *wm) {
   body_of_water *next_water;
   list *lake_sites = create_list();
   ptrdiff_t lakes_seed = wm->seed + 8177342;
+  size_t i;
 
   next_water = create_body_of_water(TR_HEIGHT_SEA_LEVEL, SALINITY_SALINE);
 
@@ -364,7 +532,20 @@ void generate_hydrology(world_map *wm) {
   // Finally, run rivers upwards from shores:
   printf("    ...generating rivers...\n");
   l_witheach(wm->all_water, (void*) wm, &_iter_seed_rivers);
-  // TODO: Grow the river seeds!
+  for (i = 0; i < CL_RIVER_GROWTH_ITERATIONS; ++i) {
+    // Grow each river once
+    printf(
+      "      ...%zu / %d river growth iterations completed...\r",
+      i,
+      CL_RIVER_GROWTH_ITERATIONS
+    );
+    l_witheach(wm->all_rivers, (void*) wm, &_iter_grow_rivers);
+  }
+  printf(
+    "      ...%d / %d river growth iterations completed...\n",
+    CL_RIVER_GROWTH_ITERATIONS,
+    CL_RIVER_GROWTH_ITERATIONS
+  );
 }
 
 void generate_climate(world_map *wm) {
@@ -649,7 +830,9 @@ step_result seed_rivers(
   geopt rseed;
   region_pos rpos;
   river *r;
+  float widthrng;
   float uph;
+  intptr_t width;
   size_t i;
   body_of_water *body = (body_of_water*) v_body;
   // TODO: Use this variable!
@@ -673,13 +856,23 @@ step_result seed_rivers(
     if (ptrf(salt) < prob && wr->climate.water.rivers[WM_MAX_RIVERS-1] == NULL){
       // Seed a new river here:
       r = create_river();
+      r->branch_prob = CL_RIVER_BRANCH_PROB_BASE;
       rseed = inner_pt(wr, &salt);
+      widthrng = ptrf(salt); // A random starting width
+      widthrng = (exp(widthrng) - 1) / (exp(1) - 1);
+      salt = prng(salt);
+      width = (intptr_t) (CL_RIVER_BASE_WIDTH + CL_RIVER_WIDTH_VAR * widthrng);
+      l_append_element(r->widths, (void*) width);
+      width = (intptr_t) l_get_item(
+        r->widths,
+        l_get_length(r->widths) - 1
+      );
       l_append_element(r->path, rseed); // A random starting point
       geopt__rpos(wr->world, &rseed, &rpos);
       uph = mani_uphill(&(wr->gross_height)); // flow from uphill
       // TODO: Add a random element here?
-      rpos.x += WORLD_REGION_BLOCKS * CL_RIVER_SEED_CPT_DIST * cosf(uph);
-      rpos.y += WORLD_REGION_BLOCKS * CL_RIVER_SEED_CPT_DIST * sinf(uph);
+      rpos.x += CL_RIVER_SEED_CPT_DIST * CL_RIVER_SEP_BASE * cosf(uph);
+      rpos.y += CL_RIVER_SEED_CPT_DIST * CL_RIVER_SEP_BASE * sinf(uph);
       if (rpos.x < 0) { rpos.x = 0; } // snap in control point if necessary
       if (rpos.y < 0) { rpos.y = 0; }
       if (rpos.x > wr->world->width * WORLD_REGION_BLOCKS) {
@@ -693,6 +886,7 @@ step_result seed_rivers(
       for (i = 0; i < WM_MAX_RIVERS; ++i) {
         if (wr->climate.water.rivers[i] == NULL) {
           wr->climate.water.rivers[i] = r;
+          break;
         }
       }
       l_append_element(wr->world->all_rivers, r);
