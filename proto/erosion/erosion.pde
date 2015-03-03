@@ -8,20 +8,25 @@ Map THE_MAP;
 
 PImage THE_IMAGE;
 
+String MODE = "grid";
+
 int WINDOW_WIDTH = 800;
 int WINDOW_HEIGHT = 600;
 
-int MAP_WIDTH = 80;
-int MAP_HEIGHT = 30;
+int MAP_WIDTH = 120;
+int MAP_HEIGHT = 50;
 
-int IMAGE_WIDTH = 200;
-int IMAGE_HEIGHT = 150;
+//int MAP_WIDTH = 80;
+//int MAP_HEIGHT = 30;
 
 //int MAP_WIDTH = 8;
 //int MAP_HEIGHT = 6;
 
 //int MAP_WIDTH = 4;
 //int MAP_HEIGHT = 4;
+
+int IMAGE_WIDTH = 200;
+int IMAGE_HEIGHT = 150;
 
 float SEA_LEVEL = 0.0;
 
@@ -34,20 +39,27 @@ float BUMPINESS = 0.05;
 
 float DEFAULT_SCALE = 0.15;
 float SCALE = DEFAULT_SCALE;
-float NS_TINY =  0.014;
-float NS_SMALL = 0.042;
-float NS_MEDIUM = 0.104;
-float NS_LARGE = 0.225;
+float NS_LARGE =  0.0014;
+float NS_MEDIUM = 0.042;
+float NS_SMALL = 0.104;
+float NS_TINY = 0.225;
 
 float DSTR = 1.3;
 
-float UNTANGLE_OFFSET = PI/32.0;
+float DEFAULT_RUSTLE_STR = 0.8;
 
 float SETTLE_K = 1.5;
-float SETTLE_DISTANCE = GRID_RESOLUTION * 1.6;
+float SETTLE_DISTANCE = GRID_RESOLUTION * 1.3;
 float SETTLE_DT = 0.01;
 
-int DEFAULT_SMOOTH_STEPS = 50;
+float UNTANGLE_DT = 0.1;
+
+float SEAM_DT = 0.1;
+float MIN_SEAM_WIDTH = GRID_RESOLUTION * 4.3;
+float MAX_SEAM_WIDTH = GRID_RESOLUTION * 12.1;
+
+int DEFAULT_UNTANGLE_STEPS = 5;
+int DEFAULT_SETTLE_STEPS = 20;
 
 float pnoise(float x, float y) {
   float[] xy = new float[2];
@@ -66,8 +78,23 @@ float pnoise(float x, float y, float z) {
   return result;
 }
 
+float sigmoid(float x) {
+  // Takes an input between 0 and 1 and smoothes it towards the extremes a bit,
+  // using a sigmoid which has a slope of 0 at both endpoints.
+  float remapped, result;
+  if (x < 0.5) {
+    remapped = x * 2;
+    result = pow(remapped, 2) * 0.5;
+  } else {
+    remapped = 1 - (x - 0.5)*2;
+    result = (1 - pow(remapped, 2))*0.5 + 0.5;
+  }
+  return result;
+}
+
 
 color colormap(float h) {
+/*
   float[] result = new float[3];
   if (h < SEA_LEVEL) {
     result[0] = 0.7;
@@ -79,6 +106,8 @@ color colormap(float h) {
     result[2] = 0.5 + 0.4*h;
   }
   return color(result[0], result[1], result[2]);
+  */
+  return color(0, 0, h);
 }
 
 class Point {
@@ -87,6 +116,12 @@ class Point {
     this.x = x;
     this.y = y;
     this.z = z;
+  }
+
+  Point(Point o) {
+    this.x = o.x;
+    this.y = o.y;
+    this.z = o.z;
   }
 
   float magnitude() {
@@ -177,6 +212,45 @@ class Point {
   }
 }
 
+class LineSegment {
+  Point from, to;
+  LineSegment(Point from, Point to) {
+    this.from = from;
+    this.to = to;
+  }
+
+  boolean xy_same_side(Point a, Point b) {
+    Point va, vb, vto;
+    Point cr1, cr2;
+    va = this.from.vector_to(a);
+    vb = this.from.vector_to(b);
+    vto = this.from.vector_to(this.to);
+    va.z = 0;
+    vb.z = 0;
+    vto.z = 0;
+    cr1 = vto.cross(va);
+    cr2 = vto.cross(vb);
+    return cr1.z > 0 == cr2.z > 0;
+  }
+
+  Point closest_point(Point p) {
+    Point proj;
+    Point v;
+    float m;
+    v = this.from.vector_to(this.to);
+    proj = this.from.vector_to(p).project_onto(v);
+    m = proj.mag_in_terms_of(v);
+    if (m < 0) {
+      return new Point(this.from);
+    } else if (m > 1.0) {
+      return new Point(this.to);
+    } else {
+      proj.add(this.from);
+      return proj;
+    }
+  }
+}
+
 class Triangle {
   Point a, b, c;
   Triangle(Point a, Point b, Point c) {
@@ -237,8 +311,8 @@ class Triangle {
 
 float init_z(float x, float y) {
   return BUMPINESS * GRID_RESOLUTION * pnoise(
-    NS_MEDIUM * x + DSTR * pnoise(NS_LARGE * x + 20000, NS_LARGE * y),
-    NS_MEDIUM * y + DSTR * pnoise(NS_LARGE * x, NS_LARGE * y + 20000)
+    NS_LARGE * x + DSTR * pnoise(NS_LARGE * x + 20000, NS_LARGE * y),
+    NS_LARGE * y + DSTR * pnoise(NS_LARGE * x, NS_LARGE * y + 20000)
   );
 }
 
@@ -246,6 +320,7 @@ class Map {
   Triangle triangles[];
   Point points[];
   Point forces[];
+  int avgcounts[];
   Point center;
   int width;
   int height;
@@ -259,6 +334,7 @@ class Map {
     this.triangles = new Triangle[width*height];
     this.points = new Point[this.pwidth()*this.pheight()];
     this.forces = new Point[this.pwidth()*this.pheight()];
+    this.avgcounts = new int[this.pwidth()*this.pheight()];
     this.center = new Point(0, 0, 0);
     // Set up points:
     for (i = 0; i < this.pwidth(); ++i) {
@@ -272,6 +348,7 @@ class Map {
         z = init_z(x, y);
         this.points[idx] = new Point(x, y, z);
         this.forces[idx] = new Point(0, 0, 0);
+        this.avgcounts[idx] = 0;
       }
     }
     // Set up triangles:
@@ -440,10 +517,10 @@ class Map {
       }
     }
     // Next, settle down the inner points holding edge points in place:
-    this.settle(DEFAULT_SMOOTH_STEPS, true);
+    this.settle(DEFAULT_SETTLE_STEPS, true);
   }
 
-  void rustle(float strength, float seed) {
+  void rustle(float strength, float size, float seed) {
     // Randomly moves each grid point a little bit in the x/y plane. Strength
     // represents the max perturbation as a percentage of the default
     // between-point distance.
@@ -453,8 +530,8 @@ class Map {
     for (i = 0; i < this.pwidth(); ++i) {
       for (j = 0; j < this.pheight(); ++j) {
         p = this.points[this.pidx(i, j)];
-        p.x += s * pnoise(p.x*NS_TINY, p.y*NS_TINY, seed);
-        p.y += s * pnoise(p.x*NS_TINY + 11000.0, p.y*NS_TINY, seed);
+        p.x += s * pnoise(p.x*size, p.y*size, seed);
+        p.y += s * pnoise(p.x*size + 11000.0, p.y*size, seed);
       }
     }
   }
@@ -531,6 +608,7 @@ class Map {
           &&
             (i == 0 || i == this.pwidth()-1 || j == 0 || j == this.pheight()-1)
           ) {
+            this.forces[this.pidx(i, j)].scale(0);
             continue;
           }
           idx = this.pidx(i, j);
@@ -538,92 +616,134 @@ class Map {
           f = this.forces[idx];
           f.scale(SETTLE_DT);
           p.add(f);
-          f.x = 0;
-          f.y = 0;
-          f.z = 0;
+          f.scale(0);
         }
       }
     }
   }
 
-  void untangle() {
-    // Untangles the graph by expanding it rightwards and downwards as
-    // necessary. If "fierce" is specified, untangles based on the maximum
-    // diagonal principle as well as the adjacent overlapping principle.
-    // TODO: This doesn't really work...
-    float dx, dy, m, theta, otheta, limit;
-    int i, j;
+  void untangle(int iterations, boolean fix_edges) {
+    // Untangles the graph by moving points towards the average of their
+    // neighbors.
     Triangle t;
-    for (i = 0; i < this.width; ++i) {
-      for (j = 0; j < this.height; ++j) {
-        t = this.triangles[this.tidx(i, j)];
-        boolean points_up = i % 2 == j % 2;
-        if (points_up) {
-          // First handle point b:
-          dx = t.b.x - t.a.x;
-          dy = t.b.y - t.a.y;
-          m = sqrt(dx*dx + dy*dy);
-          theta = atan2(dy, dx);
-          limit = 2.0 * PI / 3.0;
-          if (theta > limit || theta < -limit) {
-            t.b.x = t.a.x + m*cos(limit);
-            t.b.y = t.a.y + m*sin(limit);
-          } else if (theta < 0) {
-            t.b.x = t.a.x + m;
-            t.b.y = t.a.y;
-          }
-          // Next handle point c:
-          dx = t.c.x - t.a.x;
-          dy = t.c.y - t.a.y;
-          m = sqrt(dx*dx + dy*dy);
-          theta = atan2(dy, dx);
-          limit = PI / 3.0;
-          otheta = atan2(t.b.y - t.a.y, t.b.x - t.a.x);
-          if (limit > otheta - UNTANGLE_OFFSET) {
-            limit = otheta - UNTANGLE_OFFSET;
-          }
-          if (theta > limit) {
-            t.c.x = t.a.x + m*cos(limit);
-            t.c.y = t.a.y + m*sin(limit);
-          } else {
-            limit = -PI / 3.0;
-            if (theta < limit) {
-              t.c.x = t.a.x + m*cos(limit);
-              t.c.y = t.a.y + m*sin(limit);
-            }
-          }
-        } else {
-          // First handle point b:
-          dx = t.b.x - t.a.x;
-          dy = t.b.y - t.a.y;
-          m = sqrt(dx*dx + dy*dy);
-          theta = atan2(dy, dx);
-          limit = PI / 3.0;
-          if (theta < limit && theta > -limit) {
-            t.b.x = t.a.x + m*cos(limit);
-            t.b.y = t.a.y + m*sin(limit);
-          } else if (theta < limit) {
-            t.b.x = t.a.x - m;
-            t.b.y = t.a.y;
-          }
-          // Next handle point c:
-          dx = t.c.x - t.a.x;
-          dy = t.c.y - t.a.y;
-          m = sqrt(dx*dx + dy*dy);
-          theta = atan2(dy, dx);
-          limit = 2.0 * PI / 3.0;
-          otheta = atan2(t.b.y - t.a.y, t.b.x - t.a.x);
-          if (limit > otheta - UNTANGLE_OFFSET) {
-            limit = otheta - UNTANGLE_OFFSET;
-          }
-          if (theta > limit || theta < -2.0 * PI / 3.0) {
-            t.b.x = t.a.x + m*cos(limit);
-            t.b.y = t.a.y + m*sin(limit);
-          } else if (theta < 0) {
-            t.c.x = t.a.x + m;
-            t.c.y = t.a.y;
+    Point p, f, v;
+    int iter, i, j, idx;
+    for (iter = 0; iter < iterations; ++iter) {
+      // First pass: compute averages and store them in the force slots.
+      for (i = 0; i < this.width; ++i) {
+        for (j = 0; j < this.height; ++j) {
+          t = this.triangles[this.tidx(i, j)];
+          boolean points_up = i % 2 == j % 2;
+          if (points_up) {
+            // All six relations on all three corners of this triangle:
+            // a <- b; a <- c
+            idx = this.pidx_a(i, j);
+            this.forces[idx].add(t.b);
+            this.forces[idx].add(t.c);
+            this.avgcounts[idx] += 2;
+            // b <- a; b <- c
+            idx = this.pidx_b(i, j);
+            this.forces[idx].add(t.a);
+            this.forces[idx].add(t.c);
+            this.avgcounts[idx] += 2;
+            // c <- a; c <- b
+            idx = this.pidx_c(i, j);
+            this.forces[idx].add(t.a);
+            this.forces[idx].add(t.b);
+            this.avgcounts[idx] += 2;
+          } else if (i == 0 && (j % 2 == 1)) {
+            // Both relations on our a <-> b edge:
+            // a <- b
+            idx = this.pidx_a(i, j);
+            this.forces[idx].add(t.b);
+            this.avgcounts[idx] += 1;
+            // b <- a
+            idx = this.pidx_b(i, j);
+            this.forces[idx].add(t.a);
+            this.avgcounts[idx] += 1;
+          } else if ((i == this.width - 1) && (j % 2 == 0) ) {
+            // Both forces on our a <-> c edge:
+            // a <- c
+            idx = this.pidx_a(i, j);
+            this.forces[idx].add(t.c);
+            this.avgcounts[idx] += 1;
+            // c <- a
+            idx = this.pidx_c(i, j);
+            this.forces[idx].add(t.a);
+            this.avgcounts[idx] += 1;
           }
         }
+      }
+      // Second pass: move each point towards its respective average
+      for (i = 0; i < this.pwidth(); ++i) {
+        for (j = 0; j < this.pheight(); ++j) {
+          if (
+            fix_edges
+          &&
+            (i == 0 || i == this.pwidth()-1 || j == 0 || j == this.pheight()-1)
+          ) {
+            this.forces[this.pidx(i, j)].scale(0);
+            this.avgcounts[this.pidx(i, j)] = 0;
+            continue;
+          }
+          idx = this.pidx(i, j);
+          p = this.points[idx];
+          f = this.forces[idx];
+          f.scale((1 / (float) (this.avgcounts[idx])));
+          v = p.vector_to(f);
+          v.scale(UNTANGLE_DT);
+          // Add only in the x/y plane:
+          p.x += v.x;
+          p.y += v.y;
+          f.scale(0);
+          this.avgcounts[idx] = 0;
+        }
+      }
+    }
+  }
+
+  void seam(LineSegment seg, float width, boolean pull, boolean fix_edges) {
+    int i, j, idx;
+    Point p, f, cl, v;
+    float d, str;
+    // First pass: compute push/pull vectors
+    for (i = 0; i < this.pwidth(); ++i) {
+      for (j = 0; j < this.pheight(); ++j) {
+        idx = this.pidx(i, j);
+        p = this.points[idx];
+        f = this.forces[idx];
+        cl = seg.closest_point(p);
+        v = cl.vector_to(p);
+        d = v.magnitude();
+        str = pow((width - d) / width, 0.6);
+        if (d > width) {
+          str = 0;
+        }
+        str = sigmoid(str);
+        v.scale(str);
+        if (pull) {
+          v.scale(-1);
+        }
+        f.add(v);
+      }
+    }
+    // Second pass: move each point towards its respective average
+    for (i = 0; i < this.pwidth(); ++i) {
+      for (j = 0; j < this.pheight(); ++j) {
+        if (
+          fix_edges
+        &&
+          (i == 0 || i == this.pwidth()-1 || j == 0 || j == this.pheight()-1)
+        ) {
+          this.forces[this.pidx(i, j)].scale(0);
+          continue;
+        }
+        idx = this.pidx(i, j);
+        p = this.points[idx];
+        f = this.forces[idx];
+        f.scale(SEAM_DT);
+        p.add(f);
+        f.scale(0);
       }
     }
   }
@@ -718,41 +838,152 @@ void draw() {
   background(0.6, 0.8, 0.25);
   stroke(0.0, 0.0, 1.0);
   noFill();
-  // Draw the rendered map:
-  THE_MAP.render(THE_IMAGE);
-  image(THE_IMAGE, 0, 0);
-  // Center the map:
-  pushMatrix();
-  THE_MAP.update_center();
-  translate(-THE_MAP.center.x*SCALE, -THE_MAP.center.y*SCALE);
-  translate(WINDOW_WIDTH/2.0, WINDOW_HEIGHT/2.0);
-  scale(SCALE);
-  // And draw it:
-  THE_MAP.render_wireframe();
-  popMatrix();
+  if (MODE == "map") {
+    // Draw the rendered map:
+    pushMatrix();
+    scale(
+      WINDOW_WIDTH / (float) THE_IMAGE.width,
+      WINDOW_HEIGHT / (float) THE_IMAGE.height
+    );
+    THE_MAP.render(THE_IMAGE);
+    image(THE_IMAGE, 0, 0);
+    popMatrix();
+  } else if (MODE == "grid") {
+    // Center the map:
+    pushMatrix();
+    THE_MAP.update_center();
+    translate(-THE_MAP.center.x*SCALE, -THE_MAP.center.y*SCALE);
+    translate(WINDOW_WIDTH/2.0, WINDOW_HEIGHT/2.0);
+    scale(SCALE);
+    // And draw it:
+    THE_MAP.render_wireframe();
+    popMatrix();
+  }
 }
 
 void keyPressed() {
+  Point a, b;
+  int i;
+  boolean push = false;
   if (key == 'q') {
     exit();
   } else if (key == 'k') {
     SCALE *= 1.2;
   } else if (key == 'j') {
     SCALE /= 1.2;
+  } else if (key == 'g') {
+    THE_MAP = new Map(MAP_WIDTH, MAP_HEIGHT);
+    THE_MAP.rustle(0.4, NS_TINY, (int) random(15000));
+    THE_MAP.rustle(0.4, NS_MEDIUM, (int) random(15000));
+    for (i = 0; i < 25; ++i) {
+      a = new Point(
+        random(THE_MAP.min_x(), THE_MAP.max_x()),
+        random(THE_MAP.min_y(), THE_MAP.max_y()),
+        0
+      );
+      b = new Point(
+        random(THE_MAP.min_x(), THE_MAP.max_x()),
+        random(THE_MAP.min_y(), THE_MAP.max_y()),
+        0
+      );
+      push = (int) random(2) == 1;
+      THE_MAP.seam(
+        new LineSegment(a, b),
+        random(MIN_SEAM_WIDTH, MAX_SEAM_WIDTH),
+        push,
+        false
+      );
+      THE_MAP.seam(
+        new LineSegment(a, b),
+        random(MIN_SEAM_WIDTH, MAX_SEAM_WIDTH),
+        push,
+        false
+      );
+    }
+    THE_MAP.rustle(0.4, NS_TINY, random(15000));
+    THE_MAP.rustle(0.4, NS_LARGE, (int) random(15000));
+    THE_MAP.settle(DEFAULT_SETTLE_STEPS, false);
+    THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
+    for (i = 0; i < 4; ++i) {
+      THE_MAP.rustle(0.6, NS_TINY, random(15000));
+      THE_MAP.settle(DEFAULT_SETTLE_STEPS, false);
+      THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
+    }
+    THE_MAP.stretch(
+      THE_MAP.max_x() - THE_MAP.min_x(),
+      THE_MAP.max_y() - THE_MAP.min_y()
+    );
+    THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
+    THE_MAP.rustle(0.6, NS_TINY, random(15000));
+    THE_MAP.rustle(0.4, NS_TINY, random(15000));
+    THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
+    THE_MAP.settle(DEFAULT_SETTLE_STEPS/2, false);
+    THE_MAP.stretch(
+      THE_MAP.max_x() - THE_MAP.min_x(),
+      THE_MAP.max_y() - THE_MAP.min_y()
+    );
+    THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
+    THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, true);
+    THE_MAP.rustle(0.8, NS_MEDIUM, (int) random(15000));
+    THE_MAP.rustle(1.2, NS_LARGE, (int) random(15000));
+  } else if (key == 'w') {
+    THE_MAP.rustle(DEFAULT_RUSTLE_STR, NS_LARGE, (int) random(15000));
   } else if (key == 'u') {
-    THE_MAP.untangle();
+    THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
+  } else if (key == 'U') {
+    THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, true);
   } else if (key == 'R') {
     THE_MAP = new Map(MAP_WIDTH, MAP_HEIGHT);
     SCALE = DEFAULT_SCALE;
   } else if (key == 'r') {
-    THE_MAP.rustle(0.8, random(15000));
+    THE_MAP.rustle(0.8, NS_TINY, random(15000));
   } else if (key == 'S') {
     THE_MAP.stretch(
       THE_MAP.max_x() - THE_MAP.min_x(),
       THE_MAP.max_y() - THE_MAP.min_y()
     );
   } else if (key == 's') {
-    THE_MAP.settle(DEFAULT_SMOOTH_STEPS, false);
+    THE_MAP.settle(DEFAULT_SETTLE_STEPS, false);
+  } else if (key == 'p') {
+    a = new Point(
+      random(THE_MAP.min_x(), THE_MAP.max_x()),
+      random(THE_MAP.min_y(), THE_MAP.max_y()),
+      0
+    );
+    b = new Point(
+      random(THE_MAP.min_x(), THE_MAP.max_x()),
+      random(THE_MAP.min_y(), THE_MAP.max_y()),
+      0
+    );
+    THE_MAP.seam(
+      new LineSegment(a, b),
+      random(MIN_SEAM_WIDTH, MAX_SEAM_WIDTH),
+      false,
+      false
+    );
+  } else if (key == 'P') {
+    a = new Point(
+      random(THE_MAP.min_x(), THE_MAP.max_x()),
+      random(THE_MAP.min_y(), THE_MAP.max_y()),
+      0
+    );
+    b = new Point(
+      random(THE_MAP.min_x(), THE_MAP.max_x()),
+      random(THE_MAP.min_y(), THE_MAP.max_y()),
+      0
+    );
+    THE_MAP.seam(
+      new LineSegment(a, b),
+      random(MIN_SEAM_WIDTH, MAX_SEAM_WIDTH),
+      true,
+      false
+    );
+  } else if (key == 'm') {
+    if (MODE == "map") {
+      MODE = "grid";
+    } else {
+      MODE = "map";
+    }
   }
   redraw();
 }
