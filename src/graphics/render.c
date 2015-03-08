@@ -327,6 +327,9 @@ void render_area(
     // The main loop: loop over a spherical region out to the farthest render
     // distance, getting the best data for each chunk (subject to render
     // distance constraints) and rendering one of its layers:
+#ifdef PROFILE_TIME
+    start_duration(&RENDER_CORE_TIME);
+#endif
     for (
       rcpos.x = origin.x - farthest_render_distance;
       rcpos.x < origin.x + farthest_render_distance + 1;
@@ -355,6 +358,9 @@ void render_area(
           rcpos.z < origin.z + farthest_render_distance + 1 - skipz;
           ++rcpos.z
         ) { 
+#ifdef PROFILE_TIME
+          start_duration(&RENDER_INNER_TIME);
+#endif
           chunk_vector.z = (rcpos.z - origin.z) * CHUNK_SIZE - view_origin.z;
           dist = (rcpos.z - origin.z);
           dist *= dist;
@@ -423,9 +429,15 @@ void render_area(
           ) {
             count += 1;
           }
+#ifdef PROFILE_TIME
+          end_duration(&RENDER_INNER_TIME);
+#endif
         }
       }
     }
+#ifdef PROFILE_TIME
+    end_duration(&RENDER_CORE_TIME);
+#endif
     if (ly == L_TRANSLUCENT) {
       // Re-enable depth masking and face culling if necessary:
       glDepthMask( GL_TRUE );

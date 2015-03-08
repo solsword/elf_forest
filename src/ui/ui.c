@@ -195,6 +195,81 @@ static inline void draw_rates(int *h) {
   *h -= 25;
 }
 
+static inline void draw_durations(int *h) {
+  // Draw render times:
+  sprintf(
+    TXT,
+    "render ms :: %.2f",
+    1000.0 * RENDER_TIME.duration
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 500, *h);
+  *h -= 25;
+  sprintf(
+    TXT,
+    "render area ms :: %.2f",
+    1000.0 * RENDER_AREA_TIME.duration
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 500, *h);
+  *h -= 25;
+  sprintf(
+    TXT,
+    "render ui ms :: %.2f",
+    1000.0 * RENDER_UI_TIME.duration
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 500, *h);
+  *h -= 25;
+  sprintf(
+    TXT,
+    "render core ms :: %.2f",
+    1000.0 * RENDER_CORE_TIME.duration
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 500, *h);
+  *h -= 25;
+  sprintf(
+    TXT,
+    "render inner ms :: %.6f",
+    1000.0 * RENDER_INNER_TIME.duration
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 500, *h);
+  *h -= 25;
+
+  // Draw compile time:
+  sprintf(
+    TXT,
+    "compile ms :: %.2f",
+    1000.0 * COMPILE_TIME.duration
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 500, *h);
+  *h -= 25;
+
+  // Draw physics time:
+  sprintf(
+    TXT,
+    "physics ms :: %.2f",
+    1000.0 * PHYSICS_TIME.duration
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 500, *h);
+  *h -= 25;
+
+  // Draw data time:
+  sprintf(
+    TXT,
+    "data ms :: %.2f",
+    1000.0 * DATA_TIME.duration
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 500, *h);
+  *h -= 25;
+
+  // Draw terrain generation time:
+  sprintf(
+    TXT,
+    "terrain gen ms :: %.2f",
+    1000.0 * TGEN_TIME.duration
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 500, *h);
+  *h -= 25;
+}
+
 static inline void draw_mem(int *h) {
   // First compute memory info:
   compute_chunk_cache_mem();
@@ -382,6 +457,9 @@ void render_ui(void) {
   h = 570;
   if (DRAW_DEBUG_INFO) {
     draw_rates(&h);
+#ifdef PROFILE_TIME
+    draw_durations(&h);
+#endif
 #ifdef PROFILE_MEM
     draw_mem(&h);
 #endif

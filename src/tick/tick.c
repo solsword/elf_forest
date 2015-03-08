@@ -150,13 +150,29 @@ void start_game(
           break;
         }
         // Compile chunks
+#ifdef PROFILE_TIME
+        start_duration(&COMPILE_TIME);
+#endif
         tick_compile_chunks();
+#ifdef PROFILE_TIME
+        end_duration(&COMPILE_TIME);
+        start_duration(&PHYSICS_TIME);
+#endif
         tick(ticks_expected());
+#ifdef PROFILE_TIME
+        end_duration(&PHYSICS_TIME);
+#endif
         omp_set_lock(&POSITION_LOCK);
         rpos__rcpos(&(ACTIVE_AREA->origin), &area_origin);
         omp_unset_lock(&POSITION_LOCK);
         if (RENDER) {
+#ifdef PROFILE_TIME
+          start_duration(&RENDER_TIME);
+#endif
           render(WINDOW);
+#ifdef PROFILE_TIME
+          end_duration(&RENDER_TIME);
+#endif
           glfwPollEvents();
         } else {
           glfwPollEvents();
@@ -178,8 +194,14 @@ void start_game(
           last_origin.y = area_origin.y;
           last_origin.z = area_origin.z;
           omp_unset_lock(&POSITION_LOCK);
+#ifdef PROFILE_TIME
+          start_duration(&DATA_TIME);
+#endif
           load_surroundings(&last_origin);
           tick_load_chunks(&last_origin);
+#ifdef PROFILE_TIME
+          end_duration(&DATA_TIME);
+#endif
         }
         nap(10);
       }

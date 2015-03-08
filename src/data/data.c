@@ -530,6 +530,9 @@ void load_chunk(chunk *c) {
   ch_idx_t x, y, z;
   region_pos rpos;
   chunk_or_approx coa;
+#ifdef PROFILE_TIME
+  start_duration(&TGEN_TIME);
+#endif
   for (x = 0; x < CHUNK_SIZE; ++x) {
     for (y = 0; y < CHUNK_SIZE; ++y) {
       for (z = 0; z < CHUNK_SIZE; ++z) {
@@ -541,6 +544,9 @@ void load_chunk(chunk *c) {
       }
     }
   }
+#ifdef PROFILE_TIME
+  end_duration(&TGEN_TIME);
+#endif
   c->chunk_flags |= CF_LOADED;
   if (c->chunk_flags & CF_COMPILE_ON_LOAD) {
     c->chunk_flags &= ~CF_COMPILE_ON_LOAD;
