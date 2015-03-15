@@ -1,109 +1,110 @@
 performance
-  optimize the chunk load queue and load_surroundings
-  optimize exposure computation by caching block results (27-element array)
-  double-check octree performance
-  time chunk loading
-  render ordering of chunks
-  support path caching
-  dynamic load capping
+  [ ] optimize the chunk load queue and load_surroundings
+  [ ] optimize exposure computation by caching block results (27-element array)
+  [ ] double-check octree performance
+  [ ] time chunk loading
+  [ ] render ordering of chunks
+  [ ] support path caching
+  [ ] dynamic load capping
 loading
-  implement dynamic chunk loading
-  implement player position management
-  separate loading/compiling of chunks
+  [ ] implement dynamic chunk loading
+  [ ] implement player position management
+  [x] separate loading/compiling of chunks
+  [x] stop chunks from flickering on recompile
 physics
-  entity collision detection
-  swimming upwards when pressing against a wall vs. not
+  [ ] entity collision detection
+  [ ] swimming upwards when pressing against a wall vs. not
 terrain
-  forests
-    simplex object noise
-  caves
-  erosion
-  block support
+  [ ] forests
+    [ ] poisson-disc-distributed objects
+  [ ] caves
+  [ ] erosion
+  [ ] structural support
 graphics
-  fix png vs. ppm 90-degree rotation
-  use or disable texture mipmapping
-  voxel mipmapping
-    better block averaging
-    better edge behavior?
-    advanced sampling techniques?
-  block lighting
-    ambient occlusion
-  entity models & textures
-  initial player facing due to initial mouse movement
-  implement wrapped simplex noise (optional)
-  check for z reconciliation problems (esp. at corners of secondary solid
-    blocks)
+  [ ] fix png vs. ppm 90-degree rotation
+  [ ] use or disable texture mipmapping
+  [~] voxel mipmapping
+    [ ] better block averaging
+    [ ] better edge behavior?
+    [ ] advanced sampling techniques?
+  [~] block lighting
+    [x] ambient occlusion
+  [ ] entity models & textures
+  [ ] initial player facing due to initial mouse movement
+  [x] implement wrapped simplex noise (optional)
+  [ ] check for z reconciliation problems (esp. at corners of secondary solid
+      blocks)
 world
-  plant growth
-  water flow
+  [ ] plant growth
+  [ ] water flow
 gameplay
-  glyphs
-  songs
-  plants
-  smell
-  sounds (directional; slow pathfinding)
+  [ ] glyphs
+  [ ] songs
+  [ ] plants
+  [ ] smell
+  [ ] sounds (directional; slow pathfinding?)
 bugs/testing
-  edge-of-chunk lighting and transparency issues
-  far away chunk block size
-  bad transparency layering (before/behind the player when in water with
+  [~] edge-of-chunk lighting and transparency issues
+  [ ] far away chunk block size
+  [ ] bad transparency layering (before/behind the player when in water with
     abstract water below).
-  fix abstracted chunk adjacency+transparency
-  test for bugs near the region origin
-  double-stepping when traversing a corner precisely
-  add arbitrary vertex buffer lists
-  gencolumn job is buggy (run valgrind --track-origins=yes)
+  [ ] fix abstracted chunk adjacency+transparency
+  [ ] test for bugs near the region origin
+  [ ] double-stepping when traversing a corner precisely
+  [x] add arbitrary vertex buffer lists
+  [#] gencolumn job is buggy (run valgrind --track-origins=yes)
 misc
-  coppicing
-  Cistercian monks
-  copper and its alloys have anti-microbial properties
+  [ ] coppicing
+  [ ] Cistercian monks
+  [ ] copper and its alloys have anti-microbial properties
 processes
-  no-till farming
-  limestone flux supplies both CO2 and CaO in a blast furnace
-    carbon from coke/charcoal provides CO and C to turn CO2 into CO
-    CaO + SiO2 -> CaSiO3
-  zinc smelting (low boiling point)
-    froth flotation
-  cupellation to separate noble metals from base metals
-  liquation to separate copper and silver
-  cement production
-    calcination
-  retting to produce straw
-    curing, breaking, and scutching
-    produces shives (fuel; wallboard) and tow (paper; stuffing)
-  cementation to produce brass from copper and gaseous zinc
+  [ ] no-till farming
+  [ ] limestone flux supplies both CO2 and CaO in a blast furnace
+      carbon from coke/charcoal provides CO and C to turn CO2 into CO
+      CaO + SiO2 -> CaSiO3
+  [ ] zinc smelting (low boiling point)
+    [ ] froth flotation
+  [ ] cupellation to separate noble metals from base metals
+  [ ] liquation to separate copper and silver
+  [ ] cementation to produce brass from copper and gaseous zinc
+  [ ] cement production
+    [ ] calcination
+  [ ] retting to produce straw
+    [ ] curing, breaking, and scutching
+    [ ] produces shives (fuel; wallboard) and tow (paper; stuffing)
 materials
-  H2S (stinkdamp) reacts with alcohol to produce thiols
-  tar, coke, and turpentine production
-  turpentine (see also mineral spirits)
-    paint thinner; furniture finish w/ beeswax; aniseptic;
-    flavor for cheap gin
-  fuller's earth & activated charcoal
-  rock wool
-  charcoal/potash as fertilizer
-  Carnauba wax
-  opium
-  alcohol
-  senna (laxative)
-  graphite
-    writing (also chalk)
-  zinc
-    (oxide)
+  [ ] H2S (stinkdamp) reacts with alcohol to produce thiols
+  [ ] tar, coke, and turpentine production
+  [ ] turpentine (see also mineral spirits)
+    [ ] paint thinner; furniture finish w/ beeswax; aniseptic;
+    [ ] flavor for cheap gin
+  [ ] fuller's earth & activated charcoal
+  [ ] rock wool
+  [ ] charcoal/potash as fertilizer
+  [ ] Carnauba wax
+  [ ] opium
+  [ ] alcohol
+  [ ] senna (laxative)
+  [ ] graphite
+    [ ] writing (also chalk)
+  [ ] zinc
+    [ ] (oxide)
       glazes; white paint; calamine (with some Fe2O3) vs. itching; deodorizing;
       antibacterial
-  bronze & brass
-    tin and non-co-occurrence with copper -> trade
-  camphor
+  [ ] bronze & brass
+    [ ] tin and non-co-occurrence with copper -> trade
+  [ ] camphor
     cooking; embalming; perfume; calming effect; medicine; poison;
     insect repellent
-  ipecac
+  [ ] ipecac
     nausea-inducer
-  mucilage (marshmallow; slippery elm; cactus; aloe; kelp; flax seeds)
+  [ ] mucilage (marshmallow; slippery elm; cactus; aloe; kelp; flax seeds)
     demulcent (also honey; pectin; liquorice)
     glue
-  flax
+  [ ] flax
     fibres for linen; oil (fuel; drying); food; 
-  burlap
+  [ ] burlap
     from jute
 species
-  ocotillo
-  Madagascar ecoregions
+  [ ] ocotillo
+  [ ] Madagascar ecoregions

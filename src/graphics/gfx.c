@@ -45,8 +45,8 @@ int WINDOW_HEIGHT = 0;
 int const DEFAULT_WIDTH = 800;
 int const DEFAULT_HEIGHT = 600;
 char const * const DEFAULT_NAME = "Elf Forest";
-float const DEFAULT_R = 0.65;
-float const DEFAULT_G = 0.71;
+float const DEFAULT_R = 0.63;
+float const DEFAULT_G = 0.68;
 float const DEFAULT_B = 1.0;
 float const DEFAULT_A = 1.0;
 
