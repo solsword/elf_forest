@@ -738,3 +738,27 @@ size_t m_overhead_size(map *m) {
   result += sizeof(map);
   return result;
 }
+
+float m_utilization(map *m) {
+  size_t i;
+  float used = 0;
+  list *l = NULL;
+  for (i = 0; i < m->table_size; ++i) {
+    l = m->table[i];
+    if (l != NULL && l_get_length(l) > 0) { used += 1; }
+  }
+  return used / (float) m->table_size;
+}
+
+float m_crowding(map *m) {
+  size_t i;
+  float total_entries = 0;
+  list *l = NULL;
+  for (i = 0; i < m->table_size; ++i) {
+    l = m->table[i];
+    if (l != NULL) {
+      total_entries += l_get_length(l);
+    }
+  }
+  return total_entries / (float) m->table_size;
+}

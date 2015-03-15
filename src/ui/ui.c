@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 #include "tex/tex.h"
+#include "data/data.h"
 #include "graphics/gfx.h"
 #include "graphics/render.h"
 #include "shaders/pipeline.h"
@@ -326,6 +327,7 @@ static inline void draw_pos_info(int *h) {
   rpos__wmpos(&player_pos, &wmpos);
 
   // Draw geoform data:
+  /*
   terrain_region region;
   float tr_interp;
   geoform_info(&player_pos, &region, &tr_interp);
@@ -336,8 +338,10 @@ static inline void draw_pos_info(int *h) {
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
   *h -= 30;
+  */
 
   // Draw fractional height:
+  /*
   manifold_point dontcare, th;
   compute_terrain_height(&player_pos, &dontcare, &dontcare, &th);
   sprintf(
@@ -347,6 +351,7 @@ static inline void draw_pos_info(int *h) {
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
   *h -= 30;
+  */
 
   // DEBUG:
   if (PLAYER->area != NULL) {
@@ -379,6 +384,15 @@ static inline void draw_pos_info(int *h) {
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
   *h -= 30;
 
+  // Draw chunk cache loading:
+  sprintf(
+    TXT,
+    "chunk cache :: %0.3f // %0.3f",
+    m_utilization(CHUNK_CACHE->levels[LOD_BASE]),
+    m_crowding(CHUNK_CACHE->levels[LOD_BASE])
+  );
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
+  *h -= 30;
 }
 
 static inline void draw_perf_info(int *h) {

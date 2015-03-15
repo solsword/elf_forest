@@ -111,4 +111,12 @@ size_t m_data_size(map *m);
 
 size_t m_overhead_size(map *m);
 
+// Returns a number between 0 and 1 representing the fraction of the map's
+// table entries that are being used.
+float m_utilization(map *m);
+
+// Returns the average number of entries per cell. This correlates with lookup
+// times.
+float m_crowding(map *m);
+
 #endif //ifndef MAP_H

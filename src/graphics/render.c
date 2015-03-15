@@ -3,7 +3,9 @@
 
 #include <math.h>
 // DEBUG:
+#ifdef DEBUG
 #include <stdio.h>
+#endif
 
 #include <GL/glew.h> // glBindBuffer etc.
 #include <GL/glu.h>
@@ -38,12 +40,28 @@ float const AIR_FOG_DENSITY = 0.0005; // TODO: adjust these.
 float const WATER_FOG_DENSITY = 0.01;
 
 // TODO: Good values here (match data.c!)
-//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 20, 60, 175, 550 };
-//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 18, 34, 66, 130 };
-//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 20, 35, 38, 60 };
-r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 20, 35, 38, 40 };
-//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, 25 };
-//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, 11 };
+#define WCRD WORST_CASE_RENDER_DISTANCE
+// #define WORST_CASE_RENDER_DISTANCE 550
+//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 20, 60, 175, WCRD };
+// #define WORST_CASE_RENDER_DISTANCE 130
+//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 18, 34, 66, WCRD };
+// #define WORST_CASE_RENDER_DISTANCE 60
+//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 20, 35, 38, WCRD };
+//#define WORST_CASE_RENDER_DISTANCE 40
+//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 20, 35, 38, WCRD };
+#define WORST_CASE_RENDER_DISTANCE 30
+r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 16, 21, 28, WCRD };
+// #define WORST_CASE_RENDER_DISTANCE 25
+//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, WCRD };
+// #define WORST_CASE_RENDER_DISTANCE 11
+//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, WCRD };
+#undef WCRD
+#define MAX_VIEWABLE_CHUNKS \
+  (2 * ( \
+    (1 + WORST_CASE_RENDER_DISTANCE) \
+  * (1 + WORST_CASE_RENDER_DISTANCE) \
+  * (1 + WORST_CASE_RENDER_DISTANCE) \
+  ))
 
 float const MIN_CULL_DIST = 5 * CHUNK_SIZE;
 float const RENDER_ANGLE_ALLOWANCE = M_PI/8.0;
@@ -185,9 +203,13 @@ void render_area(
   float fovx,
   float fovy
 ) {
+  // a place for storing chunks to be rendered:
+  static chunk_or_approx chunks_to_render[MAX_VIEWABLE_CHUNKS];
+  size_t which_chunk; // which chunk we're rendering
+  size_t n_visible_chunks; // how many chunks are visible
   size_t count = 0; // A count of how many chunks we rendered
-  float xangle = 0; // horizontal angle to chunk being rendered
-  float yangle = 0; // vertical angle to chunk being rendered
+  float xangle = 0; // horizontal angle to chunk being considered
+  float yangle = 0; // vertical angle to chunk being considered
   int cull = 0; // Whether to cull this chunk
 
   // Set the fog density:
@@ -301,17 +323,143 @@ void render_area(
   rpos__wmpos(&(area->origin), &wmorigin); // TODO: really area->origin here?
   render_world_neighborhood(&wmorigin, &(area->origin));
 
-  // First, some loop variables:
-  chunk_or_approx coa;
+  // Some loop variables:
   region_chunk_pos origin;
   region_chunk_pos rcpos;
   layer ly;
 
   rpos__rcpos(&(area->origin), &origin);
 
+#ifdef PROFILE_TIME
+    start_duration(&RENDER_CORE_TIME);
+#endif
   // Iterate over chunk positions in a sphere:
   r_cpos_t farthest_render_distance = MAX_RENDER_DISTANCES[N_LODS - 1];
   r_cpos_t skipy = 0, skipz = 0, xdist_sq = 0, xydist_sq = 0, dist = 0;
+
+  // The main loop: loop over a spherical region out to the farthest render
+  // distance, getting the best data for each chunk (subject to render
+  // distance constraints) and checking cull angles.
+  which_chunk = 0;
+  for (
+    rcpos.x = origin.x - farthest_render_distance;
+    rcpos.x < origin.x + farthest_render_distance + 1;
+    ++rcpos.x
+  ) {
+    chunk_vector.x = (rcpos.x - origin.x) * CHUNK_SIZE - view_origin.x;
+    xdist_sq = (rcpos.x - origin.x);
+    xdist_sq *= xdist_sq;
+    skipy = farthest_render_distance - fastceil(
+      sqrt(farthest_render_distance*farthest_render_distance - xdist_sq)
+    );
+    for (
+      rcpos.y = origin.y - farthest_render_distance + skipy;
+      rcpos.y < origin.y + farthest_render_distance + 1 - skipy;
+      ++rcpos.y
+    ) { 
+      chunk_vector.y = (rcpos.y - origin.y) * CHUNK_SIZE - view_origin.y;
+      xydist_sq = (rcpos.y - origin.y);
+      xydist_sq *= xydist_sq;
+      xydist_sq += xdist_sq;
+      skipz = farthest_render_distance - fastceil(
+        sqrt(farthest_render_distance*farthest_render_distance - xydist_sq)
+      );
+      for (
+        rcpos.z = origin.z - farthest_render_distance + skipz;
+        rcpos.z < origin.z + farthest_render_distance + 1 - skipz;
+        ++rcpos.z
+      ) { 
+#ifdef PROFILE_TIME
+        start_duration(&RENDER_INNER_TIME);
+#endif
+        chunk_vector.z = (rcpos.z - origin.z) * CHUNK_SIZE - view_origin.z;
+        dist = (rcpos.z - origin.z);
+        dist *= dist;
+        dist += xydist_sq;
+        dist = sqrtf(dist);
+        // Compute angle to chunk:
+        compute_hv_angles(
+          &chunk_vector,
+          &view_vector, &side_vector, &up_vector,
+          &xangle, &yangle
+        );
+        cull = ( // chunk is farther than the min cull distance
+          (
+            fabs(chunk_vector.x) +
+            fabs(chunk_vector.y) +
+            fabs(chunk_vector.z)
+          ) > MIN_CULL_DIST
+        &&
+          ( // and it fails the frustum test
+            fabs(xangle) > (fovx/2) + RENDER_ANGLE_ALLOWANCE
+          ||
+            fabs(yangle) > (fovy/2) + RENDER_ANGLE_ALLOWANCE
+          )
+        );
+     
+        // DEBUG: Draw vectors to nearby chunks:
+        /*
+        use_pipeline(&RAW_PIPELINE);
+        if (
+          (
+            fabs(chunk_vector.x) +
+            fabs(chunk_vector.y) +
+            fabs(chunk_vector.z)
+          ) < CHUNK_SIZE * 3
+        ) {
+          glColor4ub(255, 255, 0, 255);
+          //glLineWidth(2);
+          glBegin( GL_LINES );
+          glVertex3f(
+            view_origin.x + view_vector.x,
+            view_origin.y + view_vector.y,
+            view_origin.z + view_vector.z
+          );
+          glVertex3f(
+            view_origin.x + chunk_vector.x,
+            view_origin.y + chunk_vector.y,
+            view_origin.z + chunk_vector.z
+          );
+          glEnd();
+          glColor4ub(255, 255, 128, 255);
+          glPointSize(10);
+          glBegin( GL_POINTS );
+          glVertex3f(
+            view_origin.x + chunk_vector.x,
+            view_origin.y + chunk_vector.y,
+            view_origin.z + chunk_vector.z
+          );
+          glEnd();
+        }
+        // */
+        if (!cull) {
+          get_best_data_limited(
+            &rcpos,
+            desired_detail(dist),
+            1,
+            &(chunks_to_render[which_chunk])
+          );
+          if (chunks_to_render[which_chunk].type != CA_TYPE_NOT_LOADED) {
+            which_chunk += 1;
+          }
+          if (which_chunk > MAX_VIEWABLE_CHUNKS) {
+            fprintf(
+              stderr,
+              "ERROR: out of places to store chunks while culling!\n"
+            );
+            fprintf(stderr, "Chunk: %zu\n", which_chunk);
+            fprintf(stderr, "Max: %d\n", MAX_VIEWABLE_CHUNKS);
+            exit(1);
+          }
+        }
+#ifdef PROFILE_TIME
+        end_duration(&RENDER_INNER_TIME);
+#endif
+      }
+    }
+  }
+  n_visible_chunks = which_chunk;
+
   // TODO: per-layer pipelines...
   use_pipeline(&CELL_PIPELINE);
   for (ly = L_OPAQUE; ly <= L_TRANSLUCENT; ++ly) {
@@ -324,126 +472,28 @@ void render_area(
       glDisable( GL_CULL_FACE );
       glDepthMask( GL_FALSE );
     }
-    // The main loop: loop over a spherical region out to the farthest render
-    // distance, getting the best data for each chunk (subject to render
-    // distance constraints) and rendering one of its layers:
-#ifdef PROFILE_TIME
-    start_duration(&RENDER_CORE_TIME);
-#endif
-    for (
-      rcpos.x = origin.x - farthest_render_distance;
-      rcpos.x < origin.x + farthest_render_distance + 1;
-      ++rcpos.x
-    ) {
-      chunk_vector.x = (rcpos.x - origin.x) * CHUNK_SIZE - view_origin.x;
-      xdist_sq = (rcpos.x - origin.x);
-      xdist_sq *= xdist_sq;
-      skipy = farthest_render_distance - fastceil(
-        sqrt(farthest_render_distance*farthest_render_distance - xdist_sq)
-      );
-      for (
-        rcpos.y = origin.y - farthest_render_distance + skipy;
-        rcpos.y < origin.y + farthest_render_distance + 1 - skipy;
-        ++rcpos.y
-      ) { 
-        chunk_vector.y = (rcpos.y - origin.y) * CHUNK_SIZE - view_origin.y;
-        xydist_sq = (rcpos.y - origin.y);
-        xydist_sq *= xydist_sq;
-        xydist_sq += xdist_sq;
-        skipz = farthest_render_distance - fastceil(
-          sqrt(farthest_render_distance*farthest_render_distance - xydist_sq)
-        );
-        for (
-          rcpos.z = origin.z - farthest_render_distance + skipz;
-          rcpos.z < origin.z + farthest_render_distance + 1 - skipz;
-          ++rcpos.z
-        ) { 
-#ifdef PROFILE_TIME
-          start_duration(&RENDER_INNER_TIME);
-#endif
-          chunk_vector.z = (rcpos.z - origin.z) * CHUNK_SIZE - view_origin.z;
-          dist = (rcpos.z - origin.z);
-          dist *= dist;
-          dist += xydist_sq;
-          dist = sqrtf(dist);
-          get_best_data_limited(&rcpos, desired_detail(dist), 1, &coa);
-          // Compute angle to chunk:
-          compute_hv_angles(
-            &chunk_vector,
-            &view_vector, &side_vector, &up_vector,
-            &xangle, &yangle
-          );
-          cull = ( // chunk is farther than the min cull distance
-            (
-              fabs(chunk_vector.x) +
-              fabs(chunk_vector.y) +
-              fabs(chunk_vector.z)
-            ) > MIN_CULL_DIST
-          &&
-            ( // and it fails the frustum test
-              fabs(xangle) > (fovx/2) + RENDER_ANGLE_ALLOWANCE
-            ||
-              fabs(yangle) > (fovy/2) + RENDER_ANGLE_ALLOWANCE
-            )
-          );
-
-          // DEBUG: Draw vectors to nearby chunks:
-          /*
-          use_pipeline(&RAW_PIPELINE);
-          if (
-            (
-              fabs(chunk_vector.x) +
-              fabs(chunk_vector.y) +
-              fabs(chunk_vector.z)
-            ) < CHUNK_SIZE * 3
-          ) {
-            glColor4ub(255, 255, 0, 255);
-            //glLineWidth(2);
-            glBegin( GL_LINES );
-            glVertex3f(
-              view_origin.x + view_vector.x,
-              view_origin.y + view_vector.y,
-              view_origin.z + view_vector.z
-            );
-            glVertex3f(
-              view_origin.x + chunk_vector.x,
-              view_origin.y + chunk_vector.y,
-              view_origin.z + chunk_vector.z
-            );
-            glEnd();
-            glColor4ub(255, 255, 128, 255);
-            glPointSize(10);
-            glBegin( GL_POINTS );
-            glVertex3f(
-              view_origin.x + chunk_vector.x,
-              view_origin.y + chunk_vector.y,
-              view_origin.z + chunk_vector.z
-            );
-            glEnd();
-          }
-          // */
-          if (
-            !cull
-          &&
-            render_chunk_layer(LAYER_ATLASES, &coa, &(area->origin), ly)
-          ) {
-            count += 1;
-          }
-#ifdef PROFILE_TIME
-          end_duration(&RENDER_INNER_TIME);
-#endif
-        }
+    // iterate over our visible chunks and render them:
+    for (which_chunk = 0; which_chunk < n_visible_chunks; ++which_chunk) {
+      if (
+        render_chunk_layer(
+          LAYER_ATLASES,
+          &(chunks_to_render[which_chunk]),
+          &(area->origin),
+          ly
+        )
+      ) {
+        count += 1;
       }
     }
-#ifdef PROFILE_TIME
-    end_duration(&RENDER_CORE_TIME);
-#endif
     if (ly == L_TRANSLUCENT) {
       // Re-enable depth masking and face culling if necessary:
       glDepthMask( GL_TRUE );
       glEnable( GL_CULL_FACE );
     }
   }
+#ifdef PROFILE_TIME
+    end_duration(&RENDER_CORE_TIME);
+#endif
 
   // DEBUG: Draw eye-space vectors:
   /*
@@ -513,7 +563,7 @@ int render_chunk_layer(
   glColor4ub(255, 255, 255, 255); // 100% white
 
   // DEBUG: Draw a bounding box for this chunk:
-  //*
+  /*
   glBegin( GL_LINE_LOOP );
 
   glVertex3f(0, 0, 0);

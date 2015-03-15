@@ -120,11 +120,11 @@ void render(GLFWwindow *window) {
 #ifdef PROFILE_TIME
   start_duration(&RENDER_AREA_TIME);
 #endif
-  render_area(
-    ACTIVE_AREA,
-    &head_pos, PLAYER->yaw, PLAYER->pitch,
-    FOV*ASPECT, FOV
-  );
+    render_area(
+      ACTIVE_AREA,
+      &head_pos, PLAYER->yaw, PLAYER->pitch,
+      FOV*ASPECT, FOV
+    );
 #ifdef PROFILE_TIME
   end_duration(&RENDER_AREA_TIME);
 #endif

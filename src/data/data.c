@@ -247,13 +247,11 @@ void mark_for_compilation(chunk_or_approx *coa) {
   if (coa->type == CA_TYPE_CHUNK) {
     chunk *c = (chunk *) coa->ptr;
     if (c->chunk_flags & CF_QUEUED_TO_COMPILE) { return; }
-    c->chunk_flags &= ~CF_COMPILED;
     c->chunk_flags |= CF_QUEUED_TO_COMPILE;
     enqueue_chunk(COMPILE_QUEUES, c);
   } else if (coa->type == CA_TYPE_APPROXIMATION) {
     chunk_approximation *ca = (chunk_approximation *) coa->ptr;
     if (ca->chunk_flags & CF_QUEUED_TO_COMPILE) { return; }
-    ca->chunk_flags &= ~CF_COMPILED;
     ca->chunk_flags |= CF_QUEUED_TO_COMPILE;
     enqueue_chunk_approximation(COMPILE_QUEUES, ca);
   } else {

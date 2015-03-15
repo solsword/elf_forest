@@ -411,8 +411,8 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   chunk *c;
   chunk_approximation *ca;
   region_chunk_pos* rcpos;
-  chunk_or_approx chunk_neighbors[27]; // also zxy order
-  cell* neighborhood[27]; // zxy order:
+  chunk_or_approx chunk_neighbors[27]; // zxy order
+  cell* neighborhood[27]; // also zxy order
   vertex_buffer *vb;
   block_info geom;
   ch_idx_t step = 1;
