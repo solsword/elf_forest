@@ -9,6 +9,7 @@ Map THE_MAP;
 PImage THE_IMAGE;
 
 String MODE = "grid";
+boolean USE_GREYSCALE = true;
 
 int WINDOW_WIDTH = 800;
 int WINDOW_HEIGHT = 600;
@@ -28,7 +29,7 @@ int MAP_HEIGHT = 50;
 int IMAGE_WIDTH = 200;
 int IMAGE_HEIGHT = 150;
 
-float SEA_LEVEL = 0.0;
+float SEA_LEVEL = 0.4;
 
 float GRID_RESOLUTION = 100.0;
 
@@ -37,7 +38,7 @@ float SG_OFFSET = cos(PI/3.0);
 
 float BUMPINESS = 0.05;
 
-float DEFAULT_SCALE = 0.15;
+float DEFAULT_SCALE = 0.15 / 1.2;
 float SCALE = DEFAULT_SCALE;
 float NS_LARGE =  0.0014;
 float NS_MEDIUM = 0.042;
@@ -93,21 +94,20 @@ float sigmoid(float x) {
 }
 
 
-color colormap(float h) {
-/*
-  float[] result = new float[3];
-  if (h < SEA_LEVEL) {
-    result[0] = 0.7;
-    result[1] = 0.45;
-    result[2] = h;
+color colormap(float h, boolean grey) {
+  if (grey) {
+    return color(0, 0, h);
   } else {
-    result[0] = 0.02 + 0.24*h;
-    result[1] = 0.45;
-    result[2] = 0.5 + 0.4*h;
+    if (h < SEA_LEVEL) {
+      return color(0.7, 0.45, 0.3 + 0.7 * h);
+    } else {
+      return color(
+        0.38 - 0.28*(h - SEA_LEVEL),
+        0.7,
+        0.6 + 0.3*(h - SEA_LEVEL)
+      );
+    }
   }
-  return color(result[0], result[1], result[2]);
-  */
-  return color(0, 0, h);
 }
 
 class Point {
@@ -536,6 +536,63 @@ class Map {
     }
   }
 
+  void jiggle(float strength, float size, boolean only_up, float seed) {
+    // Randomly moves each grid point up or down a little (or only upwards if
+    // only_up is given).
+    float s = strength * GRID_RESOLUTION;
+    float n;
+    Point p;
+    int i, j;
+    for (i = 0; i < this.pwidth(); ++i) {
+      for (j = 0; j < this.pheight(); ++j) {
+        p = this.points[this.pidx(i, j)];
+        n = pnoise(p.x*size + 13000.0, p.y*size, seed);
+        if (only_up) {
+          n = 1 + n / 2.0;
+        }
+        p.z += s*n;
+      }
+    }
+  }
+
+  void continents(float strength, float scale, float seed) {
+    float s = strength * GRID_RESOLUTION;
+    Point p;
+    int i, j;
+    float fx, fy;
+    float elevate;
+    for (i = 0; i < this.pwidth(); ++i) {
+      for (j = 0; j < this.pheight(); ++j) {
+        p = this.points[this.pidx(i, j)];
+        fx = (
+          p.x
+        +
+          0.3 * this.pwidth() * GRID_RESOLUTION * pnoise(
+            p.x * scale,
+            p.y * scale + 170,
+            seed + 1345
+          )
+        );
+        fy = (
+          p.y
+        +
+          0.3 * this.pheight() * GRID_RESOLUTION * pnoise(
+            p.x * scale,
+            p.y * scale - 60,
+            seed + 1764
+          )
+        );
+        // base height:
+        elevate = (
+          sin(2.0 * PI * fx / (this.pwidth() * GRID_RESOLUTION))
+        *
+          cos(2.0 * PI * fy / (this.pheight() * GRID_RESOLUTION))
+        );
+        p.z += elevate * s;
+      }
+    }
+  }
+
   void settle(int iterations, boolean fix_edges) {
     // Slowly settles the graph by pretending that each grid line is a spring.
     Triangle t;
@@ -748,6 +805,20 @@ class Map {
     }
   }
 
+  void popup() {
+    // Pops up the grid to ensure that the lowest point is at z=0.
+    Point p;
+    int i, j;
+    for (i = 0; i < this.pwidth(); ++i) {
+      for (j = 0; j < this.pheight(); ++j) {
+        p = this.points[this.pidx(i, j)];
+        if (p.z < 0) {
+          p.z = 0;
+        }
+      }
+    }
+  }
+
   void render_wireframe() {
     int i, j;
     Triangle t;
@@ -777,7 +848,7 @@ class Map {
     }
   }
 
-  void render(PImage fb) {
+  void render(PImage fb, boolean grey, float seed) {
     float min_x, max_x, min_y, max_y, min_z, max_z;
     min_x = this.min_x();
     max_x = this.max_x();
@@ -790,15 +861,31 @@ class Map {
     float d = max_z - min_z;
     int i, j;
     float fx, fy;
+    float dfx, dfy;
+    float bh, th; // base and terrain heights
     Point p;
     for (i = 0; i < fb.width; ++i) {
       for (j = 0; j < fb.height; ++j) {
         fx = i / (float) (fb.width);
         fy = j / (float) (fb.height);
-        fx = min_x + w*fx;
-        fy = min_y + h*fy;
+        // base height distortion:
+        dfx = fx + 0.3 * pnoise(fx * 5.0, fy * 4.0 + 170, seed + 7182);
+        dfy = fy + 0.3 * pnoise(fx * 5.0, fy * 4.0 - 60, seed + 5468);
+        // base height:
+        bh = (
+          sin(2.0 * PI * dfx)
+        *
+          sin(2.0 * PI * dfy)
+        );
+        bh = (1 + bh) / 2.0;
+        // distortion:
+        dfx = fx + 0.022 * pnoise(fx * 14.0, fy * 14.0, seed);
+        dfy = fy + 0.022 * pnoise(fx * 14.0, fy * 14.0 + 1110.0, seed);
+        fx = min_x + w*dfx;
+        fy = min_y + h*dfy;
         p = new Point(fx, fy, 0);
-        fb.set(i, j, colormap((this.get_height(p) - min_z) / d));
+        th = (this.get_height(p) - min_z) / d;
+        fb.set(i, j, colormap((th + bh) / 2.0, grey));
       }
     }
   }
@@ -845,7 +932,7 @@ void draw() {
       WINDOW_WIDTH / (float) THE_IMAGE.width,
       WINDOW_HEIGHT / (float) THE_IMAGE.height
     );
-    THE_MAP.render(THE_IMAGE);
+    THE_MAP.render(THE_IMAGE, USE_GREYSCALE, 34654.4);
     image(THE_IMAGE, 0, 0);
     popMatrix();
   } else if (MODE == "grid") {
@@ -871,10 +958,17 @@ void keyPressed() {
     SCALE *= 1.2;
   } else if (key == 'j') {
     SCALE /= 1.2;
+  } else if (key == 'K') {
+    SEA_LEVEL += 0.1;
+  } else if (key == 'J') {
+    SEA_LEVEL -= 0.1;
+  } else if (key == 'i') {
+    THE_MAP.jiggle(0.1, NS_MEDIUM, false, random(15000));
   } else if (key == 'g') {
     THE_MAP = new Map(MAP_WIDTH, MAP_HEIGHT);
-    THE_MAP.rustle(0.4, NS_TINY, (int) random(15000));
-    THE_MAP.rustle(0.4, NS_MEDIUM, (int) random(15000));
+    THE_MAP.continents(0.3, NS_LARGE, random(15000));
+    THE_MAP.rustle(0.4, NS_TINY, random(15000));
+    THE_MAP.rustle(0.4, NS_MEDIUM, random(15000));
     for (i = 0; i < 25; ++i) {
       a = new Point(
         random(THE_MAP.min_x(), THE_MAP.max_x()),
@@ -901,7 +995,7 @@ void keyPressed() {
       );
     }
     THE_MAP.rustle(0.4, NS_TINY, random(15000));
-    THE_MAP.rustle(0.4, NS_LARGE, (int) random(15000));
+    THE_MAP.rustle(0.4, NS_LARGE, random(15000));
     THE_MAP.settle(DEFAULT_SETTLE_STEPS, false);
     THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
     for (i = 0; i < 4; ++i) {
@@ -924,10 +1018,78 @@ void keyPressed() {
     );
     THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
     THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, true);
-    THE_MAP.rustle(0.8, NS_MEDIUM, (int) random(15000));
-    THE_MAP.rustle(1.2, NS_LARGE, (int) random(15000));
+    THE_MAP.rustle(0.8, NS_MEDIUM, random(15000));
+    THE_MAP.rustle(1.2, NS_LARGE, random(15000));
+    THE_MAP.jiggle(0.05, NS_MEDIUM, false, random(15000));
+    THE_MAP.continents(0.6, NS_LARGE, random(15000));
+    THE_MAP.settle(DEFAULT_SETTLE_STEPS, false);
+    THE_MAP.popup();
+    THE_MAP.jiggle(0.03, NS_SMALL, true, random(15000));
+    THE_MAP.settle(DEFAULT_SETTLE_STEPS/2, false);
+    THE_MAP.rustle(0.4, NS_LARGE, random(15000));
+    THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
+    THE_MAP.stretch(
+      THE_MAP.max_x() - THE_MAP.min_x(),
+      THE_MAP.max_y() - THE_MAP.min_y()
+    );
+    THE_MAP.popup();
+  } else if (key == 'G') {
+    THE_MAP = new Map(MAP_WIDTH, MAP_HEIGHT);
+    THE_MAP.rustle(0.4, NS_TINY, random(15000));
+    THE_MAP.rustle(0.6, NS_MEDIUM, random(15000));
+    THE_MAP.continents(0.8, NS_LARGE, random(15000));
+    for (i = 0; i < 20; ++i) {
+      a = new Point(
+        random(THE_MAP.min_x(), THE_MAP.max_x()),
+        random(THE_MAP.min_y(), THE_MAP.max_y()),
+        0
+      );
+      b = new Point(
+        random(THE_MAP.min_x(), THE_MAP.max_x()),
+        random(THE_MAP.min_y(), THE_MAP.max_y()),
+        0
+      );
+      push = (int) random(2) == 1;
+      THE_MAP.seam(
+        new LineSegment(a, b),
+        random(MIN_SEAM_WIDTH, MAX_SEAM_WIDTH),
+        push,
+        false
+      );
+      THE_MAP.seam(
+        new LineSegment(a, b),
+        random(MIN_SEAM_WIDTH, MAX_SEAM_WIDTH),
+        push,
+        false
+      );
+    }
+    //THE_MAP.rustle(0.4, NS_TINY, random(15000));
+    //THE_MAP.rustle(0.4, NS_LARGE, random(15000));
+    //THE_MAP.settle(DEFAULT_SETTLE_STEPS, false);
+    //THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
+    for (i = 0; i < 4; ++i) {
+      THE_MAP.rustle(0.6, NS_SMALL, random(15000));
+      THE_MAP.settle(DEFAULT_SETTLE_STEPS, false);
+      THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
+    }
+    THE_MAP.stretch(
+      THE_MAP.max_x() - THE_MAP.min_x(),
+      THE_MAP.max_y() - THE_MAP.min_y()
+    );
+    THE_MAP.popup();
+    /*
+    THE_MAP.jiggle(0.03, NS_SMALL, true, random(15000));
+    THE_MAP.rustle(0.4, NS_MEDIUM, random(15000));
+    THE_MAP.settle(DEFAULT_SETTLE_STEPS, false);
+    THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
+    THE_MAP.stretch(
+      THE_MAP.max_x() - THE_MAP.min_x(),
+      THE_MAP.max_y() - THE_MAP.min_y()
+    );
+    THE_MAP.popup();
+    */
   } else if (key == 'w') {
-    THE_MAP.rustle(DEFAULT_RUSTLE_STR, NS_LARGE, (int) random(15000));
+    THE_MAP.rustle(DEFAULT_RUSTLE_STR, NS_LARGE, random(15000));
   } else if (key == 'u') {
     THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
   } else if (key == 'U') {
@@ -937,6 +1099,8 @@ void keyPressed() {
     SCALE = DEFAULT_SCALE;
   } else if (key == 'r') {
     THE_MAP.rustle(0.8, NS_TINY, random(15000));
+  } else if (key == 'c') {
+    THE_MAP.continents(0.8, NS_LARGE, random(15000));
   } else if (key == 'S') {
     THE_MAP.stretch(
       THE_MAP.max_x() - THE_MAP.min_x(),
@@ -984,6 +1148,8 @@ void keyPressed() {
     } else {
       MODE = "map";
     }
+  } else if (key == 'y') {
+    USE_GREYSCALE = !USE_GREYSCALE;
   }
   redraw();
 }
