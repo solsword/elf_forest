@@ -19,4 +19,11 @@
 // adjacent to unavailable neighbors are not exposed.
 void compute_exposure(chunk_or_approx *coa);
 
+// Computes and returns the exposure of the given cell.
+block compute_cell_exposure(
+  chunk_or_approx *coa,
+  chunk_index idx,
+  chunk_or_approx *chunk_neighbors
+);
+
 #endif // ifndef CHUNK_DATA_H

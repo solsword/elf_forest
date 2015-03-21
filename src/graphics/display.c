@@ -442,6 +442,9 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
     return;
   }
 
+  // Get the chunk neighborhood:
+  get_chunk_neighborhood(rcpos, chunk_neighbors);
+
   uint16_t counts[N_LAYERS];
   uint16_t total = 0;
   layer i;
@@ -461,7 +464,9 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
         } else {
           here = ca_cell(ca, idx);
         }
-        exposure = cl_get_exposure(here);
+        // TODO: Remove this entirely
+        //exposure = cl_get_exposure(here);
+        exposure = compute_cell_exposure(coa, idx, chunk_neighbors);
         if (
           (exposure & BF_EXPOSED_ANY)
         &&
@@ -518,16 +523,15 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
 #endif
   }
 
-  // Get the chunk neighborhood:
-  get_chunk_neighborhood(rcpos, chunk_neighbors);
-
   for (idx.x = 0; idx.x < CHUNK_SIZE; idx.x += step) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
         // get local cell and neighbors:
         get_cell_neighborhood(idx, chunk_neighbors, neighborhood, step, &dummy);
         here = neighborhood[13];
-        exposure = cl_get_exposure(here);
+        // TODO: Remove this entirely
+        //exposure = cl_get_exposure(here);
+        exposure = compute_cell_exposure(coa, idx, chunk_neighbors);
         if (!b_is_invisible(here->primary)) {
           ensure_mapped(here->primary);
           geom = bi_geom(here->primary);

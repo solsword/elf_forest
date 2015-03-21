@@ -155,8 +155,8 @@ typedef struct biome_s biome;
 // 128*96 = 12288 regions
 // 12288 * 256*256*(?=512) = 412316860416 chunks
 // 412316860416 chunks * 384 KB/chunk = 144 petabytes
-// 96*256*32 = 786432 blocks ~= 524300 meters ~= 525 km
-// 320*256*32 = 2621440 blocks ~= 1747500 meters ~= 1750 km <-
+// 96*256*32 = 786432 blocks ~= 524300 meters ~= 525 km <-
+// 320*256*32 = 2621440 blocks ~= 1747500 meters ~= 1750 km
 // 512*256*32 = 4194304 blocks ~= 2796000 meters ~= 2800 km
 #define WORLD_REGION_BITS 8
 #define WORLD_REGION_SIZE (1 << WORLD_REGION_BITS)

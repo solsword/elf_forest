@@ -29,7 +29,7 @@ size_t const CHUNK_CACHE_MAP_SIZE = 16384;
 //int const LOAD_CAP = 128;
 //int const COMPILE_CAP = 64;
 int const LOAD_CAP = 16;
-int const COMPILE_CAP = 16;
+int const COMPILE_CAP = 2;
 //int const LOAD_CAP = 1;
 //int const COMPILE_CAP = 16;
 
@@ -502,7 +502,8 @@ void tick_compile_chunks(void) {
   while (n < COMPILE_CAP && q_get_length(q) > 0) {
     c = (chunk *) q_pop_element(q);
     ch__coa(c, &coa);
-    compute_exposure(&coa);
+    // TODO: Remove this entirely
+    //compute_exposure(&coa);
     compile_chunk_or_approx(&coa);
     c->chunk_flags &= ~CF_QUEUED_TO_COMPILE;
     n += 1;
@@ -512,7 +513,8 @@ void tick_compile_chunks(void) {
     while (n < COMPILE_CAP && q_get_length(q) > 0) {
       ca = (chunk_approximation *) q_pop_element(q);
       aprx__coa(ca, &coa);
-      compute_exposure(&coa);
+      // TODO: Remove this entirely
+      //compute_exposure(&coa);
       compile_chunk_or_approx(&coa);
       ca->chunk_flags &= ~CF_QUEUED_TO_COMPILE;
       n += 1;
