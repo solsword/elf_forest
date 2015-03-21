@@ -223,8 +223,6 @@ void world_cell(world_map *wm, region_pos *rpos, cell *result) {
   // default values:
   result->primary = b_make_block(B_VOID);
   result->secondary = b_make_block(B_VOID);
-  result->p_data = 0;
-  result->s_data = 0;
   i = 0;
   for (iter.x = wmpos.x - 1; iter.x <= wmpos.x + 1; iter.x += 1) {
     for (iter.y = wmpos.y - 1; iter.y <= wmpos.y + 1; iter.y += 1) {

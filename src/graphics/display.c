@@ -405,8 +405,6 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   static cell dummy = {
     .primary = 0,
     .secondary = 0,
-    .p_data = 0,
-    .s_data = 0
   };
   chunk *c;
   chunk_approximation *ca;
@@ -464,8 +462,6 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
         } else {
           here = ca_cell(ca, idx);
         }
-        // TODO: Remove this entirely
-        //exposure = cl_get_exposure(here);
         exposure = compute_cell_exposure(coa, idx, chunk_neighbors);
         if (
           (exposure & BF_EXPOSED_ANY)
@@ -529,8 +525,6 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
         // get local cell and neighbors:
         get_cell_neighborhood(idx, chunk_neighbors, neighborhood, step, &dummy);
         here = neighborhood[13];
-        // TODO: Remove this entirely
-        //exposure = cl_get_exposure(here);
         exposure = compute_cell_exposure(coa, idx, chunk_neighbors);
         if (!b_is_invisible(here->primary)) {
           ensure_mapped(here->primary);

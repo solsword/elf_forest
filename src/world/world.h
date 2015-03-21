@@ -358,34 +358,6 @@ static inline void c_paste_cell(
   copy_cell(cl, dst);
 }
 
-static inline block cl_get_exposure(cell *cl) { return b_exp(cl->primary); }
-
-static inline void cl_set_exposure(cell *cl, block exposure) {
-#ifdef DEBUG
-  if (exposure & (~BM_EXPOSURE)) {
-    fprintf(
-      stderr,
-      "Warning: cl_set_exposure will corrupt block: 0x%x.\n",
-      exposure
-    );
-  }
-#endif
-  cl->primary |= (exposure << BS_EXP);
-}
-
-static inline void cl_clear_exposure(cell *cl, block exposure) {
-#ifdef DEBUG
-  if (exposure & (~BM_EXPOSURE)) {
-    fprintf(
-      stderr,
-      "Warning: cl_clear_exposure will corrupt block: 0x%x.\n",
-      exposure
-    );
-  }
-#endif
-  cl->primary &= ~(exposure << BS_EXP);
-}
-
 // General utility functions:
 
 static inline void c_erase_cell_data(chunk *c) {

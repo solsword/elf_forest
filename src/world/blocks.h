@@ -13,23 +13,28 @@
  ************/
 
 // 9 bits of block ID.
-// 14 bits of block species.
+// 12 bits of block species.
+// 8 bits of block data.
 // 3 bits of block orientation.
-// 6 bits of block exposure.
 typedef uint32_t block;
 
 // Used for storing species info separately.
 typedef uint16_t species;
 
-// Extra static block data and flags stored in the BLOCK_INFO table.
-typedef uint32_t block_info;
-
-// Extra variable block data. Meaning depends on block ID.
+// Used for storing block data separately. Meaning depends on block ID.
+// For flowing liquids:
+//   2 bits of level.
+//   3 bits of flow direction.
+//   3 bits of flow rate.
 // For organic blocks:
 //   2 bits of vitality (healthy, sick, dying, dead)
 //   3 bits of growth stage
-//     (normal, dormant, sprouting, budding, flowering, fruit-bearing, autumnal)
-typedef uint16_t block_data;
+//     (dormant, sprouting, budding, flowering, fruit-bearing, normal, autumnal)
+//   3 bits of growth direction.
+typedef uint8_t block_data;
+
+// Extra static block data and flags stored in the BLOCK_INFO table.
+typedef uint32_t block_info;
 
 // A cell holds two blocks and their block data:
 struct cell_s;
@@ -42,8 +47,6 @@ typedef struct cell_s cell;
 struct cell_s {
   block primary;
   block secondary;
-  block_data p_data;
-  block_data s_data;
 };
 
 /**********************
@@ -51,14 +54,14 @@ struct cell_s {
  **********************/
 
 #define BLOCK_ID_BITS 9
-#define BLOCK_SPC_BITS 14
+#define BLOCK_SPC_BITS 12
+#define BLOCK_DAT_BITS 8
 #define BLOCK_ORI_BITS 3
-#define BLOCK_EXP_BITS 6
 
-#define BS_ID (BLOCK_SPC_BITS + BLOCK_ORI_BITS + BLOCK_EXP_BITS)
-#define BS_SPC (BLOCK_ORI_BITS + BLOCK_EXP_BITS)
-#define BS_ORI BLOCK_ORI_BITS
-#define BS_EXP 0
+#define BS_ID (BLOCK_SPC_BITS + BLOCK_DAT_BITS + BLOCK_ORI_BITS)
+#define BS_SPC (BLOCK_DAT_BITS + BLOCK_ORI_BITS)
+#define BS_DAT BLOCK_ORI_BITS
+#define BS_ORI 0
 
 #define TOTAL_BLOCK_TYPES (1 << BLOCK_ID_BITS)
 #define TOTAL_BLOCK_SPECIES (1 << (BLOCK_ID_BITS + BLOCK_SPC_BITS))
@@ -81,6 +84,8 @@ extern char const * const BLOCK_NAMES[TOTAL_BLOCK_TYPES];
 // Exposure Flags:
 // ---------------
 
+// Note that block exposure isn't stored anywhere but is recomputed on the fly.
+
 #define    BFS_EXPOSED_ABOVE_SHIFT 0
 #define    BFS_EXPOSED_BELOW_SHIFT 1
 #define    BFS_EXPOSED_NORTH_SHIFT 2
@@ -102,9 +107,9 @@ static block const   BF_EXPOSED_WEST = 1 << BFS_EXPOSED_WEST_SHIFT;
 // Masks:
 // ------
 
-static block const    BM_EXPOSURE = 0x3f << BS_EXP;
-static block const BM_ORIENTATION = 0x7 << BS_ORI;
-static block const     BM_SPECIES = 0x3fff << BS_SPC;
+static block const BM_ORIENTATION = ((1 << BLOCK_ORI_BITS) - 1) << BS_ORI;
+static block const        BM_DATA = ((1 << BLOCK_DAT_BITS) - 1) << BS_DAT;
+static block const     BM_SPECIES = ((1 << BLOCK_SPC_BITS) - 1) << BS_SPC;
 
 // Info Masks:
 // -----------
@@ -173,7 +178,7 @@ static block const      BD_ORI_EAST = 0x02;
 static block const      BD_ORI_WEST = 0x03;
 static block const        BD_ORI_UP = 0x04;
 static block const      BD_ORI_DOWN = 0x05;
-                            
+
 static block const        BD_ORI_IN = 0x06;
 static block const       BD_ORI_OUT = 0x07;
 
@@ -436,7 +441,6 @@ static inline block b_id(block b) { return b >> BS_ID; }
 static inline species b_species(block b) { return (b & BM_SPECIES) >> BS_SPC; }
 static inline block b_idspc(block b) { return b >> BS_SPC; }
 static inline block b_ori(block b) { return (b & BM_ORIENTATION) >> BS_ORI; }
-static inline block b_exp(block b) { return (b & BM_EXPOSURE) >> BS_EXP; }
 
 // Per-block-type properties:
 static inline block_info bi_vis(block b) {
@@ -457,12 +461,12 @@ static inline block_info bi_oabl(block b) {
 
 // Constructors:
 
-// Turn an ID into a block with default species, exposure, and orientation:
+// Turn an ID into a block with default species and orientation:
 static inline block b_make_block(block id) {
   return id << BS_ID;
 }
 
-// Combine an id and species into a block with default exposure and orientation:
+// Combine an id and species into a block with default orientation:
 static inline block b_make_species(block id, species sp) {
   return (id << BS_ID) + (((block) sp) << BS_SPC);
 }
@@ -475,7 +479,7 @@ static inline block b_is(block b, block c) {
 }
 
 // Compare just block IDs:
-static inline block b_is_species_of(block b, block c) {
+static inline block b_is_same_type(block b, block c) {
   return b_id(b) == b_id(c);
 }
 
@@ -522,8 +526,6 @@ static inline block next_species(block b) {
 static inline void copy_cell(cell const * const src, cell * dst) {
   dst->primary = src->primary;
   dst->secondary = src->secondary;
-  dst->p_data = src->p_data;
-  dst->s_data = src->s_data;
 }
 
 #endif // ifndef BLOCKS_H

@@ -502,8 +502,6 @@ void tick_compile_chunks(void) {
   while (n < COMPILE_CAP && q_get_length(q) > 0) {
     c = (chunk *) q_pop_element(q);
     ch__coa(c, &coa);
-    // TODO: Remove this entirely
-    //compute_exposure(&coa);
     compile_chunk_or_approx(&coa);
     c->chunk_flags &= ~CF_QUEUED_TO_COMPILE;
     n += 1;
@@ -513,8 +511,6 @@ void tick_compile_chunks(void) {
     while (n < COMPILE_CAP && q_get_length(q) > 0) {
       ca = (chunk_approximation *) q_pop_element(q);
       aprx__coa(ca, &coa);
-      // TODO: Remove this entirely
-      //compute_exposure(&coa);
       compile_chunk_or_approx(&coa);
       ca->chunk_flags &= ~CF_QUEUED_TO_COMPILE;
       n += 1;
