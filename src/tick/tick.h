@@ -48,7 +48,7 @@ void start_game(
   int argc,
   char **argv,
   char *player_entity_type,
-  region_pos *spawn_point
+  global_pos *spawn_point
 );
 
 // Cleans up resources before exiting.

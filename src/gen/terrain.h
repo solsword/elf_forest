@@ -267,7 +267,7 @@ static inline void worley_component(
 }
 
 static inline void get_standard_distortion(
-  r_pos_t x, r_pos_t y, ptrdiff_t *salt,
+  gl_pos_t x, gl_pos_t y, ptrdiff_t *salt,
   float frequency,
   float scale,
   manifold_point *result_x,
@@ -296,7 +296,7 @@ static inline void get_standard_distortion(
 }
 
 static inline void get_noise(
-  r_pos_t x, r_pos_t y, ptrdiff_t *salt,
+  gl_pos_t x, gl_pos_t y, ptrdiff_t *salt,
   manifold_point *continents,
   manifold_point *primary_geoforms, manifold_point *secondary_geoforms,
   manifold_point *geodetails, manifold_point *mountains,
@@ -958,7 +958,7 @@ static inline void geomap(
 
 // Computes basic geoform information to be used by compute_terrain_height.
 static inline void compute_base_geoforms(
-  region_pos* pos, ptrdiff_t *salt,
+  global_pos* pos, ptrdiff_t *salt,
   manifold_point *continents,
   manifold_point *primary_geoforms, manifold_point *secondary_geoforms,
   manifold_point *geodetails, manifold_point *mountains,
@@ -1098,7 +1098,7 @@ void setup_terrain_gen(ptrdiff_t seed);
 // Computes the terrain height at the given region position in blocks, and
 // writes out the gross (large-scale), rock and dirt heights at that location.
 void compute_terrain_height(
-  region_pos *pos,
+  global_pos *pos,
   manifold_point *r_gross,
   manifold_point *r_rocks,
   manifold_point *r_dirt
@@ -1107,7 +1107,7 @@ void compute_terrain_height(
 // Alters the various detail values according to the terrain region
 // classification.
 void alter_terrain_values(
-  region_pos *pos, ptrdiff_t *salt,
+  global_pos *pos, ptrdiff_t *salt,
   terrain_region region, manifold_point *tr_interp,
   manifold_point *mountains, manifold_point *hills, manifold_point *ridges,
   manifold_point *mounds, manifold_point *details, manifold_point *bumps
@@ -1116,7 +1116,7 @@ void alter_terrain_values(
 // Figures out the dirt height at the given location and writes it into the
 // result parameter.
 void compute_dirt_height(
-  region_pos *pos, ptrdiff_t *salt,
+  global_pos *pos, ptrdiff_t *salt,
   manifold_point *rocks_height,
   manifold_point *mountains, manifold_point *hills,
   manifold_point *details, manifold_point *bumps,
@@ -1124,19 +1124,19 @@ void compute_dirt_height(
 );
 
 // Computes the terrain region and interpolation values at the given position.
-void geoform_info(region_pos *pos, terrain_region* region, float* tr_interp);
+void geoform_info(global_pos *pos, terrain_region* region, float* tr_interp);
 
 // Computes the cell contents at the given position based on the terrain.
 void terrain_cell(
   world_map *wm,
   world_region* neighborhood[],
-  region_pos* rpos,
+  global_pos* glpos,
   cell* result
 );
 
 // Computes a stone cell from within the base strata layers.
 void stone_cell(
-  world_map *wm, region_pos *rpos,
+  world_map *wm, global_pos *glpos,
   float h, float ceiling,
   world_region *best, world_region *secondbest, float strbest, float strsecond,
   cell *result
@@ -1144,7 +1144,7 @@ void stone_cell(
 
 // Computes a dirt cell from the dirt layer.
 void dirt_cell(
-  world_map *wm, region_pos *rpos,
+  world_map *wm, global_pos *glpos,
   float h, float elev,
   world_region *wr,
   cell *result

@@ -46,7 +46,7 @@ void setup_terrain_gen(ptrdiff_t seed) {
 }
 
 void compute_terrain_height(
-  region_pos *pos,
+  global_pos *pos,
   manifold_point *r_gross,
   manifold_point *r_rocks,
   manifold_point *r_dirt
@@ -312,7 +312,7 @@ static inline void alter_value(
 }
 
 void alter_terrain_values(
-  region_pos *pos, ptrdiff_t *salt,
+  global_pos *pos, ptrdiff_t *salt,
   terrain_region region, manifold_point *tr_interp,
   manifold_point *mountains, manifold_point *hills, manifold_point *ridges,
   manifold_point *mounds, manifold_point *details, manifold_point *bumps
@@ -420,7 +420,7 @@ void alter_terrain_values(
 }
 
 void compute_dirt_height(
-  region_pos *pos, ptrdiff_t *salt,
+  global_pos *pos, ptrdiff_t *salt,
   manifold_point *rocks_height,
   manifold_point *mountains, manifold_point *hills,
   manifold_point *details, manifold_point *bumps,
@@ -544,7 +544,7 @@ void compute_dirt_height(
 }
 
 void geoform_info(
-  region_pos *pos,
+  global_pos *pos,
   terrain_region* region,
   float* tr_interp
 ) {
@@ -590,11 +590,11 @@ void geoform_info(
 void terrain_cell(
   world_map *wm,
   world_region* neighborhood[],
-  region_pos *rpos,
+  global_pos *glpos,
   cell *result
 ) {
   static manifold_point dontcare, stone_height, dirt_height;
-  static region_pos pr_rpos = { .x = -1, .y = -1, .z = -1 };
+  static global_pos pr_glpos = { .x = -1, .y = -1, .z = -1 };
   float h;
   world_region *best, *secondbest; // best and second-best regions
   float strbest, strsecond; // their respective strengths
@@ -604,17 +604,17 @@ void terrain_cell(
   if (
     (
       abs(
-        rpos->x -
+        glpos->x -
         ((WORLD_WIDTH / 2.0) * WORLD_REGION_BLOCKS + 2*CHUNK_SIZE)
       ) < CHUNK_SIZE
     ) && (
-      rpos->z > (
-        rpos->y - (WORLD_HEIGHT/2.0) * WORLD_REGION_BLOCKS
+      glpos->z > (
+        glpos->y - (WORLD_HEIGHT/2.0) * WORLD_REGION_BLOCKS
       ) + 8000
-      //rpos->z > (rpos->y - (WORLD_HEIGHT*WORLD_REGION_BLOCKS)/2)
+      //glpos->z > (glpos->y - (WORLD_HEIGHT*WORLD_REGION_BLOCKS)/2)
     )
   ) {
-  //if (abs(rpos->x - 32770) < CHUNK_SIZE) {
+  //if (abs(glpos->x - 32770) < CHUNK_SIZE) {
     result->primary = b_make_block(B_AIR);
     result->secondary = b_make_block(B_VOID);
     return;
@@ -624,8 +624,8 @@ void terrain_cell(
   // DEBUG: Caves to show things off more:
   /*
   if (
-    sxnoise_3d(rpos->x*1/12.0, rpos->y*1/12.0, rpos->z*1/12.0, 17) >
-      sxnoise_3d(rpos->x*1/52.0, rpos->y*1/52.0, rpos->z*1/52.0, 18)
+    sxnoise_3d(glpos->x*1/12.0, glpos->y*1/12.0, glpos->z*1/12.0, 17) >
+      sxnoise_3d(glpos->x*1/52.0, glpos->y*1/52.0, glpos->z*1/52.0, 18)
   ) {
     result->primary = b_make_block(B_AIR);
     result->secondary = b_make_block(B_VOID);
@@ -633,43 +633,43 @@ void terrain_cell(
   }
   // */
 
-  if (pr_rpos.x != rpos->x || pr_rpos.y != rpos->y) {
+  if (pr_glpos.x != glpos->x || pr_glpos.y != glpos->y) {
     // No need to recompute the surface height if we're at the same x/y.
     // TODO: Get rid of double-caching here?
-    compute_terrain_height(rpos, &dontcare, &stone_height, &dirt_height);
+    compute_terrain_height(glpos, &dontcare, &stone_height, &dirt_height);
   }
 
   // Keep track of our previous position:
-  copy_rpos(rpos, &pr_rpos);
+  copy_glpos(glpos, &pr_glpos);
 
   // Compute our fractional height:
-  h = rpos->z / stone_height.z;
+  h = glpos->z / stone_height.z;
 
   // Figure out the nearest regions:
   compute_region_contenders(
     wm,
     neighborhood,
-    rpos,
+    glpos,
     &best, &secondbest, 
     &strbest, &strsecond
   );
 
   if (h <= 1.0) { // we're in the stone layers
     stone_cell(
-      wm, rpos,
+      wm, glpos,
       h, stone_height.z,
       best, secondbest, strbest, strsecond,
       result
     );
   } else if (h <= dirt_height.z / stone_height.z) { // we're in dirt
     dirt_cell(
-      wm, rpos,
-      (rpos->z - stone_height.z) / (dirt_height.z - stone_height.z),
+      wm, glpos,
+      (glpos->z - stone_height.z) / (dirt_height.z - stone_height.z),
       dirt_height.z,
       best,
       result
     );
-  } else if (rpos->z <= TR_HEIGHT_SEA_LEVEL) { // under the ocean
+  } else if (glpos->z <= TR_HEIGHT_SEA_LEVEL) { // under the ocean
     result->primary = b_make_block(B_WATER);
     result->secondary = b_make_block(B_VOID);
   } else { // we're above the ground
@@ -680,7 +680,7 @@ void terrain_cell(
 }
 
 void stone_cell(
-  world_map *wm, region_pos *rpos,
+  world_map *wm, global_pos *glpos,
   float h, float ceiling,
   world_region *best, world_region *secondbest, float strbest, float strsecond,
   cell *result
@@ -690,15 +690,15 @@ void stone_cell(
   // TODO: more spatial variance in noise strength?
   h += (TR_STRATA_FRACTION_NOISE_STRENGTH / ceiling) * (
     sxnoise_3d(
-      rpos->x * TR_STRATA_FRACTION_NOISE_SCALE,
-      rpos->y * TR_STRATA_FRACTION_NOISE_SCALE,
-      rpos->z * TR_STRATA_FRACTION_NOISE_SCALE,
+      glpos->x * TR_STRATA_FRACTION_NOISE_SCALE,
+      glpos->y * TR_STRATA_FRACTION_NOISE_SCALE,
+      glpos->z * TR_STRATA_FRACTION_NOISE_SCALE,
       7193
     ) + 
     0.5 * sxnoise_3d(
-      rpos->x * TR_STRATA_FRACTION_NOISE_SCALE * 1.7,
-      rpos->y * TR_STRATA_FRACTION_NOISE_SCALE * 1.7,
-      rpos->z * TR_STRATA_FRACTION_NOISE_SCALE * 1.7,
+      glpos->x * TR_STRATA_FRACTION_NOISE_SCALE * 1.7,
+      glpos->y * TR_STRATA_FRACTION_NOISE_SCALE * 1.7,
+      glpos->z * TR_STRATA_FRACTION_NOISE_SCALE * 1.7,
       7194
     )
   ) / 1.5;
@@ -731,7 +731,7 @@ void stone_cell(
 }
 
 void dirt_cell(
-  world_map *wm, region_pos *rpos,
+  world_map *wm, global_pos *glpos,
   float h,
   float elev,
   world_region *wr,
@@ -749,8 +749,8 @@ void dirt_cell(
   // compute beach height:
   beach_height = TR_BEACH_BASE_HEIGHT;
   beach_height += TR_BEACH_HEIGHT_VAR * sxnoise_2d(
-    rpos->x * TR_BEACH_HEIGHT_NOISE_SCALE,
-    rpos->y * TR_BEACH_HEIGHT_NOISE_SCALE,
+    glpos->x * TR_BEACH_HEIGHT_NOISE_SCALE,
+    glpos->y * TR_BEACH_HEIGHT_NOISE_SCALE,
     wr->seed + 18294
   );
 
@@ -781,19 +781,19 @@ void dirt_cell(
   for (i = 0; i < max_alts; ++i) {
     // TODO: Moisture dependence?
     str = sxnoise_3d(
-      rpos->x * TR_SOIL_ALT_NOISE_SCALE,
-      rpos->y * TR_SOIL_ALT_NOISE_SCALE,
-      rpos->z * TR_SOIL_ALT_NOISE_SCALE,
+      glpos->x * TR_SOIL_ALT_NOISE_SCALE,
+      glpos->y * TR_SOIL_ALT_NOISE_SCALE,
+      glpos->z * TR_SOIL_ALT_NOISE_SCALE,
       wr->seed + 4920 * i
     ) + 0.7 * sxnoise_3d(
-      rpos->x * TR_SOIL_ALT_NOISE_SCALE * 2.4,
-      rpos->y * TR_SOIL_ALT_NOISE_SCALE * 2.4,
-      rpos->z * TR_SOIL_ALT_NOISE_SCALE * 2.4,
+      glpos->x * TR_SOIL_ALT_NOISE_SCALE * 2.4,
+      glpos->y * TR_SOIL_ALT_NOISE_SCALE * 2.4,
+      glpos->z * TR_SOIL_ALT_NOISE_SCALE * 2.4,
       wr->seed + 7482 * i
     ) + 0.3 * sxnoise_3d(
-      rpos->x * TR_SOIL_ALT_NOISE_SCALE * 3.8,
-      rpos->y * TR_SOIL_ALT_NOISE_SCALE * 3.8,
-      rpos->z * TR_SOIL_ALT_NOISE_SCALE * 3.8,
+      glpos->x * TR_SOIL_ALT_NOISE_SCALE * 3.8,
+      glpos->y * TR_SOIL_ALT_NOISE_SCALE * 3.8,
+      glpos->z * TR_SOIL_ALT_NOISE_SCALE * 3.8,
       wr->seed + 3194 * i
     );
     str = (2 + str)/4.0; // [0, 1]

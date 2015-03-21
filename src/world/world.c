@@ -36,12 +36,12 @@
  * Constructors & Destructors *
  ******************************/
 
-chunk * create_chunk(region_chunk_pos const * const rcpos) {
+chunk * create_chunk(global_chunk_pos const * const glcpos) {
   chunk *c = (chunk *) malloc(sizeof(chunk));
   c->type = CA_TYPE_CHUNK;
-  c->rcpos.x = rcpos->x;
-  c->rcpos.y = rcpos->y;
-  c->rcpos.z = rcpos->z;
+  c->glcpos.x = glcpos->x;
+  c->glcpos.y = glcpos->y;
+  c->glcpos.z = glcpos->z;
   c->chunk_flags = 0;
   layer ly;
   for (ly = 0; ly < N_LAYERS; ++ly) {
@@ -67,16 +67,16 @@ void cleanup_chunk(chunk *c) {
 }
 
 chunk_approximation * create_chunk_approximation(
-  region_chunk_pos *rcpos,
+  global_chunk_pos *glcpos,
   lod detail
 ) {
   chunk_approximation *ca = (chunk_approximation *) malloc(
     sizeof(chunk_approximation)
   );
   ca->type = CA_TYPE_APPROXIMATION;
-  ca->rcpos.x = rcpos->x;
-  ca->rcpos.y = rcpos->y;
-  ca->rcpos.z = rcpos->z;
+  ca->glcpos.x = glcpos->x;
+  ca->glcpos.y = glcpos->y;
+  ca->glcpos.z = glcpos->z;
   ca->chunk_flags = 0;
   layer ly;
   for (ly = 0; ly < N_LAYERS; ++ly) {
@@ -132,37 +132,37 @@ DECLARE_APPROX_FN_VARIANTS_TABLE(CA_PASTE_CELL_SIG, CA_PASTE_CELL_FN)
 
 
 uint8_t CELL_AT_SALT = 0;
-cell* cell_at(region_pos const * const rpos) {
-  region_chunk_pos rcpos;
-  static region_chunk_pos last_rcpos = { .x = 0, .y = 0, .z = 0 };
+cell* cell_at(global_pos const * const glpos) {
+  global_chunk_pos glcpos;
+  static global_chunk_pos last_glcpos = { .x = 0, .y = 0, .z = 0 };
   chunk_or_approx coa;
   static chunk_or_approx last_coa = { .type=CA_TYPE_NOT_LOADED, .ptr=NULL };
   chunk_index cidx;
   static uint8_t last_salt = 1;
 
-  rpos__rcpos(rpos, &rcpos);
-  rpos__cidx(rpos, &cidx);
+  glpos__glcpos(glpos, &glcpos);
+  glpos__cidx(glpos, &cidx);
   if (
     last_salt == CELL_AT_SALT
   &&
     last_coa.type != CA_TYPE_NOT_LOADED
   &&
-    last_rcpos.x == rcpos.x
+    last_glcpos.x == glcpos.x
   &&
-    last_rcpos.y == rcpos.y
+    last_glcpos.y == glcpos.y
   &&
-    last_rcpos.z == rcpos.z
+    last_glcpos.z == glcpos.z
   ) {
     // We can use the cached chunk pointer!
     coa.type = last_coa.type;
     coa.ptr = last_coa.ptr;
   } else {
     // We need to recompute our chunk pointer.
-    get_best_data(&rcpos, &coa);
+    get_best_data(&glcpos, &coa);
     last_coa.type = coa.type;
     last_coa.ptr = coa.ptr;
   }
-  copy_rcpos(&rcpos, &last_rcpos);
+  copy_glcpos(&glcpos, &last_glcpos);
   last_salt = CELL_AT_SALT;
   if (coa.type == CA_TYPE_CHUNK) {
     return c_cell((chunk *) (coa.ptr), cidx);

@@ -34,14 +34,14 @@ int const COMPILE_CAP = 2;
 //int const COMPILE_CAP = 16;
 
 // TODO: Good values here
-//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 6, 16, 50, 150, 500 };
-//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 8, 16, 32, 64, 128 };
-//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 8, 12, 16, 20 };
-//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 5, 6, 7, 7, 7 };
-//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 6, 7, 7, 7 };
-r_cpos_t const LOAD_DISTANCES[N_LODS] = { 3, 4, 4, 4, 4 };
-//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 2, 3, 3, 3, 3 };
-//r_cpos_t const LOAD_DISTANCES[N_LODS] = { 1, 2, 2, 2, 2 };
+//gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 6, 16, 50, 150, 500 };
+//gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 8, 16, 32, 64, 128 };
+//gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 8, 12, 16, 20 };
+//gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 5, 6, 7, 7, 7 };
+//gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 6, 7, 7, 7 };
+gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 3, 4, 4, 4, 4 };
+//gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 2, 3, 3, 3, 3 };
+//gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 1, 2, 2, 2, 2 };
 
 int const VERTICAL_LOAD_BIAS = 2;
 
@@ -62,24 +62,24 @@ chunk_cache *CHUNK_CACHE = NULL;
 
 int find_chunk_at_position(void *element, void *reference) {
   chunk *c = (chunk *) element;
-  region_chunk_pos *rcpos = (region_chunk_pos *) reference;
+  global_chunk_pos *glcpos = (global_chunk_pos *) reference;
   return (
-    c->rcpos.x == rcpos->x
+    c->glcpos.x == glcpos->x
   &&
-    c->rcpos.y == rcpos->y
+    c->glcpos.y == glcpos->y
   &&
-    c->rcpos.z == rcpos->z
+    c->glcpos.z == glcpos->z
   );
 }
 int find_chunk_approx_at_position(void *element, void *reference) {
   chunk_approximation *ca = (chunk_approximation *) element;
-  region_chunk_pos *rcpos = (region_chunk_pos *) reference;
+  global_chunk_pos *glcpos = (global_chunk_pos *) reference;
   return (
-    ca->rcpos.x == rcpos->x
+    ca->glcpos.x == glcpos->x
   &&
-    ca->rcpos.y == rcpos->y
+    ca->glcpos.y == glcpos->y
   &&
-    ca->rcpos.z == rcpos->z
+    ca->glcpos.z == glcpos->z
   );
 }
 
@@ -87,27 +87,27 @@ int find_chunk_approx_at_position(void *element, void *reference) {
  * Private Inline Functions *
  ****************************/
 
-static inline int is_loaded(region_chunk_pos *rcpos, lod detail) {
+static inline int is_loaded(global_chunk_pos *glcpos, lod detail) {
   m_lock(CHUNK_CACHE->levels[detail]);
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
   int result = m3_contains_key(
     CHUNK_CACHE->levels[detail],
-    (map_key_t) rcpos->x,
-    (map_key_t) rcpos->y,
-    (map_key_t) rcpos->z
+    (map_key_t) glcpos->x,
+    (map_key_t) glcpos->y,
+    (map_key_t) glcpos->z
   );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
   m_unlock(CHUNK_CACHE->levels[detail]);
   return result;
 }
 
-static inline int is_loading(region_chunk_pos *rcpos, lod detail) {
+static inline int is_loading(global_chunk_pos *glcpos, lod detail) {
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
   return m3_contains_key(
     LOAD_QUEUES->maps[detail],
-    (map_key_t) rcpos->x,
-    (map_key_t) rcpos->y,
-    (map_key_t) rcpos->z
+    (map_key_t) glcpos->x,
+    (map_key_t) glcpos->y,
+    (map_key_t) glcpos->z
   );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
 }
@@ -201,9 +201,9 @@ void enqueue_chunk(chunk_queue_set *cqs, chunk *c) {
   m3_put_value(
     cqs->maps[LOD_BASE],
     (void *) c,
-    (map_key_t) c->rcpos.x,
-    (map_key_t) c->rcpos.y,
-    (map_key_t) c->rcpos.z
+    (map_key_t) c->glcpos.x,
+    (map_key_t) c->glcpos.y,
+    (map_key_t) c->glcpos.z
   );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
   m_unlock(cqs->maps[LOD_BASE]);
@@ -218,25 +218,25 @@ void enqueue_chunk_approximation(chunk_queue_set *cqs, chunk_approximation *ca){
   m3_put_value(
     cqs->maps[ca->detail],
     (void *) ca,
-    (map_key_t) ca->rcpos.x,
-    (map_key_t) ca->rcpos.y,
-    (map_key_t) ca->rcpos.z
+    (map_key_t) ca->glcpos.x,
+    (map_key_t) ca->glcpos.y,
+    (map_key_t) ca->glcpos.z
   );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
   m_unlock(cqs->maps[ca->detail]);
 }
 
-void mark_for_loading(region_chunk_pos *rcpos, lod detail) {
-  if (is_loaded(rcpos, detail) || is_loading(rcpos, detail)) {
+void mark_for_loading(global_chunk_pos *glcpos, lod detail) {
+  if (is_loaded(glcpos, detail) || is_loading(glcpos, detail)) {
     return;
   }
   if (detail == LOD_BASE) {
-    chunk *c = create_chunk(rcpos);
+    chunk *c = create_chunk(glcpos);
     c->chunk_flags |= CF_QUEUED_TO_LOAD;
     c->chunk_flags |= CF_COMPILE_ON_LOAD;
     enqueue_chunk(LOAD_QUEUES, c);
   } else {
-    chunk_approximation *ca = create_chunk_approximation(rcpos, detail);
+    chunk_approximation *ca = create_chunk_approximation(glcpos, detail);
     ca->chunk_flags |= CF_QUEUED_TO_LOAD;
     ca->chunk_flags |= CF_COMPILE_ON_LOAD;
     enqueue_chunk_approximation(LOAD_QUEUES, ca);
@@ -260,41 +260,41 @@ void mark_for_compilation(chunk_or_approx *coa) {
   }
 }
 
-void mark_neighbors_for_compilation(region_chunk_pos *center) {
+void mark_neighbors_for_compilation(global_chunk_pos *center) {
   chunk_or_approx coa;
-  region_chunk_pos rcpos;
-  rcpos.x = center->x;
-  rcpos.y = center->y;
-  rcpos.z = center->z;
+  global_chunk_pos glcpos;
+  glcpos.x = center->x;
+  glcpos.y = center->y;
+  glcpos.z = center->z;
 
-  rcpos.x += 1;
-  get_best_data(&rcpos, &coa);
+  glcpos.x += 1;
+  get_best_data(&glcpos, &coa);
   if (coa.ptr != NULL) { mark_for_compilation(&coa); }
 
-  rcpos.x -= 2;
-  get_best_data(&rcpos, &coa);
+  glcpos.x -= 2;
+  get_best_data(&glcpos, &coa);
   if (coa.ptr != NULL) { mark_for_compilation(&coa); }
 
-  rcpos.x += 1;
-  rcpos.y += 1;
-  get_best_data(&rcpos, &coa);
+  glcpos.x += 1;
+  glcpos.y += 1;
+  get_best_data(&glcpos, &coa);
   if (coa.ptr != NULL) { mark_for_compilation(&coa); }
 
-  rcpos.y -= 2;
-  get_best_data(&rcpos, &coa);
+  glcpos.y -= 2;
+  get_best_data(&glcpos, &coa);
   if (coa.ptr != NULL) { mark_for_compilation(&coa); }
 
-  rcpos.y += 1;
-  rcpos.z += 1;
-  get_best_data(&rcpos, &coa);
+  glcpos.y += 1;
+  glcpos.z += 1;
+  get_best_data(&glcpos, &coa);
   if (coa.ptr != NULL) { mark_for_compilation(&coa); }
 
-  rcpos.z -= 2;
-  get_best_data(&rcpos, &coa);
+  glcpos.z -= 2;
+  get_best_data(&glcpos, &coa);
   if (coa.ptr != NULL) { mark_for_compilation(&coa); }
 }
 
-lod get_best_loaded_level(region_chunk_pos *rcpos) {
+lod get_best_loaded_level(global_chunk_pos *glcpos) {
   lod detail = N_LODS; // level of detail being considered
   for (detail = LOD_BASE; detail < N_LODS; ++detail) {
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
@@ -302,9 +302,9 @@ lod get_best_loaded_level(region_chunk_pos *rcpos) {
     if (
       m3_contains_key(
         CHUNK_CACHE->levels[detail],
-        (map_key_t) rcpos->x,
-        (map_key_t) rcpos->y,
-        (map_key_t) rcpos->z
+        (map_key_t) glcpos->x,
+        (map_key_t) glcpos->y,
+        (map_key_t) glcpos->z
       )
     ) {
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
@@ -316,12 +316,12 @@ lod get_best_loaded_level(region_chunk_pos *rcpos) {
   return N_LODS;
 }
 
-void get_best_data(region_chunk_pos *rcpos, chunk_or_approx *coa) {
-  get_best_data_limited(rcpos, LOD_BASE, 0, coa);
+void get_best_data(global_chunk_pos *glcpos, chunk_or_approx *coa) {
+  get_best_data_limited(glcpos, LOD_BASE, 0, coa);
 }
 
 void get_best_data_limited(
-  region_chunk_pos *rcpos,
+  global_chunk_pos *glcpos,
   lod limit,
   uint8_t compiled,
   chunk_or_approx *coa
@@ -333,9 +333,9 @@ void get_best_data_limited(
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
     coa->ptr = m3_get_value(
       CHUNK_CACHE->levels[LOD_BASE],
-      (map_key_t) rcpos->x,
-      (map_key_t) rcpos->y,
-      (map_key_t) rcpos->z
+      (map_key_t) glcpos->x,
+      (map_key_t) glcpos->y,
+      (map_key_t) glcpos->z
     );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
     m_unlock(CHUNK_CACHE->levels[LOD_BASE]);
@@ -354,9 +354,9 @@ void get_best_data_limited(
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
     coa->ptr = m3_get_value(
       CHUNK_CACHE->levels[detail],
-      (map_key_t) rcpos->x,
-      (map_key_t) rcpos->y,
-      (map_key_t) rcpos->z
+      (map_key_t) glcpos->x,
+      (map_key_t) glcpos->y,
+      (map_key_t) glcpos->z
     );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
     m_unlock(CHUNK_CACHE->levels[detail]);
@@ -377,38 +377,38 @@ void get_best_data_limited(
   return;
 }
 
-void load_surroundings(region_chunk_pos *center) {
+void load_surroundings(global_chunk_pos *center) {
   lod detail = LOD_BASE; // level of detail being considered
-  region_chunk_pos rcpos = { .x=0, .y=0, .z=0 }; // current chunk
+  global_chunk_pos glcpos = { .x=0, .y=0, .z=0 }; // current chunk
   // Max distance at which to load anything, trimmed a bit:
-  r_cpos_t max_distance = LOAD_DISTANCES[N_LODS - 1];
+  gl_cpos_t max_distance = LOAD_DISTANCES[N_LODS - 1];
   max_distance -= max_distance / LOAD_AREA_TRIM_FRACTION;
   // TODO: spherical iteration here?
   for (
-    rcpos.x = center->x - max_distance;
-    rcpos.x < center->x + max_distance;
-    ++rcpos.x
+    glcpos.x = center->x - max_distance;
+    glcpos.x < center->x + max_distance;
+    ++glcpos.x
   ) {
     for (
-      rcpos.y = center->y - max_distance;
-      rcpos.y < center->y + max_distance;
-      ++rcpos.y
+      glcpos.y = center->y - max_distance;
+      glcpos.y < center->y + max_distance;
+      ++glcpos.y
     ) {
       for (
-        rcpos.z = center->z - (max_distance / VERTICAL_LOAD_BIAS);
-        rcpos.z < center->z + (max_distance / VERTICAL_LOAD_BIAS);
-        ++rcpos.z
+        glcpos.z = center->z - (max_distance / VERTICAL_LOAD_BIAS);
+        glcpos.z < center->z + (max_distance / VERTICAL_LOAD_BIAS);
+        ++glcpos.z
       ) {
-        detail = desired_detail_at(center, &rcpos);
+        detail = desired_detail_at(center, &glcpos);
         if (detail < N_LODS) {
-          mark_for_loading(&rcpos, detail);
+          mark_for_loading(&glcpos, detail);
         }
       }
     }
   }
 }
 
-void tick_load_chunks(region_chunk_pos *load_center) {
+void tick_load_chunks(global_chunk_pos *load_center) {
   int n = 0;
   chunk *c = NULL;
   chunk *old_chunk = NULL;
@@ -424,11 +424,11 @@ void tick_load_chunks(region_chunk_pos *load_center) {
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
     m3_pop_value(
       m,
-      (map_key_t) c->rcpos.x,
-      (map_key_t) c->rcpos.y,
-      (map_key_t) c->rcpos.z
+      (map_key_t) c->glcpos.x,
+      (map_key_t) c->glcpos.y,
+      (map_key_t) c->glcpos.z
     );
-    if (desired_detail_at(load_center, &(c->rcpos)) > LOD_BASE) {
+    if (desired_detail_at(load_center, &(c->glcpos)) > LOD_BASE) {
       // discard this chunk and don't load it.
       cleanup_chunk(c);
       continue;
@@ -441,9 +441,9 @@ void tick_load_chunks(region_chunk_pos *load_center) {
     old_chunk = (chunk *) m3_put_value(
       CHUNK_CACHE->levels[LOD_BASE],
       (void *) c,
-      (map_key_t) c->rcpos.x,
-      (map_key_t) c->rcpos.y,
-      (map_key_t) c->rcpos.z
+      (map_key_t) c->glcpos.x,
+      (map_key_t) c->glcpos.y,
+      (map_key_t) c->glcpos.z
     );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
     m_unlock(CHUNK_CACHE->levels[LOD_BASE]);
@@ -460,12 +460,12 @@ void tick_load_chunks(region_chunk_pos *load_center) {
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
       m3_pop_value(
         m,
-        (map_key_t) ca->rcpos.x,
-        (map_key_t) ca->rcpos.y,
-        (map_key_t) ca->rcpos.z
+        (map_key_t) ca->glcpos.x,
+        (map_key_t) ca->glcpos.y,
+        (map_key_t) ca->glcpos.z
       );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
-      if (desired_detail_at(load_center, &(ca->rcpos)) > detail) {
+      if (desired_detail_at(load_center, &(ca->glcpos)) > detail) {
         // discard this chunk and don't load it.
         cleanup_chunk_approximation(ca);
         continue;
@@ -477,9 +477,9 @@ void tick_load_chunks(region_chunk_pos *load_center) {
       old_approx = (chunk_approximation *) m3_put_value(
         CHUNK_CACHE->levels[ca->detail],
         (void *) ca,
-        (map_key_t) ca->rcpos.x,
-        (map_key_t) ca->rcpos.y,
-        (map_key_t) ca->rcpos.z
+        (map_key_t) ca->glcpos.x,
+        (map_key_t) ca->glcpos.y,
+        (map_key_t) ca->glcpos.z
       );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
       m_unlock(CHUNK_CACHE->levels[ca->detail]);
@@ -524,7 +524,7 @@ void load_chunk(chunk *c) {
   // TODO: Cell entities!
   chunk_index idx;
   ch_idx_t x, y, z;
-  region_pos rpos;
+  global_pos glpos;
   chunk_or_approx coa;
 #ifdef PROFILE_TIME
   start_duration(&TGEN_TIME);
@@ -535,8 +535,8 @@ void load_chunk(chunk *c) {
         idx.x = x;
         idx.y = y;
         idx.z = z;
-        cidx__rpos(c, &idx, &rpos);
-        world_cell(THE_WORLD, &rpos, c_cell(c, idx));
+        cidx__glpos(c, &idx, &glpos);
+        world_cell(THE_WORLD, &glpos, c_cell(c, idx));
       }
     }
   }
@@ -549,7 +549,7 @@ void load_chunk(chunk *c) {
     coa.type = CA_TYPE_CHUNK;
     coa.ptr = c;
     mark_for_compilation(&coa);
-    mark_neighbors_for_compilation(&(c->rcpos));
+    mark_neighbors_for_compilation(&(c->glcpos));
   }
 }
 
@@ -558,15 +558,15 @@ void load_chunk_approx(chunk_approximation *ca) {
   // TODO: Cell entities!
   ch_idx_t step = (1 << (ca->detail));
   chunk_index idx;
-  region_pos rpos;
+  global_pos glpos;
   chunk_or_approx coa;
   lod previous_detail;
   // TODO: Better approximation?
   for (idx.x = 0; idx.x < CHUNK_SIZE; idx.x += step) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
-        caidx__rpos(ca, &idx, &rpos);
-        world_cell(THE_WORLD, &rpos, ca_cell(ca, idx));
+        caidx__glpos(ca, &idx, &glpos);
+        world_cell(THE_WORLD, &glpos, ca_cell(ca, idx));
       }
     }
   }
@@ -576,11 +576,11 @@ void load_chunk_approx(chunk_approximation *ca) {
     coa.type = CA_TYPE_APPROXIMATION;
     coa.ptr = ca;
     mark_for_compilation(&coa);
-    previous_detail = get_best_loaded_level(&(ca->rcpos));
+    previous_detail = get_best_loaded_level(&(ca->glcpos));
     // Only recompile neighbors if the newly-loaded approximation is a step up
     // (or at least sideways) from the previous approximation:
     if (previous_detail >= ca->detail) {
-      mark_neighbors_for_compilation(&(ca->rcpos));
+      mark_neighbors_for_compilation(&(ca->glcpos));
     }
   }
 }

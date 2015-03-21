@@ -95,13 +95,13 @@ void _get_everything_set_up(ptrdiff_t seed, int argc, char** argv) {
 void _spawn_the_player(
   char *type,
   active_entity_area *area,
-  region_pos *origin
+  global_pos *origin
 ) {
   manifold_point dontcare, th;
   compute_terrain_height(origin, &dontcare, &dontcare, &th);
-  origin->z = (r_pos_t) fastfloor(th.z) + 4;
+  origin->z = (gl_pos_t) fastfloor(th.z) + 4;
   vector pos;
-  rpos__vec(&(area->origin), origin, &pos);
+  glpos__vec(&(area->origin), origin, &pos);
   warp_space(ACTIVE_AREA, &pos);
   pos.x -= CHUNK_SIZE * fastfloor(pos.x / CHUNK_SIZE);
   pos.y -= CHUNK_SIZE * fastfloor(pos.y / CHUNK_SIZE);
@@ -118,10 +118,10 @@ void start_game(
   int argc,
   char **argv,
   char *player_entity_type,
-  region_pos *spawn_point
+  global_pos *spawn_point
 ) {
   int thread_id = 0;
-  region_chunk_pos area_origin, last_origin;
+  global_chunk_pos area_origin, last_origin;
 
   // Start the main threads:
 #pragma omp parallel num_threads(2) firstprivate(thread_id)
@@ -133,7 +133,7 @@ void start_game(
       _spawn_the_player(player_entity_type, ACTIVE_AREA, spawn_point);
       // A couple of sequential cycles to start things off smoothly:
       tick(2);
-      rpos__rcpos(&(ACTIVE_AREA->origin), &area_origin);
+      glpos__glcpos(&(ACTIVE_AREA->origin), &area_origin);
       tick_load_chunks(&area_origin);
       tick_compile_chunks();
       render(WINDOW);
@@ -163,7 +163,7 @@ void start_game(
         end_duration(&PHYSICS_TIME);
 #endif
         omp_set_lock(&POSITION_LOCK);
-        rpos__rcpos(&(ACTIVE_AREA->origin), &area_origin);
+        glpos__glcpos(&(ACTIVE_AREA->origin), &area_origin);
         omp_unset_lock(&POSITION_LOCK);
         if (RENDER) {
 #ifdef PROFILE_TIME

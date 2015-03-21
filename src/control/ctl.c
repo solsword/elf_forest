@@ -120,7 +120,7 @@ void tick_general_controls(void) {
   double mx, my;
   manifold_point dontcare, th;
   vector teleport_vector;
-  region_pos teleport_destination;
+  global_pos teleport_destination;
   glfwGetCursorPos(WINDOW, &mx, &my);
   mx -= WINDOW_WIDTH/2.0;
   my -= WINDOW_HEIGHT/2.0;
@@ -160,10 +160,10 @@ void tick_general_controls(void) {
     vface(&teleport_vector, PLAYER->yaw, 0);
     vscale(&teleport_vector, TELEPORT_DISTANCE);
     vadd(&(PLAYER->pos), &teleport_vector);
-    get_head_rpos(PLAYER, &teleport_destination);
+    get_head_glpos(PLAYER, &teleport_destination);
     compute_terrain_height(&teleport_destination, &dontcare, &dontcare, &th);
     PLAYER->pos.z = (
-      (r_pos_t) ffloor(th.z+15) -
+      (gl_pos_t) ffloor(th.z+15) -
       PLAYER->area->origin.z
     );
   }

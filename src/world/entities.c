@@ -70,7 +70,7 @@ static inline void warp_entity(void *thing) {
  * Constructors & Destructors *
  ******************************/
 
-void setup_entities(region_pos *origin) {
+void setup_entities(global_pos *origin) {
   ENTITY_PROTOTYPES = create_list();
   ACTIVE_AREA = create_active_entity_area(ACTIVE_AREA_SIZE);
   // TODO: management of multiple active entity areas?
@@ -153,15 +153,15 @@ void tick_entity(void *thing) {
 
 cell * head_cell(entity *e) {
   chunk_or_approx coa;
-  region_pos rpos;
-  region_chunk_pos rcpos;
+  global_pos glpos;
+  global_chunk_pos glcpos;
   chunk_index idx;
 
-  get_head_rpos(e, &rpos);
-  rpos__rcpos(&rpos, &rcpos);
-  rpos__cidx(&rpos, &idx);
+  get_head_glpos(e, &glpos);
+  glpos__glcpos(&glpos, &glcpos);
+  glpos__cidx(&glpos, &idx);
 
-  get_best_data(&rcpos, &coa);
+  get_best_data(&glcpos, &coa);
   if (coa.type == CA_TYPE_CHUNK) {
     return c_cell((chunk *) (coa.ptr), idx);
   } else if (coa.type == CA_TYPE_APPROXIMATION) {

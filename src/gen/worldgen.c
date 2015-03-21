@@ -113,7 +113,7 @@ void init_world_map(world_map *wm) {
   manifold_point gross, stone, dirt;
   world_map_pos xy, iter;
   world_region *wr, *dh;
-  region_pos sample_point;
+  global_pos sample_point;
 
   samples_per_region = (
     WORLD_REGION_SIZE * WORLD_REGION_SIZE
@@ -128,7 +128,7 @@ void init_world_map(world_map *wm) {
       wr->pos.x = xy.x;
       wr->pos.y = xy.y;
       // Probe chunk heights in the region to get min/max and average:
-      wmpos__rpos(&xy, &(wr->anchor));
+      wmpos__glpos(&xy, &(wr->anchor));
       wr->min_height = TR_MAX_HEIGHT;
       wr->mean_height = 0;
       wr->max_height = TR_MIN_HEIGHT;
@@ -215,11 +215,11 @@ void init_world_map(world_map *wm) {
   }
 }
 
-void world_cell(world_map *wm, region_pos *rpos, cell *result) {
+void world_cell(world_map *wm, global_pos *glpos, cell *result) {
   world_map_pos wmpos, iter;
   world_region *neighborhood[9];
   size_t i = 0;
-  rpos__wmpos(rpos, &wmpos);
+  glpos__wmpos(glpos, &wmpos);
   // default values:
   result->primary = b_make_block(B_VOID);
   result->secondary = b_make_block(B_VOID);
@@ -230,14 +230,14 @@ void world_cell(world_map *wm, region_pos *rpos, cell *result) {
       i += 1;
     }
   }
-  if (rpos->z < 0) {
+  if (glpos->z < 0) {
     result->primary = b_make_block(B_BOUNDARY);
   } else if (neighborhood[4] == NULL) {
     // Outside the world:
     result->primary = b_make_block(B_AIR);
   } else {
     // TODO: Oceans here!
-    terrain_cell(wm, neighborhood, rpos, result);
+    terrain_cell(wm, neighborhood, glpos, result);
   }
   if (b_is(result->primary, B_VOID)) {
     // TODO: Other things like plants here...

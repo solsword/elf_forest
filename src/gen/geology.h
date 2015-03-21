@@ -48,7 +48,7 @@ extern float const GN_MED_VAR_SCALE;
  * Inline Functions *
  ********************/
 
-static inline float geothermal_temperature(region_pos *rpos) {
+static inline float geothermal_temperature(global_pos *glpos) {
   return 100.0; // TODO: HERE!
 }
 
@@ -153,7 +153,7 @@ stratum *create_stratum(
 void generate_geology(world_map *wm);
 
 // Computes the heigh of the given stratum at the given coordinates (ignores z):
-r_pos_t compute_stratum_height(stratum *st, region_pos *rpos);
+gl_pos_t compute_stratum_height(stratum *st, global_pos *glpos);
 
 // Functions that create new types of stone:
 species create_new_igneous_species(ptrdiff_t seed);

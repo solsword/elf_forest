@@ -59,19 +59,19 @@ void cleanup_world_map(world_map *wm) {
 void compute_region_contenders(
   world_map *wm,
   world_region* neighborhood[],
-  region_pos *rpos,
+  global_pos *glpos,
   world_region **best, world_region **secondbest,
   float *strbest, float *strsecond
 ) {
   world_region *wr; // best and second-best regions
   int i;
-  region_pos anchor;
+  global_pos anchor;
   vector v, vbest, vsecond;
   float str, noise;
   ptrdiff_t salt;
   world_map_pos wmpos;
 
-  rpos__wmpos(rpos, &wmpos);
+  glpos__wmpos(glpos, &wmpos);
 
  // Figure out the two nearest world regions:
   // Setup worst-case defaults:
@@ -93,15 +93,15 @@ void compute_region_contenders(
   for (i = 0; i < 9; i += 1) {
     wr = neighborhood[i];
     if (wr != NULL) {
-      copy_rpos(&(wr->anchor), &anchor);
+      copy_glpos(&(wr->anchor), &anchor);
       salt = prng(wr->seed + 172841);
     } else {
       compute_region_anchor(wm, &wmpos, &anchor);
       salt = prng(prng(prng(wmpos.x) + wmpos.y) + 51923);
     }
-    v.x = rpos->x - anchor.x;
-    v.y = rpos->y - anchor.y;
-    v.z = rpos->z - anchor.z;
+    v.x = glpos->x - anchor.x;
+    v.y = glpos->y - anchor.y;
+    v.z = glpos->z - anchor.z;
     str = 1 - (vmag(&v) / MAX_REGION_ANCHOR_DISTANCE);
     // 3D base noise:
     noise = (

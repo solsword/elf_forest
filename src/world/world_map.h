@@ -152,10 +152,11 @@ typedef struct biome_s biome;
 // -------
 
 // Bits per world region (8 -> 256x256 chunks).
-// 128*96 = 12288 regions
-// 12288 * 256*256*(?=512) = 412316860416 chunks
-// 412316860416 chunks * 384 KB/chunk = 144 petabytes
-// 96*256*32 = 786432 blocks ~= 524300 meters ~= 525 km <-
+// 128*108 = 13824 regions / world
+// 13824 * 256*256*(?=512) = 463856467968 chunks / world
+// 463856467968 chunks * 256 KB/chunk = 108 petabytes / world
+// 96*256*32 = 786432 blocks ~= 524300 meters ~= 525 km
+// 108*256*32 = 884736 blocks ~= 589800 meters ~= 590 km <-
 // 320*256*32 = 2621440 blocks ~= 1747500 meters ~= 1750 km
 // 512*256*32 = 4194304 blocks ~= 2796000 meters ~= 2800 km
 #define WORLD_REGION_BITS 8
@@ -293,7 +294,7 @@ struct hydrology_s {
   hydro_state state; // what kind of region this is
   body_of_water *body; // what body of water this region belongs to
   river *rivers[WM_MAX_RIVERS]; // Which rivers flow through this region
-  r_pos_t water_table; // how high the water table is, in blocks
+  gl_pos_t water_table; // how high the water table is, in blocks
   salinity salt; // the salinity of local groundwater
 };
 
@@ -414,7 +415,7 @@ struct world_region_s {
   ptrdiff_t seed;
   world_map *world;
   world_map_pos pos;
-  region_pos anchor;
+  global_pos anchor;
   // topology info:
   float min_height;
   float mean_height;
@@ -445,38 +446,38 @@ struct world_map_s {
  * Inline Functions *
  ********************/
 
-static inline void wmpos__rpos(
+static inline void wmpos__glpos(
   world_map_pos const * const wmpos,
-  region_pos *rpos
+  global_pos *glpos
 ) {
-  rpos->x = ((r_pos_t) wmpos->x) << (WORLD_REGION_BITS + CHUNK_BITS);
-  rpos->y = ((r_pos_t) wmpos->y) << (WORLD_REGION_BITS + CHUNK_BITS);
-  rpos->z = 0;
+  glpos->x = ((gl_pos_t) wmpos->x) << (WORLD_REGION_BITS + CHUNK_BITS);
+  glpos->y = ((gl_pos_t) wmpos->y) << (WORLD_REGION_BITS + CHUNK_BITS);
+  glpos->z = 0;
 }
 
-static inline void rpos__wmpos(
-  region_pos const * const rpos,
+static inline void glpos__wmpos(
+  global_pos const * const glpos,
   world_map_pos *wmpos
 ) {
-  wmpos->x = (wm_pos_t) (rpos->x >> (WORLD_REGION_BITS + CHUNK_BITS));
-  wmpos->y = (wm_pos_t) (rpos->y >> (WORLD_REGION_BITS + CHUNK_BITS));
+  wmpos->x = (wm_pos_t) (glpos->x >> (WORLD_REGION_BITS + CHUNK_BITS));
+  wmpos->y = (wm_pos_t) (glpos->y >> (WORLD_REGION_BITS + CHUNK_BITS));
 }
 
-static inline void wmpos__rcpos(
+static inline void wmpos__glcpos(
   world_map_pos const * const wmpos,
-  region_chunk_pos *rcpos
+  global_chunk_pos *glcpos
 ) {
-  rcpos->x = ((r_cpos_t) wmpos->x) << WORLD_REGION_BITS;
-  rcpos->y = ((r_cpos_t) wmpos->y) << WORLD_REGION_BITS;
-  rcpos->z = 0;
+  glcpos->x = ((gl_cpos_t) wmpos->x) << WORLD_REGION_BITS;
+  glcpos->y = ((gl_cpos_t) wmpos->y) << WORLD_REGION_BITS;
+  glcpos->z = 0;
 }
 
-static inline void rcpos__wmpos(
-  region_chunk_pos const * const rcpos,
+static inline void glcpos__wmpos(
+  global_chunk_pos const * const glcpos,
   world_map_pos *wmpos
 ) {
-  wmpos->x = (wm_pos_t) (rcpos->x >> WORLD_REGION_BITS);
-  wmpos->y = (wm_pos_t) (rcpos->y >> WORLD_REGION_BITS);
+  wmpos->x = (wm_pos_t) (glcpos->x >> WORLD_REGION_BITS);
+  wmpos->y = (wm_pos_t) (glcpos->y >> WORLD_REGION_BITS);
 }
 
 static inline void copy_wmpos(
@@ -508,26 +509,26 @@ static inline void geopt__wmpos(
 }
 
 // Ignores the z value.
-static inline void rpos__geopt(
+static inline void glpos__geopt(
   world_map *wm,
-  region_pos const * const rpos,
+  global_pos const * const glpos,
   geopt *gpt
 ) {
   *gpt = fxy__ptr(
-    (rpos->x) / ((float) (wm->width * WORLD_REGION_BLOCKS)),
-    (rpos->y) / ((float) (wm->height * WORLD_REGION_BLOCKS))
+    (glpos->x) / ((float) (wm->width * WORLD_REGION_BLOCKS)),
+    (glpos->y) / ((float) (wm->height * WORLD_REGION_BLOCKS))
   );
 }
 
 // Sets the z value to 0.
-static inline void geopt__rpos(
+static inline void geopt__glpos(
   world_map *wm,
   geopt const * const gpt,
-  region_pos *rpos
+  global_pos *glpos
 ) {
-  rpos->x = fastfloor(ptr__fx(*gpt) * wm->width * WORLD_REGION_BLOCKS);
-  rpos->y = fastfloor(ptr__fy(*gpt) * wm->height * WORLD_REGION_BLOCKS);
-  rpos->z = 0;
+  glpos->x = fastfloor(ptr__fx(*gpt) * wm->width * WORLD_REGION_BLOCKS);
+  glpos->y = fastfloor(ptr__fy(*gpt) * wm->height * WORLD_REGION_BLOCKS);
+  glpos->z = 0;
 }
 
 // Takes a world region and a seed and returns a random geopt within the
@@ -580,10 +581,10 @@ static inline world_region* get_world_region(
 static inline void compute_region_anchor(
   world_map *wm,
   world_map_pos const * const wmpos,
-  region_pos *anchor
+  global_pos *anchor
 ) {
   ptrdiff_t hash = hash_3d(wmpos->x, wmpos->y, wm->seed + 71);
-  wmpos__rpos(wmpos, anchor);
+  wmpos__glpos(wmpos, anchor);
   anchor->x += float_hash_1d(hash) * (WORLD_REGION_BLOCKS - 1);
   hash += 1;
   anchor->y += float_hash_1d(hash) * (WORLD_REGION_BLOCKS - 1);
@@ -611,7 +612,7 @@ void cleanup_world_map(world_map *wm);
 void compute_region_contenders(
   world_map *wm,
   world_region* neighborhood[],
-  region_pos *rpos,
+  global_pos *glpos,
   world_region **best, world_region **secondbest,
   float *strbest, float *strsecond
 );

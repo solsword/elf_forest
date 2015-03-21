@@ -46,9 +46,9 @@ ptrdiff_t SEED = 18224445;
 
 int main(int argc, char** argv) {
   // Compute detailed starting location:
-  region_pos origin;
-  //rcpos__rpos(&CHUNK_ORIGIN, &origin);
-  wmpos__rpos(&WORLD_ORIGIN, &origin);
+  global_pos origin;
+  //glcpos__glpos(&CHUNK_ORIGIN, &origin);
+  wmpos__glpos(&WORLD_ORIGIN, &origin);
   origin.x += 2;
   origin.y += 2;
   // note origin.z is ignored by start_game

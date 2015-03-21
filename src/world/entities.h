@@ -99,7 +99,7 @@ struct cell_entity_s {
 
 struct active_entity_area_s {
   // Origin position within a region (bottom-south-west corner of this cell):
-  region_pos origin;
+  global_pos origin;
   size_t size; // Total width, height, and length.
   list *list; // list for holding entities.
   octree *tree; // octree for holding entities.
@@ -199,48 +199,48 @@ static inline void get_head_vec(entity *e, vector *result) {
 
 // Note: if this is called on an entity that isn't in any area, it writes
 // (0, 0, 0) into the result argument.
-static inline void get_head_rpos(entity *e, region_pos *rpos) {
+static inline void get_head_glpos(entity *e, global_pos *glpos) {
   vector hp;
   get_head_vec(e, &hp);
   if (e->area == NULL) {
-    rpos->x = 0;
-    rpos->y = 0;
-    rpos->z = 0;
+    glpos->x = 0;
+    glpos->y = 0;
+    glpos->z = 0;
   } else {
-    vec__rpos(&(e->area->origin), &hp, rpos);
+    vec__glpos(&(e->area->origin), &hp, glpos);
   }
 }
 
 // Functions to quickly get rounded bounding box cell coordinates:
-static inline r_pos_t e_rp_min_x(entity *e) {
+static inline gl_pos_t e_rp_min_x(entity *e) {
   return e->area->origin.x + fastfloor(e->box.min.x);
 }
-static inline r_pos_t e_rp_max_x(entity *e) {
+static inline gl_pos_t e_rp_max_x(entity *e) {
   return e->area->origin.x + fastfloor(e->box.max.x);
 }
-static inline r_pos_t e_rp_min_y(entity *e) {
+static inline gl_pos_t e_rp_min_y(entity *e) {
   return e->area->origin.y + fastfloor(e->box.min.y);
 }
-static inline r_pos_t e_rp_max_y(entity *e) {
+static inline gl_pos_t e_rp_max_y(entity *e) {
   return e->area->origin.y + fastfloor(e->box.max.y);
 }
-static inline r_pos_t e_rp_min_z(entity *e) {
+static inline gl_pos_t e_rp_min_z(entity *e) {
   return e->area->origin.z + fastfloor(e->box.min.z);
 }
-static inline r_pos_t e_rp_max_z(entity *e) {
+static inline gl_pos_t e_rp_max_z(entity *e) {
   return e->area->origin.z + fastfloor(e->box.max.z);
 }
 
-static inline void e_min__rpos(entity *e, region_pos *rpos) {
-  rpos->x = e_rp_min_x(e);
-  rpos->y = e_rp_min_y(e);
-  rpos->z = e_rp_min_z(e);
+static inline void e_min__glpos(entity *e, global_pos *glpos) {
+  glpos->x = e_rp_min_x(e);
+  glpos->y = e_rp_min_y(e);
+  glpos->z = e_rp_min_z(e);
 }
 
-static inline void e_max__rpos(entity *e, region_pos *rpos) {
-  rpos->x = e_rp_max_x(e);
-  rpos->y = e_rp_max_y(e);
-  rpos->z = e_rp_max_z(e);
+static inline void e_max__glpos(entity *e, global_pos *glpos) {
+  glpos->x = e_rp_max_x(e);
+  glpos->y = e_rp_max_y(e);
+  glpos->z = e_rp_max_z(e);
 }
 
 // Movement functions:

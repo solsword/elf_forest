@@ -41,7 +41,7 @@ extern float const WATER_FOG_DENSITY;
 // data is fetched for areas leaving the focus zone). If data of the desired
 // quality is not loaded, lower-quality data may be used in its place, but
 // higher-quality data won't be.
-extern r_cpos_t const MAX_RENDER_DISTANCES[N_LODS];
+extern gl_cpos_t const MAX_RENDER_DISTANCES[N_LODS];
 
 // The distance at which frustum culling applies (Manhattan distance cells):
 extern float const MIN_CULL_DIST;
@@ -56,7 +56,7 @@ extern float const RENDER_ANGLE_ALLOWANCE;
 
 // A number to add to the z position of the nearest vertex in the distant
 // terrain so that surrounding positions look better.
-extern r_pos_t const THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET;
+extern gl_pos_t const THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET;
 
 /***********
  * Globals *
@@ -117,7 +117,7 @@ void render_area(
 int render_chunk_layer(
   dynamic_texture_atlas **atlases, // texture atlases for each layer
   chunk_or_approx *coa, // the target chunk/approximation
-  region_pos *origin, // a reference point for the origin of the scene
+  global_pos *origin, // a reference point for the origin of the scene
   layer ly // which layer to render
 );
 
@@ -131,6 +131,6 @@ void compile_distant_terrain(world_map_pos *origin);
 
 // Renders the nearby portions of the world map. Recompiles the distant terrain
 // buffer as necessary.
-void render_world_neighborhood(world_map_pos *wmpos, region_pos *origin);
+void render_world_neighborhood(world_map_pos *wmpos, global_pos *origin);
 
 #endif // ifndef RENDER_H

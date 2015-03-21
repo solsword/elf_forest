@@ -122,14 +122,14 @@ extern tree_milieu TREE_MILIEU;
  *************************/
 
 struct trunk_s {
-  region_pos root;
+  global_pos root;
   int height;
   int radius;
 };
 
 struct tree_cell_s {
   int scale;
-  region_pos origin;
+  global_pos origin;
   int n_trunks;
   trunk trunks[TREE_MAX_TRUNKS];
 };
@@ -284,9 +284,9 @@ static inline void compute_tree_milieu(int x, int y, tree_milieu *trm) {
  *************/
 
 // Computes a block ID given a tree, a location, and some noise.
-block trunk_block(region_pos pos, trunk const * const trk);
+block trunk_block(global_pos pos, trunk const * const trk);
 
 // Computes a block ID given a tree milieu, a location, and some noise.
-block tree_block(region_pos pos, tree_milieu const * const trm);
+block tree_block(global_pos pos, tree_milieu const * const trm);
 
 #endif // ifndef TREES_H

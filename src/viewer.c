@@ -32,16 +32,16 @@
 vector VBOX_MIN = { .x = VB_MIN, .y = VB_MIN, .z = VB_MIN };
 vector VBOX_MAX = { .x = VB_MAX, .y = VB_MAX, .z = VB_MAX };
 
-region_chunk_pos const OBSERVED_CHUNK = { .x = 0, .y = 0, .z = 0 };
+global_chunk_pos const OBSERVED_CHUNK = { .x = 0, .y = 0, .z = 0 };
 
-region_chunk_pos const INTERESTING_CHUNK = { .x = 0, .y = 4500, .z = 0 };
+global_chunk_pos const INTERESTING_CHUNK = { .x = 0, .y = 4500, .z = 0 };
 
 /********
  * Main *
  ********/
 
 int main(int argc, char** argv) {
-  region_pos origin = { .x = 0, .y = 0, .z = 0 };
+  global_pos origin = { .x = 0, .y = 0, .z = 0 };
 
   // Seed the random number generator:
   srand(545438);
@@ -104,16 +104,16 @@ void stage_chunk(chunk *c) {
 
   // Overwrite the chunk's position information and stick it in the chunk cache
   // at the correct position:
-  c->rcpos.x = OBSERVED_CHUNK.x;
-  c->rcpos.y = OBSERVED_CHUNK.y;
-  c->rcpos.z = OBSERVED_CHUNK.z;
+  c->glcpos.x = OBSERVED_CHUNK.x;
+  c->glcpos.y = OBSERVED_CHUNK.y;
+  c->glcpos.z = OBSERVED_CHUNK.z;
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
   old_chunk = (chunk *) m3_put_value(
     CHUNK_CACHE->levels[LOD_BASE],
     (void *) c,
-    (map_key_t) c->rcpos.x,
-    (map_key_t) c->rcpos.y,
-    (map_key_t) c->rcpos.z
+    (map_key_t) c->glcpos.x,
+    (map_key_t) c->glcpos.y,
+    (map_key_t) c->glcpos.z
   );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
 
@@ -171,8 +171,8 @@ void constrain_player_position(entity *e) {
   }
 }
 
-void view_chunk_from_world(region_chunk_pos const * const rcpos) {
-  chunk *c = create_chunk(rcpos);
+void view_chunk_from_world(global_chunk_pos const * const glcpos) {
+  chunk *c = create_chunk(glcpos);
 
   // Set flags so that the chunk won't be automatically marked for compilation
   // (stage_chunk compiles chunks manually and the data subsystem isn't even

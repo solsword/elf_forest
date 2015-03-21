@@ -322,9 +322,9 @@ static inline void draw_mem(int *h) {
 static inline void draw_pos_info(int *h) {
   // Gather position info:
   world_map_pos wmpos;
-  region_pos player_pos;
-  get_head_rpos(PLAYER, &player_pos);
-  rpos__wmpos(&player_pos, &wmpos);
+  global_pos player_pos;
+  get_head_glpos(PLAYER, &player_pos);
+  glpos__wmpos(&player_pos, &wmpos);
 
   // Draw geoform data:
   /*

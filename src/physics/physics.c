@@ -87,8 +87,8 @@ static inline void resolve_entity_collisions(entity *e) {
 
 static inline void step_up(
   entity *e,
-  region_pos *min,
-  region_pos *max,
+  global_pos *min,
+  global_pos *max,
   int blocks_to_step
 ) {
   if (blocks_to_step > 0) {
@@ -109,12 +109,12 @@ static inline void step_up(
 
 static inline void update_position_x (
   entity *e,
-  region_pos *min,
-  region_pos *max,
+  global_pos *min,
+  global_pos *max,
   vector *increment
 ) {
-  r_pos_t next_cell;
-  region_pos pos;
+  gl_pos_t next_cell;
+  global_pos pos;
   int blocks_to_step = 0;
   if (increment->x > 0) {
     next_cell = fastfloor(e->box.max.x + increment->x);
@@ -178,12 +178,12 @@ done_x:
 
 static inline void update_position_y(
   entity *e,
-  region_pos *min,
-  region_pos *max,
+  global_pos *min,
+  global_pos *max,
   vector *increment
 ) {
-  r_pos_t next_cell;
-  region_pos pos;
+  gl_pos_t next_cell;
+  global_pos pos;
   int blocks_to_step = 0;
   if (increment->y > 0) {
     next_cell = fastfloor(e->box.max.y + increment->y);
@@ -238,12 +238,12 @@ done_y:
 
 static inline void update_position_z(
   entity *e,
-  region_pos *min,
-  region_pos *max,
+  global_pos *min,
+  global_pos *max,
   vector *increment
 ) {
-  r_pos_t next_cell;
-  region_pos pos;
+  gl_pos_t next_cell;
+  global_pos pos;
   if (increment->z > 0) {
     next_cell = fastfloor(e->box.max.z + increment->z);
     if (next_cell != max->z) {
@@ -359,11 +359,11 @@ static inline void integrate_control_inputs(entity *e) {
 
 // Updates an entity's position while respecting solid blocks.
 static inline void update_position_collide_blocks(entity *e) {
-  region_pos min, max; // min/max cell positions
+  global_pos min, max; // min/max cell positions
   vector increment; // the increment vector
   // fill in min/max coords
-  e_min__rpos(e, &min);
-  e_max__rpos(e, &max);
+  e_min__glpos(e, &min);
+  e_max__glpos(e, &max);
   // compute increment
   vcopy(&increment, &(e->vel));
   vscale(&increment, PHYS_SUB_DT);
@@ -408,13 +408,13 @@ static inline void update_position_collide_blocks(entity *e) {
 }
 
 static inline void check_move_flags(entity *e) {
-  region_pos pos;
+  global_pos pos;
   // Avoid getting stale cell data:
   // TODO: this less often (esp. considering multiple entities)
   refresh_cell_at_cache();
   // MF_IN_VOID
   clear_in_void(e);
-  get_head_rpos(e, &pos);
+  get_head_glpos(e, &pos);
   // TODO: FIX THIS
   if (cell_at(&pos) == NULL || b_is_void(cell_at(&pos)->primary)) {
     set_in_void(e);

@@ -46,18 +46,18 @@ size_t test_create_world(void) {
 }
 
 size_t test_load_chunk(void) {
-  region_chunk_pos rcpos = { .x = 5, .y = 5, .z = 5 };
-  mark_for_loading(&rcpos, LOD_BASE);
-  tick_load_chunks(&rcpos);
+  global_chunk_pos glcpos = { .x = 5, .y = 5, .z = 5 };
+  mark_for_loading(&glcpos, LOD_BASE);
+  tick_load_chunks(&glcpos);
   return 0;
 }
 
 size_t test_load_stacked_chunks(void) {
-  region_chunk_pos rcpos = { .x = 0, .y = 0, .z = 0 };
-  mark_for_loading(&rcpos, LOD_BASE);
-  rcpos.z += 1;
-  mark_for_loading(&rcpos, LOD_BASE);
-  tick_load_chunks(&rcpos);
+  global_chunk_pos glcpos = { .x = 0, .y = 0, .z = 0 };
+  mark_for_loading(&glcpos, LOD_BASE);
+  glcpos.z += 1;
+  mark_for_loading(&glcpos, LOD_BASE);
+  tick_load_chunks(&glcpos);
   return 0;
 }
 

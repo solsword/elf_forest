@@ -21,10 +21,10 @@ extern vector VBOX_MIN;
 extern vector VBOX_MAX;
 
 // The fake chunk position of our observed chunk:
-extern region_chunk_pos const OBSERVED_CHUNK;
+extern global_chunk_pos const OBSERVED_CHUNK;
 
 // An interesting chunk:
-extern region_chunk_pos const INTERESTING_CHUNK;
+extern global_chunk_pos const INTERESTING_CHUNK;
 
 /********
  * Main *
@@ -47,7 +47,7 @@ void fake_player_floating(entity *e);
 void constrain_player_position(entity *e);
 
 // Loads a chunk from the world into the viewing area:
-void view_chunk_from_world(region_chunk_pos const * const rcpos);
+void view_chunk_from_world(global_chunk_pos const * const glcpos);
 
 // Loads an empty chunk into the viewing area.
 void view_empty_chunk();

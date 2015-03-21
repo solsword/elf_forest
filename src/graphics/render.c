@@ -42,19 +42,19 @@ float const WATER_FOG_DENSITY = 0.01;
 // TODO: Good values here (match data.c!)
 #define WCRD WORST_CASE_RENDER_DISTANCE
 // #define WORST_CASE_RENDER_DISTANCE 550
-//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 20, 60, 175, WCRD };
+//gl_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 20, 60, 175, WCRD };
 // #define WORST_CASE_RENDER_DISTANCE 130
-//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 18, 34, 66, WCRD };
+//gl_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 10, 18, 34, 66, WCRD };
 // #define WORST_CASE_RENDER_DISTANCE 60
-//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 20, 35, 38, WCRD };
+//gl_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 20, 35, 38, WCRD };
 //#define WORST_CASE_RENDER_DISTANCE 40
-//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 20, 35, 38, WCRD };
+//gl_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 20, 35, 38, WCRD };
 #define WORST_CASE_RENDER_DISTANCE 30
-r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 16, 21, 28, WCRD };
+gl_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 9, 16, 21, 28, WCRD };
 // #define WORST_CASE_RENDER_DISTANCE 25
-//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, WCRD };
+//gl_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, WCRD };
 // #define WORST_CASE_RENDER_DISTANCE 11
-//r_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, WCRD };
+//gl_cpos_t const MAX_RENDER_DISTANCES[N_LODS] = { 3, 5, 7, 9, WCRD };
 #undef WCRD
 #define MAX_VIEWABLE_CHUNKS \
   (2 * ( \
@@ -71,7 +71,7 @@ float const RENDER_ANGLE_ALLOWANCE = M_PI/8.0;
 
 vertex_buffer* WM_VB = NULL;
 
-r_pos_t const THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET = -1000;
+gl_pos_t const THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET = -1000;
 
 /***********
  * Globals *
@@ -92,9 +92,9 @@ area_render_callback AREA_PRE_RENDER_CALLBACK = NULL;
 
 // Takes a distance and returns the highest level of detail desired at that
 // distance.
-static inline lod desired_detail(r_cpos_t dist) {
+static inline lod desired_detail(gl_cpos_t dist) {
   lod result = LOD_BASE;
-  r_cpos_t mrd = 0;
+  gl_cpos_t mrd = 0;
   for (result = LOD_BASE; result < N_LODS; ++result) {
     mrd = MAX_RENDER_DISTANCES[result];
     if (dist <= mrd) {
@@ -320,60 +320,60 @@ void render_area(
 
   // Render our distant surroundings, and then clear the depth buffer:
   world_map_pos wmorigin;
-  rpos__wmpos(&(area->origin), &wmorigin); // TODO: really area->origin here?
+  glpos__wmpos(&(area->origin), &wmorigin); // TODO: really area->origin here?
   render_world_neighborhood(&wmorigin, &(area->origin));
 
   // Some loop variables:
-  region_chunk_pos origin;
-  region_chunk_pos rcpos;
+  global_chunk_pos origin;
+  global_chunk_pos glcpos;
   layer ly;
 
-  rpos__rcpos(&(area->origin), &origin);
+  glpos__glcpos(&(area->origin), &origin);
 
 #ifdef PROFILE_TIME
     start_duration(&RENDER_CORE_TIME);
 #endif
   // Iterate over chunk positions in a sphere:
-  r_cpos_t farthest_render_distance = MAX_RENDER_DISTANCES[N_LODS - 1];
-  r_cpos_t skipy = 0, skipz = 0, xdist_sq = 0, xydist_sq = 0, dist = 0;
+  gl_cpos_t farthest_render_distance = MAX_RENDER_DISTANCES[N_LODS - 1];
+  gl_cpos_t skipy = 0, skipz = 0, xdist_sq = 0, xydist_sq = 0, dist = 0;
 
   // The main loop: loop over a spherical region out to the farthest render
   // distance, getting the best data for each chunk (subject to render
   // distance constraints) and checking cull angles.
   which_chunk = 0;
   for (
-    rcpos.x = origin.x - farthest_render_distance;
-    rcpos.x < origin.x + farthest_render_distance + 1;
-    ++rcpos.x
+    glcpos.x = origin.x - farthest_render_distance;
+    glcpos.x < origin.x + farthest_render_distance + 1;
+    ++glcpos.x
   ) {
-    chunk_vector.x = (rcpos.x - origin.x) * CHUNK_SIZE - view_origin.x;
-    xdist_sq = (rcpos.x - origin.x);
+    chunk_vector.x = (glcpos.x - origin.x) * CHUNK_SIZE - view_origin.x;
+    xdist_sq = (glcpos.x - origin.x);
     xdist_sq *= xdist_sq;
     skipy = farthest_render_distance - fastceil(
       sqrt(farthest_render_distance*farthest_render_distance - xdist_sq)
     );
     for (
-      rcpos.y = origin.y - farthest_render_distance + skipy;
-      rcpos.y < origin.y + farthest_render_distance + 1 - skipy;
-      ++rcpos.y
+      glcpos.y = origin.y - farthest_render_distance + skipy;
+      glcpos.y < origin.y + farthest_render_distance + 1 - skipy;
+      ++glcpos.y
     ) { 
-      chunk_vector.y = (rcpos.y - origin.y) * CHUNK_SIZE - view_origin.y;
-      xydist_sq = (rcpos.y - origin.y);
+      chunk_vector.y = (glcpos.y - origin.y) * CHUNK_SIZE - view_origin.y;
+      xydist_sq = (glcpos.y - origin.y);
       xydist_sq *= xydist_sq;
       xydist_sq += xdist_sq;
       skipz = farthest_render_distance - fastceil(
         sqrt(farthest_render_distance*farthest_render_distance - xydist_sq)
       );
       for (
-        rcpos.z = origin.z - farthest_render_distance + skipz;
-        rcpos.z < origin.z + farthest_render_distance + 1 - skipz;
-        ++rcpos.z
+        glcpos.z = origin.z - farthest_render_distance + skipz;
+        glcpos.z < origin.z + farthest_render_distance + 1 - skipz;
+        ++glcpos.z
       ) { 
 #ifdef PROFILE_TIME
         start_duration(&RENDER_INNER_TIME);
 #endif
-        chunk_vector.z = (rcpos.z - origin.z) * CHUNK_SIZE - view_origin.z;
-        dist = (rcpos.z - origin.z);
+        chunk_vector.z = (glcpos.z - origin.z) * CHUNK_SIZE - view_origin.z;
+        dist = (glcpos.z - origin.z);
         dist *= dist;
         dist += xydist_sq;
         dist = sqrtf(dist);
@@ -434,7 +434,7 @@ void render_area(
         // */
         if (!cull) {
           get_best_data_limited(
-            &rcpos,
+            &glcpos,
             desired_detail(dist),
             1,
             &(chunks_to_render[which_chunk])
@@ -516,7 +516,7 @@ void render_area(
 int render_chunk_layer(
   dynamic_texture_atlas **atlases,
   chunk_or_approx *coa,
-  region_pos *origin,
+  global_pos *origin,
   layer ly
 ) {
   chunk *c = NULL;
@@ -524,19 +524,19 @@ int render_chunk_layer(
   chunk_flag flags = 0;
   dynamic_texture_atlas *dta = atlases[ly];
   vertex_buffer *vb;
-  region_pos rpos;
+  global_pos glpos;
   if (coa->type == CA_TYPE_NOT_LOADED) { return 0; }
   // Assign the relevant variables depending on the chunk/approximation type:
   if (coa->type == CA_TYPE_CHUNK) {
     c = (chunk *) (coa->ptr);
     flags = c->chunk_flags;
     vb = &(c->layers[ly]);
-    rcpos__rpos(&(c->rcpos), &rpos);
+    glcpos__glpos(&(c->glcpos), &glpos);
   } else if (coa->type == CA_TYPE_APPROXIMATION) {
     ca = (chunk_approximation *) (coa->ptr);
     flags = ca->chunk_flags;
     vb = &(ca->layers[ly]);
-    rcpos__rpos(&(ca->rcpos), &rpos);
+    glcpos__glpos(&(ca->glcpos), &glpos);
   }
   // Skip this chunk if it's out-of-date:
   if (!(flags & CF_LOADED) || !(flags & CF_COMPILED)) {
@@ -554,9 +554,9 @@ int render_chunk_layer(
 
   // Translate to the chunk position:
   glTranslatef(
-    rpos.x - origin->x,
-    rpos.y - origin->y,
-    rpos.z - origin->z
+    glpos.x - origin->x,
+    glpos.y - origin->y,
+    glpos.z - origin->z
   );
 
   // Set our drawing color:
@@ -668,12 +668,12 @@ void iter_render_entity(void *thing) {
 
 void compile_neighborhood(world_map_pos *wmpos) {
   world_map_pos iter;
-  region_pos peak;
-  region_pos origin;
+  global_pos peak;
+  global_pos origin;
   manifold_point dontcare, th;
   compute_region_anchor(THE_WORLD, wmpos, &origin);
   compute_terrain_height(&origin, &dontcare, &dontcare, &th);
-  origin.z = (r_pos_t) fastfloor(th.z);
+  origin.z = (gl_pos_t) fastfloor(th.z);
   origin.z += THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET;
   vertex v[(WORLD_NEIGHBORHOOD_SIZE*2 + 1)*(WORLD_NEIGHBORHOOD_SIZE*2 + 1)];
   size_t index = 0;
@@ -690,7 +690,7 @@ void compile_neighborhood(world_map_pos *wmpos) {
     ) {
       compute_region_anchor(THE_WORLD, &iter, &peak);
       compute_terrain_height(&peak, &dontcare, &dontcare, &th);
-      peak.z = (r_pos_t) fastfloor(th.z);
+      peak.z = (gl_pos_t) fastfloor(th.z);
       if (iter.x == wmpos->x && iter.y == wmpos->y) {
         peak.z += THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET;
       }
@@ -740,10 +740,10 @@ void compile_neighborhood(world_map_pos *wmpos) {
   vb_free_cache(WM_VB);
 }
 
-void render_world_neighborhood(world_map_pos *wmpos, region_pos *origin) {
+void render_world_neighborhood(world_map_pos *wmpos, global_pos *origin) {
   static world_map_pos prev_pos = { .x = -3, .y = -7 };
   manifold_point dontcare, th;
-  region_pos anchor;
+  global_pos anchor;
   if (
     wmpos->x != prev_pos.x ||
     wmpos->y != prev_pos.y
@@ -755,7 +755,7 @@ void render_world_neighborhood(world_map_pos *wmpos, region_pos *origin) {
 
   compute_region_anchor(THE_WORLD, wmpos, &anchor);
   compute_terrain_height(&anchor, &dontcare, &dontcare, &th);
-  anchor.z = (r_pos_t) fastfloor(th.z);
+  anchor.z = (gl_pos_t) fastfloor(th.z);
   anchor.z += THIS_REGION_DISTANT_TERRAIN_MESH_OFFSET;
 
   // Use the raw rendering pipeline:

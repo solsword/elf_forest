@@ -65,6 +65,6 @@ void cleanup_worldgen();
 void init_world_map(world_map *wm);
 
 // Computes the cell contents at the given position.
-void world_cell(world_map *wm, region_pos *pos, cell *result);
+void world_cell(world_map *wm, global_pos *pos, cell *result);
 
 #endif // ifndef WORLDGEN_H

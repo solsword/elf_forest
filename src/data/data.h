@@ -39,7 +39,7 @@ extern int const COMPILE_CAP;
 
 // Distances at which to load chunks at different levels of detail, expressed
 // in chunks.
-extern r_cpos_t const LOAD_DISTANCES[N_LODS];
+extern gl_cpos_t const LOAD_DISTANCES[N_LODS];
 
 // Vertical bias for load distances: in loading calculations the z-axis
 // distance is multiplied by this amount.
@@ -81,27 +81,27 @@ struct chunk_cache_s {
 
 // These functions return data for the chunk at the given position if it is
 // loaded, and return NULL otherwise.
-static inline chunk * get_chunk(region_chunk_pos *rcpos) {
+static inline chunk * get_chunk(global_chunk_pos *glcpos) {
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
   return (chunk *) m3_get_value(
     CHUNK_CACHE->levels[LOD_BASE],
-    (map_key_t) rcpos->x,
-    (map_key_t) rcpos->y,
-    (map_key_t) rcpos->z
+    (map_key_t) glcpos->x,
+    (map_key_t) glcpos->y,
+    (map_key_t) glcpos->z
   );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
 }
 
 static inline chunk_approximation * get_chunk_approx(
-  region_chunk_pos *rcpos,
+  global_chunk_pos *glcpos,
   lod detail
 ) {
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
   return (chunk_approximation *) m3_get_value(
     CHUNK_CACHE->levels[detail],
-    (map_key_t) rcpos->x,
-    (map_key_t) rcpos->y,
-    (map_key_t) rcpos->z
+    (map_key_t) glcpos->x,
+    (map_key_t) glcpos->y,
+    (map_key_t) glcpos->z
   );
 #pragma GCC diagnostic warning "-Wint-to-pointer-cast"
 }
@@ -110,12 +110,12 @@ static inline chunk_approximation * get_chunk_approx(
 // is at the given center position). Returns N_LODS if the given chunk is
 // outside the max loading distance.
 static inline lod desired_detail_at(
-  region_chunk_pos* center,
-  region_chunk_pos* pos
+  global_chunk_pos* center,
+  global_chunk_pos* pos
 ) {
   lod result = N_LODS;
   lod detail;
-  r_cpos_t edge;
+  gl_cpos_t edge;
   float d2 = (
     (pos->x - center->x) * (pos->x - center->x) +
     (pos->y - center->y) * (pos->y - center->y) +
@@ -171,18 +171,18 @@ void enqueue_chunk_approximation(chunk_queue_set *cqs, chunk_approximation *ca);
 // Creates a new chunk at the given position and level of detail and marks it
 // for loading. Does nothing if a chunk with the same coordinates and level of
 // detail is either already loaded or already queued for loading.
-void mark_for_loading(region_chunk_pos *rcpos, lod detail);
+void mark_for_loading(global_chunk_pos *glcpos, lod detail);
 
 // Marks the given chunk or approximation for (re)compilation.
 void mark_for_compilation(chunk_or_approx *coa);
 
 // Marks the six best-quality loaded neighbors of the given position for
 // (re)compilation.
-void mark_neighbors_for_compilation(region_chunk_pos *rcpos);
+void mark_neighbors_for_compilation(global_chunk_pos *glcpos);
 
 // Returns the best level-of-detail at which the given chunk is loaded, or
 // N_LODS if the given chunk isn't loaded.
-lod get_best_loaded_level(region_chunk_pos *rcpos);
+lod get_best_loaded_level(global_chunk_pos *glcpos);
 
 // Fills in the given chunk_or_approx struct with a pointer to the best
 // available data for the given chunk, or NULL if there is no loaded data for
@@ -190,9 +190,9 @@ lod get_best_loaded_level(region_chunk_pos *rcpos);
 // type CA_TYPE_NOT_LOADED. The limited version accepts an upper bound on the
 // resolution of data to return, and a flag for requesting only compiled chunk
 // data.
-void get_best_data(region_chunk_pos *rcpos, chunk_or_approx *coa);
+void get_best_data(global_chunk_pos *glcpos, chunk_or_approx *coa);
 void get_best_data_limited(
-  region_chunk_pos *rcpos,
+  global_chunk_pos *glcpos,
   lod limit,
   uint8_t compiled,
   chunk_or_approx *coa
@@ -200,11 +200,11 @@ void get_best_data_limited(
 
 // Marks for loading all chunks near the given chunk, as defined by the
 // LOAD_DISTANCES array.
-void load_surroundings(region_chunk_pos *rcpos);
+void load_surroundings(global_chunk_pos *glcpos);
 
 // Ticks the chunk loading system, loading/unloading as many chunks as allowed
 // and appropriate. Prioritizes more-detailed areas when loading data.
-void tick_load_chunks(region_chunk_pos *load_center);
+void tick_load_chunks(global_chunk_pos *load_center);
 
 // Ticks the chunk compilation system, compiling as many chunks as allowed and
 // appropriate. Prioritizes more-detailed areas when loading data. This should
@@ -223,14 +223,14 @@ void load_chunk_approx(chunk_approximation *ca);
 // neighborhood should be a 27-dimensional array of chunk_or_approxes, which
 // will be filled in in zxy order.
 static inline void get_chunk_neighborhood(
-  region_chunk_pos* rcpos,
+  global_chunk_pos* glcpos,
   chunk_or_approx* neighborhood
 ) {
-  region_chunk_pos nbpos;
+  global_chunk_pos nbpos;
   size_t i = 0;
-  for (nbpos.z = rcpos->z - 1; nbpos.z <= rcpos->z + 1; nbpos.z += 1) {
-    for (nbpos.x = rcpos->x - 1; nbpos.x <= rcpos->x + 1; nbpos.x += 1) {
-      for (nbpos.y = rcpos->y - 1; nbpos.y <= rcpos->y + 1; nbpos.y += 1) {
+  for (nbpos.z = glcpos->z - 1; nbpos.z <= glcpos->z + 1; nbpos.z += 1) {
+    for (nbpos.x = glcpos->x - 1; nbpos.x <= glcpos->x + 1; nbpos.x += 1) {
+      for (nbpos.y = glcpos->y - 1; nbpos.y <= glcpos->y + 1; nbpos.y += 1) {
         get_best_data(&nbpos, &(neighborhood[i]));
         i += 1;
       }

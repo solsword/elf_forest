@@ -110,19 +110,18 @@ typedef enum capprox_type_e capprox_type;
  * Structures *
  **************/
 
-// Defines the size of a region in cells:
-typedef int64_t r_pos_t;
-// Defines the size of a region in chunks. Must be < the size of r_pos_t:
-typedef int32_t r_cpos_t;
+// The global position of a cell:
+typedef int64_t gl_pos_t;
+// The global position of a chunk. Should be < the size of gl_pos_t:
+typedef int32_t gl_cpos_t;
 
-// TODO: Rename these!!
-// Cell position within a region:
-struct region_pos_s;
-typedef struct region_pos_s region_pos;
+// Global cell position:
+struct global_pos_s;
+typedef struct global_pos_s global_pos;
 
-// Chunk position within a region:
-struct region_chunk_pos_s;
-typedef struct region_chunk_pos_s region_chunk_pos;
+// Global chunk position:
+struct global_chunk_pos_s;
+typedef struct global_chunk_pos_s global_chunk_pos;
 
 // Flags for a chunk:
 typedef uint16_t chunk_flag;
@@ -175,12 +174,12 @@ static chunk_flag const   CF_QUEUED_TO_COMPILE = 0x0010;
  * Structure Definitions *
  *************************/
 
-struct region_pos_s {
-  r_pos_t x, y, z;
+struct global_pos_s {
+  gl_pos_t x, y, z;
 };
 
-struct region_chunk_pos_s {
-  r_cpos_t x, y, z;
+struct global_chunk_pos_s {
+  gl_cpos_t x, y, z;
 };
 
 struct chunk_index_s {
@@ -189,11 +188,11 @@ struct chunk_index_s {
 
 // (16 * 16 * 16) * 16 = 65536 bits = 8 KB
 // (16 * 16 * 16) * 32 = 131072 bits = 16 KB
-// (16 * 16 * 16) * 96 = 393216 bits = 48 KB
-// (32 * 32 * 32) * 96 = 3145728 bits = 384 KB <-
+// (16 * 16 * 16) * 64 = 262144 bits = 32 KB
+// (32 * 32 * 32) * 64 = 2097152 bits = 256 KB <-
 struct chunk_s {
   capprox_type type; // Always CA_TYPE_CHUNK
-  region_chunk_pos rcpos; // Absolute location within the region.
+  global_chunk_pos glcpos; // Absolute location.
   vertex_buffer layers[N_LAYERS]; // The vertex buffers.
   chunk_flag chunk_flags; // Flags
 
@@ -204,7 +203,7 @@ struct chunk_s {
 
 struct chunk_approximation_s {
   capprox_type type; // Always CA_TYPE_APPROXIMATION
-  region_chunk_pos rcpos; // Absolute location within the region.
+  global_chunk_pos glcpos; // Absolute location.
   vertex_buffer layers[N_LAYERS]; // Vertex buffers.
   chunk_flag chunk_flags; // Flags
 
@@ -236,69 +235,69 @@ union approx_data_u {
 // Coordinate conversions:
 // Note that these are hand-inlined in a few places for speed.
 
-static inline void rcpos__rpos(
-  region_chunk_pos const * const rcpos,
-  region_pos *rpos
+static inline void glcpos__glpos(
+  global_chunk_pos const * const glcpos,
+  global_pos *glpos
 ) {
-  rpos->x = ((r_pos_t) rcpos->x) << CHUNK_BITS;
-  rpos->y = ((r_pos_t) rcpos->y) << CHUNK_BITS;
-  rpos->z = ((r_pos_t) rcpos->z) << CHUNK_BITS;
+  glpos->x = ((gl_pos_t) glcpos->x) << CHUNK_BITS;
+  glpos->y = ((gl_pos_t) glcpos->y) << CHUNK_BITS;
+  glpos->z = ((gl_pos_t) glcpos->z) << CHUNK_BITS;
 }
 
-static inline void rpos__rcpos(
-  region_pos const * const rpos,
-  region_chunk_pos *rcpos
+static inline void glpos__glcpos(
+  global_pos const * const glpos,
+  global_chunk_pos *glcpos
 ) {
-  rcpos->x = rpos->x >> CHUNK_BITS;
-  rcpos->y = rpos->y >> CHUNK_BITS;
-  rcpos->z = rpos->z >> CHUNK_BITS;
+  glcpos->x = glpos->x >> CHUNK_BITS;
+  glcpos->y = glpos->y >> CHUNK_BITS;
+  glcpos->z = glpos->z >> CHUNK_BITS;
 }
 
-static inline void cidx__rpos(
+static inline void cidx__glpos(
   chunk const * const c,
   chunk_index const * const idx,
-  region_pos *pos
+  global_pos *pos
 ) {
-  rcpos__rpos(&(c->rcpos), pos);
+  glcpos__glpos(&(c->glcpos), pos);
   pos->x += idx->x;
   pos->y += idx->y;
   pos->z += idx->z;
 }
 
-static inline void caidx__rpos(
+static inline void caidx__glpos(
   chunk_approximation const * const ca,
   chunk_index const * const idx,
-  region_pos *pos
+  global_pos *pos
 ) {
-  rcpos__rpos(&(ca->rcpos), pos);
+  glcpos__glpos(&(ca->glcpos), pos);
   pos->x += idx->x;
   pos->y += idx->y;
   pos->z += idx->z;
 }
 
-static inline void rpos__cidx(
-  region_pos const * const rpos,
+static inline void glpos__cidx(
+  global_pos const * const glpos,
   chunk_index *idx
 ) {
-  idx->x = rpos->x & CH_MASK;
-  idx->y = rpos->y & CH_MASK;
-  idx->z = rpos->z & CH_MASK;
+  idx->x = glpos->x & CH_MASK;
+  idx->y = glpos->y & CH_MASK;
+  idx->z = glpos->z & CH_MASK;
 }
 
-static inline void rpos__vec(
-  region_pos const * const origin,
-  region_pos const * const rpos,
+static inline void glpos__vec(
+  global_pos const * const origin,
+  global_pos const * const glpos,
   vector *result
 ) {
-  result->x = (rpos->x - origin->x);
-  result->y = (rpos->y - origin->y);
-  result->z = (rpos->z - origin->z);
+  result->x = (glpos->x - origin->x);
+  result->y = (glpos->y - origin->y);
+  result->z = (glpos->z - origin->z);
 }
 
-static inline void vec__rpos(
-  region_pos const * const origin,
+static inline void vec__glpos(
+  global_pos const * const origin,
   vector const * const v,
-  region_pos *result
+  global_pos *result
 ) {
   result->x = origin->x + fastfloor(v->x);
   result->y = origin->y + fastfloor(v->y);
@@ -317,18 +316,18 @@ static inline void aprx__coa(chunk_approximation *ca, chunk_or_approx *coa) {
 
 // Copying, adding, and other pseudo-conversion functions:
 
-static inline void copy_rpos(
-  region_pos const * const source,
-  region_pos *destination
+static inline void copy_glpos(
+  global_pos const * const source,
+  global_pos *destination
 ) {
   destination->x = source->x;
   destination->y = source->y;
   destination->z = source->z;
 }
 
-static inline void copy_rcpos(
-  region_chunk_pos const * const source,
-  region_chunk_pos *destination
+static inline void copy_glcpos(
+  global_chunk_pos const * const source,
+  global_chunk_pos *destination
 ) {
   destination->x = source->x;
   destination->y = source->y;
@@ -386,7 +385,7 @@ static inline void c_fill_with_block(chunk *c, block b) {
 
 // Allocates and initializes a new chunk at the given position. Allocates but
 // does not initialize the chunk's cell data.
-chunk * create_chunk(region_chunk_pos const * const rcpos);
+chunk * create_chunk(global_chunk_pos const * const glcpos);
 
 // Cleans up memory allocated for the given chunk.
 void cleanup_chunk(chunk *c);
@@ -394,7 +393,7 @@ void cleanup_chunk(chunk *c);
 // Allocates and initializes a new chunk approximation at the given position
 // with the given level of detail.
 chunk_approximation * create_chunk_approximation(
-  region_chunk_pos *rcpos,
+  global_chunk_pos *glcpos,
   lod detail
 );
 
@@ -418,7 +417,7 @@ static inline cell* ca_cell(
   return ca_cell_table[ca->detail](ca, &idx);
 }
 
-// cell_at returns the cell at the given region position according to the best
+// cell_at returns the cell at the given global position according to the best
 // available currently-loaded data, returning NULL if there is no data loaded
 // for that position. Note that this will cache the chunk used and re-use it
 // when possible, subject to changes in the value of CELL_AT_SALT, so
@@ -429,47 +428,47 @@ extern uint8_t CELL_AT_SALT;
 static inline void refresh_cell_at_cache(void) {
   CELL_AT_SALT += 1; // overflow is fine
 }
-cell* cell_at(region_pos const * const rpos);
+cell* cell_at(global_pos const * const glpos);
 
 // These inline functions call cell_at for neighboring cells:
-static inline cell* cell_above(region_pos const * const rpos) {
-  region_pos above;
-  copy_rpos(rpos, &above);
+static inline cell* cell_above(global_pos const * const glpos) {
+  global_pos above;
+  copy_glpos(glpos, &above);
   above.z += 1;
   return cell_at(&above);
 }
 
-static inline cell* cell_below(region_pos const * const rpos) {
-  region_pos below;
-  copy_rpos(rpos, &below);
+static inline cell* cell_below(global_pos const * const glpos) {
+  global_pos below;
+  copy_glpos(glpos, &below);
   below.z -= 1;
   return cell_at(&below);
 }
 
-static inline cell* cell_north(region_pos const * const rpos) {
-  region_pos north;
-  copy_rpos(rpos, &north);
+static inline cell* cell_north(global_pos const * const glpos) {
+  global_pos north;
+  copy_glpos(glpos, &north);
   north.y += 1;
   return cell_at(&north);
 }
 
-static inline cell* cell_south(region_pos const * const rpos) {
-  region_pos south;
-  copy_rpos(rpos, &south);
+static inline cell* cell_south(global_pos const * const glpos) {
+  global_pos south;
+  copy_glpos(glpos, &south);
   south.y -= 1;
   return cell_at(&south);
 }
 
-static inline cell* cell_east(region_pos const * const rpos) {
-  region_pos east;
-  copy_rpos(rpos, &east);
+static inline cell* cell_east(global_pos const * const glpos) {
+  global_pos east;
+  copy_glpos(glpos, &east);
   east.x += 1;
   return cell_at(&east);
 }
 
-static inline cell* cell_west(region_pos const * const rpos) {
-  region_pos west;
-  copy_rpos(rpos, &west);
+static inline cell* cell_west(global_pos const * const glpos) {
+  global_pos west;
+  copy_glpos(glpos, &west);
   west.x -= 1;
   return cell_at(&west);
 }

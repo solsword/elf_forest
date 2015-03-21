@@ -200,8 +200,8 @@ stratum *create_stratum(
 void generate_geology(world_map *wm) {
   size_t i, j;
   world_map_pos xy;
-  region_pos anchor;
-  r_pos_t t;
+  global_pos anchor;
+  gl_pos_t t;
   stratum *s;
 
   float avg_size = sqrtf(wm->width*wm->height);
@@ -301,10 +301,10 @@ void generate_geology(world_map *wm) {
   printf("\n");
 }
 
-r_pos_t compute_stratum_height(stratum *st, region_pos *rpos) {
+gl_pos_t compute_stratum_height(stratum *st, global_pos *glpos) {
   // static variables:
   static stratum *pr_st = NULL;
-  static region_chunk_pos pr_rcpos = { .x = -1, .y = -1, .z = -1 };
+  static global_chunk_pos pr_glcpos = { .x = -1, .y = -1, .z = -1 };
   // low- and high-frequency distortion:
   static float lfdx = 0; static float lfdy = 0;
   // low- and high-frequency noise:
@@ -315,23 +315,23 @@ r_pos_t compute_stratum_height(stratum *st, region_pos *rpos) {
   // normal variables:
   float fx;
   float fy;
-  region_chunk_pos rcpos;
+  global_chunk_pos glcpos;
 
   // compute our chunk position:
-  rpos__rcpos(rpos, &rcpos);
+  glpos__glcpos(glpos, &glcpos);
 
-  if (pr_st != st || pr_rcpos.x != rcpos.x || pr_rcpos.y != rcpos.y) {
+  if (pr_st != st || pr_glcpos.x != glcpos.x || pr_glcpos.y != glcpos.y) {
     // need to recompute low-frequency info:
-    fx = (float) (rpos->x);
-    fy = (float) (rpos->y);
+    fx = (float) (glpos->x);
+    fy = (float) (glpos->y);
     stratum_lf_distortion(st, fx, fy, &lfdx, &lfdy);
     stratum_lf_noise(st, fx+lfdx, fy+lfdy, &lfn);
     stratum_base_thickness(st, fx+lfdx, fy+lfdy, &base);
   }
   // set static variables:
-  copy_rcpos(&rcpos, &pr_rcpos);
+  copy_glcpos(&glcpos, &pr_glcpos);
   pr_st = st;
-  return (r_pos_t) fastfloor(base + lfn);
+  return (gl_pos_t) fastfloor(base + lfn);
 }
 
 species create_new_igneous_species(ptrdiff_t seed) {

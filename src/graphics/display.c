@@ -408,7 +408,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   };
   chunk *c;
   chunk_approximation *ca;
-  region_chunk_pos* rcpos;
+  global_chunk_pos* glcpos;
   chunk_or_approx chunk_neighbors[27]; // zxy order
   cell* neighborhood[27]; // also zxy order
   vertex_buffer *vb;
@@ -428,20 +428,20 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
     ca = NULL;
     step = 1;
     layers = &(c->layers);
-    rcpos = &(c->rcpos);
+    glcpos = &(c->glcpos);
   } else if (coa->type == CA_TYPE_APPROXIMATION) {
     c = NULL;
     ca = (chunk_approximation *) (coa->ptr);
     step = 1 << (ca->detail);
     layers = &(ca->layers);
-    rcpos = &(ca->rcpos);
+    glcpos = &(ca->glcpos);
   } else {
     // We can't deal with unloaded chunks
     return;
   }
 
   // Get the chunk neighborhood:
-  get_chunk_neighborhood(rcpos, chunk_neighbors);
+  get_chunk_neighborhood(glcpos, chunk_neighbors);
 
   uint16_t counts[N_LAYERS];
   uint16_t total = 0;

@@ -11,7 +11,7 @@
  * Constants *
  *************/
 
-extern region_chunk_pos const CHUNK_ORIGIN;
+extern global_chunk_pos const CHUNK_ORIGIN;
 
 /********
  * Main *
