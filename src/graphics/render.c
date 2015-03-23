@@ -22,6 +22,7 @@
 
 #include "datatypes/vector.h"
 #include "control/ctl.h"
+#include "control/interact.h"
 #include "world/world.h"
 #include "world/entities.h"
 #include "data/data.h"
@@ -211,9 +212,16 @@ void render_area(
   float xangle = 0; // horizontal angle to chunk being considered
   float yangle = 0; // vertical angle to chunk being considered
   int cull = 0; // Whether to cull this chunk
+  global_pos cursor; // The area-local cursor position
 
   // Set the fog density:
   set_fog_density(FOG_DENSITY);
+
+  // Compute the local cursor position:
+  copy_glpos(&(PLAYER_CURSOR.pos), &cursor);
+  cursor.x -= area->origin.x;
+  cursor.y -= area->origin.y;
+  cursor.z -= area->origin.z;
 
   // head_pos (the argument) is a vector from the origin to the head position
   vector eye_vector; // vector pointing in the player's model's view direction
@@ -490,6 +498,26 @@ void render_area(
       glDepthMask( GL_TRUE );
       glEnable( GL_CULL_FACE );
     }
+  }
+
+  // Draw the player's cursor
+  // DEBUG:
+  clear_depth_buffer(); // TODO: fix the bug that necessitates this!
+  if (PLAYER_CURSOR.valid) {
+    //use_pipeline(&RAW_PIPELINE);
+    // TODO: Get colors working here (create a cell markup pipeline?)!!
+    // TODO: texture-based cursor?
+    glColor4ub(20, 180, 60, 255); // a green
+    highlight_cell(&cursor);
+    // DEBUG:
+  } else {
+    //use_pipeline(&RAW_PIPELINE);
+    glColor4ub(255, 0, 0, 255); // bright red
+    vec__glpos(&(area->origin), &(PLAYER->pos), &cursor);
+    cursor.x -= area->origin.x;
+    cursor.y -= area->origin.y;
+    cursor.z -= area->origin.z;
+    highlight_cell(&cursor);
   }
 #ifdef PROFILE_TIME
     end_duration(&RENDER_CORE_TIME);
@@ -780,5 +808,60 @@ void render_world_neighborhood(world_map_pos *wmpos, global_pos *origin) {
   clear_depth_buffer();
 
   // Pop our matrix:
+  glPopMatrix();
+}
+
+void highlight_cell(global_pos* pos) {
+  glMatrixMode( GL_MODELVIEW );
+  glPushMatrix();
+
+  // Translate to the cell position:
+  glTranslatef(
+    pos->x + 0.5,
+    pos->y + 0.5,
+    pos->z + 0.5
+  );
+
+  // Render a bounding box:
+  float hx, hy, hz;
+  hx = 0.505;
+  hy = 0.505;
+  hz = 0.505;
+
+  glBegin( GL_LINE_LOOP );
+
+  glVertex3f(-hx, -hy, -hz);
+  glVertex3f(-hx, hy, -hz);
+  glVertex3f(hx, hy, -hz);
+  glVertex3f(hx, -hy, -hz);
+
+  glEnd();
+
+
+  glBegin( GL_LINE_LOOP );
+
+  glVertex3f(-hx, -hy, hz);
+  glVertex3f(-hx, hy, hz);
+  glVertex3f(hx, hy, hz);
+  glVertex3f(hx, -hy, hz);
+
+  glEnd();
+
+  glBegin( GL_LINES );
+
+  glVertex3f(-hx, -hy, -hz);
+  glVertex3f(-hx, -hy, hz);
+
+  glVertex3f(-hx, hy, -hz);
+  glVertex3f(-hx, hy, hz);
+
+  glVertex3f(hx, hy, -hz);
+  glVertex3f(hx, hy, hz);
+
+  glVertex3f(hx, -hy, -hz);
+  glVertex3f(hx, -hy, hz);
+
+  glEnd();
+
   glPopMatrix();
 }

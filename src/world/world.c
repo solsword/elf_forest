@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <math.h>
 // DEBUG
 #include <stdio.h>
 
@@ -226,3 +227,99 @@ size_t chunk_approx_gpu_size(chunk_approximation *ca) {
   return result;
 }
 
+void iter_ray(
+  global_pos const * const reference,
+  vector origin,
+  vector heading,
+  void* data,
+  float (*f)(void*, global_pos*, vector, vector, float)
+) {
+  global_pos here, next;
+  float limit;
+  float length = 0;
+  vector step;
+  int east = 0, north = 0, up = 0;
+  float xint, yint, zint;
+
+  if (vmag2(&heading) == 0) { return; } // nope
+  vnorm(&heading); // normalize our heading vector
+
+  // Compute our initial global position and make our origin vector relative to
+  // that position:
+  vec__glpos(reference, &origin, &here);
+  reref_vec(reference, &origin, &here);
+
+  // Call the iteration function initially:
+  limit = f(data, &here, origin, heading, length);
+  while (length < limit) {
+    vcopy(&step, &heading); // copy heading into step (yes it's backwards)
+    copy_glpos(&here, &next); // copy here into next
+    if (heading.x > 0) {
+      xint = (1.0 - origin.x) / heading.x;
+      east = 1;
+    } else if (heading.x < 0) {
+      xint = origin.x / (-heading.x);
+      east = 0;
+    } else {
+      xint = INFINITY;
+    }
+    if (heading.y > 0) {
+      yint = (1.0 - origin.y) / heading.y;
+      north = 1;
+    } else if (heading.y < 0) {
+      yint = origin.y / (-heading.y);
+      north = 0;
+    } else {
+      yint = INFINITY;
+    }
+    if (heading.z > 0) {
+      zint = (1.0 - origin.z) / heading.z;
+      up = 1;
+    } else if (heading.z < 0) {
+      zint = origin.z / (-heading.z);
+      up = 0;
+    } else {
+      zint = INFINITY;
+    }
+    if (xint <= yint && xint <= zint) {
+      // First side hit is east or west
+      vscale(&step, xint);
+      length += xint;
+      if (east) {
+        next.x += 1;
+      } else {
+        next.x -= 1;
+      }
+    } else if (yint <= xint && yint <= zint) {
+      // First side hit is north or south
+      vscale(&step, yint);
+      length += yint;
+      if (north) {
+        next.y += 1;
+      } else {
+        next.y -= 1;
+      }
+    } else if (zint <= xint && zint <= yint) {
+      // First side hit is up or down
+      vscale(&step, zint);
+      length += zint;
+      if (up) {
+        next.z += 1;
+      } else {
+        next.z -= 1;
+      }
+#ifdef DEBUG
+    } else { // shouldn't be possible because of vmag2 test above
+      fprintf(stderr, "Error: bad x/y/z-intercept ordering in iter_ray.\n");
+      exit(1);
+#endif
+    }
+    // Add our step to our origin & rereference it to the next position:
+    vadd(&origin, &step);
+    reref_vec(&here, &origin, &next);
+    // Copy over our next position:
+    copy_glpos(&next, &here);
+    // Call the next iteration:
+    limit = f(data, &here, origin, heading, length);
+  }
+}

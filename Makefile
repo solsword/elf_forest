@@ -49,6 +49,7 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/draw.o \
              $(OBJ_DIR)/pipeline.o \
              $(OBJ_DIR)/ctl.o \
+             $(OBJ_DIR)/interact.o \
              $(OBJ_DIR)/tex.o \
              $(OBJ_DIR)/noise.o \
              $(OBJ_DIR)/physics.o \

@@ -133,4 +133,7 @@ void compile_distant_terrain(world_map_pos *origin);
 // buffer as necessary.
 void render_world_neighborhood(world_map_pos *wmpos, global_pos *origin);
 
+// Draws a highlight on the specified cell
+void highlight_cell(global_pos* pos);
+
 #endif // ifndef RENDER_H

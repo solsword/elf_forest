@@ -14,6 +14,7 @@
 #include "world/entities.h"
 #include "world/species.h"
 #include "control/ctl.h"
+#include "control/interact.h"
 #include "physics/physics.h"
 #include "prof/ptime.h"
 #include "data/data.h"
@@ -282,6 +283,7 @@ void tick(int steps) {
   for (i = 0; i < steps; ++i) {
     TICK_COUNT = (TICK_COUNT + 1) % TICKS_PER_SECOND_I;
     tick_motion_controls();
+    tick_interaction();
     for (j = 0; j < PHYS_SUBSTEPS; ++j) {
       tick_active_entities();
     }

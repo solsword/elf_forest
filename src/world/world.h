@@ -305,6 +305,18 @@ static inline void vec__glpos(
   result->z = origin->z + fastfloor(v->z);
 }
 
+// Takes a vector references from one global position and turns it into a
+// vector referenced from the given global position.
+static inline void reref_vec(
+  global_pos const * const original_ref,
+  vector* v,
+  global_pos const * const new_ref
+) {
+  v->x -= (new_ref->x - original_ref->x);
+  v->y -= (new_ref->y - original_ref->y);
+  v->z -= (new_ref->z - original_ref->z);
+}
+
 static inline void ch__coa(chunk *c, chunk_or_approx *coa) {
   coa->type = CA_TYPE_CHUNK;
   coa->ptr = (void *) c;
@@ -484,6 +496,24 @@ size_t chunk_gpu_size(chunk *c);
 size_t chunk_approx_data_size(chunk_approximation *ca);
 size_t chunk_approx_overhead_size(chunk_approximation *ca);
 size_t chunk_approx_gpu_size(chunk_approximation *ca);
+
+// Iterates over the cells in the path of the given ray, starting with the cell
+// containing its origin (the origin vector should be relative to the given
+// reference cell position). Calls the given iteration function passing in the
+// extra data pointer, the current cell position, the origin point relative to
+// the current cell (could be epsilon outside due to rounding), the heading
+// vector, and the current ray length. Iteration stops when the ray length
+// exceeds the limit returned by the iteration function (which can of course be
+// dynamic; returning zero halts iteration immediately). If iter_ray is given a
+// zero-length heading vector, it will return without calling the iteration
+// function. When iteration ends, the final iteration position is returned.
+void iter_ray(
+  global_pos const * const reference,
+  vector origin,
+  vector heading,
+  void* data,
+  float (*f)(void*, global_pos*, vector, vector, float)
+);
 
 // TODO: How to tick cells?
 
