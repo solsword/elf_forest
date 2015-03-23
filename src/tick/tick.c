@@ -17,6 +17,7 @@
 #include "physics/physics.h"
 #include "prof/ptime.h"
 #include "data/data.h"
+#include "data/persist.h"
 #include "graphics/gfx.h"
 #include "graphics/render.h"
 #include "shaders/pipeline.h"
@@ -82,6 +83,8 @@ void _get_everything_set_up(ptrdiff_t seed, int argc, char** argv) {
   setup_ui();
   printf("  ...data...\n");
   setup_data();
+  printf("  ...persist...\n");
+  setup_persist(DEFAULT_WORLD_DIRECTORY);
   printf("  ...entities...\n");
   setup_entities();
   printf("  ...species...\n");

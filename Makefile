@@ -29,7 +29,8 @@ LIBS_GLFW=-lglfw -lrt -lXrandr -lXi -lXxf86vm -lXrender -lXext -lX11 \
 LIBS_FTGL=-lftgl
 LIBS_PNG=-lpng
 LIBS_OPENMP=-fopenmp
-LIBS=$(LIBS_OPENGL) $(LIBS_GLFW) $(LIBS_FTGL) $(LIBS_PNG) $(LIBS_OPENMP)
+LIBS_UNISTRING=-lunistring
+LIBS=$(LIBS_OPENGL) $(LIBS_GLFW) $(LIBS_FTGL) $(LIBS_PNG) $(LIBS_OPENMP) $(LIBS_UNISTRING)
 
 LFLAGS=-lm $(LIBS) $(PROFILE_FLAGS)
 
@@ -59,11 +60,13 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/list.o \
              $(OBJ_DIR)/queue.o \
              $(OBJ_DIR)/map.o \
+             $(OBJ_DIR)/string.o \
              $(OBJ_DIR)/bitmap.o \
              $(OBJ_DIR)/octree.o \
              $(OBJ_DIR)/terrain.o \
              $(OBJ_DIR)/worldgen.o \
              $(OBJ_DIR)/data.o \
+             $(OBJ_DIR)/persist.o \
              $(OBJ_DIR)/climate.o \
              $(OBJ_DIR)/geology.o \
              $(OBJ_DIR)/txgen.o \

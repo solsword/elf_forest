@@ -28,6 +28,7 @@
 #include "data/data.h"
 #include "tick/tick.h"
 #include "ui/ui.h"
+#include "datatypes/string.h"
 
 #include "util.h"
 
@@ -54,6 +55,9 @@ int main(int argc, char** argv) {
   // note origin.z is ignored by start_game
 
   SEED = prng(prng(prng(prng(SEED))));
+
+  // Set up the strings system:
+  init_strings();
 
   // Start the game:
   //start_game(SEED, argc, argv, "tester", &origin);

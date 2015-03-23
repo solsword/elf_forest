@@ -39,6 +39,8 @@
 #define HALF_PTR_TOP ((uintptr_t) (umaxof(uintptr_t)<<HALF_PTR_BITS))
 #define HALF_PTR_BOT ((uintptr_t) (~((uintptr_t) HALF_PTR_TOP)))
 
+#define IS_LITTLE_ENDIAN (*((uint8_t*) (&ENDIAN_DETECTOR)) == 1)
+
 /*************
  * Constants *
  *************/
@@ -47,9 +49,66 @@
 static float const R2D = 180*M_1_PI;
 static float const D2R = M_PI/180;
 
+// Endian detection
+static uint16_t const ENDIAN_DETECTOR = 1;
+
 /********************
  * Inline Functions *
  ********************/
+
+// Conversions from/to network byte order for 64-bit values:
+static inline uint64_t hton64(uint64_t host_ordered) {
+  uint8_t* bytes;
+  if (IS_LITTLE_ENDIAN) { // host is little: convert to big
+    bytes = (uint8_t*) (&host_ordered);
+    return (
+      (((uint64_t) bytes[0]) << 56)
+    |    
+      (((uint64_t) bytes[1]) << 48)
+    |    
+      (((uint64_t) bytes[2]) << 40)
+    |    
+      (((uint64_t) bytes[3]) << 32)
+    |    
+      (((uint64_t) bytes[4]) << 24)
+    |    
+      (((uint64_t) bytes[5]) << 16)
+    |    
+      (((uint64_t) bytes[6]) << 8)
+    |
+      ((uint64_t) bytes[7])
+    );
+  } else {
+    return host_ordered;
+  }
+}
+
+static inline uint64_t ntoh64(uint64_t net_ordered) {
+  uint8_t* bytes;
+  if (IS_LITTLE_ENDIAN) { // host is little: convert from big
+    bytes = (uint8_t*) (&net_ordered);
+    return (
+      (((uint64_t) bytes[0]) << 56)
+    |    
+      (((uint64_t) bytes[1]) << 48)
+    |    
+      (((uint64_t) bytes[2]) << 40)
+    |    
+      (((uint64_t) bytes[3]) << 32)
+    |    
+      (((uint64_t) bytes[4]) << 24)
+    |    
+      (((uint64_t) bytes[5]) << 16)
+    |    
+      (((uint64_t) bytes[6]) << 8)
+    |
+      ((uint64_t) bytes[7])
+    );
+  } else {
+    return net_ordered;
+  }
+}
+
 
 // Faster floor function (mostly 'cause we're ignoring IEEE error stuff):
 static inline int fastfloor(float x) {

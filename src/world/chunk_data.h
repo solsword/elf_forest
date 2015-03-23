@@ -15,8 +15,6 @@
  * Functions *
  *************/
 
-void compute_exposure(chunk_or_approx *coa);
-
 // Computes and returns the exposure of the given cell, assuming faces adjacent
 // to unavailable neighbors are not exposed.
 block compute_cell_exposure(

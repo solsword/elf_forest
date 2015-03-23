@@ -269,6 +269,31 @@ static inline void draw_durations(int *h) {
   );
   render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 500, *h);
   *h -= 25;
+
+  // Draw disk times:
+  sprintf(
+    TXT,
+    "disk read ms :: %.2f",
+    1000.0 * DISK_READ_TIME.duration
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 500, *h);
+  *h -= 25;
+
+  sprintf(
+    TXT,
+    "disk miss ms :: %.2f",
+    1000.0 * DISK_MISS_TIME.duration
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 500, *h);
+  *h -= 25;
+
+  sprintf(
+    TXT,
+    "disk write ms :: %.2f",
+    1000.0 * DISK_WRITE_TIME.duration
+  );
+  render_string_shadow(TXT, COOL_BLUE, LEAF_SHADOW, 1, 17, 500, *h);
+  *h -= 25;
 }
 
 static inline void draw_mem(int *h) {

@@ -153,6 +153,7 @@ struct APPROX_DATA_SN(4); typedef struct APPROX_DATA_SN(4) APPROX_DATA_TN(4);
 // Macros and types for the size of a chunk:
 #define CHUNK_BITS 5
 #define CHUNK_SIZE (1 << CHUNK_BITS)
+#define TOTAL_CHUNK_CELLS (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
 #define CH_MASK (CHUNK_SIZE - 1) // Chunk mask
 typedef uint8_t ch_idx_t; // Needs to be big enough to hold CHUNK_BITS bits.
 
@@ -198,7 +199,7 @@ struct chunk_s {
 
   list *cell_entities; // Cell entities.
   // TODO: merge these?
-  cell cells[CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE]; // Cells.
+  cell cells[TOTAL_CHUNK_CELLS]; // Cells.
 };
 
 struct chunk_approximation_s {
@@ -363,7 +364,7 @@ static inline void c_erase_cell_data(chunk *c) {
   memset(
     c->cells,
     0,
-    CHUNK_SIZE*CHUNK_SIZE*CHUNK_SIZE * sizeof(cell)
+    TOTAL_CHUNK_CELLS * sizeof(cell)
   );
 }
 
