@@ -948,89 +948,25 @@ class Map {
 }
 
 void erode(float[] height, float[] next, float[] incoming, float[] outgoing) {
-  int i, j, ii, jj, idx, oidx;
+  int i, j, ii, jj, idx, oidx, obestidx;
   float h;
-  float dx, dy, slope;
-  float ndx, ndy;
-  float hdenom, vdenom;
+  float slope;
   float erosion;
   float diff;
   float[] outputs = new float[9];
   float output_coefficient;
-  float osum;
   for (i = 0; i < IMAGE_WIDTH; ++i) {
     for (j = 0; j < IMAGE_HEIGHT; ++j) {
       idx = i + IMAGE_WIDTH * j;
       h = height[idx];
-      dx = 0;
-      hdenom = 0;
-      dy = 0;
-      vdenom = 0;
 
-      // compute dx
-      if (i > 0) {
-        dx += h - height[idx-1];
-        hdenom += 1;
-      }
-      if (i < IMAGE_WIDTH - 1) {
-        dx += height[idx+1] - h;
-        hdenom += 1;
-      }
-      dx /= hdenom;
-
-      // compute dy
-      if (j > 0) {
-        dy += h - height[idx-IMAGE_WIDTH];
-        vdenom += 1;
-      }
-      if (j < IMAGE_HEIGHT - 1) {
-        dy += height[idx+IMAGE_WIDTH] - h;
-        vdenom += 1;
-      }
-      dy /= vdenom;
-
-      // Normalized dx/dy -> gradient direction:
-      ndx = dx / sqrt(dx*dx + dy*dy);
-      ndy = dy / sqrt(dx*dx + dy*dy);
-
-      // compute overall slope:
-      slope = abs(dx) + abs(dy);
-
-      // compute erosion:
-      erosion = erosion_at(h, slope);
-
-      if (erosion > 0) { // deposit some material
-        diff = erosion * incoming[idx];
-      } else { // erode some material
-        diff = erosion;
-      }
-
-      // Apply erosion: erode/deposit from height and put/take the balance
-      // into/from the sediment stream.
-      next[idx] = height[idx] + diff;
-      incoming[idx] -= -diff;
-
-      // transfer remaining sediment material to outgoing on neighboring cells:
+      // First, iterate over neighbors to find our most-downhill neighbor:
       oidx = 0;
-      osum = 0.0;
-      // First, compute dot products w/ gradient direction to determine
-      // division of output:
+      obestidx = 0;
+      slope = 0.0;
       for (ii = i - 1; ii <= i + 1; ++ii) {
         for (jj = j - 1; jj <= j + 1; ++jj) {
-          if (ii == i && jj == j) {
-            continue;
-          }
-          oidx = (ii - (i - 1)) + 3*(jj - (j - 1));
-          outputs[oidx] = (ii - i)*dx + (jj - j)*dy;
-          if (outputs[oidx] > 0) {
-            osum += outputs[oidx];
-          }
-        }
-      }
-      // Second: distribute the output:
-      for (ii = i - 1; ii <= i + 1; ++ii) {
-        for (jj = j - 1; jj <= j + 1; ++jj) {
-          if (
+          if ( // Ignore the center & any out-of-bounds:
             (ii == i && jj == j)
           || ii < 0
           || ii > IMAGE_WIDTH - 1
@@ -1039,13 +975,39 @@ void erode(float[] height, float[] next, float[] incoming, float[] outgoing) {
           ) {
             continue;
           }
-          oidx = (ii - (i - 1)) + 3*(jj - (j - 1));
-          if (outputs[oidx] > 0) {
-            outgoing[ii + IMAGE_WIDTH*jj] += (
-              incoming[idx] * (outputs[oidx] / osum)
-            );
+          oidx = ii + IMAGE_WIDTH * jj;
+          if (h - height[oidx] > slope) {
+            obestidx = oidx;
+            slope = h - height[oidx];
           }
         }
+      }
+
+      if (slope == 0.0) { // no neighbors below our height
+        // All of the incoming sediment stops here:
+        //next[idx] = height[idx] + incoming[idx];
+        // TODO: This triggers too often?
+        next[idx] = 10000.0;
+        incoming[idx] = 0;
+
+        // This tile doesn't produce any outgoing material
+      } else {
+        // compute erosion:
+        erosion = erosion_at(h, slope);
+
+        if (erosion > 0) { // deposit some material
+          diff = erosion * incoming[idx];
+        } else { // erode some material
+          diff = erosion;
+        }
+
+        // Apply erosion: erode/deposit from height and put/take the balance
+        // into/from the sediment stream.
+        next[idx] = height[idx] + diff;
+        incoming[idx] -= -diff;
+
+        // Let non-deposited material flow to our lowest neighbor:
+        outgoing[obestidx] = incoming[idx];
       }
     }
   }
