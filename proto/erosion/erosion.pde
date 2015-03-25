@@ -10,6 +10,8 @@ Perlin pnl = new Perlin(this);
 Map THE_MAP;
 
 PImage THE_IMAGE;
+PImage PRECIP_IMAGE;
+PImage FLOW_IMAGE;
 PImage ERODED;
 PImage EROSION_MAP;
 
@@ -17,6 +19,7 @@ float[] HEIGHT;
 float[] NEXT_HEIGHT;
 float[] PRECIPITATION;
 float[] FLOW;
+float[] NEXT_FLOW;
 float[] EROSION;
 float[] INCOMMING;
 float[] OUTGOING;
@@ -75,12 +78,11 @@ float MAX_SEAM_WIDTH = GRID_RESOLUTION * 12.1;
 int DEFAULT_UNTANGLE_STEPS = 5;
 int DEFAULT_SETTLE_STEPS = 20;
 
-float VERTICAL_ASPECT = 1.0;
-
 int EROSION_STEPS = 1;
+int FLOW_STEPS = 2;
 float EROSION_RATE = 0.2; // In absolute height units
 float DEPOSITION_RATE = 0.03; // In % of available sediment
-float EROSION_MAX_SLOPE = 1.0 / 2.0;
+float EROSION_MAX_SLOPE = 1.0 / 5.0;
 float EROSION_INFLECTION_POINT = 1.0 / 12.0;
 float OCEAN_SEDIMENTATION_RATE = 0.07; // % of available sediment
 
@@ -143,7 +145,7 @@ color colormap(float h, String colormode) {
   }
 }
 
-float erosion_at(float h, float slope) {
+float erosion_at(float h, float slope, float flow) {
   // Positive means deposit that % of sediment, negative means erode that much
   // height (in absolute terms).
   float result;
@@ -158,6 +160,8 @@ float erosion_at(float h, float slope) {
         (EROSION_MAX_SLOPE - EROSION_INFLECTION_POINT)
       );
       result = pow(result, 1.4);
+      /*
+      // DEBUG:
       println("Erode!");
       println("slope: " + slope);
       println(
@@ -170,11 +174,12 @@ float erosion_at(float h, float slope) {
       );
       println("pow: " + result);
       println("final: " + (-EROSION_RATE * result));
-      return -EROSION_RATE * result;
+      */
+      return -EROSION_RATE * result * (1 + flow);
     } else {
       result = 1.0 - (slope / EROSION_INFLECTION_POINT);
       result = pow(result, 1.4);
-      return DEPOSITION_RATE * result;
+      return DEPOSITION_RATE * result * (2 - flow);
     }
   } else {
     return OCEAN_SEDIMENTATION_RATE;
@@ -919,7 +924,13 @@ class Map {
     }
   }
 
-  void render(PImage fb, float[] heights, String colormode, float seed) {
+  void render(
+    PImage fb,
+    float[] heights,
+    float[] precipitation,
+    String colormode,
+    float seed
+  ) {
     float min_x, max_x, min_y, max_y, min_z, max_z;
     min_x = this.min_x();
     max_x = this.max_x();
@@ -958,6 +969,11 @@ class Map {
         th = (this.get_height(p) - min_z) / d;
         fb.set(i, j, colormap((th + bh) / 2.0, colormode));
         heights[i + j * IMAGE_WIDTH] = (th + bh) / 2.0;
+        precipitation[i + j * IMAGE_WIDTH] = (
+          0.25
+        + 0.15 * pnoise(i * 0.05, j * 0.05)
+        + 0.6 * pow(th + bh, 0.4)
+        );
       }
     }
   }
@@ -980,22 +996,46 @@ class Map {
   }
 }
 
-void map_flows(float[] height, float[] precipitation, float[] flow) {
-  // TODO: HERE!!
+void reset_array(float[] array) {
+  int i, j, idx;
+  for (i = 0; i < IMAGE_WIDTH; ++i) {
+    for (j = 0; j < IMAGE_HEIGHT; ++j) {
+      idx = i + IMAGE_WIDTH * j;
+      array[idx] = 0;
+    }
+  }
 }
 
-void erode(
+void normalize_array(float[] array) {
+  int i, j, idx;
+  float max = array[0], min = array[0];
+  for (i = 0; i < IMAGE_WIDTH; ++i) {
+    for (j = 0; j < IMAGE_HEIGHT; ++j) {
+      idx = i + IMAGE_WIDTH * j;
+      if (array[idx] > max) { max = array[idx]; }
+      if (array[idx] < min) { min = array[idx]; }
+    }
+  }
+  for (i = 0; i < IMAGE_WIDTH; ++i) {
+    for (j = 0; j < IMAGE_HEIGHT; ++j) {
+      idx = i + IMAGE_WIDTH * j;
+      array[idx] = (array[idx] - min) / (max - min);
+    }
+  }
+}
+
+void map_flows(
   float[] height,
-  float[] next,
   float[] precipitation,
   float[] flow,
-  float[] erosion,
-  float[] incoming,
-  float[] outgoing
+  float[] next_flow
 ) {
-  int i, j, ii, jj, idx, oidx, obestidx;
+  int i, j, ii, jj, idx, oidx;
+  int[] obest = new int[3];
+  float[] bslopes = new float[3];
   float h;
   float slope;
+  float stotal;
   float diff;
   float[] outputs = new float[9];
   float output_coefficient;
@@ -1004,10 +1044,16 @@ void erode(
       idx = i + IMAGE_WIDTH * j;
       h = height[idx];
 
-      // First, iterate over neighbors to find our most-downhill neighbor:
+      // First, iterate over neighbors to find our 3 most-downhill neighbors:
       oidx = 0;
-      obestidx = 0;
-      slope = 0.0;
+      obest[0] = -1;
+      obest[1] = -1;
+      obest[2] = -1;
+      bslopes[0] = 0;
+      bslopes[1] = 0;
+      bslopes[2] = 0;
+      slope = 0;
+      stotal = 0;
       for (ii = i - 1; ii <= i + 1; ++ii) {
         for (jj = j - 1; jj <= j + 1; ++jj) {
           if ( // Ignore the center & any out-of-bounds:
@@ -1020,23 +1066,141 @@ void erode(
             continue;
           }
           oidx = ii + IMAGE_WIDTH * jj;
-          if (h - height[oidx] > slope) {
-            obestidx = oidx;
-            slope = h - height[oidx];
+          slope = h - height[oidx];
+          if (slope > bslopes[0]) {
+            obest[2] = obest[1];
+            bslopes[2] = bslopes[1];
+            obest[1] = obest[0];
+            bslopes[1] = bslopes[0];
+            obest[0] = oidx;
+            bslopes[0] = slope;
+          } else if (slope > bslopes[1]) {
+            obest[2] = obest[1];
+            bslopes[2] = bslopes[1];
+            obest[1] = oidx;
+            bslopes[1] = slope;
+          } else if (slope > bslopes[2]) {
+            obest[2] = oidx;
+            bslopes[2] = slope;
           }
         }
       }
 
-      if (slope == 0.0) { // no neighbors below our height
+      // Compute sum of best slopes:
+      for (ii = 0; ii < 3; ++ii) {
+        stotal += bslopes[ii];
+      }
+
+      if (stotal == 0) {
+        // We're a local minimum: flow will stop here
+        next_flow[idx] = -1;
+      } else {
+        // Precipitation falls here:
+        next_flow[idx] += precipitation[idx];
+        // Local flow flows onwards to three most-downhill neighbors
+        // proportionally to the slope to each of them:
+        for (ii = 0; ii < 3; ++ii) {
+          if (bslopes[ii] == 0) {
+            continue;
+          }
+          if (next_flow[obest[ii]] >= 0) {
+            next_flow[obest[ii]] += flow[idx] * (bslopes[ii] / stotal);
+          }
+        }
+      }
+    }
+  }
+  // Flip buffers:
+  for (i = 0; i < IMAGE_WIDTH; ++i) {
+    for (j = 0; j < IMAGE_HEIGHT; ++j) {
+      idx = i + IMAGE_WIDTH * j;
+      if (next_flow[idx] >= 0) {
+        flow[idx] = next_flow[idx];
+      } else {
+        flow[idx] = 0;
+      }
+      next_flow[idx] = 0;
+    }
+  }
+}
+
+void erode(
+  float[] height,
+  float[] next,
+  float[] flow,
+  float[] erosion,
+  float[] incoming,
+  float[] outgoing
+) {
+  int i, j, ii, jj, idx, oidx;
+  int[] obest = new int[3];
+  float[] bslopes = new float[3];
+  float h;
+  float slope, stotal;
+  float diff;
+  float[] outputs = new float[9];
+  float output_coefficient;
+  for (i = 0; i < IMAGE_WIDTH; ++i) {
+    for (j = 0; j < IMAGE_HEIGHT; ++j) {
+      idx = i + IMAGE_WIDTH * j;
+      h = height[idx];
+
+      // First, iterate over neighbors to find our 3 most-downhill neighbors:
+      oidx = 0;
+      obest[0] = -1;
+      obest[1] = -1;
+      obest[2] = -1;
+      bslopes[0] = 0;
+      bslopes[1] = 0;
+      bslopes[2] = 0;
+      slope = 0;
+      stotal = 0;
+      for (ii = i - 1; ii <= i + 1; ++ii) {
+        for (jj = j - 1; jj <= j + 1; ++jj) {
+          if ( // Ignore the center & any out-of-bounds:
+            (ii == i && jj == j)
+          || ii < 0
+          || ii > IMAGE_WIDTH - 1
+          || jj < 0
+          || jj > IMAGE_HEIGHT - 1
+          ) {
+            continue;
+          }
+          oidx = ii + IMAGE_WIDTH * jj;
+          slope = h - height[oidx];
+          if (slope > bslopes[0]) {
+            obest[2] = obest[1];
+            bslopes[2] = bslopes[1];
+            obest[1] = obest[0];
+            bslopes[1] = bslopes[0];
+            obest[0] = oidx;
+            bslopes[0] = slope;
+          } else if (slope > bslopes[1]) {
+            obest[2] = obest[1];
+            bslopes[2] = bslopes[1];
+            obest[1] = oidx;
+            bslopes[1] = slope;
+          } else if (slope > bslopes[2]) {
+            obest[2] = oidx;
+            bslopes[2] = slope;
+          }
+        }
+      }
+
+      // Compute sum of best slopes:
+      for (ii = 0; ii < 3; ++ii) {
+        stotal += bslopes[ii];
+      }
+
+      if (stotal == 0) { // no neighbors below our height
         // All of the incoming sediment stops here:
         next[idx] = height[idx] + incoming[idx];
         incoming[idx] = 0;
         erosion[idx] = 1.0;
-
         // This tile doesn't produce any outgoing material
       } else {
         // compute erosion:
-        erosion[idx] = erosion_at(h, slope);
+        erosion[idx] = erosion_at(h, bslopes[0], flow[idx]);
 
         if (erosion[idx] > 0) { // deposit some material
           diff = erosion[idx] * incoming[idx];
@@ -1049,8 +1213,13 @@ void erode(
         next[idx] = height[idx] + diff;
         incoming[idx] -= diff;
 
-        // Let non-deposited material flow to our lowest neighbor:
-        outgoing[obestidx] = incoming[idx];
+        // Let non-deposited material flow to our lowest neighbors:
+        for (ii = 0; ii < 3; ++ii) {
+          if (bslopes[ii] == 0) {
+            continue;
+          }
+          outgoing[obest[ii]] += incoming[idx] * bslopes[ii] / stotal;
+        }
       }
     }
   }
@@ -1107,16 +1276,21 @@ void setup() {
 
   THE_MAP = new Map(MAP_WIDTH, MAP_HEIGHT);
   THE_IMAGE = new PImage(IMAGE_WIDTH, IMAGE_HEIGHT);
+  PRECIP_IMAGE = new PImage(IMAGE_WIDTH, IMAGE_HEIGHT);
+  FLOW_IMAGE = new PImage(IMAGE_WIDTH, IMAGE_HEIGHT);
   ERODED = new PImage(IMAGE_WIDTH, IMAGE_HEIGHT);
   EROSION_MAP = new PImage(IMAGE_WIDTH, IMAGE_HEIGHT);
+
   HEIGHT = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
   NEXT_HEIGHT = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
   PRECIPITATION = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
   FLOW = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
+  NEXT_FLOW = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
   EROSION = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
   INCOMMING = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
   OUTGOING = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
-  // Initialize our erosion arrays to 0:
+
+  // Initialize stuff to 0:
   int i, j, idx;
   for (i = 0; i < IMAGE_WIDTH; ++i) {
     for (j = 0; j < IMAGE_HEIGHT; ++j) {
@@ -1125,9 +1299,11 @@ void setup() {
       NEXT_HEIGHT[idx] = 0;
       INCOMMING[idx] = 0;
       OUTGOING[idx] = 0;
+      FLOW[idx] = 0;
+      PRECIPITATION[idx] = 0;
+      NEXT_FLOW[idx] = 0;
     }
   }
-  THE_MAP.render(THE_IMAGE, HEIGHT, "grayscale", 34654.4);
   noLoop();
   redraw();
 }
@@ -1138,7 +1314,18 @@ void draw() {
   background(0.6, 0.8, 0.25);
   stroke(0.0, 0.0, 1.0);
   noFill();
-  if (MODE == "map") {
+  if (MODE == "grid") {
+    // Center the map:
+    smooth();
+    pushMatrix();
+    THE_MAP.update_center();
+    translate(-THE_MAP.center.x*SCALE, -THE_MAP.center.y*SCALE);
+    translate(WINDOW_WIDTH/2.0, WINDOW_HEIGHT/2.0);
+    scale(SCALE);
+    // And draw it:
+    THE_MAP.render_wireframe();
+    popMatrix();
+  } else if (MODE == "map") {
     // Draw the rendered map:
     noSmooth();
     pushMatrix();
@@ -1146,8 +1333,26 @@ void draw() {
       WINDOW_WIDTH / (float) THE_IMAGE.width,
       WINDOW_HEIGHT / (float) THE_IMAGE.height
     );
-    THE_MAP.render(THE_IMAGE, HEIGHT, COLOR_MODE, 34654.4);
     image(THE_IMAGE, 0, 0);
+    popMatrix();
+  } else if (MODE == "precipitation") {
+    noSmooth();
+    pushMatrix();
+    scale(
+      WINDOW_WIDTH / (float) PRECIP_IMAGE.width,
+      WINDOW_HEIGHT / (float) PRECIP_IMAGE.height
+    );
+    draw_image(PRECIPITATION, PRECIP_IMAGE, "grayscale", false);
+    image(PRECIP_IMAGE, 0, 0);
+    popMatrix();
+  } else if (MODE == "flow") {
+    noSmooth();
+    pushMatrix();
+    scale(
+      WINDOW_WIDTH / (float) FLOW_IMAGE.width,
+      WINDOW_HEIGHT / (float) FLOW_IMAGE.height
+    );
+    image(FLOW_IMAGE, 0, 0);
     popMatrix();
   } else if (MODE == "erosion") {
     // Draw the erosion map:
@@ -1169,23 +1374,12 @@ void draw() {
     );
     image(ERODED, 0, 0);
     popMatrix();
-  } else if (MODE == "grid") {
-    // Center the map:
-    smooth();
-    pushMatrix();
-    THE_MAP.update_center();
-    translate(-THE_MAP.center.x*SCALE, -THE_MAP.center.y*SCALE);
-    translate(WINDOW_WIDTH/2.0, WINDOW_HEIGHT/2.0);
-    scale(SCALE);
-    // And draw it:
-    THE_MAP.render_wireframe();
-    popMatrix();
   }
 }
 
 void keyPressed() {
   Point a, b;
-  int i;
+  int i, j, idx;
   boolean push = false;
   if (key == 'q') {
     exit();
@@ -1203,10 +1397,20 @@ void keyPressed() {
     println("eroding...");
     for (i = 0; i < EROSION_STEPS; ++i) {
       print("\r  ...step " + (i+1) + "/" + EROSION_STEPS + "...");
+      reset_array(FLOW);
+      reset_array(NEXT_FLOW);
+      for (j = 0; j < FLOW_STEPS; ++j) {
+        map_flows(
+          HEIGHT,
+          PRECIPITATION,
+          FLOW,
+          NEXT_FLOW
+        );
+      }
+      normalize_array(FLOW);
       erode(
         HEIGHT,
         NEXT_HEIGHT,
-        PRECIPITATION,
         FLOW,
         EROSION,
         INCOMMING,
@@ -1214,8 +1418,22 @@ void keyPressed() {
       );
     }
     println();
+    draw_image(FLOW, FLOW_IMAGE, "grayscale", true);
     draw_image(HEIGHT, ERODED, COLOR_MODE, true);
     draw_image(EROSION, EROSION_MAP, "erosion", false);
+  } else if (key == 'f') {
+    println("mapping flows...");
+    for (i = 0; i < FLOW_STEPS; ++i) {
+      print("\r  ...step " + (i+1) + "/" + FLOW_STEPS + "...");
+      map_flows(
+        HEIGHT,
+        PRECIPITATION,
+        FLOW,
+        NEXT_FLOW
+      );
+    }
+    println();
+    draw_image(FLOW, FLOW_IMAGE, "grayscale", true);
   } else if (key == 'g') {
     THE_MAP = new Map(MAP_WIDTH, MAP_HEIGHT);
     THE_MAP.continents(0.3, NS_LARGE, random(15000));
@@ -1347,6 +1565,19 @@ void keyPressed() {
   } else if (key == 'U') {
     THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, true);
   } else if (key == 'R') {
+    // Reset stuff to 0:
+    for (i = 0; i < IMAGE_WIDTH; ++i) {
+      for (j = 0; j < IMAGE_HEIGHT; ++j) {
+        idx = i + IMAGE_WIDTH * j;
+        HEIGHT[idx] = 0;
+        NEXT_HEIGHT[idx] = 0;
+        INCOMMING[idx] = 0;
+        OUTGOING[idx] = 0;
+        FLOW[idx] = 0;
+        PRECIPITATION[idx] = 0;
+        NEXT_FLOW[idx] = 0;
+      }
+    }
     THE_MAP = new Map(MAP_WIDTH, MAP_HEIGHT);
     SCALE = DEFAULT_SCALE;
   } else if (key == 'r') {
@@ -1395,21 +1626,25 @@ void keyPressed() {
       false
     );
   } else if (key == 'm') {
-    if (MODE == "grid") {
-      MODE = "map";
-    } else if (MODE == "map") {
-      MODE = "eroded";
-    } else if (MODE == "eroded") {
-      MODE = "erosion";
-    } else {
-      MODE = "grid";
-    }
+    THE_MAP.render(THE_IMAGE, HEIGHT, PRECIPITATION, COLOR_MODE, 34654.4);
   } else if (key == 'y') {
     if (COLOR_MODE == "grayscale") {
       COLOR_MODE = "false";
     } else {
       COLOR_MODE = "grayscale";
     }
+  } else if (key == '1') {
+    MODE = "grid";
+  } else if (key == '2') {
+    MODE = "map";
+  } else if (key == '3') {
+    MODE = "precipitation";
+  } else if (key == '4') {
+    MODE = "flow";
+  } else if (key == '5') {
+    MODE = "erosion";
+  } else if (key == '6') {
+    MODE = "eroded";
   }
   redraw();
 }
