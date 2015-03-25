@@ -11,6 +11,8 @@
 #include "util.h"
 
 #include "geology.h"
+// DEBUG:
+#include "worldgen.h"
 
 #include "terrain.h"
 
@@ -600,7 +602,7 @@ void terrain_cell(
   float strbest, strsecond; // their respective strengths
 
   // DEBUG: (to show the strata)
-  /*
+  //*
   if (
     (
       abs(

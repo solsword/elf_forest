@@ -71,6 +71,7 @@ void init_block(ps_block* block) {
 }
 
 string* block_filename(ps_block_pos* pos) {
+  // TODO: Wraparound at the edge of the world!!!
   string* result;
   string* s = s_sprintf("b%u-%u-%u.efb", pos->x, pos->y, pos->z);
   result = s_concat(PS_BLOCK_DIR_PREFIX, s);
