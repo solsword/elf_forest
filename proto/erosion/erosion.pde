@@ -1,5 +1,8 @@
 // vim: syn=java
 
+import javax.media.opengl.*;
+import processing.opengl.*;
+
 import perlin.*;
 
 Perlin pnl = new Perlin(this);
@@ -8,14 +11,18 @@ Map THE_MAP;
 
 PImage THE_IMAGE;
 PImage ERODED;
+PImage EROSION_MAP;
 
 float[] HEIGHT;
 float[] NEXT_HEIGHT;
+float[] PRECIPITATION;
+float[] FLOW;
+float[] EROSION;
 float[] INCOMMING;
 float[] OUTGOING;
 
 String MODE = "grid";
-boolean USE_GREYSCALE = true;
+String COLOR_MODE = "grayscale";
 
 int WINDOW_WIDTH = 800;
 int WINDOW_HEIGHT = 600;
@@ -70,10 +77,11 @@ int DEFAULT_SETTLE_STEPS = 20;
 
 float VERTICAL_ASPECT = 1.0;
 
-int EROSION_STEPS = 10;
-float EROSION_RATE = 0.02; // In absolute height units
+int EROSION_STEPS = 1;
+float EROSION_RATE = 0.2; // In absolute height units
 float DEPOSITION_RATE = 0.03; // In % of available sediment
-float EROSION_INFLECTION_POINT = 1.0 / 12.0; // in terms of slope
+float EROSION_MAX_SLOPE = 1.0 / 2.0;
+float EROSION_INFLECTION_POINT = 1.0 / 12.0;
 float OCEAN_SEDIMENTATION_RATE = 0.07; // % of available sediment
 
 float pnoise(float x, float y) {
@@ -108,10 +116,18 @@ float sigmoid(float x) {
 }
 
 
-color colormap(float h, boolean grey) {
-  if (grey) {
+color colormap(float h, String colormode) {
+  if (colormode == "grayscale") {
     return color(0, 0, h);
-  } else {
+  } else if (colormode == "erosion") {
+    if (h < 0) {
+      return color(0.0, 1.0, -h);
+    } else if (h > 0) {
+      return color(0.7, 1.0, h);
+    } else {
+      return color(0, 0, 1);
+    }
+  } else if (colormode == "false") {
     if (h < SEA_LEVEL) {
       return color(0.7, 0.45, 0.3 + 0.7 * h);
     } else {
@@ -121,6 +137,9 @@ color colormap(float h, boolean grey) {
         0.6 + 0.3*(h - SEA_LEVEL)
       );
     }
+  } else {
+    println("Unknown color mode '" + colormode + "'.");
+    return 0;
   }
 }
 
@@ -128,15 +147,29 @@ float erosion_at(float h, float slope) {
   // Positive means deposit that % of sediment, negative means erode that much
   // height (in absolute terms).
   float result;
-  if (slope > 2.0) {
-    slope = 2.0;
+  if (slope > EROSION_MAX_SLOPE) {
+    slope = EROSION_MAX_SLOPE;
   }
   if (h > SEA_LEVEL) {
     if (slope > EROSION_INFLECTION_POINT) {
       result = (
-        (slope - EROSION_INFLECTION_POINT) / (2.0 - EROSION_INFLECTION_POINT)
+        (slope - EROSION_INFLECTION_POINT)
+      /
+        (EROSION_MAX_SLOPE - EROSION_INFLECTION_POINT)
       );
-      result = pow(result, 1.6);
+      result = pow(result, 1.4);
+      println("Erode!");
+      println("slope: " + slope);
+      println(
+        "norm: " +
+        (
+          (slope - EROSION_INFLECTION_POINT)
+        /
+          (EROSION_MAX_SLOPE - EROSION_INFLECTION_POINT)
+        )
+      );
+      println("pow: " + result);
+      println("final: " + (-EROSION_RATE * result));
       return -EROSION_RATE * result;
     } else {
       result = 1.0 - (slope / EROSION_INFLECTION_POINT);
@@ -886,7 +919,7 @@ class Map {
     }
   }
 
-  void render(PImage fb, float[] heights, boolean grey, float seed) {
+  void render(PImage fb, float[] heights, String colormode, float seed) {
     float min_x, max_x, min_y, max_y, min_z, max_z;
     min_x = this.min_x();
     max_x = this.max_x();
@@ -923,7 +956,7 @@ class Map {
         fy = min_y + h*dfy;
         p = new Point(fx, fy, 0);
         th = (this.get_height(p) - min_z) / d;
-        fb.set(i, j, colormap((th + bh) / 2.0, grey));
+        fb.set(i, j, colormap((th + bh) / 2.0, colormode));
         heights[i + j * IMAGE_WIDTH] = (th + bh) / 2.0;
       }
     }
@@ -947,11 +980,22 @@ class Map {
   }
 }
 
-void erode(float[] height, float[] next, float[] incoming, float[] outgoing) {
+void map_flows(float[] height, float[] precipitation, float[] flow) {
+  // TODO: HERE!!
+}
+
+void erode(
+  float[] height,
+  float[] next,
+  float[] precipitation,
+  float[] flow,
+  float[] erosion,
+  float[] incoming,
+  float[] outgoing
+) {
   int i, j, ii, jj, idx, oidx, obestidx;
   float h;
   float slope;
-  float erosion;
   float diff;
   float[] outputs = new float[9];
   float output_coefficient;
@@ -985,26 +1029,25 @@ void erode(float[] height, float[] next, float[] incoming, float[] outgoing) {
 
       if (slope == 0.0) { // no neighbors below our height
         // All of the incoming sediment stops here:
-        //next[idx] = height[idx] + incoming[idx];
-        // TODO: This triggers too often?
-        next[idx] = 10000.0;
+        next[idx] = height[idx] + incoming[idx];
         incoming[idx] = 0;
+        erosion[idx] = 1.0;
 
         // This tile doesn't produce any outgoing material
       } else {
         // compute erosion:
-        erosion = erosion_at(h, slope);
+        erosion[idx] = erosion_at(h, slope);
 
-        if (erosion > 0) { // deposit some material
-          diff = erosion * incoming[idx];
+        if (erosion[idx] > 0) { // deposit some material
+          diff = erosion[idx] * incoming[idx];
         } else { // erode some material
-          diff = erosion;
+          diff = erosion[idx];
         }
 
         // Apply erosion: erode/deposit from height and put/take the balance
         // into/from the sediment stream.
         next[idx] = height[idx] + diff;
-        incoming[idx] -= -diff;
+        incoming[idx] -= diff;
 
         // Let non-deposited material flow to our lowest neighbor:
         outgoing[obestidx] = incoming[idx];
@@ -1022,27 +1065,33 @@ void erode(float[] height, float[] next, float[] incoming, float[] outgoing) {
   }
 }
 
-void draw_image(float[] heights, PImage pixels, boolean grey) {
+void draw_image(float[] heights, PImage pixels, String cmode, boolean norm) {
   int i, j, idx;
   float min = heights[0], max = heights[0];
-  for (i = 0; i < IMAGE_WIDTH; ++i) {
-    for (j = 0; j < IMAGE_HEIGHT; ++j) {
-      idx = i + IMAGE_WIDTH * j;
-      if (heights[idx] < min) {
-        min = heights[idx];
-      }
-      if (heights[idx] > max) {
-        max = heights[idx];
+  if (norm) {
+    for (i = 0; i < IMAGE_WIDTH; ++i) {
+      for (j = 0; j < IMAGE_HEIGHT; ++j) {
+        idx = i + IMAGE_WIDTH * j;
+        if (heights[idx] < min) {
+          min = heights[idx];
+        }
+        if (heights[idx] > max) {
+          max = heights[idx];
+        }
       }
     }
   }
   for (i = 0; i < IMAGE_WIDTH; ++i) {
     for (j = 0; j < IMAGE_HEIGHT; ++j) {
       idx = i + IMAGE_WIDTH * j;
-      pixels.pixels[idx] = colormap(
-        (heights[idx] - min) / (max - min),
-        grey
-      );
+      if (norm) {
+        pixels.pixels[idx] = colormap(
+          (heights[idx] - min) / (max - min),
+          cmode
+        );
+      } else {
+        pixels.pixels[idx] = colormap(heights[idx], cmode);
+      }
     }
   }
   pixels.updatePixels();
@@ -1052,13 +1101,19 @@ void setup() {
   randomSeed(17);
   noiseSeed(17);
   // TODO: some way of seeding the Perlin library?
+
   colorMode(HSB, 1.0, 1.0, 1.0);
   size(WINDOW_WIDTH, WINDOW_HEIGHT);
+
   THE_MAP = new Map(MAP_WIDTH, MAP_HEIGHT);
   THE_IMAGE = new PImage(IMAGE_WIDTH, IMAGE_HEIGHT);
   ERODED = new PImage(IMAGE_WIDTH, IMAGE_HEIGHT);
+  EROSION_MAP = new PImage(IMAGE_WIDTH, IMAGE_HEIGHT);
   HEIGHT = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
   NEXT_HEIGHT = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
+  PRECIPITATION = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
+  FLOW = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
+  EROSION = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
   INCOMMING = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
   OUTGOING = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
   // Initialize our erosion arrays to 0:
@@ -1072,7 +1127,7 @@ void setup() {
       OUTGOING[idx] = 0;
     }
   }
-  THE_MAP.render(THE_IMAGE, HEIGHT, true, 34654.4);
+  THE_MAP.render(THE_IMAGE, HEIGHT, "grayscale", 34654.4);
   noLoop();
   redraw();
 }
@@ -1085,16 +1140,28 @@ void draw() {
   noFill();
   if (MODE == "map") {
     // Draw the rendered map:
+    noSmooth();
     pushMatrix();
     scale(
       WINDOW_WIDTH / (float) THE_IMAGE.width,
       WINDOW_HEIGHT / (float) THE_IMAGE.height
     );
-    THE_MAP.render(THE_IMAGE, HEIGHT, USE_GREYSCALE, 34654.4);
+    THE_MAP.render(THE_IMAGE, HEIGHT, COLOR_MODE, 34654.4);
     image(THE_IMAGE, 0, 0);
+    popMatrix();
+  } else if (MODE == "erosion") {
+    // Draw the erosion map:
+    noSmooth();
+    pushMatrix();
+    scale(
+      WINDOW_WIDTH / (float) EROSION_MAP.width,
+      WINDOW_HEIGHT / (float) EROSION_MAP.height
+    );
+    image(EROSION_MAP, 0, 0);
     popMatrix();
   } else if (MODE == "eroded") {
     // Draw the eroded map:
+    noSmooth();
     pushMatrix();
     scale(
       WINDOW_WIDTH / (float) ERODED.width,
@@ -1104,6 +1171,7 @@ void draw() {
     popMatrix();
   } else if (MODE == "grid") {
     // Center the map:
+    smooth();
     pushMatrix();
     THE_MAP.update_center();
     translate(-THE_MAP.center.x*SCALE, -THE_MAP.center.y*SCALE);
@@ -1134,11 +1202,20 @@ void keyPressed() {
   } else if (key == 'e') {
     println("eroding...");
     for (i = 0; i < EROSION_STEPS; ++i) {
-      print("\r  ...step " + i + "/" + EROSION_STEPS + "...");
-      erode(HEIGHT, NEXT_HEIGHT, INCOMMING, OUTGOING);
+      print("\r  ...step " + (i+1) + "/" + EROSION_STEPS + "...");
+      erode(
+        HEIGHT,
+        NEXT_HEIGHT,
+        PRECIPITATION,
+        FLOW,
+        EROSION,
+        INCOMMING,
+        OUTGOING
+      );
     }
     println();
-    draw_image(HEIGHT, ERODED, USE_GREYSCALE);
+    draw_image(HEIGHT, ERODED, COLOR_MODE, true);
+    draw_image(EROSION, EROSION_MAP, "erosion", false);
   } else if (key == 'g') {
     THE_MAP = new Map(MAP_WIDTH, MAP_HEIGHT);
     THE_MAP.continents(0.3, NS_LARGE, random(15000));
@@ -1322,11 +1399,17 @@ void keyPressed() {
       MODE = "map";
     } else if (MODE == "map") {
       MODE = "eroded";
+    } else if (MODE == "eroded") {
+      MODE = "erosion";
     } else {
       MODE = "grid";
     }
   } else if (key == 'y') {
-    USE_GREYSCALE = !USE_GREYSCALE;
+    if (COLOR_MODE == "grayscale") {
+      COLOR_MODE = "false";
+    } else {
+      COLOR_MODE = "grayscale";
+    }
   }
   redraw();
 }
