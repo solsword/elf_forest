@@ -24,10 +24,11 @@ int MAP_HEIGHT = 80;
 int IMAGE_WIDTH = 120;
 int IMAGE_HEIGHT = 80;
 
-int PARTICLES = 5000;
-int SLIP = 0;
+int BASE_PARTICLES = 100;
+int EXTRA_PARTICLES = 20;
+int SLIP = 2; // TODO: Why does this fail at 5?
 
-int MAX_WANDER_STEPS = 2000;
+int MAX_WANDER_STEPS = 5000;
 
 float pnoise(float x, float y) {
   float[] xy = new float[2];
@@ -249,19 +250,19 @@ void run_particle(int[] array, int slip) {
     idx = px + py*MAP_WIDTH;
     if (px > 0 && array[idx - 1] > 0) {
       slip -= 1;
-      if (slip == 0) { break; }
+      if (slip <= 0) { break; }
     }
     if (px < MAP_WIDTH - 1 && array[idx + 1] > 0) {
       slip -= 1;
-      if (slip == 0) { break; }
+      if (slip <= 0) { break; }
     }
     if (py > 0 && array[idx - MAP_WIDTH] > 0) {
       slip -= 1;
-      if (slip == 0) { break; }
+      if (slip <= 0) { break; }
     }
     if (py < MAP_HEIGHT - 1 && array[idx + MAP_WIDTH] > 0) {
       slip -= 1;
-      if (slip == 0) { break; }
+      if (slip <= 0) { break; }
     }
     nx = px;
     ny = py;
@@ -310,9 +311,9 @@ void setup() {
   MATRIX = new int[MAP_WIDTH*MAP_HEIGHT];
   reset_array(MATRIX);
 
-  println("Running " + PARTICLES + " particles...");
-  for (i = 0; i < PARTICLES; ++i) {
-    print("\r  ..." + i + "/" + PARTICLES + "...");
+  println("Running " + BASE_PARTICLES + " particles...");
+  for (i = 0; i < BASE_PARTICLES; ++i) {
+    print("\r  ..." + i + "/" + BASE_PARTICLES + "...");
     run_particle(MATRIX, SLIP);
   }
 
@@ -343,8 +344,17 @@ void draw() {
 }
 
 void keyPressed() {
+  int i;
   if (key == 'q') {
     exit();
+  } else if (key == 'r') {
+    reset_array(MATRIX);
+  } else if (key == 'p') {
+    run_particle(MATRIX, SLIP);
+  } else if (key == 'P') {
+    for (i = 0; i < EXTRA_PARTICLES; ++i) {
+      run_particle(MATRIX, SLIP);
+    }
   }
   redraw();
 }
