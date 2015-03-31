@@ -1,8 +1,5 @@
 // vim: syn=java
 
-import javax.media.opengl.*;
-import processing.opengl.*;
-
 import perlin.*;
 
 Perlin pnl = new Perlin(this);
@@ -80,7 +77,7 @@ int DEFAULT_SETTLE_STEPS = 20;
 
 int EROSION_STEPS = 1;
 int FLOW_STEPS = 2;
-float EROSION_RATE = 0.2; // In absolute height units
+float EROSION_RATE = 0.02; // In absolute height units
 float DEPOSITION_RATE = 0.03; // In % of available sediment
 float EROSION_MAX_SLOPE = 1.0 / 5.0;
 float EROSION_INFLECTION_POINT = 1.0 / 12.0;
@@ -967,12 +964,15 @@ class Map {
         fy = min_y + h*dfy;
         p = new Point(fx, fy, 0);
         th = (this.get_height(p) - min_z) / d;
-        fb.set(i, j, colormap((th + bh) / 2.0, colormode));
-        heights[i + j * IMAGE_WIDTH] = (th + bh) / 2.0;
+        // fb.set(i, j, colormap((th + bh) / 2.0, colormode));
+        // heights[i + j * IMAGE_WIDTH] = (th + bh) / 2.0;
+        fb.set(i, j, colormap(th, colormode));
+        heights[i + j * IMAGE_WIDTH] = th;
         precipitation[i + j * IMAGE_WIDTH] = (
           0.25
         + 0.15 * pnoise(i * 0.05, j * 0.05)
-        + 0.6 * pow(th + bh, 0.4)
+        // + 0.6 * pow((th + bh) / 2.0, 0.4)
+        + 0.6 * pow(th, 0.4)
         );
       }
     }
