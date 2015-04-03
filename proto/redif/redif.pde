@@ -4,7 +4,8 @@ import perlin.*;
 
 Perlin pnl = new Perlin(this);
 
-int[] MATRIX;
+float[] MATRIX;
+float[] TMP;
 
 int WINDOW_WIDTH = 800;
 int WINDOW_HEIGHT = 600;
@@ -24,9 +25,12 @@ int MAP_HEIGHT = 80;
 int IMAGE_WIDTH = 120;
 int IMAGE_HEIGHT = 80;
 
-int BASE_PARTICLES = 100;
+int BUILD_CYCLES = 80;
+int STEP_PARTICLES = 100;
 int EXTRA_PARTICLES = 20;
 int SLIP = 2; // TODO: Why does this fail at 5?
+float HEIGHT = 1.0;
+float BLUR_BIAS = 8;
 
 int MAX_WANDER_STEPS = 5000;
 
@@ -232,7 +236,7 @@ class LineSegment {
   }
 }
 
-void reset_array(int[] array) {
+void reset_array(float[] array) {
   int i, j, idx;
   for (i = 0; i < MAP_WIDTH; ++i) {
     for (j = 0; j < MAP_HEIGHT; ++j) {
@@ -242,25 +246,61 @@ void reset_array(int[] array) {
   }
 }
 
-void run_particle(int[] array, int slip) {
+void blur_array(float[] array, float[] tmp) {
+  int i, j, idx;
+  float total;
+  float divisor;
+  for (i = 0; i < MAP_WIDTH; ++i) {
+    for (j = 0; j < MAP_HEIGHT; ++j) {
+      idx = i + MAP_WIDTH * j;
+      total  = array[idx] * BLUR_BIAS;
+      divisor = BLUR_BIAS;
+      if (i > 0) {
+        total += array[idx - 1];
+        divisor += 1;
+      }
+      if (i < MAP_WIDTH - 1) {
+        total += array[idx + 1];
+        divisor += 1;
+      }
+      if (j > 0) {
+        total += array[idx - MAP_WIDTH];
+        divisor += 1;
+      }
+      if (j < MAP_HEIGHT - 1) {
+        total += array[idx + MAP_WIDTH];
+        divisor += 1;
+      }
+      tmp[idx] = total / divisor;
+    }
+  }
+  for (i = 0; i < MAP_WIDTH; ++i) {
+    for (j = 0; j < MAP_HEIGHT; ++j) {
+      idx = i + MAP_WIDTH * j;
+      array[idx] = tmp[idx];
+    }
+  }
+}
+
+boolean run_particle(float[] array, float height, float slip) {
   int px = floor(random(0, MAP_WIDTH));
   int py = floor(random(0, MAP_HEIGHT));
   int i, idx, ndir, nx, ny;
   for (i = 0; i < MAX_WANDER_STEPS; ++i) {
     idx = px + py*MAP_WIDTH;
-    if (px > 0 && array[idx - 1] > 0) {
+    if (px > 0 && array[idx - 1] >= height) {
       slip -= 1;
       if (slip <= 0) { break; }
     }
-    if (px < MAP_WIDTH - 1 && array[idx + 1] > 0) {
+    if (px < MAP_WIDTH - 1 && array[idx + 1] >= height) {
       slip -= 1;
       if (slip <= 0) { break; }
     }
-    if (py > 0 && array[idx - MAP_WIDTH] > 0) {
+    if (py > 0 && array[idx - MAP_WIDTH] >= height) {
       slip -= 1;
       if (slip <= 0) { break; }
     }
-    if (py < MAP_HEIGHT - 1 && array[idx + MAP_WIDTH] > 0) {
+    if (py < MAP_HEIGHT - 1 && array[idx + MAP_WIDTH] >= height) {
       slip -= 1;
       if (slip <= 0) { break; }
     }
@@ -287,7 +327,7 @@ void run_particle(int[] array, int slip) {
         continue;
       }
       idx = nx + ny*MAP_WIDTH;
-      if (array[idx] == 0) {
+      if (array[idx] < height) {
         break;
       }
     }
@@ -295,7 +335,25 @@ void run_particle(int[] array, int slip) {
     py = ny;
   }
   idx = px + py*MAP_WIDTH;
-  array[idx] = 1;
+  if (array[idx] < height) {
+    array[idx] = height;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+void build_mountains() {
+  int i, j;
+  float height = HEIGHT;
+  reset_array(MATRIX);
+  for (i = 0; i < BUILD_CYCLES; ++i) {
+    height *= 0.95;
+    for (j = 0; j < STEP_PARTICLES; ++j) {
+      run_particle(MATRIX, height, SLIP);
+    }
+    //blur_array(MATRIX, TMP);
+  }
 }
 
 void setup() {
@@ -308,14 +366,19 @@ void setup() {
   colorMode(HSB, 1.0, 1.0, 1.0);
   size(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-  MATRIX = new int[MAP_WIDTH*MAP_HEIGHT];
+  MATRIX = new float[MAP_WIDTH*MAP_HEIGHT];
+  TMP = new float[MAP_WIDTH*MAP_HEIGHT];
   reset_array(MATRIX);
+  reset_array(TMP);
 
+  /*
   println("Running " + BASE_PARTICLES + " particles...");
   for (i = 0; i < BASE_PARTICLES; ++i) {
     print("\r  ..." + i + "/" + BASE_PARTICLES + "...");
-    run_particle(MATRIX, SLIP);
+    run_particle(MATRIX, HEIGHT, SLIP);
   }
+  */
+  build_mountains();
 
   noLoop();
   redraw();
@@ -333,11 +396,7 @@ void draw() {
   for (i = 0; i < MAP_WIDTH; ++i) {
     for (j = 0; j < MAP_HEIGHT; ++j) {
       idx = i + j * MAP_WIDTH;
-      if (MATRIX[idx] > 0) {
-        fill(0.0, 0.0, 0.0);
-      } else {
-        fill(0.0, 0.0, 1.0);
-      }
+      fill(colormap(MATRIX[idx]));
       rect(i*cw, j*ch, cw, ch);
     }
   }
@@ -350,11 +409,15 @@ void keyPressed() {
   } else if (key == 'r') {
     reset_array(MATRIX);
   } else if (key == 'p') {
-    run_particle(MATRIX, SLIP);
+    run_particle(MATRIX, HEIGHT, SLIP);
   } else if (key == 'P') {
     for (i = 0; i < EXTRA_PARTICLES; ++i) {
-      run_particle(MATRIX, SLIP);
+      run_particle(MATRIX, HEIGHT, SLIP);
     }
+  } else if (key == 'b') {
+    blur_array(MATRIX, TMP);
+  } else if (key == 'm') {
+    build_mountains();
   }
   redraw();
 }
