@@ -6,12 +6,13 @@ Perlin pnl = new Perlin(this);
 
 float[] MATRIX;
 float[] TMP;
+float[] SAVE;
 
-int WINDOW_WIDTH = 800;
+int WINDOW_WIDTH = 900;
 int WINDOW_HEIGHT = 600;
 
-int MAP_WIDTH = 120;
-int MAP_HEIGHT = 80;
+int MAP_WIDTH = 180;
+int MAP_HEIGHT = 120;
 
 //int MAP_WIDTH = 80;
 //int MAP_HEIGHT = 30;
@@ -26,13 +27,20 @@ int IMAGE_WIDTH = 120;
 int IMAGE_HEIGHT = 80;
 
 int BUILD_CYCLES = 80;
-int STEP_PARTICLES = 100;
+int STEP_PARTICLES = 400;
 int EXTRA_PARTICLES = 20;
-int SLIP = 2; // TODO: Why does this fail at 5?
+int SLIP = 3; // TODO: Why does this fail at 4?
 float HEIGHT = 1.0;
 float BLUR_BIAS = 8;
+float MAX_SLOPE = 0.01;
+float EROSION_RATE = 0.2;
+float SLUMP_STEPS = 50;
+float FINAL_SLUMPS = 5;
 
-int MAX_WANDER_STEPS = 5000;
+String COLORMODE = "grayscale";
+float SEA_LEVEL = 0.4;
+
+int MAX_WANDER_STEPS = 30000;
 
 float pnoise(float x, float y) {
   float[] xy = new float[2];
@@ -67,18 +75,9 @@ float sigmoid(float x) {
 
 
 color colormap(float h) {//, String colormode) {
-  return color(0, 0, h);
-  /*
-  if (colormode == "grayscale") {
-  } else if (colormode == "erosion") {
-    if (h < 0) {
-      return color(0.0, 1.0, -h);
-    } else if (h > 0) {
-      return color(0.7, 1.0, h);
-    } else {
-      return color(0, 0, 1);
-    }
-  } else if (colormode == "false") {
+  if (COLORMODE == "grayscale") {
+    return color(0, 0, h);
+  } else if (COLORMODE == "false") {
     if (h < SEA_LEVEL) {
       return color(0.7, 0.45, 0.3 + 0.7 * h);
     } else {
@@ -89,10 +88,9 @@ color colormap(float h) {//, String colormode) {
       );
     }
   } else {
-    println("Unknown color mode '" + colormode + "'.");
+    println("Unknown color mode '" + COLORMODE + "'.");
     return 0;
   }
-  */
 }
 
 class Point {
@@ -246,6 +244,26 @@ void reset_array(float[] array) {
   }
 }
 
+void copy_array(float[] from, float[] to) {
+  int i, j, idx;
+  for (i = 0; i < MAP_WIDTH; ++i) {
+    for (j = 0; j < MAP_HEIGHT; ++j) {
+      idx = i + MAP_WIDTH * j;
+      to[idx] = from[idx];
+    }
+  }
+}
+
+void average_arrays(float[] main, float[] add_in, float main_weight) {
+  int i, j, idx;
+  for (i = 0; i < MAP_WIDTH; ++i) {
+    for (j = 0; j < MAP_HEIGHT; ++j) {
+      idx = i + MAP_WIDTH * j;
+      main[idx] = (main[idx]*main_weight + add_in[idx]) / (1.0 + main_weight);
+    }
+  }
+}
+
 void blur_array(float[] array, float[] tmp) {
   int i, j, idx;
   float total;
@@ -278,6 +296,51 @@ void blur_array(float[] array, float[] tmp) {
     for (j = 0; j < MAP_HEIGHT; ++j) {
       idx = i + MAP_WIDTH * j;
       array[idx] = tmp[idx];
+    }
+  }
+}
+
+void slump_array(float[] array, float[] tmp) {
+  int i, j, idx, lnidx;
+  float ln, midpoint;
+  for (i = 0; i < MAP_WIDTH; ++i) {
+    for (j = 0; j < MAP_HEIGHT; ++j) {
+      idx = i + MAP_WIDTH * j;
+      tmp[idx] = 0;
+    }
+  }
+  for (i = 0; i < MAP_WIDTH; ++i) {
+    for (j = 0; j < MAP_HEIGHT; ++j) {
+      idx = i + MAP_WIDTH * j;
+      ln = array[idx];
+      lnidx = idx;
+      if (i > 0 && array[idx - 1] < ln) {
+        ln = array[idx - 1];
+        lnidx = idx - 1;
+      }
+      if (i < MAP_WIDTH - 1 && array[idx + 1] < ln) {
+        ln = array[idx + 1];
+        lnidx = idx + 1;
+      }
+      if (j > 0 && array[idx - MAP_WIDTH] < ln) {
+        ln = array[idx - MAP_WIDTH];
+        lnidx = idx - MAP_WIDTH;
+      }
+      if (j < MAP_HEIGHT - 1 && array[idx + MAP_WIDTH] < ln) {
+        ln = array[idx + MAP_WIDTH];
+        lnidx = idx + MAP_WIDTH;
+      }
+      if (lnidx != idx && array[idx] - ln > MAX_SLOPE) {
+        midpoint = ln + (array[idx] - ln) / 2.0;
+        tmp[idx] -= array[idx] - (midpoint + MAX_SLOPE/2.0);
+        tmp[lnidx] += (midpoint - MAX_SLOPE/2.0) - ln;
+      }
+    }
+  }
+  for (i = 0; i < MAP_WIDTH; ++i) {
+    for (j = 0; j < MAP_HEIGHT; ++j) {
+      idx = i + MAP_WIDTH * j;
+      array[idx] += tmp[idx] * EROSION_RATE;
     }
   }
 }
@@ -347,12 +410,22 @@ void build_mountains() {
   int i, j;
   float height = HEIGHT;
   reset_array(MATRIX);
+  println("Starting build cycles...");
   for (i = 0; i < BUILD_CYCLES; ++i) {
+    print("\r  ...build cycle " + (i+1) + "/" + BUILD_CYCLES + " completed...");
     height *= 0.95;
     for (j = 0; j < STEP_PARTICLES; ++j) {
       run_particle(MATRIX, height, SLIP);
     }
-    //blur_array(MATRIX, TMP);
+  }
+  println("\n  ...done with build cycles.");
+  copy_array(MATRIX, SAVE);
+  for (j = 0; j < SLUMP_STEPS; ++j) {
+    slump_array(MATRIX, TMP);
+    average_arrays(MATRIX, SAVE, 20.0);
+  }
+  for (j = 0; j < FINAL_SLUMPS; ++j) {
+    slump_array(MATRIX, TMP);
   }
 }
 
@@ -368,8 +441,10 @@ void setup() {
 
   MATRIX = new float[MAP_WIDTH*MAP_HEIGHT];
   TMP = new float[MAP_WIDTH*MAP_HEIGHT];
+  SAVE = new float[MAP_WIDTH*MAP_HEIGHT];
   reset_array(MATRIX);
   reset_array(TMP);
+  reset_array(SAVE);
 
   /*
   println("Running " + BASE_PARTICLES + " particles...");
@@ -416,8 +491,20 @@ void keyPressed() {
     }
   } else if (key == 'b') {
     blur_array(MATRIX, TMP);
+  } else if (key == 's') {
+    slump_array(MATRIX, TMP);
   } else if (key == 'm') {
     build_mountains();
+  } else if (key == 'j') {
+    SEA_LEVEL -= 0.05;
+  } else if (key == 'k') {
+    SEA_LEVEL += 0.05;
+  } else if (key == 'c') {
+    if (COLORMODE == "grayscale") {
+      COLORMODE = "false";
+    } else {
+      COLORMODE = "grayscale";
+    }
   }
   redraw();
 }
