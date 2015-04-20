@@ -143,15 +143,15 @@ void compute_region_contenders(
     // ]
     str *= noise;
     if (str > *strbest) {
-      vcopy(&vsecond, &vbest);
+      vcopy_as(&vsecond, &vbest);
       *strsecond = *strbest;
       *secondbest = *best;
 
-      vcopy(&vbest, &v);
+      vcopy_as(&vbest, &v);
       *strbest = str;
       *best = wr;
     } else if (str > *strsecond) {
-      vcopy(&vsecond, &v);
+      vcopy_as(&vsecond, &v);
       *strsecond = str;
       *secondbest = wr;
     }

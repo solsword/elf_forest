@@ -136,7 +136,7 @@ static inline int is_airborne(entity *e) {
 
 static inline void add_impulse(entity *e, vector *impulse) {
   vscale(impulse, IMPULSE_WIDTH/(PHYS_SUB_DT));
-  vadd(&(e->impulse), impulse);
+  vadd_to(&(e->impulse), impulse);
 }
 
 /*************

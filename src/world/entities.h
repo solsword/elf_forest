@@ -190,11 +190,11 @@ static inline void clear_kinetics(entity *e) {
 }
 
 static inline void get_head_vec(entity *e, vector *result) {
-  vcopy(result, &(e->head_pos));
+  vcopy_as(result, &(e->head_pos));
   //vyaw(result, e->yaw);
   // TODO: 3-d rotating creatures like birds/fish?
   //vpitch(&hp, e->pitch);
-  vadd(result, &(e->pos));
+  vadd_to(result, &(e->pos));
 }
 
 // Note: if this is called on an entity that isn't in any area, it writes

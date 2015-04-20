@@ -252,7 +252,7 @@ void iter_ray(
   // Call the iteration function initially:
   limit = f(data, &here, origin, heading, length);
   while (length < limit) {
-    vcopy(&step, &heading); // copy heading into step (yes it's backwards)
+    vcopy_as(&step, &heading); // copy heading into step (yes it's backwards)
     copy_glpos(&here, &next); // copy here into next
     if (heading.x > 0) {
       xint = (1.0 - origin.x) / heading.x;
@@ -315,7 +315,7 @@ void iter_ray(
 #endif
     }
     // Add our step to our origin & rereference it to the next position:
-    vadd(&origin, &step);
+    vadd_to(&origin, &step);
     reref_vec(&here, &origin, &next);
     // Copy over our next position:
     copy_glpos(&next, &here);

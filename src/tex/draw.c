@@ -42,7 +42,7 @@ void draw_thick_curve_segment(float t, vector *pos, vector *dir, void *args) {
   draw_thick_curve_segment_args *dtcsargs=(draw_thick_curve_segment_args*) args;
   // Compute a vector from the point pos to the edge of the current segment:
   vector toedge;
-  vcopy(&toedge, dir);
+  vcopy_as(&toedge, dir);
   vrotz(&toedge, M_PI_2);
   vnorm(&toedge);
   float width = (*(dtcsargs->width_func))(t, dtcsargs->width_param);
@@ -93,8 +93,8 @@ void draw_line(
   vector line, here;
   float t, length;
   size_t row, col;
-  vcopy(&line, to);
-  vsub(&line, from);
+  vcopy_as(&line, to);
+  vsub_from(&line, from);
   line.z = 0;
   length = vmag(&line);
   for (t = 0; t < 1; t += LINE_DRAWING_RESOLUTION / length) {
@@ -121,8 +121,8 @@ void draw_line_gradient(
   vector line, here;
   float t, length;
   size_t row, col;
-  vcopy(&line, to);
-  vsub(&line, from);
+  vcopy_as(&line, to);
+  vsub_from(&line, from);
   line.z = 0;
   length = vmag(&line);
   for (t = 0; t < 1; t += LINE_DRAWING_RESOLUTION / length) {

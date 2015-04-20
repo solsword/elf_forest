@@ -113,7 +113,7 @@ static inline void compute_hv_angles(
   float * xangle, float * yangle // outputs
 ) {
   vector tmp;
-  vcopy(&tmp, obs);
+  vcopy_as(&tmp, obs);
   // 1: transform the observation vector into eye-space:
   vintermsof(
     &tmp,
@@ -136,8 +136,8 @@ static inline void draw_basis_vectors(
   vector const * const vz
 ) {
   vector where;
-  vcopy(&where, view_origin);
-  vadd(&where, view_vector);
+  vcopy_as(&where, view_origin);
+  vadd_to(&where, view_vector);
 
   use_pipeline(&RAW_PIPELINE);
 
@@ -246,27 +246,27 @@ void render_area(
   //*
   if (VIEW_MODE == VM_FIRST) {
     // Look from head_pos in the direction given by eye_vector:
-    vcopy(&view_origin, head_pos);
-    vcopy(&view_vector, &eye_vector);
+    vcopy_as(&view_origin, head_pos);
+    vcopy_as(&view_vector, &eye_vector);
   } else if (VIEW_MODE == VM_SECOND) {
     // Look at head_pos in the opposite direction from eye_vector from
     // SECOND_PERSON_DISTANCE units away.
     vscale(&eye_vector, SECOND_PERSON_DISTANCE*ZOOM);
 
-    vcopy(&view_origin, head_pos);
-    vadd(&view_origin, &eye_vector);
+    vcopy_as(&view_origin, head_pos);
+    vadd_to(&view_origin, &eye_vector);
 
-    vcopy(&view_vector, &eye_vector);
+    vcopy_as(&view_vector, &eye_vector);
     vscale(&view_vector, -1);
   } else if (VIEW_MODE == VM_THIRD) {
     // Look at head_pos in the direction given by the eye_vector from
     // THIRD_PERSON_DISTANCE units away.
     vscale(&eye_vector, THIRD_PERSON_DISTANCE*ZOOM);
 
-    vcopy(&view_origin, head_pos);
-    vsub(&view_origin, &eye_vector);
+    vcopy_as(&view_origin, head_pos);
+    vsub_from(&view_origin, &eye_vector);
 
-    vcopy(&view_vector, &eye_vector);
+    vcopy_as(&view_vector, &eye_vector);
   }
 
   // Call gluLookAt with the computed view origin and vector:

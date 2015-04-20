@@ -306,8 +306,104 @@ void rustle_sheet(
   }
 }
 
-void settle_sheet(tectonic_sheet *ts, size_t iterations, int hold_edges) {
-  // TODO: HERE
+void settle_sheet(
+  tectonic_sheet *ts,
+  size_t iterations,
+  float dt,
+  float equilibrium_distance,
+  float spring_constant,
+  int hold_edges
+) {
+  size_t iter, i, j;
+  size_t idx, idx_a, idx_b, idx_c;
+  size_t pw, ph;
+  pw = sheet_pwidth(ts);
+  ph = sheet_pheight(ts);
+  vector *a, *b, *c; // the points of the current triangle
+  vector *f; // the force on the current point
+  vector tmp; // vector used for intermediate calculations
+  for (iter = 0; iter < iterations; ++iter) {
+    // First pass: compute forces by iterating over triangles in the sheet:
+    for (i = 0; i < ts->width; ++i) {
+      for (j = 0; j < ts->height; ++j) {
+        idx_a = sheet_pidx_a(ts, i, j);
+        idx_b = sheet_pidx_b(ts, i, j);
+        idx_c = sheet_pidx_c(ts, i, j);
+        a = &(ts->points[idx_a]);
+        b = &(ts->points[idx_b]);
+        c = &(ts->points[idx_c]);
+        if (i % 2 == j % 2) { // if this triangle points up
+          // All six forces on all three corners of this triangle:
+          // a <- b
+          f = &(ts->forces[idx_a]);
+          spring_force(b, a, &tmp, equilibrium_distance, spring_constant);
+          vadd_to(f, &tmp);
+
+          // a <- c
+          spring_force(c, a, &tmp, equilibrium_distance, spring_constant);
+          vadd_to(f, &tmp);
+
+          // b <- a
+          f = &(ts->forces[idx_b]);
+          spring_force(a, b, &tmp, equilibrium_distance, spring_constant);
+          vadd_to(f, &tmp);
+
+          // b <- c
+          spring_force(c, b, &tmp, equilibrium_distance, spring_constant);
+          vadd_to(f, &tmp);
+
+          // c <- a
+          f = &(ts->forces[idx_c]);
+          spring_force(a, c, &tmp, equilibrium_distance, spring_constant);
+          vadd_to(f, &tmp);
+
+          // c <- b
+          spring_force(b, c, &tmp, equilibrium_distance, spring_constant);
+          vadd_to(f, &tmp);
+        } else if (i == 0 && (j % 2 == 1)) {
+          // Both forces on our a <-> b edge:
+          // a <- b
+          f = &(ts->forces[idx_a]);
+          spring_force(b, a, &tmp, equilibrium_distance, spring_constant);
+          vadd_to(f, &tmp);
+
+          // b <- a
+          f = &(ts->forces[idx_b]);
+          spring_force(a, b, &tmp, equilibrium_distance, spring_constant);
+          vadd_to(f, &tmp);
+        } else if ((i == this.width - 1) && (j % 2 == 0) ) {
+          // Both forces on our a <-> c edge:
+          // a <- c
+          f = &(ts->forces[idx_a]);
+          spring_force(c, a, &tmp, equilibrium_distance, spring_constant);
+          vadd_to(f, &tmp);
+
+          // c <- a
+          f = &(ts->forces[idx_c]);
+          spring_force(a, c, &tmp, equilibrium_distance, spring_constant);
+          vadd_to(f, &tmp);
+        }
+      }
+    }
+    // Second pass: apply forces (iterating over points this time)
+    for (i = 0; i < pw; ++i) {
+      for (j = 0; j < ph; ++j) {
+        idx = sheet_pidx(ts, i, j);
+        f = &(ts->forces[idx]);
+        if (
+          hold_edges
+        &&
+          (i == 0 || i == pw - 1 || j == 0 || j == ph - 1)
+        ) {
+          vzero(f);
+          continue;
+        }
+        vscale(f, dt);
+        vadd_to(&(ts->points[idx]), f);
+        vzero(f);
+      }
+    }
+  }
 }
 
 void untangle_sheet(tectonic_sheet *ts, size_t iterations, int hold_edges) {

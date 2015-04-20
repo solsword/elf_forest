@@ -129,7 +129,7 @@ static inline void vnorm(vector *v) {
 
 // Adds the given value vector to the target vector, storing the result in the
 // target vector.
-static inline void vadd(vector * const target, vector const * const value) {
+static inline void vadd_to(vector * const target, vector const * const value) {
   target->x += value->x;
   target->y += value->y;
   target->z += value->z;
@@ -137,7 +137,7 @@ static inline void vadd(vector * const target, vector const * const value) {
 
 // Adds the given value vector scaled by the given scalar to the target vector,
 // storing the result in the target vector.
-static inline void vadd_scaled(
+static inline void vadd_to_scaled(
   vector * const target,
   vector const * const value,
   float scale
@@ -149,14 +149,14 @@ static inline void vadd_scaled(
 
 // Subtracts the given value vector from the target vector, storing the result
 // in the target vector.
-static inline void vsub(vector * const target, vector const * const value) {
+static inline void vsub_from(vector * const target, vector const * const value){
   target->x -= value->x;
   target->y -= value->y;
   target->z -= value->z;
 }
 
 // Copies the given value vector into the given target vector.
-static inline void vcopy(vector * const target, vector const * const value) {
+static inline void vcopy_as(vector * const target, vector const * const value) {
   target->x = value->x;
   target->y = value->y;
   target->z = value->z;
@@ -169,7 +169,7 @@ static inline void vproject(
   vector const * const onto
 ) {
   float projscale = vnormproj(vec, onto);
-  vcopy(vec, onto);
+  vcopy_as(vec, onto);
   vscale(vec, projscale);
 }
 

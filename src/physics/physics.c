@@ -297,7 +297,7 @@ static inline void integrate_control_inputs(entity *e) {
   // Normal control inputs that accumulate every frame:
   vface(&forward, e->yaw, 0);
   vface(&right, e->yaw - M_PI_2, 0);
-  vcopy(&cdir, &(e->control));
+  vcopy_as(&cdir, &(e->control));
   vnorm(&cdir);
   base = e->walk;
   if (in_liquid(e)) {
@@ -310,14 +310,14 @@ static inline void integrate_control_inputs(entity *e) {
   }
   vzero(&v);
   backup = (e->control.y < 0) * BACKUP_COEFFICIENT + (e->control.y >= 0);
-  vadd_scaled(&v, &forward, e->control.y * backup);
-  vadd_scaled(&v, &right, e->control.x * STRAFE_COEFFICIENT);
-  vadd_scaled(&v, &V_UP, e->control.z);
+  vadd_to_scaled(&v, &forward, e->control.y * backup);
+  vadd_to_scaled(&v, &right, e->control.x * STRAFE_COEFFICIENT);
+  vadd_to_scaled(&v, &V_UP, e->control.z);
   if (vmag2(&v) > 1) { vnorm(&v); }
 
   // Event control inputs that happen once in a while:
-  vcopy(&vjump, &V_UP);
-  vcopy(&vleap, &v);
+  vcopy_as(&vjump, &V_UP);
+  vcopy_as(&vleap, &v);
   vleap.z = 0;
   // Jump or flap as appropriate:
   if (do_jump(e)) {
@@ -365,7 +365,7 @@ static inline void update_position_collide_blocks(entity *e) {
   e_min__glpos(e, &min);
   e_max__glpos(e, &max);
   // compute increment
-  vcopy(&increment, &(e->vel));
+  vcopy_as(&increment, &(e->vel));
   vscale(&increment, PHYS_SUB_DT);
   // Make sure we're getting up-to-date cell data from cell_at:
   refresh_cell_at_cache();
@@ -373,7 +373,7 @@ static inline void update_position_collide_blocks(entity *e) {
   // DEBUG:
 #ifdef DEBUG_DETECT_JUMPS
   vector old_pos, new_pos;
-  vcopy(&old_pos, &(e->pos));
+  vcopy_as(&old_pos, &(e->pos));
 #endif
 
   // Update x/y axes according to the magnitude of their increments:
@@ -389,7 +389,7 @@ static inline void update_position_collide_blocks(entity *e) {
 
 #ifdef DEBUG_DETECT_JUMPS
   // If enabled, check for massive position updates:
-  vcopy(&new_pos, &(e->pos));
+  vcopy_as(&new_pos, &(e->pos));
   double dist = sqrt(
     (new_pos.x - old_pos.x) * (new_pos.x - old_pos.x)
   +
@@ -517,7 +517,7 @@ void tick_physics(entity *e) {
   // Resolve entity collisions:
   resolve_entity_collisions(e);
   // Integrate acceleration into velocity:
-  vadd_scaled(&(e->vel), &acceleration, PHYS_SUB_DT);
+  vadd_to_scaled(&(e->vel), &acceleration, PHYS_SUB_DT);
   // Drag:
   if (in_liquid(e)) {
     drag = LIQUID_DRAG;

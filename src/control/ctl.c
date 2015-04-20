@@ -159,7 +159,7 @@ void tick_general_controls(void) {
   if (DOWN[C_TELEPORT]) {
     vface(&teleport_vector, PLAYER->yaw, 0);
     vscale(&teleport_vector, TELEPORT_DISTANCE);
-    vadd(&(PLAYER->pos), &teleport_vector);
+    vadd_to(&(PLAYER->pos), &teleport_vector);
     get_head_glpos(PLAYER, &teleport_destination);
     compute_terrain_height(&teleport_destination, &dontcare, &dontcare, &th);
     PLAYER->pos.z = (
@@ -178,19 +178,19 @@ void tick_motion_controls(void) {
   }
   // Add directional inputs to our control vector:
   if (CONTROLS[C_FORWARD]) {
-    vadd(&(PLAYER->control), &V_NORTH);
+    vadd_to(&(PLAYER->control), &V_NORTH);
   }
   if (CONTROLS[C_REVERSE]) {
-    vadd(&(PLAYER->control), &V_SOUTH);
+    vadd_to(&(PLAYER->control), &V_SOUTH);
   }
   if (CONTROLS[C_LEFT]) {
-    vadd(&(PLAYER->control), &V_WEST);
+    vadd_to(&(PLAYER->control), &V_WEST);
   }
   if (CONTROLS[C_RIGHT]) {
-    vadd(&(PLAYER->control), &V_EAST);
+    vadd_to(&(PLAYER->control), &V_EAST);
   }
   if (CONTROLS[C_DIVE]) {
-    vadd(&(PLAYER->control), &V_DOWN);
+    vadd_to(&(PLAYER->control), &V_DOWN);
   }
   // Set the do_jump or do_flap flag if the jump key is pressed (or add to
   // control if we're in water)
@@ -198,7 +198,7 @@ void tick_motion_controls(void) {
   clear_do_flap(PLAYER);
   if (DOWN[C_JUMP] || CONTROLS[C_JUMP]) {
     if (in_liquid(PLAYER)) {
-      vadd(&(PLAYER->control), &V_UP);
+      vadd_to(&(PLAYER->control), &V_UP);
     } else {
       // Jump if we're on the ground, otherwise try to flap:
       if (on_ground(PLAYER)) {

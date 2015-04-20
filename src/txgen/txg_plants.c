@@ -252,7 +252,7 @@ void fltr_leaf(texture *tx, void const * const fargs) {
     }
 
     // copy the go_towards point as the come_from point:
-    vcopy(&c.come_from, &c.go_towards);
+    vcopy_as(&c.come_from, &c.go_towards);
 
     // draw the leaf:
     draw_leaf(tx, &c, lfargs);
@@ -358,7 +358,7 @@ void fltr_bulb_leaves(texture *tx, void const * const fargs) {
     }
     // */
     // Copy the come_from vector from the go_towards vector:
-    vcopy(&c.come_from, &c.go_towards);
+    vcopy_as(&c.come_from, &c.go_towards);
     /* DEBUG:
     printf("th_base: %.3f\n", th_base);
     printf("th_mid: %.3f\n", th_mid);

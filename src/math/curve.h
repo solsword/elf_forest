@@ -93,18 +93,18 @@ static inline float est_curve_length(curve *c) {
   float lest = 0, pest = 0;
 
   // the linear estimate:
-  vcopy(&line, &(c->to));
-  vsub(&line, &(c->from));
+  vcopy_as(&line, &(c->to));
+  vsub_from(&line, &(c->from));
 
   lest = vmag(&line);
 
   // the polyline estimate:
-  vcopy(&p3, &(c->to));
-  vsub(&p3, &(c->come_from));
-  vcopy(&p2, &(c->come_from));
-  vsub(&p2, &(c->go_towards));
-  vcopy(&p1, &(c->go_towards));
-  vsub(&p1, &(c->from));
+  vcopy_as(&p3, &(c->to));
+  vsub_from(&p3, &(c->come_from));
+  vcopy_as(&p2, &(c->come_from));
+  vsub_from(&p2, &(c->go_towards));
+  vcopy_as(&p1, &(c->go_towards));
+  vsub_from(&p1, &(c->from));
 
   pest = vmag(&p1) + vmag(&p2) + vmag(&p3);
 

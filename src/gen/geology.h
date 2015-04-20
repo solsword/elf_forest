@@ -63,8 +63,8 @@ static inline void spring_force(
   float eq,
   float k
 ) {
-  vcopy(result, to);
-  vsub(result, from);
+  vcopy_as(result, to);
+  vsub_from(result, from);
   float m = vmag(result);
   vnorm(result);
   vscale(result, (m - eq) * k);
@@ -79,19 +79,19 @@ static inline void closest_point_on_line_segment(
 ) {
   vector segment;
   float len, plen;
-  vcopy(result, p);
-  vsub(result, a);
-  vcopy(&segment, b);
-  vsub(&segment, a);
+  vcopy_as(result, p);
+  vsub_from(result, a);
+  vcopy_as(&segment, b);
+  vsub_from(&segment, a);
   vproject(result, &segment);
   len = vmag(&segment);
   plen = vmag(result);
   if (vdot(result, &segment) < 0) {
-    vcopy(result, a);
+    vcopy_as(result, a);
   } else if (len > plen) {
-    vcopy(result, b);
+    vcopy_as(result, b);
   } else {
-    vadd(result, a);
+    vadd_to(result, a);
   }
 }
 
@@ -149,18 +149,23 @@ static inline void barycentric__xy(
   bc.z = z;
 }
 
+// The width in points (rather than triangles) of the given tectonic sheet.
 static inline size_t sheet_pwidth(tectonic_sheet *ts) {
   return (ts->width / 2) + 1;
 }
 
+// The height in points (rather than triangles) of the given tectonic sheet.
 static inline size_t sheet_pheight(tectonic_sheet *ts) {
   return ts->height + 1;
 }
 
+// The index of a point within the sheet's points array, based on (i, j) point
+// coordinates (not triangle coordinates).
 static inline size_t sheet_pidx(tectonic_sheet *ts, size_t i, size_t j) {
   return j * sheet_pwidth(ts) + i;
 }
 
+// The index of the first point of the triangle at triangle coordinates (i, j)
 static inline size_t sheet_pidx_a(tectonic_sheet *ts, size_t i, size_t j) {
   if (j % 2 == 0) {
     return sheet_pidx(ts, (i+1)/2, j);
@@ -169,6 +174,7 @@ static inline size_t sheet_pidx_a(tectonic_sheet *ts, size_t i, size_t j) {
   }
 }
 
+// The index of the second point of the triangle at triangle coordinates (i, j)
 static inline size_t sheet_pidx_b(tectonic_sheet *ts, size_t i, size_t j) {
   if (j % 2 == 0) {
     return sheet_pidx(ts, i/2, j+1);
@@ -177,6 +183,7 @@ static inline size_t sheet_pidx_b(tectonic_sheet *ts, size_t i, size_t j) {
   }
 }
 
+// The index of the third point of the triangle at triangle coordinates (i, j)
 static inline size_t sheet_pidx_c(tectonic_sheet *ts, size_t i, size_t j) {
   if (i % 2 == j % 2) { // if this triangle points up instead of down
     return sheet_pidx(ts, i/2+1, j);
@@ -398,8 +405,15 @@ void rustle_sheet(
 );
 
 // Settles the given sheet over the given number of iterations, moving points
-// based on spring forces between them.
-void settle_sheet(tectonic_sheet *ts, size_t iterations, int hold_edges);
+// based on spring forces between them. The spring forces are determined by the
+// given equilibrium distance and spring constant.
+void settle_sheet(
+  tectonic_sheet *ts,
+  size_t iterations,
+  float equilibrium_distance,
+  float spring_constant,
+  int hold_edges
+);
 
 // Untangles the given sheet over the given number of iterations, moving each
 // point towards the average of its neighbors in the graph (might not be its
