@@ -5,6 +5,7 @@
 // Stone types and strata generation.
 
 #include <stdint.h>
+#include <math.h>
 
 #include "math/functions.h"
 
@@ -29,6 +30,10 @@
 // The base stratum thickness (before an exponential distribution).
 #define BASE_STRATUM_THICKNESS 10.0
 
+// Height and offset for a simplex grid:
+#define SG_HEIGHT (sin(PI/3.0))
+#define SG_OFFSET (cos(PI/3.0))
+
 /***********
  * Globals *
  ***********/
@@ -47,6 +52,222 @@ extern float const GN_MED_VAR_SCALE;
 /********************
  * Inline Functions *
  ********************/
+
+// Finds the force exerted on point 'to' by a spring between 'from' and 'to'
+// with equilibrium length 'eq' and spring constant 'k'. Stores the result in
+// the 'result' vector.
+static inline void spring_force(
+  vector const * const from,
+  vector const * const to,
+  vector *result,
+  float eq,
+  float k
+) {
+  vcopy(result, to);
+  vsub(result, from);
+  float m = vmag(result);
+  vnorm(result);
+  vscale(result, (m - eq) * k);
+}
+
+// Finds the closest point to the given point 'p' on the line segment from 'a'
+// to 'b'. Stores the result in 'result'.
+static inline void closest_point_on_line_segment(
+  vector const * const p,
+  vector const * const a, vector const * const b,
+  vector *result
+) {
+  vector segment;
+  float len, plen;
+  vcopy(result, p);
+  vsub(result, a);
+  vcopy(&segment, b);
+  vsub(&segment, a);
+  vproject(result, &segment);
+  len = vmag(&segment);
+  plen = vmag(result);
+  if (vdot(result, &segment) < 0) {
+    vcopy(result, a);
+  } else if (len > plen) {
+    vcopy(result, b);
+  } else {
+    vadd(result, a);
+  }
+}
+
+// Takes a point 'p' and converts it to barycentric coordinates in the xy plane
+// using the triangle 'a'-'b'-'c' as reference. z-values are completely ignored
+// in the calculation. The input point 'p' is modified.
+static inline void xy__barycentric(
+  vector *p,
+  vector const * const a,
+  vector const * const b,
+  vector const * const c
+) {
+  float det, b1, b2, b3;
+  det = (
+    (b.y - c.y) * (a.x - c.x)
+  +
+    (c.x - b.x) * (a.y - c.y)
+  );
+
+  b1 = (
+    (b.y - c.y) * (p.x - c.x)
+  +
+    (c.x - b.x) * (p.y - c.y)
+  );
+  b1 /= det;
+
+  b2 = (
+    (c.y - a.y) * (p.x - c.x)
+  +
+    (a.x - c.x) * (p.y - c.y)
+  );
+  b2 /= det;
+
+  b3 = 1 - b1 - b2;
+  p.x = b1;
+  p.y = b2;
+  p.z = b3;
+}
+
+// Takes barycentric coordinates 'bc' in terms of the triangle 'a'-'b'-'c' and
+// computes a 3D point on the surface of the triangle 'a'-'b'-'c' at the given
+// barycentric coordinates. The result is stored in the input point 'bc'.
+static inline void barycentric__xy(
+  vector *bc,
+  vector const * const a,
+  vector const * const b,
+  vector const * const c
+){
+  float x, y, z;
+  x = bc.x * a.x + bc.y * b.x + bc.z * c.x;
+  y = bc.x * a.y + bc.y * b.y + bc.z * c.y;
+  z = bc.x * a.z + bc.y * b.z + bc.z * c.z;
+  bc.x = x;
+  bc.y = y;
+  bc.z = z;
+}
+
+static inline size_t sheet_pwidth(tectonic_sheet *ts) {
+  return (ts->width / 2) + 1;
+}
+
+static inline size_t sheet_pheight(tectonic_sheet *ts) {
+  return ts->height + 1;
+}
+
+static inline size_t sheet_pidx(tectonic_sheet *ts, size_t i, size_t j) {
+  return j * sheet_pwidth(ts) + i;
+}
+
+static inline size_t sheet_pidx_a(tectonic_sheet *ts, size_t i, size_t j) {
+  if (j % 2 == 0) {
+    return sheet_pidx(ts, (i+1)/2, j);
+  } else {
+    return sheet_pidx(ts, i/2, j);
+  }
+}
+
+static inline size_t sheet_pidx_b(tectonic_sheet *ts, size_t i, size_t j) {
+  if (j % 2 == 0) {
+    return sheet_pidx(ts, i/2, j+1);
+  } else {
+    return sheet_pidx(ts, (i+1)/2, j+1);
+  }
+}
+
+static inline size_t sheet_pidx_c(tectonic_sheet *ts, size_t i, size_t j) {
+  if (i % 2 == j % 2) { // if this triangle points up instead of down
+    return sheet_pidx(ts, i/2+1, j);
+  } else {
+    return sheet_pidx(ts, i/2+1, j+1);
+  }
+}
+
+static inline float sheet_min_x(tectonic_sheet *ts) {
+  float result = ts->points[0].x;
+  size_t i, j, idx;
+  for (i = 0; i < sheet_pwidth(ts); ++i) {
+    for (j = 0; j < sheet_pheight(ts); ++j) {
+      idx = sheet_pidx(ts, i, j);
+      if (ts->points[idx].x < result) {
+        result = ts->points[idx].x;
+      }
+    }
+  }
+  return result;
+}
+
+static inline float sheet_min_y(tectonic_sheet *ts) {
+  float result = ts->points[0].y;
+  size_t i, j, idx;
+  for (i = 0; i < sheet_pwidth(ts); ++i) {
+    for (j = 0; j < sheet_pheight(ts); ++j) {
+      idx = sheet_pidx(ts, i, j);
+      if (ts->points[idx].y < result) {
+        result = ts->points[idx].y;
+      }
+    }
+  }
+  return result;
+}
+
+static inline float sheet_min_z(tectonic_sheet *ts) {
+  float result = ts->points[0].z;
+  size_t i, j, idx;
+  for (i = 0; i < sheet_pwidth(ts); ++i) {
+    for (j = 0; j < sheet_pheight(ts); ++j) {
+      idx = sheet_pidx(ts, i, j);
+      if (ts->points[idx].z < result) {
+        result = ts->points[idx].z;
+      }
+    }
+  }
+  return result;
+}
+
+static inline float sheet_max_x(tectonic_sheet *ts) {
+  float result = ts->points[0].x;
+  size_t i, j, idx;
+  for (i = 0; i < sheet_pwidth(ts); ++i) {
+    for (j = 0; j < sheet_pheight(ts); ++j) {
+      idx = sheet_pidx(ts, i, j);
+      if (ts->points[idx].x > result) {
+        result = ts->points[idx].x;
+      }
+    }
+  }
+  return result;
+}
+
+static inline float sheet_max_y(tectonic_sheet *ts) {
+  float result = ts->points[0].y;
+  size_t i, j, idx;
+  for (i = 0; i < sheet_pwidth(ts); ++i) {
+    for (j = 0; j < sheet_pheight(ts); ++j) {
+      idx = sheet_pidx(ts, i, j);
+      if (ts->points[idx].y > result) {
+        result = ts->points[idx].y;
+      }
+    }
+  }
+  return result;
+}
+
+static inline float sheet_max_z(tectonic_sheet *ts) {
+  float result = ts->points[0].z;
+  size_t i, j, idx;
+  for (i = 0; i < sheet_pwidth(ts); ++i) {
+    for (j = 0; j < sheet_pheight(ts); ++j) {
+      idx = sheet_pidx(ts, i, j);
+      if (ts->points[idx].z > result) {
+        result = ts->points[idx].z;
+      }
+    }
+  }
+  return result;
+}
 
 static inline float geothermal_temperature(global_pos *glpos) {
   return 100.0; // TODO: HERE!
@@ -136,6 +357,14 @@ static inline stratum* get_stratum(
  * Constructors & Destructors *
  ******************************/
 
+// Allocates and returns a new tectonic sheet with the given parameters.
+tectonic_sheet *create_tectonic_sheet(
+  ptrdiff_t seed,
+  size_t width, size_t height
+);
+
+void cleanup_tectonic_sheet(tectonic_sheet *ts);
+
 // Allocates and returns a new stratum with the given parameters.
 stratum *create_stratum(
   ptrdiff_t seed,
@@ -148,6 +377,55 @@ stratum *create_stratum(
 /*************
  * Functions *
  *************/
+
+// Tectonic sheet functions:
+// -------------------------
+
+// Resets the given sheet.
+void reset_sheet(tectonic_sheet *ts);
+
+// Stretches the sheet to fit the given height/width dimensions.
+void stretch_sheet(tectonic_sheet *ts, float width, float height);
+
+// Randomly moves each grid point a little bit in the x/y plane. Strength
+// represents the max perturbation, while size represents the size of the noise
+// used in grid units.
+void rustle_sheet(
+  tectonic_sheet *ts,
+  float strength,
+  float size,
+  ptrdiff_t seed
+);
+
+// Settles the given sheet over the given number of iterations, moving points
+// based on spring forces between them.
+void settle_sheet(tectonic_sheet *ts, size_t iterations, int hold_edges);
+
+// Untangles the given sheet over the given number of iterations, moving each
+// point towards the average of its neighbors in the graph (might not be its
+// neighbors is x/y/z space, hence the name).
+void untangle_sheet(tectonic_sheet *ts, size_t iterations, int hold_edges);
+
+// Adds some continents to the tectonic sheet by changing z values.
+void add_continents_to_sheet(
+  tectonic_sheet*ts,
+  float strength,
+  float scale,
+  ptrdiff_t seed
+);
+
+// Either expands or contracts the tectonic sheet around the given line
+// segment, holding edge points still if instructed to do so.
+void seam_sheet(
+  vector *from,
+  vector *to,
+  float width,
+  int pull,
+  int hold_edges
+);
+
+// General geology functions:
+// --------------------------
 
 // Generates geology for the given world.
 void generate_geology(world_map *wm);

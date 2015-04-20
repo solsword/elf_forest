@@ -10,6 +10,7 @@
 #include "world/blocks.h"
 #include "world/species.h"
 #include "datatypes/list.h"
+#include "datatypes/vector.h"
 #include "math/manifold.h"
 #include "math/functions.h"
 
@@ -114,6 +115,11 @@ typedef struct civ_info_s civ_info;
 
 // Geology
 // -------
+
+// An underlying model of tectonics represented by a sheet of interconnected
+// points.
+struct tectonic_sheet_s;
+typedef struct tectonic_sheet_s tectonic_sheet;
 
 // A layer of material that encompasses some region of the world.
 struct stratum_s;
@@ -329,6 +335,15 @@ struct soil_composition_s {
 // Geology
 // -------
 
+struct tectonic_sheet_s {
+  ptrdiff_t seed; // seed for various noise purposes
+
+  size_t width, height; // the size of the sheet
+  vector *points; // the points in the sheet
+  vector *forces; // the forces on each point in the sheet
+  float *avgcounts; // counts for averaging at each point
+}
+
 struct stratum_s {
   ptrdiff_t seed; // seed for various noise sources
 
@@ -417,10 +432,8 @@ struct world_region_s {
   world_map_pos pos;
   global_pos anchor;
   // topology info:
-  float min_height;
-  float mean_height;
-  float max_height;
-  manifold_point gross_height; // an averaged local manifold
+  float terrain_height;
+  float geologic_height;
   world_region *downhill;
   // various info modules:
   strata_info geology;
@@ -429,12 +442,13 @@ struct world_region_s {
   civ_info anthropology;
 };
 
-// The world map is a grid of regions, with lists of all strata, biomes, and
-// civilizations.
+// The world map is a grid of regions, with lists of all strata, water, rivers,
+// biomes, and civilizations.
 struct world_map_s {
   ptrdiff_t seed;
   wm_pos_t width, height;
   world_region *regions;
+  tectonic_sheet *tectonics;
   list *all_strata;
   list *all_water;
   list *all_rivers;

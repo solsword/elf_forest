@@ -109,17 +109,10 @@ void cleanup_worldgen() {
 
 void init_world_map(world_map *wm) {
   size_t sofar = 0;
-  float samples_per_region, min_neighbor_height;
-  manifold_point gross, stone, dirt;
+  float min_neighbor_height;
   world_map_pos xy, iter;
   world_region *wr, *dh;
-  global_pos sample_point;
 
-  samples_per_region = (
-    WORLD_REGION_SIZE * WORLD_REGION_SIZE
-  /
-    (REGION_HEIGHT_SAMPLE_FREQUENCY * REGION_HEIGHT_SAMPLE_FREQUENCY)
-  );
   for (xy.x = 0; xy.x < wm->width; xy.x += 1) {
     for (xy.y = 0; xy.y < wm->height; xy.y += 1) {
       sofar += 1;

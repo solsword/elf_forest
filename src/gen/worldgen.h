@@ -34,12 +34,6 @@
 //#define WORLD_WIDTH 32
 //#define WORLD_HEIGHT 32
 
-// How often to sample world regions (in chunks) to determine approximate
-// min/max/mean height data. This should be a power of 2, and of course should
-// be less than WORLD_REGION_SIZE.
-//#define REGION_HEIGHT_SAMPLE_FREQUENCY 16
-#define REGION_HEIGHT_SAMPLE_FREQUENCY 32
-
 // The name of the file to write a copy of the world map into:
 extern char const * const WORLD_MAP_FILE_BASE;
 extern char const * const WORLD_MAP_FILE_REGIONS;

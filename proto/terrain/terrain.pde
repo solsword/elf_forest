@@ -581,7 +581,7 @@ class Map {
     min_y = this.center.y - height/2.0;
     max_y = this.center.y + height/2.0;
     int i, j;
-    // First, pull all edge points straight outwards to meed the desired
+    // First, pull all edge points straight outwards to meet the desired
     // minimum dimensions as necessary:
     for (i = 0; i < this.pwidth(); ++i) {
       if (this.points[this.pidx(i, 0)].y > min_y) {
