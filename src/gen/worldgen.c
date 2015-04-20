@@ -44,6 +44,8 @@ void setup_worldgen(ptrdiff_t seed) {
   THE_WORLD = create_world_map(seed, WORLD_WIDTH, WORLD_HEIGHT);
   printf("  ...initializing world...\n");
   init_world_map(THE_WORLD);
+  printf("  ...generating tectonics...\n");
+  generate_tectonics(THE_WORLD);
   printf("  ...generating geology...\n");
   generate_geology(THE_WORLD);
   printf("  ...generating hydrology...\n");

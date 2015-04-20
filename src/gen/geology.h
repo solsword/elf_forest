@@ -20,6 +20,57 @@
  * Constants *
  *************/
 
+// Height and offset for a simplex grid:
+#define SX_GRID_HEIGHT (sin(PI/3.0))
+#define SX_GRID_OFFSET (cos(PI/3.0))
+
+// Exponents defining the shapes of tectonic seams & squashing:
+#define TECT_SEAM_SHAPE 0.6
+#define TECT_SQUASH_SHAPE 2.4
+
+// Tectonics sheet generation parameters:
+// --------------------------------------
+
+#define TECT_SMALL_RUSTLE_STR 0.4
+#define TECT_SMALL_RUSTLE_SCALE 14.2
+#define TECT_LARGE_RUSTLE_STR 0.6
+#define TECT_LARGE_RUSTLE_SCALE 7.5
+
+#define TECT_CONTINENTS_STR 0.06
+#define TECT_CONTINENTS_SCALE 1.6
+#define TECT_CONTINENTS_DSTR 0.27
+#define TECT_CONTINENTS_DSCALE 8.4
+
+#define TECT_SEAM_COUNT 20
+#define TECT_SEAM_DT 0.1
+#define TECT_SEAM_MIN_WIDTH 5.3
+#define TECT_SEAM_WIDTH_VAR 12.8
+
+#define TECT_CRUMPLE_STEPS 4
+
+#define TECT_CRUMPLE_RUSTLE_STR 0.3
+#define TECT_CRUMPLE_RUSTLE_SCALE 12.7
+
+#define TECT_CRUMPLE_SETTLE_STEPS 16
+#define TECT_CRUMPLE_SETTLE_DT 0.01
+#define TECT_CRUMPLE_EQ_DIST 1.3
+#define TECT_CRUMPLE_K 1.5
+
+#define TECT_CRUMPLE_UNTANGLE_STEPS 5
+#define TECT_CRUMPLE_UNTANGLE_DT 0.1
+
+#define TECT_STRETCH_RELAX_STEPS 20
+#define TECT_STRETCH_RELAX_DT 0.01
+#define TECT_STRETCH_RELAX_EQ_DIST 1.3
+#define TECT_STRETCH_RELAX_K 1.5
+#define TECT_STRETCH_UNTANGLE_STEPS 3
+#define TECT_STRETCH_UNTANGLE_DT 0.1
+
+#define TECT_DEFAULT_SQUASH_STR 29.0
+
+// Strata parameters:
+// ------------------
+
 // Controls the size of strata relative to the world map size.
 #define STRATA_AVG_SIZE 0.25
 
@@ -29,10 +80,6 @@
 
 // The base stratum thickness (before an exponential distribution).
 #define BASE_STRATUM_THICKNESS 10.0
-
-// Height and offset for a simplex grid:
-#define SG_HEIGHT (sin(PI/3.0))
-#define SG_OFFSET (cos(PI/3.0))
 
 /***********
  * Globals *
@@ -367,7 +414,8 @@ static inline stratum* get_stratum(
 // Allocates and returns a new tectonic sheet with the given parameters.
 tectonic_sheet *create_tectonic_sheet(
   ptrdiff_t seed,
-  size_t width, size_t height
+  size_t width,
+  size_t height
 );
 
 void cleanup_tectonic_sheet(tectonic_sheet *ts);
@@ -388,28 +436,35 @@ stratum *create_stratum(
 // Tectonic sheet functions:
 // -------------------------
 
-// Resets the given sheet.
+// Resets the given sheet, setting most things to 0 and remapping the points of
+// the sheet to a simplex grid.
 void reset_sheet(tectonic_sheet *ts);
 
-// Stretches the sheet to fit the given height/width dimensions.
+// Stretches the sheet to fit the given height/width dimensions. This just
+// moves the edge points outwards/inwards to match the given dimensions. It is
+// recommended that some settling/untangling be applied afterwards with edges
+// held to sort out interior points. This function only operates on x/y values
+// and ignores z values.
 void stretch_sheet(tectonic_sheet *ts, float width, float height);
 
 // Randomly moves each grid point a little bit in the x/y plane. Strength
-// represents the max perturbation, while size represents the size of the noise
-// used in grid units.
+// represents the max perturbation, while scale is the number of noise cells
+// per sheet width (so higher scale -> smaller features).
 void rustle_sheet(
   tectonic_sheet *ts,
   float strength,
-  float size,
+  float scale,
   ptrdiff_t seed
 );
 
 // Settles the given sheet over the given number of iterations, moving points
 // based on spring forces between them. The spring forces are determined by the
-// given equilibrium distance and spring constant.
+// given equilibrium distance and spring constant. Each iteration updates
+// positions as if dt time had passed.
 void settle_sheet(
   tectonic_sheet *ts,
   size_t iterations,
+  float dt,
   float equilibrium_distance,
   float spring_constant,
   int hold_edges
@@ -417,26 +472,59 @@ void settle_sheet(
 
 // Untangles the given sheet over the given number of iterations, moving each
 // point towards the average of its neighbors in the graph (might not be its
-// neighbors is x/y/z space, hence the name).
-void untangle_sheet(tectonic_sheet *ts, size_t iterations, int hold_edges);
+// neighbors is x/y/z space, hence the name). The process works only with x/y
+// values and ignores z values. The 'dt' value determines the rate at which
+// points move towards their neighbors' average position at each iteration.
+void untangle_sheet(
+  tectonic_sheet *ts,
+  size_t iterations,
+  float dt,
+  int hold_edges
+);
 
-// Adds some continents to the tectonic sheet by changing z values.
+// Adds some continents to the tectonic sheet by changing z values. Doesn't
+// affect x/y values at all. The strength parameters scales the height added,
+// while the scale and dscale parameters control the scale of the continents
+// and the scale of underlying distortion respectively. The dstr parameter
+// controls the strength of distortion applied. The scaling parameters are set
+// up such that there will be scale periods per sheet width. This means that
+// higher numbers correspond to smaller features.
 void add_continents_to_sheet(
-  tectonic_sheet*ts,
+  tectonic_sheet *ts,
   float strength,
   float scale,
+  float dstr,
+  float dscale,
   ptrdiff_t seed
 );
 
 // Either expands or contracts the tectonic sheet around the given line
-// segment, holding edge points still if instructed to do so.
+// segment, holding edge points still if instructed to do so. Operates only in
+// the x/y plane, ignoring z values. If 'pull' is true, it will contract
+// towards the line, otherwise it will expand away from it. The 'dt' parameter
+// determines how far the seam pushes/pulls.
 void seam_sheet(
+  tectonic_sheet *ts,
+  float dt,
   vector *from,
   vector *to,
   float width,
   int pull,
   int hold_edges
 );
+
+// Takes a tectonic sheet and dramatically flattens the negative values to
+// create a lopsided height distribution. The most-negative value will be
+// divided by the 'strength' parameter. This only affects z values (and only
+// negative ones at that).
+void squash_sheet(
+  tectonic_sheet *ts,
+  float strength
+);
+
+// This is the core tectonics generation function that applies various
+// operations to come up with an interesting tectonics sheet for a world map.
+void generate_tectonics(world_map *wm);
 
 // General geology functions:
 // --------------------------

@@ -3,6 +3,7 @@
 
 #include "noise/noise.h"
 #include "math/functions.h"
+#include "math/curve.h"
 #include "datatypes/vector.h"
 #include "world/world.h"
 #include "world/species.h"
@@ -30,7 +31,8 @@ float const GN_MED_VAR_SCALE = 1345;
  
 tectonic_sheet *create_tectonic_sheet(
   ptrdiff_t seed,
-  size_t width, size_t height
+  size_t width,
+  size_t height
 ) {
   tectonic_sheet *result = (tectonic_sheet *) malloc(sizeof(tectonic_sheet));
   result->width = width;
@@ -41,8 +43,8 @@ tectonic_sheet *create_tectonic_sheet(
   result->forces = (vector *) malloc(
     sizeof(vector) * sheet_pwidth(result) * sheet_pheight(result)
   );
-  result->avgcounts = (float *) malloc(
-    sizeof(float) * sheet_pwidth(result) * sheet_pheight(result)
+  result->avgcounts = (uint8_t *) malloc(
+    sizeof(uint8_t) * sheet_pwidth(result) * sheet_pheight(result)
   );
   reset_sheet(result);
   return result;
@@ -223,16 +225,19 @@ stratum *create_stratum(
  * Functions *
  *************/
 
+// Tectonic sheet functions:
+// -------------------------
+
 void reset_sheet(tectonic_sheet *ts) {
   size_t i, j, idx;
   for (i = 0; i < sheet_pwidth(ts); ++i) {
     for (j = 0; j < sheet_pheight(ts); ++j) {
       idx = sheet_pidx(ts, i, j);
       ts->points[idx].x = i;
-      ts->points[idx].y = j * SG_HEIGHT;
+      ts->points[idx].y = j * SX_GRID_HEIGHT;
       ts->points[idx].z = 0;
       if (j % 2 == 1) {
-        ts->points[idx].x += SG_OFFSET;
+        ts->points[idx].x += SX_GRID_OFFSET;
       }
 
       vzero(&(ts->forces[idx]));
@@ -248,7 +253,7 @@ void stretch_sheet(tectonic_sheet *ts, float width, float height) {
   float min_x, max_x, min_y, max_y;
   pw = sheet_pwidth(ts);
   ph = sheet_pheight(ts);
-  // compute center to find desired min/max x/y:
+  // Compute the center to find desired min/max x/y:
   for (i = 0; i < pw; ++i) {
     for (j = 0; j < ph; ++j) {
       idx = sheet_pidx(ts, i, j);
@@ -265,7 +270,7 @@ void stretch_sheet(tectonic_sheet *ts, float width, float height) {
   min_y = cy - height / 2.0;
   max_y = cy + height / 2.0;
 
-  // Now pull all edge points in/outwards to the desired dimensions:
+  // Pull all edge points in/outwards to the desired dimensions:
   for (i = 0; i < pw; ++i) {
     ts->points[sheet_pidx(ts, i, 0)].y = min_y;
     ts->points[sheet_pidx(ts, i, ph - 1)].y = max_y;
@@ -274,32 +279,35 @@ void stretch_sheet(tectonic_sheet *ts, float width, float height) {
     ts->points[sheet_pidx(ts, 0, j)].x = min_x;
     ts->points[sheet_pidx(ts, pw - 1, j)].x = max_x;
   }
-
-  // Next, settle down the inner points holding edge points in place:
-  settle_sheet(ts, DEFAULT_SETTLE_STEPS, 1);
 }
 
 void rustle_sheet(
   tectonic_sheet *ts,
   float strength,
-  float size,
+  float scale,
   ptrdiff_t seed
 ) {
   int i, j, idx;
+  float actw;
   vector *p;
   ptrdiff_t oseed;
   seed = prng(seed + 71);
   oseed = prng(seed + 30);
+
+  actw = sheet_max_x(ts) - sheet_min_x(ts);
+
   for (i = 0; i < sheet_pwidth(ts); ++i) {
     for (j = 0; j < sheet_pheight(ts); ++j) {
       idx = sheet_pidx(ts, i, j);
       p = &(ts->points[idx]);
       p->x += strength * sxnoise_2d(
-        x/size, y/size,
+        (p->x / actw) * scale,
+        (p->y / actw) * scale,
         seed
       );
       p->y += strength * sxnoise_2d(
-        x/size, y/size,
+        (p->x / actw) * scale,
+        (p->y / actw) * scale,
         oseed
       );
     }
@@ -406,28 +414,399 @@ void settle_sheet(
   }
 }
 
-void untangle_sheet(tectonic_sheet *ts, size_t iterations, int hold_edges) {
-  // TODO: HERE
+void untangle_sheet(
+  tectonic_sheet *ts,
+  size_t iterations,
+  float dt,
+  int hold_edges
+) {
+  size_t iter, i, j;
+  size_t idx, idx_a, idx_b, idx_c;
+  size_t pw, ph;
+  pw = sheet_pwidth(ts);
+  ph = sheet_pheight(ts);
+  vector *a, *b, *c; // the points of the current triangle
+  vector *f; // the "force" for the current point (used to store averages)
+  vector *p; // The focused point
+  vector tmp; // vector used for intermediate calculations
+  for (iter = 0; iter < iterations; ++iter) {
+    // First pass: compute averages by iterating over triangles:
+    for (i = 0; i < ts->width; ++i) {
+      for (j = 0; j < ts->height; ++j) {
+        idx_a = sheet_pidx_a(ts, i, j);
+        idx_b = sheet_pidx_b(ts, i, j);
+        idx_c = sheet_pidx_c(ts, i, j);
+        a = &(ts->points[idx_a]);
+        b = &(ts->points[idx_b]);
+        c = &(ts->points[idx_c]);
+        if (i % 2 == j % 2) { // if this triangle points up
+          // All six relations on all three corners of this triangle:
+          // a <- b; a <- c
+          f = &(ts->forces[idx_a]);
+          f->x += b->x;
+          f->y += b->y;
+          f->x += c->x;
+          f->y += c->y;
+          ts->avgcounts[idx_a] += 2;
+
+          // b <- a; b <- c
+          f = &(ts->forces[idx_b]);
+          f->x += a->x;
+          f->y += a->y;
+          f->x += c->x;
+          f->y += c->y;
+          ts->avgcounts[idx_b] += 2;
+
+          // c <- a; c <- b
+          f = &(ts->forces[idx_c]);
+          f->x += a->x;
+          f->y += a->y;
+          f->x += b->x;
+          f->y += b->y;
+          ts->avgcounts[idx_c] += 2;
+        } else if (i == 0 && (j % 2 == 1)) {
+          // Both relations on our a <-> b edge:
+          // a <- b
+          f = &(ts->forces[idx_a]);
+          f->x += b->x;
+          f->y += b->y;
+          ts->avgcounts[idx_a] += 1;
+
+          // b <- a
+          f = &(ts->forces[idx_b]);
+          f->x += a->x;
+          f->y += a->y;
+          ts->avgcounts[idx_b] += 1;
+        } else if ((i == this.width - 1) && (j % 2 == 0) ) {
+          // Both relations on our a <-> c edge:
+          // a <- c
+          f = &(ts->forces[idx_a]);
+          f->x += c->x;
+          f->y += c->y;
+          ts->avgcounts[idx_a] += 1;
+
+          // c <- a
+          f = &(ts->forces[idx_c]);
+          f->x += a->x;
+          f->y += a->y;
+          ts->avgcounts[idx_c] += 1;
+        }
+      }
+    }
+    // Second pass: move each point towards its respective average (iterating
+    // over points this time)
+    for (i = 0; i < pw; ++i) {
+      for (j = 0; j < ph; ++j) {
+        idx = sheet_pidx(ts, i, j);
+        p = &(ts->points[idx]);
+        f = &(ts->forces[idx]);
+        if (
+          hold_edges
+        &&
+          (i == 0 || i == pw - 1 || j == 0 || j == ph - 1)
+        ) {
+          vzero(f);
+          ts->avgcounts[idx] = 0;
+          continue;
+        }
+        f->x /= (float) ts->avgcounts[idx];
+        f->y /= (float) ts->avgcounts[idx];
+
+        tmp.x = f->x;
+        tmp.y = f->y;
+
+        tmp.x -= p->x;
+        tmp.y -= p->y;
+
+        tmp.x *= dt;
+        tmp.y *= dt;
+
+        p->x += tmp.x;
+        p->y += tmp.y;
+
+        vzero(f);
+        ts->avgcounts[idx] = 0;
+      }
+    }
+  }
 }
 
 void add_continents_to_sheet(
-  tectonic_sheet*ts,
+  tectonic_sheet *ts,
   float strength,
   float scale,
+  float dstr,
+  float dscale,
   ptrdiff_t seed
 ) {
-  // TODO: HERE
+  size_t i, j, idx;
+  size_t pw, ph;
+  float actw;
+  float fx, fy;
+  vector *p;
+  vector tmp;
+  ptrdiff_t dxseed, dyseed;
+  float xphase, yphase;
+
+  dxseed = prng(seed);
+  dyseed = prng(dxseed);
+
+  xphase = float_hash_1d(prng(seed + 18291));
+  yphase = float_hash_1d(prng(seed + 6546));
+
+  pw = sheet_pwidth(ts);
+  ph = sheet_pwidth(ts);
+
+  // We use the width of the sheet as the basis for scaling, and we ignore the
+  // height (so that the aspect ratio of the sheet doesn't cause distortion).
+  actw = sheet_max_x(ts) - sheet_min_x(ts);
+
+  fpw = (float) pw;
+  fph = (float) ph;
+
+  // Only pass: add continent height
+  for (i = 0; i < pw; ++i) {
+    for (j = 0; j < ph; ++j) {
+      idx = sheet_pidx(ts, i, j);
+      p = &(ts->points[idx]);
+      // base scaling:
+      fx = (p->x / actw) * scale;
+      fy = (p->y / actw) * scale;
+
+      // distortion
+      fx += dstr * (actw / scale) * sxnoise_2d(
+        (p->x / actw) * dscale,
+        (p->y / actw) * dscale,
+        dxseed
+      );
+      fy += dstr * (actw / scale) * sxnoise_2d(
+        (p->x / actw) * scale,
+        (p->y / actw) * scale,
+        dyseed
+      );
+      // sin/cos continents:
+      p->z += strength * (
+        sin(2.0 * PI * fx + xphase)
+      *
+        cos(2.0 * PI * fy + yphase)
+      );
+    }
+  }
 }
 
 void seam_sheet(
+  tectonic_sheet *ts,
+  float dt,
   vector *from,
   vector *to,
   float width,
   int pull,
   int hold_edges
 ) {
-  // TODO: HERE
+  size_t i, j, idx;
+  float str;
+  size_t pw, ph;
+  vector *p;
+  vector tmp;
+
+  pw = sheet_pwidth(ts);
+  ph = sheet_pwidth(ts);
+
+  // Only pass: compute and apply push/pull vectors
+  for (i = 0; i < pw; ++i) {
+    for (j = 0; j < ph; ++j) {
+      idx = sheet_pidx(ts, i, j);
+      p = &(ts->points[idx]);
+
+      if (
+        hold_edges
+      &&
+        (i == 0 || i == pw - 1 || j == 0 || j == ph - 1)
+      ) {
+        continue;
+      }
+
+      closest_point_on_line_segment(p, from, to, &tmp);
+      tmp.z = 0;
+      tmp.x = p->x - tmp.x;
+      tmp.y = p->y - tmp.y;
+      // tmp is now the shortest 2D vector from the line to this point
+
+      str = sqrtf(tmp.x * tmp.x + tmp.y * tmp.y);
+      if (str > width) {
+        continue;
+      }
+      str = pow((width - str) / width, TECT_SEAM_SHAPE);
+      str = sigmoid(str, 0, 1);
+      tmp.x *= str;
+      tmp.y *= str;
+
+      if (pull) {
+        tmp.x *= -1;
+        tmp.y *= -1;
+      }
+      p->x += tmp.x * dt;
+      p->y += tmp.y * dt;
+    }
+  }
 }
+
+void squash_sheet(
+  tectonic_sheet *ts,
+  float strength
+) {
+  size_t i, j, idx;
+  size_t pw, ph;
+  float min_z;
+  float fixed;
+  vector *p;
+  vector tmp;
+
+  pw = sheet_pwidth(ts);
+  ph = sheet_pwidth(ts);
+
+  min_z = sheet_min_z(ts);
+
+  fixed = pow(min_z, 2) / strength;
+
+  // Only pass: squash negative z values:
+  for (i = 0; i < pw; ++i) {
+    for (j = 0; j < ph; ++j) {
+      idx = sheet_pidx(ts, i, j);
+      p = &(ts->points[idx]);
+
+      if (p->z < 0) {
+        p->z = (
+          fixed
+        * pow(p->z / min_z, TECT_SQUASH_SHAPE)
+        / p->z
+        );
+      }
+    }
+  }
+}
+
+void generate_tectonics(world_map *wm) {
+  size_t i;
+  vector a, b;
+  ptrdiff_t seed = prng(wm->seed + 182011);
+  float min_x, max_x, min_y, max_y;
+
+  tectonic_sheet *ts = wm->tectonics;
+
+  min_x = sheet_min_x(ts);
+  max_x = sheet_max_x(ts);
+  min_y = sheet_min_y(ts);
+  max_y = sheet_max_y(ts);
+
+  // Reset the sheet
+  reset_sheet(ts);
+
+  // Rustle the points a bit to undermine grid uniformity
+  rustle_sheet(ts, TECT_SMALL_RUSTLE_STR, TECT_SMALL_RUSTLE_SCALE, seed);
+  seed = prng(seed);
+  rustle_sheet(ts, TECT_LARGE_RUSTLE_STR, TECT_LARGE_RUSTLE_SCALE, seed);
+  seed = prng(seed);
+
+  // Add continents to the sheet (will subtly affect spring forces later)
+  add_continents_to_sheet(
+    ts,
+    TECT_CONTINENTS_STR,
+    TECT_CONTINENTS_SCALE,
+    TECT_CONTINENTS_DSTR,
+    TECT_CONTINENTS_DSCALE,
+    seed
+  );
+  seed = prng(seed);
+  add_continents_to_sheet(
+    ts,
+    TECT_CONTINENTS_STR,
+    TECT_CONTINENTS_SCALE,
+    TECT_CONTINENTS_DSTR,
+    TECT_CONTINENTS_DSCALE,
+    seed
+  );
+  seed = prng(seed);
+
+  // Push/pull to/from some random seams
+  a.z = 0;
+  b.z = 0;
+  for (i = 0; i < TECT_SEAM_COUNT; ++i) {
+    // Get a random line segment:
+    a.x = min_x + ptrf(seed) * (max_x - min_x);
+    seed = prng(seed);
+    a.y = min_y + ptrf(seed) * (max_y - min_y);
+    seed = prng(seed);
+    b.x = min_x + ptrf(seed) * (max_x - min_x);
+    seed = prng(seed);
+    b.y = min_y + ptrf(seed) * (max_y - min_y);
+    seed = prng(seed);
+
+    // Add the seam:
+    seam_sheet(
+      ts,
+      TECT_SEAM_DT,
+      &a,
+      &b,
+      TECT_SEAM_MIN_WIDTH + ptrf(seed) * TECT_SEAM_WIDTH_VAR,
+      seed % 2 == 0,
+      0
+    );
+    seed = prng(seed);
+  }
+
+  // Crumple up the sheet based on the seam results:
+  for (i = 0; i < TECT_CRUMPLE_STEPS; ++i) {
+    rustle_sheet(
+      ts,
+      TECT_CRUMPLE_RUSTLE_STR,
+      TECT_CRUMPLE_RUSTLE_SCALE,
+      seed
+    );
+    seed = prng(seed);
+    settle_sheet(
+      ts,
+      TECT_CRUMPLE_SETTLE_STEPS,
+      TECT_CRUMPLE_SETTLE_DT,
+      TECT_CRUMPLE_EQ_DIST,
+      TECT_CRUMPLE_K,
+      0
+    );
+    untangle_sheet(
+      ts,
+      TECT_CRUMPLE_UNTANGLE_STEPS,
+      TECT_CRUMPLE_UNTANGLE_DT,
+      0
+    );
+  }
+
+  // Stretch the sheet into a square shape:
+  min_x = sheet_min_x(ts);
+  max_x = sheet_max_x(ts);
+  min_y = sheet_min_y(ts);
+  max_y = sheet_max_y(ts);
+  stretch_sheet(ts, max_x - min_x, max_y - min_y);
+  settle_sheet(
+    ts,
+    TECT_STRETCH_RELAX_STEPS,
+    TECT_STRETCH_RELAX_DT,
+    TECT_STRETCH_RELAX_EQ_DIST,
+    TECT_STRETCH_RELAX_K,
+    1
+  );
+  untangle_sheet(
+    ts,
+    TECT_STRETCH_UNTANGLE_STEPS,
+    TECT_STRETCH_UNTANGLE_DT,
+    1
+  );
+
+  // Finally, squash the sheet to make mountains stand out:
+  squash_sheet(ts, TECT_DEFAULT_SQUASH_STR);
+}
+
+// General geology functions:
+// --------------------------
 
 void generate_geology(world_map *wm) {
   size_t i, j;

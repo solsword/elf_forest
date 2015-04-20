@@ -4,14 +4,17 @@ import perlin.*;
 
 Perlin pnl = new Perlin(this);
 
-int WINDOW_WIDTH = 900;
-int WINDOW_HEIGHT = 600;
+int WINDOW_WIDTH = 800;
+int WINDOW_HEIGHT = 640;
 
-int ARRAY_WIDTH = 180;
-int ARRAY_HEIGHT = 120;
+int ARRAY_WIDTH = 200;
+int ARRAY_HEIGHT = 160;
 
-int GRID_WIDTH = 120;
-int GRID_HEIGHT = 50;
+int GRID_WIDTH = 160;
+int GRID_HEIGHT = 64;
+
+//int GRID_WIDTH = 80;
+//int GRID_HEIGHT = 30;
 
 String DISPLAY = "height";
 
@@ -35,7 +38,7 @@ float DSTR = 1.3;
 
 float DEFAULT_RUSTLE_STR = 0.8;
 
-float SETTLE_K = 1.5;
+float SETTLE_K = 1.6;
 float SETTLE_DISTANCE = GRID_RESOLUTION * 1.3;
 float SETTLE_DT = 0.01;
 
@@ -54,6 +57,8 @@ float TECTONIC_DISTORTION = 0.052;
 
 int N_TECTONIC_SEAMS = 20;
 int N_TECTONIC_RUSTLE_SETTLE_STEPS = 4;
+
+float NEGATIVE_SHRINK_AMOUNT = 26;
 
 // Reaction-diffusion system parameters:
 
@@ -816,7 +821,7 @@ class Map {
             this.forces[idx].add(t.a);
             this.avgcounts[idx] += 1;
           } else if ((i == this.width - 1) && (j % 2 == 0) ) {
-            // Both forces on our a <-> c edge:
+            // Both relations on our a <-> c edge:
             // a <- c
             idx = this.pidx_a(i, j);
             this.forces[idx].add(t.c);
@@ -858,14 +863,20 @@ class Map {
 
   void seam(LineSegment seg, float width, boolean pull, boolean fix_edges) {
     int i, j, idx;
-    Point p, f, cl, v;
+    Point p, cl, v;
     float d, str;
-    // First pass: compute push/pull vectors
+    // Only pass: compute push/pull vectors
     for (i = 0; i < this.pwidth(); ++i) {
       for (j = 0; j < this.pheight(); ++j) {
+        if (
+          fix_edges
+        &&
+          (i == 0 || i == this.pwidth()-1 || j == 0 || j == this.pheight()-1)
+        ) {
+          continue;
+        }
         idx = this.pidx(i, j);
         p = this.points[idx];
-        f = this.forces[idx];
         cl = seg.closest_point(p);
         v = cl.vector_to(p);
         d = v.magnitude();
@@ -878,26 +889,29 @@ class Map {
         if (pull) {
           v.scale(-1);
         }
-        f.add(v);
+        v.scale(SEAM_DT);
+        p.add(v);
       }
     }
-    // Second pass: move each point towards its respective average
+  }
+
+  void shrink_negative() {
+    // Dramatically flattens negative values to create a lopsided height
+    // distribution.
+    float minz = this.min_z();
+    float t;
+    if (minz >= 0) {
+      return;
+    }
+    Point p;
+    int i, j;
     for (i = 0; i < this.pwidth(); ++i) {
       for (j = 0; j < this.pheight(); ++j) {
-        if (
-          fix_edges
-        &&
-          (i == 0 || i == this.pwidth()-1 || j == 0 || j == this.pheight()-1)
-        ) {
-          this.forces[this.pidx(i, j)].scale(0);
-          continue;
+        p = this.points[this.pidx(i, j)];
+        if (p.z < 0) {
+          t = pow(p.z / minz, 2.5);
+          p.z = pow(minz, 2) * t / (NEGATIVE_SHRINK_AMOUNT * p.z);
         }
-        idx = this.pidx(i, j);
-        p = this.points[idx];
-        f = this.forces[idx];
-        f.scale(SEAM_DT);
-        p.add(f);
-        f.scale(0);
       }
     }
   }
@@ -1676,7 +1690,7 @@ void setup() {
   reset_array(EX_SAVE);
 
   //build_dual_world(173.4);
-  build_tectonics(173.4);
+  build_tectonics(true, 173.4);
   copy_array(TECTONICS, HEIGHT);
   get_hydrology();
   COLORMODE = "false";
@@ -1774,7 +1788,7 @@ void build_dual_world(float seed) {
   normalize_array(HEIGHT);
 }
 
-void build_tectonics(float seed) {
+void build_tectonics(boolean flatten_vs_chop, float seed) {
   randomSeed((long) (seed * 29));
   int i;
   boolean pull;
@@ -1814,7 +1828,7 @@ void build_tectonics(float seed) {
   //THE_MAP.settle(DEFAULT_SETTLE_STEPS, false);
   //THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
   for (i = 0; i < N_TECTONIC_RUSTLE_SETTLE_STEPS; ++i) {
-    THE_MAP.rustle(0.6, NS_SMALL, random(15000));
+    THE_MAP.rustle(0.3, NS_SMALL, random(15000));
     THE_MAP.settle(DEFAULT_SETTLE_STEPS, false);
     THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, false);
   }
@@ -1822,9 +1836,15 @@ void build_tectonics(float seed) {
     THE_MAP.max_x() - THE_MAP.min_x(),
     THE_MAP.max_y() - THE_MAP.min_y()
   );
-  THE_MAP.popup();
+  THE_MAP.untangle(DEFAULT_UNTANGLE_STEPS, true);
+  if (flatten_vs_chop) {
+    THE_MAP.shrink_negative();
+  } else {
+    THE_MAP.popup();
+  }
   THE_MAP.render(TECTONICS, PRECIP, seed + 53);
 
+  //*
   normalize_array(TECTONICS);
   build_mountains(
     TECTONICS,
@@ -1851,6 +1871,7 @@ void build_tectonics(float seed) {
   for (i = 0; i < TECTONICS_EROSION_STEPS - 1; ++i) {
     erode_array(TECTONICS, MODULATE, TECTONICS_EROSION_MODSTR);
   }
+  // */
 }
 
 void consolidate_headwaters(float[] height, float[] water, float[] tmp) {
@@ -2124,15 +2145,17 @@ void keyPressed() {
   } else if (key == 't') {
     // Build new tectonics
     println("Building tectonics...");
-    build_tectonics(random(1000));
+    build_tectonics(true, random(1000));
     println("  ...done.");
     copy_array(TECTONICS, HEIGHT);
     get_hydrology();
   } else if (key == 'T') {
     // Copy tectonics into height.
     println("Building tectonics...");
-    build_tectonics(random(1000));
+    build_tectonics(false, random(1000));
     println("  ...done.");
+    copy_array(TECTONICS, HEIGHT);
+    get_hydrology();
   } else if (key == 'h') {
     // Compute hydrology
     get_hydrology();

@@ -193,6 +193,9 @@ typedef struct biome_s biome;
 // Geology
 // -------
 
+// Approximate number of world regions per tectonic sheet triangle
+#define TECTONIC_SHEET_SCALE 2.5
+
 // Maximum number of stone layers per world region
 #define WM_MAX_STRATA_LAYERS 256
 
@@ -341,7 +344,7 @@ struct tectonic_sheet_s {
   size_t width, height; // the size of the sheet
   vector *points; // the points in the sheet
   vector *forces; // the forces on each point in the sheet
-  float *avgcounts; // counts for averaging at each point
+  uint8_t *avgcounts; // counts for averaging at each point
 }
 
 struct stratum_s {
