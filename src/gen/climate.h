@@ -253,7 +253,7 @@ static inline float evaporation(world_region *wr) {
   // Temperature scaling:
   temp = temp_evap_influence(wr->climate.atmosphere.mean_temp);
   // Elevation scaling:
-  elev = elevation(wr->mean_height);
+  elev = elevation(wr->topography.terrain_height.z);
   if (elev < 0) { elev = 0; }
   // The noise component:
   result = sxnoise_2d(

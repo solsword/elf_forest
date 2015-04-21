@@ -153,29 +153,29 @@ static inline void xy__barycentric(
 ) {
   float det, b1, b2, b3;
   det = (
-    (b.y - c.y) * (a.x - c.x)
+    (b->y - c->y) * (a->x - c->x)
   +
-    (c.x - b.x) * (a.y - c.y)
+    (c->x - b->x) * (a->y - c->y)
   );
 
   b1 = (
-    (b.y - c.y) * (p.x - c.x)
+    (b->y - c->y) * (p->x - c->x)
   +
-    (c.x - b.x) * (p.y - c.y)
+    (c->x - b->x) * (p->y - c->y)
   );
   b1 /= det;
 
   b2 = (
-    (c.y - a.y) * (p.x - c.x)
+    (c->y - a->y) * (p->x - c->x)
   +
-    (a.x - c.x) * (p.y - c.y)
+    (a->x - c->x) * (p->y - c->y)
   );
   b2 /= det;
 
   b3 = 1 - b1 - b2;
-  p.x = b1;
-  p.y = b2;
-  p.z = b3;
+  p->x = b1;
+  p->y = b2;
+  p->z = b3;
 }
 
 // Takes barycentric coordinates 'bc' in terms of the triangle 'a'-'b'-'c' and
@@ -188,12 +188,12 @@ static inline void barycentric__xy(
   vector const * const c
 ){
   float x, y, z;
-  x = bc.x * a.x + bc.y * b.x + bc.z * c.x;
-  y = bc.x * a.y + bc.y * b.y + bc.z * c.y;
-  z = bc.x * a.z + bc.y * b.z + bc.z * c.z;
-  bc.x = x;
-  bc.y = y;
-  bc.z = z;
+  x = bc->x * a->x + bc->y * b->x + bc->z * c->x;
+  y = bc->x * a->y + bc->y * b->y + bc->z * c->y;
+  z = bc->x * a->z + bc->y * b->z + bc->z * c->z;
+  bc->x = x;
+  bc->y = y;
+  bc->z = z;
 }
 
 // The width in points (rather than triangles) of the given tectonic sheet.

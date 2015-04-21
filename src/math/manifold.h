@@ -65,7 +65,10 @@ static inline float mani_contour(manifold_point *point) {
 // ----------------------------------------------
 
 // Copies the source manifold to the target manifold.
-static inline void mani_copy(manifold_point *target, manifold_point *source) {
+static inline void mani_copy_as(
+  manifold_point *target,
+  manifold_point const * const source
+) {
   target->z = source->z;
   target->dx = source->dx;
   target->dy = source->dy;

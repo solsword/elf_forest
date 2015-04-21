@@ -61,6 +61,106 @@ void cleanup_world_map(world_map *wm) {
  * Functions *
  *************/
 
+void get_world_neighborhood_small(
+  world_map *wm,
+  world_map_pos *wmpos,
+  world_region* neighborhood[]
+) {
+  world_map_pos iter;
+  size_t i = 0;
+  for (iter.x = wmpos->x - 1; iter.x <= wmpos->x + 1; iter.x += 1) {
+    for (iter.y = wmpos->y - 1; iter.y <= wmpos->y + 1; iter.y += 1) {
+      neighborhood[i] = get_world_region(wm, &iter);
+      i += 1;
+    }
+  }
+}
+
+void get_world_neighborhood(
+  world_map *wm,
+  world_map_pos *wmpos,
+  world_region* neighborhood[]
+) {
+  world_map_pos iter;
+  size_t i = 0;
+  for (iter.x = wmpos->x - 2; iter.x <= wmpos->x + 2; iter.x += 1) {
+    for (iter.y = wmpos->y - 2; iter.y <= wmpos->y + 2; iter.y += 1) {
+      neighborhood[i] = get_world_region(wm, &iter);
+      i += 1;
+    }
+  }
+}
+
+void compute_region_interpolation_values(
+  world_map *wm,
+  world_region* neighborhood[],
+  global_pos *glpos,
+  manifold_point result[]
+) {
+  world_region *wr;
+  size_t i;
+  vector v;
+  global_pos anchor;
+  world_map_pos wmpos, xy;
+  float str, slope;
+
+  glpos__wmpos(glpos, &wmpos);
+  xy.x = wmpos.x - 2;
+  xy.y = wmpos.x - 2;
+
+  i = 0;
+  for (xy.x = wmpos.x - 2; xy.x <= wmpos.x + 2; xy.x += 1) {
+    for (xy.y = wmpos.y - 2; xy.y <= wmpos.y + 2; xy.y += 1) {
+      wr = neighborhood[i];
+      if (wr != NULL) {
+        copy_glpos(&(wr->anchor), &anchor);
+      } else {
+        compute_region_anchor(wm, &wmpos, &anchor);
+      }
+      v.x = glpos->x - anchor.x;
+      v.y = glpos->y - anchor.y;
+      v.z = glpos->z - anchor.z;
+
+      // Map the distance to this anchor to [0, 1]
+      str = 1 - (sqrtf(v.x*v.x + v.y*v.y) / MAX_REGION_INFULENCE_DISTANCE);
+      vnorm(&v); // we'll need this for dx/dy
+      // if we're beyond the edge of influence, the result is 0
+      if (str < 0) {
+        result[i].z = 0;
+        result[i].dx = 0;
+        result[i].dy = 0;
+        continue;
+      }
+      // A biased sigmoid-type curve made from two parabolas
+      if (str < 0.3) {
+        // TODO: is the slope pointing in the right direction?
+        str = (0.3 / 0.25) * pow(str/0.6, 2);
+        slope = (2 * 0.3 / (0.25 * 0.36)) * str;
+        result[i].z = str;
+        result[i].dx = v.x * slope;
+        result[i].dy = v.y * slope;
+      } else {
+        // TODO: Is this calculation correct?
+        str = 1 - (0.7/0.25)*pow((1 - str)/1.4, 2);
+        slope = - (0.7/(0.25 * 1.96))*(-2.0 + 2.0*str);
+        result[i].z = str;
+        result[i].dx = v.x * slope;
+        result[i].dy = v.y * slope;
+      }
+
+      // Update wmpos based on i:
+      if (i == 4 || i == 9 || i == 14 || i == 19) {
+        wmpos.x += 1;
+        wmpos.y -= 4;
+      } else {
+        wmpos.y += 1;
+      }
+      // Update i:
+      i += 1;
+    }
+  }
+}
+
 void compute_region_contenders(
   world_map *wm,
   world_region* neighborhood[],
@@ -69,16 +169,16 @@ void compute_region_contenders(
   float *strbest, float *strsecond
 ) {
   world_region *wr; // best and second-best regions
-  int i;
+  size_t i;
   global_pos anchor;
   vector v, vbest, vsecond;
   float str, noise;
-  ptrdiff_t salt;
+  ptrdiff_t seed;
   world_map_pos wmpos;
 
   glpos__wmpos(glpos, &wmpos);
 
- // Figure out the two nearest world regions:
+  // Figure out the two nearest world regions:
   // Setup worst-case defaults:
   vbest.x = WORLD_REGION_BLOCKS;
   vbest.y = WORLD_REGION_BLOCKS;
@@ -99,10 +199,10 @@ void compute_region_contenders(
     wr = neighborhood[i];
     if (wr != NULL) {
       copy_glpos(&(wr->anchor), &anchor);
-      salt = prng(wr->seed + 172841);
+      seed = prng(wr->seed + 172841);
     } else {
       compute_region_anchor(wm, &wmpos, &anchor);
-      salt = prng(prng(prng(wmpos.x) + wmpos.y) + 51923);
+      seed = prng(prng(prng(wmpos.x) + wmpos.y) + 51923);
     }
     v.x = glpos->x - anchor.x;
     v.y = glpos->y - anchor.y;
@@ -114,16 +214,16 @@ void compute_region_contenders(
         v.x * WM_REGION_CONTENTION_NOISE_SCALE,
         v.y * WM_REGION_CONTENTION_NOISE_SCALE,
         v.z * WM_REGION_CONTENTION_NOISE_SCALE,
-        salt * 576 + 9123
+        seed * 576 + 9123
       ) + 
       0.6 * sxnoise_3d(
         v.x * WM_REGION_CONTENTION_NOISE_SCALE * 2.1,
         v.y * WM_REGION_CONTENTION_NOISE_SCALE * 2.1,
         v.z * WM_REGION_CONTENTION_NOISE_SCALE * 2.1,
-        salt * 577 + 9124
+        seed * 577 + 9124
       )
     ) / 1.6;
-    salt = prng(salt);
+    seed = prng(seed);
     noise = (1 + noise * WM_REGION_CONTENTION_NOISE_STRENGTH) / 2.0;
     // [
     //   0.5 - WM_REGION_CONTENTION_NOISE_STRENGTH/2,
@@ -138,7 +238,7 @@ void compute_region_contenders(
       v.z * WM_REGION_CONTENTION_POLAR_SCALE,
       2*M_PI*WM_REGION_CONTENTION_POLAR_SCALE,
       2*M_PI*WM_REGION_CONTENTION_POLAR_SCALE,
-      salt
+      seed
     );
     vpolar__xyz(&v, &v);
     noise = (1 + noise * WM_REGION_CONTENTION_POLAR_STRENGTH) / 2.0;
@@ -177,8 +277,8 @@ void find_valley(world_map *wm, world_map_pos *pos) {
     return;
   }
 
-  while (wr->downhill != NULL) {
-    wr = wr->downhill;
+  while (wr->topography.downhill != NULL) {
+    wr = wr->topography.downhill;
   }
   copy_wmpos(&(wr->pos), pos);
 }

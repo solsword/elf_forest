@@ -102,7 +102,7 @@ void _spawn_the_player(
   global_pos *origin
 ) {
   manifold_point dontcare, th;
-  compute_terrain_height(origin, &dontcare, &dontcare, &th);
+  compute_terrain_height(THE_WORLD, origin, &dontcare, &dontcare, &th);
   origin->z = (gl_pos_t) fastfloor(th.z) + 4;
   vector pos;
   glpos__vec(&(area->origin), origin, &pos);

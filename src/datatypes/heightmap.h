@@ -4,7 +4,8 @@
 // heightmap.h
 // Two-dimensional arrays of floating point values.
 
-#include <stdint.h>
+#include <stdlib.h>
+#include <stddef.h>
 
 /**************
  * Structures *
@@ -158,6 +159,7 @@ void hm_compute_flows(
   heightmap const * const precip,
   heightmap *result,
   heightmap *buffer,
+  heightmap *extra_buffer,
   size_t flow_steps
 );
 

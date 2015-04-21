@@ -97,9 +97,9 @@ typedef struct world_map_s world_map;
 // Info
 // ----
 
-// Topological information for a world region.
-struct topology_info_s;
-typedef struct topology_info_s topology_info;
+// Topographical information for a world region.
+struct topography_info_s;
+typedef struct topography_info_s topography_info;
 
 // Geological information for a world region.
 struct strata_info_s;
@@ -176,6 +176,12 @@ typedef struct biome_s biome;
 // World region anchors will be between 20% and 80% of this height. This should
 // be related to the various TR_HEIGHT constants in gen/terrain.h
 #define WORLD_REGION_ANCHOR_HEIGHT 16000
+
+// Maximum range at which a world region exerts influence:
+#define MAX_REGION_INFULENCE_DISTANCE (1.05 * sqrtf( \
+  WORLD_REGION_BLOCKS * WORLD_REGION_BLOCKS + \
+  WORLD_REGION_BLOCKS * WORLD_REGION_BLOCKS \
+))
 
 // Maximum distance between two world region anchors:
 #define MAX_REGION_ANCHOR_DISTANCE sqrtf( \
@@ -349,7 +355,7 @@ struct tectonic_sheet_s {
   vector *points; // the points in the sheet
   vector *forces; // the forces on each point in the sheet
   uint8_t *avgcounts; // counts for averaging at each point
-}
+};
 
 struct stratum_s {
   ptrdiff_t seed; // seed for various noise sources
@@ -405,7 +411,7 @@ struct stratum_s {
 // Info
 // ----
 
-struct topology_info_s {
+struct topography_info_s {
   manifold_point terrain_height; // height of this region
   float geologic_height; // "geologic height" is >= terrain height and allows
                          // for stratified mountains/canyons/etc.
@@ -449,7 +455,7 @@ struct world_region_s {
   global_pos anchor;
 
   // various info modules:
-  topology_info topology;
+  topography_info topography;
   strata_info geology;
   climate_info climate;
   biome_info ecology;
@@ -635,8 +641,38 @@ void cleanup_world_map(world_map *wm);
  * Functions *
  *************/
 
+// Stores the 9 (_small) or 25 world region pointers surrounding the given
+// world map position into the given neighborhood array. Some or all of the
+// neighbors may be NULL if positions run off the edge of the map. If the
+// neighborhood arrays aren't big enough, memory corruption will result.
+void get_world_neighborhood_small(
+  world_map *wm,
+  world_map_pos *wmpos,
+  world_region* neighborhood[]
+);
+
+void get_world_neighborhood(
+  world_map *wm,
+  world_map_pos *wmpos,
+  world_region* neighborhood[]
+);
+
+// Computes interpolation values for the given world neighborhood at the given
+// global position, just using x/y values. The result array must have room for
+// 25 entries (which must be the size of the neighborhood array). Interpolation
+// can be performed by taking a weighted average of values from each region
+// using the results as weights. Unlike compute_region_contenders, this does
+// not introduce any extra noise, so interpolation should be smooth.
+void compute_region_interpolation_values(
+  world_map *wm,
+  world_region* neighborhood[],
+  global_pos *glpos,
+  manifold_point result[]
+);
+
 // Computes the two closest world region anchors to the given point, along with
-// the strengths of each.
+// the strengths of each. Simplex noise is used to mix up strengths giving the
+// effect of a bubbly mixture where regions have inclusions of their neighbors.
 void compute_region_contenders(
   world_map *wm,
   world_region* neighborhood[],

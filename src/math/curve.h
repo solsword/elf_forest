@@ -118,7 +118,7 @@ static inline float sigmoid(float t, float start, float end) {
   } else if (t > end) {
     return 1;
   } else {
-    float tprime = (t - start) / (end - start);
+    float tprime = -1.0 + 2.0 * (t - start) / (end - start);
     return 1.0 / (1 + exp(-tprime*5));
   }
 }

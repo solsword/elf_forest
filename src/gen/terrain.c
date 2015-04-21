@@ -2,6 +2,10 @@
 // Code for determining terrain height.
 
 #include <math.h>
+#ifdef DEBUG
+#include <stdlib.h>
+#include <stdio.h>
+#endif
 
 #include "world/blocks.h"
 #include "world/world.h"
@@ -37,7 +41,8 @@ char const * const TR_REGION_NAMES[] = {
 
 omp_lock_t TERRAIN_HEIGHT_LOCK;
 
-uint8_t const TR_DIRECTION_PERMUTATIONS[24] = {
+// All possible permutations of the numbers 0, 1, 2, 3
+uint8_t const TR_DIRECTION_PERMUTATIONS[24*4] = {
   0, 1, 2, 3,
   0, 1, 3, 2,
   0, 2, 1, 3,
@@ -73,7 +78,7 @@ uint8_t const TR_DIRECTION_PERMUTATIONS[24] = {
 
 // A helper function for computing the flat array index of a world region.
 static inline wm_pos_t _ar_idx(world_region *wr) {
-  return wr->pos.x + wr->world.width * wr->pos.y;
+  return wr->pos.x + wr->world->width * wr->pos.y;
 }
 
 float _render_tectonics(
@@ -105,7 +110,6 @@ float _get_modulation(
   void *v_seed
 ) {
   ptrdiff_t seed = (ptrdiff_t) v_seed;
-  float result;
   float fx, fy;
 
   fx = ((float) x) / ((float) hm->width);
@@ -187,7 +191,7 @@ uint8_t run_particle(
     valid = 0;
     // there are 24 orders to check directions in:
     dperm = posmod(seed + dperm, 24);
-    seed = prng(seed);
+    seed = prng((seed >> 4) ^ seed); // amp low-bits variability a little
 
     for (j = 0; j < 4; ++j) {
       ndir = TR_DIRECTION_PERMUTATIONS[dperm * 4 + j];
@@ -212,7 +216,7 @@ uint8_t run_particle(
       if (nx < 0 || nx > hm->width - 1 || ny < 0 || ny > hm->height - 1) {
         continue;
       }
-      idx = hm_idx(nx, ny);
+      idx = hm_idx(hm, nx, ny);
       if (hm->data[idx] < height) {
         valid = 1;
         break;
@@ -234,14 +238,11 @@ uint8_t run_particle(
   }
 }
 
-void generate_topology(world_map *wm) {
+void generate_topography(world_map *wm) {
   world_map_pos xy;
   world_region *wr;
   tectonic_sheet *ts;
   size_t i, j;
-  float fx, fy;
-  float tmax, tmin;
-  float z;
   float pth, pcount, pgrowth;
   heightmap *topo, *modulation, *precipitation, *flow, *tmp, *save;
   ptrdiff_t seed;
@@ -255,9 +256,6 @@ void generate_topology(world_map *wm) {
   flow = create_heightmap(wm->width, wm->height);
   tmp = create_heightmap(wm->width, wm->height);
   save = create_heightmap(wm->width, wm->height);
-
-  tmax = sheet_height(ts, 0, 0);
-  tmin = tmax;
 
   // First, render our tectonic sheet into our topo heightmap and normalize it:
   hm_process(topo, (void*) ts, &_render_tectonics);
@@ -278,7 +276,7 @@ void generate_topology(world_map *wm) {
   }
 
   // We want to slump things out, but at each step we mix back in a little of
-  // the original topology.
+  // the original topography.
   for (i = 0; i < TR_BUILD_SLUMP_STEPS; ++i) {
     hm_copy(topo, save);
     hm_slump(topo, tmp, TR_BUILD_SLUMP_MAX_SLOPE, TR_BUILD_SLUMP_RATE);
@@ -350,13 +348,16 @@ void generate_topology(world_map *wm) {
   for (xy.x = 0; xy.x < wm->width; ++xy.x) {
     for (xy.y = 0; xy.y < wm->height; ++xy.y) {
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
-      wr->topology.terrain_height.z = hm_height(topo, xy.x, xy.y);
+      wr->topography.terrain_height.z = hm_height(topo, xy.x, xy.y);
     }
   }
 
   // Now that we've updated our height information, let's build an empirical
   // manifold with proper slope information:
   compute_manifold(wm);
+
+  // Finally, remap everything from [0, 1] onto full world heights:
+  geomap_topography(wm);
 
   // Free our temporary processing arrays:
   cleanup_heightmap(topo);
@@ -368,180 +369,135 @@ void generate_topology(world_map *wm) {
 }
 
 
+void geomap_topography(world_map *wm) {
+  world_map_pos xy;
+  world_region *wr;
+  manifold_point result, ignore;
+  terrain_region dontcare;
+
+  for (xy.x = 0; xy.x < wm->width; xy.x += 1) {
+    for (xy.y = 0; xy.y < wm->height; xy.y += 1) {
+      wr = get_world_region(wm, &xy); // no need to worry about NULL here
+      geomap(&(wr->topography.terrain_height), &result, &dontcare, &ignore);
+      mani_copy_as(&(wr->topography.terrain_height), &result);
+    }
+  }
+}
+
 void compute_terrain_height(
+  world_map *wm,
   global_pos *pos,
   manifold_point *r_gross,
   manifold_point *r_rocks,
   manifold_point *r_dirt
 ) {
   static int xcache = 3, ycache = 7;
-  static manifold_point continents, primary_geoforms, secondary_geoforms;
-  static manifold_point geodetails, mountains;
-  static manifold_point hills, ridges;
-  static manifold_point mounds, details, bumps;
+  static manifold_point hills, ridges, mounds;
   static manifold_point gross_height, rocks_height, dirt_height;
+  static world_region* neighborhood[25];
+  static manifold_point interp_values[25];
 
-  terrain_region region;
-  manifold_point tr_interp;
-  manifold_point base;
-  ptrdiff_t salt = TR_NOISE_SALT;
+  world_map_pos wmpos;
+  ptrdiff_t seed;
+  size_t i;
+  float divisor;
+
+  manifold_point tmp;
+  manifold_point dstx, dsty;
 
   if (xcache == pos->x && ycache == pos->y) {
     // no need to recompute everything:
     // printf("cached heights: %.2f, %.2f\n\n", rocks_height.z, dirt_height.z);
-    mani_copy(r_gross, &gross_height);
-    mani_copy(r_rocks, &rocks_height);
-    mani_copy(r_dirt, &dirt_height);
+    mani_copy_as(r_gross, &gross_height);
+    mani_copy_as(r_rocks, &rocks_height);
+    mani_copy_as(r_dirt, &dirt_height);
   }
   // beyond this point we can't let multiple threads run at once as they'd mess
   // up each others' static variables.
   omp_set_lock(&TERRAIN_HEIGHT_LOCK);
+
+  seed = prng(wm->seed + 54621);
+  glpos__wmpos(pos, &wmpos);
   
   xcache = pos->x; ycache = pos->y;
 
-  compute_base_geoforms(
-    pos, &salt,
-    &continents, &primary_geoforms, &secondary_geoforms,
-    &geodetails, &mountains,
-    &hills, &ridges, &mounds, &details, &bumps,
-    &base,
-    &region,
-    &tr_interp,
-    &rocks_height
-  );
-  salt = prng(salt);
+  // Interpolate region terrain_height values to get a gross height:
+  get_world_neighborhood(wm, &wmpos, neighborhood);
+  compute_region_interpolation_values(wm, neighborhood, pos, interp_values);
+  divisor = 0;
+  for (i = 0; i < 25; ++i) {
+    mani_copy_as(&tmp, &(neighborhood[i]->topography.terrain_height));
+    mani_multiply(&tmp, &(interp_values[i]));
+    mani_add(&gross_height, &tmp);
+    divisor += interp_values[i].z;
+  }
 #ifdef DEBUG
-  if (isnan(rocks_height.dx) || isnan(rocks_height.dy)) {
-    printf("nan base rocks_height\n");
+  if (divisor == 0) {
+    fprintf(stderr, "Sum of interpolation values is zero!\n");
     exit(1);
   }
 #endif
+  // TODO: Should the divisor be a manifold?
+  mani_scale_const(&gross_height, 1.0 / divisor);
 
-  // DEBUG: print base geoforms:
-  /*
-  // printf("Base geoforms!\n");
-  if (continents.z < -1 || continents.z > 1) {
-    printf("BAD!\n");
-    printf("continents: %.2f\n", continents.z);
-    exit(17);
-  }
-  if (primary_geoforms.z < -1 || primary_geoforms.z > 1) {
-    printf("BAD!\n");
-    printf("primary_geoforms: %.2f\n", primary_geoforms.z);
-    exit(17);
-  }
-  if (secondary_geoforms.z < -1 || secondary_geoforms.z > 1) {
-    printf("BAD!\n");
-    printf("secondary_geoforms: %.2f\n", secondary_geoforms.z);
-    exit(17);
-  }
-  if (geodetails.z < -1 || geodetails.z > 1) {
-    printf("BAD!\n");
-    printf("geodetails: %.2f\n", geodetails.z);
-    exit(17);
-  }
-  if (mountains.z < -1 || mountains.z > 1) {
-    printf("BAD!\n");
-    printf("mountains: %.2f\n", mountains.z);
-    exit(17);
-  }
-  if (hills.z < -1 || hills.z > 1) {
-    printf("BAD!\n");
-    printf("hills: %.2f\n", hills.z);
-    exit(17);
-  }
-  if (ridges.z < -1 || ridges.z > 1) {
-    printf("BAD!\n");
-    printf("ridges: %.2f\n", ridges.z);
-    exit(17);
-  }
-  if (mounds.z < -1 || mounds.z > 1) {
-    printf("BAD!\n");
-    printf("mounds: %.2f\n", mounds.z);
-    exit(17);
-  }
-  if (details.z < -1 || details.z > 1) {
-    printf("BAD!\n");
-    printf("details: %.2f\n", details.z);
-    exit(17);
-  }
-  if (bumps.z < -1 || bumps.z > 1) {
-    printf("BAD!\n");
-    printf("bumps: %.2f\n", bumps.z);
-    exit(17);
-  }
-  if (base.z < -1 || base.z > 1) {
-    printf("BAD!\n");
-    printf("base: %.2f\n", base.z);
-    exit(17);
-  }
-  if (tr_interp.z < -1 || tr_interp.z > 1) {
-    printf("BAD!\n");
-    printf("interp: %.2f\n", tr_interp.z);
-    exit(17);
-  }
-  // printf("rocks: %.2f\n", rocks_height.z);
-  // printf("\n");
-  // */
+  // gross_height now holds the interpolated terrain height
 
-  alter_terrain_values(
-    pos, &salt,
-    region, &tr_interp,
-    &mountains, &hills, &ridges, &mounds, &details, &bumps
+  // Compute hill, ridge, and mound manifolds:
+  get_standard_distortion(
+    pos->x, pos->y, &seed,
+    TR_DFREQ_HILLS,
+    TR_DSCALE_HILLS,
+    &dstx,
+    &dsty
+  );
+  simplex_component(
+    &hills,
+    pos->x + dstx.z, pos->y + dsty.z,
+    dstx.dx, dstx.dy,
+    dsty.dx, dsty.dy,
+    TR_NFREQ_HILLS,
+    &seed
   );
 
-  // DEBUG:
-  /*
-  printf("altered values!\n");
-  printf(
-    "mountains: %.2f :: %.2f %.2f\n",
-    mountains.z,
-    mountains.dx,
-    mountains.dy
+  get_standard_distortion(
+    pos->x, pos->y, &seed,
+    TR_DFREQ_RIDGES,
+    TR_DSCALE_RIDGES,
+    &dstx,
+    &dsty
   );
-  printf(
-    "hills: %.2f :: %.2f %.2f\n",
-    hills.z,
-    hills.dx,
-    hills.dy
-  );
-  printf(
-    "ridges: %.2f :: %.2f %.2f\n",
-    ridges.z,
-    ridges.dx,
-    ridges.dy
-  );
-  printf(
-    "mounds: %.2f :: %.2f %.2f\n",
-    mounds.z,
-    mounds.dx,
-    mounds.dy
-  );
-  printf(
-    "details: %.2f :: %.2f %.2f\n",
-    details.z,
-    details.dx,
-    details.dy
-  );
-  printf(
-    "bumps: %.2f :: %.2f %.2f\n",
-    bumps.z,
-    bumps.dx,
-    bumps.dy
-  );
-  printf("\n");
-  // */
+  worley_component(
+    &ridges,
+    pos->x + dstx.z, pos->y + dsty.z,
+    dstx.dx, dstx.dy,
+    dsty.dx, dsty.dy,
+    TR_NFREQ_RIDGES,
+    &seed,
+    WORLEY_FLAG_INCLUDE_NEXTBEST
+  ); // TODO: Adjust flags here
 
-  // TODO: attenuate mountains near the beach?
-  //* DEBUG
-  mani_scale_const(&mountains, TR_SCALE_MOUNTAINS);
-  mani_add(&rocks_height, &mountains);
+  get_standard_distortion(
+    pos->x, pos->y, &seed,
+    TR_DFREQ_MOUNDS,
+    TR_DSCALE_MOUNDS,
+    &dstx,
+    &dsty
+  );
+  simplex_component(
+    &mounds,
+    pos->x + dstx.z, pos->y + dsty.z,
+    dstx.dx, dstx.dy,
+    dsty.dx, dsty.dy,
+    TR_NFREQ_MOUNDS,
+    &seed
+  );
+
+  // Compute our rocks height by adding hills, ridges, and mounds to our gross
+  // height:
+  mani_copy_as(&rocks_height, &gross_height);
 
   mani_scale_const(&hills, TR_SCALE_HILLS);
   mani_add(&rocks_height, &hills);
-
-  // Gross height includes hills and mountains but no smaller details.
-  mani_copy(&gross_height, &rocks_height);
 
   mani_scale_const(&ridges, TR_SCALE_RIDGES);
   mani_add(&rocks_height, &ridges);
@@ -549,25 +505,11 @@ void compute_terrain_height(
   mani_scale_const(&mounds, TR_SCALE_MOUNDS);
   mani_add(&rocks_height, &mounds);
 
-  mani_scale_const(&details, TR_SCALE_DETAILS);
-  mani_add(&rocks_height, &details);
-
-  mani_scale_const(&bumps, TR_SCALE_BUMPS);
-  mani_add(&rocks_height, &bumps);
-  // */
-
-  // DEBUG:
-  //*
-  // printf("summed rocks: %.2f\n", rocks_height.z);
-  // printf("\n");
-  // */
-
   // Figure out our soil depth:
   compute_dirt_height(
-    pos, &salt,
+    pos, &seed,
     &rocks_height,
-    &mountains, &hills,
-    &details, &bumps,
+    //&hills, &ridges, &mounds
     &dirt_height
   );
 
@@ -590,9 +532,9 @@ void compute_terrain_height(
 #endif
 
   // Write out our results:
-  mani_copy(r_gross, &gross_height);
-  mani_copy(r_rocks, &rocks_height);
-  mani_copy(r_dirt, &dirt_height);
+  mani_copy_as(r_gross, &gross_height);
+  mani_copy_as(r_rocks, &rocks_height);
+  mani_copy_as(r_dirt, &dirt_height);
 
   // Now we can release the lock and let another thread compute some terrain
   // height.
@@ -607,10 +549,10 @@ void compute_terrain_height(
 }
 
 void compute_dirt_height(
-  global_pos *pos, ptrdiff_t *salt,
+  global_pos *pos, ptrdiff_t *seed,
   manifold_point *rocks_height,
-  manifold_point *mountains, manifold_point *hills,
-  manifold_point *details, manifold_point *bumps,
+  // TODO: Do we want/need these?
+  //manifold_point *hills, manifold_point *ridges, manifold_point *mounds,
   manifold_point *result
 ) {
   manifold_point var, temp;
@@ -622,7 +564,7 @@ void compute_dirt_height(
     1, 0,
     0, 1,
     TR_DIRT_NOISE_SCALE,
-    salt
+    seed
   );
   simplex_component(
     &temp,
@@ -630,7 +572,7 @@ void compute_dirt_height(
     1, 0,
     0, 1,
     TR_DIRT_NOISE_SCALE * 2.5,
-    salt
+    seed
   );
   mani_scale_const(&temp, 0.5);
   mani_add(&var, &temp);
@@ -641,17 +583,19 @@ void compute_dirt_height(
   mani_offset_const(&var, 0.6);
 
   // Base soil depth:
-  mani_copy(result, &var);
+  mani_copy_as(result, &var);
   mani_scale_const(result, TR_BASE_SOIL_DEPTH);
 
   // Mountains and hills have less dirt on them in general:
+  // TODO: THIS!
+  /*
   simplex_component(
     &temp,
     pos->x, pos->y,
     1, 0,
     0, 1,
     TR_DIRT_EROSION_SCALE,
-    salt
+    seed
   );
   mani_offset_const(&temp, 1);
   mani_scale_const(&temp, 0.5 * 0.5);
@@ -667,7 +611,7 @@ void compute_dirt_height(
     1, 0,
     0, 1,
     TR_DIRT_EROSION_SCALE * 1.6,
-    salt
+    seed
   );
   mani_offset_const(&temp, 1);
   mani_scale_const(&temp, 0.5 * 0.5);
@@ -676,11 +620,12 @@ void compute_dirt_height(
   mani_multiply(&temp, hills);
   mani_scale_const(&temp, 1.0/TR_SCALE_HILLS);
   mani_add(result, &temp);
+  */
 
   // Altitude above/below sea level contributes to soil depth due to wind
   // erosion and marine snow (this is a stupidly oversimplified model of
   // course):
-  mani_copy(&temp, rocks_height);
+  mani_copy_as(&temp, rocks_height);
   mani_offset_const(&temp, -TR_HEIGHT_SEA_LEVEL);
   if (temp.z > 0) {
     mani_scale_const(&temp, 1.0/(TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL));
@@ -695,9 +640,12 @@ void compute_dirt_height(
 
   // Steeper places (especially at high altitudes) have less dirt, while
   // flatter places have more (but small-scale slope components are ignored):
-  mani_copy(&temp, rocks_height);
+  mani_copy_as(&temp, rocks_height);
+  /*
+   * TODO: THIS?
   mani_sub(&temp, details);
   mani_sub(&temp, bumps);
+  */
   steepness = mani_slope(&temp);
   steepness = fmin(1.5, steepness); // slopes above 1.5 are treated identically
   steepness /= 1.5;
@@ -716,8 +664,11 @@ void compute_dirt_height(
 
   // Details and bumps in the stone aren't reflected in the dirt:
   // TODO: smoothness vs. roughness
+  /*
+   * TODO: THIS?
   mani_sub(result, details);
   mani_sub(result, bumps);
+  */
 
   // Dirt depth can't be negative:
   if (result->z < 0) {
@@ -735,17 +686,16 @@ void geoform_info(
   terrain_region* region,
   float* tr_interp
 ) {
-  static int xcache = 3, ycache = 7;
+  // TODO: Something about this!
+  *region = TR_REGION_PLAINS;
+  *tr_interp = 0.5;
+  return;
   /*
-  static manifold_point continents, primary_geoforms;
-  static manifold_point secondary_geoforms;
-  static manifold_point geodetails;
-  static manifold_point base;
-  */
+  static int xcache = 3, ycache = 7;
   static manifold_point my_tr_interp;
   static terrain_region my_region;
   manifold_point dontcare;
-  ptrdiff_t salt = TR_NOISE_SALT;
+  ptrdiff_t seed = TR_NOISE_SALT;
 
   if (xcache == pos->x && ycache == pos->y) {
     // no need to recompute everything:
@@ -756,13 +706,9 @@ void geoform_info(
   xcache = pos->x; ycache = pos->y;
 
   compute_base_geoforms(
-    pos, &salt,
+    pos, &seed,
     &dontcare, &dontcare, &dontcare,
     &dontcare, &dontcare,
-    /*
-    &continents, &primary_geoforms, &secondary_geoforms,
-    &geodetails, &dontcare,
-    */
     &dontcare, &dontcare,
     &dontcare, &dontcare, &dontcare,
     &dontcare, // &base,
@@ -772,6 +718,7 @@ void geoform_info(
   );
   *region = my_region;
   *tr_interp = my_tr_interp.z;
+  */
 }
 
 void terrain_cell(
@@ -780,11 +727,13 @@ void terrain_cell(
   global_pos *glpos,
   cell *result
 ) {
-  static manifold_point dontcare, stone_height, dirt_height;
-  static global_pos pr_glpos = { .x = -1, .y = -1, .z = -1 };
+  manifold_point gross_height, stone_height, dirt_height;
   float h;
   world_region *best, *secondbest; // best and second-best regions
   float strbest, strsecond; // their respective strengths
+
+  // compute_terrain_height handles caching:
+  compute_terrain_height(wm, glpos, &gross_height, &stone_height, &dirt_height);
 
   // DEBUG: (to show the strata)
   //*
@@ -819,15 +768,6 @@ void terrain_cell(
     return;
   }
   // */
-
-  if (pr_glpos.x != glpos->x || pr_glpos.y != glpos->y) {
-    // No need to recompute the surface height if we're at the same x/y.
-    // TODO: Get rid of double-caching here?
-    compute_terrain_height(glpos, &dontcare, &stone_height, &dirt_height);
-  }
-
-  // Keep track of our previous position:
-  copy_glpos(glpos, &pr_glpos);
 
   // Compute our fractional height:
   h = glpos->z / stone_height.z;
@@ -890,7 +830,7 @@ void stone_cell(
     )
   ) / 1.5;
   // Clamp out-of-range values after noise:
-  // TODO: some low-frequency un-clamped noise?
+  // TODO: get geologic_height in here!
   if (h > 1.0) { h = 1.0; } else if (h < 0.0) { h = 0.0; }
 
   // Where available, persistence values are also a factor:

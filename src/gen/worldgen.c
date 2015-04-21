@@ -45,8 +45,8 @@ void setup_worldgen(ptrdiff_t seed) {
   init_world_map(THE_WORLD);
   printf("  ...generating tectonics...\n");
   generate_tectonics(THE_WORLD);
-  printf("  ...generating topology...\n");
-  generate_topology(THE_WORLD);
+  printf("  ...generating topography...\n");
+  generate_topography(THE_WORLD);
   printf("  ...generating hydrology...\n");
   generate_hydrology(THE_WORLD);
   printf("  ...generating climate...\n");
@@ -123,14 +123,13 @@ void init_world_map(world_map *wm) {
       wr->pos.x = xy.x;
       wr->pos.y = xy.y;
       // Default height info:
-      wr->topology.terrain_height.z = 0;
-      wr->topology.terrain_height.dx = 0;
-      wr->topology.terrain_height.dy = 0;
-      wr->topology.geologic_height = 0;
-      wr->topology.flow_potential = 0;
-      wr->topology.next_height = 0;
-      wr->topology.downhill = NULL;
-      wr->topology.uphill = NULL;
+      wr->topography.terrain_height.z = 0;
+      wr->topography.terrain_height.dx = 0;
+      wr->topography.terrain_height.dy = 0;
+      wr->topography.geologic_height = 0;
+      wr->topography.flow_potential = 0;
+      wr->topography.downhill = NULL;
+      wr->topography.uphill = NULL;
 
       // Default hydrology info:
       wr->climate.water.state = HYDRO_LAND;
@@ -170,11 +169,11 @@ void compute_manifold(world_map *wm) {
   for (xy.x = 0; xy.x < wm->width; xy.x += 1) {
     for (xy.y = 0; xy.y < wm->height; xy.y += 1) {
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
-      wr->downhill = NULL;
-      wr->uphill = NULL;
-      z = wr->topology.terrain_height.z;
-      wr->topology.terrain_height.dx = 0;
-      wr->topology.terrain_height.dy = 0;
+      wr->topography.downhill = NULL;
+      wr->topography.uphill = NULL;
+      z = wr->topography.terrain_height.z;
+      wr->topography.terrain_height.dx = 0;
+      wr->topography.terrain_height.dy = 0;
       min_neighbor_height = z;
       max_neighbor_height = z;
       xdivisor = 0;
@@ -184,81 +183,75 @@ void compute_manifold(world_map *wm) {
           if (iter.x == xy.x && iter.y == xy.y) { continue; }
           nb = get_world_region(wm, &iter);
           if (nb == NULL) { continue; }
-          nbz = nb->topology.terrain_height.z;
+          nbz = nb->topography.terrain_height.z;
           // figure out up- and down-hill neighbors:
           if (nbz < min_neighbor_height) {
-            wr->topology.downhill = nb;
+            wr->topography.downhill = nb;
             min_neighbor_height = nbz;
           }
           if (nbz > max_neighbor_height) {
-            wr->topology.uphill = nb;
+            wr->topography.uphill = nb;
             max_neighbor_height = nbz;
           }
           // add up nearby height differences:
           if (iter.x < xy.x) {
             if (iter.y == xy.y) {
-              wr->topology.terrain_height.dx += (z - nbz);
+              wr->topography.terrain_height.dx += (z - nbz);
               xdivisor += 1;
             } else {
-              wr->topology.terrain_height.dx += (z - nbz) * 0.5;
+              wr->topography.terrain_height.dx += (z - nbz) * 0.5;
               xdivisor += 0.5;
             }
           } else if (iter.x > xy.x) {
             if (iter.y == xy.y) {
-              wr->topology.terrain_height.dx += (nbz - z);
+              wr->topography.terrain_height.dx += (nbz - z);
               xdivisor += 1;
             } else {
-              wr->topology.terrain_height.dx += (nbz - z) * 0.5;
+              wr->topography.terrain_height.dx += (nbz - z) * 0.5;
               xdivisor += 0.5;
             }
           }
           if (iter.y < xy.y) {
             if (iter.x == xy.x) {
-              wr->topology.terrain_height.dy += (z - nbz);
+              wr->topography.terrain_height.dy += (z - nbz);
               xdivisor += 1;
             } else {
-              wr->topology.terrain_height.dy += (z - nbz) * 0.5;
+              wr->topography.terrain_height.dy += (z - nbz) * 0.5;
               xdivisor += 0.5;
             }
           } else if (iter.y > xy.y) {
             if (iter.x == xy.x) {
-              wr->topology.terrain_height.dy += (nbz - z);
+              wr->topography.terrain_height.dy += (nbz - z);
               xdivisor += 1;
             } else {
-              wr->topology.terrain_height.dy += (nbz - z) * 0.5;
+              wr->topography.terrain_height.dy += (nbz - z) * 0.5;
               xdivisor += 0.5;
             }
           }
         }
       }
-      wr->topology.terrain_height.dx /= xdivisor;
-      wr->topology.terrain_height.dy /= ydivisor;
+      wr->topography.terrain_height.dx /= xdivisor;
+      wr->topography.terrain_height.dy /= ydivisor;
     }
   }
 }
 
 void world_cell(world_map *wm, global_pos *glpos, cell *result) {
-  world_map_pos wmpos, iter;
-  world_region *neighborhood[9];
-  size_t i = 0;
-  glpos__wmpos(glpos, &wmpos);
+  static world_region *neighborhood[9];
+  world_map_pos wmpos;
   // default values:
   result->primary = b_make_block(B_VOID);
   result->secondary = b_make_block(B_VOID);
-  i = 0;
-  for (iter.x = wmpos.x - 1; iter.x <= wmpos.x + 1; iter.x += 1) {
-    for (iter.y = wmpos.y - 1; iter.y <= wmpos.y + 1; iter.y += 1) {
-      neighborhood[i] = get_world_region(wm, &iter);
-      i += 1;
-    }
-  }
-  if (glpos->z < 0) {
-    result->primary = b_make_block(B_BOUNDARY);
-  } else if (neighborhood[4] == NULL) {
+
+  // get neighborhood pointers:
+  glpos__wmpos(glpos, &wmpos);
+  get_world_neighborhood_small(wm, &wmpos, neighborhood);
+
+  if (glpos->z < 0 || neighborhood[4] == NULL) {
     // Outside the world:
-    result->primary = b_make_block(B_AIR);
+    result->primary = b_make_block(B_BOUNDARY);
   } else {
-    // TODO: Oceans here!
+    // TODO: Oceans here! (handled in terrain_cell, right?)
     terrain_cell(wm, neighborhood, glpos, result);
   }
   if (b_is(result->primary, B_VOID)) {

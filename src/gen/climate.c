@@ -115,9 +115,9 @@ void _iter_fill_lake_site(void *v_wr, void *v_seed) {
   );
 
   // Create a body of water and attempt to fill with it:
-  water = create_body_of_water(wr->min_height + f, salt);
+  water = create_body_of_water(wr->topography.terrain_height.z + f, salt);
   while (
-    water->level >= wr->min_height + CL_MIN_LAKE_DEPTH
+    water->level >= wr->topography.terrain_height.z + CL_MIN_LAKE_DEPTH
   &&
     !breadth_first_iter(
       wr->world,
@@ -129,9 +129,9 @@ void _iter_fill_lake_site(void *v_wr, void *v_seed) {
     )
   ) {
     f *= 0.9;
-    water->level = wr->min_height + f;
+    water->level = wr->topography.terrain_height.z + f;
   }
-  if (water->level < wr->min_height + CL_MIN_LAKE_DEPTH) {
+  if (water->level < wr->topography.terrain_height.z + CL_MIN_LAKE_DEPTH) {
     // we failed to make a lake here
     cleanup_body_of_water(water);
   } else {
@@ -222,9 +222,9 @@ void _iter_grow_rivers(void *v_river, void *v_wm) {
     l_append_element(r->control_points, (void*) phandle);
     return;
   }
-  gross_uph = mani_uphill(&(wr->gross_height)); // gross uphill
+  gross_uph = mani_uphill(&(wr->topography.terrain_height)); // gross uphill
   // Neighborhood least uphill:
-  elev_here = wr->mean_height;
+  elev_here = wr->topography.terrain_height.z;
   lowest_gain = -1;
   least_uph = 0;
   for (iter.x = wmpos.x - 1; iter.x <= wmpos.x + 1; ++iter.x) {
@@ -234,7 +234,7 @@ void _iter_grow_rivers(void *v_river, void *v_wm) {
       }
       wr = get_world_region(wm, &iter);
       if (wr != NULL) {
-        elev_gain = wr->mean_height - elev_here;
+        elev_gain = wr->topography.terrain_height.z - elev_here;
         if (elev_gain > 0 && (lowest_gain == -1 || elev_gain < lowest_gain)) {
           lowest_gain = elev_gain;
           least_uph = atan2(iter.y - wmpos.y, iter.x - wmpos.x);
@@ -350,8 +350,8 @@ static inline void _water_sim_step(world_region *wr) {
         if (neighbors[i] != NULL) {
           // Our neighbor's elevation with respect to us:
           nbelev = (
-            neighbors[i]->topology.terrain_height.z
-          - wr->topology.terrain_height.z
+            neighbors[i]->topography.terrain_height.z
+          - wr->topography.terrain_height.z
           );
           // Convert to a slope in block units:
           nbelev /= (float) (WORLD_REGION_BLOCKS);
@@ -362,7 +362,7 @@ static inline void _water_sim_step(world_region *wr) {
             nbelev = 1.5;
           }
           nbelev = (1.5 + nbelev) * CL_WIND_ELEVATION_FORCING;
-          if (wr->topology.terrain_height.z < TR_HEIGHT_SEA_LEVEL) {
+          if (wr->topography.terrain_height.z < TR_HEIGHT_SEA_LEVEL) {
             nbelev = 1.0;
           }
         } else {
@@ -572,7 +572,7 @@ void generate_climate(world_map *wm) {
       salt = seed;
 
       // compute "elevation:"
-      elev = elevation(wr->topology.terrain_height.z);
+      elev = elevation(wr->topography.terrain_height.z);
 
       // Winds:
       // ------
@@ -605,9 +605,9 @@ void generate_climate(world_map *wm) {
       r = mani_slope(&winds_base);
       theta = mani_contour(&winds_base);
       // TODO: Choose between contour and opposite direction...
-      if (wr->topology.terrain_height > TR_HEIGHT_SEA_LEVEL) {
-        r2 = mani_slope(&(wr->topology.terrain_height))*CL_WIND_LAND_INFLUENCE;
-        theta2 = mani_contour(&(wr->topology.terrain_height));
+      if (wr->topography.terrain_height > TR_HEIGHT_SEA_LEVEL) {
+        r2 = mani_slope(&(wr->topography.terrain_height))*CL_WIND_LAND_INFLUENCE;
+        theta2 = mani_contour(&(wr->topography.terrain_height));
         // Note we're not changing magnitude here:
         theta = (
           (r / (r + r2)) * theta

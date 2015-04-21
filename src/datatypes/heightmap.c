@@ -1,6 +1,8 @@
 // heightmap.c
 // Two-dimensional arrays of floating point values.
 
+#include "heightmap.h"
+
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -11,6 +13,7 @@ heightmap *create_heightmap(size_t width, size_t height) {
   result->width = width;
   result->height = height;
   result->data = (float*) calloc(width * height, sizeof(float));
+  return result;
 }
 
 // Frees the memory associated with a heightmap.
@@ -39,7 +42,7 @@ void hm_copy(heightmap const * const source, heightmap *dest) {
     dest->data = (float*) malloc(sizeof(float) * dest->width * dest->height);
   }
   for (i = 0; i < dest->width * dest->height; ++i) {
-    dest->data[i] = src->data[i];
+    dest->data[i] = source->data[i];
   }
 }
 
@@ -171,8 +174,8 @@ void hm_convolve_q(heightmap *hm, heightmap *filter) {
 }
 
 void hm_slump(heightmap *hm, heightmap *buffer, float max_slope, float rate) {
-  size_t x, y, idx;
-  float ln;
+  size_t i, x, y, idx, lnidx;
+  float ln, midpoint;
   if (hm->width != buffer->width || hm->height != buffer->height) {
     return;
   }
@@ -181,7 +184,7 @@ void hm_slump(heightmap *hm, heightmap *buffer, float max_slope, float rate) {
       idx = x + hm->width * y;
       ln = hm->data[idx];
       lnidx = idx;
-      if (x > 0 && array[idx - 1] < ln) {
+      if (x > 0 && hm->data[idx - 1] < ln) {
         ln = hm->data[idx - 1];
         lnidx = idx - 1;
       }
@@ -235,6 +238,7 @@ void hm_add_limited(
   for (x = 0; x < base->width; ++x) {
     for (y = 0; y < base->height; ++y) {
       idx = x + y * base->width;
+      min_new = base->data[idx];
       max_new = base->data[idx];
       if (x > 0) {
         z = base->data[idx - 1];
@@ -285,7 +289,7 @@ void hm_process(
   for (x = 0; x < hm->width; ++x) {
     for (y = 0; y < hm->height; ++y) {
       idx = x + y * hm->width;
-      hm->data[idx] = *process(hm, x, y, hm->data[idx], arg);
+      hm->data[idx] = process(hm, x, y, hm->data[idx], arg);
     }
   }
 }
@@ -302,7 +306,6 @@ void  hm_compute_flows(
   ptrdiff_t x, y, xx, yy;
   size_t bidx, sbidx, tbidx;
   float bslope, sbslope, tbslope;
-  float bflow, sbflow, tbflow;
   float slope, stotal;
   if (
     hm->width != precip->width
@@ -334,9 +337,6 @@ void  hm_compute_flows(
         bslope = 0;
         sbslope = 0;
         tbslope = 0;
-        bflow = 0;
-        sbflow = 0;
-        tbflow = 0;
         slope = 0;
         stotal = 0;
         for (xx = x - 1; xx <= x + 1; ++xx) {
@@ -394,7 +394,7 @@ void  hm_compute_flows(
 
     // Flip buffers and accumulate:
     for (i = 0; i < hm->width * hm->height; ++i) {
-      result->data[i] += buffer->data[i]
+      result->data[i] += buffer->data[i];
       buffer->data[i] = extra_buffer->data[i];
       extra_buffer->data[i] = 0;
     }
@@ -456,7 +456,7 @@ void hm_erode(
   // Slump the flow buffer:
   for (i = 0; i < flow_slump_steps; ++i) {
     hm_reset(extra_buffer);
-    hm_slump(flow_buffer, extra_buffer, flow_maxslope, flow_slump_rate)
+    hm_slump(flow_buffer, extra_buffer, flow_maxslope, flow_slump_rate);
   }
   // Scale the flow buffer and add it to the base heightmap:
   hm_scale(flow_buffer, erosion_strength);

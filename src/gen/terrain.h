@@ -5,11 +5,14 @@
 // Code for determining terrain height.
 
 #include <math.h>
+#include <stdint.h>
 
 #include "noise/noise.h"
+#include "datatypes/heightmap.h"
+#include "math/manifold.h"
 #include "world/world.h"
 #include "world/world_map.h"
-#include "math/manifold.h"
+
 #include "util.h"
 
 /**************
@@ -17,15 +20,17 @@
  **************/
 
 // Terrain building parameters:
+// ----------------------------
+// Terrain building creates a base terrain shape; see generate_topography.
 
 #define TR_TECT_CROP 0.95
 
 #define TR_PARTICLE_START_TRIES 3
 
 #define TR_BUILD_STARTING_HEIGHT 0.92
-#define TR_BUILD_HEIGHT_FALLOFF = 0.83
+#define TR_BUILD_HEIGHT_FALLOFF 0.83
 #define TR_BUILD_MAX_WANDER 100000
-#define TR_BUILD_SLIP = 3
+#define TR_BUILD_SLIP 3
 
 #define TR_BUILD_WAVE_COUNT 27
 #define TR_BUILD_WAVE_SIZE 90
@@ -55,7 +60,8 @@
 
 
 // Geoform parameters:
-// (geoform mapping maps [0, 1] to real heights; see compute_geoforms)
+// -------------------
+// Geoform mapping maps [0, 1] to real heights; see compute_geoforms.
 
 #define       TR_GEOMAP_SHELF 0.38
 #define       TR_GEOMAP_SHORE 0.46
@@ -85,17 +91,45 @@
 #define      TR_HEIGHT_MOUNTAIN_BASES 18500
 #define       TR_HEIGHT_MOUNTAIN_TOPS 27000
 
+// Postprocessing parameters:
+// --------------------------
+// Postprocessing adds details at scales smaller than the size of a world
+// region; see compute_terrain_height.
+
+// The strength and base scale of the noise that distorts strata boundaries:
+#define TR_STRATA_FRACTION_NOISE_STRENGTH 16.0
+#define TR_STRATA_FRACTION_NOISE_SCALE (1.0 / 40.0)
+
+// The height of hills, ridges, and mounds in blocks:
+#define TR_SCALE_HILLS 120.0
+#define TR_SCALE_RIDGES 80.0
+#define TR_SCALE_MOUNDS 40.0
+
+// Noise parameters for hills, ridges, and mounds:
+#define TR_NFREQ_HILLS (1.0 / 300.0)
+#define TR_DFREQ_HILLS (1.0 / 350.0)
+#define TR_DSCALE_HILLS 50.0
+
+#define TR_NFREQ_RIDGES (1.0 / 170.0)
+#define TR_DFREQ_RIDGES (1.0 / 220.0)
+#define TR_DSCALE_RIDGES 35.0
+
+#define TR_NFREQ_MOUNDS (1.0 / 90.0)
+#define TR_DFREQ_MOUNDS (1.0 / 110.0)
+#define TR_DSCALE_MOUNDS 30.0
+
 // Min/max height:
-// TODO: Redo this...
 #define TR_MIN_HEIGHT 0
 #define TR_MAX_HEIGHT (\
   TR_HEIGHT_MOUNTAIN_TOPS +\
   TR_SCALE_HILLS +\
   TR_SCALE_RIDGES +\
-  TR_SCALE_MOUNDS +\
-  TR_SCALE_DETAILS +\
-  TR_SCALE_BUMPS \
+  TR_SCALE_MOUNDS \
 )
+
+// Dirt parameters:
+// ----------------
+// Dirt is layered on top of the terrain; see compute_dirt_height.
 
 // Base soil parameters
 // TODO: Revamp dirt distribution
@@ -121,10 +155,6 @@
 
 // Soil alternate threshold:
 #define TR_SOIL_ALT_THRESHOLD 0.5
-
-// The strength and base scale of the noise that distorts strata boundaries:
-#define TR_STRATA_FRACTION_NOISE_STRENGTH 16
-#define TR_STRATA_FRACTION_NOISE_SCALE (1.0 / 40.0)
 
 /*********
  * Enums *
@@ -157,27 +187,27 @@ static inline void trig_component(
   float dxx, float dxy,
   float dyx, float dyy,
   float frequency,
-  ptrdiff_t *salt
+  ptrdiff_t *seed
 ) {
   manifold_point cos_part, sin_part;
   float phase;
 
   // cos part:
-  phase = 2 * M_PI * ptrf(*salt);
-  *salt = prng(*salt);
+  phase = 2 * M_PI * ptrf(*seed);
+  *seed = prng(*seed);
   cos_part.z = cosf(phase + x * frequency);
   cos_part.dx = (1 + dxx) * frequency * (-sinf(phase + x * frequency));
   cos_part.dy = dxy * frequency * (-sinf(phase + x * frequency));
 
   // sin part:
-  phase = 2 * M_PI * ptrf(*salt);
-  *salt = prng(*salt);
+  phase = 2 * M_PI * ptrf(*seed);
+  *seed = prng(*seed);
   sin_part.z = sinf(phase + y * frequency);
   sin_part.dx = dyx * frequency * cosf(phase + y * frequency);
   sin_part.dy = (1 + dyy) * frequency * cosf(phase + y * frequency);
 
   // result:
-  mani_copy(result, &cos_part);
+  mani_copy_as(result, &cos_part);
   mani_multiply(result, &sin_part);
 }
 
@@ -187,17 +217,17 @@ static inline void simplex_component(
   float dxx, float dxy,
   float dyx, float dyy,
   float frequency,
-  ptrdiff_t *salt
+  ptrdiff_t *seed
 ) {
   mani_get_sxnoise_2d(
     result,
     x * frequency,
     y * frequency,
-    *salt
-  ); *salt = prng(*salt);
+    *seed
+  ); *seed = prng(*seed);
   // DEBUG:
   // printf("simp-comp-base x y freq: %.3f %.3f %.8f\n", x, y, frequency);
-  // printf("simp-comp-base salt: %td\n", *salt);
+  // printf("simp-comp-base seed: %td\n", *seed);
   // printf(
   //   "simp-comp-base: %.3f :: %.4f, %.4f\n",
   //   result->z,
@@ -219,17 +249,17 @@ static inline void worley_component(
   float dxx, float dxy,
   float dyx, float dyy,
   float frequency,
-  ptrdiff_t *salt,
+  ptrdiff_t *seed,
   uint32_t flags
 ) {
   mani_get_wrnoise_2d(
     result,
     x * frequency,
     y * frequency,
-    *salt,
+    *seed,
     0, 0,
     flags
-  ); *salt = prng(*salt);
+  ); *seed = prng(*seed);
   mani_compose_double_simple(
     result,
     dxx * frequency, dxy * frequency,
@@ -238,7 +268,7 @@ static inline void worley_component(
 }
 
 static inline void get_standard_distortion(
-  gl_pos_t x, gl_pos_t y, ptrdiff_t *salt,
+  gl_pos_t x, gl_pos_t y, ptrdiff_t *seed,
   float frequency,
   float scale,
   manifold_point *result_x,
@@ -251,7 +281,7 @@ static inline void get_standard_distortion(
     1, 0,
     0, 1,
     frequency,
-    salt
+    seed
   );
   mani_scale_const(result_x, scale);
   // y distortion
@@ -261,18 +291,20 @@ static inline void get_standard_distortion(
     1, 0,
     0, 1,
     frequency,
-    salt
+    seed
   );
   mani_scale_const(result_y, scale);
 }
 
 static inline void geomap_segment(
-  manifold_point *result, manifold_point *base, manifold_point *interp,
+  manifold_point *result,
+  manifold_point const * const base,
+  manifold_point *interp,
   float sm_str, float sm_ctr,
   float lower, float upper,
   float lower_height, float upper_height
 ) {
-  mani_copy(interp, base);
+  mani_copy_as(interp, base);
   // DEBUG:
   // printf("Geomap segment :: base %.2f\n", base->z);
   // printf("Geomap segment :: interp %.2f\n", interp->z);
@@ -282,7 +314,7 @@ static inline void geomap_segment(
   // printf("Geomap segment :: scale :: interp %.2f\n", interp->z);
   mani_smooth(interp, sm_str, sm_ctr);
   // printf("Geomap segment :: smooth :: interp %.2f\n", interp->z);
-  mani_copy(result, interp);
+  mani_copy_as(result, interp);
   // printf("Geomap segment :: copy :: result %.2f\n", result->z);
   mani_scale_const(
     result,
@@ -295,58 +327,59 @@ static inline void geomap_segment(
 }
 
 // Remaps the given value (on [0, 1]) to account for the shape and height of
-// the overall height profile.
+// the overall height profile. The terrain region and interpolation value are
+// also returned as results.
 static inline void geomap(
+  manifold_point const * const base,
   manifold_point *result,
-  manifold_point *base,
-  terrain_region* region,
-  manifold_point* interp
+  terrain_region* r_region,
+  manifold_point* r_interp
 ) {
   if (base->z < TR_GEOMAP_SHELF) { // deep ocean
-    *region = TR_REGION_DEPTHS;
+    *r_region = TR_REGION_DEPTHS;
     geomap_segment(
-      result, base, interp,
+      result, base, r_interp,
       TR_GMS_DEPTHS, TR_GMC_DEPTHS,
       0, TR_GEOMAP_SHELF,
       TR_HEIGHT_OCEAN_DEPTHS, TR_HEIGHT_CONTINENTAL_SHELF
     );
   } else if (base->z < TR_GEOMAP_SHORE) { // continental shelf
-    *region = TR_REGION_SHELF;
+    *r_region = TR_REGION_SHELF;
     geomap_segment(
-      result, base, interp,
+      result, base, r_interp,
       TR_GMS_SHELF, TR_GMC_SHELF,
       TR_GEOMAP_SHELF, TR_GEOMAP_SHORE,
       TR_HEIGHT_CONTINENTAL_SHELF, TR_HEIGHT_SEA_LEVEL
     );
     // TODO: Sea cliffs?
   } else if (base->z < TR_GEOMAP_PLAINS) { // coastal plain
-    *region = TR_REGION_PLAINS;
+    *r_region = TR_REGION_PLAINS;
     geomap_segment(
-      result, base, interp,
+      result, base, r_interp,
       TR_GMS_PLAINS, TR_GMC_PLAINS,
       TR_GEOMAP_SHORE, TR_GEOMAP_PLAINS,
       TR_HEIGHT_SEA_LEVEL, TR_HEIGHT_COASTAL_PLAINS
     );
   } else if (base->z < TR_GEOMAP_HILLS) { // hills
-    *region = TR_REGION_HILLS;
+    *r_region = TR_REGION_HILLS;
     geomap_segment(
-      result, base, interp,
+      result, base, r_interp,
       TR_GMS_HILLS, TR_GMC_HILLS,
       TR_GEOMAP_PLAINS, TR_GEOMAP_HILLS,
       TR_HEIGHT_COASTAL_PLAINS, TR_HEIGHT_HIGHLANDS
     );
   } else if (base->z < TR_GEOMAP_MOUNTAINS) { // highlands
-    *region = TR_REGION_HIGHLANDS;
+    *r_region = TR_REGION_HIGHLANDS;
     geomap_segment(
-      result, base, interp,
+      result, base, r_interp,
       TR_GMS_HIGHLANDS, TR_GMC_HIGHLANDS,
       TR_GEOMAP_HILLS, TR_GEOMAP_MOUNTAINS,
       TR_HEIGHT_HIGHLANDS, TR_HEIGHT_MOUNTAIN_BASES
     );
   } else { // mountains
-    *region = TR_REGION_MOUNTAINS;
+    *r_region = TR_REGION_MOUNTAINS;
     geomap_segment(
-      result, base, interp,
+      result, base, r_interp,
       TR_GMS_MOUNTAINS, TR_GMC_MOUNTAINS,
       TR_GEOMAP_MOUNTAINS, 1.0,
       TR_HEIGHT_MOUNTAIN_BASES, TR_HEIGHT_MOUNTAIN_TOPS
@@ -364,7 +397,7 @@ void setup_terrain_gen();
 // Adds a particle at the given height to the world map, letting it wander
 // randomly until it stops next to a higher region (or until it has taken
 // max_steps steps). The first slip times it would settle, it keeps going.
-void run_particle(
+uint8_t run_particle(
   heightmap *hm,
   float height,
   size_t slip,
@@ -372,12 +405,16 @@ void run_particle(
   ptrdiff_t seed
 );
 
-// Generates topology for a world using the world's tectonics as a base.
-void generate_topology(world_map *wm);
+// Generates topography for a world using the world's tectonics as a base.
+void generate_topography(world_map *wm);
+
+// Takes topography on [0, 1] and geomaps it to the full world height.
+void geomap_topography(world_map *wm);
 
 // Computes the terrain height at the given region position in blocks, and
 // writes out the gross, rock and dirt heights at that location.
 void compute_terrain_height(
+  world_map *wm,
   global_pos *pos,
   manifold_point *r_gross,
   manifold_point *r_rocks,
@@ -388,10 +425,9 @@ void compute_terrain_height(
 // result parameter.
 // TODO: Something about this
 void compute_dirt_height(
-  global_pos *pos, ptrdiff_t *salt,
+  global_pos *pos, ptrdiff_t *seed,
   manifold_point *rocks_height,
-  manifold_point *mountains, manifold_point *hills,
-  manifold_point *details, manifold_point *bumps,
+  // manifold_point *hills, manifold_point *ridges, manifold_point *mounds
   manifold_point *result
 );
 
