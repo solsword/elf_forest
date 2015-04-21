@@ -805,6 +805,67 @@ void generate_tectonics(world_map *wm) {
   squash_sheet(ts, TECT_DEFAULT_SQUASH_STR);
 }
 
+float sheet_height(
+  tectonic_sheet *ts,
+  float fx,
+  float fy
+) {
+  size_t i, j, idx_a, idx_b, idx_c;
+  size_t pw, ph;
+  float px, py;
+  float min_x, max_x, min_y, max_y;
+  vector bc;
+
+  pw = sheet_pwidth(ts);
+  ph = sheet_pwidth(ts);
+
+  min_x = sheet_min_x(ts);
+  max_x = sheet_max_x(ts);
+  min_y = sheet_min_y(ts);
+  max_y = sheet_max_y(ts);
+
+  px = min_x + (max_x - min_x) * fx;
+  py = min_y + (max_y - min_y) * fy;
+
+  // TODO: More efficient search here?
+  for (i = 0; i < ts->width; ++i) {
+    for (j = 0; j < ts->height; ++j) {
+      idx_a = sheet_pidx_a(ts, i, j);
+      idx_b = sheet_pidx_b(ts, i, j);
+      idx_c = sheet_pidx_c(ts, i, j);
+
+      bc.x = px;
+      bc.y = py;
+      bc.z = 0;
+      xy__barycentric(
+        &bc,
+        &(ts->points[idx_a]),
+        &(ts->points[idx_b]),
+        &(ts->points[idx_c])
+      )
+      if (bc.x > 0 && bc.y > 0 && bc.z > 0) { // we're inside this triangle
+        barycentric__xy(
+          &bc
+          &(ts->points[idx_a]),
+          &(ts->points[idx_b]),
+          &(ts->points[idx_c])
+        );
+        return bc.z;
+      }
+    }
+  }
+#ifdef DEBUG
+  fprint(
+    stderr,
+    "Error: sheet heigh query: no triangle at (%.3f, %.3f) -> (%.3f, %.3f).\n",
+    fx, fy,
+    px, py
+  );
+  exit(1);
+#endif
+  return 0;
+}
+
 // General geology functions:
 // --------------------------
 

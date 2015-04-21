@@ -547,7 +547,7 @@ static inline void compute_offset_grid_point_2d(
   );
 }
 
-static inline ptrdiff_t posmod(ptrdiff_t n, ptrdiff_t modulus) {
+static inline ptrdiff_t _posmod(ptrdiff_t n, ptrdiff_t modulus) {
   return ((n % modulus) + modulus) % modulus;
 }
 
@@ -561,8 +561,8 @@ static inline void compute_offset_grid_point_2d_wrapped(
   ptrdiff_t salt
 ) {
   ptrdiff_t iw = i, jw = j;
-  if (width > 0) { iw = posmod(iw, width); }
-  if (height > 0) { jw = posmod(jw, height); }
+  if (width > 0) { iw = _posmod(iw, width); }
+  if (height > 0) { jw = _posmod(jw, height); }
   grn->x[idx] = (float) i + (
     hash_2d(
       iw + salt,

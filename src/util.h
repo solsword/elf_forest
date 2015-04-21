@@ -56,6 +56,11 @@ static uint16_t const ENDIAN_DETECTOR = 1;
  * Inline Functions *
  ********************/
 
+// Takes the modulus of a ptrdiff_t but also ensures it's positive:
+static inline ptrdiff_t posmod(ptrdiff_t n, ptrdiff_t base) {
+  return ((n % base) + base) % base;
+}
+
 // Conversions from/to network byte order for 64-bit values:
 static inline uint64_t hton64(uint64_t host_ordered) {
   uint8_t* bytes;

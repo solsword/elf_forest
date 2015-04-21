@@ -1531,9 +1531,7 @@ void map_flows(
   float h;
   float slope;
   float stotal;
-  float diff;
   float[] outputs = new float[9];
-  float output_coefficient;
   // Start with precipitation:
   copy_array(precipitation, flow);
   copy_array(precipitation, water);

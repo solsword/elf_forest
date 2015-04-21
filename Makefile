@@ -63,6 +63,7 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/map.o \
              $(OBJ_DIR)/string.o \
              $(OBJ_DIR)/bitmap.o \
+             $(OBJ_DIR)/heightmap.o \
              $(OBJ_DIR)/octree.o \
              $(OBJ_DIR)/terrain.o \
              $(OBJ_DIR)/worldgen.o \

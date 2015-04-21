@@ -526,6 +526,14 @@ void squash_sheet(
 // operations to come up with an interesting tectonics sheet for a world map.
 void generate_tectonics(world_map *wm);
 
+// Returns the height of the given tectonic sheet at a point fx, fy expressed
+// in fractions of the sheet's width and height.
+float sheet_height(
+  tectonic_sheet *ts,
+  float fx,
+  float fy
+);
+
 // General geology functions:
 // --------------------------
 

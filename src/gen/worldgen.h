@@ -58,6 +58,9 @@ void cleanup_worldgen();
 // Initializes the given world map.
 void init_world_map(world_map *wm);
 
+// Computes manifold information for the given world map.
+void compute_manifold(world_map *wm);
+
 // Computes the cell contents at the given position.
 void world_cell(world_map *wm, global_pos *pos, cell *result);
 

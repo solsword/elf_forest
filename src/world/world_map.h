@@ -97,6 +97,10 @@ typedef struct world_map_s world_map;
 // Info
 // ----
 
+// Topological information for a world region.
+struct topology_info_s;
+typedef struct topology_info_s topology_info;
+
 // Geological information for a world region.
 struct strata_info_s;
 typedef struct strata_info_s strata_info;
@@ -401,6 +405,15 @@ struct stratum_s {
 // Info
 // ----
 
+struct topology_info_s {
+  manifold_point terrain_height; // height of this region
+  float geologic_height; // "geologic height" is >= terrain height and allows
+                         // for stratified mountains/canyons/etc.
+  float flow_potential; // the "flow potential" of a region is used for erosion
+  world_region *downhill; // the region downhill from here
+  world_region *uphill; // the region uphill from here
+};
+
 struct strata_info_s { // indexed starting from the bottom
   size_t stratum_count;
   stratum* strata[WM_MAX_STRATA_LAYERS]; // the layers that touch this region
@@ -434,11 +447,9 @@ struct world_region_s {
   world_map *world;
   world_map_pos pos;
   global_pos anchor;
-  // topology info:
-  float terrain_height;
-  float geologic_height;
-  world_region *downhill;
+
   // various info modules:
+  topology_info topology;
   strata_info geology;
   climate_info climate;
   biome_info ecology;

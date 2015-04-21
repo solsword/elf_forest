@@ -39,19 +39,20 @@ char const * const WORLD_MAP_FILE_LRAIN = "out/world_map_land_rain.png";
  *************/
 
 void setup_worldgen(ptrdiff_t seed) {
-  setup_terrain_gen(seed);
-  seed = prng(seed);
-  THE_WORLD = create_world_map(seed, WORLD_WIDTH, WORLD_HEIGHT);
+  setup_terrain_gen();
+  THE_WORLD = create_world_map(prng(seed + 71), WORLD_WIDTH, WORLD_HEIGHT);
   printf("  ...initializing world...\n");
   init_world_map(THE_WORLD);
   printf("  ...generating tectonics...\n");
   generate_tectonics(THE_WORLD);
-  printf("  ...generating geology...\n");
-  generate_geology(THE_WORLD);
+  printf("  ...generating topology...\n");
+  generate_topology(THE_WORLD);
   printf("  ...generating hydrology...\n");
   generate_hydrology(THE_WORLD);
   printf("  ...generating climate...\n");
   generate_climate(THE_WORLD);
+  printf("  ...generating geology...\n");
+  generate_geology(THE_WORLD);
   printf("  ...writing world maps...\n");
 
   texture *base_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
@@ -111,9 +112,8 @@ void cleanup_worldgen() {
 
 void init_world_map(world_map *wm) {
   size_t sofar = 0;
-  float min_neighbor_height;
-  world_map_pos xy, iter;
-  world_region *wr, *dh;
+  world_map_pos xy;
+  world_region *wr;
 
   for (xy.x = 0; xy.x < wm->width; xy.x += 1) {
     for (xy.y = 0; xy.y < wm->height; xy.y += 1) {
@@ -122,44 +122,15 @@ void init_world_map(world_map *wm) {
       // Set position information:
       wr->pos.x = xy.x;
       wr->pos.y = xy.y;
-      // Probe chunk heights in the region to get min/max and average:
-      wmpos__glpos(&xy, &(wr->anchor));
-      wr->min_height = TR_MAX_HEIGHT;
-      wr->mean_height = 0;
-      wr->max_height = TR_MIN_HEIGHT;
-      wr->gross_height.z = 0;
-      wr->gross_height.dx = 0;
-      wr->gross_height.dy = 0;
-      for (
-        sample_point.x = wr->anchor.x;
-        sample_point.x < wr->anchor.x + WORLD_REGION_BLOCKS;
-        sample_point.x += CHUNK_SIZE * REGION_HEIGHT_SAMPLE_FREQUENCY
-      ) {
-        for (
-          sample_point.y = wr->anchor.y;
-          sample_point.y < wr->anchor.y + WORLD_REGION_BLOCKS;
-          sample_point.y += CHUNK_SIZE * REGION_HEIGHT_SAMPLE_FREQUENCY
-        ) {
-          compute_terrain_height(&sample_point, &gross, &stone, &dirt);
-
-          // update min
-          if (dirt.z < wr->min_height) {
-            wr->min_height = dirt.z;
-          }
-          // update max
-          if (dirt.z > wr->max_height) {
-            wr->max_height = dirt.z;
-          }
-
-          // update mean
-          wr->mean_height += dirt.z / samples_per_region;
-
-          // update gross
-          wr->gross_height.z += gross.z / samples_per_region;
-          wr->gross_height.dx += gross.dx / samples_per_region;
-          wr->gross_height.dy += gross.dy / samples_per_region;
-        }
-      }
+      // Default height info:
+      wr->topology.terrain_height.z = 0;
+      wr->topology.terrain_height.dx = 0;
+      wr->topology.terrain_height.dy = 0;
+      wr->topology.geologic_height = 0;
+      wr->topology.flow_potential = 0;
+      wr->topology.next_height = 0;
+      wr->topology.downhill = NULL;
+      wr->topology.uphill = NULL;
 
       // Default hydrology info:
       wr->climate.water.state = HYDRO_LAND;
@@ -188,24 +159,80 @@ void init_world_map(world_map *wm) {
     (size_t) (wm->width * wm->height)
   );
   printf("\n");
-  // Loop again now that heights are known to find downhill links:
+}
+
+void compute_manifold(world_map *wm) {
+  float z, nbz, min_neighbor_height, max_neighbor_height;
+  float xdivisor, ydivisor;
+  world_map_pos xy, iter;
+  world_region *wr, *nb;
+
   for (xy.x = 0; xy.x < wm->width; xy.x += 1) {
     for (xy.y = 0; xy.y < wm->height; xy.y += 1) {
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
       wr->downhill = NULL;
-      min_neighbor_height = wr->min_height;
+      wr->uphill = NULL;
+      z = wr->topology.terrain_height.z;
+      wr->topology.terrain_height.dx = 0;
+      wr->topology.terrain_height.dy = 0;
+      min_neighbor_height = z;
+      max_neighbor_height = z;
+      xdivisor = 0;
+      ydivisor = 0;
       for (iter.x = xy.x - 1; iter.x <= xy.x + 1; iter.x += 1) {
         for (iter.y = xy.y - 1; iter.y <= xy.y + 1; iter.y += 1) {
-          if (iter.x == xy.x && iter.y == xy.y) {
-            continue;
+          if (iter.x == xy.x && iter.y == xy.y) { continue; }
+          nb = get_world_region(wm, &iter);
+          if (nb == NULL) { continue; }
+          nbz = nb->topology.terrain_height.z;
+          // figure out up- and down-hill neighbors:
+          if (nbz < min_neighbor_height) {
+            wr->topology.downhill = nb;
+            min_neighbor_height = nbz;
           }
-          dh = get_world_region(wm, &iter);
-          if (dh != NULL && dh->min_height < min_neighbor_height) {
-            wr->downhill = dh;
-            min_neighbor_height = dh->min_height;
+          if (nbz > max_neighbor_height) {
+            wr->topology.uphill = nb;
+            max_neighbor_height = nbz;
+          }
+          // add up nearby height differences:
+          if (iter.x < xy.x) {
+            if (iter.y == xy.y) {
+              wr->topology.terrain_height.dx += (z - nbz);
+              xdivisor += 1;
+            } else {
+              wr->topology.terrain_height.dx += (z - nbz) * 0.5;
+              xdivisor += 0.5;
+            }
+          } else if (iter.x > xy.x) {
+            if (iter.y == xy.y) {
+              wr->topology.terrain_height.dx += (nbz - z);
+              xdivisor += 1;
+            } else {
+              wr->topology.terrain_height.dx += (nbz - z) * 0.5;
+              xdivisor += 0.5;
+            }
+          }
+          if (iter.y < xy.y) {
+            if (iter.x == xy.x) {
+              wr->topology.terrain_height.dy += (z - nbz);
+              xdivisor += 1;
+            } else {
+              wr->topology.terrain_height.dy += (z - nbz) * 0.5;
+              xdivisor += 0.5;
+            }
+          } else if (iter.y > xy.y) {
+            if (iter.x == xy.x) {
+              wr->topology.terrain_height.dy += (nbz - z);
+              xdivisor += 1;
+            } else {
+              wr->topology.terrain_height.dy += (nbz - z) * 0.5;
+              xdivisor += 0.5;
+            }
           }
         }
       }
+      wr->topology.terrain_height.dx /= xdivisor;
+      wr->topology.terrain_height.dy /= ydivisor;
     }
   }
 }

@@ -6,6 +6,7 @@
 #include "world/blocks.h"
 #include "world/world.h"
 #include "world/world_map.h"
+#include "datatypes/heightmap.h"
 #include "noise/noise.h"
 
 #include "util.h"
@@ -19,8 +20,6 @@
 /***********
  * Globals *
  ***********/
-
-ptrdiff_t TR_NOISE_SALT = 7300845;
 
 char const * const TR_REGION_NAMES[] = {
   "ocean depths",
@@ -38,14 +37,336 @@ char const * const TR_REGION_NAMES[] = {
 
 omp_lock_t TERRAIN_HEIGHT_LOCK;
 
+uint8_t const TR_DIRECTION_PERMUTATIONS[24] = {
+  0, 1, 2, 3,
+  0, 1, 3, 2,
+  0, 2, 1, 3,
+  0, 2, 3, 1,
+  0, 3, 1, 2,
+  0, 3, 2, 1,
+
+  1, 0, 2, 3,
+  1, 0, 3, 2,
+  1, 2, 0, 3,
+  1, 2, 3, 0,
+  1, 3, 0, 2,
+  1, 3, 2, 0,
+
+  2, 0, 1, 3,
+  2, 0, 3, 1,
+  2, 1, 0, 3,
+  2, 1, 3, 0,
+  2, 3, 0, 1,
+  2, 3, 1, 0,
+
+  3, 0, 1, 2,
+  3, 0, 2, 1,
+  3, 1, 0, 2,
+  3, 1, 2, 0,
+  3, 2, 0, 1,
+  3, 2, 1, 0
+};
+
+/*********************
+ * Private Functions *
+ *********************/
+
+// A helper function for computing the flat array index of a world region.
+static inline wm_pos_t _ar_idx(world_region *wr) {
+  return wr->pos.x + wr->world.width * wr->pos.y;
+}
+
+float _render_tectonics(
+  heightmap *hm,
+  size_t x,
+  size_t y,
+  float ignore,
+  void *v_ts
+) {
+  float fx, fy;
+  tectonic_sheet *ts = (tectonic_sheet*) v_ts;
+
+  fx = (x / (float) (ts->width - 1));
+  fy = (y / (float) (ts->height - 1));
+
+  // Crop the edges of the tectonic sheet to avoid the distorted edges.
+  fx = 0.5 + (0.5 - fx) * TR_TECT_CROP;
+  fy = 0.5 + (0.5 - fy) * TR_TECT_CROP;
+
+  // Get tectonic sheet height at this point:
+  return sheet_height(ts, fx, fy);
+}
+
+float _get_modulation(
+  heightmap *hm,
+  size_t x,
+  size_t y,
+  float ignore,
+  void *v_seed
+) {
+  ptrdiff_t seed = (ptrdiff_t) v_seed;
+  float result;
+  float fx, fy;
+
+  fx = ((float) x) / ((float) hm->width);
+  fy = ((float) y) / ((float) hm->width); // intentional
+
+  return (
+    sxnoise_2d(
+      TR_BUILD_MODULATION_LARGE_SCALE * fx,
+      TR_BUILD_MODULATION_LARGE_SCALE * fy,
+      seed
+    )
+  +
+    sxnoise_2d(
+      TR_BUILD_MODULATION_SMALL_SCALE * fx,
+      TR_BUILD_MODULATION_SMALL_SCALE * fy,
+      seed
+    ) * TR_BUILD_MODULATION_SMALL_STR
+  );
+}
+
 /*************
  * Functions *
  *************/
 
-void setup_terrain_gen(ptrdiff_t seed) {
+void setup_terrain_gen() {
   omp_init_lock(&TERRAIN_HEIGHT_LOCK);
-  TR_NOISE_SALT = prng(prng(seed) + 719102);
 }
+
+uint8_t run_particle(
+  heightmap *hm,
+  float height,
+  size_t slip,
+  size_t max_steps,
+  ptrdiff_t seed
+) {
+  size_t px, py;
+  size_t i, j, idx, ndir, nx, ny;
+  ptrdiff_t dperm; // the order in which we'll check the different directions
+  uint8_t valid;
+
+  seed = prng(seed + 3451);
+
+  // Start our particle at a random point that's lower than it (give up after a
+  // few tries though):
+  i = 0;
+  while (!valid && i < TR_PARTICLE_START_TRIES) {
+    px = posmod(seed, hm->width);
+    seed = prng(seed);
+    py = posmod(seed, hm->height);
+    seed = prng(seed);
+    if (hm_height(hm, px, py) < height) { valid = 1; }
+    i += 1;
+  }
+  if (!valid) { // We didn't find a valid place to start this particle.
+    return 0;
+  }
+
+  for (i = 0; i < max_steps; ++i) {
+    idx = hm_idx(hm, px, py);
+    if (px > 0 && hm->data[idx - 1] >= height) {
+      if (slip <= 0) { break; }
+      slip -= 1;
+    }
+    if (px < hm->width - 1 && hm->data[idx + 1] >= height) {
+      if (slip <= 0) { break; }
+      slip -= 1;
+    }
+    if (py > 0 && hm->data[idx - hm->width] >= height) {
+      if (slip <= 0) { break; }
+      slip -= 1;
+    }
+    if (py < hm->height - 1 && hm->data[idx + hm->width] >= height) {
+      if (slip <= 0) { break; }
+      slip -= 1;
+    }
+
+    nx = px;
+    ny = py;
+    valid = 0;
+    // there are 24 orders to check directions in:
+    dperm = posmod(seed + dperm, 24);
+    seed = prng(seed);
+
+    for (j = 0; j < 4; ++j) {
+      ndir = TR_DIRECTION_PERMUTATIONS[dperm * 4 + j];
+      if (ndir == 0) {
+        nx = px - 1;
+        ny = py;
+      } else if (ndir == 1) {
+        nx = px + 1;
+        ny = py;
+      } else if (ndir == 2) {
+        nx = px;
+        ny = py - 1;
+      } else if (ndir == 3) {
+        nx = px;
+        ny = py + 1;
+#ifdef DEBUG
+      } else {
+        fprintf(stderr, "Bad direction!");
+        exit(1);
+#endif
+      }
+      if (nx < 0 || nx > hm->width - 1 || ny < 0 || ny > hm->height - 1) {
+        continue;
+      }
+      idx = hm_idx(nx, ny);
+      if (hm->data[idx] < height) {
+        valid = 1;
+        break;
+      }
+    }
+
+    if (!valid) {
+      break;
+    }
+    px = nx;
+    py = ny;
+  }
+  idx = hm_idx(hm, px, py);
+  if (hm->data[idx] < height) {
+    hm->data[idx] = height;
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+void generate_topology(world_map *wm) {
+  world_map_pos xy;
+  world_region *wr;
+  tectonic_sheet *ts;
+  size_t i, j;
+  float fx, fy;
+  float tmax, tmin;
+  float z;
+  float pth, pcount, pgrowth;
+  heightmap *topo, *modulation, *precipitation, *flow, *tmp, *save;
+  ptrdiff_t seed;
+
+  ts = wm->tectonics;
+  seed = prng(wm->seed + 9164);
+
+  topo = create_heightmap(wm->width, wm->height);
+  modulation = create_heightmap(wm->width, wm->height);
+  precipitation = create_heightmap(wm->width, wm->height);
+  flow = create_heightmap(wm->width, wm->height);
+  tmp = create_heightmap(wm->width, wm->height);
+  save = create_heightmap(wm->width, wm->height);
+
+  tmax = sheet_height(ts, 0, 0);
+  tmin = tmax;
+
+  // First, render our tectonic sheet into our topo heightmap and normalize it:
+  hm_process(topo, (void*) ts, &_render_tectonics);
+  hm_normalize(topo);
+
+  // Now we start adding particles:
+  pcount = TR_BUILD_WAVE_SIZE;
+  pgrowth = TR_BUILD_WAVE_GROWTH;
+  pth = TR_BUILD_STARTING_HEIGHT;
+  for (i = 0; i < TR_BUILD_WAVE_COUNT; ++i) {
+    for (j = 0; j < pcount; ++j) {
+      run_particle(topo, pth, TR_BUILD_SLIP, TR_BUILD_MAX_WANDER, seed);
+      seed = prng(seed);
+    }
+    pth *= TR_BUILD_HEIGHT_FALLOFF;
+    pcount += pgrowth;
+    pgrowth += TR_BUILD_WAVE_COMPOUND;
+  }
+
+  // We want to slump things out, but at each step we mix back in a little of
+  // the original topology.
+  for (i = 0; i < TR_BUILD_SLUMP_STEPS; ++i) {
+    hm_copy(topo, save);
+    hm_slump(topo, tmp, TR_BUILD_SLUMP_MAX_SLOPE, TR_BUILD_SLUMP_RATE);
+    hm_average(topo, save, TR_BUILD_SLUMP_SAVE_MIX);
+  }
+
+  // Finally do a bit of pure slumping:
+  for (i = 0; i < TR_BUILD_FINAL_SLUMPS; ++i) {
+    hm_slump(topo, tmp, TR_BUILD_SLUMP_MAX_SLOPE, TR_BUILD_SLUMP_RATE);
+  }
+
+  // TODO: Is this fine?
+  // We invent completely uniform precipitation to drive erosion:
+  hm_offset(precipitation, 0.5);
+
+  // Next we get some modulation to create differential erosion in different
+  // areas of the world:
+  hm_process(modulation, (void*) seed, &_get_modulation);
+  seed = prng(seed);
+  hm_normalize(modulation);
+
+  // And we do a round of erosion:
+  for (i = 0; i < TR_BUILD_EROSION_STEPS; ++i) {
+    hm_reset(flow);
+    hm_reset(save);
+    hm_reset(tmp);
+    hm_erode(
+      topo,
+      modulation,
+      precipitation,
+      flow,
+      save,
+      tmp,
+      TR_BUILD_EROSION_FLOW_STEPS,
+      TR_BUILD_EROSION_FLOW_SLUMP_STEPS,
+      TR_BUILD_EROSION_FLOW_MAXSLOPE,
+      TR_BUILD_EROSION_FLOW_SLUMP_RATE,
+      TR_BUILD_EROSION_STR,
+      TR_BUILD_EROSION_MODULATION
+    );
+  }
+
+  // Now do another round of erosion with a different modulation array:
+  hm_process(modulation, (void*) seed, &_get_modulation);
+  seed = prng(seed);
+  hm_normalize(modulation);
+  for (i = 0; i < TR_BUILD_EROSION_STEPS; ++i) {
+    hm_reset(flow);
+    hm_reset(save);
+    hm_reset(tmp);
+    hm_erode(
+      topo,
+      modulation,
+      precipitation,
+      flow,
+      save,
+      tmp,
+      TR_BUILD_EROSION_FLOW_STEPS,
+      TR_BUILD_EROSION_FLOW_SLUMP_STEPS,
+      TR_BUILD_EROSION_FLOW_MAXSLOPE,
+      TR_BUILD_EROSION_FLOW_SLUMP_RATE,
+      TR_BUILD_EROSION_STR,
+      TR_BUILD_EROSION_MODULATION
+    );
+  }
+
+  // At this point our heightmap is complete, we just need to copy values over
+  // into our topography information:
+  for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+    for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+      wr = get_world_region(wm, &xy); // no need to worry about NULL here
+      wr->topology.terrain_height.z = hm_height(topo, xy.x, xy.y);
+    }
+  }
+
+  // Now that we've updated our height information, let's build an empirical
+  // manifold with proper slope information:
+  compute_manifold(wm);
+
+  // Free our temporary processing arrays:
+  cleanup_heightmap(topo);
+  cleanup_heightmap(modulation);
+  cleanup_heightmap(precipitation);
+  cleanup_heightmap(flow);
+  cleanup_heightmap(tmp);
+  cleanup_heightmap(save);
+}
+
 
 void compute_terrain_height(
   global_pos *pos,
@@ -283,142 +604,6 @@ void compute_terrain_height(
   // printf("result dirt: %.2f\n", r_dirt->z);
   // printf("\n");
   // */
-}
-
-// helper for alter_terrian_values
-static inline void alter_value(
-  manifold_point *value,
-  manifold_point *interp,
-  float this_str, float this_ctr,
-  float next_str, float next_ctr,
-  manifold_point *this_flatten,
-  manifold_point *next_flatten
-) {
-  manifold_point result, temp, tinterp;
-  mani_copy(&temp, value);
-  mani_smooth(&temp, this_str, this_ctr);
-  mani_multiply(&temp, interp);
-  mani_multiply(&temp, this_flatten);
-  mani_copy(&result, &temp);
-
-  mani_copy(&temp, value);
-  mani_copy(&tinterp, interp);
-  mani_smooth(&temp, next_str, next_ctr);
-  mani_scale_const(&tinterp, -1);
-  mani_offset_const(&tinterp, 1);
-  mani_multiply(&temp, &tinterp);
-  mani_multiply(&temp, next_flatten);
-
-  mani_add(&result, &temp);
-  mani_copy(value, &result);
-}
-
-void alter_terrain_values(
-  global_pos *pos, ptrdiff_t *salt,
-  terrain_region region, manifold_point *tr_interp,
-  manifold_point *mountains, manifold_point *hills, manifold_point *ridges,
-  manifold_point *mounds, manifold_point *details, manifold_point *bumps
-) {
-  manifold_point flatten, nofl, temp;
-
-  nofl.z = 1;
-  nofl.dx = 0;
-  nofl.dy = 0;
-
-  // Superflat areas:
-  simplex_component(
-    &flatten,
-    pos->x, pos->y,
-    1, 0,
-    0, 1,
-    TR_FREQUENCY_SGEOFORMS * 1.3,
-    salt
-  );
-  simplex_component(
-    &temp,
-    pos->x, pos->y,
-    1, 0,
-    0, 1,
-    TR_FREQUENCY_SGEOFORMS * 2.4,
-    salt
-  );
-  mani_scale_const(&temp, 0.7);
-  mani_add(&flatten, &temp);
-  mani_scale_const(&flatten, 1.0/1.7);
-  mani_offset_const(&flatten, 1);
-  mani_scale_const(&flatten, 0.5);
-
-  if (region == TR_REGION_DEPTHS) {
-    // amplify *bumps, *ridges, and *details; attenuate *hills and *mountains
-    alter_value(mountains, tr_interp, 2.3, 0.6, 3.8, 0.75, &nofl, &nofl);
-    alter_value(hills, tr_interp, 2.8, 0.7, 2.3, 0.65, &nofl, &nofl);
-    alter_value(ridges, tr_interp, 4.9, 0.2, 3.7, 0.8, &nofl, &nofl);
-    alter_value(mounds, tr_interp, 0, 1, 1.9, 0.6, &nofl, &nofl);
-    alter_value(details, tr_interp, 2.8, 0.2, 2.8, 0.6, &nofl, &nofl);
-    alter_value(bumps, tr_interp, 3.7, 0.3, 3.7, 0.8, &nofl, &nofl);
-  } else if (region == TR_REGION_SHELF) {
-    // gently attenuate most features; strongly attenuate *ridges:
-    mani_scale_const(&flatten, 0.8);
-
-    alter_value(mountains, tr_interp, 3.8, 0.75, 2.9, 0.6, &nofl, &flatten);
-    alter_value(hills, tr_interp, 2.3, 0.65, 2.3, 0.7, &nofl, &flatten);
-    alter_value(ridges, tr_interp, 3.7, 0.8, 1.9, 0.6, &nofl, &flatten);
-    alter_value(mounds, tr_interp, 1.9, 0.6, 1.9, 0.6, &nofl, &flatten);
-    alter_value(details, tr_interp, 2.8, 0.6, 2.0, 0.6, &nofl, &flatten);
-    alter_value(bumps, tr_interp, 3.7, 0.8, 3.7, 0.9, &nofl, &flatten);
-  } else if (region == TR_REGION_PLAINS) {
-    // attenuate everything; create some superflat regions:
-    mani_scale_const(&flatten, 0.8);
-
-    alter_value(mountains, tr_interp, 2.9, 0.6, 0, 1, &flatten, &nofl);
-    alter_value(hills, tr_interp, 2.3, 0.7, 2.8, 0.3, &flatten, &nofl);
-    alter_value(ridges, tr_interp, 1.9, 0.6, 2.1, 0.35, &flatten, &nofl);
-    alter_value(mounds, tr_interp, 1.9, 0.6, 0, 1, &flatten, &nofl);
-    alter_value(details, tr_interp, 2.0, 0.6, 0, 1, &flatten, &nofl);
-    alter_value(bumps, tr_interp, 3.7, 0.9, 0, 1, &flatten, &nofl);
-
-  } else if (region == TR_REGION_HILLS) {
-    // slightly accentuate *hills and *ridges:
-    mani_smooth(&flatten, 1.9, 0.5);
-    mani_scale_const(&flatten, 0.9);
-    mani_offset_const(&flatten, 0.1);
-
-    alter_value(mountains, tr_interp, 0, 1, 1.8, 0.3, &nofl, &nofl);
-    alter_value(hills, tr_interp, 2.7, 0.3, 1.9, 0.55, &nofl, &nofl);
-    alter_value(ridges, tr_interp, 2.1, 0.35, 2.4, 0.4, &nofl, &flatten);
-    alter_value(mounds, tr_interp, 0, 1, 0, 1, &nofl, &flatten);
-
-    mani_scale_const(&flatten, 0.5);
-    mani_offset_const(&flatten, 0.25);
-    alter_value(details, tr_interp, 0, 1, 0, 1, &nofl, &flatten);
-    alter_value(bumps, tr_interp, 0, 1, 0, 1, &nofl, &flatten);
-
-  } else if (region == TR_REGION_HIGHLANDS) {
-    // accentuate *mountains; attenuate *hills and *ridges slightly; create some
-    // flatter regions:
-    mani_smooth(&flatten, 1.9, 0.5);
-    mani_scale_const(&flatten, 0.9);
-    mani_offset_const(&flatten, 0.1);
-
-    alter_value(mountains, tr_interp, 1.8, 0.3, 2.9, 0.2, &nofl, &nofl);
-    alter_value(hills, tr_interp, 1.9, 0.55, 2.6, 0.4, &nofl, &nofl);
-    alter_value(ridges, tr_interp, 2.4, 0.4, 2.4, 0.15, &flatten, &nofl);
-    alter_value(mounds, tr_interp, 0, 1, 1.9, 0.3, &flatten, &nofl);
-
-    mani_scale_const(&flatten, 0.5);
-    mani_offset_const(&flatten, 0.25);
-    alter_value(details, tr_interp, 0, 1, 2.3, 0.4, &flatten, &nofl);
-    alter_value(bumps, tr_interp, 0, 1, 2.3, 0.3, &flatten, &nofl);
-
-  } else if (region == TR_REGION_MOUNTAINS) {
-    // amplify most things:
-    mani_smooth(mountains, 2.9, 0.2);
-    mani_smooth(hills, 2.6, 0.4);
-    mani_smooth(ridges, 2.4, 0.15);
-    mani_smooth(mounds, 1.9, 0.3);
-    mani_smooth(details, 2.3, 0.4);
-    mani_smooth(bumps, 2.3, 0.3);
-  }
 }
 
 void compute_dirt_height(

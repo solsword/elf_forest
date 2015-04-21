@@ -349,8 +349,11 @@ static inline void _water_sim_step(world_region *wr) {
         nbwind = pow(nbwind, CL_WIND_FOCUS_EXP); // tighten the envelope a bit
         if (neighbors[i] != NULL) {
           // Our neighbor's elevation with respect to us:
-          nbelev = neighbors[i]->mean_height - wr->mean_height;
-          // Convert to a slope:
+          nbelev = (
+            neighbors[i]->topology.terrain_height.z
+          - wr->topology.terrain_height.z
+          );
+          // Convert to a slope in block units:
           nbelev /= (float) (WORLD_REGION_BLOCKS);
           // truncate:
           if (nbelev < -1.5) {
@@ -359,7 +362,7 @@ static inline void _water_sim_step(world_region *wr) {
             nbelev = 1.5;
           }
           nbelev = (1.5 + nbelev) * CL_WIND_ELEVATION_FORCING;
-          if (wr->mean_height < TR_HEIGHT_SEA_LEVEL) {
+          if (wr->topology.terrain_height.z < TR_HEIGHT_SEA_LEVEL) {
             nbelev = 1.0;
           }
         } else {
@@ -569,7 +572,7 @@ void generate_climate(world_map *wm) {
       salt = seed;
 
       // compute "elevation:"
-      elev = elevation(wr->mean_height);
+      elev = elevation(wr->topology.terrain_height.z);
 
       // Winds:
       // ------
@@ -591,6 +594,7 @@ void generate_climate(world_map *wm) {
       mani_scale_const(&winds_base, 0.5);
 
       // Put slopes at around a comparable magnitude with the actual terrain:
+      // TODO: Does this still work w/ new empirical manifolds?
       mani_scale_const(
         &winds_base,
         (1.0 / (TR_FREQUENCY_CONTINENTS * CL_WIND_CELL_SIZE))
@@ -601,9 +605,9 @@ void generate_climate(world_map *wm) {
       r = mani_slope(&winds_base);
       theta = mani_contour(&winds_base);
       // TODO: Choose between contour and opposite direction...
-      if (wr->min_height > TR_HEIGHT_SEA_LEVEL) {
-        r2 = mani_slope(&(wr->gross_height)) * CL_WIND_LAND_INFLUENCE;
-        theta2 = mani_contour(&(wr->gross_height));
+      if (wr->topology.terrain_height > TR_HEIGHT_SEA_LEVEL) {
+        r2 = mani_slope(&(wr->topology.terrain_height))*CL_WIND_LAND_INFLUENCE;
+        theta2 = mani_contour(&(wr->topology.terrain_height));
         // Note we're not changing magnitude here:
         theta = (
           (r / (r + r2)) * theta
