@@ -161,6 +161,26 @@ typedef struct biome_s biome;
 // General
 // -------
 
+// World width and height in regions (used in worldgen.c):
+// 768*512 = 393216 regions
+//#define WORLD_WIDTH 768
+//#define WORLD_HEIGHT 512
+// 400*320 = 144000 regions
+//#define WORLD_WIDTH 400
+//#define WORLD_HEIGHT 360
+// 240*200 = 48000 regions
+#define WORLD_WIDTH 240
+#define WORLD_HEIGHT 200
+// 128*108 = 13824 regions
+//#define WORLD_WIDTH 128
+//#define WORLD_HEIGHT 108
+// 96*96 = 9216 regions
+//#define WORLD_WIDTH 96
+//#define WORLD_HEIGHT 96
+// 32*32 = 1024 regions
+//#define WORLD_WIDTH 32
+//#define WORLD_HEIGHT 32
+
 // Bits per world region (8 -> 256x256 chunks).
 // 128*108 = 13824 regions / world
 // 13824 * 256*256*(?=512) = 463856467968 chunks / world
@@ -204,7 +224,7 @@ typedef struct biome_s biome;
 // -------
 
 // Approximate number of world regions per tectonic sheet triangle
-#define TECTONIC_SHEET_SCALE 2.5
+#define TECTONIC_SHEET_SCALE 3.2
 
 // Maximum number of stone layers per world region
 #define WM_MAX_STRATA_LAYERS 256

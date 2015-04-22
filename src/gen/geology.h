@@ -21,8 +21,8 @@
  *************/
 
 // Height and offset for a simplex grid:
-#define SX_GRID_HEIGHT (sin(PI/3.0))
-#define SX_GRID_OFFSET (cos(PI/3.0))
+#define SX_GRID_HEIGHT (sin(M_PI/3.0))
+#define SX_GRID_OFFSET (cos(M_PI/3.0))
 
 // Exponents defining the shapes of tectonic seams & squashing:
 #define TECT_SEAM_SHAPE 0.6
@@ -32,38 +32,38 @@
 // --------------------------------------
 
 #define TECT_SMALL_RUSTLE_STR 0.4
-#define TECT_SMALL_RUSTLE_SCALE 14.2
+#define TECT_SMALL_RUSTLE_SCALE (14.2/100.0)
 #define TECT_LARGE_RUSTLE_STR 0.6
-#define TECT_LARGE_RUSTLE_SCALE 7.5
+#define TECT_LARGE_RUSTLE_SCALE (7.5/100.0)
 
-#define TECT_CONTINENTS_STR 0.06
-#define TECT_CONTINENTS_SCALE 1.6
-#define TECT_CONTINENTS_DSTR 0.27
-#define TECT_CONTINENTS_DSCALE 8.4
+#define TECT_CONTINENTS_STR 0.08
+#define TECT_CONTINENTS_SCALE (1.5/100.0)
+#define TECT_CONTINENTS_DSTR 9.3
+#define TECT_CONTINENTS_DSCALE (3.4/100.0)
 
-#define TECT_SEAM_COUNT 20
-#define TECT_SEAM_DT 0.1
-#define TECT_SEAM_MIN_WIDTH 5.3
+#define TECT_SEAM_COUNT (((WORLD_WIDTH + WORLD_HEIGHT) / 2) / 5)
+#define TECT_SEAM_DT 0.12
+#define TECT_SEAM_MIN_WIDTH 6.3
 #define TECT_SEAM_WIDTH_VAR 12.8
 
 #define TECT_CRUMPLE_STEPS 4
 
 #define TECT_CRUMPLE_RUSTLE_STR 0.3
-#define TECT_CRUMPLE_RUSTLE_SCALE 12.7
+#define TECT_CRUMPLE_RUSTLE_SCALE (12.7/100.0)
 
-#define TECT_CRUMPLE_SETTLE_STEPS 16
+#define TECT_CRUMPLE_SETTLE_STEPS 20
 #define TECT_CRUMPLE_SETTLE_DT 0.01
 #define TECT_CRUMPLE_EQ_DIST 1.3
 #define TECT_CRUMPLE_K 1.5
 
-#define TECT_CRUMPLE_UNTANGLE_STEPS 5
+#define TECT_CRUMPLE_UNTANGLE_STEPS 6
 #define TECT_CRUMPLE_UNTANGLE_DT 0.1
 
 #define TECT_STRETCH_RELAX_STEPS 20
 #define TECT_STRETCH_RELAX_DT 0.01
 #define TECT_STRETCH_RELAX_EQ_DIST 1.3
 #define TECT_STRETCH_RELAX_K 1.5
-#define TECT_STRETCH_UNTANGLE_STEPS 3
+#define TECT_STRETCH_UNTANGLE_STEPS 4
 #define TECT_STRETCH_UNTANGLE_DT 0.1
 
 #define TECT_DEFAULT_SQUASH_STR 29.0
@@ -76,7 +76,7 @@
 
 // Controls how many strata to generate (a multiple of MAX_STRATA_LAYERS).
 //#define STRATA_COMPLEXITY 3.0
-#define STRATA_COMPLEXITY (1/32.0)
+#define STRATA_COMPLEXITY (1/18.0)
 
 // The base stratum thickness (before an exponential distribution).
 #define BASE_STRATUM_THICKNESS 10.0
@@ -114,7 +114,7 @@ static inline void spring_force(
   vsub_from(result, from);
   float m = vmag(result);
   vnorm(result);
-  vscale(result, (m - eq) * k);
+  vscale(result, (eq - m) * k);
 }
 
 // Finds the closest point to the given point 'p' on the line segment from 'a'

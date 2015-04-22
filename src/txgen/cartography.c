@@ -248,6 +248,31 @@ void render_map_vectors(
   }
 }
 
+void render_heightmap(
+  heightmap *hm,
+  texture *tx,
+  uint8_t use_color
+) {
+  size_t row, col;
+  float x, y;
+  size_t hx, hy;
+  pixel color;
+  for (col = 0; col < tx->width; ++col) {
+    for (row = 0; row < tx->height; ++row) {
+      x = (col + 0.5) / ((float) tx->width);
+      y = (row + 0.5) / ((float) tx->height);
+      hx = ffloor(x * hm->width);
+      hy = ffloor(y * hm->height);
+      if (use_color) {
+        color = gradient_result(&LAND_GRADIENT, hm_height(hm, hx, hy));
+      } else {
+        color = gradient_result(&BW_GRADIENT, hm_height(hm, hx, hy));
+      }
+      tx_set_px(tx, color, col, row);
+    }
+  }
+}
+
 
 /*******************
  * Layer Functions *
@@ -262,7 +287,7 @@ pixel ly_terrain_height(world_region *wr) {
   } else if (wr->climate.water.body != NULL) {
     // draw water depth
     h = (
-      (wr->climate.water.body->level - wr->min_height)
+      (wr->climate.water.body->level - wr->topography.terrain_height.z)
     /
       (float) (TR_HEIGHT_SEA_LEVEL)
     );
@@ -291,18 +316,24 @@ pixel ly_terrain_height(world_region *wr) {
   } else {
     // draw land elevation
     h = (
-      (wr->mean_height - TR_HEIGHT_SEA_LEVEL)
+      (wr->topography.terrain_height.z - TR_HEIGHT_SEA_LEVEL)
     /
       (float) (TR_MAX_HEIGHT - TR_HEIGHT_SEA_LEVEL)
     );
     //return gradient_result(&LAND_GRADIENT, h);
     // TODO: Clean this up!
-    return gradient_map_result(&GEOREGIONS_GRADIENT, wr->mean_height);
+    return gradient_map_result(
+      &GEOREGIONS_GRADIENT,
+      wr->topography.terrain_height.z
+    );
   }
 }
 
 pixel ly_georegions(world_region *wr) {
-  return gradient_map_result_sharp(&GEOREGIONS_GRADIENT, wr->mean_height);
+  return gradient_map_result_sharp(
+    &GEOREGIONS_GRADIENT,
+    wr->topography.terrain_height.z
+  );
 }
 
 pixel ly_temperature(world_region *wr) {

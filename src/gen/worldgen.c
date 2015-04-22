@@ -65,34 +65,41 @@ void setup_worldgen(ptrdiff_t seed) {
   texture *rain_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
   texture *lrain_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
 
+  printf("    ...elevation...\n");
   render_map_layer(THE_WORLD, base_map, &ly_terrain_height);
+  write_texture_to_png(base_map, WORLD_MAP_FILE_BASE);
+
+  printf("    ...geographic regions...\n");
   render_map_layer(THE_WORLD, regions_map, &ly_georegions);
+  write_texture_to_png(regions_map, WORLD_MAP_FILE_REGIONS);
+
+  printf("    ...temperature...\n");
   render_map_layer(THE_WORLD, temp_map, &ly_temperature);
+  write_texture_to_png(temp_map, WORLD_MAP_FILE_TEMP);
+
+  printf("    ...wind...\n");
   render_map_layer(THE_WORLD, wind_map, &ly_terrain_height);
   render_map_vectors(THE_WORLD, wind_map, PX_BLACK,PX_WHITE, &vly_wind_vectors);
-  render_map_layer(THE_WORLD, evap_map, &ly_evaporation);
-  render_map_layer(THE_WORLD, cloud_map, &ly_cloud_cover);
-  render_map_layer(THE_WORLD, pq_map, &ly_precipitation_quotient);
-  render_map_layer(THE_WORLD, rain_map, &ly_precipitation);
-  render_map_layer(THE_WORLD, lrain_map, &ly_land_precipitation);
-
-  printf("    ...elevation...\n");
-  write_texture_to_png(base_map, WORLD_MAP_FILE_BASE);
-  printf("    ...geographic regions...\n");
-  write_texture_to_png(regions_map, WORLD_MAP_FILE_REGIONS);
-  printf("    ...temperature...\n");
-  write_texture_to_png(temp_map, WORLD_MAP_FILE_TEMP);
-  printf("    ...wind...\n");
   write_texture_to_png(wind_map, WORLD_MAP_FILE_WIND);
+
   printf("    ...evaporation...\n");
+  render_map_layer(THE_WORLD, evap_map, &ly_evaporation);
   write_texture_to_png(evap_map, WORLD_MAP_FILE_EVAP);
+
   printf("    ...clouds...\n");
+  render_map_layer(THE_WORLD, cloud_map, &ly_cloud_cover);
   write_texture_to_png(cloud_map, WORLD_MAP_FILE_CLOUDS);
+
   printf("    ...precipitation_quotient...\n");
+  render_map_layer(THE_WORLD, pq_map, &ly_precipitation_quotient);
   write_texture_to_png(pq_map, WORLD_MAP_FILE_PQ);
+
   printf("    ...precipitation...\n");
+  render_map_layer(THE_WORLD, rain_map, &ly_precipitation);
   write_texture_to_png(rain_map, WORLD_MAP_FILE_RAIN);
+
   printf("    ...land precipitation...\n");
+  render_map_layer(THE_WORLD, lrain_map, &ly_land_precipitation);
   write_texture_to_png(lrain_map, WORLD_MAP_FILE_LRAIN);
 
   cleanup_texture(base_map);

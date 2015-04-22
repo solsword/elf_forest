@@ -1,6 +1,8 @@
 // geology.c
 // Stone types and strata generation.
 
+#include <stdio.h>
+
 #include "noise/noise.h"
 #include "math/functions.h"
 #include "math/curve.h"
@@ -254,6 +256,8 @@ void stretch_sheet(tectonic_sheet *ts, float width, float height) {
   pw = sheet_pwidth(ts);
   ph = sheet_pheight(ts);
   // Compute the center to find desired min/max x/y:
+  cx = 0;
+  cy = 0;
   for (i = 0; i < pw; ++i) {
     for (j = 0; j < ph; ++j) {
       idx = sheet_pidx(ts, i, j);
@@ -288,26 +292,23 @@ void rustle_sheet(
   ptrdiff_t seed
 ) {
   int i, j, idx;
-  float actw;
   vector *p;
   ptrdiff_t oseed;
   seed = prng(seed + 71);
   oseed = prng(seed + 30);
-
-  actw = sheet_max_x(ts) - sheet_min_x(ts);
 
   for (i = 0; i < sheet_pwidth(ts); ++i) {
     for (j = 0; j < sheet_pheight(ts); ++j) {
       idx = sheet_pidx(ts, i, j);
       p = &(ts->points[idx]);
       p->x += strength * sxnoise_2d(
-        (p->x / actw) * scale,
-        (p->y / actw) * scale,
+        p->x * scale,
+        p->y * scale,
         seed
       );
       p->y += strength * sxnoise_2d(
-        (p->x / actw) * scale,
-        (p->y / actw) * scale,
+        p->x * scale,
+        p->y * scale,
         oseed
       );
     }
@@ -379,7 +380,7 @@ void settle_sheet(
           f = &(ts->forces[idx_b]);
           spring_force(a, b, &tmp, equilibrium_distance, spring_constant);
           vadd_to(f, &tmp);
-        } else if ((i == this.width - 1) && (j % 2 == 0) ) {
+        } else if ((i == ts->width - 1) && (j % 2 == 0) ) {
           // Both forces on our a <-> c edge:
           // a <- c
           f = &(ts->forces[idx_a]);
@@ -477,7 +478,7 @@ void untangle_sheet(
           f->x += a->x;
           f->y += a->y;
           ts->avgcounts[idx_b] += 1;
-        } else if ((i == this.width - 1) && (j % 2 == 0) ) {
+        } else if ((i == ts->width - 1) && (j % 2 == 0) ) {
           // Both relations on our a <-> c edge:
           // a <- c
           f = &(ts->forces[idx_a]);
@@ -541,54 +542,51 @@ void add_continents_to_sheet(
 ) {
   size_t i, j, idx;
   size_t pw, ph;
-  float actw;
   float fx, fy;
   vector *p;
-  vector tmp;
   ptrdiff_t dxseed, dyseed;
   float xphase, yphase;
 
   dxseed = prng(seed);
   dyseed = prng(dxseed);
 
-  xphase = float_hash_1d(prng(seed + 18291));
-  yphase = float_hash_1d(prng(seed + 6546));
+  seed = prng(seed + 18291);
+  xphase = float_hash_1d(seed);
+  seed = prng(seed + 6546);
+  yphase = float_hash_1d(seed);
 
   pw = sheet_pwidth(ts);
   ph = sheet_pwidth(ts);
-
-  // We use the width of the sheet as the basis for scaling, and we ignore the
-  // height (so that the aspect ratio of the sheet doesn't cause distortion).
-  actw = sheet_max_x(ts) - sheet_min_x(ts);
-
-  fpw = (float) pw;
-  fph = (float) ph;
 
   // Only pass: add continent height
   for (i = 0; i < pw; ++i) {
     for (j = 0; j < ph; ++j) {
       idx = sheet_pidx(ts, i, j);
       p = &(ts->points[idx]);
-      // base scaling:
-      fx = (p->x / actw) * scale;
-      fy = (p->y / actw) * scale;
+      fx = p->x;
+      fy = p->y;
 
       // distortion
-      fx += dstr * (actw / scale) * sxnoise_2d(
-        (p->x / actw) * dscale,
-        (p->y / actw) * dscale,
+      fx += dstr * sxnoise_2d(
+        p->x * dscale,
+        p->y * dscale,
         dxseed
       );
-      fy += dstr * (actw / scale) * sxnoise_2d(
-        (p->x / actw) * scale,
-        (p->y / actw) * scale,
+      fy += dstr * sxnoise_2d(
+        p->x * dscale,
+        p->y * dscale,
         dyseed
       );
+
+      // scaling:
+      fx *= scale;
+      fy *= scale;
+
       // sin/cos continents:
       p->z += strength * (
-        sin(2.0 * PI * fx + xphase)
+        sin(2.0 * M_PI * (fx + xphase))
       *
-        cos(2.0 * PI * fy + yphase)
+        cos(2.0 * M_PI * (fy + yphase))
       );
     }
   }
@@ -660,7 +658,6 @@ void squash_sheet(
   float min_z;
   float fixed;
   vector *p;
-  vector tmp;
 
   pw = sheet_pwidth(ts);
   ph = sheet_pwidth(ts);
@@ -689,7 +686,7 @@ void squash_sheet(
 void generate_tectonics(world_map *wm) {
   size_t i;
   vector a, b;
-  ptrdiff_t seed = prng(wm->seed + 182011);
+  ptrdiff_t seed = prng(wm->seed + 187012);
   float min_x, max_x, min_y, max_y;
 
   tectonic_sheet *ts = wm->tectonics;
@@ -811,13 +808,9 @@ float sheet_height(
   float fy
 ) {
   size_t i, j, idx_a, idx_b, idx_c;
-  size_t pw, ph;
   float px, py;
   float min_x, max_x, min_y, max_y;
   vector bc;
-
-  pw = sheet_pwidth(ts);
-  ph = sheet_pwidth(ts);
 
   min_x = sheet_min_x(ts);
   max_x = sheet_max_x(ts);
@@ -842,10 +835,10 @@ float sheet_height(
         &(ts->points[idx_a]),
         &(ts->points[idx_b]),
         &(ts->points[idx_c])
-      )
+      );
       if (bc.x > 0 && bc.y > 0 && bc.z > 0) { // we're inside this triangle
         barycentric__xy(
-          &bc
+          &bc,
           &(ts->points[idx_a]),
           &(ts->points[idx_b]),
           &(ts->points[idx_c])
@@ -855,13 +848,13 @@ float sheet_height(
     }
   }
 #ifdef DEBUG
-  fprint(
+  fprintf(
     stderr,
-    "Error: sheet heigh query: no triangle at (%.3f, %.3f) -> (%.3f, %.3f).\n",
+    "WARNING: sheet height: no triangle at (%.3f, %.3f) -> (%.3f, %.3f).\n",
     fx, fy,
     px, py
   );
-  exit(1);
+  return -100;
 #endif
   return 0;
 }

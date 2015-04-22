@@ -56,6 +56,15 @@ void render_map_vectors(
   void (*vector_layer_fn)(world_region*, float*, float*)
 );
 
+// Renders the given heightmap into the given texture, using either grayscale
+// or false color depending on the value of use_color. The heightmap is assumed
+// to be normalized.
+void render_heightmap(
+  heightmap *hm,
+  texture *tx,
+  uint8_t use_color
+);
+
 /*******************
  * Layer Functions *
  *******************/

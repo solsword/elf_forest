@@ -61,10 +61,10 @@
 #define CL_ELEV_REMAP_POWER 1.6
 #define CL_ELEV_REMAP_TO 0.7
 
-// Wind parameters (base values from corresponding continent parameters):
-#define CL_WIND_CELL_DISTORTION_SIZE 1.2
-#define CL_WIND_CELL_DISTORTION_STRENGTH 0.6
-#define CL_WIND_CELL_SIZE 1.3
+// Wind parameters:
+#define CL_WIND_CELL_DISTORTION_SCALE (3.8 / (100.0 * WORLD_REGION_BLOCKS))
+#define CL_WIND_CELL_DISTORTION_STRENGTH (0.17 * (100.0 * WORLD_REGION_BLOCKS))
+#define CL_WIND_CELL_SCALE (2.2 / (100.0 * WORLD_REGION_BLOCKS))
 
 // should be roughly the median wind strength
 #define CL_WIND_BASE_STRENGTH 3.0

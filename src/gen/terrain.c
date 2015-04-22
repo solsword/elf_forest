@@ -2,9 +2,9 @@
 // Code for determining terrain height.
 
 #include <math.h>
-#ifdef DEBUG
-#include <stdlib.h>
 #include <stdio.h>
+#ifdef DEBUG
+  #include <stdlib.h>
 #endif
 
 #include "world/blocks.h"
@@ -13,10 +13,13 @@
 #include "datatypes/heightmap.h"
 #include "noise/noise.h"
 
+#ifdef DEBUG
+  #include "txgen/cartography.h"
+#endif
+
 #include "util.h"
 
 #include "geology.h"
-// DEBUG:
 #include "worldgen.h"
 
 #include "terrain.h"
@@ -91,8 +94,8 @@ float _render_tectonics(
   float fx, fy;
   tectonic_sheet *ts = (tectonic_sheet*) v_ts;
 
-  fx = (x / (float) (ts->width - 1));
-  fy = (y / (float) (ts->height - 1));
+  fx = (x / (float) (hm->width - 1));
+  fy = (y / (float) (hm->height - 1));
 
   // Crop the edges of the tectonic sheet to avoid the distorted edges.
   fx = 0.5 + (0.5 - fx) * TR_TECT_CROP;
@@ -151,10 +154,12 @@ uint8_t run_particle(
   uint8_t valid;
 
   seed = prng(seed + 3451);
+  dperm = 0;
 
   // Start our particle at a random point that's lower than it (give up after a
   // few tries though):
   i = 0;
+  valid = 0;
   while (!valid && i < TR_PARTICLE_START_TRIES) {
     px = posmod(seed, hm->width);
     seed = prng(seed);
@@ -242,10 +247,13 @@ void generate_topography(world_map *wm) {
   world_map_pos xy;
   world_region *wr;
   tectonic_sheet *ts;
-  size_t i, j;
-  float pth, pcount, pgrowth;
+  size_t i, j, pcount, pgrowth;
+  float pth;
   heightmap *topo, *modulation, *precipitation, *flow, *tmp, *save;
   ptrdiff_t seed;
+#ifdef DEBUG
+  texture *tx;
+#endif
 
   ts = wm->tectonics;
   seed = prng(wm->seed + 9164);
@@ -258,8 +266,17 @@ void generate_topography(world_map *wm) {
   save = create_heightmap(wm->width, wm->height);
 
   // First, render our tectonic sheet into our topo heightmap and normalize it:
+  printf("    ...rendering tectonics...\n");
   hm_process(topo, (void*) ts, &_render_tectonics);
+  printf("    ...done rendering tectonics...\n");
   hm_normalize(topo);
+
+#ifdef DEBUG
+  tx = create_texture(wm->width, wm->height);
+  render_heightmap(topo, tx, 0);
+  write_texture_to_png(tx, "out/topography_tectonics.png");
+  cleanup_texture(tx);
+#endif
 
   // Now we start adding particles:
   pcount = TR_BUILD_WAVE_SIZE;
@@ -273,20 +290,42 @@ void generate_topography(world_map *wm) {
     pth *= TR_BUILD_HEIGHT_FALLOFF;
     pcount += pgrowth;
     pgrowth += TR_BUILD_WAVE_COMPOUND;
+    printf(
+      "    ...%zu / %zu particle waves done...\r",
+      i + 1,
+      (size_t) TR_BUILD_WAVE_COUNT
+    );
   }
+  printf("\n");
+
+#ifdef DEBUG
+  tx = create_texture(wm->width, wm->height);
+  render_heightmap(topo, tx, 0);
+  write_texture_to_png(tx, "out/topography_with_particles.png");
+  cleanup_texture(tx);
+#endif
 
   // We want to slump things out, but at each step we mix back in a little of
   // the original topography.
   for (i = 0; i < TR_BUILD_SLUMP_STEPS; ++i) {
     hm_copy(topo, save);
+    hm_reset(tmp);
     hm_slump(topo, tmp, TR_BUILD_SLUMP_MAX_SLOPE, TR_BUILD_SLUMP_RATE);
     hm_average(topo, save, TR_BUILD_SLUMP_SAVE_MIX);
   }
 
   // Finally do a bit of pure slumping:
   for (i = 0; i < TR_BUILD_FINAL_SLUMPS; ++i) {
+    hm_reset(tmp);
     hm_slump(topo, tmp, TR_BUILD_SLUMP_MAX_SLOPE, TR_BUILD_SLUMP_RATE);
   }
+
+#ifdef DEBUG
+  tx = create_texture(wm->width, wm->height);
+  render_heightmap(topo, tx, 0);
+  write_texture_to_png(tx, "out/topography_slumped.png");
+  cleanup_texture(tx);
+#endif
 
   // TODO: Is this fine?
   // We invent completely uniform precipitation to drive erosion:
@@ -342,6 +381,14 @@ void generate_topography(world_map *wm) {
       TR_BUILD_EROSION_MODULATION
     );
   }
+  hm_normalize(topo);
+
+#ifdef DEBUG
+  tx = create_texture(wm->width, wm->height);
+  render_heightmap(topo, tx, 0);
+  write_texture_to_png(tx, "out/topography_eroded.png");
+  cleanup_texture(tx);
+#endif
 
   // At this point our heightmap is complete, we just need to copy values over
   // into our topography information:

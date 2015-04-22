@@ -44,7 +44,7 @@ float SETTLE_DT = 0.01;
 
 float UNTANGLE_DT = 0.1;
 
-float SEAM_DT = 0.1;
+float SEAM_DT = 0.15;
 float MIN_SEAM_WIDTH = GRID_RESOLUTION * 4.3;
 float MAX_SEAM_WIDTH = GRID_RESOLUTION * 12.1;
 

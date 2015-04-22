@@ -519,7 +519,7 @@ void generate_hydrology(world_map *wm) {
         l_append_element(wm->all_water, next_water);
         next_water = create_body_of_water(TR_HEIGHT_SEA_LEVEL, SALINITY_SALINE);
       }
-      if (wr->climate.water.body == NULL && wr->downhill == NULL) {
+      if (wr->climate.water.body == NULL && wr->topography.downhill == NULL) {
         l_append_element(lake_sites, wr);
       }
     }
@@ -533,6 +533,8 @@ void generate_hydrology(world_map *wm) {
   cleanup_list(lake_sites);
 
   // Finally, run rivers upwards from shores:
+  /*
+   * DEBUG:
   printf("    ...generating rivers...\n");
   l_witheach(wm->all_water, (void*) wm, &_iter_seed_rivers);
   for (i = 0; i < CL_RIVER_GROWTH_ITERATIONS; ++i) {
@@ -549,6 +551,7 @@ void generate_hydrology(world_map *wm) {
     CL_RIVER_GROWTH_ITERATIONS,
     CL_RIVER_GROWTH_ITERATIONS
   );
+  */
 }
 
 void generate_climate(world_map *wm) {
@@ -578,8 +581,8 @@ void generate_climate(world_map *wm) {
       // ------
       get_standard_distortion(
         wr->anchor.x, wr->anchor.y, &salt,
-        TR_DFQ_CONTINENTS * CL_WIND_CELL_DISTORTION_SIZE,
-        TR_DS_CONTINENTS * CL_WIND_CELL_DISTORTION_STRENGTH,
+        CL_WIND_CELL_DISTORTION_SCALE,
+        CL_WIND_CELL_DISTORTION_STRENGTH,
         &dst_x, &dst_y
       );
       trig_component(
@@ -587,7 +590,7 @@ void generate_climate(world_map *wm) {
         wr->anchor.x + dst_x.z, wr->anchor.y + dst_y.z,
         1 + dst_x.dx, dst_x.dy,
         dst_y.dx, 1 + dst_y.dy,
-        TR_FREQUENCY_CONTINENTS * CL_WIND_CELL_SIZE,
+        CL_WIND_CELL_SCALE,
         &salt
       );
       mani_offset_const(&winds_base, 1);
@@ -597,7 +600,7 @@ void generate_climate(world_map *wm) {
       // TODO: Does this still work w/ new empirical manifolds?
       mani_scale_const(
         &winds_base,
-        (1.0 / (TR_FREQUENCY_CONTINENTS * CL_WIND_CELL_SIZE))
+        (1.0 / (CL_WIND_CELL_SCALE))
       );
       mani_scale_const(&winds_base, CL_WIND_BASE_STRENGTH);
 
@@ -605,7 +608,7 @@ void generate_climate(world_map *wm) {
       r = mani_slope(&winds_base);
       theta = mani_contour(&winds_base);
       // TODO: Choose between contour and opposite direction...
-      if (wr->topography.terrain_height > TR_HEIGHT_SEA_LEVEL) {
+      if (wr->topography.terrain_height.z > TR_HEIGHT_SEA_LEVEL) {
         r2 = mani_slope(&(wr->topography.terrain_height))*CL_WIND_LAND_INFLUENCE;
         theta2 = mani_contour(&(wr->topography.terrain_height));
         // Note we're not changing magnitude here:
@@ -796,13 +799,15 @@ step_result fill_water(
     if (wr->climate.water.body != NULL) {
       return SRESULT_ABORT;
     } else if (
-      wr->min_height - (TR_SCALE_MOUNDS + TR_SCALE_DETAILS + TR_SCALE_BUMPS)
-    >
-      body->level
+      (
+        wr->topography.terrain_height.z
+      - (TR_SCALE_HILLS + TR_SCALE_RIDGES + TR_SCALE_MOUNDS)
+      )
+    > body->level
     ) {
       // This is a pure land region: do nothing
       return SRESULT_IGNORE;
-    } else if (wr->max_height < body->level) {
+    } else if (wr->topography.terrain_height.z < body->level) {
       // This is an interior region
       l_append_element(interior, wr);
       body->area += 1;
@@ -873,7 +878,7 @@ step_result seed_rivers(
       );
       l_append_element(r->path, rseed); // A random starting point
       geopt__glpos(wr->world, &rseed, &glpos);
-      uph = mani_uphill(&(wr->gross_height)); // flow from uphill
+      uph = mani_uphill(&(wr->topography.terrain_height)); // flow from uphill
       // TODO: Add a random element here?
       glpos.x += CL_RIVER_SEED_CPT_DIST * CL_RIVER_SEP_BASE * cosf(uph);
       glpos.y += CL_RIVER_SEED_CPT_DIST * CL_RIVER_SEP_BASE * sinf(uph);
