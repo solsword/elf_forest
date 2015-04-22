@@ -53,6 +53,43 @@ float slice_3d_noise(float x, float y) {
   return sxnoise_3d(x, y, NOISE_Z, SALT);
 }
 
+float unsalt_worley_noise(float x, float y) {
+  return wrnoise_2d(x, y, 117);
+}
+
+float fancy_worley_noise(float x, float y) {
+  float dontcare;
+  return wrnoise_2d_fancy(
+    x, y,
+    117,
+    0, 0,
+    &dontcare, &dontcare,
+    0
+  );
+}
+
+float fancier_worley_noise(float x, float y) {
+  float dontcare;
+  return wrnoise_2d_fancy(
+    x, y,
+    117,
+    0, 0,
+    &dontcare, &dontcare,
+    WORLEY_FLAG_INCLUDE_NEXTBEST
+  );
+}
+
+float fancy_smooth_worley_noise(float x, float y) {
+  float dontcare;
+  return wrnoise_2d_fancy(
+    x, y,
+    117,
+    0, 0,
+    &dontcare, &dontcare,
+    WORLEY_FLAG_SMOOTH_SIDES
+  );
+}
+
 float fractal_2d_noise(float x, float y) {
   return fractal_sxnoise_2d(
     x, y,
@@ -565,6 +602,20 @@ void write_grad_ppm(
 int main(int argc, char** argv) {
   write_noise_ppm(&unsalt_2d_noise, "noise_test_2D.ppm", 0, 0);
   write_noise_ppm(&unsalt_2d_noise, "noise_test_2D_shaded.ppm", 0, 1);
+  write_noise_ppm(&unsalt_worley_noise, "noise_test_worley.ppm", 0, 0);
+  write_noise_ppm(&fancy_worley_noise, "noise_test_worley_fancy.ppm", 0, 0);
+  write_noise_ppm(&fancier_worley_noise, "noise_test_worley_fancier.ppm", 0, 0);
+  write_noise_ppm(
+    &fancy_smooth_worley_noise,
+    "noise_test_worley_fancy_smooth.ppm",
+    0, 0
+  );
+  write_noise_ppm(&fancier_worley_noise, "noise_test_worley_fshade.ppm", 0, 1);
+  write_noise_ppm(
+    &fancy_smooth_worley_noise,
+    "noise_test_worley_fsmshade.ppm",
+    0, 1
+  );
   write_noise_ppm(&slice_3d_noise, "noise_test_3D.ppm", 1, 1);
   write_noise_ppm(&fractal_2d_noise, "noise_test_2D_F.ppm", 1, 1);
   write_noise_ppm(&slice_fractal_3d_noise, "noise_test_3D_F.ppm", 1, 1);

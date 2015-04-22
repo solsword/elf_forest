@@ -535,14 +535,14 @@ static inline void compute_offset_grid_point_2d(
 ) {
   grn->x[idx] = (float) i + (
     hash_2d(
-      i + salt,
-      j + salt
+      i,
+      j ^ salt
     ) / ((float) HASH_MASK)
   );
   grn->y[idx] = (float) j + (
     hash_2d(
-      j + salt,
-      i + salt
+      j ^ salt,
+      i
     ) / ((float) HASH_MASK)
   );
 }

@@ -33,7 +33,8 @@ typedef struct grid_neighborhood_2d_s grid_neighborhood_2d;
 // Disables normalization of the result.
 #define WORLEY_FLAG_DONT_NORMALIZE 0x0000004
 // Smoothes the sides of the Worley contours somewhat using some fancy
-// interpolation.
+// interpolation. If SMOOTH_SIDES is given, the sense of INCLUDE_NEXTBEST is
+// inverted.
 #define WORLEY_FLAG_SMOOTH_SIDES 0x0000008
 
 // These flags control the noise generation when given to the table form of
@@ -238,11 +239,12 @@ static inline ptrdiff_t ffloor(float x) {
 
 // Basic hash of a single value:
 static inline ptrdiff_t hash_1d(ptrdiff_t x) {
-  return ((x + 8911211) * 71817211) & HASH_MASK; // both are prime
+  //return ((x + 8911211) * 71817211) & HASH_MASK; // both are prime
+  return ((x + 11) * 7) & HASH_MASK; // both are prime
 }
 
 static inline ptrdiff_t hash_2d(ptrdiff_t x, ptrdiff_t y) {
-  return hash_1d(x + hash_1d(y));
+  return (y ^ hash_1d(x + (hash_1d(y) ^ x))) & HASH_MASK;
 }
 static inline ptrdiff_t hash_3d(ptrdiff_t x, ptrdiff_t y, ptrdiff_t z) {
   return hash_1d(x + hash_1d(y + hash_1d(z)));
