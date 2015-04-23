@@ -237,6 +237,9 @@ static inline pixel gradient_result(gradient const * const gr, float t) {
     if (lower == upper) {
       upper = lower + 1;
     }
+    if (upper > gr->count - 1) { // watch out for floating point error
+      return gr->colors[lower];
+    }
     f = ( ( (gr->count - 1) * t) - lower) / (upper - lower);
     return px_interp(gr->colors[lower], gr->colors[upper], f);
   }

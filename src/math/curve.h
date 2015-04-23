@@ -111,7 +111,10 @@ static inline float est_curve_length(curve *c) {
   return 0.5 * lest + 0.5 * pest;
 }
 
-// This is here because it makes more sense than having it anywhere else:
+// Miscellaneous useful curves:
+
+// A logarithmic sigmoid with slope ~0.5 at the center. Doesn't exactly hit 0/1
+// at the ends.
 static inline float sigmoid(float t, float start, float end) {
   if (t < start) {
     return 0;
@@ -120,6 +123,36 @@ static inline float sigmoid(float t, float start, float end) {
   } else {
     float tprime = -1.0 + 2.0 * (t - start) / (end - start);
     return 1.0 / (1 + exp(-tprime*5));
+  }
+}
+
+// An exponential distribution over [0, 1] with values in [0, 1].
+static inline float expdist(float x, float power) {
+  return (exp(x * power) - 1) / (exp(power) - 1);
+}
+
+// A sigmoid on [0,1] built out of two parabolas that hits 0/1 at the ends and
+// which has slope asymptotic to 0 at the ends. The inflection point is
+// adjustable (it's y-value is always equal to its x-value).
+static inline float strict_sigmoid(float x, float inflect) {
+  if (x < inflect) {
+    // TODO: is the slope pointing in the right direction?
+    return (inflect / 0.25) * pow(x/(2*inflect), 2);
+  } else {
+    // TODO: Is this calculation correct?
+    float omi = (1 - inflect);
+    return 1 - (omi/0.25)*pow((1 - x)/(2*omi), 2);
+  }
+}
+
+// Returns the analytical derivative of a strict_sigmoid with the given
+// inflection point.
+static inline float strict_sigmoid_slope(float x, float inflect) {
+  if (x < inflect) {
+    return (2 * 0.3 / (0.25 * (4*inflect*inflect))) * x;
+  } else {
+    float omi = (1 - inflect);
+    return -(omi/(0.25 * (4*omi*omi)))*(-2.0 + 2.0*x);
   }
 }
 

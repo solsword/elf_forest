@@ -26,7 +26,9 @@
 
 // Exponents defining the shapes of tectonic seams & squashing:
 #define TECT_SEAM_SHAPE 0.6
-#define TECT_SQUASH_SHAPE 2.4
+#define TECT_SEAM_SIGSHAPE 0.4
+#define TECT_RMOD_SIGSHAPE 0.75
+#define TECT_RMOD_EXPSHAPE 4.4
 
 // Tectonics sheet generation parameters:
 // --------------------------------------
@@ -36,10 +38,16 @@
 #define TECT_LARGE_RUSTLE_STR 0.6
 #define TECT_LARGE_RUSTLE_SCALE (7.5/100.0)
 
-#define TECT_CONTINENTS_STR 0.08
+#define TECT_CONTINENTS_STR 0.06
 #define TECT_CONTINENTS_SCALE (1.5/100.0)
 #define TECT_CONTINENTS_DSTR 9.3
 #define TECT_CONTINENTS_DSCALE (3.4/100.0)
+
+#define TECT_RIDGES_STR (6.0 * 0.32) // the 6.0 offsets various biases
+#define TECT_RIDGES_SCALE (5.4/100.0)
+#define TECT_RIDGES_DSTR 2.4
+#define TECT_RIDGES_DSCALE (10.7/100.0)
+#define TECT_RIDGES_MSCALE (2.2/100.0)
 
 #define TECT_SEAM_COUNT (((WORLD_WIDTH + WORLD_HEIGHT) / 2) / 5)
 #define TECT_SEAM_DT 0.12
@@ -51,7 +59,7 @@
 #define TECT_CRUMPLE_RUSTLE_STR 0.3
 #define TECT_CRUMPLE_RUSTLE_SCALE (12.7/100.0)
 
-#define TECT_CRUMPLE_SETTLE_STEPS 20
+#define TECT_CRUMPLE_SETTLE_STEPS 15
 #define TECT_CRUMPLE_SETTLE_DT 0.01
 #define TECT_CRUMPLE_EQ_DIST 1.3
 #define TECT_CRUMPLE_K 1.5
@@ -59,14 +67,20 @@
 #define TECT_CRUMPLE_UNTANGLE_STEPS 6
 #define TECT_CRUMPLE_UNTANGLE_DT 0.1
 
-#define TECT_STRETCH_RELAX_STEPS 20
+#define TECT_STRETCH_RELAX_STEPS 15
 #define TECT_STRETCH_RELAX_DT 0.01
 #define TECT_STRETCH_RELAX_EQ_DIST 1.3
 #define TECT_STRETCH_RELAX_K 1.5
+
 #define TECT_STRETCH_UNTANGLE_STEPS 4
 #define TECT_STRETCH_UNTANGLE_DT 0.1
 
-#define TECT_DEFAULT_SQUASH_STR 29.0
+#define TECT_SQUASH_LOWER_CUTOFF 0.0
+#define TECT_SQUASH_NEW_MIN -0.1
+#define TECT_SQUASH_UPPER_FRACTION 0.75
+#define TECT_SQUASH_MAX_FACTOR 0.2
+
+#define TECT_RECOMBINE_STR 0.3
 
 // Strata parameters:
 // ------------------
@@ -418,6 +432,10 @@ tectonic_sheet *create_tectonic_sheet(
   size_t height
 );
 
+// Allocates and returns a new tectonic sheet that's a copy of the given sheet,
+// including its seed.
+tectonic_sheet* copy_tectonic_sheet(tectonic_sheet *ts);
+
 void cleanup_tectonic_sheet(tectonic_sheet *ts);
 
 // Allocates and returns a new stratum with the given parameters.
@@ -448,8 +466,7 @@ void reset_sheet(tectonic_sheet *ts);
 void stretch_sheet(tectonic_sheet *ts, float width, float height);
 
 // Randomly moves each grid point a little bit in the x/y plane. Strength
-// represents the max perturbation, while scale is the number of noise cells
-// per sheet width (so higher scale -> smaller features).
+// represents the max perturbation, while scale controls the size of the noise.
 void rustle_sheet(
   tectonic_sheet *ts,
   float strength,
@@ -486,9 +503,7 @@ void untangle_sheet(
 // affect x/y values at all. The strength parameters scales the height added,
 // while the scale and dscale parameters control the scale of the continents
 // and the scale of underlying distortion respectively. The dstr parameter
-// controls the strength of distortion applied. The scaling parameters are set
-// up such that there will be scale periods per sheet width. This means that
-// higher numbers correspond to smaller features.
+// controls the strength of distortion applied.
 void add_continents_to_sheet(
   tectonic_sheet *ts,
   float strength,
@@ -496,6 +511,23 @@ void add_continents_to_sheet(
   float dstr,
   float dscale,
   ptrdiff_t seed
+);
+
+// Adds some ridges to the tectonic sheet by changing z values. Doesn't affect
+// x/y values at all. The strength parameter scales the height added, while
+// the scale and dscale parameters control the scale of the ridges and the
+// scale of underlying distortion respectively. The dstr parameter controls the
+// strength of distortion applied. The mscale parameter controls the scale of
+// modulation, while the mseed paramter provides a separate modulation seed.
+void add_ridges_to_sheet(
+  tectonic_sheet *ts,
+  float strength,
+  float scale,
+  float dstr,
+  float dscale,
+  float mscale,
+  ptrdiff_t seed,
+  ptrdiff_t mseed
 );
 
 // Either expands or contracts the tectonic sheet around the given line
@@ -513,13 +545,16 @@ void seam_sheet(
   int hold_edges
 );
 
-// Takes a tectonic sheet and dramatically flattens the negative values to
-// create a lopsided height distribution. The most-negative value will be
-// divided by the 'strength' parameter. This only affects z values (and only
-// negative ones at that).
+// Takes a tectonic sheet and flattens outlying values. Basically, takes the
+// bottom lower_fraction of the distribution and compresses it into
+// lower_strength of its former range, and does the same using the upper_
+// parameters. This only affects z values.
 void squash_sheet(
   tectonic_sheet *ts,
-  float strength
+  float lower_fraction,
+  float lower_strength,
+  float upper_fraction,
+  float upper_strength
 );
 
 // This is the core tectonics generation function that applies various

@@ -25,17 +25,17 @@
 
 #define TR_TECT_CROP 0.95
 
-#define TR_PARTICLE_START_TRIES 3
+#define TR_PARTICLE_START_TRIES 5
 
 #define TR_BUILD_STARTING_HEIGHT 0.92
 #define TR_BUILD_HEIGHT_FALLOFF 0.85
 #define TR_BUILD_MAX_WANDER 1000000
 #define TR_BUILD_SLIP 4
 
-#define TR_BUILD_WAVE_COUNT 31
+#define TR_BUILD_WAVE_COUNT 30
 #define TR_BUILD_WAVE_SIZE ((WORLD_WIDTH + WORLD_HEIGHT) / 2)
 #define TR_BUILD_WAVE_GROWTH ((WORLD_WIDTH + WORLD_HEIGHT) / 8)
-#define TR_BUILD_WAVE_COMPOUND 4
+#define TR_BUILD_WAVE_COMPOUND 8
 
 // TODO: Fiddle with this?
 #define TR_BUILD_SLUMP_MAX_SLOPE 0.01 // ~1:1
@@ -64,10 +64,10 @@
 // Geoform mapping maps [0, 1] to real heights; see compute_geoforms.
 
 // TODO: Fiddle with these
-#define       TR_GEOMAP_SHELF 0.07
-#define       TR_GEOMAP_SHORE 0.10
-#define      TR_GEOMAP_PLAINS 0.13
-#define       TR_GEOMAP_HILLS 0.22
+#define       TR_GEOMAP_SHELF 0.12
+#define       TR_GEOMAP_SHORE 0.16
+#define      TR_GEOMAP_PLAINS 0.22
+#define       TR_GEOMAP_HILLS 0.55
 #define   TR_GEOMAP_MOUNTAINS 0.75
 
 #define TR_GMS_DEPTHS (-4.1)

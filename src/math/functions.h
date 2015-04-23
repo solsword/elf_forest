@@ -15,7 +15,8 @@ enum map_function_e {
   MFN_QUADRATIC, // x' = x*x
   MFN_CUBIC, // x' = x*x*x
   MFN_SQRT, // x' = sqrt(x)
-  MFN_EXPONENTIAL, // x' = (exp(x) / exp(1)) - 1
+  MFN_EXPONENTIAL, // x' = (exp(x) - 1) / (exp(1) - 1)
+  MFN_EX_EXPONENTIAL, // x' = (exp(x*5) - 1) / (exp(5) - 1)
   MFN_SIGMOID, // exponential sigmoid shape
   MFN_HILL, // stacked quadratic gentler sigmoid
   MFN_TERRACE, // two quadratics stacked into a terrace
@@ -40,7 +41,9 @@ static float fmap(float x, map_function f) {
     case MFN_SQRT:
       return sqrtf(x);
     case MFN_EXPONENTIAL:
-      return (exp(x) - 1)/exp(1);
+      return (exp(x) - 1)/(exp(1) - 1);
+    case MFN_EX_EXPONENTIAL:
+      return (exp(x*5) - 1)/(exp(5) - 1);
     case MFN_SIGMOID:
       return 1.0 / (1.0 + exp(6.0-x*12.0));
     case MFN_HILL:

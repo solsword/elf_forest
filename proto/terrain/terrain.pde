@@ -1072,6 +1072,30 @@ void add_to_array(float[] array, float addend) {
   }
 }
 
+void min_arrays(float[] array, float[] alt) {
+  int i, j, idx;
+  for (i = 0; i < ARRAY_WIDTH; ++i) {
+    for (j = 0; j < ARRAY_HEIGHT; ++j) {
+      idx = i + ARRAY_WIDTH * j;
+      if (alt[idx] < array[idx]) {
+        array[idx] = alt[idx];
+      }
+    }
+  }
+}
+
+void max_arrays(float[] array, float[] alt) {
+  int i, j, idx;
+  for (i = 0; i < ARRAY_WIDTH; ++i) {
+    for (j = 0; j < ARRAY_HEIGHT; ++j) {
+      idx = i + ARRAY_WIDTH * j;
+      if (alt[idx] > array[idx]) {
+        array[idx] = alt[idx];
+      }
+    }
+  }
+}
+
 void average_arrays(float[] main, float[] add_in, float main_weight) {
   int i, j, idx;
   for (i = 0; i < ARRAY_WIDTH; ++i) {
@@ -1105,6 +1129,16 @@ void add_arrays(float[] main, float[] add_in) {
     for (j = 0; j < ARRAY_HEIGHT; ++j) {
       idx = i + ARRAY_WIDTH * j;
       main[idx] += add_in[idx];
+    }
+  }
+}
+
+void mult_arrays(float[] main, float[] multiplicand) {
+  int i, j, idx;
+  for (i = 0; i < ARRAY_WIDTH; ++i) {
+    for (j = 0; j < ARRAY_HEIGHT; ++j) {
+      idx = i + ARRAY_WIDTH * j;
+      main[idx] *= multiplicand[idx];
     }
   }
 }
@@ -2148,12 +2182,30 @@ void keyPressed() {
     copy_array(TECTONICS, HEIGHT);
     get_hydrology();
   } else if (key == 'T') {
-    // Copy tectonics into height.
-    println("Building tectonics...");
-    build_tectonics(false, random(1000));
-    println("  ...done.");
-    copy_array(TECTONICS, HEIGHT);
-    get_hydrology();
+    reset_array(HEIGHT);
+    reset_array(TMP);
+    noise_array(
+      HEIGHT,
+      MOD_BASE_STR,
+      MOD_BASE_SCALE,
+      MOD_BASE_DSTR,
+      MOD_BASE_DSCALE,
+      random(1000)
+    );
+    noise_array(
+      TMP,
+      MOD_BASE_STR,
+      MOD_BASE_SCALE,
+      MOD_BASE_DSTR,
+      MOD_BASE_DSCALE,
+      random(1000)
+    );
+    normalize_array(HEIGHT);
+    normalize_array(TMP);
+    min_arrays(HEIGHT, TMP);
+    //max_arrays(HEIGHT, TMP);
+    //mult_arrays(HEIGHT, TMP);
+    //normalize_array(HEIGHT);
   } else if (key == 'h') {
     // Compute hydrology
     get_hydrology();

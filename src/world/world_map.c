@@ -11,6 +11,7 @@
 #include "gen/geology.h"
 #include "gen/climate.h"
 #include "gen/biology.h"
+#include "math/curve.h"
 
 #include "world_map.h"
 
@@ -131,22 +132,12 @@ void compute_region_interpolation_values(
         result[i].dy = 0;
         continue;
       }
-      // A biased sigmoid-type curve made from two parabolas
-      if (str < 0.3) {
-        // TODO: is the slope pointing in the right direction?
-        str = (0.3 / 0.25) * pow(str/0.6, 2);
-        slope = (2 * 0.3 / (0.25 * 0.36)) * str;
-        result[i].z = str;
-        result[i].dx = v.x * slope;
-        result[i].dy = v.y * slope;
-      } else {
-        // TODO: Is this calculation correct?
-        str = 1 - (0.7/0.25)*pow((1 - str)/1.4, 2);
-        slope = - (0.7/(0.25 * 1.96))*(-2.0 + 2.0*str);
-        result[i].z = str;
-        result[i].dx = v.x * slope;
-        result[i].dy = v.y * slope;
-      }
+      // A biased sigmoid:
+      str = strict_sigmoid(str, WORLD_REGION_INFLUENCE_SHAPE);
+      slope = strict_sigmoid_slope(str, WORLD_REGION_INFLUENCE_SHAPE);
+      result[i].z = str;
+      result[i].dx = v.x * slope;
+      result[i].dy = v.y * slope;
 
       // Update wmpos based on i:
       if (i == 4 || i == 9 || i == 14 || i == 19) {

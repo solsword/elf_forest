@@ -203,7 +203,10 @@ typedef struct biome_s biome;
   WORLD_REGION_BLOCKS * WORLD_REGION_BLOCKS \
 ))
 
-// Maximum distance between two world region anchors:
+// The sigmoid inflection point for the world region influence distribution:
+#define WORLD_REGION_INFLUENCE_SHAPE 0.3
+
+// Maximum 3D distance between two world region anchors:
 #define MAX_REGION_ANCHOR_DISTANCE sqrtf( \
   WORLD_REGION_BLOCKS * WORLD_REGION_BLOCKS + \
   WORLD_REGION_BLOCKS * WORLD_REGION_BLOCKS + \

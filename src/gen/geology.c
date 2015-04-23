@@ -52,6 +52,21 @@ tectonic_sheet *create_tectonic_sheet(
   return result;
 }
 
+tectonic_sheet* copy_tectonic_sheet(tectonic_sheet *ts) {
+  size_t i;
+  tectonic_sheet *result = create_tectonic_sheet(
+    ts->seed,
+    ts->width,
+    ts->height
+  );
+  for (i = 0; i < sheet_pwidth(ts) * sheet_pheight(ts); ++i) {
+    vcopy_as(&(result->points[i]), &(ts->points[i]));
+    vcopy_as(&(result->forces[i]), &(ts->forces[i]));
+    result->avgcounts[i] = ts->avgcounts[i];
+  }
+  return result;
+}
+
 void cleanup_tectonic_sheet(tectonic_sheet *ts) {
   free(ts->points);
   free(ts->forces);
@@ -592,6 +607,87 @@ void add_continents_to_sheet(
   }
 }
 
+void add_ridges_to_sheet(
+  tectonic_sheet *ts,
+  float strength,
+  float scale,
+  float dstr,
+  float dscale,
+  float mscale,
+  ptrdiff_t seed,
+  ptrdiff_t mseed
+) {
+  size_t i, j, idx;
+  size_t pw, ph;
+  float fx, fy;
+  float mx, my;
+  float xphase, yphase;
+  float modulation;
+  float ignore;
+  vector *p;
+  ptrdiff_t dxseed, dyseed;
+
+  dxseed = prng(seed + 13392);
+  dyseed = prng(dxseed);
+
+  pw = sheet_pwidth(ts);
+  ph = sheet_pwidth(ts);
+
+  seed = prng(seed + 5448);
+  xphase = float_hash_1d(seed);
+  seed = prng(seed + 88166);
+  yphase = float_hash_1d(seed);
+
+  // Only pass: add ridge height
+  for (i = 0; i < pw; ++i) {
+    for (j = 0; j < ph; ++j) {
+      idx = sheet_pidx(ts, i, j);
+      p = &(ts->points[idx]);
+      fx = p->x;
+      fy = p->y;
+      mx = p->x;
+      my = p->y;
+
+      // distortion
+      fx += dstr * sxnoise_2d(
+        p->x * dscale,
+        p->y * dscale,
+        dxseed
+      );
+      fy += dstr * sxnoise_2d(
+        p->x * dscale,
+        p->y * dscale,
+        dyseed
+      );
+
+      // scaling:
+      fx *= scale;
+      fy *= scale;
+      mx *= mscale;
+      my *= mscale;
+
+      // phase offset:
+      fx += xphase;
+      fy += yphase;
+
+      // modulation:
+      modulation = sxnoise_2d(mx, my, mseed);
+      modulation = 0.5 * (1 + modulation);
+      modulation = strict_sigmoid(modulation, TECT_RMOD_SIGSHAPE);
+      modulation = expdist(modulation, TECT_RMOD_EXPSHAPE);
+
+      // worley ridges:
+      p->z += strength * modulation * wrnoise_2d_fancy(
+        fx, fy,
+        seed,
+        0, 0,
+        &ignore, &ignore,
+        0
+      );
+    }
+  }
+}
+
 void seam_sheet(
   tectonic_sheet *ts,
   float dt,
@@ -635,7 +731,7 @@ void seam_sheet(
         continue;
       }
       str = pow((width - str) / width, TECT_SEAM_SHAPE);
-      str = sigmoid(str, 0, 1);
+      str = strict_sigmoid(str, TECT_SEAM_SIGSHAPE);
       tmp.x *= str;
       tmp.y *= str;
 
@@ -651,33 +747,62 @@ void seam_sheet(
 
 void squash_sheet(
   tectonic_sheet *ts,
-  float strength
+  float lower_cutoff,
+  float new_min,
+  float upper_cutoff,
+  float new_max
 ) {
   size_t i, j, idx;
   size_t pw, ph;
-  float min_z;
-  float fixed;
+  float old_min, old_max;
   vector *p;
+  float interp;
+  curve lcurve, ucurve;
+  vector bzr;
 
   pw = sheet_pwidth(ts);
   ph = sheet_pwidth(ts);
 
-  min_z = sheet_min_z(ts);
+  old_min = sheet_min_z(ts);
+  old_max = sheet_max_z(ts);
 
-  fixed = pow(min_z, 2) / strength;
+  // set up the lower and upper interpolation curves:
+  lcurve.from.x = 0;
+  lcurve.from.y = lower_cutoff;
+  lcurve.from.z = 0;
+  lcurve.go_towards.x = 0.5; // TODO: Be smarter here!
+  lcurve.go_towards.y = new_min;
+  lcurve.go_towards.z = 0;
+  vcopy_as(&(lcurve.come_from), &(lcurve.go_towards));
+  lcurve.to.x = 1.0;
+  lcurve.to.y = new_min;
+  lcurve.to.z = 0;
 
-  // Only pass: squash negative z values:
+  ucurve.from.x = 0;
+  ucurve.from.y = upper_cutoff;
+  ucurve.from.z = 0;
+  ucurve.go_towards.x = 0.5; // TODO: Be smarter here!
+  ucurve.go_towards.y = new_max;
+  ucurve.go_towards.z = 0;
+  vcopy_as(&(ucurve.come_from), &(ucurve.go_towards));
+  ucurve.to.x = 1.0;
+  ucurve.to.y = new_max;
+  ucurve.to.z = 0;
+
+  // Only pass: squash lower and upper z values:
   for (i = 0; i < pw; ++i) {
     for (j = 0; j < ph; ++j) {
       idx = sheet_pidx(ts, i, j);
       p = &(ts->points[idx]);
 
-      if (p->z < 0) {
-        p->z = (
-          fixed
-        * pow(p->z / min_z, TECT_SQUASH_SHAPE)
-        / p->z
-        );
+      if (p->z < lower_cutoff) {
+        interp = (lower_cutoff - p->z) / (lower_cutoff - old_min);
+        point_on_curve(&lcurve, interp, &bzr);
+        p->z = bzr.y;
+      } else if (p->z > upper_cutoff) {
+        interp = (p->z - upper_cutoff) / (old_max - upper_cutoff);
+        point_on_curve(&ucurve, interp, &bzr);
+        p->z = bzr.y;
       }
     }
   }
@@ -686,10 +811,13 @@ void squash_sheet(
 void generate_tectonics(world_map *wm) {
   size_t i;
   vector a, b;
-  ptrdiff_t seed = prng(wm->seed + 187012);
-  float min_x, max_x, min_y, max_y;
+  ptrdiff_t seed;
+  float min_x, max_x, min_y, max_y, min_z, max_z;
+  float squash_cutoff, squash_remap;
+  tectonic_sheet *ts, *save;
 
-  tectonic_sheet *ts = wm->tectonics;
+  ts = wm->tectonics;
+  seed = ts->seed;
 
   min_x = sheet_min_x(ts);
   max_x = sheet_max_x(ts);
@@ -705,7 +833,7 @@ void generate_tectonics(world_map *wm) {
   rustle_sheet(ts, TECT_LARGE_RUSTLE_STR, TECT_LARGE_RUSTLE_SCALE, seed);
   seed = prng(seed);
 
-  // Add continents to the sheet (will subtly affect spring forces later)
+  // Add continents and ridges to the sheet (will affect spring forces later)
   add_continents_to_sheet(
     ts,
     TECT_CONTINENTS_STR,
@@ -717,13 +845,39 @@ void generate_tectonics(world_map *wm) {
   seed = prng(seed);
   add_continents_to_sheet(
     ts,
-    TECT_CONTINENTS_STR,
-    TECT_CONTINENTS_SCALE,
+    TECT_CONTINENTS_STR * 0.8,
+    TECT_CONTINENTS_SCALE * 1.4,
     TECT_CONTINENTS_DSTR,
-    TECT_CONTINENTS_DSCALE,
+    TECT_CONTINENTS_DSCALE * 1.4,
     seed
   );
   seed = prng(seed);
+
+  add_ridges_to_sheet(
+    ts,
+    TECT_RIDGES_STR,
+    TECT_RIDGES_SCALE,
+    TECT_RIDGES_DSTR,
+    TECT_RIDGES_DSCALE,
+    TECT_RIDGES_MSCALE,
+    seed,
+    seed + 1817
+  );
+  seed = prng(seed);
+  add_ridges_to_sheet(
+    ts,
+    TECT_RIDGES_STR,
+    TECT_RIDGES_SCALE * 1.6,
+    TECT_RIDGES_DSTR,
+    TECT_RIDGES_DSCALE * 1.6,
+    TECT_RIDGES_MSCALE,
+    seed,
+    seed + 1817
+  );
+  seed = prng(seed);
+
+  // Save a copy of our base height (continents + ridges)
+  save = copy_tectonic_sheet(ts); // allocates memory
 
   // Push/pull to/from some random seams
   a.z = 0;
@@ -798,8 +952,33 @@ void generate_tectonics(world_map *wm) {
     1
   );
 
-  // Finally, squash the sheet to make mountains stand out:
-  squash_sheet(ts, TECT_DEFAULT_SQUASH_STR);
+  min_z = sheet_min_z(ts);
+  max_z = sheet_max_z(ts);
+  squash_cutoff = min_z + (max_z - min_z) * TECT_SQUASH_UPPER_FRACTION;
+  squash_remap = squash_cutoff;
+  squash_remap += (
+    TECT_SQUASH_MAX_FACTOR
+  * (1 - TECT_SQUASH_UPPER_FRACTION)
+  * (max_z - min_z)
+  );
+  // Squash the sheet to make mountains stand out:
+  squash_sheet(
+    ts,
+    TECT_SQUASH_LOWER_CUTOFF,
+    TECT_SQUASH_NEW_MIN,
+    squash_cutoff,
+    squash_remap
+  );
+
+  // Merge our crumpled data with our pre-crumpling data (ignoring the fact
+  // that grid positions have changed meanwhile).
+  for (i = 0; i < sheet_pwidth(ts) * sheet_pheight(ts); ++i) {
+    ts->points[i].z += save->points[i].z * TECT_RECOMBINE_STR;
+    ts->points[i].z /= 1 + TECT_RECOMBINE_STR;
+  }
+
+  // Make sure to free our sheet copy:
+  free(save);
 }
 
 float sheet_height(

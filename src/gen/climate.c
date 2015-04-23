@@ -609,7 +609,9 @@ void generate_climate(world_map *wm) {
       theta = mani_contour(&winds_base);
       // TODO: Choose between contour and opposite direction...
       if (wr->topography.terrain_height.z > TR_HEIGHT_SEA_LEVEL) {
-        r2 = mani_slope(&(wr->topography.terrain_height))*CL_WIND_LAND_INFLUENCE;
+        r2 = mani_slope(
+          &(wr->topography.terrain_height)
+        ) * CL_WIND_LAND_INFLUENCE;
         theta2 = mani_contour(&(wr->topography.terrain_height));
         // Note we're not changing magnitude here:
         theta = (
