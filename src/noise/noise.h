@@ -415,12 +415,13 @@ static inline float stretch(float n, float stretch) {
 }
 
 // Takes a value in [-1, 1] and maps it through a sigmoid function centered on
-// (center, center) with an exponent of strength. Negative values are flipped
-// first and flopped afterwards, so it's really a double sigmoid. Note that
-// there's a slight discontinuity at 0 which is exaggerated if the strength is
-// low. A strength of 0 is just a straight line; negative strengths pull values
-// towards the given center while positive strengths push them away from it.
-// Strengths in about [-4, 4] are usually reasonable.
+// (center, center) with an exponent of strength. Center must not be in
+// (0, 1). Negative values are flipped first and flopped afterwards, so it's
+// really a double sigmoid. Note that there's a slight discontinuity at 0 which
+// is exaggerated if the strength is low. A strength of 0 is just a straight
+// line; negative strengths pull values towards the given center while positive
+// strengths push them away from it. Strengths in about [-4, 4] are usually
+// reasonable.
 static inline float smooth(float n, float strength, float center) {
   float sign = 1;
   float result = 0;

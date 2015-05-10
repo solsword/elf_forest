@@ -8,6 +8,8 @@
 
 #include "noise/noise.h"
 
+#include "util.h"
+
 /************************
  * Types and Structures *
  ************************/
@@ -58,7 +60,9 @@ static inline float mani_slope(manifold_point *point) {
 // Returns the contour direction (arbitrarily for counter-clockwise contours)
 // at the given manifold point. This is just the uphill direction minus pi/2.
 static inline float mani_contour(manifold_point *point) {
-  return mani_uphill(point) - M_PI/2.0;
+  float result = mani_uphill(point) - M_PI_2;
+  norm_angle(&result);
+  return result;
 }
 
 // Manipulation functions for changing manifolds:
@@ -183,8 +187,8 @@ static inline void mani_smooth(
   float strength,
   float center
 ) {
-  point->z = smooth(point->z, strength, center);
   smooth_grad(point->z, strength, center, &(point->dx), &(point->dy));
+  point->z = smooth(point->z, strength, center);
 }
 
 // Helper functions for putting noise values into manifold points:

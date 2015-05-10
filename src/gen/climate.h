@@ -62,9 +62,9 @@
 #define CL_ELEV_REMAP_TO 0.7
 
 // Wind parameters:
-#define CL_WIND_CELL_DISTORTION_SCALE (3.8 / (100.0 * WORLD_REGION_BLOCKS))
+#define CL_WIND_CELL_DISTORTION_SCALE (3.3 / (100.0 * WORLD_REGION_BLOCKS))
 #define CL_WIND_CELL_DISTORTION_STRENGTH (0.17 * (100.0 * WORLD_REGION_BLOCKS))
-#define CL_WIND_CELL_SCALE (2.2 / (100.0 * WORLD_REGION_BLOCKS))
+#define CL_WIND_CELL_SCALE (1.4 / (100.0 * WORLD_REGION_BLOCKS))
 
 // should be roughly the median wind strength
 #define CL_WIND_BASE_STRENGTH 3.0
@@ -72,7 +72,7 @@
 #define CL_WIND_UPPER_STRENGTH 5.0
 
 // how much land slopes affect wind direction
-#define CL_WIND_LAND_INFLUENCE 43.0
+#define CL_WIND_LAND_INFLUENCE 23.0
 
 // Temperature parameters:
 #define CL_GLOBAL_TEMP_DISTORTION_SCALE 4.5
@@ -263,7 +263,7 @@ static inline float evaporation(world_region *wr) {
   );
   result = (1 + result) / 2.0;
   result *= CL_EVAPORATION_NOISE_BASE;
-  result = result * (1 + temp) * 0.5;
+  result = result * (1 + temp) / 2.0;
   // The base component:
   if (wr->climate.water.body != NULL) {
     result += CL_BASE_WATER_CLOUD_POTENTIAL * temp * (1 - elev);

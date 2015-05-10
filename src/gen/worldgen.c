@@ -221,24 +221,34 @@ void compute_manifold(world_map *wm) {
           if (iter.y < xy.y) {
             if (iter.x == xy.x) {
               wr->topography.terrain_height.dy += (z - nbz);
-              xdivisor += 1;
+              ydivisor += 1;
             } else {
               wr->topography.terrain_height.dy += (z - nbz) * 0.5;
-              xdivisor += 0.5;
+              ydivisor += 0.5;
             }
           } else if (iter.y > xy.y) {
             if (iter.x == xy.x) {
               wr->topography.terrain_height.dy += (nbz - z);
-              xdivisor += 1;
+              ydivisor += 1;
             } else {
               wr->topography.terrain_height.dy += (nbz - z) * 0.5;
-              xdivisor += 0.5;
+              ydivisor += 0.5;
             }
           }
         }
       }
       wr->topography.terrain_height.dx /= xdivisor;
       wr->topography.terrain_height.dy /= ydivisor;
+      wr->topography.terrain_height.dx /= (float) WORLD_REGION_BLOCKS;
+      wr->topography.terrain_height.dy /= (float) WORLD_REGION_BLOCKS;
+      if (
+        isnan(wr->topography.terrain_height.dx)
+      ||
+        isnan(wr->topography.terrain_height.dy)
+      ) {
+        printf("ERROR!\n");
+        exit(1);
+      }
     }
   }
 }

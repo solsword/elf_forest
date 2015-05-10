@@ -597,7 +597,6 @@ void generate_climate(world_map *wm) {
       mani_scale_const(&winds_base, 0.5);
 
       // Put slopes at around a comparable magnitude with the actual terrain:
-      // TODO: Does this still work w/ new empirical manifolds?
       mani_scale_const(
         &winds_base,
         (1.0 / (CL_WIND_CELL_SCALE))
@@ -607,18 +606,18 @@ void generate_climate(world_map *wm) {
       // Compute wind strength and direction:
       r = mani_slope(&winds_base);
       theta = mani_contour(&winds_base);
-      // TODO: Choose between contour and opposite direction...
       if (wr->topography.terrain_height.z > TR_HEIGHT_SEA_LEVEL) {
         r2 = mani_slope(
           &(wr->topography.terrain_height)
         ) * CL_WIND_LAND_INFLUENCE;
         theta2 = mani_contour(&(wr->topography.terrain_height));
+        // Pick the terrain contour angle that's closest to the wind angle:
+        if (angle_between(theta, theta2) > M_PI_2) {
+          theta2 += M_PI;
+          norm_angle(&theta2);
+        }
         // Note we're not changing magnitude here:
-        theta = (
-          (r / (r + r2)) * theta
-        +
-          (r2 / (r + r2)) * theta2
-        );
+        theta = mix_angles(theta, theta2, r / (r + r2));
       }
       wr->climate.atmosphere.wind_strength = r;
       wr->climate.atmosphere.wind_direction = theta;

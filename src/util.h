@@ -204,12 +204,39 @@ static inline size_t ptr__iy(void const * const ptr) {
 
 // Normalizes the given angle to be between -M_PI and M_PI.
 static inline void norm_angle(float *angle) {
-    while (*angle > M_PI) {
-      *angle -= M_PI*2;
-    }
-    while (*angle < -M_PI) {
-      *angle += M_PI*2;
-    }
+  *angle = fmod(*angle, 2*M_PI);
+  if (*angle > M_PI) {
+    *angle -= 2*M_PI;
+  }
+  if (*angle < -M_PI) {
+    *angle += 2*M_PI;
+  }
+}
+
+// Returns the positive angle between the two given headings, which should each
+// be in the range -M_PI, M_PI.
+static inline float angle_between(float first, float second) {
+  float result = fabs(second - first);
+  if (result > M_PI) {
+    return 2*M_PI - result;
+  } else {
+    return result;
+  }
+}
+
+// Takes two headings in [-M_PI, M_PI] and returns a heading between them,
+// governed by the interpolation constant interp which should be in [0, 1] (if
+// interp == 0, the result is first, if interp == 1, the result is second).
+static inline float mix_angles(float first, float second, float interp) {
+  float between = second - first;
+  if (between > M_PI) {
+    between = -(2*M_PI - between);
+  } else if (between < -M_PI) {
+    between = 2*M_PI + between;
+  }
+  between = first + between * (1 - interp);
+  norm_angle(&between);
+  return between;
 }
 
 static inline void nap(ms) {

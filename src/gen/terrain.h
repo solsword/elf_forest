@@ -81,7 +81,7 @@
 #define TR_GMS_HIGHLANDS (-1.3)
 #define TR_GMC_HIGHLANDS 0.7
 #define TR_GMS_MOUNTAINS 1.2
-#define TR_GMC_MOUNTAINS 1.0
+#define TR_GMC_MOUNTAINS 0.99
 
 // Geoform heights:
 #define        TR_HEIGHT_OCEAN_DEPTHS 1500
@@ -307,24 +307,73 @@ static inline void geomap_segment(
 ) {
   mani_copy_as(interp, base);
   // DEBUG:
-  // printf("Geomap segment :: base %.2f\n", base->z);
-  // printf("Geomap segment :: interp %.2f\n", interp->z);
+  /*
+  printf("Geomap segment :: base %.2f\n", base->z);
+  printf(
+    "Geomap segment :: interp %.2f | %.2f/%.2f\n",
+    interp->z,
+    interp->dx,
+    interp->dy
+  );
+  */
   mani_offset_const(interp, -lower);
-  // printf("Geomap segment :: offset :: interp %.2f\n", interp->z);
+  /*
+  printf(
+    "Geomap segment :: offset :: interp %.2f | %.2f/%.2f\n",
+    interp->z,
+    interp->dx,
+    interp->dy
+  );
+  */
   mani_scale_const(interp, 1.0/(upper - lower));
-  // printf("Geomap segment :: scale :: interp %.2f\n", interp->z);
+  /*
+  printf(
+    "Geomap segment :: scale :: interp %.2f | %.2f/%.2f\n",
+    interp->z,
+    interp->dx,
+    interp->dy
+  );
+  */
   mani_smooth(interp, sm_str, sm_ctr);
-  // printf("Geomap segment :: smooth :: interp %.2f\n", interp->z);
+  /*
+  printf(
+    "Geomap segment :: smooth :: interp %.2f | %.2f/%.2f\n",
+    interp->z,
+    interp->dx,
+    interp->dy
+  );
+  */
   mani_copy_as(result, interp);
-  // printf("Geomap segment :: copy :: result %.2f\n", result->z);
+  /*
+  printf(
+    "Geomap segment :: copy :: result %.2f | %.2f/%.2f\n",
+    result->z,
+    result->dx,
+    result->dy
+  );
+  */
   mani_scale_const(
     result,
     (upper_height - lower_height)
   );
-  // printf("Geomap segment :: scale :: result %.2f\n", result->z);
+  /*
+  printf(
+    "Geomap segment :: scale :: result %.2f | %.2f/%.2f\n",
+    result->z,
+    result->dx,
+    result->dy
+  );
+  */
   mani_offset_const(result, lower_height);
-  // printf("Geomap segment :: offset :: result %.2f\n", result->z);
-  // printf("\n\n\n");
+  /*
+  printf(
+    "Geomap segment :: offset :: result %.2f | %.2f/%.2f\n",
+    result->z,
+    result->dx,
+    result->dy
+  );
+  printf("\n\n\n");
+  */
 }
 
 // Remaps the given value (on [0, 1]) to account for the shape and height of

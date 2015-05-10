@@ -106,8 +106,6 @@ void compute_region_interpolation_values(
   float str, slope;
 
   glpos__wmpos(glpos, &wmpos);
-  xy.x = wmpos.x - 2;
-  xy.y = wmpos.x - 2;
 
   i = 0;
   for (xy.x = wmpos.x - 2; xy.x <= wmpos.x + 2; xy.x += 1) {
@@ -116,7 +114,7 @@ void compute_region_interpolation_values(
       if (wr != NULL) {
         copy_glpos(&(wr->anchor), &anchor);
       } else {
-        compute_region_anchor(wm, &wmpos, &anchor);
+        compute_region_anchor(wm, &xy, &anchor);
       }
       v.x = glpos->x - anchor.x;
       v.y = glpos->y - anchor.y;
@@ -130,22 +128,15 @@ void compute_region_interpolation_values(
         result[i].z = 0;
         result[i].dx = 0;
         result[i].dy = 0;
-        continue;
-      }
-      // A biased sigmoid:
-      str = strict_sigmoid(str, WORLD_REGION_INFLUENCE_SHAPE);
-      slope = strict_sigmoid_slope(str, WORLD_REGION_INFLUENCE_SHAPE);
-      result[i].z = str;
-      result[i].dx = v.x * slope;
-      result[i].dy = v.y * slope;
-
-      // Update wmpos based on i:
-      if (i == 4 || i == 9 || i == 14 || i == 19) {
-        wmpos.x += 1;
-        wmpos.y -= 4;
       } else {
-        wmpos.y += 1;
+        // A biased sigmoid:
+        slope = strict_sigmoid_slope(str, WORLD_REGION_INFLUENCE_SHAPE);
+        str = strict_sigmoid(str, WORLD_REGION_INFLUENCE_SHAPE);
+        result[i].z = str;
+        result[i].dx = v.x * slope;
+        result[i].dy = v.y * slope;
       }
+
       // Update i:
       i += 1;
     }

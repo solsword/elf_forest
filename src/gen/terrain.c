@@ -400,7 +400,8 @@ void generate_topography(world_map *wm) {
   }
 
   // Now that we've updated our height information, let's build an empirical
-  // manifold with proper slope information:
+  // manifold with proper slope information (slope will be in blocks per
+  // terrain region after geomapping):
   compute_manifold(wm);
 
   // Finally, remap everything from [0, 1] onto full world heights:

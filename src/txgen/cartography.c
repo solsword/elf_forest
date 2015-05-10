@@ -342,21 +342,29 @@ pixel ly_temperature(world_region *wr) {
   /
     (CL_TEMP_HIGH - CL_TEMP_LOW)
   );
+  if (t < 0) { t = 0; }
+  if (t > 1) { t = 1.0; }
   return gradient_result(&TEMPERATURE_GRADIENT, t);
 }
 
 pixel ly_evaporation(world_region *wr) {
   float t = evaporation(wr) / CL_HUGE_CLOUD_POTENTIAL;
+  if (t < 0) { t = 0; }
+  if (t > 1) { t = 1.0; }
   return gradient_result(&CLOUDS_GRADIENT, t);
 }
 
 pixel ly_cloud_cover(world_region *wr) {
   float t = wr->climate.atmosphere.cloud_potential / CL_HUGE_CLOUD_POTENTIAL;
+  if (t < 0) { t = 0; }
+  if (t > 1) { t = 1.0; }
   return gradient_result(&CLOUDS_GRADIENT, t);
 }
 
 pixel ly_precipitation_quotient(world_region *wr) {
   float t = wr->climate.atmosphere.precipitation_quotient;
+  if (t < 0) { t = 0; }
+  if (t > 1) { t = 1.0; }
   return gradient_result(&BW_GRADIENT, t);
 }
 
