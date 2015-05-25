@@ -114,24 +114,28 @@ void l_reverse(list *l);
 // cryptographically sound.
 void l_shuffle(list *l, ptrdiff_t seed);
 
-// Runs the given function sequentially on each element in the list. Note that
-// this locks the list, so the iteration function shouldn't try to call any
-// other functions on the list.
+// Runs the given function sequentially on each element in the list.
 void l_foreach(list *l, void (*f)(void *));
 
 // Runs the given function sequentially on each element in the list with the
-// given extra argument as its second argument. Like l_foreach, this locks the
-// list.
+// given extra argument as its second argument.
 void l_witheach(list *l, void *arg, void (*f)(void *, void *));
 
 // Scans the list until the given function returns non-zero, and returns the
-// element that matched. Returns NULL if no match was found.
-void * l_find_element(list *l, int (*match)(void *));
+// index that matched. Returns -1 if no match was found.
+ptrdiff_t l_find_index(list *l, int (*match)(void *));
 
 // Scans the list until the given function returns non-zero given the list
 // element as its first argument and the reference as its second argument.
-// Returns the element that matched. Returns NULL if no match was found. Like
-// l_foreach, this locks the list during the scan.
+// Returns the index that matched. Returns -1 if no match was found.
+ptrdiff_t l_scan_indices(list *l, void *ref, int (*match)(void *, void *));
+
+// Works like l_find_index but returns the matching element instead of its
+// index.
+void * l_find_element(list *l, int (*match)(void *));
+
+// Works like l_scan_indices but returns the matching element instead of its
+// index.
 void * l_scan_elements(list *l, void *ref, int (*match)(void *, void *));
 
 // Counts the number of bytes of data/overhead used by the given list.

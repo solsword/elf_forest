@@ -126,9 +126,18 @@ static inline float sigmoid(float t, float start, float end) {
   }
 }
 
-// An exponential distribution over [0, 1] with values in [0, 1].
+// An exponential distribution over [0, 1] with values in [0, 1]. Power should
+// be strictly greater than zero; the equation approaches a line as power goes
+// to zero, and becomes more eccentric as power goes to infinity.
 static inline float expdist(float x, float power) {
   return (exp(x * power) - 1) / (exp(power) - 1);
+}
+
+// A logarithmic distribution over [0, 1] with values in [0, 1]. Offset should
+// be strictly greater than zero; the equation approaches a line as offset goes
+// to infinity, and becomes more eccentric as offset goes to zero.
+static inline float logdist(float x, float offset) {
+  return (log(x + offset) - log(offset)) / (log(1 + offset) - log(offset));
 }
 
 // A sigmoid on [0,1] built out of two parabolas that hits 0/1 at the ends and

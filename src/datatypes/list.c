@@ -312,24 +312,42 @@ void l_witheach(list *l, void *arg, void (*f)(void *, void *)) {
   }
 }
 
-void * l_find_element(list *l, int (*match)(void *)) {
-  size_t i;
+ptrdiff_t l_find_index(list *l, int (*match)(void *)) {
+  ptrdiff_t i;
   for (i = 0; i < l->count; ++i) {
     if ((*match)(l->elements[i])) {
-      return l->elements[i];
+      return i;
     }
   }
-  return NULL;
+  return -1;
+}
+
+ptrdiff_t l_scan_indices(list *l, void *ref, int (*match)(void *, void *)) {
+  ptrdiff_t i;
+  for (i = 0; i < l->count; ++i) {
+    if ((*match)(l->elements[i], ref)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+void * l_find_element(list *l, int (*match)(void *)) {
+  ptrdiff_t idx = l_find_index(l, match);
+  if (idx == -1) {
+    return NULL;
+  } else {
+    return l->elements[idx];
+  }
 }
 
 void * l_scan_elements(list *l, void *ref, int (*match)(void *, void *)) {
-  size_t i;
-  for (i = 0; i < l->count; ++i) {
-    if ((*match)(l->elements[i], ref)) {
-      return l->elements[i];
-    }
+  ptrdiff_t idx = l_scan_indices(l, ref, match);
+  if (idx == -1) {
+    return NULL;
+  } else {
+    return l->elements[idx];
   }
-  return NULL;
 }
 
 size_t l_data_size(list *l) {

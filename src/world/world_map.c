@@ -252,6 +252,14 @@ void compute_region_contenders(
   }
 }
 
+int find_geopt_in_wr(void *v_gpt, void *v_wr_ptr) {
+  geopt pt = (geopt) v_gpt;
+  world_region *wr = (world_region*) v_wr_ptr;
+  world_map_pos wmpos;
+  geopt__wmpos(wr->world, &pt, &wmpos);
+  return (wmpos.x == wr->pos.x && wmpos.y == wr->pos.y);
+}
+
 void find_valley(world_map *wm, world_map_pos *pos) {
   world_region *wr;
   wr = get_world_region(wm, pos);

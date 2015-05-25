@@ -329,8 +329,7 @@ struct river_s {
   list *path;
   list *control_points;
   list *widths;
-  float branch_prob;
-  float current_width;
+  list *depths;
 };
 
 struct hydrology_s {
@@ -558,7 +557,7 @@ static inline void wmpos__geopt(
 }
 
 static inline void geopt__wmpos(
-  world_map *wm,
+  world_map const * const wm,
   geopt const * const gpt,
   world_map_pos *wmpos
 ) {
@@ -587,6 +586,25 @@ static inline void geopt__glpos(
   glpos->x = fastfloor(ptr__fx(*gpt) * wm->width * WORLD_REGION_BLOCKS);
   glpos->y = fastfloor(ptr__fy(*gpt) * wm->height * WORLD_REGION_BLOCKS);
   glpos->z = 0;
+}
+
+// Computes the (2D) distance in blocks between two geopoints on the given map:
+static inline float geodist(world_map *wm, geopt from, geopt to) {
+  global_pos gl_from, gl_to;
+  geopt__glpos(wm, &from, &gl_from);
+  geopt__glpos(wm, &to, &gl_to);
+  return sqrtf(
+    (gl_from.x - gl_to.x) * (gl_from.x - gl_to.x)
+  + (gl_from.y - gl_to.y) * (gl_from.y - gl_to.y)
+  );
+}
+
+// Returns a geopt that's halfway between the two given geopts:
+static inline geopt geomid(geopt from, geopt to) {
+  return fxy__ptr(
+    (ptr__fx(from) + ptr__fx(to))/2.0,
+    (ptr__fy(from) + ptr__fy(to))/2.0
+  );
 }
 
 // Takes a world region and a seed and returns a random geopt within the
@@ -704,6 +722,10 @@ void compute_region_contenders(
   world_region **best, world_region **secondbest,
   float *strbest, float *strsecond
 );
+
+// A match function for iterating over geopoints and stopping when one is
+// inside the given world region. Use with e.g., l_scan_elements.
+int find_geopt_in_wr(void *v_gpt, void *v_wr_ptr);
 
 // Takes a world map position and uses downhill information to find a terrain
 // local minimum. The input position is edited directly.
