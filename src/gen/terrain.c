@@ -382,11 +382,15 @@ void generate_topography(world_map *wm) {
     );
   }
   hm_normalize(topo);
+  hm_normalize(flow);
 
 #ifdef DEBUG
   tx = create_texture(wm->width, wm->height);
   render_heightmap(topo, tx, 0);
   write_texture_to_png(tx, "out/topography_eroded.png");
+
+  render_heightmap(flow, tx, 0);
+  write_texture_to_png(tx, "out/flow.png");
   cleanup_texture(tx);
 #endif
 
@@ -396,6 +400,7 @@ void generate_topography(world_map *wm) {
     for (xy.y = 0; xy.y < wm->height; ++xy.y) {
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
       wr->topography.terrain_height.z = hm_height(topo, xy.x, xy.y);
+      wr->topography.flow_potential = hm_height(flow, xy.x, xy.y);
     }
   }
 

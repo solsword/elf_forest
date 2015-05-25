@@ -330,6 +330,7 @@ struct river_s {
   list *control_points;
   list *widths;
   float branch_prob;
+  float current_width;
 };
 
 struct hydrology_s {

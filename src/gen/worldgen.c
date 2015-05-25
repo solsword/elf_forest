@@ -126,6 +126,7 @@ void init_world_map(world_map *wm) {
     for (xy.y = 0; xy.y < wm->height; xy.y += 1) {
       sofar += 1;
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
+      wr->world = wm;
       // Set position information:
       wr->pos.x = xy.x;
       wr->pos.y = xy.y;

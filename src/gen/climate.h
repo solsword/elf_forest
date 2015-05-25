@@ -32,14 +32,16 @@
 #define CL_LAKE_SALINITY_THRESHOLD_BRINY 0.02
 
 // River parameters:
+#define CL_HEADWATERS_FLOW_THRESHOLD 0.2
+
 #define CL_RIVER_SEED_PROB_FLOOR 0.007
 #define CL_RIVER_SEED_PROB_CLIMB 1.4
 #define CL_RIVER_SEED_PROB_CEILING 0.45
 
 #define CL_RIVER_SEED_CPT_DIST 0.8
 
-#define CL_RIVER_BASE_WIDTH 8.0
-#define CL_RIVER_WIDTH_VAR 63.0
+#define CL_RIVER_BASE_WIDTH 2.0
+#define CL_RIVER_WIDTH_VAR 4.0
 
 #define CL_RIVER_BRANCH_PROB_BASE 0.0001
 #define CL_RIVER_BRANCH_PROB_CLIMB 1.3
@@ -51,7 +53,7 @@
 #define CL_RIVER_SEP_MIN 18.0
 
 // TODO: A better mechanism here!
-#define CL_RIVER_SHRINK_PROB 0.0001
+#define CL_RIVER_GROWTH_RATE 0.01
 
 #define CL_RIVER_GROWTH_ITERATIONS 16384
 //#define CL_RIVER_GROWTH_ITERATIONS 100
@@ -312,12 +314,7 @@ step_result fill_water(
   void* v_body
 );
 
-// A fill step function which iterates over shore regions and randomly adds
-// river seeds to the world_map's all_rivers list.
-step_result seed_rivers(
-  search_step step,
-  world_region *wr,
-  void* ignored
-);
+// Releases a new river at a random point within the given world region.
+void release_river(world_region *wr);
 
 #endif // ifndef CLIMATE_H
