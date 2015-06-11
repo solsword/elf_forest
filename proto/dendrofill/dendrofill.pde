@@ -11,15 +11,15 @@ String HEIGHTMODE = "uniform-x";
 String COLOR_MODE = "grayscale";
 
 int WINDOW_WIDTH = 800;
-int WINDOW_HEIGHT = 600;
+int WINDOW_HEIGHT = 800;
 
-//int MAP_WIDTH = 50;
-//int MAP_HEIGHT = 50;
+int MAP_WIDTH = 30;
+int MAP_HEIGHT = 30;
 
-int MAP_WIDTH = 100;
-int MAP_HEIGHT = 100;
+//int MAP_WIDTH = 100;
+//int MAP_HEIGHT = 100;
 
-float SEA_LEVEL = 0.4;
+float SEA_LEVEL = 0.2;
 
 float GRID_RESOLUTION = 100.0;
 
@@ -30,10 +30,10 @@ float BUMPINESS = 10;
 
 float DEFAULT_SCALE = 0.15 / 1.2;
 float SCALE = DEFAULT_SCALE;
-float NS_LARGE =  0.0014;
-float NS_MEDIUM = 0.042;
-float NS_SMALL = 0.104;
-float NS_TINY = 0.225;
+float NS_LARGE =  0.0006;
+float NS_MEDIUM = 0.012;
+float NS_SMALL = 0.024;
+float NS_TINY = 0.048;
 
 float DSTR = 1.3;
 
@@ -140,6 +140,10 @@ class Point {
     );
   }
 
+  float dist2d(Point other) {
+    return sqrt(pow(other.x - this.x, 2) + pow(other.y - this.y, 2));
+  }
+
   void norm() {
     float m = this.magnitude();
     this.x /= m;
@@ -242,6 +246,27 @@ class Edge {
       return new Point(this.to);
     } else {
       proj.add(this.from);
+      return proj;
+    }
+  }
+
+  Point closest_point_2d(Point p) {
+    Point proj;
+    Point v, to_p;
+    float m;
+    v = this.from.vector_to(this.to);
+    v.z = 0;
+    to_p = this.from.vector_to(p);
+    to_p.z = 0;
+    proj = to_p.project_onto(v);
+    m = proj.mag_in_terms_of(v);
+    if (m < 0) {
+      return new Point(this.from);
+    } else if (m > 1.0) {
+      return new Point(this.to);
+    } else {
+      proj.add(this.from);
+      proj.z = 0;
       return proj;
     }
   }
@@ -626,6 +651,37 @@ class Grid {
       }
     }
   }
+
+  float flat_distance_to(Point p) {
+    Edge e;
+    int i, j, a_i, a_j;
+    float est, dist = GRID_RESOLUTION * 6;
+    a_i = floor(this.width  * (p.x-this.min_x()) / (this.max_x()-this.min_x()));
+    a_j = floor(this.height * (p.y-this.min_y()) / (this.max_y()-this.min_y()));
+    for (i = a_i - 2; i < a_i + 2; ++i) {
+      for (j = a_j - 2; j < a_j + 2; ++j) {
+        if (i < 0 || j < 0 || i > this.width - 1 || j > this.height - 1) {
+          continue;
+        }
+        e = this.edges[this.eidx_v(i, j)];
+        if (e != null && e.on) {
+          est = e.closest_point_2d(p).dist2d(p);
+          if (est < dist) { dist = est; }
+        }
+        e = this.edges[this.eidx_h(i, j)];
+        if (e != null && e.on) {
+          est = e.closest_point_2d(p).dist2d(p);
+          if (est < dist) { dist = est; }
+        }
+        e = this.edges[this.eidx_d(i, j)];
+        if (e != null && e.on) {
+          est = e.closest_point_2d(p).dist2d(p);
+          if (est < dist) { dist = est; }
+        }
+      }
+    }
+    return dist;
+  }
 }
 
 void setup() {
@@ -646,13 +702,14 @@ void setup() {
 
 
 void draw() {
-  int i;
+  int i, j;
+  float x, y, gw, gh, d;
   background(0.6, 0.8, 0.25);
-  stroke(0.0, 0.0, 1.0);
-  noFill();
   if (MODE == "grid") {
     // Center the map:
     smooth();
+    stroke(0.0, 0.0, 1.0);
+    noFill();
     pushMatrix();
     THE_GRID.update_center();
     translate(-THE_GRID.center.x*SCALE, -THE_GRID.center.y*SCALE);
@@ -661,6 +718,34 @@ void draw() {
     // And draw it:
     THE_GRID.render();
     popMatrix();
+  } else if (MODE == "dist") {
+    gw = THE_GRID.max_x() - THE_GRID.min_x();
+    gh = THE_GRID.max_y() - THE_GRID.min_y();
+    noStroke();
+    print("Rendering...");
+    int c = 0;
+    for (i = 0; i < WINDOW_WIDTH; i += 4) {
+      for (j = 0; j < WINDOW_HEIGHT; j += 4) {
+        x = THE_GRID.min_x() + gw * (float) ((i + 2) / (float) WINDOW_WIDTH);
+        y = THE_GRID.min_y() + gh * (float) ((j + 2) / (float) WINDOW_HEIGHT);
+        x += 0.6 * GRID_RESOLUTION * pnoise(
+          NS_MEDIUM * x,
+          NS_MEDIUM * y + 181,
+          7.3
+        );
+        y += 0.6 * GRID_RESOLUTION * pnoise(
+          NS_MEDIUM * x + 5645,
+          NS_MEDIUM * y,
+          35.8
+        );
+        d = THE_GRID.flat_distance_to(new Point(x, y, 0));
+        fill(colormap((d / GRID_RESOLUTION), COLOR_MODE));
+        rect(i, j, 4, 4);
+        c += 1;
+        print("\r  ...", c, "/", WINDOW_WIDTH * WINDOW_HEIGHT/16, "...");
+      }
+    }
+    println("\n  ...done.");
   }
 }
 
@@ -675,9 +760,9 @@ void keyPressed() {
   } else if (key == 'j') {
     SCALE /= 1.2;
   } else if (key == 'K') {
-    SEA_LEVEL += 0.1;
+    SEA_LEVEL += 0.05;
   } else if (key == 'J') {
-    SEA_LEVEL -= 0.1;
+    SEA_LEVEL -= 0.05;
   } else if (key == 'h') {
     // re-set heights and re-dendrize
     if (HEIGHTMODE == "uniform-x") {
@@ -705,6 +790,8 @@ void keyPressed() {
     }
   } else if (key == '1') {
     MODE = "grid";
+  } else if (key == '2') {
+    MODE = "dist";
   }
   redraw();
 }
