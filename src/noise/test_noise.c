@@ -90,6 +90,32 @@ float fancy_smooth_worley_noise(float x, float y) {
   );
 }
 
+float big_sxnoise_2d(float x, float y, ptrdiff_t salt) {
+  return sxnoise_2d(x*0.05, y*0.05, salt);
+}
+
+float return_x(float x, float y, ptrdiff_t salt) {
+  return x;
+}
+
+float return_y(float x, float y, ptrdiff_t salt) {
+  return y;
+}
+
+float return_y_minus_x(float x, float y, ptrdiff_t salt) {
+  return y - x;
+}
+
+float simplex_dendroid_noise(float x, float y) {
+  return -1 + 2*dnnoise_2d(
+    x, y,
+    117,
+    //&big_sxnoise_2d,
+    &return_y_minus_x,
+    1235
+  );
+}
+
 float fractal_2d_noise(float x, float y) {
   return fractal_sxnoise_2d(
     x, y,
@@ -600,30 +626,24 @@ void write_grad_ppm(
 }
 
 int main(int argc, char** argv) {
-  write_noise_ppm(&unsalt_2d_noise, "noise_test_2D.ppm", 0, 0);
-  write_noise_ppm(&unsalt_2d_noise, "noise_test_2D_shaded.ppm", 0, 1);
-  write_noise_ppm(&unsalt_worley_noise, "noise_test_worley.ppm", 0, 0);
-  write_noise_ppm(&fancy_worley_noise, "noise_test_worley_fancy.ppm", 0, 0);
-  write_noise_ppm(&fancier_worley_noise, "noise_test_worley_fancier.ppm", 0, 0);
-  write_noise_ppm(
-    &fancy_smooth_worley_noise,
-    "noise_test_worley_fancy_smooth.ppm",
-    0, 0
-  );
-  write_noise_ppm(&fancier_worley_noise, "noise_test_worley_fshade.ppm", 0, 1);
-  write_noise_ppm(
-    &fancy_smooth_worley_noise,
-    "noise_test_worley_fsmshade.ppm",
-    0, 1
-  );
-  write_noise_ppm(&slice_3d_noise, "noise_test_3D.ppm", 1, 1);
-  write_noise_ppm(&fractal_2d_noise, "noise_test_2D_F.ppm", 1, 1);
-  write_noise_ppm(&slice_fractal_3d_noise, "noise_test_3D_F.ppm", 1, 1);
-  write_noise_ppm(&example_noise, "noise_test_ex.ppm", 1, 1);
-  write_noise_ppm(&example_wrapped_noise, "noise_test_wrapped.ppm", 1, 1);
-  write_noise_ppm(&unsalted_terrain, "noise_test_terrain.ppm", 1, 1);
-  write_noise_ppm(&wrapped_terrain, "noise_test_wrapped_terrain.ppm", 1, 1);
-  write_noise_ppm(&zoomed_noise, "noise_test_zoomed.ppm", 0, 0);
-  write_grad_ppm(&grad_noise, "noise_test_grad.ppm");
+  write_noise_ppm(&unsalt_2d_noise, "nt_2D.ppm", 0, 0);
+  write_noise_ppm(&unsalt_2d_noise, "nt_2D_shaded.ppm", 0, 1);
+  write_noise_ppm(&unsalt_worley_noise, "nt_worley.ppm", 0, 0);
+  write_noise_ppm(&fancy_worley_noise, "nt_worley_fancy.ppm", 0, 0);
+  write_noise_ppm(&fancier_worley_noise, "nt_worley_fancier.ppm", 0, 0);
+  write_noise_ppm(&fancy_smooth_worley_noise, "nt_worley_fancy_sm.ppm", 0, 0);
+  write_noise_ppm(&fancier_worley_noise, "nt_worley_fshade.ppm", 0, 1);
+  write_noise_ppm(&fancy_smooth_worley_noise, "nt_worley_fsmshade.ppm", 0, 1);
+  write_noise_ppm(&simplex_dendroid_noise, "nt_dendroid.ppm", 0, 0);
+  write_noise_ppm(&simplex_dendroid_noise, "nt_dendroid_lighted.ppm", 0, 1);
+  write_noise_ppm(&slice_3d_noise, "nt_3D.ppm", 1, 1);
+  write_noise_ppm(&fractal_2d_noise, "nt_2D_F.ppm", 1, 1);
+  write_noise_ppm(&slice_fractal_3d_noise, "nt_3D_F.ppm", 1, 1);
+  write_noise_ppm(&example_noise, "nt_ex.ppm", 1, 1);
+  write_noise_ppm(&example_wrapped_noise, "nt_wrapped.ppm", 1, 1);
+  write_noise_ppm(&unsalted_terrain, "nt_terrain.ppm", 1, 1);
+  write_noise_ppm(&wrapped_terrain, "nt_wrapped_terrain.ppm", 1, 1);
+  write_noise_ppm(&zoomed_noise, "nt_zoomed.ppm", 0, 0);
+  write_grad_ppm(&grad_noise, "nt_grad.ppm");
   return 0;
 }

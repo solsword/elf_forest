@@ -18,6 +18,11 @@
 struct grid_neighborhood_2d_s;
 typedef struct grid_neighborhood_2d_s grid_neighborhood_2d;
 
+// A 2D simplex grid neighborhood holds x/y/z values for the 22 extended
+// neighbors of a single simplex.
+struct simplex_neighborhood_2d_s;
+typedef struct simplex_neighborhood_2d_s simplex_neighborhood_2d;
+
 /*********
  * Flags *
  *********/
@@ -222,6 +227,15 @@ struct grid_neighborhood_2d_s {
   float y[9]; // y-coordinates of the same
 };
 
+struct simplex_neighborhood_2d_s {
+  ptrdiff_t i[22]; // simplex grid index
+  ptrdiff_t j[22]; // simplex grid index
+  ptrdiff_t u[22]; // simplex grid upper/lower
+  float x[22]; // cartesian x
+  float y[22]; // cartesian y
+  float z[22]; // cartesian z
+};
+
 /********************
  * Inline Functions *
  ********************/
@@ -240,7 +254,7 @@ static inline ptrdiff_t ffloor(float x) {
 // Basic hash of a single value:
 static inline ptrdiff_t hash_1d(ptrdiff_t x) {
   //return ((x + 8911211) * 71817211) & HASH_MASK; // both are prime
-  return ((x + 11) * 7) & HASH_MASK; // both are prime
+  return ((x + 7) * 11) & HASH_MASK; // both are prime
 }
 
 static inline ptrdiff_t hash_2d(ptrdiff_t x, ptrdiff_t y) {
@@ -356,6 +370,15 @@ float wrnoise_2d_fancy(
   ptrdiff_t wrapx, ptrdiff_t wrapy,
   float *dx, float *dy,
   uint32_t flags
+);
+
+// 2D dendritic noise:
+float dnnoise_2d(
+  float x,
+  float y,
+  ptrdiff_t salt,
+  float (*manifold)(float, float, ptrdiff_t),
+  ptrdiff_t msalt
 );
 
 // Multiple octaves of 2D simplex noise combined using the given number of

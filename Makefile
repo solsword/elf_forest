@@ -113,9 +113,8 @@ test: $(BIN_DIR)/test
 viewer: $(BIN_DIR)/viewer
 unit_tests: $(BIN_DIR)/unit_tests
 noise_perf: $(BIN_DIR)/noise_perf
-test_noise: $(TEST_DIR)/noise_test_2D.ppm $(TEST_DIR)/noise_test_3D.ppm \
-            $(TEST_DIR)/noise_test_2D_F.ppm $(TEST_DIR)/noise_test_3D_F.ppm \
-            $(TEST_DIR)/noise_test_ex.ppm
+test_noise: $(BIN_DIR)/test_noise $(TEST_DIR)
+	cd $(TEST_DIR) && ../../$(BIN_DIR)/test_noise && mogrify -format png *.ppm
 checkgl: $(BIN_DIR)/checkgl
 	./$(BIN_DIR)/checkgl
 
@@ -177,8 +176,3 @@ $(BIN_DIR)/noise_perf: $(NOISE_PERF_OBJECTS) $(BIN_DIR)
 
 $(BIN_DIR)/checkgl: $(CHECKGL_OBJECTS) $(BIN_DIR)
 	$(CC) $(CHECKGL_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/checkgl
-
-$(TEST_DIR)/noise_test%2D.ppm $(TEST_DIR)/noise_test%3D.ppm \
-$(TEST_DIR)/noise_test%2D_F.ppm $(TEST_DIR)/noise_test%3D_F.ppm \
-$(TEST_DIR)/noise_test%ex.ppm: $(BIN_DIR)/test_noise $(TEST_DIR)
-	cd $(TEST_DIR) && ../../$(BIN_DIR)/test_noise

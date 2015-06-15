@@ -13,27 +13,23 @@ String COLOR_MODE = "grayscale";
 int WINDOW_WIDTH = 800;
 int WINDOW_HEIGHT = 800;
 
-int MAP_WIDTH = 60;
-int MAP_HEIGHT = 60;
+int MAP_WIDTH = 30;
+int MAP_HEIGHT = 30;
 
 //int MAP_WIDTH = 100;
 //int MAP_HEIGHT = 100;
 
 float SEA_LEVEL = 0.2;
 
-float GRID_RESOLUTION = 100.0;
-
-float SG_HEIGHT = sin(PI/3.0);
-float SG_OFFSET = cos(PI/3.0);
-
 float BUMPINESS = 10;
 
 float DEFAULT_SCALE = 0.15 / 1.2;
 float SCALE = DEFAULT_SCALE;
-float NS_LARGE =  0.0006;
-float NS_MEDIUM = 0.012;
-float NS_SMALL = 0.024;
-float NS_TINY = 0.048;
+float GRID_SCALE = 100;
+float NS_LARGE = 0.1;
+float NS_MEDIUM = 0.8;
+float NS_SMALL = 1.6;
+float NS_TINY = 3.2;
 
 float DSTR = 1.3;
 
@@ -198,6 +194,21 @@ class Point {
     this.z += o.z;
   }
 
+  // Projecting <this> onto <v>:
+  //
+  //    dot(<this>, <v>)   =   |this|*|v|*cos(theta)
+  //
+  //   proj(<this>, <v>)   =   |this|*cos(theta) * unit(<v>)
+  //
+  //           unit(<v>)   =   <v>/|v|
+  //
+  // So:
+  //
+  //   proj(<this>, <v>)   =   |this|*cos(theta) * <v>/|v|
+  //
+  //   proj(<this>, <v>)   =   (|this|*|v|*cos(theta) / |v|^2) * <v>
+  //
+  //   proj(<this>, <v>)   =   (dot(<this>, <v>) / |v|^2) * <v>
   Point project_onto(Point v) {
     Point result = new Point(v.x, v.y, v.z);
     float m = this.dot(v) / v.mag2();
@@ -218,7 +229,7 @@ class Edge {
   Edge(Point from, Point to) {
     this.from = from;
     this.to = to;
-    this.state = 1;
+    this.state = 0;
   }
 
   boolean xy_same_side(Point a, Point b) {
@@ -273,9 +284,26 @@ class Edge {
     }
   }
 
-  void draw() {
+  void draw(float scale) {
     if (this.state == 1) {
-      line(this.from.x, this.from.y, this.to.x, this.to.y);
+      strokeWeight(2.0);
+      if (this.from.z > this.to.z) {
+        ellipse(
+          (this.from.x + 0.9*(this.to.x - this.from.x)) * scale,
+          (this.from.y + 0.9*(this.to.y - this.from.y)) * scale,
+          6, 6
+        );
+      } else {
+        ellipse(
+          (this.from.x + 0.1*(this.to.x - this.from.x)) * scale,
+          (this.from.y + 0.1*(this.to.y - this.from.y)) * scale,
+          6, 6
+        );
+      }
+      line(
+        this.from.x * scale, this.from.y * scale,
+        this.to.x * scale, this.to.y * scale
+      );
     }
   }
 }
@@ -347,69 +375,87 @@ class Grid {
   Point center;
   int width;
   int height;
-  Grid(int width, int height, float scale) {
-    int i, j, idx, hidx, vidx, didx;
+  Grid(int width, int height) {
+    int i, j, idx, uhidx, lhidx, vidx;
     float x, y, z;
+    float sx, sy;
+    float squash;
     Edge e;
-    Point a, b, c, d;
+    Point a, b;
     this.width = width;
     this.height = height;
-    this.points = new Point[width*height];
+    this.points = new Point[width*2*height];
     this.edges = new Edge[this.ewidth()*this.eheight()];
     this.center = new Point(0, 0, 0);
     // Set up points:
     for (i = 0; i < this.width; ++i) {
       for (j = 0; j < this.height; ++j) {
-        idx = this.pidx(i, j);
-        x = i * GRID_RESOLUTION;
-        y = j * SG_HEIGHT * GRID_RESOLUTION;
-        if (j % 2 == 1) {
-          x += SG_OFFSET * GRID_RESOLUTION;
-        }
+        // Handle the upper half:
+        idx = this.pidx_u(i, j);
+        x = i;
+        y = j;
         z = 0;
-        // add some simplex noise:
-        x += 0.6 * GRID_RESOLUTION * pnoise(x + 0.7, y + 0.11, 14);
-        y += 0.6 * GRID_RESOLUTION * pnoise(x + 0.7, y + 0.11, 14);
-        x *= scale;
-        y *= scale;
-        z *= scale;
-        this.points[idx] = new Point(x, y, z);
+        // scatter grid points randomly within grid cells:
+        sx = random(1.0);
+        sy = random(1.0);
+        while (sx >= sy) {
+          sx = random(1.0);
+          sy = random(1.0);
+        }
+        // DEBUG:
+        sx = 0;
+        sy = 1;
+        x += sx;
+        y += sy;
+        squash = (x + y) * 0.5 * (sqrt(3) - 1);
+        this.points[idx] = new Point(x + squash, y + squash, z);
+
+        // Handle the lower half:
+        idx = this.pidx_l(i, j);
+        x = i;
+        y = j;
+        z = 0;
+        // scatter grid points randomly within grid cells:
+        sx = random(1.0);
+        sy = random(1.0);
+        while (sx <= sy) {
+          sx = random(1.0);
+          sy = random(1.0);
+        }
+        // DEBUG:
+        sx = 1;
+        sy = 0;
+        x += sx;
+        y += sy;
+        squash = (x + y) * 0.5 * (sqrt(3) - 1);
+        this.points[idx] = new Point(x + squash, y + squash, z);
       }
     }
     // Set up edges:
     for (i = 0; i < this.width; ++i) {
       for (j = 0; j < this.height; ++j) {
-        hidx = this.eidx_h(i, j);
+        uhidx = this.eidx_uh(i, j);
+        lhidx = this.eidx_lh(i, j);
         vidx = this.eidx_v(i, j);
-        didx = this.eidx_d(i, j);
-        a = this.points[this.pidx(i, j)];
+
+        a = this.points[this.pidx_u(i, j)];
+        b = this.points[this.pidx_l(i, j)];
+        this.edges[uhidx] = new Edge(a, b);
+
         if (i < this.width - 1) {
-          b = this.points[this.pidx(i+1, j)];
-          this.edges[hidx] = new Edge(a, b);
+          a = b;
+          b = this.points[this.pidx_u(i+1, j)];
+          this.edges[lhidx] = new Edge(a, b);
         } else {
-          this.edges[hidx] = null;
+          this.edges[lhidx] = null;
         }
+
         if (j < this.height - 1) {
-          c = this.points[this.pidx(i, j+1)];
-          this.edges[vidx] = new Edge(a, c);
-          if (j % 2 == 0) {
-            if (i > 0) {
-              d = this.points[this.pidx(i-1, j+1)];
-              this.edges[didx] = new Edge(a, d);
-            } else {
-              this.edges[didx] = null;
-            }
-          } else {
-            if (i < this.width - 1) {
-              d = this.points[this.pidx(i+1, j+1)];
-              this.edges[didx] = new Edge(a, d);
-            } else {
-              this.edges[didx] = null;
-            }
-          }
+          a = this.points[this.pidx_u(i, j)];
+          b = this.points[this.pidx_l(i, j+1)];
+          this.edges[vidx] = new Edge(a, b);
         } else {
           this.edges[vidx] = null;
-          this.edges[didx] = null;
         }
       }
     }
@@ -419,42 +465,46 @@ class Grid {
   int ewidth() { return 3*this.width; }
   int eheight() { return this.height; }
 
-  int pidx(int i, int j) { return j*this.width+i; }
+  int pidx_u(int i, int j) { return j*2*this.width + 2*i; }
+  int pidx_l(int i, int j) { return j*2*this.width + 2*i + 1; }
 
-  int eidx_v(int i, int j) { return j*this.ewidth()+3*i; }
-  int eidx_h(int i, int j) { return j*this.ewidth()+3*i + 1; }
-  int eidx_d(int i, int j) { return j*this.ewidth()+3*i + 2; }
+  int eidx_v(int i, int j) {
+    return j*this.ewidth() + 2*this.width + i;
+  }
+  int eidx_uh(int i, int j) { return j*this.ewidth() + 2*i; }
+  int eidx_lh(int i, int j) { return j*this.ewidth() + 2*i + 1; }
 
-  void edges_from(int i, int j, Edge[] result) {
-    // vertical above / diagonal above / horizontal forward
-    // vertical below / diagonal below / horizontal backward
-    result[0] = this.edges[this.eidx_v(i, j)];
-    result[1] = this.edges[this.eidx_d(i, j)];
-    result[2] = this.edges[this.eidx_h(i, j)];
+  void edges_at(int i, int j, Edge[] result) {
+    /* 
+     *      .
+     *  +---.-------+ 
+     *  |   1      /|
+     *  |   .     / |
+     * ...0.X    /  |
+     *  |    .  /   |
+     *  |     2/    |
+     *  |     /.    |
+     *  |    /  .   |
+     *  |   /    X.4..
+     *  |  /     .  |
+     *  | /      3  |
+     *  |/       .  |
+     *  +--------.--+
+     *           .
+     */ 
+    if (i > 0) {
+      result[0] = this.edges[this.eidx_lh(i-1, j)];
+    } else {
+      result[0] = null;
+    }
+    result[1] = this.edges[this.eidx_v(i, j)];
+    result[2] = this.edges[this.eidx_uh(i, j)];
     if (j > 0) {
       result[3] = this.edges[this.eidx_v(i, j-1)];
-      if (j % 2 == 0) {
-        if (i > 0) {
-          result[4] = this.edges[this.eidx_d(i-1, j-1)];
-        } else {
-          result[4] = null;
-        }
-      } else {
-        if (i < this.width - 1) {
-          result[4] = this.edges[this.eidx_d(i+1, j-1)];
-        } else {
-          result[4] = null;
-        }
-      }
     } else {
       result[3] = null;
-      result[4] = null;
     }
-    if (i > 0) {
-      result[5] = this.edges[this.eidx_h(i-1, j)];
-    } else {
-      result[5] = null; 
-    }
+    result[4] = this.edges[this.eidx_lh(i, j)];
   }
 
   void update_center() {
@@ -464,11 +514,13 @@ class Grid {
     this.center.z = 0;
     for (i = 0; i < this.width; ++i) {
       for (j = 0; j < this.height; ++j) {
-        idx = this.pidx(i, j);
+        idx = this.pidx_u(i, j);
+        this.center.add(this.points[idx]);
+        idx = this.pidx_l(i, j);
         this.center.add(this.points[idx]);
       }
     }
-    this.center.scale(1.0 / (float) (this.width*this.height));
+    this.center.scale(1.0 / (float) (this.width*2*this.height));
   }
 
   float min_x() {
@@ -476,7 +528,11 @@ class Grid {
     float result = this.points[0].x;
     for (i = 0; i < this.width; ++i) {
       for (j = 0; j < this.height; ++j) {
-        idx = this.pidx(i, j);
+        idx = this.pidx_u(i, j);
+        if (this.points[idx].x < result) {
+          result = this.points[idx].x;
+        }
+        idx = this.pidx_l(i, j);
         if (this.points[idx].x < result) {
           result = this.points[idx].x;
         }
@@ -490,7 +546,11 @@ class Grid {
     float result = this.points[0].x;
     for (i = 0; i < this.width; ++i) {
       for (j = 0; j < this.height; ++j) {
-        idx = this.pidx(i, j);
+        idx = this.pidx_u(i, j);
+        if (this.points[idx].x > result) {
+          result = this.points[idx].x;
+        }
+        idx = this.pidx_l(i, j);
         if (this.points[idx].x > result) {
           result = this.points[idx].x;
         }
@@ -504,7 +564,11 @@ class Grid {
     float result = this.points[0].y;
     for (i = 0; i < this.width; ++i) {
       for (j = 0; j < this.height; ++j) {
-        idx = this.pidx(i, j);
+        idx = this.pidx_u(i, j);
+        if (this.points[idx].y < result) {
+          result = this.points[idx].y;
+        }
+        idx = this.pidx_l(i, j);
         if (this.points[idx].y < result) {
           result = this.points[idx].y;
         }
@@ -518,7 +582,11 @@ class Grid {
     float result = this.points[0].y;
     for (i = 0; i < this.width; ++i) {
       for (j = 0; j < this.height; ++j) {
-        idx = this.pidx(i, j);
+        idx = this.pidx_u(i, j);
+        if (this.points[idx].y > result) {
+          result = this.points[idx].y;
+        }
+        idx = this.pidx_l(i, j);
         if (this.points[idx].y > result) {
           result = this.points[idx].y;
         }
@@ -532,7 +600,11 @@ class Grid {
     float result = this.points[0].z;
     for (i = 0; i < this.width; ++i) {
       for (j = 0; j < this.height; ++j) {
-        idx = this.pidx(i, j);
+        idx = this.pidx_u(i, j);
+        if (this.points[idx].z < result) {
+          result = this.points[idx].z;
+        }
+        idx = this.pidx_l(i, j);
         if (this.points[idx].z < result) {
           result = this.points[idx].z;
         }
@@ -546,7 +618,11 @@ class Grid {
     float result = this.points[0].z;
     for (i = 0; i < this.width; ++i) {
       for (j = 0; j < this.height; ++j) {
-        idx = this.pidx(i, j);
+        idx = this.pidx_u(i, j);
+        if (this.points[idx].z > result) {
+          result = this.points[idx].z;
+        }
+        idx = this.pidx_l(i, j);
         if (this.points[idx].z > result) {
           result = this.points[idx].z;
         }
@@ -557,82 +633,77 @@ class Grid {
 
   void dendrize(int seed) {
     int i, j;
-    int count, r;
-    Edge[] edges = new Edge[6];
+    int u_count, d_count, r;
+    Edge[] edges = new Edge[5];
     for (i = 0; i < this.width; ++i) {
       for (j = 0; j < this.height; ++j) {
-        // Turn off all but one downhill edge from this point:
-        this.edges_from(i, j, edges);
-        count = 0;
-        if (edges[0] != null && edges[0].from.z > edges[0].to.z) {
-          count += 1;
+        // Turn off all edges and count upper/lower downhills:
+        this.edges_at(i, j, edges);
+        u_count = 0;
+        d_count = 0;
+        if (edges[0] != null && edges[0].from.z < edges[0].to.z) {
+          edges[0].state = 0;
+          u_count += 1;
         }
         if (edges[1] != null && edges[1].from.z > edges[1].to.z) {
-          count += 1;
+          edges[1].state = 0;
+          u_count += 1;
         }
-        if (edges[2] != null && edges[2].from.z > edges[2].to.z) {
-          count += 1;
-        }
-        if (edges[3] != null && edges[3].from.z < edges[3].to.z) {
-          count += 1;
-        }
-        if (edges[4] != null && edges[4].from.z < edges[4].to.z) {
-          count += 1;
-        }
-        if (edges[5] != null && edges[5].from.z < edges[5].to.z) {
-          count += 1;
-        }
-        if (count == 0) {
-          continue;
-        }
-        r = choice(i, j, seed, count);
-        if (edges[0] != null && edges[0].from.z > edges[0].to.z) {
-          if (r == 0) {
-            edges[0].state = 1;
-          } else {
-            edges[0].state = 0;
-          }
-          r -= 1;
-        }
-        if (edges[1] != null && edges[1].from.z > edges[1].to.z) {
-          if (r == 0) {
-            edges[1].state = 1;
-          } else {
-            edges[1].state = 0;
-          }
-          r -= 1;
-        }
-        if (edges[2] != null && edges[2].from.z > edges[2].to.z) {
-          if (r == 0) {
-            edges[2].state = 1;
-          } else {
-            edges[2].state = 0;
-          }
-          r -= 1;
+        edges[2].state = 0;
+        if (edges[2].from.z > edges[2].to.z) {
+          u_count += 1;
+        } else {
+          d_count += 1;
         }
         if (edges[3] != null && edges[3].from.z < edges[3].to.z) {
-          if (r == 0) {
-            edges[3].state = 1;
-          } else {
-            edges[3].state = 0;
-          }
-          r -= 1;
+          edges[3].state = 0;
+          d_count += 1;
         }
-        if (edges[4] != null && edges[4].from.z < edges[4].to.z) {
-          if (r == 0) {
-            edges[4].state = 1;
-          } else {
-            edges[4].state = 0;
-          }
-          r -= 1;
+        if (edges[4] != null && edges[4].from.z > edges[4].to.z) {
+          edges[4].state = 0;
+          d_count += 1;
         }
-        if (edges[5] != null && edges[5].from.z < edges[5].to.z) {
-          if (r == 0) {
-            edges[5].state = 1;
-          } else {
-            edges[5].state = 0;
+        if (u_count > 0) {
+          r = choice(i, j, seed, u_count);
+          if (edges[0] != null && edges[0].from.z < edges[0].to.z) {
+            if (r == 0) {
+              edges[0].state = 1;
+            }
+            r -= 1;
           }
-          r -= 1;
+          if (edges[1] != null && edges[1].from.z > edges[1].to.z) {
+            if (r == 0) {
+              edges[1].state = 1;
+            }
+            r -= 1;
+          }
+          if (edges[2] != null && edges[2].from.z > edges[2].to.z) {
+            if (r == 0) {
+              edges[2].state = 1;
+            }
+            r -= 1;
+          }
+        }
+        if (d_count > 0) {
+          r = choice(i, j, seed + 735, d_count);
+          if (edges[2] != null && edges[2].from.z < edges[2].to.z) {
+            if (r == 0) {
+              edges[2].state = 1;
+            }
+            r -= 1;
+          }
+          if (edges[3] != null && edges[3].from.z < edges[3].to.z) {
+            if (r == 0) {
+              edges[3].state = 1;
+            }
+            r -= 1;
+          }
+          if (edges[4] != null && edges[4].from.z > edges[4].to.z) {
+            if (r == 0) {
+              edges[4].state = 1;
+            }
+            r -= 1;
+          }
         }
       }
     }
@@ -643,13 +714,24 @@ class Grid {
     int i, j;
     for (i = 0; i < this.width; ++i) {
       for (j = 0; j < this.height; ++j) {
-        p = this.points[this.pidx(i, j)];
+        p = this.points[this.pidx_u(i, j)];
         if (mode == "uniform-x") {
           p.z = p.x;
         } else if (mode == "uniform-y") {
           p.z = p.y;
         } else if (mode == "simplex") {
-          p.z = BUMPINESS * GRID_RESOLUTION * pnoise(
+          p.z = BUMPINESS * pnoise(
+            NS_LARGE * p.x + DSTR * pnoise(NS_LARGE * p.x+2000, NS_LARGE * p.y),
+            NS_LARGE * p.y + DSTR * pnoise(NS_LARGE * p.x, NS_LARGE * p.y+2000)
+          );
+        }
+        p = this.points[this.pidx_l(i, j)];
+        if (mode == "uniform-x") {
+          p.z = p.x;
+        } else if (mode == "uniform-y") {
+          p.z = p.y;
+        } else if (mode == "simplex") {
+          p.z = BUMPINESS * pnoise(
             NS_LARGE * p.x + DSTR * pnoise(NS_LARGE * p.x+2000, NS_LARGE * p.y),
             NS_LARGE * p.y + DSTR * pnoise(NS_LARGE * p.x, NS_LARGE * p.y+2000)
           );
@@ -658,29 +740,23 @@ class Grid {
     }
   }
 
-  void render() {
+  void render(float scale) {
     int i, j;
     for (i = 0; i < this.width; ++i) {
       for (j = 0; j < this.height; ++j) {
+        this.edges[this.eidx_uh(i, j)].draw(scale);
         if (i < this.width - 1) {
-          this.edges[this.eidx_h(i, j)].draw();
+          this.edges[this.eidx_lh(i, j)].draw(scale);
         }
         if (j < this.height - 1) {
-          this.edges[this.eidx_v(i, j)].draw();
-          if (j % 2 == 0) {
-            if (i > 0) {
-              this.edges[this.eidx_d(i, j)].draw();
-            }
-          } else {
-            if (i < this.width - 1) {
-              this.edges[this.eidx_d(i, j)].draw();
-            }
-          }
+          this.edges[this.eidx_v(i, j)].draw(scale);
         }
       }
     }
   }
 
+/*
+TODO: Fix this...
   void prune(int seed) {
     int i, j;
     int count, r;
@@ -688,8 +764,7 @@ class Grid {
     Edge last;
     for (i = 0; i < this.width; ++i) {
       for (j = 0; j < this.height; ++j) {
-        // Turn off all but one downhill edge from this point:
-        this.edges_from(i, j, edges);
+        this.edges_at(i, j, edges);
         count = 0;
         last = null;
         if (edges[0] != null && edges[0].state != 0) {
@@ -708,27 +783,26 @@ class Grid {
           count += 1;
           last = edges[3];
         }
-        if (edges[4] != null && edges[4].state != 0) {
-          count += 1;
-          last = edges[4];
-        }
-        if (edges[5] != null && edges[5].state != 0) {
-          count += 1;
-          last = edges[5];
-        }
         if (count == 1 && choice(i*j, j+i, seed, 100) < PRUNE_PERCENT) {
           last.state = -1;
         }
       }
     }
   }
+  */
 
   float flat_distance_to(Point p) {
     Edge e;
     int i, j, a_i, a_j;
-    float est, dist = GRID_RESOLUTION * 6;
-    a_i = floor(this.width  * (p.x-this.min_x()) / (this.max_x()-this.min_x()));
-    a_j = floor(this.height * (p.y-this.min_y()) / (this.max_y()-this.min_y()));
+    float est, dist = 6;
+    float e_x, e_y, squash;
+    e_x = p.x;
+    e_y = p.y;
+    squash = (e_x + e_y) * 0.5 * (sqrt(3) - 1);
+    e_x -= squash;
+    e_y -= squash;
+    a_i = floor(e_x);
+    a_j = floor(e_y);
     for (i = a_i - 2; i < a_i + 2; ++i) {
       for (j = a_j - 2; j < a_j + 2; ++j) {
         if (i < 0 || j < 0 || i > this.width - 1 || j > this.height - 1) {
@@ -739,12 +813,12 @@ class Grid {
           est = e.closest_point_2d(p).dist2d(p);
           if (est < dist) { dist = est; }
         }
-        e = this.edges[this.eidx_h(i, j)];
+        e = this.edges[this.eidx_uh(i, j)];
         if (e != null && e.state == 1) {
           est = e.closest_point_2d(p).dist2d(p);
           if (est < dist) { dist = est; }
         }
-        e = this.edges[this.eidx_d(i, j)];
+        e = this.edges[this.eidx_lh(i, j)];
         if (e != null && e.state == 1) {
           est = e.closest_point_2d(p).dist2d(p);
           if (est < dist) { dist = est; }
@@ -763,10 +837,10 @@ void setup() {
   colorMode(HSB, 1.0, 1.0, 1.0);
   size(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-  THE_GRID = new Grid(MAP_WIDTH, MAP_HEIGHT, 1.0);
+  THE_GRID = new Grid(MAP_WIDTH, MAP_HEIGHT);
   THE_GRID.set_heights(HEIGHTMODE);
   THE_GRID.dendrize((int) random(1000));
-  THE_GRID.prune((int) random(1000));
+  //THE_GRID.prune((int) random(1000));
 
   noLoop();
   redraw();
@@ -777,6 +851,7 @@ void draw() {
   int i, j;
   float x, y, gw, gh, d;
   background(0.6, 0.8, 0.25);
+  //background(0, 0, 1);
   if (MODE == "grid") {
     // Center the map:
     smooth();
@@ -784,11 +859,14 @@ void draw() {
     noFill();
     pushMatrix();
     THE_GRID.update_center();
-    translate(-THE_GRID.center.x*SCALE, -THE_GRID.center.y*SCALE);
+    translate(
+      -THE_GRID.center.x*GRID_SCALE*SCALE,
+      -THE_GRID.center.y*GRID_SCALE*SCALE
+    );
     translate(WINDOW_WIDTH/2.0, WINDOW_HEIGHT/2.0);
     scale(SCALE);
     // And draw it:
-    THE_GRID.render();
+    THE_GRID.render(GRID_SCALE);
     popMatrix();
   } else if (MODE == "dist") {
     gw = THE_GRID.max_x() - THE_GRID.min_x();
@@ -800,18 +878,18 @@ void draw() {
       for (j = 0; j < WINDOW_HEIGHT; j += 4) {
         x = THE_GRID.min_x() + gw * (float) ((i + 2) / (float) WINDOW_WIDTH);
         y = THE_GRID.min_y() + gh * (float) ((j + 2) / (float) WINDOW_HEIGHT);
-        x += 0.6 * GRID_RESOLUTION * pnoise(
+        x += 0.4 * pnoise(
           NS_MEDIUM * x,
           NS_MEDIUM * y + 181,
           7.3
         );
-        y += 0.6 * GRID_RESOLUTION * pnoise(
+        y += 0.4 * pnoise(
           NS_MEDIUM * x + 5645,
           NS_MEDIUM * y,
           35.8
         );
         d = THE_GRID.flat_distance_to(new Point(x, y, 0));
-        fill(colormap((d / GRID_RESOLUTION), COLOR_MODE));
+        fill(colormap((d), COLOR_MODE));
         rect(i, j, 4, 4);
         c += 1;
         print("\r  ...", c, "/", WINDOW_WIDTH * WINDOW_HEIGHT/16, "...");
@@ -850,11 +928,11 @@ void keyPressed() {
   } else if (key == 'd') {
     // re-dendrize with a random seed:
     THE_GRID.dendrize((int) random(1000));
-  } else if (key == 'p') {
-    THE_GRID.prune((int) random(1000));
+  //} else if (key == 'p') {
+  //  THE_GRID.prune((int) random(1000));
   } else if (key == 'r') {
     // Reset stuff to 0:
-    THE_GRID = new Grid(MAP_WIDTH, MAP_HEIGHT, 1.0);
+    THE_GRID = new Grid(MAP_WIDTH, MAP_HEIGHT);
     SCALE = DEFAULT_SCALE;
   } else if (key == 'c') {
     if (COLOR_MODE == "grayscale") {

@@ -6,6 +6,9 @@
 
 #include "noise.h"
 
+// DEBUG:
+#include <stdio.h>
+
 /************
  * Examples *
  ************/
@@ -252,10 +255,12 @@ float const SURFLET_SQ_RADIUS_2D = 0.75;
 
 // The 3D simplices aren't quite regular (regular tetrahedrons don't tile
 // properly), so this value is a bit of a fudge. A regular unit tetrahedron
-// would have height 0.81, but we'll assume that our distorted tetrahedra will only have maximum allowable radius ~.75. Squaring that will yield 0.5625.
+// would have height 0.81, but we'll assume that our distorted tetrahedra will
+// only have maximum allowable radius ~.75. Squaring that will yield 0.5625.
 float const SURFLET_RADIUS_3D = 0.75;
 float const SURFLET_SQ_RADIUS_3D = 0.5625;
 
+// At worst the nearest point will be diagonally across a grid cell.
 float const MAX_WORLEY_DISTANCE_2D = M_SQRT2;
 float const MAX_SQ_WORLEY_DISTANCE_2D = 2.0;
 
@@ -271,6 +276,230 @@ static float SCALE_3D = 7.0; // Mostly falls within [-0.9,0.9]
 // noticeably when the sampling grid approaches the size of the simplices.
 // Ideally use at least 4 samples/simplex when values from the full range are
 // desired.
+
+
+// To transform a simplex grid into a square grid and vice versa, we can squash
+// the square grid along the x=y diagonal. Consequently, the transformation
+// equation has the following form:
+//
+//   x' = x + (x + y) * C
+//   y' = y + (x + y) * C
+//
+// We know that the points [0, 0], [0, 1], and [1, 1] should be corners of a
+// simplex after the transform, so the distances (and by extension the square
+// of the distances) from [0, 0] to both [0, 1] and [1, 1] should be the same
+// after the transformation. We can thus use the following system of equations
+// to solve for C:
+//
+//   x01 = 0 + (0 + 1) * C
+//   y01 = 1 + (0 + 1) * C
+//   d2 = (x01 - 0)^2 + (y01 - 0)^2
+//
+//   x11 = 1 + (1 + 1) * C
+//   y11 = 1 + (1 + 1) * C
+//   d2 = (x11 - 0)^2 + (y11  - 0)^2
+//
+// -------------------------------------------------- (simplify)
+//
+//   x01 = C
+//   y01 = 1 + C
+//   d2 = x01^2 + y01^2
+//
+//   x11 = 1 + 2*C
+//   y11 = 1 + 2*C
+//   d2 = x11^2 + y11^2
+//
+// -------------------------------------------------- (d2 == d2)
+//
+//   x01^2 + y01^2 = x11^2 + y11^2
+//
+// -------------------------------------------------- (substitute values)
+//
+//   C^2 + (1 + C)^2 = (1 + 2*C)^2 + (1 + 2*C)^2
+//
+// -------------------------------------------------- (simplify terms)
+//
+//   2*C^2 + 2*C + 1 = 8*C^2 + 8*C + 2
+//
+// -------------------------------------------------- (subtract lhs from rhs)
+//
+//   6*C^2 + 6*C + 1 = 0
+//
+// -------------------------------------------------- (quadrtic formula)
+//
+//   C = (-b +/- sqrt(b^2 - 4*a*c)) / 2*a
+//     a = 6
+//     b = 6
+//     c = 1
+//
+// -------------------------------------------------- (fill out a/b/c)
+//
+//   C = (-6 +/- sqrt(6^2 - 4*6*1)) / 2*6
+//
+// -------------------------------------------------- (simplify)
+//
+//   C = (-6 +/- sqrt(36 - 24)) / 12
+//
+// -------------------------------------------------- (simplify square root)
+//
+//   C = (-6 +/- 2*sqrt(3)) / 12
+//
+// -------------------------------------------------- (take out 2/2)
+//
+//   C = (-3 +/- sqrt(3)) / 6
+//
+// -------------------------------------------------- (two possible solutions)
+//
+//       {   (sqrt(3) - 3) / 6    }
+//   C = {                        }
+//       {   -(sqrt(3) + 3) / 6   }
+//
+// -------------------------------------------------- (pick arbitrarily)
+//
+//   C = (sqrt(3) - 3) / 6
+//
+// -------------------------------------------------- (calculate)
+//
+//   C = -0.21132486540518713
+//
+// -------------------------------------------------- (done)
+//
+// So if we use:
+//
+//   x' = x + (x + y)*C
+//   y' = y + (x + y)*C
+//
+// with this value of C, if x and y come from a square grid, x' and y' will
+// come from a corresponding simplex grid. This is the distorted -> true
+// transform: the distorted (square grid) coordinates are easier to reason
+// about; the true (simplex grid) coordinates can be computed as needed. The
+// inverse transform is needed to figure out which simplex cell an arbitrary
+// point lies within, however. For this we want a C' such that:
+//
+//   x = x' + (x' + y')*C'
+//
+// will hold true for all x/y. Substituting the transformations above yields:
+//
+//   x = (x + (x + y)*C) + (x + (x + y)*C + (y + (x + y)*C))*C'
+//
+// -------------------------------------------------- (distribute around x/y)
+// 
+//   x = (2*C'*C + C' + C + 1)*x + (2*C'*C + C' * C)*y
+//
+// -------------------------------------------------- (swap lhs/rhs + subtract)
+//
+//   (2*C'*C + C' + C)*x + (2*C'*C + C' * C)*y = 0
+//
+// -------------------------------------------------- (let x=1, y=0)
+//
+//   (2*C'*C + C' + C) = 0
+//
+// -------------------------------------------------- (distribute around C')
+//
+//   C' * (2*C + 1) = -C
+//
+// -------------------------------------------------- (divide to isolate C')
+//
+//   C' = -C / (2*C + 1)
+//
+// -------------------------------------------------- (substitute C)
+//
+//   C' = -((sqrt(3) - 3) / 6) / (2*((sqrt(3) - 3) / 6)) + 1)
+//
+// -------------------------------------------------- (simplify denominator)
+//
+//   C' = -((sqrt(3) - 3) / 6) / (2*(sqrt(3)/6 - 1/2) + 1)
+//
+// -------------------------------------------------- (simplify denominator)
+//
+//   C' = -((sqrt(3) - 3) / 6) / ((sqrt(3)/3 - 1) + 1)
+//
+// -------------------------------------------------- (simplify denominator)
+//
+//   C' = -((sqrt(3) - 3) / 6) / (1 / sqrt(3))
+//
+// -------------------------------------------------- (flip denominator)
+//
+//   C' = sqrt(3) * -((sqrt(3) - 3) / 6)
+//
+// -------------------------------------------------- (distribute)
+//
+//   C' = -(3 - 3*sqrt(3)) / 6
+//
+// -------------------------------------------------- (simplify)
+//
+//   C' = -1/2 * (1 - sqrt(3))
+//
+// -------------------------------------------------- (distribute -1)
+//
+//   C' = 1/2 * (sqrt(3) - 1)
+//
+// -------------------------------------------------- (calculate)
+//
+//   C' = 0.3660254037844386
+//
+// -------------------------------------------------- (done)
+//
+// So now we have both a distorted -> normal transform and a normal ->
+// distorted transform and we can work with a square grid and pretend it's a
+// simplex grid. The resulting simplices will have edge lengths equal to the
+// distance between [0, 0] and [0, 1] after transformation:
+//
+//   [0, 0]   ->   [0, 0]
+//   [0, 1]   ->   [0 + (0 + 1)*C, 1 + (0 + 1)*C]   =>   [C, 1 + C]
+//
+//   L = sqrt( (C - 0)^2 + ((1 + C) - 0)^2 )
+//
+// -------------------------------------------------- (simplify)
+//
+//   L = sqrt( 2*C^2 + 2*C + 1 )
+//
+// -------------------------------------------------- (substitute C)
+//
+//   L = sqrt( 2*((sqrt(3) - 3) / 6)^2 + 2*((sqrt(3) - 3) / 6) + 1 )
+//
+// -------------------------------------------------- (simplify 1st term)
+//
+//   L = sqrt( 2*((3 - 2*sqrt(3)*3 + 9) / 36) + 2*((sqrt(3) - 3) / 6) + 1 )
+//
+// -------------------------------------------------- (simplify 2nd/3rd terms)
+//
+//   L = sqrt( 2*((3 - 2*sqrt(3)*3 + 9) / 36) + sqrt(3)/3 )
+//
+// -------------------------------------------------- (simplify more)
+//
+//   L = sqrt( ((6 - 4*sqrt(3)*3 + 18) / 36) + sqrt(3)/3 )
+//
+// -------------------------------------------------- (equalize denominators)
+//
+//   L = sqrt( ((1/2 - sqrt(3) + 3/2) / 3) + sqrt(3)/3 )
+//
+// -------------------------------------------------- (combine fractions)
+//
+//   L = sqrt( (1/2 + 3/2 - sqrt(3) + sqrt(3) ) / 3 )
+//
+// -------------------------------------------------- (simplify)
+//
+//   L = sqrt(2/3)
+//
+// -------------------------------------------------- (simplify)
+//
+//   L = sqrt(2/3)
+//
+// -------------------------------------------------- (calculate)
+//
+//   L = 0.816496580927726
+//
+// -------------------------------------------------- (done)
+
+#define SQUARE_TO_SIMPLEX_FACTOR -0.2113248654051871
+#define SIMPLEX_TO_SQUARE_FACTOR  0.3660254037844386
+#define SIMPLEX_EDGE_LENGTH 0.816496580927726
+
+// The closest dendrite edge could be at the other end of a simplex.
+
+float const MAX_DENDRITE_DISTANCE_2D = SIMPLEX_EDGE_LENGTH;
+
 
 /********************
  * Inline Functions *
@@ -578,6 +807,468 @@ static inline void compute_offset_grid_point_2d_wrapped(
   );
 }
 
+// Uses the SQUARE_TO_SIMPLEX_FACTOR constant to convert from square grid
+// coordinates x/y to simplex grid coordinates. r_x and r_y may be the
+// addresses of x and y if in-place conversion is desired.
+static inline void sqr__spx(float x, float y, float *r_x, float *r_y) {
+  float squash = (x + y) * SQUARE_TO_SIMPLEX_FACTOR;
+  *r_x = x + squash;
+  *r_y = y + squash;
+}
+
+// Uses SIMPLEX_TO_SQUARE_FACTOR for the inverse of the above transformation.
+static inline void spx__sqr(float x, float y, float *r_x, float *r_y) {
+  float squash = (x + y) * SIMPLEX_TO_SQUARE_FACTOR;
+  *r_x = x + squash;
+  *r_y = y + squash;
+}
+
+// From x and y values, computes the i/j indices and upper/lower bit in a
+// simplex grid. This function uses a diagonal squash to transform a
+// rectangular grid into a simplex grid and vice versa.
+static inline void get_simplex_grid_cell(
+  float x, float y,
+  ptrdiff_t *r_i, ptrdiff_t *r_j, ptrdiff_t *r_upper
+) {
+  spx__sqr(x, y, &x, &y);
+  *r_i = ffloor(x);
+  *r_j = ffloor(y);
+  *r_upper = (y - ((float) *r_j)) > (x - ((float) *r_i));
+}
+
+// These two functions standardize computing arbitrary hashes for simplex grid
+// cells:
+static ptrdiff_t simplex_cell_hash(ptrdiff_t i, ptrdiff_t j, ptrdiff_t upper) {
+  return hash_3d(i ^ upper, i+j, (i+7)*j);
+}
+
+static ptrdiff_t simplex_alt_hash(ptrdiff_t i, ptrdiff_t j, ptrdiff_t upper) {
+  return hash_3d(i-j, j ^ upper, i*(j+3));
+}
+
+// From i and j grid indices, compute the grid cell origin in a simplex grid.
+static inline void simplex_grid_cell_origin(
+  ptrdiff_t i, ptrdiff_t j,
+  float *r_x, float *r_y
+) {
+  sqr__spx((float) i, (float) j, r_x, r_y);
+}
+
+// Given i and j indices and the upper/lower bit, compute the randomly offset
+// grid point within the given simplex cell. Returns x/y coordinates in normal
+// (simplex grid) space.
+static inline void simplex_grid_offset_point(
+  ptrdiff_t i, ptrdiff_t j, ptrdiff_t upper,
+  float *r_x, float *r_y
+) {
+  // Get a random point within a unit square:
+  float x = float_hash_1d(simplex_cell_hash(i, j, upper));
+  float y = float_hash_1d(simplex_alt_hash(i, j, upper));
+  float tmp;
+  // Flip the point if it's in the wrong half (final distribution remains
+  // uniform over the triangle):
+  if (
+    ( upper && x > y)
+  ||
+    (!upper && x < y)
+  ) {
+    tmp = x;
+    x = y;
+    y = tmp;
+  }
+  // Add our cell origin in square grid space:
+  x += (float) i;
+  y += (float) j;
+  // Transform back to simplex grid space and we're done:
+  sqr__spx(x, y, r_x, r_y);
+}
+
+/* This function fills in the x/y/z location information for a 22-cell simplex
+ * grid neighborhood on a jittered grid (see simplex_grid_offset_point). Below
+ * are the relative index patterns for both upper and lower cells:
+ *
+ *               +       +                                  +
+ *              / \     / \                                / \
+ *             / . \   / . \                              / . \
+ *            / 0,2 \ / 1,2 \                            / 1,2 \
+ *   +-------+-------+-------+-------+          +-------+-------+-------+
+ *    \-1,1 / \ 0,1 / \ 1,1 / \ 2,1 /            \ 0,1 / \ 1,1 / \ 2,1 /
+ *     \ ^ / . \ ^ / . \ ^ / . \ ^ /              \ ^ / . \ ^ / . \ ^ /
+ *      \ /-1,1 \ / 0,1 \ / 1,1 \ /                \ / 0,1 \ / 1,1 \ /
+ *       +-------+-------+-------+          +-------+-------+-------+-------+
+ *      / \-1,0 / \ 0,0 / \ 1,0 / \          \-1,0 / \ 0,0 / \ 1,0 / \ 2,0 /
+ *     / . \ ^ / . \ ^ / . \ ^ / . \          \ ^ / . \ ^ / . \ ^ / . \ ^ /
+ *    /-2,0 \ /-1,0 \ / 0,0 \ / 1,0 \          \ /-1,0 \ / 0,0 \ / 1,0 \ /
+ *   +-------+-------+-------+-------+          +-------+-------+-------+
+ *          / \-1,-1/ \ 0,-1/ \                / \-1,-1/ \ 0,-1/ \ 1,-1/ \
+ *         / . \ ^ / . \ ^ / . \              / . \ ^ / . \ ^ / . \ ^ / . \
+ *        /-2,-1\ /-1,-1\ / 0,-1\            /-2,-1\ /-1,-1\ / 0,-1\ / 1,-1\
+ *       +-------+-------+-------+          +-------+-------+-------+-------+
+ *                \-1,-2/                            \-1,-2/ \ 0,-2/
+ *                 \ ^ /                              \ ^ /   \ ^ /
+ *                  \ /                                \ /     \ /
+ *                   +                                  +       +
+ *
+ * The neighborhood triangles are indexed as follows:
+ *
+ *               +       +                                  +
+ *              / \     / \                                / \
+ *             /   \   /   \                              /   \
+ *            /  0  \ /  1  \                            / 21  \
+ *   +-------+-------+-------+-------+          +-------+-------+-------+
+ *    \  2  / \  4  / \  6  / \  8  /            \ 16  / \ 18  / \ 20  /
+ *     \   /   \   /   \   /   \   /              \   /   \   /   \   /
+ *      \ /  3  \ /  5  \ /  7  \ /                \ / 17  \ / 19  \ /
+ *       +-------+-------+-------+          +-------+-------+-------+-------+
+ *      / \ 10  / \ 12  / \ 14  / \          \  9  / \ 11  / \ 13  / \ 15  /
+ *     /   \   /   \   /   \   /   \          \   /   \   /   \   /   \   /
+ *    /  9  \ / 11  \ / 13  \ / 15  \          \ / 10  \ / 12  \ / 14  \ /
+ *   +-------+-------+-------+-------+          +-------+-------+-------+
+ *          / \ 17  / \ 19  / \                / \  3  / \  5  / \  7  / \
+ *         /   \   /   \   /   \              /   \   /   \   /   \   /   \
+ *        / 16  \ / 18  \ / 20  \            /  2  \ /  4  \ /  6  \ /  8  \
+ *       +-------+-------+-------+          +-------+-------+-------+-------+
+ *                \ 21  /                            \  0  / \  1  /
+ *                 \   /                              \   /   \   /
+ *                  \ /                                \ /     \ /
+ *                   +                                  +       +
+ *
+ */
+static inline void fill_simplex_neighborhood_2d(
+  simplex_neighborhood_2d *sxn,
+  ptrdiff_t i,
+  ptrdiff_t j,
+  ptrdiff_t upper,
+  float (*manifold)(float, float, ptrdiff_t),
+  ptrdiff_t msalt
+) {
+  ptrdiff_t ii;
+  if (upper) {
+    simplex_grid_offset_point(i-1, j+1, 1, &(sxn->x[0]), &(sxn->y[0]));
+    sxn->i[0] = i  ; sxn->j[0] = j+2; sxn->u[0] = 0;
+    sxn->i[1] = i+1; sxn->j[1] = j+2; sxn->u[1] = 0;
+
+    sxn->i[2] = i-1; sxn->j[2] = j+1; sxn->u[2] = 1;
+    sxn->i[3] = i-1; sxn->j[3] = j+1; sxn->u[3] = 0;
+    sxn->i[4] = i  ; sxn->j[4] = j+1; sxn->u[4] = 1;
+    sxn->i[5] = i  ; sxn->j[5] = j+1; sxn->u[5] = 0;
+    sxn->i[6] = i+1; sxn->j[6] = j+1; sxn->u[6] = 1;
+    sxn->i[7] = i+1; sxn->j[7] = j+1; sxn->u[7] = 0;
+    sxn->i[8] = i+2; sxn->j[8] = j+1; sxn->u[8] = 1;
+
+    sxn->i[ 9] = i-2; sxn->j[ 9] = j  ; sxn->u[ 9] = 0;
+    sxn->i[10] = i-1; sxn->j[10] = j  ; sxn->u[10] = 1;
+    sxn->i[11] = i-1; sxn->j[11] = j  ; sxn->u[11] = 0;
+    sxn->i[12] = i  ; sxn->j[12] = j  ; sxn->u[12] = 1;
+    sxn->i[13] = i  ; sxn->j[13] = j  ; sxn->u[13] = 0;
+    sxn->i[14] = i+1; sxn->j[14] = j  ; sxn->u[14] = 1;
+    sxn->i[15] = i+1; sxn->j[15] = j  ; sxn->u[15] = 0;
+
+    sxn->i[16] = i-2; sxn->j[16] = j-1; sxn->u[16] = 0;
+    sxn->i[17] = i-1; sxn->j[17] = j-1; sxn->u[17] = 1;
+    sxn->i[18] = i-1; sxn->j[18] = j-1; sxn->u[18] = 0;
+    sxn->i[19] = i  ; sxn->j[19] = j-1; sxn->u[19] = 1;
+    sxn->i[20] = i  ; sxn->j[20] = j-1; sxn->u[20] = 0;
+
+    sxn->i[21] = i-1; sxn->j[21] = j-2; sxn->u[21] = 1;
+  } else {
+    sxn->i[0] = i-1; sxn->j[0] = j-2; sxn->u[0] = 1;
+    sxn->i[1] = i  ; sxn->j[1] = j-2; sxn->u[1] = 1;
+
+    sxn->i[2] = i-2; sxn->j[2] = j-1; sxn->u[2] = 0;
+    sxn->i[3] = i-1; sxn->j[3] = j-1; sxn->u[3] = 1;
+    sxn->i[4] = i-1; sxn->j[4] = j-1; sxn->u[4] = 0;
+    sxn->i[5] = i  ; sxn->j[5] = j-1; sxn->u[5] = 1;
+    sxn->i[6] = i  ; sxn->j[6] = j-1; sxn->u[6] = 0;
+    sxn->i[7] = i+1; sxn->j[7] = j-1; sxn->u[7] = 1;
+    sxn->i[8] = i+1; sxn->j[8] = j-1; sxn->u[8] = 0;
+
+    sxn->i[ 9] = i-1; sxn->j[ 9] = j  ; sxn->u[ 9] = 1;
+    sxn->i[10] = i-1; sxn->j[10] = j  ; sxn->u[10] = 0;
+    sxn->i[11] = i  ; sxn->j[11] = j  ; sxn->u[11] = 1;
+    sxn->i[12] = i  ; sxn->j[12] = j  ; sxn->u[12] = 0;
+    sxn->i[13] = i+1; sxn->j[13] = j  ; sxn->u[13] = 1;
+    sxn->i[14] = i+1; sxn->j[14] = j  ; sxn->u[14] = 0;
+    sxn->i[15] = i+2; sxn->j[15] = j  ; sxn->u[15] = 1;
+
+    sxn->i[16] = i  ; sxn->j[16] = j+1; sxn->u[16] = 1;
+    sxn->i[17] = i  ; sxn->j[17] = j+1; sxn->u[17] = 0;
+    sxn->i[18] = i+1; sxn->j[18] = j+1; sxn->u[18] = 1;
+    sxn->i[19] = i+1; sxn->j[19] = j+1; sxn->u[19] = 0;
+    sxn->i[20] = i+2; sxn->j[20] = j+1; sxn->u[20] = 1;
+
+    sxn->i[21] = i+1; sxn->j[21] = j+2; sxn->u[21] = 0;
+  }
+  // Compute x/y and z values:
+  for (ii = 0; ii < 22; ++ii) {
+    simplex_grid_offset_point(
+      sxn->i[ii],
+      sxn->j[ii],
+      sxn->u[ii],
+      &(sxn->x[ii]),
+      &(sxn->y[ii])
+    );
+    sxn->z[ii] = manifold(sxn->x[ii], sxn->y[ii], msalt);
+  }
+}
+
+// Given a point [x, y], finds the shortest distance to the line segment
+// between [fx, fy] and [tx, ty]. It works by projecting [fx, fy] -> [x, y]
+// onto [fx, fy] -> [tx, ty], and returning the distance from [x, y] to either
+// the resulting point or one of the endpoints of the segment.
+static inline float dist_to_edge(
+  float x, float y,
+  float fx, float fy,
+  float tx, float ty
+) {
+  float seg_x, seg_y, vec_x, vec_y, proj_x, proj_y;
+  float dot, m_seg, m_proj;
+  // The segment from [fx, fy] to [tx, ty]
+  seg_x = tx - fx;
+  seg_y = ty - fy;
+  // The vector from [fx, fy] to [x, y]
+  vec_x = x - fx;
+  vec_y = y - fy;
+  // compute the dot product:
+  dot = seg_x * vec_x + seg_y * vec_y;
+  // the squared magnitude of the line segment:
+  m_seg = sqrtf(seg_x*seg_x + seg_y*seg_y);
+  // We multiply the segment vector by the dot product with the vector to the
+  // point in question and divide it by the magnitude of the segment twice. The
+  // first division gives us a unit vector in the direction we want. Because
+  // the dot product is |A|*|B|*cos(theta) and the projection should have
+  // length |B|*cos(theta) in the direction of B, we want to scale our unit
+  // vector by dot(A, B) / |A|.
+  proj_x = seg_x * dot / (m_seg*m_seg);
+  proj_y = seg_y * dot / (m_seg*m_seg);
+
+  m_proj = sqrtf(proj_x*proj_x + proj_y*proj_y);
+
+  if (dot < 0) {
+    // We're behind the first point, return distance to it:
+    return sqrtf(vec_x*vec_x + vec_y*vec_y);
+  } else if (m_proj > m_seg) {
+    // We're beyond the second point: return the distance to it:
+    return sqrtf((x - tx)*(x - tx) + (y - ty)*(y - ty));
+  } else {
+    // The closest point is on the segment:
+    proj_x += fx;
+    proj_y += fy;
+    return sqrtf((x - proj_x)*(x - proj_x) + (y - proj_y)*(y - proj_y));
+  }
+}
+
+// Helper function for nearest_neighborhood_edge_distance that handles checking
+// the distance to all three potential edges from a single simplex cell. If
+// there are no downhill edges in a cell, it returns MAX_DENDRITE_DISTANCE_2D.
+static inline float _check_edges_in_neighborhood(
+  simplex_neighborhood_2d *sxn,
+  float x,
+  float y,
+  ptrdiff_t center,
+  ptrdiff_t a,
+  ptrdiff_t b,
+  ptrdiff_t c
+) {
+  ptrdiff_t dir, checked;
+  // We'll check edges from here in a random order based on our coordinates:
+  /*
+  dir = _posmod(
+    simplex_cell_hash(
+      sxn->i[center],
+      sxn->j[center],
+      sxn->u[center]
+    ),
+    3
+  );
+  switch (dir) {
+    case 0:
+      goto lbl_check_a;
+    case 1:
+      goto lbl_check_b;
+    case 2:
+      goto lbl_check_c;
+  }
+  */
+  // Check neighbors until we find one that's pointed downhill; that'll be the
+  // official edge for this cell. We jump to one of the first 3 cases randomly
+  // and continue until all edges have been checked:
+  checked = 0;
+lbl_check_a:
+  if (sxn->z[center] > sxn->z[a]) {
+    return dist_to_edge(
+      x, y,
+      sxn->x[center], sxn->y[center],
+      sxn->x[a], sxn->y[a]
+    );
+  }
+  checked += 1;
+lbl_check_b:
+  if (sxn->z[center] > sxn->z[b]) {
+    return dist_to_edge(
+      x, y,
+      sxn->x[center], sxn->y[center],
+      sxn->x[b], sxn->y[b]
+    );
+  }
+  checked += 1;
+lbl_check_c:
+  if (sxn->z[center] > sxn->z[c]) {
+    return dist_to_edge(
+      x, y,
+      sxn->x[center], sxn->y[center],
+      sxn->x[c], sxn->y[c]
+    );
+  }
+  checked += 1;
+  if (checked == 3) { return 1+MAX_DENDRITE_DISTANCE_2D; }
+  if (sxn->z[center] > sxn->z[a]) {
+    return dist_to_edge(
+      x, y,
+      sxn->x[center], sxn->y[center],
+      sxn->x[a], sxn->y[a]
+    );
+  }
+  checked += 1;
+  if (checked == 3) { return 1+MAX_DENDRITE_DISTANCE_2D; }
+  if (sxn->z[center] > sxn->z[b]) {
+    return dist_to_edge(
+      x, y,
+      sxn->x[center], sxn->y[center],
+      sxn->x[b], sxn->y[b]
+    );
+  }
+  return 1+MAX_DENDRITE_DISTANCE_2D;
+}
+
+// Given a filled-in simplex grid neighborhood for the given x/y location, find
+// the distance from the given point to the nearest edge within that
+// neighborhood.
+static inline float nearest_neighborhood_edge_distance(
+  simplex_neighborhood_2d *sxn,
+  float x, float y
+) {
+  float ax, ay, bx, by, cx, cy;
+  float min_so_far, dist;
+
+  /* Distances to the corners of our triangle for culling purposes. The cells
+   * are laid out as follows for consistent mapping between AB/BC/AC edges and
+   * indices of the corresponding triangles as laid out for fill_simplex_
+   * neighborhood_2d.
+   *
+   *    upper:     lower:
+   *
+   *  B-------C      A
+   *   \     /      / \
+   *    \   /      /   \
+   *     \ /      /     \
+   *      A      B-------C
+   */
+  float cd_a, cd_b, cd_c;
+  if (sxn->u[12]) {
+    sqr__spx((float) sxn->i[12]    , (float) sxn->j[12]    , &ax, &ay);
+    sqr__spx((float) sxn->i[12]    , (float) sxn->j[12] + 1, &bx, &by);
+    sqr__spx((float) sxn->i[12] + 1, (float) sxn->j[12] + 1, &cx, &cy);
+  } else {
+    sqr__spx((float) sxn->i[12] + 1, (float) sxn->j[12] + 1, &ax, &ay);
+    sqr__spx((float) sxn->i[12]    , (float) sxn->j[12]    , &bx, &by);
+    sqr__spx((float) sxn->i[12] + 1, (float) sxn->j[12]    , &cx, &cy);
+  }
+  cd_a = sqrtf((x - ax)*(x - ax) + (y - ay)*(y - ay));
+  cd_b = sqrtf((x - bx)*(x - bx) + (y - by)*(y - by));
+  cd_c = sqrtf((x - cx)*(x - cx) + (y - cy)*(y - cy));
+
+  // DEBUG:
+  if (cd_a < 0.04) { return MAX_DENDRITE_DISTANCE_2D; }
+  if (cd_b < 0.04) { return MAX_DENDRITE_DISTANCE_2D; }
+  if (cd_c < 0.04) { return MAX_DENDRITE_DISTANCE_2D; }
+
+  ptrdiff_t i, j, u;
+  float opx, opy;
+  get_simplex_grid_cell(x, y, &i, &j, &u);
+  simplex_grid_offset_point(i, j, u, &opx, &opy);
+  if (sqrtf((x - opx)*(x - opx) + (y - opy)*(y - opy)) < 0.03) {
+    return MAX_DENDRITE_DISTANCE_2D+1;
+  }
+
+  // There are 12 triangles adjacent to the neighborhood origin triangle, and
+  // each of those (plus the origin itself) needs to find its downhill edge and
+  // test distance to the given point. We're not going to worry too much about
+  // re-checking edges as checking is cheap and the code to keep track of which
+  // we've checked would be more expensive than just doing multiple checks
+  // sometimes. We'll start with the distance to the edge in the same cell as
+  // our point and do some culling based on that. Refer to the diagram above
+  // the fill_simplex_neighborhood_2d function for index positions.
+  dist = _check_edges_in_neighborhood(sxn, x, y, 12, 11, 5, 13);
+  min_so_far = dist;
+  // DEBUG:
+  //*
+  if (dist > MAX_DENDRITE_DISTANCE_2D) {
+    printf("BAD: %zu, %zu:%zu -> %.3f\n", i, j, u, dist);
+    printf(
+      "  > %.3f :: %.3f, %.3f, %.3f\n",
+      sxn->z[12], sxn->z[11], sxn->z[5], sxn->z[13]
+    );
+    printf(
+      "  ?x %.3f :: %.3f, %.3f, %.3f\n",
+      sxn->x[12], sxn->x[11], sxn->x[5], sxn->x[13]
+    );
+    printf(
+      "  ?y %.3f :: %.3f, %.3f, %.3f\n",
+      sxn->y[12], sxn->y[11], sxn->y[5], sxn->y[13]
+    );
+    printf(
+      "  ?x+y %.3f :: %.3f, %.3f, %.3f\n",
+      sxn->x[12] + sxn->y[12],
+      sxn->x[11] + sxn->y[11],
+      sxn->x[5] + sxn->y[5],
+      sxn->x[13] + sxn->y[13]
+    );
+    return dist;
+  }
+  // */
+  // check across side AB:
+  dist = _check_edges_in_neighborhood(sxn, x, y, 11, 10, 17, 12);
+  if (dist < min_so_far) { min_so_far = dist; }
+  // check across side BC:
+  dist = _check_edges_in_neighborhood(sxn, x, y, 5, 4, 12, 6);
+  if (dist < min_so_far) { min_so_far = dist; }
+  // check across side AC:
+  dist = _check_edges_in_neighborhood(sxn, x, y, 13, 12, 19, 14);
+  if (dist < min_so_far) { min_so_far = dist; }
+  // check behind corner A:
+  dist = _check_edges_in_neighborhood(sxn, x, y, 17, 16, 11, 18);
+  if (dist < min_so_far) { min_so_far = dist; }
+  dist = _check_edges_in_neighborhood(sxn, x, y, 19, 18, 13, 20);
+  if (dist < min_so_far) { min_so_far = dist; }
+  // We can rule out checking the pure diagonal based on distances sometimes:
+  if (min_so_far > cd_a) {
+    dist = _check_edges_in_neighborhood(sxn, x, y, 18, 17, 21, 19);
+    if (dist < min_so_far) { min_so_far = dist; }
+  }
+  // check behind corner B:
+  dist = _check_edges_in_neighborhood(sxn, x, y, 10, 9, 3, 11);
+  if (dist < min_so_far) { min_so_far = dist; }
+  dist = _check_edges_in_neighborhood(sxn, x, y, 4, 3, 0, 5);
+  if (dist < min_so_far) { min_so_far = dist; }
+  // Another pure diagonal:
+  if (min_so_far > cd_b) {
+    dist = _check_edges_in_neighborhood(sxn, x, y, 3, 2, 10, 4);
+    if (dist < min_so_far) { min_so_far = dist; }
+  }
+  // check behind corner C:
+  dist = _check_edges_in_neighborhood(sxn, x, y, 6, 5, 1, 7);
+  if (dist < min_so_far) { min_so_far = dist; }
+  dist = _check_edges_in_neighborhood(sxn, x, y, 14, 13, 7, 15);
+  if (dist < min_so_far) { min_so_far = dist; }
+  // The last pure diagonal
+  if (min_so_far > cd_c) {
+    dist = _check_edges_in_neighborhood(sxn, x, y, 7, 6, 14, 8);
+    if (dist < min_so_far) { min_so_far = dist; }
+  }
+  return min_so_far;
+}
+
 /*************
  * Functions *
  *************/
@@ -595,7 +1286,7 @@ float sxnoise_2d(float x, float y, ptrdiff_t salt) {
   // simplex grid which is not at all axis-aligned (ours lines up with the x
   // axis) and which also saves a couple of multiplies when skewing and
   // unskewing coordinates. I'm using a partially-aligned grid because the skew
-  // transformation is conceptually simpler. The choice of simples grid also
+  // transformation is conceptually simpler. The choice of simplex grid also
   // affects how our skewed squares are subdivided: Perlin's are divided from
   // lower left to upper right, while ours are divided by the other diagonal.
 
@@ -905,11 +1596,7 @@ float sxnoise_3d(float x, float y, float z, ptrdiff_t salt) {
 
 // 2D Worley noise:
 float wrnoise_2d(float x, float y, ptrdiff_t salt) {
-  grid_neighborhood_2d grn = {
-    .i = 0, .j = 0,
-    .x = { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    .y = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
-  };
+  grid_neighborhood_2d grn;
   ptrdiff_t i, j;
   float dx, dy;
   float d = 0;
@@ -956,11 +1643,7 @@ float wrnoise_2d_fancy(
   float *dx, float *dy,
   uint32_t flags
 ) {
-  grid_neighborhood_2d grn = {
-    .i = 0, .j = 0,
-    .x = { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    .y = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }
-  };
+  grid_neighborhood_2d grn;
   ptrdiff_t i, j;
   float dist_x, dist_y;
   float d = 0;
@@ -1092,6 +1775,38 @@ float wrnoise_2d_fancy(
     //result = smooth(result, 4, 0.5);
   }
   return result;
+}
+
+// Dendritic noise:
+// Dendritic noise uses the same core principle as Worley noise: a jittered
+// grid of points as the basis for stateless noise. But instead of measuring
+// distance to the points directly, it connects the points into a grid with
+// line segments, uses an underlying manifold to determine which segments are
+// pointing downhill, and ensures that at each grid point, all but one downhill
+// segment is turned off. Noise values are then determined by the distance to
+// the nearest line segment.
+// TODO: Either don't pass in the salt or allow for custom scaling.
+float dnnoise_2d(
+  float x,
+  float y,
+  ptrdiff_t salt,
+  float (*manifold)(float, float, ptrdiff_t),
+  ptrdiff_t msalt
+) {
+  simplex_neighborhood_2d sxn;
+  ptrdiff_t i, j, upper;
+  float dist;
+
+  // Get our simplex grid location:
+  get_simplex_grid_cell(x, y, &i, &j, &upper);
+
+  // Fill out the simplex neighborhood:
+  fill_simplex_neighborhood_2d(&sxn, i, j, upper, manifold, msalt);
+
+  // Compute the closest distance to an edge in the neighborhood:
+  dist = nearest_neighborhood_edge_distance(&sxn, x, y);
+
+  return dist / MAX_DENDRITE_DISTANCE_2D;
 }
 
 // Fractal noise:

@@ -69,10 +69,10 @@ void q_unlock(queue *q);
  *************/
 
 // Tests whether the given queue is empty.
-inline int q_is_empty(queue *q);
+int q_is_empty(queue *q);
 
 // Returns the length of the given queue.
-inline size_t q_get_length(queue *q);
+size_t q_get_length(queue *q);
 
 // Test whether the given queue contains the given element (uses address
 // comparison).

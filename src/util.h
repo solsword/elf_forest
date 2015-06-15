@@ -239,7 +239,7 @@ static inline float mix_angles(float first, float second, float interp) {
   return between;
 }
 
-static inline void nap(ms) {
+static inline void nap(int ms) {
   // TODO: cross-platform BS
   usleep(ms*1000);
 }

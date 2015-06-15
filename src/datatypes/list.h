@@ -57,10 +57,10 @@ void l_unlock(list *l);
 void destroy_list(list *l);
 
 // Tests whether the given list is empty.
-inline int l_is_empty(list *l);
+int l_is_empty(list *l);
 
 // Returns the length of the given list.
-inline size_t l_get_length(list *l);
+size_t l_get_length(list *l);
 
 // Test whether the given list contains the given element (uses address
 // comparison).

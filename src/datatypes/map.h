@@ -57,13 +57,13 @@ void destroy_map(map *m);
 // Returns the key arity of the given map. All of the varargs functions must
 // always be passed exactly as many arguments as the key arity of the map they
 // are given.
-inline int m_get_key_arity(map *m);
+int m_get_key_arity(map *m);
 
 // Tests whether the given map is empty.
-inline int m_is_empty(map *m);
+int m_is_empty(map *m);
 
 // Returns the number of values in the given map.
-inline size_t m_get_count(map *m);
+size_t m_get_count(map *m);
 
 // Test whether the given map contains a value with the given key(s).
 int m_contains_key(map *m, ...);
