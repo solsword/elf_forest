@@ -6,9 +6,6 @@
 
 #include "noise.h"
 
-// DEBUG:
-#include <stdio.h>
-
 /************
  * Examples *
  ************/
@@ -1121,8 +1118,6 @@ static inline float _check_edges_in_neighborhood(
 ) {
   ptrdiff_t dir, checked;
   // We'll check edges from here in a random order based on our coordinates:
-  // DEBUG:
-  //*
   dir = _posmod(
     simplex_cell_hash(
       sxn->i[center],
@@ -1143,7 +1138,6 @@ static inline float _check_edges_in_neighborhood(
       goto lbl_check_c;
       break;
   }
-  // */
   // Check neighbors until we find one that's pointed downhill; that'll be the
   // official edge for this cell. We jump to one of the first 3 cases randomly
   // and continue until all edges have been checked:
@@ -1231,23 +1225,6 @@ static inline float nearest_neighborhood_edge_distance(
   cd_b = sqrtf((x - bx)*(x - bx) + (y - by)*(y - by));
   cd_c = sqrtf((x - cx)*(x - cx) + (y - cy)*(y - cy));
 
-  // DEBUG:
-  //if (cd_a < 0.04) { return MAX_DENDRITE_DISTANCE_2D; }
-  //if (cd_b < 0.04) { return MAX_DENDRITE_DISTANCE_2D; }
-  //if (cd_c < 0.04) { return MAX_DENDRITE_DISTANCE_2D; }
-
-  ptrdiff_t i, j, u;
-  float opx, opy;
-  get_simplex_grid_cell(x, y, &i, &j, &u);
-  //simplex_grid_offset_point(i, j, u, &opx, &opy);
-  simplex_grid_soft_offset_point(i, j, u, &opx, &opy);
-  // DEBUG:
-  /*
-  if (sqrtf((x - opx)*(x - opx) + (y - opy)*(y - opy)) < 0.03) {
-    return MAX_DENDRITE_DISTANCE_2D+1;
-  }
-  // */
-
   // There are 12 triangles adjacent to the neighborhood origin triangle, and
   // each of those (plus the origin itself) needs to find its downhill edge and
   // test distance to the given point. We're not going to worry too much about
@@ -1258,32 +1235,6 @@ static inline float nearest_neighborhood_edge_distance(
   // the fill_simplex_neighborhood_2d function for index positions.
   dist = _check_edges_in_neighborhood(sxn, x, y, 12, 11, 5, 13);
   min_so_far = dist;
-  // DEBUG:
-  /*
-  if (dist > MAX_DENDRITE_DISTANCE_2D) {
-    printf("BAD: %zu, %zu:%zu -> %.3f\n", i, j, u, dist);
-    printf(
-      "  > %.3f :: %.3f, %.3f, %.3f\n",
-      sxn->z[12], sxn->z[11], sxn->z[5], sxn->z[13]
-    );
-    printf(
-      "  ?x %.3f :: %.3f, %.3f, %.3f\n",
-      sxn->x[12], sxn->x[11], sxn->x[5], sxn->x[13]
-    );
-    printf(
-      "  ?y %.3f :: %.3f, %.3f, %.3f\n",
-      sxn->y[12], sxn->y[11], sxn->y[5], sxn->y[13]
-    );
-    printf(
-      "  ?x+y %.3f :: %.3f, %.3f, %.3f\n",
-      sxn->x[12] + sxn->y[12],
-      sxn->x[11] + sxn->y[11],
-      sxn->x[5] + sxn->y[5],
-      sxn->x[13] + sxn->y[13]
-    );
-    return dist;
-  }
-  // */
   // check across side AB:
   dist = _check_edges_in_neighborhood(sxn, x, y, 11, 10, 17, 12);
   if (dist < min_so_far) { min_so_far = dist; }
