@@ -11,6 +11,8 @@ static ptrdiff_t const SALT = 1717283;
 
 #define N_FALSE_COLORS 27
 
+#define LIGHT_STRENGTH 0.6
+
 // 26 colors from dark blue to a shoreline and then dark green to bright green
 // to yellow, gray, and then white, with an extra magenta to test slight
 // out-of-bounds at the top.
@@ -91,7 +93,7 @@ float fancy_smooth_worley_noise(float x, float y) {
 }
 
 float big_sxnoise_2d(float x, float y, ptrdiff_t salt) {
-  return sxnoise_2d(x*0.05, y*0.05, salt);
+  return sxnoise_2d(x*0.4, y*0.4, salt);
 }
 
 float return_x(float x, float y, ptrdiff_t salt) {
@@ -106,19 +108,81 @@ float return_y_minus_x(float x, float y, ptrdiff_t salt) {
   return y - x;
 }
 
-float simplex_dendroid_noise(float x, float y) {
+float dendroid_noise(float x, float y) {
   return -1 + 2*dnnoise_2d(
-    x, y,
+    x*1.5, y*1.5,
     117,
-    //&big_sxnoise_2d,
-    &return_y_minus_x,
+    &big_sxnoise_2d,
+    //&return_x,
     1235
   );
 }
 
+float dendroid_and_simplex(float x, float y) {
+  float sx = big_sxnoise_2d(x*1.5, y*1.5, 1737);
+  float dn = dendroid_noise(x, y);
+  return ((0.3 + 0.7*(1-0.5*(1 + sx)))*dn + sx) / 2.0;
+}
+
+float dendroid_base_octave(float x, float y, ptrdiff_t seed) {
+  return -1 + 2*dnnoise_2d(
+    x*0.4, y*0.4,
+    187,
+    &big_sxnoise_2d,
+    312
+  );
+}
+
+float fractal_dendroid_noise(float x, float y) {
+  float base = dendroid_base_octave(x, y, 187);
+  float add = -1 + 2*dnnoise_2d(
+    x, y,
+    171,
+    &dendroid_base_octave,
+    187
+  );
+  return (base + 0.5*add)/1.5;
+}
+
+float dendroid_distorted_simplex_noise(float x, float y) {
+  float d = 0.3 * dendroid_noise(x*0.8, y*0.8);
+  return unsalt_2d_noise(x + d, y + d);
+}
+
+float dendroid_mountains(float x, float y) {
+  // Note that we aren't even taking full advantage of dendroid noise's
+  // capability to "flow" across underlying manifolds here.
+  x *= 1.5;
+  y *= 1.5;
+  float dx = 0.23 * sxnoise_2d(x*1.1, y*1.1, 81721);
+  float dy = 0.23 * sxnoise_2d(x*1.1, y*1.1, 45467);
+  dx += 0.12 * sxnoise_2d(x*2.4, y*2.4, 5464);
+  dy += 0.12 * sxnoise_2d(x*2.4, y*2.4, 8744);
+  float str = sxnoise_2d(x*0.4, y*0.4, 5515);
+  dx *= str;
+  dy *= str;
+  float cont = sinf(x*0.55 + sxnoise_2d(x*0.4, y*0.4, 4157) - 0.3);
+  cont *= cosf(y*0.52 + sxnoise_2d(x*0.4, y*0.4, 6745) + 0.3);
+  float interp = sxnoise_2d(x*0.3, y*0.3, 79465);
+  interp = (1 + interp)/2.0;
+  interp *= interp;
+  interp *= interp;
+  interp = 0.1 + 0.9*interp;
+  interp *= (1 + cont)/2.0;
+  float base = dendroid_noise(x + dx, y + dy);
+  base = (1 + base) / 2.0;
+  base *= 1.2;
+  float alt = sxnoise_2d(x*0.8, y*0.8, 88467);
+  alt += 0.5*sxnoise_2d(x*1.5, y*1.5, 6714);
+  alt /= 1.5;
+  alt *= 0.14;
+  float full = interp*(0.8*base+0.2*alt) + (1 - interp)*(0.95*alt+0.05*base);
+  return 1.3*(cont+full)/2.0 - 0.2;
+}
+
 float fractal_2d_noise(float x, float y) {
   return fractal_sxnoise_2d(
-    x, y,
+    x*0.5, y*0.5,
     4,
     2.0,
     0.5,
@@ -128,7 +192,7 @@ float fractal_2d_noise(float x, float y) {
 
 float slice_fractal_3d_noise(float x, float y) {
   return fractal_sxnoise_3d(
-    x, y, NOISE_Z,
+    x*0.5, y*0.5, NOISE_Z,
     4,
     2.0,
     0.5,
@@ -385,6 +449,7 @@ void write_noise_ppm(
         grz * lvz
       ); // [-1, 1]
       lighting = (lighting + 1)/2.0; // [0, 1]
+      lighting = lighting*LIGHT_STRENGTH + (1 - LIGHT_STRENGTH);
 
       // Interpolate colors from the table:
       if (color < 0 || color >= N_FALSE_COLORS) {
@@ -602,6 +667,7 @@ void write_grad_ppm(
         grz * lvz
       ); // [-1, 1]
       lighting = (lighting + 1)/2.0; // [0, 1]
+      lighting = lighting*LIGHT_STRENGTH + (1 - LIGHT_STRENGTH);
 
       //*
       r *= lighting;
@@ -634,8 +700,12 @@ int main(int argc, char** argv) {
   write_noise_ppm(&fancy_smooth_worley_noise, "nt_worley_fancy_sm.ppm", 0, 0);
   write_noise_ppm(&fancier_worley_noise, "nt_worley_fshade.ppm", 0, 1);
   write_noise_ppm(&fancy_smooth_worley_noise, "nt_worley_fsmshade.ppm", 0, 1);
-  write_noise_ppm(&simplex_dendroid_noise, "nt_dendroid.ppm", 0, 0);
-  write_noise_ppm(&simplex_dendroid_noise, "nt_dendroid_lighted.ppm", 0, 1);
+  write_noise_ppm(&dendroid_noise, "nt_dendroid.ppm", 0, 0);
+  write_noise_ppm(&dendroid_noise, "nt_dendroid_lit.ppm", 0, 1);
+  write_noise_ppm(&dendroid_and_simplex, "nt_dend_simp_lit.ppm", 0, 1);
+  write_noise_ppm(&fractal_dendroid_noise, "nt_dend_fract_lit.ppm", 0, 1);
+  write_noise_ppm(&dendroid_distorted_simplex_noise, "nt_sxn_d_dnn.ppm", 0, 1);
+  write_noise_ppm(&dendroid_mountains, "nt_dendroid_mountains.ppm", 1, 1);
   write_noise_ppm(&slice_3d_noise, "nt_3D.ppm", 1, 1);
   write_noise_ppm(&fractal_2d_noise, "nt_2D_F.ppm", 1, 1);
   write_noise_ppm(&slice_fractal_3d_noise, "nt_3D_F.ppm", 1, 1);

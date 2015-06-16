@@ -500,6 +500,17 @@ static float SCALE_3D = 7.0; // Mostly falls within [-0.9,0.9]
 
 float const MAX_DENDRITE_DISTANCE_2D = SIMPLEX_EDGE_LENGTH;
 
+// Constants for the offset in normal (simplex-grid) space from the bottom
+// corner of a simplex to the upper and lower cell centers. These are calculated by averaging the simplex corners:
+float const SIMPLEX_UPPER_CELL_CENTER_OFFSET_X = 0.1220084679281462;
+float const SIMPLEX_UPPER_CELL_CENTER_OFFSET_Y = 0.45534180126147955;
+float const SIMPLEX_LOWER_CELL_CENTER_OFFSET_X = 0.45534180126147955;
+float const SIMPLEX_LOWER_CELL_CENTER_OFFSET_Y = 0.1220084679281462;
+
+// Distance (squared & normal) from the center of a simplex cell to a corner:
+float const SIMPLEX_CELL_CENTER_CORNER_DIST_SQ = 0.2222222222222222;
+float const SIMPLEX_CELL_CENTER_CORNER_DIST = 0.4714045207910317;
+
 
 /********************
  * Inline Functions *
@@ -883,6 +894,34 @@ static inline void simplex_grid_offset_point(
   sqr__spx(x, y, r_x, r_y);
 }
 
+// Works like simplex_grid_offset_point but generates points biased towards the
+// center of the simplex cell, rather than uniformly distributed throughout it.
+static inline void simplex_grid_soft_offset_point(
+  ptrdiff_t i, ptrdiff_t j, ptrdiff_t upper,
+  float *r_x, float *r_y
+) {
+  float cx, cy, d;
+  // Find the cell center:
+  sqr__spx((float) i, (float) j, &cx, &cy);
+  if (upper) {
+    cx += SIMPLEX_UPPER_CELL_CENTER_OFFSET_X;
+    cy += SIMPLEX_UPPER_CELL_CENTER_OFFSET_Y;
+  } else {
+    cx += SIMPLEX_LOWER_CELL_CENTER_OFFSET_X;
+    cy += SIMPLEX_LOWER_CELL_CENTER_OFFSET_Y;
+  }
+  // Get the normal offset point:
+  simplex_grid_offset_point(i, j, upper, r_x, r_y);
+  // The squared distance from the raw offset point to the cell center:
+  d = (cx - *r_x)*(cx - *r_x) + (cy - *r_y)*(cy - *r_y);
+  // Weighting factor from 0 to 2:
+  d /= SIMPLEX_CELL_CENTER_CORNER_DIST_SQ;
+  d *= 2;
+  // Return a weighted average of the raw offset point and the center point:
+  *r_x = (*r_x + cx*d)/(1+d);
+  *r_y = (*r_y + cy*d)/(1+d);
+}
+
 /* This function fills in the x/y/z location information for a 22-cell simplex
  * grid neighborhood on a jittered grid (see simplex_grid_offset_point). Below
  * are the relative index patterns for both upper and lower cells:
@@ -936,6 +975,7 @@ static inline void simplex_grid_offset_point(
  */
 static inline void fill_simplex_neighborhood_2d(
   simplex_neighborhood_2d *sxn,
+  ptrdiff_t soft, // controls whether to use normal or soft offset points
   ptrdiff_t i,
   ptrdiff_t j,
   ptrdiff_t upper,
@@ -944,7 +984,6 @@ static inline void fill_simplex_neighborhood_2d(
 ) {
   ptrdiff_t ii;
   if (upper) {
-    simplex_grid_offset_point(i-1, j+1, 1, &(sxn->x[0]), &(sxn->y[0]));
     sxn->i[0] = i  ; sxn->j[0] = j+2; sxn->u[0] = 0;
     sxn->i[1] = i+1; sxn->j[1] = j+2; sxn->u[1] = 0;
 
@@ -1001,13 +1040,23 @@ static inline void fill_simplex_neighborhood_2d(
   }
   // Compute x/y and z values:
   for (ii = 0; ii < 22; ++ii) {
-    simplex_grid_offset_point(
-      sxn->i[ii],
-      sxn->j[ii],
-      sxn->u[ii],
-      &(sxn->x[ii]),
-      &(sxn->y[ii])
-    );
+    if (soft) {
+      simplex_grid_soft_offset_point(
+        sxn->i[ii],
+        sxn->j[ii],
+        sxn->u[ii],
+        &(sxn->x[ii]),
+        &(sxn->y[ii])
+      );
+    } else {
+      simplex_grid_offset_point(
+        sxn->i[ii],
+        sxn->j[ii],
+        sxn->u[ii],
+        &(sxn->x[ii]),
+        &(sxn->y[ii])
+      );
+    }
     sxn->z[ii] = manifold(sxn->x[ii], sxn->y[ii], msalt);
   }
 }
@@ -1072,7 +1121,8 @@ static inline float _check_edges_in_neighborhood(
 ) {
   ptrdiff_t dir, checked;
   // We'll check edges from here in a random order based on our coordinates:
-  /*
+  // DEBUG:
+  //*
   dir = _posmod(
     simplex_cell_hash(
       sxn->i[center],
@@ -1081,19 +1131,22 @@ static inline float _check_edges_in_neighborhood(
     ),
     3
   );
+  checked = 0;
   switch (dir) {
     case 0:
       goto lbl_check_a;
+      break;
     case 1:
       goto lbl_check_b;
+      break;
     case 2:
       goto lbl_check_c;
+      break;
   }
-  */
+  // */
   // Check neighbors until we find one that's pointed downhill; that'll be the
   // official edge for this cell. We jump to one of the first 3 cases randomly
   // and continue until all edges have been checked:
-  checked = 0;
 lbl_check_a:
   if (sxn->z[center] > sxn->z[a]) {
     return dist_to_edge(
@@ -1179,17 +1232,21 @@ static inline float nearest_neighborhood_edge_distance(
   cd_c = sqrtf((x - cx)*(x - cx) + (y - cy)*(y - cy));
 
   // DEBUG:
-  if (cd_a < 0.04) { return MAX_DENDRITE_DISTANCE_2D; }
-  if (cd_b < 0.04) { return MAX_DENDRITE_DISTANCE_2D; }
-  if (cd_c < 0.04) { return MAX_DENDRITE_DISTANCE_2D; }
+  //if (cd_a < 0.04) { return MAX_DENDRITE_DISTANCE_2D; }
+  //if (cd_b < 0.04) { return MAX_DENDRITE_DISTANCE_2D; }
+  //if (cd_c < 0.04) { return MAX_DENDRITE_DISTANCE_2D; }
 
   ptrdiff_t i, j, u;
   float opx, opy;
   get_simplex_grid_cell(x, y, &i, &j, &u);
-  simplex_grid_offset_point(i, j, u, &opx, &opy);
+  //simplex_grid_offset_point(i, j, u, &opx, &opy);
+  simplex_grid_soft_offset_point(i, j, u, &opx, &opy);
+  // DEBUG:
+  /*
   if (sqrtf((x - opx)*(x - opx) + (y - opy)*(y - opy)) < 0.03) {
     return MAX_DENDRITE_DISTANCE_2D+1;
   }
+  // */
 
   // There are 12 triangles adjacent to the neighborhood origin triangle, and
   // each of those (plus the origin itself) needs to find its downhill edge and
@@ -1202,7 +1259,7 @@ static inline float nearest_neighborhood_edge_distance(
   dist = _check_edges_in_neighborhood(sxn, x, y, 12, 11, 5, 13);
   min_so_far = dist;
   // DEBUG:
-  //*
+  /*
   if (dist > MAX_DENDRITE_DISTANCE_2D) {
     printf("BAD: %zu, %zu:%zu -> %.3f\n", i, j, u, dist);
     printf(
@@ -1801,7 +1858,8 @@ float dnnoise_2d(
   get_simplex_grid_cell(x, y, &i, &j, &upper);
 
   // Fill out the simplex neighborhood:
-  fill_simplex_neighborhood_2d(&sxn, i, j, upper, manifold, msalt);
+  ptrdiff_t soft = 1;
+  fill_simplex_neighborhood_2d(&sxn, soft, i, j, upper, manifold, msalt);
 
   // Compute the closest distance to an edge in the neighborhood:
   dist = nearest_neighborhood_edge_distance(&sxn, x, y);
