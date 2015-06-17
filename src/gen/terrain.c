@@ -474,15 +474,21 @@ void compute_terrain_height(
   
   xcache = pos->x; ycache = pos->y;
 
+  // Reset gross height:
+  gross_height.z = 0;
+  gross_height.dx = 0;
+  gross_height.dy = 0;
   // Interpolate region terrain_height values to get a gross height:
   get_world_neighborhood(wm, &wmpos, neighborhood);
   compute_region_interpolation_values(wm, neighborhood, pos, interp_values);
   divisor = 0;
   for (i = 0; i < 25; ++i) {
-    mani_copy_as(&tmp, &(neighborhood[i]->topography.terrain_height));
-    mani_multiply(&tmp, &(interp_values[i]));
-    mani_add(&gross_height, &tmp);
-    divisor += interp_values[i].z;
+    if (neighborhood[i] != NULL) {
+      mani_copy_as(&tmp, &(neighborhood[i]->topography.terrain_height));
+      mani_multiply(&tmp, &(interp_values[i]));
+      mani_add(&gross_height, &tmp);
+      divisor += interp_values[i].z;
+    }
   }
 #ifdef DEBUG
   if (divisor == 0) {
@@ -566,13 +572,6 @@ void compute_terrain_height(
     &dirt_height
   );
 
-  // DEBUG:
-  //*
-  // printf("rocks post-dirt: %.2f\n", rocks_height.z);
-  // printf("dirt: %.2f\n", dirt_height.z);
-  // printf("\n");
-  // */
-
 #ifdef DEBUG
   if (isnan(rocks_height.z)||isnan(rocks_height.dx)||isnan(rocks_height.dy)) {
     printf("nan final rocks_height\n");
@@ -592,13 +591,6 @@ void compute_terrain_height(
   // Now we can release the lock and let another thread compute some terrain
   // height.
   omp_unset_lock(&TERRAIN_HEIGHT_LOCK);
-
-  // DEBUG:
-  //*
-  // printf("result rocks: %.2f\n", r_rocks->z);
-  // printf("result dirt: %.2f\n", r_dirt->z);
-  // printf("\n");
-  // */
 }
 
 void compute_dirt_height(
@@ -925,6 +917,12 @@ void dirt_cell(
   float *alt_hdeps;
   block *alt_blocks;
   species *alt_species;
+
+  if (wr == NULL) {
+    // TODO: better fallback for edges
+    result->primary = b_make_block(B_DIRT);
+    return;
+  }
 
   // compute beach height:
   beach_height = TR_BEACH_BASE_HEIGHT;

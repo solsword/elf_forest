@@ -59,7 +59,8 @@ size_t s_contains_nul(string* s);
 // contain NULs, and won't necessarily be NUL-terminated.
 char* s_encode(string* s, size_t* rlen);
 
-// Like s_encode, but returns a NUL-terminated string.
+// Like s_encode, but returns a NUL-terminated string. Remember that the result
+// is malloc'd and so should be freed by the caller.
 char* s_encode_nt(string* s);
 
 // Reallocates the base string to accommodate the addition of the given
@@ -78,5 +79,11 @@ string* s_vjoin(string const * const sep, va_list args);
 // string pointer.
 string* s_sprintf(char const * const fmt, ...);
 string* s_vsprintf(char const * const fmt, va_list args);
+
+// Prints the string to stdout (optionally adding a newline). If the string
+// contains NUL bytes, printing will stop there, and in the println case, no
+// newline will be added. The string is encoded into the user's encoding first.
+void s_print(string *s);
+void s_println(string *s);
 
 #endif // #ifndef STRING_H

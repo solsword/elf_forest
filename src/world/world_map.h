@@ -699,12 +699,12 @@ void get_world_neighborhood(
   world_region* neighborhood[]
 );
 
-// Computes interpolation values for the given world neighborhood at the given
-// global position, just using x/y values. The result array must have room for
-// 25 entries (which must be the size of the neighborhood array). Interpolation
-// can be performed by taking a weighted average of values from each region
-// using the results as weights. Unlike compute_region_contenders, this does
-// not introduce any extra noise, so interpolation should be smooth.
+// Computes interpolation values for the given large world neighborhood at the
+// given global position, just using x/y values. The result array must have
+// room for 25 entries (which must be the size of the neighborhood array).
+// Interpolation can be performed by taking a weighted average of values from
+// each region using the results as weights. Unlike compute_region_contenders,
+// this does not introduce any extra noise, so interpolation should be smooth.
 void compute_region_interpolation_values(
   world_map *wm,
   world_region* neighborhood[],
@@ -712,9 +712,10 @@ void compute_region_interpolation_values(
   manifold_point result[]
 );
 
-// Computes the two closest world region anchors to the given point, along with
-// the strengths of each. Simplex noise is used to mix up strengths giving the
-// effect of a bubbly mixture where regions have inclusions of their neighbors.
+// Computes the two closest world region anchors to the given point out of the
+// 9 anchors in the given small neighborhood, along with the strengths of each.
+// Simplex noise is used to mix up strengths giving the effect of a bubbly
+// mixture where regions have inclusions of their neighbors.
 void compute_region_contenders(
   world_map *wm,
   world_region* neighborhood[],

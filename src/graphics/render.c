@@ -327,9 +327,12 @@ void render_area(
   // settings.
 
   // Render our distant surroundings, and then clear the depth buffer:
+  // TODO: Add this back in...
+  /*
   world_map_pos wmorigin;
   glpos__wmpos(&(area->origin), &wmorigin); // TODO: really area->origin here?
   render_world_neighborhood(&wmorigin, &(area->origin));
+  */
 
   // Some loop variables:
   global_chunk_pos origin;

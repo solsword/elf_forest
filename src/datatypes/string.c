@@ -224,3 +224,16 @@ string* s_vsprintf(char const * const fmt, va_list args) {
   );
   return result;
 }
+
+void s_print(string *s) {
+  char* encoded = s_encode_nt(s);
+  printf(encoded);
+  free(encoded);
+}
+
+void s_println(string *s) {
+  char* encoded = s_encode_nt(s);
+  printf(encoded);
+  printf("\n");
+  free(encoded);
+}

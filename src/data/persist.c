@@ -52,6 +52,7 @@ void setup_persist(char const * const world_directory) {
   PS_BLOCK_DIR_PREFIX = s_join(DIRSEP, WORLD_DIRECTORY, rdir, NULL);
   cleanup_string(rdir);
   s_append(PS_BLOCK_DIR_PREFIX, DIRSEP);
+// TODO: Create directories as needed!
 
   // Initialize the block arrays:
   for (i = 0; i < PS_BLOCK_CACHE_SIZE; ++i) {
@@ -105,6 +106,12 @@ void select_block(ps_block* block, ps_block_pos* pos) {
   }
   if (0 == access(encoded_filename, F_OK)) {
     block->file = fopen(encoded_filename, "r+b");
+    if (block->file == NULL) {
+      fprintf(stderr, "Error while accessing file:\n  ");
+      s_println(block->filename);
+      perror("Failed to open block file");
+      exit(errno);
+    }
 
     // Load the block index information:
     fread(
@@ -122,6 +129,12 @@ void select_block(ps_block* block, ps_block_pos* pos) {
     }
   } else {
     block->file = fopen(encoded_filename, "w+b");
+    if (block->file == NULL) {
+      fprintf(stderr, "Error while accessing file:\n  ");
+      s_println(block->filename);
+      perror("Failed to create block file");
+      exit(errno);
+    }
 
     // Create the indices table & put zeroes in our indices as well:
     fwrite((void*)EMPTY_INDICES,sizeof(uint64_t), PS_TOTAL_CHUNKS, block->file);

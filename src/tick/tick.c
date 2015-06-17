@@ -103,13 +103,19 @@ void _spawn_the_player(
 ) {
   manifold_point dontcare, th;
   compute_terrain_height(THE_WORLD, origin, &dontcare, &dontcare, &th);
-  origin->z = (gl_pos_t) fastfloor(th.z) + 4;
+  printf("o x/y: %zu, %zu\n", origin->x, origin->y);
+  printf("spawn height: %.3f\n", th.z);
+  origin->z = (gl_pos_t) fastfloor(th.z);
+  origin->z += 25;
+  printf("spawn height (gl): %zu\n", origin->z);
   vector pos;
   glpos__vec(&(area->origin), origin, &pos);
   warp_space(ACTIVE_AREA, &pos);
   pos.x -= CHUNK_SIZE * fastfloor(pos.x / CHUNK_SIZE);
   pos.y -= CHUNK_SIZE * fastfloor(pos.y / CHUNK_SIZE);
   pos.z -= CHUNK_SIZE * fastfloor(pos.z / CHUNK_SIZE);
+  printf("warped x/y: %zu, %zu\n", area->origin.x, area->origin.y);
+  printf("vector: %.2f, %.2f, %.2f\n", pos.x, pos.y, pos.z);
   PLAYER = spawn_entity(type, &pos, area);
 }
 
