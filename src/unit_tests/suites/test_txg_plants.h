@@ -22,9 +22,11 @@
 
 branch_filter_args example_branch_args = {
   .seed = 17,
-  .rough = 1,
+  .gnarled = 0,
+  .direction = 4,
+  //.scale = 0.125,
   .scale = 0.095,
-  .width = 1.0,
+  .width = 0.4,
   .dscale = 0.12,
   .distortion = 3.0,
   .squash = 1.0,

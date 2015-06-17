@@ -98,7 +98,7 @@ float deltoid_width_func(float t, void *args) {
  * Filter Helpers *
  ******************/
 
-// private helper function for fltr_leaves w/ its own argument structure
+// Private helper function for fltr_leaves w/ its own argument structure.
 struct leaves_helper_args_s {
   texture *tx;
   texture *leaf;
@@ -114,6 +114,26 @@ void fltr_leaves_helper(int x, int y, void * arg) {
   tx_draw_wrapped(lhargs->tx, lhargs->leaf, x, y);
 }
 
+// Private helper functions for fltr_branches: underlying manifold functions
+// for different branch directions.
+float branches_direction_up(float x, float y, ptrdiff_t seed) { return -y; }
+float branches_direction_down(float x, float y, ptrdiff_t seed) { return y; }
+float branches_direction_outwards(float x, float y, ptrdiff_t seed) {
+  // TODO: What if the texture isn't 32x32?
+  float d = (x - 16)*(x - 16) + (y - 16 * y - 16);
+  return -d;
+}
+float branches_direction_inwards(float x, float y, ptrdiff_t seed) {
+  // TODO: What if the texture isn't 32x32?
+  float d = (x - 16)*(x - 16) + (y - 16 * y - 16);
+  return d;
+}
+float branches_direction_random(float x, float y, ptrdiff_t seed) {
+  // TODO: Properly control scaling...
+  return sxnoise_2d(x*1/16.0, y*1/16.0, seed);
+}
+
+
 /********************
  * Filter Functions *
  ********************/
@@ -124,39 +144,74 @@ void fltr_branches(texture *tx, void const * const fargs) {
   float noise;
   float dontcare;
   ptrdiff_t salt1, salt2, salt3;
+  float (*dirfunc)(float, float, ptrdiff_t);
   gradient_map grmap;
   branch_filter_args *bfargs = (branch_filter_args *) fargs;
   salt1 = prng(bfargs->seed+73);
   salt2 = prng(salt1);
   salt3 = prng(salt2);
-  grmap.colors[0] = bfargs->center_color;
-  grmap.colors[1] = bfargs->mid_color;
-  grmap.colors[2] = bfargs->outer_color;
-  grmap.colors[3] = PX_EMPTY;
-  if (bfargs->rough) {
-    grmap.thresholds[0] = 0.63;
-    grmap.thresholds[1] = 0.76;
-    grmap.thresholds[2] = 0.81;
-  } else {
-    // grmap.thresholds[0] = 0.011;
-    // grmap.thresholds[1] = 0.019;
-    // grmap.thresholds[2] = 0.031;
-    grmap.thresholds[0] = 0.0025;
-    grmap.thresholds[1] = 0.009;
-    grmap.thresholds[2] = 0.016;
-  }
-  grmap.thresholds[3] = 1.0;
+  if (bfargs->gnarled) {
+    grmap.colors[0] = PX_EMPTY;
+    grmap.colors[1] = bfargs->outer_color;
+    grmap.colors[2] = bfargs->mid_color;
+    grmap.colors[3] = bfargs->center_color;
+    grmap.colors[4] = bfargs->mid_color;
+    grmap.colors[5] = bfargs->outer_color;
+    grmap.colors[6] = PX_EMPTY;
 #ifdef DEBUG
-  // Use orange for out-of-range noise results.
-  grmap.colors[4] = 0xff0088ff;
+    // Use orange for out-of-range noise results.
+    grmap.colors[7] = 0xff0088ff;
 #else
-  // Ignore out-of-range results (make them transparent).
-  grmap.colors[4] = 0xff000000;
+    // Ignore out-of-range results (make them transparent).
+    grmap.colors[7] = 0x00000000;
 #endif
-  grmap.thresholds[4] = 1000.0;
+    grmap.thresholds[0] = 0.08;
+    grmap.thresholds[1] = 0.1;
+    grmap.thresholds[2] = 0.15;
+    grmap.thresholds[3] = 0.22;
+    grmap.thresholds[4] = 0.27;
+    grmap.thresholds[5] = 0.31;
+    grmap.thresholds[6] = 1.0;
+    grmap.thresholds[7] = 1000.0;
+  } else {
+    grmap.colors[0] = bfargs->center_color;
+    grmap.colors[1] = bfargs->mid_color;
+    grmap.colors[2] = bfargs->outer_color;
+    grmap.colors[3] = PX_EMPTY;
+#ifdef DEBUG
+    // Use orange for out-of-range noise results.
+    grmap.colors[4] = 0xff0088ff;
+#else
+    // Ignore out-of-range results (make them transparent).
+    grmap.colors[4] = 0x00000000;
+#endif
+    grmap.thresholds[0] = 0.07;
+    grmap.thresholds[1] = 0.15;
+    grmap.thresholds[2] = 0.22;
+    grmap.thresholds[3] = 1.0;
+    grmap.thresholds[4] = 1000.0;
+  }
+  switch (bfargs->direction) {
+    case 0:
+      dirfunc = &branches_direction_up;
+      break;
+    case 1:
+      dirfunc = &branches_direction_down;
+      break;
+    case 2:
+      dirfunc = &branches_direction_outwards;
+      break;
+    case 3:
+      dirfunc = &branches_direction_inwards;
+      break;
+    default:
+    case 4:
+      dirfunc = &branches_direction_random;
+      break;
+  }
   for (col = 0; col < tx->width; col += 1) {
     for (row = 0; row < tx->height; row += 1) {
-      // TODO: properly wrapped simplex noise.
+      // TODO: consider wrapping?
       // TODO: wrap w/ squash taken into account
       dx = tiled_func(
         &sxnoise_2d,
@@ -176,21 +231,27 @@ void fltr_branches(texture *tx, void const * const fargs) {
       );
       x = (col * bfargs->squash + dx * bfargs->distortion) * bfargs->scale;
       y = (row / bfargs->squash + dy * bfargs->distortion) * bfargs->scale;
-      noise = wrnoise_2d_fancy(
-        x, y, salt3,
-        tx->width * bfargs->scale, tx->height * bfargs->scale,
-        &dontcare, &dontcare,
-        (!bfargs->rough) * WORLEY_FLAG_INCLUDE_NEXTBEST
-      );
-      if (noise > 1) { noise = 1; }
-      if (bfargs->rough) {
-        noise = 1 - noise;
-        noise = pow(noise, 2.6);
+      if (bfargs->gnarled) {
+        noise = wrnoise_2d_fancy(
+          x, y, salt3,
+          tx->width * bfargs->scale, tx->height * bfargs->scale,
+          &dontcare, &dontcare,
+          0
+        );
       } else {
-        noise = pow(noise, 1.6);
-        noise = smooth(noise, 2.3, 0.04);
+        noise = dnnoise_2d(
+          x, y,
+          salt3,
+          dirfunc,
+          salt3
+        );
       }
-      noise *= (2 - bfargs->width);
+      if (noise > 1) { noise = 1; }
+      if (bfargs->gnarled) {
+        noise = smooth(noise, -bfargs->width, 0.185);
+      } else {
+        noise = smooth(noise, -bfargs->width, 0.05);
+      }
       tx_set_px(
         tx,
         gradient_map_result_sharp(&grmap, noise),

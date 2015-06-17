@@ -81,14 +81,21 @@ typedef struct width_func_args_s width_func_args;
 
 struct branch_filter_args_s {
   size_t seed; // integer seed
-  int rough; // whether to generate rough- or smooth-type branches (0 or 1)
-  float scale; // scale of the worley noise (~0.125)
-  float width; // branch width [0.5, 1.5]
+  int gnarled; // whether to generate gnarled- or normal-type branches (0 or 1)
+  int direction;
+    // directionality of branch pattern:
+    //   0 - up, 1 - down, 2 - outwards, 3 - inwards, 4 - random
+    // has no effect on gnarled-type branches
+  float scale; // scale of the noise (~0.125)
+  float width;
+    // relative branch width:
+    //   0 is default width; higher -> thicker; lower -> thinner
+    // [-1, 1] is a reasonable range, but it also depends on the scale
   float dscale; // scale of distortion noise (~0.125)
   float distortion; // amount of distortion ([0, 3] pixels)
   float squash;
-  // how much to squash the result in x or y (>1 means squash x, <1 means
-  // squash y; ~[0.6, 1.7])
+    // how much to squash the result in x or y (>1 means squash x, <1 means
+    // squash y; ~[0.6, 1.7])
   pixel center_color, mid_color, outer_color; // Colors for the center, middle,
   // and outer parts of the branches.
 };
