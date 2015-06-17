@@ -16,6 +16,7 @@
 #include "gen/worldgen.h"
 #include "jobs/jobs.h"
 #include "data/data.h"
+#include "data/persist.h"
 #include "world/species.h"
 #include "world/entities.h"
 
@@ -32,10 +33,12 @@ world_map *TEST_WORLD = NULL;
  ******************/
 
 size_t test_create_world(void) {
+  init_strings();
   setup_data();
+  setup_persist(DEFAULT_WORLD_DIRECTORY);
   setup_entities();
   setup_species();
-  setup_terrain_gen(1821271);
+  setup_worldgen(1821271);
   TEST_WORLD = create_world_map(178352, 64, 64);
   printf("Generating test world geology...\n");
   generate_geology(TEST_WORLD);

@@ -551,17 +551,17 @@ void compute_terrain_height(
     &seed
   );
 
-  // Compute our rocks height by adding hills, ridges, and mounds to our gross
-  // height:
+  // Compute rocks height by adding hills, ridges, and mounds to gross height:
+  // TODO: interpolate scaling factors between world regions
   mani_copy_as(&rocks_height, &gross_height);
 
-  mani_scale_const(&hills, TR_SCALE_HILLS);
+  mani_scale_const(&hills, TR_SCALE_HILLS/2); // base is in [-1, 1]
   mani_add(&rocks_height, &hills);
 
-  mani_scale_const(&ridges, TR_SCALE_RIDGES);
+  mani_scale_const(&ridges, TR_SCALE_RIDGES); // base is in [0, 1]
   mani_add(&rocks_height, &ridges);
 
-  mani_scale_const(&mounds, TR_SCALE_MOUNDS);
+  mani_scale_const(&mounds, TR_SCALE_MOUNDS/2); // base is in [-1, 1]
   mani_add(&rocks_height, &mounds);
 
   // Figure out our soil depth:

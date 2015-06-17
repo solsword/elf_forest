@@ -33,7 +33,7 @@ string* PS_BLOCK_DIR_PREFIX;
 
 ps_block PS_BLOCK_CACHE[PS_BLOCK_CACHE_SIZE];
 
-uint64_t EMPTY_INDICES[PS_TOTAL_CHUNKS];
+uint64_t EMPTY_INDICES[PS_BLOCK_TOTAL_CHUNKS];
 
 /*************
  * Functions *
@@ -60,15 +60,18 @@ void setup_persist(char const * const world_directory) {
   }
 
   // Initialize the empty indices array:
-  memset((void*) EMPTY_INDICES, 0, sizeof(uint64_t)*PS_TOTAL_CHUNKS);
+  memset((void*) EMPTY_INDICES, 0, sizeof(uint64_t)*PS_BLOCK_TOTAL_CHUNKS);
 }
 
 void init_block(ps_block* block) {
+  block->pos.x = 0;
+  block->pos.y = 0;
+  block->pos.z = 0;
   block->filename = NULL;
   block->file = NULL;
   block->age = 0;
   block->file_end = 0;
-  memset((void*) &(block->indices), 0, sizeof(uint64_t)*PS_TOTAL_CHUNKS);
+  memset((void*) &(block->indices), 0, sizeof(uint64_t)*PS_BLOCK_TOTAL_CHUNKS);
 }
 
 string* block_filename(ps_block_pos* pos) {
@@ -117,13 +120,13 @@ void select_block(ps_block* block, ps_block_pos* pos) {
     fread(
       (void*) (&(block->indices)),
       sizeof(uint64_t),
-      PS_TOTAL_CHUNKS,
+      PS_BLOCK_TOTAL_CHUNKS,
       block->file
     );
 
     // Convert endianness only if we need to (this is a bit expensive):
     if (IS_LITTLE_ENDIAN) {
-      for (i = 0; i < PS_TOTAL_CHUNKS; ++i) {
+      for (i = 0; i < PS_BLOCK_TOTAL_CHUNKS; ++i) {
         block->indices[i] = ntoh64(block->indices[i]);
       }
     }
@@ -137,8 +140,17 @@ void select_block(ps_block* block, ps_block_pos* pos) {
     }
 
     // Create the indices table & put zeroes in our indices as well:
-    fwrite((void*)EMPTY_INDICES,sizeof(uint64_t), PS_TOTAL_CHUNKS, block->file);
-    memset((void*) &(block->indices), 0, sizeof(uint64_t)*PS_TOTAL_CHUNKS);
+    fwrite(
+      (void*) EMPTY_INDICES,
+      sizeof(uint64_t),
+      PS_BLOCK_TOTAL_CHUNKS,
+      block->file
+    );
+    memset(
+      (void*) &(block->indices),
+      0,
+      sizeof(uint64_t)*PS_BLOCK_TOTAL_CHUNKS
+    );
   }
 
   // Free the encoded filename:
@@ -177,7 +189,11 @@ int load_chunk_data(chunk* chunk) {
   glcpos__psbpos(&(chunk->glcpos), &bpos);
   glcpos__pscpos(&(chunk->glcpos), &cpos);
   for (i = 0; i < PS_BLOCK_CACHE_SIZE; ++i) {
-    if (psbpos_equals(&bpos, &(PS_BLOCK_CACHE[i].pos))) {
+    if (
+      psbpos_equals(&bpos, &(PS_BLOCK_CACHE[i].pos))
+    &&
+      PS_BLOCK_CACHE[i].file != NULL
+    ) {
       return load_chunk_from_block(&(PS_BLOCK_CACHE[i]), &cpos, chunk);
     }
   }
@@ -209,7 +225,11 @@ void persist_chunk(chunk* chunk) {
   glcpos__psbpos(&(chunk->glcpos), &bpos);
   glcpos__pscpos(&(chunk->glcpos), &cpos);
   for (i = 0; i < PS_BLOCK_CACHE_SIZE; ++i) {
-    if (psbpos_equals(&bpos, &(PS_BLOCK_CACHE[i].pos))) {
+    if (
+      psbpos_equals(&bpos, &(PS_BLOCK_CACHE[i].pos))
+    &&
+      PS_BLOCK_CACHE[i].file != NULL
+    ) {
       return persist_chunk_in_block(&(PS_BLOCK_CACHE[i]), &cpos, chunk);
     }
   }

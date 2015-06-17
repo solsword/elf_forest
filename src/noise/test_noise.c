@@ -408,7 +408,7 @@ void write_noise_ppm(
   fprintf(fp, "# noise test ppm\n");
   fprintf(fp, "# Auto-generated test of noise function in noise.c.\n");
   fprintf(fp, "256 256\n");
-  fprintf(fp, "256\n");
+  fprintf(fp, "255\n");
   col = 0;
   for (j = 0; j < 256; ++j) {
     for (i = 0; i < 256; ++i) {
@@ -479,9 +479,9 @@ void write_noise_ppm(
       r *= 255;
       g *= 255;
       b *= 255;
-      fprintf(fp, "%02d %02d %02d ", (int) r, (int) g, (int) b);
-      col += 9;
-      if (col >= 70) {
+      fprintf(fp, "%03d %03d %03d ", (int) r, (int) g, (int) b);
+      col += 12;
+      if (col >= 68) {
         fprintf(fp, "\n");
         col = 0;
       }
@@ -521,7 +521,7 @@ void write_grad_ppm(
   fprintf(fp, "# noise test ppm\n");
   fprintf(fp, "# Auto-generated test of noise gradient function in noise.c.\n");
   fprintf(fp, "256 256\n");
-  fprintf(fp, "256\n");
+  fprintf(fp, "255\n");
   col = 0;
 
   // First, compute noise and gradient values and record mins and maxes:
@@ -678,9 +678,9 @@ void write_grad_ppm(
       r *= 255;
       g *= 255;
       b *= 255;
-      fprintf(fp, "%02d %02d %02d ", (int) r, (int) g, (int) b);
-      col += 9;
-      if (col >= 70) {
+      fprintf(fp, "%03d %03d %03d ", (int) r, (int) g, (int) b);
+      col += 12;
+      if (col >= 68) {
         fprintf(fp, "\n");
         col = 0;
       }

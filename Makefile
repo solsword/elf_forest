@@ -114,7 +114,7 @@ viewer: $(BIN_DIR)/viewer
 unit_tests: $(BIN_DIR)/unit_tests
 noise_perf: $(BIN_DIR)/noise_perf
 test_noise: $(BIN_DIR)/test_noise $(TEST_DIR)
-	cd $(TEST_DIR) && ../../$(BIN_DIR)/test_noise && mogrify -format png *.ppm
+	cd $(TEST_DIR) && ../../$(BIN_DIR)/test_noise
 checkgl: $(BIN_DIR)/checkgl
 	./$(BIN_DIR)/checkgl
 

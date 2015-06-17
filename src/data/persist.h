@@ -43,7 +43,7 @@ typedef struct ps_block_s ps_block;
 #define PS_BLOCK_BITS 5
 #define PS_BLOCK_SIZE (1 << PS_BLOCK_BITS)
 #define PS_BLOCK_MASK (PS_BLOCK_SIZE - 1)
-#define PS_TOTAL_CHUNKS (PS_BLOCK_SIZE * PS_BLOCK_SIZE * PS_BLOCK_SIZE)
+#define PS_BLOCK_TOTAL_CHUNKS (PS_BLOCK_SIZE * PS_BLOCK_SIZE * PS_BLOCK_SIZE)
 
 // This should be smaller than FOPEN_MAX, but should probably be as large as
 // possible. On the other hand, as long as the loading distance is less than
@@ -74,7 +74,7 @@ struct ps_block_s {
   string* filename;
   FILE* file;
   uint64_t file_end;
-  uint64_t indices[PS_TOTAL_CHUNKS];
+  uint64_t indices[PS_BLOCK_TOTAL_CHUNKS];
 };
 
 /***********

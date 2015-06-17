@@ -102,6 +102,7 @@
 #define TR_STRATA_FRACTION_NOISE_SCALE (1.0 / 40.0)
 
 // The height of hills, ridges, and mounds in blocks:
+// TODO: Parameters for mountainous, flat, etc.
 #define TR_SCALE_HILLS 120.0
 #define TR_SCALE_RIDGES 80.0
 #define TR_SCALE_MOUNDS 40.0
