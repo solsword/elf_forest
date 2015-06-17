@@ -39,7 +39,8 @@
 // Center of the world:
 world_map_pos WORLD_ORIGIN = { .x = WORLD_WIDTH/2, .y=WORLD_HEIGHT/2 };
 
-ptrdiff_t SEED = 18224345;
+//ptrdiff_t SEED = 18224347; // oceans bug!
+ptrdiff_t SEED = 18224349;
 
 /********
  * Main *

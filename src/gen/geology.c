@@ -37,6 +37,7 @@ tectonic_sheet *create_tectonic_sheet(
   size_t height
 ) {
   tectonic_sheet *result = (tectonic_sheet *) malloc(sizeof(tectonic_sheet));
+  result->seed = seed;
   result->width = width;
   result->height = height;
   result->points = (vector *) malloc(
@@ -1058,7 +1059,7 @@ void generate_geology(world_map *wm) {
   world_region *wr;
   for (i = 0; i < WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY; ++i) {
     // Create a stratum and append it to the list of all strata:
-    hash = prng(wm->seed + 567*i);
+    hash = prng(prng(wm->seed + 567*i));
     h1 = hash_1d(hash);
     h2 = hash_1d(h1);
     h3 = hash_1d(h2);

@@ -29,7 +29,7 @@ world_map* THE_WORLD;
 world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
   world_map *result = (world_map*) malloc(sizeof(world_map));
 
-  result->seed = prng(seed);
+  result->seed = prng(prng(prng(seed)));
   result->width = width;
   result->height = height;
   result->regions = (world_region *) calloc(width*height, sizeof(world_region));
