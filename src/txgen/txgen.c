@@ -35,7 +35,7 @@ pixel const GRAMMAR_KEYS[N_GRAMMAR_KEYS] = {
  * Inline Functions *
  ********************/
 
-static inline tx_grammar_literal *choose_child(
+static inline tx_grammar_literal* choose_child(
   tx_grammar_disjunction *dis,
   int seed
 ) {
@@ -92,7 +92,7 @@ void expand_literal_into(void *element, void *arg) {
  * Constructors & Destructors *
  ******************************/
 
-tx_grammar_literal * create_grammar_literal(
+tx_grammar_literal* create_grammar_literal(
   char const * const fn,
   size_t ax, size_t ay,
   texture_filter prp, void *prargs,
@@ -295,9 +295,9 @@ void ateach_scattered(
   for (xi = x_min/x_scale; xi <= x_max/x_scale; xi += 1) {
     for (yi = y_min/y_scale; yi <= y_max/y_scale; yi += 1) {
       x = xi*x_scale;
-      x += (prng(seed*xi + xi + yi) % (2*x_strength)) - x_strength;
+      x += (prng(seed*xi + xi + yi)) % (2*x_strength) - x_strength;
       y = yi*y_scale;
-      y += (prng(seed*yi + xi + yi) % (2*y_strength))- y_strength;
+      y += (prng(seed*yi + xi - yi)) % (2*y_strength) - y_strength;
       if (x >= x_min && x < x_max && y >= x_min && y < y_max) {
         f(x, y, arg);
       }

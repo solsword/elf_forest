@@ -4,6 +4,7 @@
 #define TEST_SUITE_TESTS { \
     &test_plants_branch_filter, \
     &test_plants_leaves_filter, \
+    &test_plants_branches_and_leaves, \
     &test_plants_bulb_leaves, \
     NULL, \
   }
@@ -30,9 +31,9 @@ branch_filter_args example_branch_args = {
   .dscale = 0.12,
   .distortion = 3.0,
   .squash = 1.0,
-  .center_color = 0xff001133, // dark brown
-  .mid_color = 0xff004466, // mid brown
-  .outer_color = 0xff007799 // light brown
+  .center_color = 0xff113366, // dark brown
+  .mid_color = 0xff114477, // mid brown
+  .outer_color = 0xff115588 // light brown
 };
 
 leaf_filter_args example_leaf_args = {
@@ -45,16 +46,16 @@ leaf_filter_args example_leaf_args = {
   .width = 5,
   .length = 9,
   .stem_length = 0.2,
-  .main_color = 0xff00bb22, // medium green
-  .vein_color = 0xff55dd77, // light green
+  .main_color = 0xff33dd66, // medium green
+  .vein_color = 0xff55ee77, // light green
   .dark_color = 0xff007711 // dark green
 };
 
 leaves_filter_args example_leaves_args = {
   .seed = 37,
   //*
-  .x_spacing = 4,
-  .y_spacing = 4,
+  .x_spacing = 6,
+  .y_spacing = 6,
   /*/
   .x_spacing = 12,
   .y_spacing = 16,
@@ -64,26 +65,26 @@ leaves_filter_args example_leaves_args = {
     .type = LT_SIMPLE,
     .shape = LS_OVAL,
     .angle = 0,
-    .angle_var = M_PI / 6.0,
-    .bend = M_PI / 8.0,
-    .width = 5,
-    .length = 5,
+    .angle_var = M_PI / 4.0,
+    .bend = M_PI / 6.0,
+    .width = 6,
+    .length = 7,
     .stem_length = 0.1,
-    .main_color = 0xff00bb22, // medium green
-    .vein_color = 0xff55dd77, // light green
-    .dark_color = 0xff007711 // dark green
+    .main_color = 0xff33dd33, // medium green
+    .vein_color = 0xff44ff44, // light green
+    .dark_color = 0xff22bb22 // dark green
   },
 };
 
 bulb_leaves_filter_args example_bulb_leaves_args = {
   .seed = 42,
-  .count = 5,
-  .spread = 0.3,
+  .count = 4,
+  .spread = 0.2,
   .angle = M_PI / 4.0,
   .bend = -M_PI / 8.0,
   .shape = 0.6,
   .length = 27,
-  .width = 3,
+  .width = 4,
   .main_color = 0xff00bb22, // medium green
   .vein_color = 0xff11cc33, // slightly lighter green
   .dark_color = 0xff007711 // dark green
@@ -123,6 +124,24 @@ size_t test_plants_leaves_filter(void) {
     example_leaves_literal.result,
     "out/test/test-leaves.png"
   );
+  cleanup_grammar_results(&example_leaves_literal);
+  return 0;
+}
+
+size_t test_plants_branches_and_leaves(void) {
+  run_grammar(&example_branches_literal);
+  run_grammar(&example_leaves_literal);
+  // Put the leaves on the branches:
+  tx_draw(
+    example_branches_literal.result,
+    example_leaves_literal.result,
+    0, 0
+  );
+  write_texture_to_png(
+    example_branches_literal.result,
+    "out/test/test-leaves-branches.png"
+  );
+  cleanup_grammar_results(&example_branches_literal);
   cleanup_grammar_results(&example_leaves_literal);
   return 0;
 }

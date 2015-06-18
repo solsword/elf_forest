@@ -48,4 +48,8 @@ void compute_manifold(world_map *wm);
 // Computes the cell contents at the given position.
 void world_cell(world_map *wm, global_pos *pos, cell *result);
 
+// Generates the contents of the given chunk, which should be initialized with
+// a position. The chunk's existing block data (if any) will be overwritten.
+void generate_chunk(chunk *c);
+
 #endif // ifndef WORLDGEN_H

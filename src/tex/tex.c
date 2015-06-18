@@ -404,19 +404,19 @@ void tx_draw_region(
   float alpha;
 #ifdef DEBUG
   // Some bounds checking:
-  if (dst_left + region_width >= dst->width) {
+  if (dst_left + region_width > dst->width) {
     fprintf(stderr, "Error: region overruns destination width.\n");
     exit(1);
   }
-  if (dst_top + region_height >= dst->height) {
+  if (dst_top + region_height > dst->height) {
     fprintf(stderr, "Error: region overruns destination height.\n");
     exit(1);
   }
-  if (src_left + region_width >= src->width) {
+  if (src_left + region_width > src->width) {
     fprintf(stderr, "Error: region exceeds source width.\n");
     exit(1);
   }
-  if (src_top + region_height >= src->height) {
+  if (src_top + region_height > src->height) {
     fprintf(stderr, "Error: region exceeds source height.\n");
     exit(1);
   }
@@ -437,6 +437,11 @@ void tx_draw_region(
       px_set_blue(
         &dst_px,
         (px_blue(src_px) * alpha) + (px_blue(dst_px) * (1 - alpha))
+      );
+      // TODO: Better here!
+      px_set_alpha(
+        &dst_px,
+        px_alpha(src_px)>px_alpha(dst_px) ? px_alpha(src_px) : px_alpha(dst_px)
       );
       tx_set_px(dst, dst_px, dst_left + column, dst_top + row);
     }

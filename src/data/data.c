@@ -524,9 +524,6 @@ void tick_compile_chunks(void) {
 void load_chunk(chunk *c) {
   // TODO: Data from disk!
   // TODO: Cell entities!
-  chunk_index idx;
-  ch_idx_t x, y, z;
-  global_pos glpos;
   chunk_or_approx coa;
 #ifdef PROFILE_TIME
   start_duration(&DISK_READ_TIME);
@@ -544,17 +541,7 @@ void load_chunk(chunk *c) {
     // in this case we don't record DISK_READ_TIME
     start_duration(&TGEN_TIME);
 #endif
-    for (x = 0; x < CHUNK_SIZE; ++x) {
-      for (y = 0; y < CHUNK_SIZE; ++y) {
-        for (z = 0; z < CHUNK_SIZE; ++z) {
-          idx.x = x;
-          idx.y = y;
-          idx.z = z;
-          cidx__glpos(c, &idx, &glpos);
-          world_cell(THE_WORLD, &glpos, c_cell(c, idx));
-        }
-      }
-    }
+    generate_chunk(c);
 #ifdef PROFILE_TIME
     end_duration(&TGEN_TIME);
     start_duration(&DISK_WRITE_TIME);

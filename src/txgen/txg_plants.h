@@ -123,14 +123,16 @@ struct leaves_filter_args_s {
 struct bulb_leaves_filter_args_s {
   size_t seed;
   size_t count; // approximate stalk count
-  float spread; // [0, 1] how spread out are the bases of the stalks?
+  float spread;
+    // [0, 1] how spread out are the bases of the stalks?
+    // 0 -> same place; 1.0 -> random over texture width
   float angle; // maximum base angle of the leaves
   float bend; // how far do the stalks bend (upper/lower limit in radians)?
   float shape; // how far along the stalk does it bend [0, 1]
   float length; // how long the stalks are (in pixels)
   float width; // how wide the stalks should be (at their bases)
-  pixel main_color, vein_color, dark_color; // Colors for the main leaf
-  // surface, the leaf veins, and the leaf shadows.
+  pixel main_color, vein_color, dark_color;
+    // Colors for the main leaf surface, the leaf veins, and the leaf shadows.
 };
 
 struct width_func_args_s {

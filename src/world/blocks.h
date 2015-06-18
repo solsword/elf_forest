@@ -138,31 +138,33 @@ static block_info const   BIF_ORIENTABLE = 1 << BIFS_ORIENTABLE;
 // Note: these are defined unshifted.
 
 // Visibility:
-static block_info const        BI_VIS_OPAQUE = 0x00;
-static block_info const     BI_VIS_INVISIBLE = 0x01;
-static block_info const   BI_VIS_TRANSPARENT = 0x02;
-static block_info const   BI_VIS_TRANSLUCENT = 0x03;
+static block_info const        BI_VIS_OPAQUE = 0x0;
+static block_info const     BI_VIS_INVISIBLE = 0x1;
+static block_info const   BI_VIS_TRANSPARENT = 0x2;
+static block_info const   BI_VIS_TRANSLUCENT = 0x3;
 
 // Substance:
-static block_info const        BI_SBST_SOLID = 0x00;
-static block_info const       BI_SBST_LIQUID = 0x01;
-static block_info const        BI_SBST_EMPTY = 0x02;
-static block_info const   BI_SBST_OBSTRUCTED = 0x03;
+static block_info const        BI_SBST_SOLID = 0x0;
+static block_info const       BI_SBST_LIQUID = 0x1;
+static block_info const        BI_SBST_EMPTY = 0x2;
+static block_info const   BI_SBST_OBSTRUCTED = 0x3;
 
 // Geometry:
-static block_info const        BI_GEOM_SOLID = 0x00;
-static block_info const       BI_GEOM_LIQUID = 0x01;
-static block_info const         BI_GEOM_FILM = 0x02;
-static block_info const        BI_GEOM_GRASS = 0x03;
-static block_info const         BI_GEOM_HERB = 0x04;
-static block_info const         BI_GEOM_VINE = 0x05;
-static block_info const         BI_GEOM_ROOT = 0x06;
-static block_info const         BI_GEOM_RAMP = 0x07;
-static block_info const        BI_GEOM_FENCE = 0x08;
-static block_info const         BI_GEOM_BEAM = 0x09;
-static block_info const         BI_GEOM_DOOR = 0x0a;
-static block_info const        BI_GEOM_PANEL = 0x0b;
-static block_info const       BI_GEOM_COLUMN = 0x0c;
+static block_info const        BI_GEOM_SOLID = 0x0;
+static block_info const       BI_GEOM_LIQUID = 0x1;
+static block_info const         BI_GEOM_FILM = 0x2;
+static block_info const        BI_GEOM_GRASS = 0x3;
+static block_info const         BI_GEOM_HERB = 0x4;
+static block_info const         BI_GEOM_VINE = 0x5;
+static block_info const         BI_GEOM_ROOT = 0x6;
+static block_info const       BI_GEOM_TANGLE = 0x7;
+static block_info const         BI_GEOM_RAMP = 0x8;
+static block_info const        BI_GEOM_FENCE = 0x9;
+static block_info const         BI_GEOM_BEAM = 0xa;
+static block_info const         BI_GEOM_DOOR = 0xb;
+static block_info const        BI_GEOM_PANEL = 0xc;
+static block_info const       BI_GEOM_COLUMN = 0xd;
+static block_info const        BI_GEOM_EMPTY = 0xf;
 
 /********
  * Data *
@@ -321,51 +323,73 @@ static block const ROTATE_FACE[8][8] = {
 #define            B_NATIVE_METAL 0x037
 
 // Plant blocks:
-#define                B_MUSHROOM 0x040
-#define          B_MUSHROOM_STALK 0x041
-#define            B_MUSHROOM_CAP 0x042
+#define         B_MUSHROOM_SPORES 0x040
+#define                B_MUSHROOM 0x041
+#define          B_MUSHROOM_STALK 0x042
+#define            B_MUSHROOM_CAP 0x043
 
-#define                    B_MOSS 0x043
+#define             B_MOSS_SPORES 0x044
+#define                    B_MOSS 0x045
+#define            B_MOSS_FLOWERS 0x046
+#define              B_MOSS_FRUIT 0x047
 
-#define                   B_GRASS 0x044
-#define             B_GRASS_ROOTS 0x045
+#define             B_GRASS_SEEDS 0x048
+#define             B_GRASS_ROOTS 0x049
+#define                   B_GRASS 0x04a
+#define           B_GRASS_FLOWERS 0x04b
+#define             B_GRASS_FRUIT 0x04c
 
-#define                    B_VINE 0x046
-#define              B_VINE_FRUIT 0x047
+#define              B_VINE_SEEDS 0x04e
+#define              B_VINE_ROOTS 0x04f
+#define                    B_VINE 0x050
+#define            B_VINE_FLOWERS 0x051
+#define              B_VINE_FRUIT 0x052
 
-#define                    B_HERB 0x048
-#define              B_HERB_ROOTS 0x049
+#define              B_HERB_SEEDS 0x054
+#define              B_HERB_ROOTS 0x055
+#define                    B_HERB 0x056
+#define            B_HERB_FLOWERS 0x057
+#define              B_HERB_FRUIT 0x058
 
-#define           B_BUSH_BRANCHES 0x04a
-#define             B_BUSH_LEAVES 0x04b
-#define              B_BUSH_FRUIT 0x04c
-#define              B_BUSH_ROOTS 0x04d
+#define              B_BUSH_SEEDS 0x05a
+#define              B_BUSH_ROOTS 0x05b
+#define           B_BUSH_BRANCHES 0x05c
+#define             B_BUSH_LEAVES 0x05d
+#define            B_BUSH_FLOWERS 0x05e
+#define              B_BUSH_FRUIT 0x05f
 
-#define          B_SHRUB_BRANCHES 0x04e
-#define            B_SHRUB_LEAVES 0x04f
-#define             B_SHRUB_FRUIT 0x050
-#define             B_SHRUB_ROOTS 0x051
+#define             B_SHRUB_SEEDS 0x060
+#define             B_SHRUB_ROOTS 0x061
+#define          B_SHRUB_BRANCHES 0x062
+#define            B_SHRUB_LEAVES 0x063
+#define           B_SHRUB_FLOWERS 0x064
+#define             B_SHRUB_FRUIT 0x065
 
-#define           B_TREE_BRANCHES 0x052
-#define  B_TREE_INTERIOR_BRANCHES 0x053
-#define             B_TREE_LEAVES 0x054
-#define              B_TREE_FRUIT 0x055
-#define              B_TREE_TRUNK 0x056
-#define              B_TREE_ROOTS 0x057
-#define        B_TREE_HEART_ROOTS 0x058
+#define              B_TREE_SEEDS 0x066
+#define        B_TREE_HEART_ROOTS 0x067
+#define              B_TREE_ROOTS 0x068
+#define              B_TREE_TRUNK 0x069
+#define  B_TREE_INTERIOR_BRANCHES 0x06a
+#define           B_TREE_BRANCHES 0x06b
+#define             B_TREE_LEAVES 0x06c
+#define            B_TREE_FLOWERS 0x06d
+#define              B_TREE_FRUIT 0x06e
 
-#define           B_AQUATIC_GRASS 0x059
+#define     B_AQUATIC_GRASS_SEEDS 0x070
+#define     B_AQUATIC_GRASS_ROOTS 0x071
+#define           B_AQUATIC_GRASS 0x072
+#define   B_AQUATIC_GRASS_FLOWERS 0x073
+#define     B_AQUATIC_GRASS_FRUIT 0x074
 
-#define    B_AQUATIC_PLANT_LEAVES 0x05a
-#define     B_AQUATIC_PLANT_STEMS 0x05b
-#define   B_AQUATIC_PLANT_ANCHORS 0x05c
+#define     B_AQUATIC_PLANT_SEEDS 0x076
+#define   B_AQUATIC_PLANT_ANCHORS 0x077
+#define     B_AQUATIC_PLANT_STEMS 0x078
+#define    B_AQUATIC_PLANT_LEAVES 0x079
+#define   B_AQUATIC_PLANT_FLOWERS 0x07a
+#define     B_AQUATIC_PLANT_FRUIT 0x07b
 
-#define             B_CORAL_FROND 0x05d
-#define              B_CORAL_BODY 0x05e
-
-// Hewn Blocks:
-#define           B_SMOOTHED_ROCK 0x070
-#define         B_HEWN_ROCK_GRATE 0x071
+#define             B_CORAL_FROND 0x07c
+#define              B_CORAL_BODY 0x07d
 
 // Construction Materials:
 #define                    B_BALE 0x080
@@ -404,8 +428,12 @@ static block const ROTATE_FACE[8][8] = {
 #define              B_GLASS_PANE 0x09a
 #define            B_FRAMED_GLASS 0x09b
 
-// Raw materials:
-#define             B_METAL_BLOCK 0x0a0
+#define             B_METAL_BLOCK 0x09c
+
+
+// Hewn Blocks:
+#define           B_SMOOTHED_ROCK 0x0a0
+#define         B_HEWN_ROCK_GRATE 0x0a1
 
 // Interactive blocks:
 #define             B_WOODEN_GATE 0x0b0

@@ -47,56 +47,56 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x03f
-//  MUSHROOM:         MUSHROOM_STALK:   MUSHROOM_CAP:     MOSS:
-    0x0000004a,       0x00000300,       0x00000300,       0x0000005a,
-//  GRASS:            GRASS_ROOTS:      VINE:             VINE_FRUIT:
-    0x0000003a,       0x0000006a,       0x0000005e,       0x0000005e,
-//  HERB:             HERB_ROOTS:       BUSH_BRANCHES:    BUSH_LEAVES:
-    0x0000004a,       0x0000006a,       0x0000000e,       0x0000000e,
-//  BUSH_FRUIT:       BUSH_ROOTS:       SHRUB_BRANCHES:   SHRUB_LEAVES:
-    0x0000000e,       0x0000006e,       0x00000006,       0x0000000e, // 0x04f
-//  SHRUB_FRUIT:      SHRUB_ROOTS:      TREE_BRANCHES:    TREE_INT_BRANCHES:
-    0x0000000e,       0x0000006e,       0x00000006,       0x0000000e,
-//  TREE_LEAVES:      TREE_FRUIT:       TREE_TRUNK:       TREE_ROOTS:
-    0x0000000e,       0x0000000e,       0x00000300,       0x0000006e,
-//  TREE_HEART_ROOTS: AQUATIC_GRASS:    AQ_PLANT_LEAVES:  AQ_PLANT_STEMS:
-    0x00000006,       0x0000003a,       0x0000000e,       0x0000000e,
-//  AQ_PLANT_ANCHORS: CORAL_FROND:      CORAL_BODY:       ____:
-    0x00000000,       0x0000000e,       0x00000000,       0x00000000, // 0x05f
-//  ____:             ____:             ____:             ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x06f
-//  SMOOTHED_ROCK:    HEWN_ROCK_GRATE:  ____:             ____:
-    0x00000000,       0x000002b2,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x07f
+//  MUSHROOM_SPORES:  MUSHROOM:         MUSHROOM_STALK:   MUSHROOM_CAP:
+    0x000000f9,       0x0000004a,       0x00000300,       0x00000300,
+//  MOSS_SPORES:      MOSS:             MOSS_FLOWERS:     MOSS_FRUIT:
+    0x000000f9,       0x0000005a,       0x0000005a,       0x0000005a,
+//  GRASS_SEEDS:      GRASS_ROOTS:      GRASS:            GRASS_FLOWERS:
+    0x0000006a,       0x0000006e,       0x0000003a,       0x0000003a,
+//  GRASS_FRUIT:      ____:             VINE_SEEDS:       VINE_ROOTS:
+    0x0000003a,       0x00000000,       0x0000006a,       0x0000006e, // 0x04f
+//  VINE:             VINE_FLOWERS:     VINE_FRUIT:       ____:
+    0x0000025e,       0x0000025e,       0x0000025e,       0x0000000e,
+//  HERB_SEEDS:       HERB_ROOTS:       HERB:             HERB_FLOWERS:
+    0x0000006a,       0x0000006e,       0x0000004e,       0x0000004e,
+//  HERB_FRUIT:       ____:             BUSH_SEEDS:       BUSH_ROOTS:
+    0x0000004e,       0x00000000,       0x0000006a,       0x0000006e,
+//  BUSH_BRANCHES:    BUSH_LEAVES:      BUSH_FLOWERS:     BUSH_FRUIT:
+    0x0000000e,       0x0000000e,       0x0000000e,       0x0000000e, // 0x05f
+//  SHRUB_SEEDS:      SHRUB_ROOTS:      SHRUB_BRANCHES:   SHRUB_LEAVES:
+    0x0000006a,       0x0000006e,       0x0000000e,       0x0000000e,
+//  SHRUB_FLOWERS:    SHRUB_FRUIT:      TREE_SEEDS:       TREE_HEART_ROOTS:
+    0x0000000e,       0x0000000e,       0x0000006a,       0x00000000,
+//  TREE_ROOTS:       TREE_TRUNK:       TREE_INT_BRANCHES:TREE_BRANCHES:
+    0x0000006e,       0x00000300,       0x0000000e,       0x0000000e,
+//  TREE_LEAVES:      TREE_FLOWERS:     TREE_FRUIT:       ____:
+    0x0000000e,       0x0000000e,       0x0000000e,       0x00000000, // 0x06f
+//  AQ_GRASS_SEEDS:   AQ_GRASS_ROOTS:   AQ_GRASS:         AQ_GRASS_FLOWERS:
+    0x0000006a,       0x0000006e,       0x0000004e,       0x0000004e,
+//  AQ_GRASS_FRUIT:   ____:             AQ_PLANT_SEEDS:   AQ_PLANT_ANCHORS:
+    0x0000004e,       0x00000000,       0x0000006a,       0x0000006e,
+//  AQ_PLANT_STEMS:   AQ_PLANT_LEAVES:  AQ_PLANT_FLOWERS: AQ_PLANT_FRUIT:
+    0x0000007e,       0x0000007e,       0x0000007e,       0x0000007e,
+//  CORAL_FROND:      CORAL_BODY:       ____:             ____:
+    0x0000004e,       0x00000000,       0x00000000,       0x00000000, // 0x07f
 //  BALE:             THATCH:           WATTLE:           WOODEN_PLANK:
-    0x00000300,       0x00000300,       0x00000282,       0x00000000,
+    0x00000300,       0x00000300,       0x00000292,       0x00000000,
 //  WOODEN_BEAM:      WOODEN_PANEL:     WOODEN_PILLAR:    CORDWOOD:
-    0x00000092,       0x000002b0,       0x000003c0,       0x00000300,
+    0x000000a2,       0x000002c0,       0x000003d0,       0x00000300,
 //  COB:              RAMMED_EARTH:     STACKED_STONE:    FITTED_STONE:
     0x00000000,       0x00000100,       0x00000100,       0x00000000,
 //  MORTARED_STONE:   METAL_BARS:       STONE_POST:       STONE_PILLAR:
-    0x00000000,       0x000002b2,       0x00000092,       0x000003c0, // 0x08f
+    0x00000000,       0x000002c2,       0x000000a2,       0x000003d0, // 0x08f
 //  MUD_BRICK:        CLAY_BRICK:       STONE_BRICK:      STONE_TILE:
-    0x00000000,       0x00000000,       0x00000000,       0x000002b0,
+    0x00000000,       0x00000000,       0x00000000,       0x000002c0,
 //  CERAMIC_TILE:     WOODEN_SHINGLE:   WOODEN_GRATE:     STONE_GRATE:
-    0x000002b0,       0x000002b0,       0x000002b2,       0x000002b2,
+    0x000002c0,       0x000002c0,       0x000002c2,       0x000002c2,
 //  METAL_GRATE:      GLASS_BLOCK:      GLASS_PANE:       FRAMED_GLASS:
-    0x000002b2,       0x00000003,       0x000002b3,       0x000002b3,
-//  ____:             ____:             ____:             ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x09f
+    0x000002c2,       0x00000003,       0x000002c3,       0x000002c3,
 //  METAL_BLOCK:      ____:             ____:             ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
+    0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x09f
+//  SMOOTHED_ROCK:    HEWN_ROCK_GRATE:  ____:             ____:
+    0x00000000,       0x000002c2,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
@@ -104,9 +104,9 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x0af
 //  WOODEN_GATE:      METAL_GATE:       WD_PLANK_DOOR:    WOODEN_PANEL_DOOR:
-    0x000002a2,       0x000002a2,       0x000003a2,       0x000003a2,
+    0x000002b2,       0x000002b2,       0x000003b2,       0x000003b2,
 //  STONE_DOOR:       METAL_DOOR:       ____:             ____:
-    0x000003a0,       0x000003a0,       0x00000000,       0x00000000,
+    0x000003b0,       0x000003b0,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
@@ -120,11 +120,11 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x0cf
 //  PLASTER:          STUCCO:           PAINT:            BANNER:
-    0x00000028,       0x00000028,       0x00000028,       0x000002ba,
+    0x00000028,       0x00000028,       0x00000028,       0x000002ca,
 //  TAPESTRY:         PAINTING:         ENGRAVING:        CARPET:
-    0x000002ba,       0x000002b0,       0x0000030a,       0x000002ba,
+    0x000002ca,       0x000002c0,       0x0000030a,       0x000002ca,
 //  RUG:              CLOTH_MAT:        STEM_MAT:         ____:
-    0x000002ba,       0x000002ba,       0x000002ba,       0x00000000,
+    0x000002ca,       0x000002ca,       0x000002ca,       0x00000000,
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x0df
 //  ____:             ____:             ____:             ____:
@@ -294,25 +294,25 @@ char const * const BLOCK_NAMES[TOTAL_BLOCK_TYPES] = {
 "____"             ,"____"             ,"____"             ,"____"             ,
 "____"             ,"____"             ,"____"             ,"____"             ,
 // 0x03f                                                   
-"mushroom"         ,"mushroom_stalk"   ,"mushroom_cap"     ,"moss"             ,
-"grass"            ,"grass_roots"      ,"vine"             ,"vine_fruit"       ,
-"herb"             ,"herb_roots"       ,"bush_branches"    ,"bush_leaves"      ,
-"bush_fruit"       ,"bush_roots"       ,"shrub_branches"   ,"shrub_leaves"     ,
-// 0x04f                                                   
-"shrub_fruit"      ,"shrub_roots"      ,"tree_branches"    ,"tree_int_branches",
-"tree_leaves"      ,"tree_fruit"       ,"tree_trunk"       ,"tree_roots"       ,
-"tree_ht_roots"    ,"aquatic_grass"    ,"aq_p_leaves"      ,"aq_p_stems"       ,
-"aq_p_anchors"     ,"coral_frond"      ,"coral_body"       ,"____"             ,
+"mushroom_spores"  ,"mushroom"         ,"mushroom_stalk"   ,"mushroom_cap"     ,
+"moss_spores"      ,"moss"             ,"moss_flowers"     ,"moss fruit"       ,
+"grass_seeds"      ,"grass_roots"      ,"grass"            ,"grass_flowers"    ,
+"grass_fruit"      ,"____"             ,"vine_seeds"       ,"vine_roots"       ,
+// 0x04f
+"vine"             ,"vine_flowers"     ,"vine_fruit"       ,"____"             ,
+"herb_seeds"       ,"herb_roots"       ,"herb"             ,"herb_flowers"     ,
+"herb_fruit"       ,"____"             ,"bush_seeds"       ,"bush_roots"       ,
+"bush_branches"    ,"bush_leaves"      ,"bush_flowers"     ,"bush_fruit"       ,
 // 0x05f                                                   
-"____"             ,"____"             ,"____"             ,"____"             ,
-"____"             ,"____"             ,"____"             ,"____"             ,
-"____"             ,"____"             ,"____"             ,"____"             ,
-"____"             ,"____"             ,"____"             ,"____"             ,
+"shrub_seeds"      ,"shrub_roots"      ,"shrub_branches"   ,"shrub_leaves"     ,
+"shrub_flowers"    ,"shrub_fruit"      ,"tree_seeds"       ,"tree_ht_roots"    ,
+"tree_roots"       ,"tree_trunk"       ,"tree_int_branches","tree_branches"    ,
+"tree_leaves"      ,"tree_flowers"     ,"tree_fruit"       ,"____"             ,
 // 0x06f                                                   
-"smoothed_rock"    ,"hewn_rock_grate"  ,"____"             ,"____"             ,
-"____"             ,"____"             ,"____"             ,"____"             ,
-"____"             ,"____"             ,"____"             ,"____"             ,
-"____"             ,"____"             ,"____"             ,"____"             ,
+"aq_grass_seeds"   ,"aq_grass_roots"   ,"aquatic_grass"    ,"aq_grass_flowers" ,
+"aq_grass_fruit"   ,"____"             ,"aq_p_seeds"       ,"aq_p_anchors"     ,
+"aq_p_stems"       ,"aq_p_leaves"      ,"aq_p_flowers"     ,"aq_p_fruit"       ,
+"coral_frond"      ,"coral_body"       ,"____"             ,"____"             ,
 // 0x07f                                                   
 "bale"             ,"thatch"           ,"wattle"           ,"wood_plank"       ,
 "wood_beam"        ,"wood_pane"        ,"wood_pillar"      ,"cordwood"         ,
@@ -322,9 +322,9 @@ char const * const BLOCK_NAMES[TOTAL_BLOCK_TYPES] = {
 "mud_brick"        ,"clay_brick"       ,"stone_brick"      ,"stone_tile"       ,
 "ceramic_tile"     ,"wood_shingle"     ,"wood_grate"       ,"stone_grate"      ,
 "metal_grate"      ,"glass_block"      ,"glass_pane"       ,"framed_glass"     ,
-"____"             ,"____"             ,"____"             ,"____"             ,
-// 0x09f                                                   
 "metal_block"      ,"____"             ,"____"             ,"____"             ,
+// 0x09f                                                   
+"smoothed_rock"    ,"hewn_rock_grate"  ,"____"             ,"____"             ,
 "____"             ,"____"             ,"____"             ,"____"             ,
 "____"             ,"____"             ,"____"             ,"____"             ,
 "____"             ,"____"             ,"____"             ,"____"             ,

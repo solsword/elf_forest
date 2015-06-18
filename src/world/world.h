@@ -233,6 +233,18 @@ union approx_data_u {
  * Inline Functions *
  ********************/
 
+// Hashing:
+
+static inline ptrdiff_t chunk_hash(chunk *c) {
+  return prng(
+    575451 + c->glcpos.x * (
+      454648 + c->glcpos.y * (
+        171311 + c->glcpos.z
+      )
+    )
+  );
+}
+
 // Coordinate conversions:
 // Note that these are hand-inlined in a few places for speed.
 
