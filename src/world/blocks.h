@@ -26,11 +26,10 @@ typedef uint16_t species;
 //   2 bits of level.
 //   3 bits of flow direction.
 //   3 bits of flow rate.
-// For organic blocks:
-//   2 bits of vitality (healthy, sick, dying, dead)
-//   3 bits of growth stage
-//     (dormant, sprouting, budding, flowering, fruit-bearing, normal, autumnal)
-//   3 bits of growth direction.
+// For plant blocks (see ecology/growth.h):
+//   3 bits of stored growth (0-7).
+//   3 bits of growth direction (BD_ORI_* values).
+//   2 bits of vitality (healthy, sick, dying, dead).
 typedef uint8_t block_data;
 
 // Extra static block data and flags stored in the BLOCK_INFO table.
@@ -125,11 +124,13 @@ static block_info const    BIM_GEOMETRY = 0x0f << BIMS_GEOMETRY;
 // Info Flags:
 // -----------
 
-#define  BIFS_ANISOTROPIC 8
-#define   BIFS_ORIENTABLE 9
+#define  BIFS_ANISOTROPIC 0x8
+#define   BIFS_ORIENTABLE 0x9
+#define        BIFS_GROWS 0xa
 
 static block_info const  BIF_ANISOTROPIC = 1 << BIFS_ANISOTROPIC;
 static block_info const   BIF_ORIENTABLE = 1 << BIFS_ORIENTABLE;
+static block_info const        BIF_GROWS = 1 << BIFS_GROWS;
 
 /********
  * Info *
@@ -536,6 +537,9 @@ static inline block_info bi_anis(block b) {
 static inline block_info bi_oabl(block b) {
   return (BLOCK_INFO[b_id(b)] & BIF_ORIENTABLE) >> BIFS_ORIENTABLE;
 }
+static inline block_info bi_grws(block b) {
+  return (BLOCK_INFO[b_id(b)] & BIF_GROWS) >> BIFS_GROWS;
+}
 
 // Constructors:
 
@@ -547,6 +551,12 @@ static inline block b_make_block(block id) {
 // Combine an id and species into a block with default orientation:
 static inline block b_make_species(block id, species sp) {
   return (id << BS_ID) + (((block) sp) << BS_SPC);
+}
+
+// Edit functions:
+static inline void b_set_data(block *b, block_data data) {
+  *b &= ~BM_DATA; // zero out the data
+  *b |= ((block) data) << BS_DAT
 }
 
 // Comparisons:

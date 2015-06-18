@@ -44,6 +44,7 @@ chunk * create_chunk(global_chunk_pos const * const glcpos) {
   c->glcpos.y = glcpos->y;
   c->glcpos.z = glcpos->z;
   c->chunk_flags = 0;
+  c->growth_counter = 0;
   layer ly;
   for (ly = 0; ly < N_LAYERS; ++ly) {
     setup_vertex_buffer(&(c->layers[ly]));

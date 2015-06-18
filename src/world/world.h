@@ -196,6 +196,7 @@ struct chunk_s {
   global_chunk_pos glcpos; // Absolute location.
   vertex_buffer layers[N_LAYERS]; // The vertex buffers.
   chunk_flag chunk_flags; // Flags
+  size_t growth_counter; // Cumulative growth cycles experienced by this chunk
 
   list *cell_entities; // Cell entities.
   // TODO: merge these?
@@ -240,6 +241,16 @@ static inline ptrdiff_t chunk_hash(chunk *c) {
     575451 + c->glcpos.x * (
       454648 + c->glcpos.y * (
         171311 + c->glcpos.z
+      )
+    )
+  );
+}
+
+static inline ptrdiff_t cell_hash(glpos *pos) {
+  return prng(
+    81024 + pos->x * (
+      640513 + pos->y * (
+        2094841 + pos->z
       )
     )
   );

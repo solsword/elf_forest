@@ -73,9 +73,17 @@ _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
 
 // TODO: thread safety here!
 
-/**************
- * Structures *
- **************/
+/************************
+ * Secondary Structures *
+ ************************/
+
+// Growth patterns determine how growing things grow.
+struct growth_pattern_s;
+typedef struct growth_pattern_s growth_pattern;
+
+/**********************
+ * Primary Structures *
+ **********************/
 
 // Minerals:
 struct dirt_species_s;
@@ -156,6 +164,12 @@ extern map *FIBER_SPECIES; // various sources; uniform use
  * Structure Definitions *
  *************************/
 
+struct growth_pattern_s {
+  growth_pattern *next;
+  block tmpl[7]; // indexed by the BD_ORI_* constants (BD_ORI_IN is the center)
+  block grow[7]; // same as above
+};
+
 /*
 struct dirt_species_s {
   material material;
@@ -182,56 +196,69 @@ struct metal_species_s {
 struct fungus_species_s {
   material material;
   fungus_texture_params appearance;
+  growth_pattern growth_pattern;
 };
 
 struct moss_species_s {
   material material;
   moss_texture_params appearance;
+  growth_pattern growth_pattern;
 };
 
 struct grass_species_s {
   material material;
   grass_texture_params appearance;
+  growth_pattern growth_pattern;
 };
 
 struct vine_species_s {
   material material;
   vine_texture_params appearance;
+  growth_pattern growth_pattern;
 };
+*/
 
 struct herb_species_s {
   material material;
-  herb_texture_params appearance;
+  bulb_leaves_filter_args appearance; // TODO: more appearance variety
+  growth_pattern *growth_pattern;
 };
 
+/*
 struct bush_species_s {
   material material;
   bush_texture_params appearance;
+  growth_pattern growth_pattern;
 };
 
 struct shrub_species_s {
   material material;
   shrub_texture_params appearance;
+  growth_pattern growth_pattern;
 };
 
 struct tree_species_s {
   material material;
   tree_texture_params appearance;
+  growth_pattern growth_pattern;
 };
 
 struct aquatic_grass_species_s {
   material material;
   aquatic_grass_texture_params appearance;
+  growth_pattern growth_pattern;
 };
 
 struct aquatic_plant_species_s {
   material material;
   aquatic_plant_texture_params appearance;
+  growth_pattern growth_pattern;
 };
 
 struct coral_species_s {
   material material;
   coral_texture_params appearance;
+  growth_pattern growth_pattern;
 };
 
 struct animal_species_s {

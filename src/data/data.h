@@ -244,7 +244,7 @@ static inline void get_chunk_neighborhood(
 // as well, but their values shouldn't be depended upon).
 static inline void get_exact_chunk_neighborhood(
   global_chunk_pos *glcpos,
-  chunk* r_neighborhood
+  chunk** r_neighborhood
 ) {
   chunk_or_approx* coa;
   global_chunk_pos nbpos;
