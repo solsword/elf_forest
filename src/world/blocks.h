@@ -36,7 +36,7 @@ typedef uint8_t block_data;
 // Extra static block data and flags stored in the BLOCK_INFO table.
 typedef uint32_t block_info;
 
-// A cell holds two blocks and their block data:
+// A cell holds two blocks:
 struct cell_s;
 typedef struct cell_s cell;
 
@@ -278,185 +278,235 @@ static block const ROTATE_FACE[8][8] = {
 // Note that these are given as block IDs, ignoring the info bits.
 
 // Special blocks:
-#define                    B_VOID 0x000 // for invalid/missing blocks
-#define                B_BOUNDARY 0x001 // for sealing areas 
+#define                              B_VOID 0x000 // for invalid/missing blocks
+#define                          B_BOUNDARY 0x001 // for sealing areas 
 
 // Invisible blocks:
-#define                     B_AIR 0x002
-#define                   B_ETHER 0x003
-#define               B_BLACKDAMP 0x004
-#define               B_WHITEDAMP 0x005
-#define                B_FIREDAMP 0x006
-#define               B_STINKDAMP 0x007
+#define                               B_AIR 0x002
+#define                             B_ETHER 0x003
+#define                         B_BLACKDAMP 0x004
+#define                         B_WHITEDAMP 0x005
+#define                          B_FIREDAMP 0x006
+#define                         B_STINKDAMP 0x007
 
 // Translucent liquid blocks:
-#define                   B_WATER 0x00a
-#define              B_WATER_FLOW 0x00b
+#define                             B_WATER 0x00a
+#define                        B_WATER_FLOW 0x00b
 
-#define                   B_SLIME 0x00c
-#define              B_SLIME_FLOW 0x00d
+#define                             B_SLIME 0x00c
+#define                        B_SLIME_FLOW 0x00d
 
-#define                    B_ACID 0x00e
-#define               B_ACID_FLOW 0x00f
+#define                              B_ACID 0x00e
+#define                         B_ACID_FLOW 0x00f
 
 // Opaque liquid blocks:
-#define               B_QUICKSAND 0x014
+#define                         B_QUICKSAND 0x014
 
-#define                    B_LAVA 0x016
-#define               B_LAVA_FLOW 0x017
+#define                              B_LAVA 0x016
+#define                         B_LAVA_FLOW 0x017
 
 // Translucent non-solid blocks:
-#define                   B_SMOKE 0x021
-#define                  B_MIASMA 0x022
+#define                             B_SMOKE 0x021
+#define                            B_MIASMA 0x022
 
 // Opaque non-solid blocks:
-#define             B_BLACK_SMOKE 0x028
+#define                       B_BLACK_SMOKE 0x028
 
 // Mineral blocks:
-#define                    B_DIRT 0x030
-#define                     B_MUD 0x031
-#define                    B_CLAY 0x032
-#define                    B_SAND 0x033
-#define                  B_GRAVEL 0x034
-#define                   B_SCREE 0x035
-#define                   B_STONE 0x036
-#define            B_NATIVE_METAL 0x037
+#define                              B_DIRT 0x030
+#define                               B_MUD 0x031
+#define                              B_CLAY 0x032
+#define                              B_SAND 0x033
+#define                            B_GRAVEL 0x034
+#define                             B_SCREE 0x035
+#define                             B_STONE 0x036
+#define                      B_NATIVE_METAL 0x037
 
 // Plant blocks:
-#define         B_MUSHROOM_SPORES 0x040
-#define                B_MUSHROOM 0x041
-#define          B_MUSHROOM_STALK 0x042
-#define            B_MUSHROOM_CAP 0x043
+#define                   B_MUSHROOM_SPORES 0x040
+#define                   B_MUSHROOM_SHOOTS 0x041
+#define                    B_MUSHROOM_GROWN 0x042
+#define           B_GIANT_MUSHROOM_MYCELIUM 0x043
+#define             B_GIANT_MUSHROOM_SPROUT 0x044
+#define              B_GIANT_MUSHROOM_STALK 0x045
+#define                B_GIANT_MUSHROOM_CAP 0x046
 
-#define             B_MOSS_SPORES 0x044
-#define                    B_MOSS 0x045
-#define            B_MOSS_FLOWERS 0x046
-#define              B_MOSS_FRUIT 0x047
+#define                       B_MOSS_SPORES 0x048
+#define                       B_MOSS_SHOOTS 0x049
+#define                        B_MOSS_GROWN 0x04a
+#define                    B_MOSS_FLOWERING 0x04b
+#define                     B_MOSS_FRUITING 0x04c
 
-#define             B_GRASS_SEEDS 0x048
-#define             B_GRASS_ROOTS 0x049
-#define                   B_GRASS 0x04a
-#define           B_GRASS_FLOWERS 0x04b
-#define             B_GRASS_FRUIT 0x04c
+#define                       B_GRASS_SEEDS 0x050
+#define                       B_GRASS_ROOTS 0x051
+#define                      B_GRASS_SHOOTS 0x052
+#define                       B_GRASS_GROWN 0x053
+#define                     B_GRASS_BUDDING 0x054
+#define                   B_GRASS_FLOWERING 0x055
+#define                    B_GRASS_FRUITING 0x056
 
-#define              B_VINE_SEEDS 0x04e
-#define              B_VINE_ROOTS 0x04f
-#define                    B_VINE 0x050
-#define            B_VINE_FLOWERS 0x051
-#define              B_VINE_FRUIT 0x052
+#define                        B_VINE_SEEDS 0x058
+#define                        B_VINE_ROOTS 0x059
+#define                       B_VINE_SHOOTS 0x05a
+#define                    B_VINE_SPROUTING 0x05b
+#define                        B_VINE_GROWN 0x05c
+#define                      B_VINE_BUDDING 0x05d
+#define                    B_VINE_FLOWERING 0x05e
+#define                     B_VINE_FRUITING 0x05f
+#define                     B_VINE_SHEDDING 0x060
+#define                      B_VINE_DORMANT 0x061
 
-#define              B_HERB_SEEDS 0x054
-#define              B_HERB_ROOTS 0x055
-#define                    B_HERB 0x056
-#define            B_HERB_FLOWERS 0x057
-#define              B_HERB_FRUIT 0x058
+#define                        B_HERB_SEEDS 0x064
+#define                        B_HERB_ROOTS 0x065
+#define                       B_HERB_SHOOTS 0x066
+#define                        B_HERB_GROWN 0x067
+#define                      B_HERB_BUDDING 0x068
+#define                    B_HERB_FLOWERING 0x069
+#define                     B_HERB_FRUITING 0x06a
 
-#define              B_BUSH_SEEDS 0x05a
-#define              B_BUSH_ROOTS 0x05b
-#define           B_BUSH_BRANCHES 0x05c
-#define             B_BUSH_LEAVES 0x05d
-#define            B_BUSH_FLOWERS 0x05e
-#define              B_BUSH_FRUIT 0x05f
+#define                        B_BUSH_SEEDS 0x06c
+#define                        B_BUSH_ROOTS 0x06d
+#define                       B_BUSH_SHOOTS 0x06e
+#define           B_BUSH_BRANCHES_SPROUTING 0x06f
+#define               B_BUSH_BRANCHES_GROWN 0x070
+#define             B_BUSH_BRANCHES_BUDDING 0x071
+#define           B_BUSH_BRANCHES_FLOWERING 0x072
+#define            B_BUSH_BRANCHES_FRUITING 0x073
+#define            B_BUSH_BRANCHES_SHEDDING 0x074
+#define             B_BUSH_BRANCHES_DORMANT 0x075
+#define             B_BUSH_LEAVES_SPROUTING 0x076
+#define                 B_BUSH_LEAVES_GROWN 0x077
+#define               B_BUSH_LEAVES_BUDDING 0x078
+#define             B_BUSH_LEAVES_FLOWERING 0x079
+#define              B_BUSH_LEAVES_FRUITING 0x07a
+#define              B_BUSH_LEAVES_SHEDDING 0x07b
+#define               B_BUSH_LEAVES_DORMANT 0x07c
 
-#define             B_SHRUB_SEEDS 0x060
-#define             B_SHRUB_ROOTS 0x061
-#define          B_SHRUB_BRANCHES 0x062
-#define            B_SHRUB_LEAVES 0x063
-#define           B_SHRUB_FLOWERS 0x064
-#define             B_SHRUB_FRUIT 0x065
+#define                       B_SHRUB_SEEDS 0x080
+#define                       B_SHRUB_ROOTS 0x081
+#define                 B_SHRUB_THICK_ROOTS 0x082
+#define                      B_SHRUB_SHOOTS 0x083
+#define          B_SHRUB_BRANCHES_SPROUTING 0x084
+#define              B_SHRUB_BRANCHES_GROWN 0x085
+#define            B_SHRUB_BRANCHES_BUDDING 0x086
+#define          B_SHRUB_BRANCHES_FLOWERING 0x087
+#define           B_SHRUB_BRANCHES_FRUITING 0x088
+#define           B_SHRUB_BRANCHES_SHEDDING 0x089
+#define            B_SHRUB_BRANCHES_DORMANT 0x08a
+#define            B_SHRUB_LEAVES_SPROUTING 0x08b
+#define                B_SHRUB_LEAVES_GROWN 0x08c
+#define              B_SHRUB_LEAVES_BUDDING 0x08d
+#define            B_SHRUB_LEAVES_FLOWERING 0x08e
+#define             B_SHRUB_LEAVES_FRUITING 0x08f
+#define             B_SHRUB_LEAVES_SHEDDING 0x090
+#define              B_SHRUB_LEAVES_DORMANT 0x091
 
-#define              B_TREE_SEEDS 0x066
-#define        B_TREE_HEART_ROOTS 0x067
-#define              B_TREE_ROOTS 0x068
-#define              B_TREE_TRUNK 0x069
-#define  B_TREE_INTERIOR_BRANCHES 0x06a
-#define           B_TREE_BRANCHES 0x06b
-#define             B_TREE_LEAVES 0x06c
-#define            B_TREE_FLOWERS 0x06d
-#define              B_TREE_FRUIT 0x06e
+#define                        B_TREE_SEEDS 0x094
+#define                        B_TREE_ROOTS 0x095
+#define                  B_TREE_THICK_ROOTS 0x096
+#define                  B_TREE_HEART_ROOTS 0x097
+#define                       B_TREE_SHOOTS 0x098
+#define                        B_TREE_TRUNK 0x099
+#define                B_TREE_BARE_BRANCHES 0x09a
+#define           B_TREE_BRANCHES_SPROUTING 0x09b
+#define               B_TREE_BRANCHES_GROWN 0x09c
+#define             B_TREE_BRANCHES_BUDDING 0x09d
+#define           B_TREE_BRANCHES_FLOWERING 0x09e
+#define            B_TREE_BRANCHES_FRUITING 0x09f
+#define            B_TREE_BRANCHES_SHEDDING 0x0a0
+#define             B_TREE_BRANCHES_DORMANT 0x0a1
+#define             B_TREE_LEAVES_SPROUTING 0x0a2
+#define                 B_TREE_LEAVES_GROWN 0x0a3
+#define               B_TREE_LEAVES_BUDDING 0x0a4
+#define             B_TREE_LEAVES_FLOWERING 0x0a5
+#define              B_TREE_LEAVES_FRUITING 0x0a6
+#define              B_TREE_LEAVES_SHEDDING 0x0a7
+#define               B_TREE_LEAVES_DORMANT 0x0a8
 
-#define     B_AQUATIC_GRASS_SEEDS 0x070
-#define     B_AQUATIC_GRASS_ROOTS 0x071
-#define           B_AQUATIC_GRASS 0x072
-#define   B_AQUATIC_GRASS_FLOWERS 0x073
-#define     B_AQUATIC_GRASS_FRUIT 0x074
+#define               B_AQUATIC_GRASS_SEEDS 0x0ac
+#define               B_AQUATIC_GRASS_ROOTS 0x0ad
+#define              B_AQUATIC_GRASS_SHOOTS 0x0ae
+#define               B_AQUATIC_GRASS_GROWN 0x0af
+#define           B_AQUATIC_GRASS_FLOWERING 0x0b0
+#define            B_AQUATIC_GRASS_FRUITING 0x0b1
 
-#define     B_AQUATIC_PLANT_SEEDS 0x076
-#define   B_AQUATIC_PLANT_ANCHORS 0x077
-#define     B_AQUATIC_PLANT_STEMS 0x078
-#define    B_AQUATIC_PLANT_LEAVES 0x079
-#define   B_AQUATIC_PLANT_FLOWERS 0x07a
-#define     B_AQUATIC_PLANT_FRUIT 0x07b
+#define               B_AQUATIC_PLANT_SEEDS 0x0b4
+#define             B_AQUATIC_PLANT_ANCHORS 0x0b5
+#define              B_AQUATIC_PLANT_SHOOTS 0x0b6
+#define               B_AQUATIC_PLANT_STEMS 0x0b7
+#define        B_AQUATIC_PLANT_LEAVES_GROWN 0x0b8
+#define    B_AQUATIC_PLANT_LEAVES_FLOWERING 0x0b9
+#define     B_AQUATIC_PLANT_LEAVES_FRUITING 0x0ba
 
-#define             B_CORAL_FROND 0x07c
-#define              B_CORAL_BODY 0x07d
-
-// Construction Materials:
-#define                    B_BALE 0x080
-#define                  B_THATCH 0x081
-#define                  B_WATTLE 0x082
-
-#define            B_WOODEN_PLANK 0x083
-#define             B_WOODEN_BEAM 0x084
-#define            B_WOODEN_PANEL 0x085
-#define           B_WOODEN_PILLAR 0x086
-
-#define                B_CORDWOOD 0x087
-#define                     B_COB 0x088
-#define            B_RAMMED_EARTH 0x089
-#define           B_STACKED_STONE 0x08a
-#define            B_FITTED_STONE 0x08b
-#define          B_MORTARED_STONE 0x08c
-#define              B_METAL_BARS 0x08d
-
-#define              B_STONE_POST 0x08e
-#define            B_STONE_PILLAR 0x08f
-
-#define               B_MUD_BRICK 0x090
-#define              B_CLAY_BRICK 0x091
-#define             B_STONE_BRICK 0x092
-
-#define              B_STONE_TILE 0x093
-#define            B_CERAMIC_TILE 0x094
-#define          B_WOODEN_SHINGLE 0x095
-
-#define            B_WOODEN_GRATE 0x096
-#define             B_STONE_GRATE 0x097
-#define             B_METAL_GRATE 0x098
-
-#define             B_GLASS_BLOCK 0x099
-#define              B_GLASS_PANE 0x09a
-#define            B_FRAMED_GLASS 0x09b
-
-#define             B_METAL_BLOCK 0x09c
-
+#define                  B_YOUNG_CORAL_BODY 0x0bc
+#define                  B_CORAL_BODY_GROWN 0x0bd
+#define                       B_CORAL_FROND 0x0be
 
 // Hewn Blocks:
-#define           B_SMOOTHED_ROCK 0x0a0
-#define         B_HEWN_ROCK_GRATE 0x0a1
+#define                     B_SMOOTHED_ROCK 0x0c0
+#define                   B_HEWN_ROCK_GRATE 0x0c1
+
+// Construction Materials:
+#define                              B_BALE 0x0d0
+#define                            B_THATCH 0x0d1
+#define                            B_WATTLE 0x0d2
+
+#define                      B_WOODEN_PLANK 0x0d3
+#define                       B_WOODEN_BEAM 0x0d4
+#define                      B_WOODEN_PANEL 0x0d5
+#define                     B_WOODEN_PILLAR 0x0d6
+
+#define                          B_CORDWOOD 0x0d7
+#define                               B_COB 0x0d8
+#define                      B_RAMMED_EARTH 0x0d9
+#define                     B_STACKED_STONE 0x0da
+#define                      B_FITTED_STONE 0x0db
+#define                    B_MORTARED_STONE 0x0dc
+#define                        B_METAL_BARS 0x0dd
+
+#define                        B_STONE_POST 0x0de
+#define                      B_STONE_PILLAR 0x0df
+
+#define                         B_MUD_BRICK 0x0e0
+#define                        B_CLAY_BRICK 0x0e1
+#define                       B_STONE_BRICK 0x0e2
+
+#define                        B_STONE_TILE 0x0e3
+#define                      B_CERAMIC_TILE 0x0e4
+#define                    B_WOODEN_SHINGLE 0x0e5
+
+#define                      B_WOODEN_GRATE 0x0e6
+#define                       B_STONE_GRATE 0x0e7
+#define                       B_METAL_GRATE 0x0e8
+
+#define                       B_GLASS_BLOCK 0x0e9
+#define                        B_GLASS_PANE 0x0ea
+#define                      B_FRAMED_GLASS 0x0eb
+
+#define                       B_METAL_BLOCK 0x0ec
 
 // Interactive blocks:
-#define             B_WOODEN_GATE 0x0b0
-#define              B_METAL_GATE 0x0b1
-#define       B_WOODEN_PLANK_DOOR 0x0b2
-#define       B_WOODEN_PANEL_DOOR 0x0b3
-#define              B_STONE_DOOR 0x0b4
-#define              B_METAL_DOOR 0x0b5
+#define                       B_WOODEN_GATE 0x100
+#define                        B_METAL_GATE 0x101
+#define                 B_WOODEN_PLANK_DOOR 0x102
+#define                 B_WOODEN_PANEL_DOOR 0x103
+#define                        B_STONE_DOOR 0x104
+#define                        B_METAL_DOOR 0x105
 
 // Decorative blocks:
-#define                 B_PLASTER 0x0d0
-#define                  B_STUCCO 0x0d1
-#define                   B_PAINT 0x0d2
+#define                           B_PLASTER 0x120
+#define                            B_STUCCO 0x121
+#define                             B_PAINT 0x122
 
-#define                  B_BANNER 0x0d3
-#define                B_TAPESTRY 0x0d4
-#define                B_PAINTING 0x0d5
-#define               B_ENGRAVING 0x0d6
+#define                            B_BANNER 0x123
+#define                          B_TAPESTRY 0x124
+#define                          B_PAINTING 0x125
+#define                         B_ENGRAVING 0x126
 
-#define                  B_CARPET 0x0d7
-#define                     B_RUG 0x0d8
-#define               B_CLOTH_MAT 0x0d9
-#define                B_STEM_MAT 0x0da
+#define                            B_CARPET 0x127
+#define                               B_RUG 0x128
+#define                         B_CLOTH_MAT 0x129
+#define                          B_STEM_MAT 0x12a
 
 /********************
  * Inline Functions *

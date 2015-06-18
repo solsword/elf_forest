@@ -220,28 +220,54 @@ void load_chunk_approx(chunk_approximation *ca);
  * Extra Inline Functions *
  **************************/
 
-// neighborhood should be a 27-dimensional array of chunk_or_approxes, which
-// will be filled in in zxy order.
+// neighborhood should be a 27-entry array of chunk_or_approxes, which will be
+// filled in in zxy order.
 static inline void get_chunk_neighborhood(
   global_chunk_pos* glcpos,
-  chunk_or_approx* neighborhood
+  chunk_or_approx* r_neighborhood
 ) {
   global_chunk_pos nbpos;
   size_t i = 0;
   for (nbpos.z = glcpos->z - 1; nbpos.z <= glcpos->z + 1; nbpos.z += 1) {
     for (nbpos.x = glcpos->x - 1; nbpos.x <= glcpos->x + 1; nbpos.x += 1) {
       for (nbpos.y = glcpos->y - 1; nbpos.y <= glcpos->y + 1; nbpos.y += 1) {
-        get_best_data(&nbpos, &(neighborhood[i]));
+        get_best_data(&nbpos, &(r_neighborhood[i]));
         i += 1;
       }
     }
   }
 }
 
-// chunk_neighbors should be a 27-dimensional array of chunk_or_approxes in zxy
-// order, while neighborhood should be a pointer to a 27-dimensional array of
-// cell pointers in zxy order. The step value indicates how far to go to reach
-// a "neighbor." The dummy value is substituted for missing cells.
+// Works like get_chunk_neighborhood, but only returns actual chunks, never
+// approximations. If the entire neighborhood isn't available, it will set the
+// first entry in r_neighborhood to NULL (the others may or may not be changed
+// as well, but their values shouldn't be depended upon).
+static inline void get_exact_chunk_neighborhood(
+  global_chunk_pos *glcpos,
+  chunk* r_neighborhood
+) {
+  chunk_or_approx* coa;
+  global_chunk_pos nbpos;
+  size_t i = 0;
+  for (nbpos.z = glcpos->z - 1; nbpos.z <= glcpos->z + 1; nbpos.z += 1) {
+    for (nbpos.x = glcpos->x - 1; nbpos.x <= glcpos->x + 1; nbpos.x += 1) {
+      for (nbpos.y = glcpos->y - 1; nbpos.y <= glcpos->y + 1; nbpos.y += 1) {
+        get_best_data(&nbpos, coa);
+        if (coa->type != CA_TYPE_CHUNK) {
+          r_neighborhood[0] = NULL;
+          return;
+        }
+        r_neighborhood[i] = (chunk*) coa->ptr;
+        i += 1;
+      }
+    }
+  }
+}
+
+// chunk_neighbors should be a 27-entry array of chunk_or_approxes in zxy
+// order, while neighborhood should be a pointer to a 27-entry array of cell
+// pointers in zxy order. The step value indicates how far to go to reach a
+// "neighbor." The dummy value is substituted for missing cells.
 static inline void get_cell_neighborhood(
   chunk_index idx,
   chunk_or_approx const * const chunk_neighbors,
