@@ -27,9 +27,15 @@ typedef uint16_t species;
 //   3 bits of flow direction.
 //   3 bits of flow rate.
 // For plant blocks (see ecology/growth.h):
-//   3 bits of stored growth (0-7).
-//   3 bits of growth direction (BD_ORI_* values).
 //   2 bits of vitality (healthy, sick, dying, dead).
+//   1 bit of renewal.
+//   3 bits of trajectory bias (BD_ORI_* values; out=no bias; in=block growth).
+//   2 extra bits (TODO: THESE!)
+// For growth centers: TODO: How to distinguish growth centers? Add block types?
+//   2 bits of vitality (healthy, sick, dying, dead).
+//   2 bits of body plan seed.
+//   2 bits of age.
+//   2 bits of leaf balance.
 typedef uint8_t block_data;
 
 // Extra static block data and flags stored in the BLOCK_INFO table.
@@ -597,6 +603,12 @@ static inline block b_is_liquid(block b) { return bi_sbst(b) == BI_SBST_LIQUID;}
 static inline block b_is_empty(block b) { return bi_sbst(b) == BI_SBST_EMPTY; }
 static inline block b_is_obstructed(block b) {
   return bi_sbst(b) == BI_SBST_OBSTRUCTED;
+}
+
+// Synthetic categories:
+
+static inline block b_is_natural_terrain(block b) {
+  return b_id(b) >= B_DIRT && b_id(b) < B_MUSHROOM_SPORES;
 }
 
 // Other flags can be checked manually...

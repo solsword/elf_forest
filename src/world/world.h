@@ -170,6 +170,7 @@ static chunk_flag const            CF_COMPILED = 0x0002;
 static chunk_flag const     CF_COMPILE_ON_LOAD = 0x0004;
 static chunk_flag const      CF_QUEUED_TO_LOAD = 0x0008;
 static chunk_flag const   CF_QUEUED_TO_COMPILE = 0x0010;
+static chunk_flag const         CF_HAS_BIOLOGY = 0x0020;
 
 /*************************
  * Structure Definitions *

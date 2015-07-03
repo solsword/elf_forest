@@ -13,6 +13,7 @@
 //  5-8: Geometry (full, half, liquid, grass, etc.)
 //  9: Anisotropic (different textures for different faces)
 //  10: Orientable (can be placed facing multiple directions)
+//  11: Grows (will be processed by the ecology subsystem)
 
 block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 //  VOID:             BOUNDARY:         AIR:              ETHER:

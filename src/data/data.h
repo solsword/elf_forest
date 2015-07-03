@@ -270,7 +270,7 @@ static inline void get_exact_chunk_neighborhood(
 // "neighbor." The dummy value is substituted for missing cells.
 static inline void get_cell_neighborhood(
   chunk_index idx,
-  chunk_or_approx const * const chunk_neighbors,
+  chunk_or_approx* chunk_neighbors,
   cell* neighborhood[],
   int step,
   cell* dummy
@@ -279,7 +279,7 @@ static inline void get_cell_neighborhood(
   // the values anyways.
   chunk_index nbr;
   int dx, dy, dz;
-  chunk_or_approx const * coa;
+  chunk_or_approx *coa;
   capprox_type center_type = chunk_neighbors[13].type;
   size_t i = 0, j = 0;
   for (dz = -step; dz <= step; dz += step) {
@@ -306,6 +306,40 @@ static inline void get_cell_neighborhood(
         } else {
           neighborhood[i] = dummy;
         }
+        i += 1;
+      }
+    }
+  }
+}
+
+// Works like get_cell_neighborhood but requires and exact chunk neighborhood
+// and produces an exact cell neighborhood.
+static inline void get_cell_neighborhood_exact(
+  chunk_index idx,
+  chunk* exact_chunk_neighbors,
+  cell* neighborhood[],
+) {
+  // Note that the underflow should wrap correctly here, but we're fixing up
+  // the values anyways.
+  chunk_index nbr;
+  int dx, dy, dz;
+  chunk *c;
+  size_t i = 0, j = 0;
+  for (dz = -1; dz <= 1; dz += 1) {
+    for (dx = -1; dx <= 1; dx += 1) {
+      for (dy = -1; dy <= 1; dy += 1) {
+        nbr.x = idx.x + dx;
+        nbr.y = idx.y + dy;
+        nbr.z = idx.z + dz;
+        j = 13; // the center of the chunk neighborhood
+        if (idx.z < step && dz == -step) { j -= 9; nbr.z = CHUNK_SIZE - 1; }
+        if (idx.z >= CHUNK_SIZE - step && dz == step) { j += 9; nbr.z = 0; }
+        if (idx.x < step && dx == -step) { j -= 3; nbr.x = CHUNK_SIZE - 1; }
+        if (idx.x >= CHUNK_SIZE - step && dx == step) { j += 3; nbr.x = 0; }
+        if (idx.y < step && dy == -step) { j -= 1; nbr.y = CHUNK_SIZE - 1; }
+        if (idx.y >= CHUNK_SIZE - step && dy == step) { j += 1; nbr.y = 0; }
+        c = &(exact_chunk_neighbors[j]);
+        neighborhood[i] = c_cell(c, nbr);
         i += 1;
       }
     }

@@ -50,6 +50,9 @@ void world_cell(world_map *wm, global_pos *pos, cell *result);
 
 // Generates the contents of the given chunk, which should be initialized with
 // a position. The chunk's existing block data (if any) will be overwritten.
+// Note that there are some further steps before a chunk is fully polished,
+// like adding biology, but these extra steps require basic terrain data
+// generated here from multiple chunks.
 void generate_chunk(chunk *c);
 
 #endif // ifndef WORLDGEN_H

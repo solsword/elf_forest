@@ -277,11 +277,9 @@ void world_cell(world_map *wm, global_pos *glpos, cell *result) {
 }
 
 void generate_chunk(chunk *c) {
-  cell *cl, *clab, *clbl;
-  chunk_index idx, idx_above, idx_below;
+  chunk_index idx;
   global_pos glpos;
-  ptrdiff_t seed_hash = prng(chunk_hash(c) + 616485);
-  // Generate individual cells:
+  // Generate base materials:
   for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
     for (idx.y = 0; idx.y < CHUNK_SIZE; ++yidx.) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
@@ -290,94 +288,6 @@ void generate_chunk(chunk *c) {
       }
     }
   }
-  // Add seeds:
-  for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
-    idx_above.x = idx.x;
-    idx_below.x = idx.x;
-    for (idx.y = 0; idx.y < CHUNK_SIZE; ++yidx.) {
-      idx_above.y = idx.y;
-      idx_below.y = idx.y;
-      for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
-        if (idx.z < CHUNK_SIZE - 1) {
-          idx_above.z + idx.z + 1;
-          clab = c_cell(c, idx_above);
-        } else {
-          clab = NULL;
-        }
-        if (idx.z > 0) {
-          idx_below.z + idx.z - 1;
-          clbl = c_cell(c, idx_below);
-        } else {
-          clbl = NULL;
-        }
-        cl = c_cell(c, idx);
-        // Note: if the above/below block is out-of-bounds, we assume that it's
-        // air. Other mechanisms that can check data from multiple chunks have
-        // to correct for this.
-
-        // If our secondary is empty we can put a seed here...
-        if (b_is_void(cl->secondary)) {
-          if (b_is_same_type(cl->primary, B_DIRT)) {
-            // Dirt
-            if (clab == NULL || b_is_same_type(clab->primary, B_AIR)) {
-              // Surface dirt
-              cl->secondary = b_make_species(
-                B_HERB_SEEDS,
-                seed_hash % SPECIES_PER_BLOCK
-              );
-              seed_hash = prng(
-                idx.x + idx.y + glpos.z +
-                prng(seed_hash + glpos.x + glpos.y + idx.z)
-              );
-              // TODO: Real ecology here!
-            } else if (clab == NULL || b_is_same_type(clab->primary, B_WATER)) {
-              // Underwater dirt
-              cl->secondary = b_make_species(
-                B_AQUATIC_GRASS_SEEDS,
-                seed_hash % SPECIES_PER_BLOCK
-              );
-              seed_hash = prng(
-                idx.x + idx.y + glpos.z +
-                prng(seed_hash + glpos.x + glpos.y + idx.z)
-              );
-            } else if (clbl == NULL || b_is_same_type(clbl->primary, B_AIR)) {
-              // Ceiling dirt
-              cl->secondary = b_make_species(
-                B_VINE_SEEDS,
-                seed_hash % SPECIES_PER_BLOCK
-              );
-              seed_hash = prng(
-                idx.x + idx.y + glpos.z +
-                prng(seed_hash + glpos.x + glpos.y + idx.z)
-              );
-            } // Nothing grows in underwater ceilings...
-          } else if (b_is_same_type(cl->primary, B_SAND)) {
-            // Sand
-            if (clab == NULL || b_is_same_type(clab->primary, B_AIR)) {
-              // Surface sand
-              cl->secondary = b_make_species(
-                B_GRASS_SEEDS,
-                seed_hash % SPECIES_PER_BLOCK
-              );
-              seed_hash = prng(
-                idx.x + idx.y + glpos.z +
-                prng(seed_hash + glpos.x + glpos.y + idx.z)
-              );
-            } else if (clab == NULL || b_is_same_type(clab->primary, B_WATER)) {
-              // Underwater sand
-              cl->secondary = b_make_species(
-                B_AQUATIC_GRASS_SEEDS,
-                seed_hash % SPECIES_PER_BLOCK
-              );
-              seed_hash = prng(
-                idx.x + idx.y + glpos.z +
-                prng(seed_hash + glpos.x + glpos.y + idx.z)
-              );
-            }
-          }
-        }
-      }
-    }
-  }
-  // Grow plants a bit:
+  // Queue the chunk for biology generation:
+  // TODO: HERE
 }
