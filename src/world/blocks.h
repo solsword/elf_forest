@@ -333,10 +333,11 @@ static block const ROTATE_FACE[8][8] = {
 #define                   B_MUSHROOM_SPORES 0x040
 #define                   B_MUSHROOM_SHOOTS 0x041
 #define                    B_MUSHROOM_GROWN 0x042
-#define           B_GIANT_MUSHROOM_MYCELIUM 0x043
-#define             B_GIANT_MUSHROOM_SPROUT 0x044
-#define              B_GIANT_MUSHROOM_STALK 0x045
-#define                B_GIANT_MUSHROOM_CAP 0x046
+#define               B_GIANT_MUSHROOM_CORE 0x043
+#define           B_GIANT_MUSHROOM_MYCELIUM 0x044
+#define             B_GIANT_MUSHROOM_SPROUT 0x045
+#define              B_GIANT_MUSHROOM_STALK 0x046
+#define                B_GIANT_MUSHROOM_CAP 0x047
 
 #define                       B_MOSS_SPORES 0x048
 #define                       B_MOSS_SHOOTS 0x049
@@ -353,82 +354,88 @@ static block const ROTATE_FACE[8][8] = {
 #define                    B_GRASS_FRUITING 0x056
 
 #define                        B_VINE_SEEDS 0x058
-#define                        B_VINE_ROOTS 0x059
-#define                       B_VINE_SHOOTS 0x05a
-#define                    B_VINE_SPROUTING 0x05b
-#define                        B_VINE_GROWN 0x05c
-#define                      B_VINE_BUDDING 0x05d
-#define                    B_VINE_FLOWERING 0x05e
-#define                     B_VINE_FRUITING 0x05f
-#define                     B_VINE_SHEDDING 0x060
-#define                      B_VINE_DORMANT 0x061
+#define                         B_VINE_CORE 0x059
+#define                        B_VINE_ROOTS 0x05a
+#define                       B_VINE_SHOOTS 0x05b
+#define                    B_VINE_SPROUTING 0x05c
+#define                        B_VINE_GROWN 0x05d
+#define                      B_VINE_BUDDING 0x05e
+#define                    B_VINE_FLOWERING 0x05f
+#define                     B_VINE_FRUITING 0x060
+#define                     B_VINE_SHEDDING 0x061
+#define                      B_VINE_DORMANT 0x062
 
 #define                        B_HERB_SEEDS 0x064
-#define                        B_HERB_ROOTS 0x065
-#define                       B_HERB_SHOOTS 0x066
-#define                        B_HERB_GROWN 0x067
-#define                      B_HERB_BUDDING 0x068
-#define                    B_HERB_FLOWERING 0x069
-#define                     B_HERB_FRUITING 0x06a
+#define                         B_HERB_CORE 0x065
+#define                        B_HERB_ROOTS 0x066
+#define                       B_HERB_SHOOTS 0x067
+#define                        B_HERB_GROWN 0x068
+#define                      B_HERB_BUDDING 0x069
+#define                    B_HERB_FLOWERING 0x06a
+#define                     B_HERB_FRUITING 0x06b
 
 #define                        B_BUSH_SEEDS 0x06c
-#define                        B_BUSH_ROOTS 0x06d
-#define                       B_BUSH_SHOOTS 0x06e
-#define           B_BUSH_BRANCHES_SPROUTING 0x06f
-#define               B_BUSH_BRANCHES_GROWN 0x070
-#define             B_BUSH_BRANCHES_BUDDING 0x071
-#define           B_BUSH_BRANCHES_FLOWERING 0x072
-#define            B_BUSH_BRANCHES_FRUITING 0x073
-#define            B_BUSH_BRANCHES_SHEDDING 0x074
-#define             B_BUSH_BRANCHES_DORMANT 0x075
-#define             B_BUSH_LEAVES_SPROUTING 0x076
-#define                 B_BUSH_LEAVES_GROWN 0x077
-#define               B_BUSH_LEAVES_BUDDING 0x078
-#define             B_BUSH_LEAVES_FLOWERING 0x079
-#define              B_BUSH_LEAVES_FRUITING 0x07a
-#define              B_BUSH_LEAVES_SHEDDING 0x07b
-#define               B_BUSH_LEAVES_DORMANT 0x07c
+#define                         B_BUSH_CORE 0x06d
+#define                        B_BUSH_ROOTS 0x06e
+#define                       B_BUSH_SHOOTS 0x06f
+#define           B_BUSH_BRANCHES_SPROUTING 0x070
+#define               B_BUSH_BRANCHES_GROWN 0x071
+#define             B_BUSH_BRANCHES_BUDDING 0x072
+#define           B_BUSH_BRANCHES_FLOWERING 0x073
+#define            B_BUSH_BRANCHES_FRUITING 0x074
+#define            B_BUSH_BRANCHES_SHEDDING 0x075
+#define             B_BUSH_BRANCHES_DORMANT 0x076
+#define             B_BUSH_LEAVES_SPROUTING 0x077
+#define                 B_BUSH_LEAVES_GROWN 0x078
+#define               B_BUSH_LEAVES_BUDDING 0x079
+#define             B_BUSH_LEAVES_FLOWERING 0x07a
+#define              B_BUSH_LEAVES_FRUITING 0x07b
+#define              B_BUSH_LEAVES_SHEDDING 0x07c
+#define               B_BUSH_LEAVES_DORMANT 0x07d
 
 #define                       B_SHRUB_SEEDS 0x080
-#define                       B_SHRUB_ROOTS 0x081
-#define                 B_SHRUB_THICK_ROOTS 0x082
-#define                      B_SHRUB_SHOOTS 0x083
-#define          B_SHRUB_BRANCHES_SPROUTING 0x084
-#define              B_SHRUB_BRANCHES_GROWN 0x085
-#define            B_SHRUB_BRANCHES_BUDDING 0x086
-#define          B_SHRUB_BRANCHES_FLOWERING 0x087
-#define           B_SHRUB_BRANCHES_FRUITING 0x088
-#define           B_SHRUB_BRANCHES_SHEDDING 0x089
-#define            B_SHRUB_BRANCHES_DORMANT 0x08a
-#define            B_SHRUB_LEAVES_SPROUTING 0x08b
-#define                B_SHRUB_LEAVES_GROWN 0x08c
-#define              B_SHRUB_LEAVES_BUDDING 0x08d
-#define            B_SHRUB_LEAVES_FLOWERING 0x08e
-#define             B_SHRUB_LEAVES_FRUITING 0x08f
-#define             B_SHRUB_LEAVES_SHEDDING 0x090
-#define              B_SHRUB_LEAVES_DORMANT 0x091
+#define                        B_SHRUB_CORE 0x081
+#define                       B_SHRUB_ROOTS 0x082
+#define                 B_SHRUB_THICK_ROOTS 0x083
+#define                      B_SHRUB_SHOOTS 0x084
+#define          B_SHRUB_BRANCHES_SPROUTING 0x085
+#define              B_SHRUB_BRANCHES_GROWN 0x086
+#define            B_SHRUB_BRANCHES_BUDDING 0x087
+#define          B_SHRUB_BRANCHES_FLOWERING 0x088
+#define           B_SHRUB_BRANCHES_FRUITING 0x089
+#define           B_SHRUB_BRANCHES_SHEDDING 0x08a
+#define            B_SHRUB_BRANCHES_DORMANT 0x08b
+#define            B_SHRUB_LEAVES_SPROUTING 0x08c
+#define                B_SHRUB_LEAVES_GROWN 0x08d
+#define              B_SHRUB_LEAVES_BUDDING 0x08e
+#define            B_SHRUB_LEAVES_FLOWERING 0x08f
+#define             B_SHRUB_LEAVES_FRUITING 0x090
+#define             B_SHRUB_LEAVES_SHEDDING 0x091
+#define              B_SHRUB_LEAVES_DORMANT 0x092
 
 #define                        B_TREE_SEEDS 0x094
-#define                        B_TREE_ROOTS 0x095
-#define                  B_TREE_THICK_ROOTS 0x096
-#define                  B_TREE_HEART_ROOTS 0x097
-#define                       B_TREE_SHOOTS 0x098
-#define                        B_TREE_TRUNK 0x099
-#define                B_TREE_BARE_BRANCHES 0x09a
-#define           B_TREE_BRANCHES_SPROUTING 0x09b
-#define               B_TREE_BRANCHES_GROWN 0x09c
-#define             B_TREE_BRANCHES_BUDDING 0x09d
-#define           B_TREE_BRANCHES_FLOWERING 0x09e
-#define            B_TREE_BRANCHES_FRUITING 0x09f
-#define            B_TREE_BRANCHES_SHEDDING 0x0a0
-#define             B_TREE_BRANCHES_DORMANT 0x0a1
-#define             B_TREE_LEAVES_SPROUTING 0x0a2
-#define                 B_TREE_LEAVES_GROWN 0x0a3
-#define               B_TREE_LEAVES_BUDDING 0x0a4
-#define             B_TREE_LEAVES_FLOWERING 0x0a5
-#define              B_TREE_LEAVES_FRUITING 0x0a6
-#define              B_TREE_LEAVES_SHEDDING 0x0a7
-#define               B_TREE_LEAVES_DORMANT 0x0a8
+#define                         B_TREE_CORE 0x095
+#define                   B_TREE_THICK_CORE 0x096
+#define                        B_TREE_ROOTS 0x097
+#define                  B_TREE_THICK_ROOTS 0x098
+#define                  B_TREE_HEART_ROOTS 0x099
+#define                       B_TREE_SHOOTS 0x09a
+#define                        B_TREE_TRUNK 0x09b
+#define                B_TREE_BARE_BRANCHES 0x09c
+#define           B_TREE_BRANCHES_SPROUTING 0x09d
+#define               B_TREE_BRANCHES_GROWN 0x09e
+#define             B_TREE_BRANCHES_BUDDING 0x09f
+#define           B_TREE_BRANCHES_FLOWERING 0x0a0
+#define            B_TREE_BRANCHES_FRUITING 0x0a1
+#define            B_TREE_BRANCHES_SHEDDING 0x0a2
+#define             B_TREE_BRANCHES_DORMANT 0x0a3
+#define             B_TREE_LEAVES_SPROUTING 0x0a4
+#define                 B_TREE_LEAVES_GROWN 0x0a5
+#define               B_TREE_LEAVES_BUDDING 0x0a6
+#define             B_TREE_LEAVES_FLOWERING 0x0a7
+#define              B_TREE_LEAVES_FRUITING 0x0a8
+#define              B_TREE_LEAVES_SHEDDING 0x0a9
+#define               B_TREE_LEAVES_DORMANT 0x0aa
 
 #define               B_AQUATIC_GRASS_SEEDS 0x0ac
 #define               B_AQUATIC_GRASS_ROOTS 0x0ad
@@ -438,16 +445,18 @@ static block const ROTATE_FACE[8][8] = {
 #define            B_AQUATIC_GRASS_FRUITING 0x0b1
 
 #define               B_AQUATIC_PLANT_SEEDS 0x0b4
-#define             B_AQUATIC_PLANT_ANCHORS 0x0b5
-#define              B_AQUATIC_PLANT_SHOOTS 0x0b6
-#define               B_AQUATIC_PLANT_STEMS 0x0b7
-#define        B_AQUATIC_PLANT_LEAVES_GROWN 0x0b8
-#define    B_AQUATIC_PLANT_LEAVES_FLOWERING 0x0b9
-#define     B_AQUATIC_PLANT_LEAVES_FRUITING 0x0ba
+#define                B_AQUATIC_PLANT_CORE 0x0b5
+#define             B_AQUATIC_PLANT_ANCHORS 0x0b6
+#define              B_AQUATIC_PLANT_SHOOTS 0x0b7
+#define               B_AQUATIC_PLANT_STEMS 0x0b8
+#define        B_AQUATIC_PLANT_LEAVES_GROWN 0x0b9
+#define    B_AQUATIC_PLANT_LEAVES_FLOWERING 0x0ba
+#define     B_AQUATIC_PLANT_LEAVES_FRUITING 0x0bb
 
-#define                  B_YOUNG_CORAL_BODY 0x0bc
-#define                  B_CORAL_BODY_GROWN 0x0bd
-#define                       B_CORAL_FROND 0x0be
+#define                       B_YOUNG_CORAL 0x0bc
+#define                        B_CORAL_CORE 0x0bd
+#define                        B_CORAL_BODY 0x0be
+#define                       B_CORAL_FROND 0x0bf
 
 // Hewn Blocks:
 #define                     B_SMOOTHED_ROCK 0x0c0
@@ -609,6 +618,21 @@ static inline block b_is_obstructed(block b) {
 
 static inline block b_is_natural_terrain(block b) {
   return b_id(b) >= B_DIRT && b_id(b) < B_MUSHROOM_SPORES;
+}
+
+static inline block b_is_growth_core(block b) {
+  // TODO: Keep this list up to date!?!
+  return (
+     b_id(b) == B_GIANT_MUSHROOM_CORE
+  || b_id(b) == B_VINE_CORE
+  || b_id(b) == B_HERB_CORE
+  || b_id(b) == B_BUSH_CORE
+  || b_id(b) == B_SHRUB_CORE
+  || b_id(b) == B_TREE_CORE
+  || b_id(b) == B_TREE_THICK_CORE
+  || b_id(b) == B_AQ_PLANT_CORE
+  || b_id(b) == B_CORAL_CORE
+  );
 }
 
 // Other flags can be checked manually...

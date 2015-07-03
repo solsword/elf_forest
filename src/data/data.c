@@ -13,6 +13,7 @@
 
 #include "graphics/display.h"
 #include "gen/worldgen.h"
+#include "gen/biology.h"
 #include "prof/ptime.h"
 #include "world/blocks.h"
 #include "world/world.h"
@@ -30,10 +31,13 @@ size_t const CHUNK_CACHE_MAP_SIZE = 16384;
 // TODO: dynamic capping?
 //int const LOAD_CAP = 128;
 //int const COMPILE_CAP = 64;
+//int const BIOGEN_CAP = 64;
 int const LOAD_CAP = 16;
-int const COMPILE_CAP = 3;
+int const COMPILE_CAP = 8;
+int const BIOGEN_CAP = 8;
 //int const LOAD_CAP = 1;
-//int const COMPILE_CAP = 16;
+//int const COMPILE_CAP = 2;
+//int const BIOGEN_CAP = 2;
 
 // TODO: Good values here
 //gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 6, 16, 50, 150, 500 };
@@ -55,6 +59,7 @@ int const LOAD_AREA_TRIM_FRACTION = 10;
 
 chunk_queue_set *LOAD_QUEUES = NULL;
 chunk_queue_set *COMPILE_QUEUES = NULL;
+chunk_queue_set *BIOGEN_QUEUES = NULL;
 
 chunk_cache *CHUNK_CACHE = NULL;
 
@@ -129,12 +134,14 @@ void iter_cleanup_chunk_approx(void * ptr) {
 void setup_data(void) {
   LOAD_QUEUES = create_chunk_queue_set();
   COMPILE_QUEUES = create_chunk_queue_set();
+  BIOGEN_QUEUES = create_chunk_queue_set();
   CHUNK_CACHE = create_chunk_cache();
 }
 
 void cleanup_data(void) {
   destroy_chunk_queue_set(LOAD_QUEUES);
   cleanup_chunk_queue_set(COMPILE_QUEUES);
+  cleanup_chunk_queue_set(BIOGEN_QUEUES);
   cleanup_chunk_cache(CHUNK_CACHE);
 }
 
@@ -294,6 +301,33 @@ void mark_neighbors_for_compilation(global_chunk_pos *center) {
   glcpos.z -= 2;
   get_best_data(&glcpos, &coa);
   if (coa.ptr != NULL) { mark_for_compilation(&coa); }
+}
+
+void mark_for_biogen(chunk *c) {
+  if (
+     (c->chunk_flags & CF_QUEUED_FOR_BIOGEN)
+  || (c->chunk_flags & CF_HAS_BIOLOGY)
+  ) { return; }
+  enqueue_chunk(BIOGEN_QUEUES, c);
+}
+
+void mark_neighbors_for_biogen(global_chunk_pos *center) {
+  chunk_or_approx coa;
+  global_chunk_pos glcpos;
+  glcpos.x = center->x;
+  glcpos.y = center->y;
+  glcpos.z = center->z;
+
+  for (glcpos.x = center->x - 1; glcpos.x < center->x + 2; ++glcpos.x) {
+    for (glcpos.y = center->y - 1; glcpos.y < center->y + 2; ++glcpos.y) {
+      for (glcpos.z = center->z - 1; glcpos.z < center->z + 2; ++glcpos.z) {
+        get_best_data(&glcpos, &coa);
+        if (coa.ptr != NULL && coa->type == CA_TYPE_CHUNK) {
+          mark_for_biogen(coa.ptr);
+        }
+      }
+    }
+  }
 }
 
 lod get_best_loaded_level(global_chunk_pos *glcpos) {
@@ -500,9 +534,18 @@ void tick_compile_chunks(void) {
   chunk_approximation *ca = NULL;
   lod detail = LOD_BASE;
   queue *q = COMPILE_QUEUES->levels[LOD_BASE];
+  map *m = COMPILE_QUEUES->maps[LOD_BASE];
   chunk_or_approx coa;
   while (n < COMPILE_CAP && q_get_length(q) > 0) {
     c = (chunk *) q_pop_element(q);
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+    m3_pop_value(
+      m,
+      (map_key_t) c->glcpos.x,
+      (map_key_t) c->glcpos.y,
+      (map_key_t) c->glcpos.z
+    );
+#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
     ch__coa(c, &coa);
     compile_chunk_or_approx(&coa);
     c->chunk_flags &= ~CF_QUEUED_TO_COMPILE;
@@ -510,8 +553,17 @@ void tick_compile_chunks(void) {
   }
   for (detail = LOD_BASE + 1; detail < N_LODS; ++detail) {
     q = COMPILE_QUEUES->levels[detail];
+    m = COMPILE_QUEUES->maps[detail];
     while (n < COMPILE_CAP && q_get_length(q) > 0) {
       ca = (chunk_approximation *) q_pop_element(q);
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+      m3_pop_value(
+        m,
+        (map_key_t) ca->glcpos.x,
+        (map_key_t) ca->glcpos.y,
+        (map_key_t) ca->glcpos.z
+      );
+#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
       aprx__coa(ca, &coa);
       compile_chunk_or_approx(&coa);
       ca->chunk_flags &= ~CF_QUEUED_TO_COMPILE;
@@ -521,8 +573,39 @@ void tick_compile_chunks(void) {
   update_count(&CHUNKS_COMPILED, n);
 }
 
+void tick_biogen(void) {
+  int n = 0, ns = 0;
+  chunk *c = NULL;
+  lod detail = LOD_BASE;
+  queue *q = BIOGEN_QUEUES->levels[LOD_BASE];
+  map *m = BIOGEN_QUEUES->maps[LOD_BASE];
+  while (n < BIOGEN_CAP && q_get_length(q) > 0) {
+    c = (chunk *) q_pop_element(q);
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+    m3_pop_value(
+      m,
+      (map_key_t) c->glcpos.x,
+      (map_key_t) c->glcpos.y,
+      (map_key_t) c->glcpos.z
+    );
+#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
+    add_biology(c);
+    if (c->chunk_flags & CF_HAS_BIOLOGY) {
+      n += 1;
+      persist_chunk(c); // when the chunk was loaded we saved a bare-terrain
+      // version, now that we've added biology let's save that too.
+    } else {
+      ns += 1;
+    }
+    c->chunk_flags &= ~CF_QUEUED_FOR_BIOGEN;
+  }
+  // TODO: Is it fine to ignore other LODs? Maybe we should be adding some fake
+  // plants to them?
+  update_count(&CHUNKS_BIOGEND, n);
+  update_count(&CHUNKS_BIOSKIPPED, ns);
+}
+
 void load_chunk(chunk *c) {
-  // TODO: Data from disk!
   // TODO: Cell entities!
   chunk_or_approx coa;
 #ifdef PROFILE_TIME
@@ -560,6 +643,12 @@ void load_chunk(chunk *c) {
     mark_for_compilation(&coa);
     mark_neighbors_for_compilation(&(c->glcpos));
   }
+  // TODO: This could be more efficient at the cost of a bit more memory
+  // probably.
+  if (!(c->chunk_flags & CF_HAS_BIOLOGY)) {
+    mark_for_biogen(c);
+  }
+  mark_neighbors_for_biogen(c);
 }
 
 void load_chunk_approx(chunk_approximation *ca) {
@@ -592,4 +681,5 @@ void load_chunk_approx(chunk_approximation *ca) {
       mark_neighbors_for_compilation(&(ca->glcpos));
     }
   }
+  // TODO: Mark for biogen as well?
 }

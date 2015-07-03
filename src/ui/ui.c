@@ -444,6 +444,15 @@ static inline void draw_perf_info(int *h) {
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
   *h -= 30;
+
+  sprintf(
+    TXT,
+    "chunks biogen'd // bioskipped :: %d // %d",
+    CHUNKS_BIOGEND.average,
+    CHUNKS_BIOSKIPPED.average
+  );
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
+  *h -= 30;
 }
 
 /*************

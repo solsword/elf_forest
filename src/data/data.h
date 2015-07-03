@@ -57,6 +57,7 @@ extern int const LOAD_AREA_TRIM_FRACTION;
 // The global loading and compiling queues:
 extern chunk_queue_set *LOAD_QUEUES;
 extern chunk_queue_set *COMPILE_QUEUES;
+extern chunk_queue_set *BIOGEN_QUEUES;
 
 // The global chunk cache:
 extern chunk_cache *CHUNK_CACHE;
@@ -180,6 +181,15 @@ void mark_for_compilation(chunk_or_approx *coa);
 // (re)compilation.
 void mark_neighbors_for_compilation(global_chunk_pos *glcpos);
 
+// Marks the given chunk for biogeneration. Does nothing if the chunk is
+// already in the biogen queue or if it already has biology.
+void mark_for_biogen(chunk *c);
+
+// Works like mark_neighbors_for_compilation but marks the neighbors for
+// biogeneration instead. Marks all 27 adjacent chunks rather than just the 6
+// face-adjacent neighbors.
+void mark_neighbors_for_biogen(global_chunk_pos *glcpos);
+
 // Returns the best level-of-detail at which the given chunk is loaded, or
 // N_LODS if the given chunk isn't loaded.
 lod get_best_loaded_level(global_chunk_pos *glcpos);
@@ -210,6 +220,10 @@ void tick_load_chunks(global_chunk_pos *load_center);
 // appropriate. Prioritizes more-detailed areas when loading data. This should
 // be called from the graphics thread as it needs an OpenGL context.
 void tick_compile_chunks(void);
+
+// Ticks the biogeneration system which adds biology to terrain-generated
+// chunks.
+void tick_biogen(void);
 
 // Loads data from disk for the given chunk/approximation. Uses the chunk's
 // x/y/z coordinates to determine what contents it should have.
