@@ -34,6 +34,7 @@
  * Inline Functions *
  ********************/
 
+// TODO: Update these!
 // Getters and setters for growth potential, growth direction, and vitality.
 // Growth potential goes from 0 to 7, growth direction uses BD_ORI_* constants,
 // and vitality uses GR_VITALITY_* constants.

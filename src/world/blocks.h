@@ -132,11 +132,16 @@ static block_info const    BIM_GEOMETRY = 0x0f << BIMS_GEOMETRY;
 
 #define  BIFS_ANISOTROPIC 0x8
 #define   BIFS_ORIENTABLE 0x9
-#define        BIFS_GROWS 0xa
+// 0xa and 0xb are free
+#define        BIFS_GROWS 0xc
+#define         BIFS_SEED 0xd
+#define  BIFS_GROWTH_CORE 0xe
 
 static block_info const  BIF_ANISOTROPIC = 1 << BIFS_ANISOTROPIC;
 static block_info const   BIF_ORIENTABLE = 1 << BIFS_ORIENTABLE;
 static block_info const        BIF_GROWS = 1 << BIFS_GROWS;
+static block_info const         BIF_SEED = 1 << BIFS_SEED;
+static block_info const  BIF_GROWTH_CORE = 1 << BIFS_GROWTH_CORE;
 
 /********
  * Info *
@@ -555,6 +560,12 @@ static inline block_info bi_oabl(block b) {
 static inline block_info bi_grws(block b) {
   return (BLOCK_INFO[b_id(b)] & BIF_GROWS) >> BIFS_GROWS;
 }
+static inline block_info bi_seed(block b) {
+  return (BLOCK_INFO[b_id(b)] & BIF_SEED) >> BIFS_SEED;
+}
+static inline block_info bi_gcore(block b) {
+  return (BLOCK_INFO[b_id(b)] & BIF_GROWTH_CORE) >> BIFS_GROWTH_CORE;
+}
 
 // Constructors:
 
@@ -620,22 +631,8 @@ static inline block b_is_natural_terrain(block b) {
   return b_id(b) >= B_DIRT && b_id(b) < B_MUSHROOM_SPORES;
 }
 
-static inline block b_is_growth_core(block b) {
-  // TODO: Keep this list up to date!?!
-  return (
-     b_id(b) == B_GIANT_MUSHROOM_CORE
-  || b_id(b) == B_VINE_CORE
-  || b_id(b) == B_HERB_CORE
-  || b_id(b) == B_BUSH_CORE
-  || b_id(b) == B_SHRUB_CORE
-  || b_id(b) == B_TREE_CORE
-  || b_id(b) == B_TREE_THICK_CORE
-  || b_id(b) == B_AQ_PLANT_CORE
-  || b_id(b) == B_CORAL_CORE
-  );
-}
-
 // Other flags can be checked manually...
+
 
 // Utilities:
 

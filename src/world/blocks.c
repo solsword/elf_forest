@@ -13,7 +13,10 @@
 //  5-8: Geometry (full, half, liquid, grass, etc.)
 //  9: Anisotropic (different textures for different faces)
 //  10: Orientable (can be placed facing multiple directions)
-//  11: Grows (will be processed by the ecology subsystem)
+//
+//  13: Grows (will be processed by the ecology subsystem)
+//  14: Seed (grows by grammar transformations)
+//  15: Growth core (grows using growth particles)
 
 block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 //  VOID:             BOUNDARY:         AIR:              ETHER:
@@ -49,69 +52,69 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x03f
 //  MUSHROOM_SPORES:  MUSHROOM_SHOOTS:  MUSHROOM:         GIANT_MSH_CORE:
-    0x000004f9,       0x0000044a,       0x0000044a,       0x0000046e,
+    0x000030f9,       0x0000304a,       0x0000304a,       0x0000506e,
 //  GIANT_MSH_MYCEL   GIANT_MSH_SPROUT  GIANT_MSH_STALK:  GIANT_MSH_CAP:
-    0x0000046e,       0x0000044e,       0x00000700,       0x00000700,
+    0x0000106e,       0x0000104e,       0x00001300,       0x00001300,
 //  MOSS_SPORES:      MOSS_SHOOTS:      MOSS:             MOSS_FLOWERS:
-    0x000000f9,       0x0000005a,       0x0000005a,       0x0000005a,
+    0x000030f9,       0x0000305a,       0x0000305a,       0x0000305a,
 //  MOSS_FRUIT:       ____:              ____:            ____:
-    0x0000045a,       0x00000000,       0x00000000,       0x00000000, // 0x04f
+    0x0003045a,       0x00000000,       0x00000000,       0x00000000, // 0x04f
 //  GRASS_SEEDS:      GRASS_ROOTS:      GRASS_SHOOTS:     GRASS:
-    0x0000046a,       0x0000046e,       0x0000043a,       0x0000043a,
+    0x0000306a,       0x0000306e,       0x0000303a,       0x0000303a,
 //  GRASS_BUDS:       GRASS_FLOWERS:    GRASS_FRUIT:      ____:
-    0x0000043a,       0x0000043a,       0x0000043a,       0x00000000,
+    0x0000303a,       0x0000303a,       0x0000303a,       0x00000000,
 //  VINE_SEEDS:       VINE_CORE:        VINE_ROOTS:       VINE_SHOOTS:
-    0x0000046a,       0x0000046e,       0x0000046e,       0x0000065e,
+    0x0000306a,       0x0000506e,       0x0000106e,       0x0000125e,
 //  SPROUTING_VINE:   VINE:             VINE_BUDS:        VINE_FLOWERS:
-    0x0000065e,       0x0000065e,       0x0000065e,       0x0000065e, // 0x05f
+    0x0000125e,       0x0000125e,       0x0000125e,       0x0000125e, // 0x05f
 //  VINE_FRUIT:       SHEDDING_VINE:    DORMANT_VINE:     ____:
-    0x0000065e,       0x0000065e,       0x0000065e,       0x00000000,
+    0x0000125e,       0x0000125e,       0x0000125e,       0x00000000,
 //  HERB_SEEDS:       HERB_CORE:        HERB_ROOTS:       HERB_SHOOTS:
-    0x0000046a,       0x0000046e,       0x0000046e,       0x0000044e,
+    0x0000306a,       0x0000506e,       0x0000106e,       0x0000104e,
 //  HERB:             HERB_BUDS:        HERB_FLOWERS:     HERB_FRUIT:
-    0x0000044e,       0x0000044e,       0x0000044e,       0x0000044e,
+    0x0000104e,       0x0000104e,       0x0000104e,       0x0000104e,
 //  BUSH_SEEDS:       BUSH_CORE:        BUSH_ROOTS:       BUSH_SHOOTS:
-    0x0000046a,       0x0000046e,       0x0000046e,       0x0000044e, // 0x06f
+    0x0000306a,       0x0000506e,       0x0000106e,       0x0000104e, // 0x06f
 //  SPR_BUSH_BRNCHES: BUSH_BRANCHES:    BUD_BUSH_BRNCHES: FLR_BUSH_BRNCHES:
-    0x0000040e,       0x0000040e,       0x0000040e,       0x0000040e,
+    0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e,
 //  FRT_BUSH_BRNCHES: SHD_BUSH_BRNCHES: DMT_BUSH_BRNCHES: SPR_BUSH_LEAVES:
-    0x0000040e,       0x0000040e,       0x0000040e,       0x0000040e,
+    0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e,
 //  BUSH_LEAVES:      BUD_BUSH_LEAVES:  FLR_BUSH_LEAVES:  FRT_BUSH_LEAVES:
-    0x0000040e,       0x0000040e,       0x0000040e,       0x0000040e,
+    0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e,
 //  SHD_BUSH_LEAVES:  DMT_BUSH_LEAVES:  ____:             ____:
-    0x0000040e,       0x0000040e,       0x00000000,       0x00000000, // 0x07f
+    0x0000100e,       0x0000100e,       0x00000000,       0x00000000, // 0x07f
 //  SHRUB_SEEDS:      SHRUB_CORE:       SHRUB_ROOTS:      SHRUB_THCK_ROOTS:
-    0x0000046a,       0x0000046e,       0x0000046e,       0x0000046e,
+    0x0000306a,       0x0000506e,       0x0000106e,       0x0000106e,
 //  SHRUB_SHOOTS:     SPR_SHRUB_BRNCHS: SHRUB_BRANCHES:   BUD_SHRUB_BRNCHS:
-    0x0000044e,       0x0000040e,       0x0000040e,       0x0000040e,
+    0x0000104e,       0x0000100e,       0x0000100e,       0x0000100e,
 //  FLR_SHRUB_BRNCHS: FRT_SHRUB_BRNCHS: SHD_SHRUB_BRNCHS: DMT_SHRUB_BRNCHS:
-    0x0000040e,       0x0000040e,       0x0000040e,       0x0000040e,
+    0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e,
 //  SPR_SHRUB_LEAVES: SHRUB_LEAVES:     BUD_SHRUB_LEAVES: FLR_SHRUB_LEAVES:
-    0x0000040e,       0x0000040e,       0x0000040e,       0x0000040e, // 0x08f
+    0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e, // 0x08f
 //  FRT_SHRUB_LEAVES: SHD_SHRUB_LEAVES: DMT_SHRUB_LEAVES: ____:
-    0x0000040e,       0x0000040e,       0x0000040e,       0x00000000,
+    0x0000100e,       0x0000100e,       0x0000100e,       0x00000000,
 //  TREE_SEEDS:       TREE_CORE:        TREE_THICK_CORE:  TREE_ROOTS:
-    0x0000046a,       0x0000046e,       0x00000400,       0x0000046e,
+    0x0000306a,       0x0000506e,       0x00005000,       0x0000106e,
 //  TREE_THICK_ROOTS: TREE_HEART_ROOTS: TREE_SHOOTS:      TREE_TRUNK:
-    0x0000046e,       0x00000400,       0x0000044e,       0x00000700,
+    0x0000106e,       0x00001000,       0x0000104e,       0x00001300,
 //  TREE_BARE_BRNCHS: SPR_TREE_BRNCHES: TREE_BRANCHES:    BUD_TREE_BRNCHS:
-    0x0000040e,       0x0000040e,       0x0000040e,       0x0000040e, // 0x09f
+    0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e, // 0x09f
 //  FLR_TREE_BRNCHS:  FRT_TREE_BRNCHS:  SHD_TREE_BRNCHS:  DMT_TREE_BRNCHS:
-    0x0000040e,       0x0000040e,       0x0000040e,       0x0000040e,
+    0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e,
 //  SPR_TREE_LEAVES:  TREE_LEAVES:      BUD_TREE_LEAVES:  FLR_TREE_LEAVES:
-    0x0000040e,       0x0000040e,       0x0000040e,       0x0000040e,
+    0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e,
 //  FRT_TREE_LEAVES:  SHD_TREE_LEAVES:  DMT_TREE_LEAVES:  ____:
-    0x0000040e,       0x0000040e,       0x0000040e,       0x00000000,
+    0x0000100e,       0x0000100e,       0x0000100e,       0x00000000,
 //  AQ_GRASS_SEEDS:   AQ_GRASS_ROOTS:   AQ_GRASS_SHOOTS:  AQ_GRASS:
-    0x0000046a,       0x0000046e,       0x0000044e,       0x0000044e, // 0x0af
+    0x0000306a,       0x0000306e,       0x0000304e,       0x0000304e, // 0x0af
 //  AQ_GRASS_FLOWERS: AQ_GRASS_FRUIT:   ____:             ____:
-    0x0000044e,       0x0000044e,       0x00000000,       0x00000000,
+    0x0000304e,       0x0000304e,       0x00000000,       0x00000000,
 //  AQ_PLANT_SEEDS:   AQ_PLANT_CORE:    AQ_PLANT_ANCHORS: AQ_PLANT_SHOOTS:
-    0x0000046a,       0x0000046e,       0x0000046e,       0x0000044e,
+    0x0000306a,       0x0000506e,       0x0000106e,       0x0000104e,
 //  AQ_PLANT_STEMS:   AQ_PLANT_LEAVES:  AQ_PLANT_FLOWERS: AQ_PLANT_FRUIT:
-    0x0000047e,       0x0000047e,       0x0000047e,       0x0000047e,
+    0x0000107e,       0x0000107e,       0x0000107e,       0x0000107e,
 //  YOUNG_CORAL:      CORAL_CORE:       CORAL_BODY:       CORAL_FROND:
-    0x0000044e,       0x00000400,       0x00000400,       0x0000044e, // 0x0bf
+    0x0000304e,       0x00005000,       0x00001000,       0x0000104e, // 0x0bf
 //  SMOOTHED_ROCK:    HEWN_ROCK_GRATE:  ____:             ____:
     0x00000000,       0x000002c2,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
