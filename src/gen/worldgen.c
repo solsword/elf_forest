@@ -281,7 +281,7 @@ void generate_chunk(chunk *c) {
   global_pos glpos;
   // Generate base materials:
   for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
-    for (idx.y = 0; idx.y < CHUNK_SIZE; ++yidx.) {
+    for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
       for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
         cidx__glpos(c, &idx, &glpos);
         world_cell(THE_WORLD, &glpos, c_cell(c, idx));

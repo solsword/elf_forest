@@ -248,7 +248,7 @@ static inline ptrdiff_t chunk_hash(chunk *c) {
   );
 }
 
-static inline ptrdiff_t cell_hash(glpos *pos) {
+static inline ptrdiff_t cell_hash(global_pos *pos) {
   return prng(
     81024 + pos->x * (
       640513 + pos->y * (

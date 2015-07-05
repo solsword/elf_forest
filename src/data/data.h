@@ -260,7 +260,7 @@ static inline void get_exact_chunk_neighborhood(
   global_chunk_pos *glcpos,
   chunk** r_neighborhood
 ) {
-  chunk_or_approx* coa;
+  chunk_or_approx* coa = NULL;
   global_chunk_pos nbpos;
   size_t i = 0;
   for (nbpos.z = glcpos->z - 1; nbpos.z <= glcpos->z + 1; nbpos.z += 1) {
@@ -330,8 +330,8 @@ static inline void get_cell_neighborhood(
 // and produces an exact cell neighborhood.
 static inline void get_cell_neighborhood_exact(
   chunk_index idx,
-  chunk* exact_chunk_neighbors,
-  cell* neighborhood[],
+  chunk* exact_chunk_neighbors[],
+  cell* neighborhood[]
 ) {
   // Note that the underflow should wrap correctly here, but we're fixing up
   // the values anyways.
@@ -346,13 +346,13 @@ static inline void get_cell_neighborhood_exact(
         nbr.y = idx.y + dy;
         nbr.z = idx.z + dz;
         j = 13; // the center of the chunk neighborhood
-        if (idx.z < step && dz == -step) { j -= 9; nbr.z = CHUNK_SIZE - 1; }
-        if (idx.z >= CHUNK_SIZE - step && dz == step) { j += 9; nbr.z = 0; }
-        if (idx.x < step && dx == -step) { j -= 3; nbr.x = CHUNK_SIZE - 1; }
-        if (idx.x >= CHUNK_SIZE - step && dx == step) { j += 3; nbr.x = 0; }
-        if (idx.y < step && dy == -step) { j -= 1; nbr.y = CHUNK_SIZE - 1; }
-        if (idx.y >= CHUNK_SIZE - step && dy == step) { j += 1; nbr.y = 0; }
-        c = &(exact_chunk_neighbors[j]);
+        if (idx.z < 1 && dz == -1) { j -= 9; nbr.z = CHUNK_SIZE - 1; }
+        if (idx.z >= CHUNK_SIZE - 1 && dz == 1) { j += 9; nbr.z = 0; }
+        if (idx.x < 1 && dx == -1) { j -= 3; nbr.x = CHUNK_SIZE - 1; }
+        if (idx.x >= CHUNK_SIZE - 1 && dx == 1) { j += 3; nbr.x = 0; }
+        if (idx.y < 1 && dy == -1) { j -= 1; nbr.y = CHUNK_SIZE - 1; }
+        if (idx.y >= CHUNK_SIZE - 1 && dy == 1) { j += 1; nbr.y = 0; }
+        c = exact_chunk_neighbors[j];
         neighborhood[i] = c_cell(c, nbr);
         i += 1;
       }

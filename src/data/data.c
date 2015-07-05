@@ -32,9 +32,9 @@ size_t const CHUNK_CACHE_MAP_SIZE = 16384;
 //int const LOAD_CAP = 128;
 //int const COMPILE_CAP = 64;
 //int const BIOGEN_CAP = 64;
-int const LOAD_CAP = 16;
+int const LOAD_CAP = 64;
 int const COMPILE_CAP = 8;
-int const BIOGEN_CAP = 8;
+int const BIOGEN_CAP = 16;
 //int const LOAD_CAP = 1;
 //int const COMPILE_CAP = 2;
 //int const BIOGEN_CAP = 2;
@@ -43,9 +43,9 @@ int const BIOGEN_CAP = 8;
 //gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 6, 16, 50, 150, 500 };
 //gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 8, 16, 32, 64, 128 };
 //gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 8, 12, 16, 20 };
-//gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 5, 6, 7, 7, 7 };
+gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 7, 12, 12, 12 };
 //gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 4, 6, 7, 7, 7 };
-gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 3, 4, 4, 4, 4 };
+//gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 3, 4, 4, 4, 4 };
 //gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 2, 3, 3, 3, 3 };
 //gl_cpos_t const LOAD_DISTANCES[N_LODS] = { 1, 2, 2, 2, 2 };
 
@@ -322,7 +322,7 @@ void mark_neighbors_for_biogen(global_chunk_pos *center) {
     for (glcpos.y = center->y - 1; glcpos.y < center->y + 2; ++glcpos.y) {
       for (glcpos.z = center->z - 1; glcpos.z < center->z + 2; ++glcpos.z) {
         get_best_data(&glcpos, &coa);
-        if (coa.ptr != NULL && coa->type == CA_TYPE_CHUNK) {
+        if (coa.ptr != NULL && coa.type == CA_TYPE_CHUNK) {
           mark_for_biogen(coa.ptr);
         }
       }
@@ -576,7 +576,6 @@ void tick_compile_chunks(void) {
 void tick_biogen(void) {
   int n = 0, ns = 0;
   chunk *c = NULL;
-  lod detail = LOD_BASE;
   queue *q = BIOGEN_QUEUES->levels[LOD_BASE];
   map *m = BIOGEN_QUEUES->maps[LOD_BASE];
   while (n < BIOGEN_CAP && q_get_length(q) > 0) {
@@ -648,7 +647,7 @@ void load_chunk(chunk *c) {
   if (!(c->chunk_flags & CF_HAS_BIOLOGY)) {
     mark_for_biogen(c);
   }
-  mark_neighbors_for_biogen(c);
+  mark_neighbors_for_biogen(&(c->glcpos));
 }
 
 void load_chunk_approx(chunk_approximation *ca) {

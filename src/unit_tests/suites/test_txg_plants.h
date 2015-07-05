@@ -5,7 +5,8 @@
     &test_plants_branch_filter, \
     &test_plants_leaves_filter, \
     &test_plants_branches_and_leaves, \
-    &test_plants_bulb_leaves, \
+    &test_plants_herb_leaves, \
+    &test_plants_herb_stems, \
     NULL, \
   }
 
@@ -76,7 +77,7 @@ leaves_filter_args example_leaves_args = {
   },
 };
 
-bulb_leaves_filter_args example_bulb_leaves_args = {
+herb_leaves_filter_args example_herb_leaves_args = {
   .seed = 42,
   .count = 4,
   .spread = 0.2,
@@ -85,6 +86,20 @@ bulb_leaves_filter_args example_bulb_leaves_args = {
   .shape = 0.6,
   .length = 27,
   .width = 4,
+  .main_color = 0xff00bb22, // medium green
+  .vein_color = 0xff11cc33, // slightly lighter green
+  .dark_color = 0xff007711 // dark green
+};
+
+herb_leaves_filter_args example_herb_stems_args = {
+  .seed = 47,
+  .count = 12,
+  .spread = 0.9,
+  .angle = M_PI / 12.0,
+  .bend = -M_PI / 4.0,
+  .shape = 0.5,
+  .length = 29,
+  .width = 2,
   .main_color = 0xff00bb22, // medium green
   .vein_color = 0xff11cc33, // slightly lighter green
   .dark_color = 0xff007711 // dark green
@@ -146,10 +161,37 @@ size_t test_plants_branches_and_leaves(void) {
   return 0;
 }
 
-size_t test_plants_bulb_leaves(void) {
+size_t test_plants_herb_leaves(void) {
   texture *tx = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
-  fltr_bulb_leaves(tx, &example_bulb_leaves_args);
-  write_texture_to_png(tx, "out/test/test-bulb_leaves.png");
+  fltr_herb_leaves(tx, &example_herb_leaves_args);
+  write_texture_to_png(tx, "out/test/test-herb_leaves.png");
+  // TODO: doublecheck
+  /*
+  texture *doublecheck = load_texture_from_png("out/test/tmoss.png");
+  if (tx_get_px(doublecheck, 0, 0) != 0xff00b40f) { return 1; }
+  if (tx_get_px(doublecheck, 1, 0) != 0xbf10870d) { return 2; }
+  cleanup_texture(doublecheck);
+  // */
+  return 0;
+}
+
+size_t test_plants_herb_stems(void) {
+  texture *leaves_tx = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  texture *stems_tx = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  texture *combined = create_texture(BLOCK_TEXTURE_SIZE*3, BLOCK_TEXTURE_SIZE*3);
+  fltr_herb_leaves(leaves_tx, &example_herb_stems_args);
+  fltr_herb_stems(stems_tx, &example_herb_stems_args);
+  write_texture_to_png(stems_tx, "out/test/test-herb_stems.png");
+  tx_paste(combined, leaves_tx, 0, 0);
+  tx_paste(combined, leaves_tx, BLOCK_TEXTURE_SIZE, 0);
+  tx_paste(combined, leaves_tx, BLOCK_TEXTURE_SIZE*2, 0);
+  tx_paste(combined, stems_tx, 0, BLOCK_TEXTURE_SIZE);
+  tx_paste(combined, stems_tx, 0, BLOCK_TEXTURE_SIZE*2);
+  tx_paste(combined, stems_tx, BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  tx_paste(combined, stems_tx, BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE*2);
+  tx_paste(combined, stems_tx, BLOCK_TEXTURE_SIZE*2, BLOCK_TEXTURE_SIZE);
+  tx_paste(combined, stems_tx, BLOCK_TEXTURE_SIZE*2, BLOCK_TEXTURE_SIZE*2);
+  write_texture_to_png(combined, "out/test/test-herb_combined.png");
   // TODO: doublecheck
   /*
   texture *doublecheck = load_texture_from_png("out/test/tmoss.png");

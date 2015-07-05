@@ -539,6 +539,7 @@ static block const ROTATE_FACE[8][8] = {
 static inline block b_id(block b) { return b >> BS_ID; }
 static inline species b_species(block b) { return (b & BM_SPECIES) >> BS_SPC; }
 static inline block b_idspc(block b) { return b >> BS_SPC; }
+static inline block b_data(block b) { return (b & BM_DATA) >> BS_DAT; }
 static inline block b_ori(block b) { return (b & BM_ORIENTATION) >> BS_ORI; }
 
 // Per-block-type properties:
@@ -582,7 +583,7 @@ static inline block b_make_species(block id, species sp) {
 // Edit functions:
 static inline void b_set_data(block *b, block_data data) {
   *b &= ~BM_DATA; // zero out the data
-  *b |= ((block) data) << BS_DAT
+  *b |= ((block) data) << BS_DAT;
 }
 
 // Comparisons:

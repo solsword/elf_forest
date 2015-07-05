@@ -71,10 +71,12 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/persist.o \
              $(OBJ_DIR)/climate.o \
              $(OBJ_DIR)/geology.o \
+             $(OBJ_DIR)/biology.o \
              $(OBJ_DIR)/txgen.o \
              $(OBJ_DIR)/txg_plants.o \
              $(OBJ_DIR)/txg_minerals.o \
              $(OBJ_DIR)/cartography.o \
+             $(OBJ_DIR)/grow.o \
              $(OBJ_DIR)/ptime.o \
              $(OBJ_DIR)/pmem.o \
              $(OBJ_DIR)/jobs.o \

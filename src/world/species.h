@@ -78,8 +78,13 @@ _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
  ************************/
 
 // Growth patterns determine how growing things grow.
-struct growth_pattern_s;
-typedef struct growth_pattern_s growth_pattern;
+// Seed growth patterns are used for seed-type blocks.
+struct seed_growth_pattern_s;
+typedef struct seed_growth_pattern_s seed_growth_pattern;
+
+// Core growth patterns are used for growth-core-type blocks.
+struct core_growth_pattern_s;
+typedef struct core_growth_pattern_s core_growth_pattern;
 
 /**********************
  * Primary Structures *
@@ -164,10 +169,12 @@ extern map *FIBER_SPECIES; // various sources; uniform use
  * Structure Definitions *
  *************************/
 
-struct growth_pattern_s {
-  growth_pattern *next;
-  block tmpl[7]; // indexed by the BD_ORI_* constants (BD_ORI_IN is the center)
-  block grow[7]; // same as above
+struct seed_growth_pattern_s {
+  // TODO: HERE
+};
+
+struct core_growth_pattern_s {
+  // TODO: HERE
 };
 
 /*
@@ -196,69 +203,77 @@ struct metal_species_s {
 struct fungus_species_s {
   material material;
   fungus_texture_params appearance;
-  growth_pattern growth_pattern;
+  seed_growth_pattern_s seed_growth;
+  core_growth_pattern core_growth;
 };
 
 struct moss_species_s {
   material material;
   moss_texture_params appearance;
-  growth_pattern growth_pattern;
+  seed_growth_pattern_s seed_growth;
 };
 
 struct grass_species_s {
   material material;
   grass_texture_params appearance;
-  growth_pattern growth_pattern;
+  seed_growth_pattern seed_growth;
 };
 
 struct vine_species_s {
   material material;
   vine_texture_params appearance;
-  growth_pattern growth_pattern;
+  seed_growth_pattern seed_growth;
+  core_growth_pattern core_growth;
 };
 */
 
 struct herb_species_s {
   material material;
-  bulb_leaves_filter_args appearance; // TODO: more appearance variety
-  growth_pattern *growth_pattern;
+  herb_leaves_filter_args appearance; // TODO: more appearance variety
+  seed_growth_pattern seed_growth;
+  core_growth_pattern core_growth;
 };
 
 /*
 struct bush_species_s {
   material material;
   bush_texture_params appearance;
-  growth_pattern growth_pattern;
+  seed_growth_pattern seed_growth;
+  core_growth_pattern core_growth;
 };
 
 struct shrub_species_s {
   material material;
   shrub_texture_params appearance;
-  growth_pattern growth_pattern;
+  seed_growth_pattern seed_growth;
+  core_growth_pattern core_growth;
 };
 
 struct tree_species_s {
   material material;
   tree_texture_params appearance;
-  growth_pattern growth_pattern;
+  seed_growth_pattern seed_growth;
+  core_growth_pattern core_growth;
 };
 
 struct aquatic_grass_species_s {
   material material;
   aquatic_grass_texture_params appearance;
-  growth_pattern growth_pattern;
+  seed_growth_pattern seed_growth;
 };
 
 struct aquatic_plant_species_s {
   material material;
   aquatic_plant_texture_params appearance;
-  growth_pattern growth_pattern;
+  seed_growth_pattern seed_growth;
+  core_growth_pattern core_growth;
 };
 
 struct coral_species_s {
   material material;
   coral_texture_params appearance;
-  growth_pattern growth_pattern;
+  seed_growth_pattern seed_growth;
+  core_growth_pattern core_growth;
 };
 
 struct animal_species_s {

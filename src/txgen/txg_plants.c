@@ -35,7 +35,7 @@ leaf_width_func leaf_width_functions_table[N_LEAF_SHAPES] = {
   NULL, // triangular with lobes at the base
   NULL, // spoon-shaped
   NULL, // pointed at both ends
-  NULL, // parallel margins for much of length
+  &linear_width_func, // parallel margins (useful for stems)
   &deltoid_width_func, // simple triangular
   NULL, // fish-shaped w/ stem as tail
 };
@@ -89,6 +89,11 @@ float oval_width_func(float t, void *args) {
   return stem_width_func(t, args) * wfargs->base_width * v;
 }
 
+float linear_width_func(float t, void *args) {
+  width_func_args *wfargs = (width_func_args *) args;
+  return wfargs->base_width * stem_width_func(t, args);
+}
+
 float deltoid_width_func(float t, void *args) {
   width_func_args *wfargs = (width_func_args *) args;
   return (1 - t) * wfargs->base_width * stem_width_func(t, args);
@@ -119,21 +124,51 @@ void fltr_leaves_helper(int x, int y, void * arg) {
 float branches_direction_up(float x, float y, ptrdiff_t seed) { return -y; }
 float branches_direction_down(float x, float y, ptrdiff_t seed) { return y; }
 float branches_direction_outwards(float x, float y, ptrdiff_t seed) {
-  // TODO: What if the texture isn't 32x32?
   int half = BLOCK_TEXTURE_SIZE/2;
   float d = (x - half)*(x - half) + (y - half * y - half);
   return -d;
 }
 float branches_direction_inwards(float x, float y, ptrdiff_t seed) {
-  // TODO: What if the texture isn't 32x32?
   int half = BLOCK_TEXTURE_SIZE/2;
   float d = (x - half)*(x - half) + (y - half * y - half);
   return d;
 }
 float branches_direction_random(float x, float y, ptrdiff_t seed) {
-  // TODO: Properly control scaling...
   float half = ((float) BLOCK_TEXTURE_SIZE)/2.0;
   return sxnoise_2d(x*1/half, y*1/half, seed);
+}
+
+// Common random decisions and setup for herb leaves/stems: hash setup,
+// nstalks, and spread.
+static inline void herb_setup(
+  herb_leaves_filter_args *hlfargs,
+  ptrdiff_t *hash,
+  float *noise,
+  int *nstalks,
+  float *spread,
+  leaf_filter_args *lfargs
+) {
+  *hash = prng(hlfargs->seed);
+  *noise = 0.7 + 0.6 * ptrf(*hash); // [0.7, 1.3]
+  *hash = prng(*hash);
+  *nstalks = (int) (hlfargs->count * (*noise) + 0.5);
+  if (*nstalks < 1) {
+    *nstalks = 1;
+  }
+  *noise = 0.75 + 0.5 * ptrf(*hash); // [0.75, 1.25]
+  *hash = prng(*hash);
+  *spread = hlfargs->spread * (*noise);
+  if (*spread > MAX_BULB_SPREAD) {
+    *spread = MAX_BULB_SPREAD;
+  }
+  *spread *= BLOCK_TEXTURE_SIZE / 2.0;
+
+  lfargs->main_color = hlfargs->main_color;
+  lfargs->vein_color = hlfargs->vein_color;
+  lfargs->dark_color = hlfargs->dark_color;
+  lfargs->width = 1;
+  lfargs->stem_length = 0;
+  // shape is set differently for leaves/stems
 }
 
 
@@ -360,40 +395,23 @@ void fltr_leaves(texture *tx, void const * const fargs) {
   );
 }
 
-void fltr_bulb_leaves(texture *tx, void const * const fargs) {
-  bulb_leaves_filter_args *blfargs = (bulb_leaves_filter_args *) fargs;
-  ptrdiff_t hash = prng(blfargs->seed);
+void fltr_herb_leaves(texture *tx, void const * const fargs) {
+  herb_leaves_filter_args *hlfargs = (herb_leaves_filter_args *) fargs;
+  ptrdiff_t hash;
   int i = 0;
-  float noise = 0.7 + 0.6 * ptrf(hash); // [0.7, 1.3]
-  hash = prng(hash);
-  int nstalks = (int) (blfargs->count * noise + 0.5);
-  printf("stalks: %d\n", nstalks);
-  if (nstalks < 1) {
-    nstalks = 1;
-  }
-  curve c; // stores individual leaf shapes
-  c.from.x = BLOCK_TEXTURE_SIZE / 2.0;
-  c.from.y = BLOCK_TEXTURE_SIZE;
-  c.from.z = 0;
-  c.go_towards.x = 0; c.go_towards.y = 0; c.go_towards.z = 0;
-  c.come_from.x = 0; c.come_from.y = 0; c.come_from.z = 0;
-  c.to.x = 0; c.to.y = 0; c.to.z = 0;
+  float noise;
+  int nstalks;
+  float spread;
   leaf_filter_args lfargs; // stores individual leaf parameters
-  lfargs.main_color = blfargs->main_color;
-  lfargs.vein_color = blfargs->vein_color;
-  lfargs.dark_color = blfargs->dark_color;
-  lfargs.width = 1;
-  lfargs.stem_length = 0;
+  curve c; // stores individual leaf shapes
+  c.from.y = BLOCK_TEXTURE_SIZE;
+
+  herb_setup(hlfargs, &hash, &noise, &nstalks, &spread, &lfargs);
   lfargs.shape = LS_DELTOID;
+
   float th_base = 0, th_mid = 0;
   float mid = (BLOCK_TEXTURE_SIZE / 2);
-  noise = 0.75 + 0.5 * ptrf(hash); // [0.75, 1.25]
-  hash = prng(hash);
-  float spread = blfargs->spread * noise;
-  if (spread > MAX_BULB_SPREAD) {
-    spread = MAX_BULB_SPREAD;
-  }
-  spread *= BLOCK_TEXTURE_SIZE / 2.0;
+
   for (i = 0; i < nstalks; ++i) {
     // generate x in [mid - spread, mid + spread]
     c.from.x = mid - spread;
@@ -402,17 +420,17 @@ void fltr_bulb_leaves(texture *tx, void const * const fargs) {
     // pick a starting angle in [-1, 1]
     noise = 1.0 - 2 * ptrf(hash);
     hash = prng(hash + i);
-    th_base = blfargs->angle * noise;
+    th_base = hlfargs->angle * noise;
     // pick a bend angle in [0.6, 1.4] of the specified angle
     noise = 0.6 + 0.8 * ptrf(hash);
     hash = prng(hash + i);
-    th_mid = blfargs->bend * noise * th_base / blfargs->angle;
+    th_mid = hlfargs->bend * noise * th_base / hlfargs->angle;
     th_mid += th_base;
     // compute midpiont and endpoint
-    c.go_towards.x = c.from.x + sinf(th_base) * blfargs->length*blfargs->shape;
-    c.go_towards.y = c.from.y - cosf(th_base) * blfargs->length*blfargs->shape;
-    c.to.x = c.go_towards.x + sinf(th_mid) * blfargs->length*(1-blfargs->shape);
-    c.to.y = c.go_towards.y - cosf(th_mid) * blfargs->length*(1-blfargs->shape);
+    c.go_towards.x = c.from.x + sinf(th_base) * hlfargs->length*hlfargs->shape;
+    c.go_towards.y = c.from.y - cosf(th_base) * hlfargs->length*hlfargs->shape;
+    c.to.x = c.go_towards.x + sinf(th_mid) * hlfargs->length*(1-hlfargs->shape);
+    c.to.y = c.go_towards.y - cosf(th_mid) * hlfargs->length*(1-hlfargs->shape);
     // keep things in-bounds
     /*
     if (c.to.x < 1) {
@@ -432,7 +450,7 @@ void fltr_bulb_leaves(texture *tx, void const * const fargs) {
     /* DEBUG:
     printf("th_base: %.3f\n", th_base);
     printf("th_mid: %.3f\n", th_mid);
-    printf("th_mid_atten: %.3f\n", th_base / blfargs->angle);
+    printf("th_mid_atten: %.3f\n", th_base / hlfargs->angle);
     printf("th_mid_roll: %.3f\n", noise);
     printf("xy_mid: %.2f, %.2f\n", c.go_towards.x, c.go_towards.y);
     printf("xy_end: %.2f, %.2f\n", c.to.x, c.to.y);
@@ -440,7 +458,54 @@ void fltr_bulb_leaves(texture *tx, void const * const fargs) {
     // pick a base width in [0.75, 1.25]
     noise = 0.75 + 0.5 * ptrf(hash);
     hash = prng(hash + i);
-    lfargs.width = blfargs->width * noise;
+    lfargs.width = hlfargs->width * noise;
+
+    // draw the leaf:
+    draw_leaf(tx, &c, &lfargs);
+  }
+}
+
+void fltr_herb_stems(texture *tx, void const * const fargs) {
+  herb_leaves_filter_args *hlfargs = (herb_leaves_filter_args *) fargs;
+  ptrdiff_t hash;
+  int i = 0;
+  float noise;
+  int nstalks;
+  float spread;
+  leaf_filter_args lfargs; // stores individual leaf parameters
+  curve c; // stores individual leaf shapes
+  c.from.y = BLOCK_TEXTURE_SIZE;
+  c.to.y = 0;
+
+  herb_setup(hlfargs, &hash, &noise, &nstalks, &spread, &lfargs);
+  lfargs.shape = LS_LINEAR;
+
+  float th_base = 0;
+  float mid = (BLOCK_TEXTURE_SIZE / 2);
+
+  for (i = 0; i < nstalks; ++i) {
+    // generate x in [mid - spread, mid + spread]
+    // for stems, we use the same top/bottom values so that they'll fit
+    // together vertically.
+    c.from.x = mid - spread;
+    c.from.x += 2 * spread * ptrf(hash + i);
+    c.to.x = c.from.x;
+    hash = prng(hash + i + c.from.x);
+    // pick the same starting angle that leaves use [-1, 1]
+    noise = 1.0 - 2 * ptrf(hash);
+    hash = prng(hash + i);
+    th_base = hlfargs->angle * noise;
+    // An extra hash to maintain stride with fltr_herb_leaves:
+    hash = prng(hash + i);
+    // stems use the same angle at the top and bottom so that they can stack.
+    c.come_from.x = c.to.x - sinf(th_base) * hlfargs->length*hlfargs->shape;
+    c.come_from.y = c.to.y + cosf(th_base) * hlfargs->length*hlfargs->shape;
+    c.go_towards.x = c.from.x + sinf(th_base) * hlfargs->length*hlfargs->shape;
+    c.go_towards.y = c.from.y - cosf(th_base) * hlfargs->length*hlfargs->shape;
+    // pick a base width in [0.75, 1.25]
+    noise = 0.75 + 0.5 * ptrf(hash);
+    hash = prng(hash + i);
+    lfargs.width = hlfargs->width * noise;
 
     // draw the leaf:
     draw_leaf(tx, &c, &lfargs);

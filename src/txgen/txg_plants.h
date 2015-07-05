@@ -49,7 +49,7 @@ enum leaf_shape_e {
   LS_HASTATE, // triangular with lobes at the base
   LS_SPATULATE, // spoon-shaped
   LS_LANCEOLATE, // pointed at both ends
-  LS_LINEAR, // parallel margins for much of length
+  LS_LINEAR, // parallel margins (useful for stems)
   LS_DELTOID, // triangular
   LS_CUNEATE, // fish-shaped w/ stem as tail
   N_LEAF_SHAPES,
@@ -69,8 +69,8 @@ typedef struct leaf_filter_args_s leaf_filter_args;
 struct leaves_filter_args_s;
 typedef struct leaves_filter_args_s leaves_filter_args;
 
-struct bulb_leaves_filter_args_s;
-typedef struct bulb_leaves_filter_args_s bulb_leaves_filter_args;
+struct herb_leaves_filter_args_s;
+typedef struct herb_leaves_filter_args_s herb_leaves_filter_args;
 
 struct width_func_args_s;
 typedef struct width_func_args_s width_func_args;
@@ -120,7 +120,7 @@ struct leaves_filter_args_s {
   leaf_filter_args leaf_args; // arguments for the individual leaves
 };
 
-struct bulb_leaves_filter_args_s {
+struct herb_leaves_filter_args_s {
   size_t seed;
   size_t count; // approximate stalk count
   float spread;
@@ -161,6 +161,9 @@ float needle_width_func(float t, void *arg);
 // An oval leaf after the stem:
 float oval_width_func(float t, void *args);
 
+// Includes a stem, sides run parallel (useful for stems):
+float linear_width_func(float t, void *arg);
+
 // Includes a stem, but linear after that; widest at the base.
 float deltoid_width_func(float t, void *arg);
 
@@ -181,6 +184,9 @@ void fltr_leaf(texture *tx, void const * const fargs);
 void fltr_leaves(texture *tx, void const * const fargs);
 
 // Generates a block leaves texture by drawing leaves sprouting from the bottom.
-void fltr_bulb_leaves(texture *tx, void const * const fargs);
+void fltr_herb_leaves(texture *tx, void const * const fargs);
+
+// Generates a block leaves texture by drawing leaves sprouting from the bottom.
+void fltr_herb_stems(texture *tx, void const * const fargs);
 
 #endif // ifndef TXG_PLANTS_H
