@@ -13,15 +13,17 @@
  ******************************/
 
 cell_grammar * create_cell_grammar(void) {
+  return NULL;
 }
 
 void cleanup_cell_grammar(cell_grammar *cg) {
 }
 
-cell_grammar_expansion * create_cell_grammar_expansion(void) {
+cg_expansion * create_cell_grammar_expansion(void) {
+  return NULL;
 }
 
-void cleanup_cell_grammar_expansion(cell_grammar_expansion *cge) {
+void cleanup_cell_grammar_expansion(cg_expansion *cge) {
 }
 
 /*************
@@ -31,14 +33,16 @@ void cleanup_cell_grammar_expansion(cell_grammar_expansion *cge) {
 void build_grammar_from_string(string *definition) {
 }
 
-cell_grammmar_expansion* pick_expansion(
+cg_expansion* pick_expansion(
   cell *cell_neighborhood[],
   cell_grammar *cg
 ) {
+  return NULL;
 }
 
 int apply_expansion(
   cell *cell_neighborhood[],
-  cell_grammar_expansion *cge
+  cg_expansion *cge
 ) {
+  return 0;
 }

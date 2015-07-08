@@ -94,7 +94,7 @@ struct entity_s {
 };
 
 struct cell_entity_s {
-  ch_idx_t x, y, z; // Position within a chunk.
+  chunk_index pos; // Position within a chunk.
 };
 
 struct active_entity_area_s {

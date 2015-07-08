@@ -796,8 +796,8 @@ void terrain_cell(
     )
   ) {
   //if (abs(glpos->x - 32770) < CHUNK_SIZE) {
-    result->primary = b_make_block(B_AIR);
-    result->secondary = b_make_block(B_VOID);
+    result->blocks[0] = b_make_block(B_AIR);
+    result->blocks[1] = b_make_block(B_VOID);
     return;
   }
   // */
@@ -808,8 +808,8 @@ void terrain_cell(
     sxnoise_3d(glpos->x*1/12.0, glpos->y*1/12.0, glpos->z*1/12.0, 17) >
       sxnoise_3d(glpos->x*1/52.0, glpos->y*1/52.0, glpos->z*1/52.0, 18)
   ) {
-    result->primary = b_make_block(B_AIR);
-    result->secondary = b_make_block(B_VOID);
+    result->blocks[0] = b_make_block(B_AIR);
+    result->blocks[1] = b_make_block(B_VOID);
     return;
   }
   // */
@@ -842,12 +842,12 @@ void terrain_cell(
       result
     );
   } else if (glpos->z <= TR_HEIGHT_SEA_LEVEL) { // under the ocean
-    result->primary = b_make_block(B_WATER);
-    result->secondary = b_make_block(B_VOID);
+    result->blocks[0] = b_make_block(B_WATER);
+    result->blocks[1] = b_make_block(B_VOID);
   } else { // we're above the ground
     // TODO: HERE!
-    result->primary = b_make_block(B_AIR);
-    result->secondary = b_make_block(B_VOID);
+    result->blocks[0] = b_make_block(B_AIR);
+    result->blocks[1] = b_make_block(B_VOID);
   }
 }
 
@@ -894,11 +894,11 @@ void stone_cell(
   }
   if (best == NULL) {
     // TODO: Various edge types here?
-    result->primary = b_make_block(B_STONE);
+    result->blocks[0] = b_make_block(B_STONE);
   } else {
     st = get_stratum(best, h);
     // TODO: veins and inclusions here!
-    result->primary = b_make_species(B_STONE, st->base_species);
+    result->blocks[0] = b_make_species(B_STONE, st->base_species);
   }
 }
 
@@ -920,7 +920,7 @@ void dirt_cell(
 
   if (wr == NULL) {
     // TODO: better fallback for edges
-    result->primary = b_make_block(B_DIRT);
+    result->blocks[0] = b_make_block(B_DIRT);
     return;
   }
 
@@ -987,5 +987,5 @@ void dirt_cell(
       soil_species = alt_species[i];
     }
   }
-  result->primary = b_make_species(soil_type, soil_species);
+  result->blocks[0] = b_make_species(soil_type, soil_species);
 }

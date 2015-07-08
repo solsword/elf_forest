@@ -177,9 +177,10 @@ static inline void compute_lighting(
           ic += o_s + o_e;
           break;
       }
-      side0 = b_is_opaque(neighborhood[i0]->primary);
-      side1 = b_is_opaque(neighborhood[i1]->primary);
-      corner = b_is_opaque(neighborhood[ic]->primary);
+      // TODO: non-primary blocks!
+      side0 = b_is_opaque(neighborhood[i0]->blocks[0]);
+      side1 = b_is_opaque(neighborhood[i1]->blocks[0]);
+      corner = b_is_opaque(neighborhood[ic]->blocks[0]);
       // DEBUG:
       /*
       if (face == BD_FACE_FRONT) {

@@ -123,7 +123,7 @@ static inline void update_position_x (
       for (pos.z = min->z; pos.z <= max->z + blocks_to_step; ++pos.z) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
           // TODO: FIX THIS!
-          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->blocks[0])) {
             /*
             printf(
               "step? %d - %d < %d? %d\n",
@@ -155,7 +155,7 @@ static inline void update_position_x (
       for (pos.z = min->z; pos.z <= max->z + blocks_to_step; ++pos.z) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
           // TODO: FIX THIS!
-          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->blocks[0])) {
             if (pos.z - min->z < e->step_height) {
               blocks_to_step = (pos.z - min->z) + 1;
               break; // continue to next z value
@@ -192,7 +192,7 @@ static inline void update_position_y(
       for (pos.z = min->z; pos.z <= max->z + blocks_to_step; ++pos.z) {
         for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
           // TODO: FIX THIS
-          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->blocks[0])) {
             if (pos.z - min->z < e->step_height) {
               blocks_to_step = (pos.z - min->z) + 1;
               break; // continue to next z value
@@ -215,7 +215,7 @@ static inline void update_position_y(
       for (pos.z = min->z; pos.z <= max->z + blocks_to_step; ++pos.z) {
         for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
           // TODO: FIX THIS
-          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->blocks[0])) {
             if (pos.z - min->z < e->step_height) {
               blocks_to_step = (pos.z - min->z) + 1;
               break; // continue to next z value
@@ -251,7 +251,7 @@ static inline void update_position_z(
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
           // TODO: FIX THIS
-          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->blocks[0])) {
             e->vel.z = 0;
             increment->z = 0;
             e->pos.z = next_cell - (BOUNCE_DISTANCE + e->size.z / 2.0);
@@ -268,7 +268,7 @@ static inline void update_position_z(
       for (pos.x = min->x; pos.x <= max->x; ++pos.x) {
         for (pos.y = min->y; pos.y <= max->y; ++pos.y) {
           // TODO: FIX THIS
-          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->blocks[0])) {
             e->vel.z = 0;
             increment->z = 0;
             e->pos.z = next_cell + 1 + (BOUNCE_DISTANCE + e->size.z / 2.0);
@@ -416,7 +416,7 @@ static inline void check_move_flags(entity *e) {
   clear_in_void(e);
   get_head_glpos(e, &pos);
   // TODO: FIX THIS
-  if (cell_at(&pos) == NULL || b_is_void(cell_at(&pos)->primary)) {
+  if (cell_at(&pos) == NULL || b_is_void(cell_at(&pos)->blocks[0])) {
     set_in_void(e);
     clear_in_liquid(e);
     clear_on_ground(e);
@@ -436,7 +436,7 @@ static inline void check_move_flags(entity *e) {
           ++pos.y
         ) {
           // TODO: FIX THIS!
-          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_solid(cell_at(&pos)->blocks[0])) {
             set_on_ground(e);
           }
         }
@@ -460,7 +460,7 @@ static inline void check_move_flags(entity *e) {
           ++pos.z
         ) {
           // TODO: FIX THIS!
-          if (cell_at(&pos) != NULL && b_is_liquid(cell_at(&pos)->primary)) {
+          if (cell_at(&pos) != NULL && b_is_liquid(cell_at(&pos)->blocks[0])) {
             set_in_liquid(e);
           }
         }

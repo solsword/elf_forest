@@ -299,16 +299,34 @@ static inline void get_cell_neighborhood(
   for (dz = -step; dz <= step; dz += step) {
     for (dx = -step; dx <= step; dx += step) {
       for (dy = -step; dy <= step; dy += step) {
-        nbr.x = idx.x + dx;
-        nbr.y = idx.y + dy;
-        nbr.z = idx.z + dz;
+        nbr.xyz.x = idx.xyz.x + dx;
+        nbr.xyz.y = idx.xyz.y + dy;
+        nbr.xyz.z = idx.xyz.z + dz;
         j = 13; // the center of the chunk neighborhood
-        if (idx.z < step && dz == -step) { j -= 9; nbr.z = CHUNK_SIZE - 1; }
-        if (idx.z >= CHUNK_SIZE - step && dz == step) { j += 9; nbr.z = 0; }
-        if (idx.x < step && dx == -step) { j -= 3; nbr.x = CHUNK_SIZE - 1; }
-        if (idx.x >= CHUNK_SIZE - step && dx == step) { j += 3; nbr.x = 0; }
-        if (idx.y < step && dy == -step) { j -= 1; nbr.y = CHUNK_SIZE - 1; }
-        if (idx.y >= CHUNK_SIZE - step && dy == step) { j += 1; nbr.y = 0; }
+        if (idx.xyz.z < step && dz == -step) {
+          j -= 9;
+          nbr.xyz.z = CHUNK_SIZE - 1;
+        }
+        if (idx.xyz.z >= CHUNK_SIZE - step && dz == step) {
+          j += 9;
+          nbr.xyz.z = 0;
+        }
+        if (idx.xyz.x < step && dx == -step) {
+          j -= 3;
+          nbr.xyz.x = CHUNK_SIZE - 1;
+        }
+        if (idx.xyz.x >= CHUNK_SIZE - step && dx == step) {
+          j += 3;
+          nbr.xyz.x = 0;
+        }
+        if (idx.xyz.y < step && dy == -step) {
+          j -= 1;
+          nbr.xyz.y = CHUNK_SIZE - 1;
+        }
+        if (idx.xyz.y >= CHUNK_SIZE - step && dy == step) {
+          j += 1;
+          nbr.xyz.y = 0;
+        }
         coa = &(chunk_neighbors[j]);
         if (center_type == CA_TYPE_APPROXIMATION && coa->type == CA_TYPE_CHUNK){
           // Expose all faces of approximations that border actual chunks
@@ -342,16 +360,16 @@ static inline void get_cell_neighborhood_exact(
   for (dz = -1; dz <= 1; dz += 1) {
     for (dx = -1; dx <= 1; dx += 1) {
       for (dy = -1; dy <= 1; dy += 1) {
-        nbr.x = idx.x + dx;
-        nbr.y = idx.y + dy;
-        nbr.z = idx.z + dz;
+        nbr.xyz.x = idx.xyz.x + dx;
+        nbr.xyz.y = idx.xyz.y + dy;
+        nbr.xyz.z = idx.xyz.z + dz;
         j = 13; // the center of the chunk neighborhood
-        if (idx.z < 1 && dz == -1) { j -= 9; nbr.z = CHUNK_SIZE - 1; }
-        if (idx.z >= CHUNK_SIZE - 1 && dz == 1) { j += 9; nbr.z = 0; }
-        if (idx.x < 1 && dx == -1) { j -= 3; nbr.x = CHUNK_SIZE - 1; }
-        if (idx.x >= CHUNK_SIZE - 1 && dx == 1) { j += 3; nbr.x = 0; }
-        if (idx.y < 1 && dy == -1) { j -= 1; nbr.y = CHUNK_SIZE - 1; }
-        if (idx.y >= CHUNK_SIZE - 1 && dy == 1) { j += 1; nbr.y = 0; }
+        if (idx.xyz.z < 1 && dz == -1) { j -= 9; nbr.xyz.z = CHUNK_SIZE - 1; }
+        if (idx.xyz.z >= CHUNK_SIZE - 1 && dz == 1) { j += 9; nbr.xyz.z = 0; }
+        if (idx.xyz.x < 1 && dx == -1) { j -= 3; nbr.xyz.x = CHUNK_SIZE - 1; }
+        if (idx.xyz.x >= CHUNK_SIZE - 1 && dx == 1) { j += 3; nbr.xyz.x = 0; }
+        if (idx.xyz.y < 1 && dy == -1) { j -= 1; nbr.xyz.y = CHUNK_SIZE - 1; }
+        if (idx.xyz.y >= CHUNK_SIZE - 1 && dy == 1) { j += 1; nbr.xyz.y = 0; }
         c = exact_chunk_neighbors[j];
         neighborhood[i] = c_cell(c, nbr);
         i += 1;

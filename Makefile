@@ -40,6 +40,7 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/world_map.o \
              $(OBJ_DIR)/materials.o \
              $(OBJ_DIR)/chunk_data.o \
+             $(OBJ_DIR)/grammar.o \
              $(OBJ_DIR)/render.o \
              $(OBJ_DIR)/gfx.o \
              $(OBJ_DIR)/display.o \

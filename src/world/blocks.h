@@ -50,8 +50,7 @@ typedef struct cell_s cell;
  *************************/
 
 struct cell_s {
-  block primary;
-  block secondary;
+  block blocks[2];
 };
 
 /**********************
@@ -646,8 +645,8 @@ static inline block next_species(block b) {
 }
 
 static inline void copy_cell(cell const * const src, cell * dst) {
-  dst->primary = src->primary;
-  dst->secondary = src->secondary;
+  dst->blocks[0] = src->blocks[0];
+  dst->blocks[1] = src->blocks[1];
 }
 
 #endif // ifndef BLOCKS_H

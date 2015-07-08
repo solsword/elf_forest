@@ -78,11 +78,11 @@ static inline void render_vision_effects() {
   if (hc == NULL) {
     no_tint();
     FOG_DENSITY = AIR_FOG_DENSITY;
-  } else if (b_is_opaque(hc->primary)) {
+  } else if (b_is_opaque(hc->blocks[0])) {
     blind = 1;
     // compute texture coordinates
     compute_dynamic_face_tc(
-      hc->primary,
+      hc->blocks[0],
       BD_FACE_BOT,
       &st
     );
@@ -91,7 +91,7 @@ static inline void render_vision_effects() {
     step_s = 1.0/LAYER_ATLASES[L_OPAQUE]->size;
     step_t = 0.5/LAYER_ATLASES[L_OPAQUE]->size;
     FOG_DENSITY = 1.0;
-  } else if (b_same_liquid(hc->primary, b_make_block(B_WATER))) {
+  } else if (b_same_liquid(hc->blocks[0], b_make_block(B_WATER))) {
     set_tint(0.5, 0.5, 0.9, 1.0);
     FOG_DENSITY = WATER_FOG_DENSITY;
   } else {

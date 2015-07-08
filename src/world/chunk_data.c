@@ -41,8 +41,7 @@ block compute_cell_exposure(
   chunk_or_approx *chunk_neighbors
 ) {
   static cell dummy = {
-    .primary = 0,
-    .secondary = 0,
+    .blocks = { 0, 0 }
   };
   static cell* neighborhood[27]; // also zxy order
   block result = 0;
@@ -61,10 +60,11 @@ block compute_cell_exposure(
   get_cell_neighborhood(idx, chunk_neighbors, neighborhood, step, &dummy);
 
   // Check exposure:
+  // TODO: non-primary blocks!
   if (
     !occludes_face(
-      neighborhood[13+9]->primary,
-      neighborhood[13]->primary
+      neighborhood[13+9]->blocks[0],
+      neighborhood[13]->blocks[0]
     )
   ) {
     result |= BF_EXPOSED_ABOVE;
@@ -73,8 +73,8 @@ block compute_cell_exposure(
   }
   if (
     !occludes_face(
-      neighborhood[13-9]->primary,
-      neighborhood[13]->primary
+      neighborhood[13-9]->blocks[0],
+      neighborhood[13]->blocks[0]
     )
   ) {
     result |= BF_EXPOSED_BELOW;
@@ -83,8 +83,8 @@ block compute_cell_exposure(
   }
   if (
     !occludes_face(
-      neighborhood[13+1]->primary,
-      neighborhood[13]->primary
+      neighborhood[13+1]->blocks[0],
+      neighborhood[13]->blocks[0]
     )
   ) {
     result |= BF_EXPOSED_NORTH;
@@ -93,8 +93,8 @@ block compute_cell_exposure(
   }
   if (
     !occludes_face(
-      neighborhood[13-1]->primary,
-      neighborhood[13]->primary
+      neighborhood[13-1]->blocks[0],
+      neighborhood[13]->blocks[0]
     )
   ) {
     result |= BF_EXPOSED_SOUTH;
@@ -103,8 +103,8 @@ block compute_cell_exposure(
   }
   if (
     !occludes_face(
-      neighborhood[13+3]->primary,
-      neighborhood[13]->primary
+      neighborhood[13+3]->blocks[0],
+      neighborhood[13]->blocks[0]
     )
   ) {
     result |= BF_EXPOSED_EAST;
@@ -113,8 +113,8 @@ block compute_cell_exposure(
   }
   if (
     !occludes_face(
-      neighborhood[13-3]->primary,
-      neighborhood[13]->primary
+      neighborhood[13-3]->blocks[0],
+      neighborhood[13]->blocks[0]
     )
   ) {
     result |= BF_EXPOSED_WEST;

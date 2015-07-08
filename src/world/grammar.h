@@ -8,17 +8,19 @@
 #include "world.h"
 
 #include "datatypes/list.h"
+#include "datatypes/string.h"
 
 /****************
  * Enumerations *
  ****************/
 
 // Different expansion types.
-enum expansion_type_e {
-  ET_PRECISE,
-  ET_FUZZY,
+enum cg_condition_type_e {
+  CGCT_EXACT,
+  CGCT_EITHER_BLOCK,
+  CGCT_FUZZY
 };
-typedef enum expansion_type_e expansion_type;
+typedef enum cg_condition_type_e cg_condition_type;
 
 /**************
  * Structures *
@@ -29,8 +31,12 @@ struct cell_grammar_s;
 typedef struct cell_grammar_s cell_grammar;
 
 // An individual expansion rule within a cell-space grammar.
-struct cell_grammar_expansion_s;
-typedef struct cell_grammar_expansion_s cell_grammar_expansion;
+struct cg_expansion_s;
+typedef struct cg_expansion_s cg_expansion;
+
+// An individual condition of a grammar expansion rule.
+struct cg_condition_s;
+typedef struct cg_condition_s cg_condition;
 
 /*************************
  * Structure Definitions *
@@ -39,14 +45,14 @@ typedef struct cell_grammar_expansion_s cell_grammar_expansion;
 struct cell_grammar_s {
 };
 
-struct cell_grammar_expansion_s {
+struct cg_expansion_s {
 };
 
 /********************
  * Inline Functions *
  ********************/
 
-static inline ptrdiff_t i_dont_know(void) {
+static inline void i_dont_know(void) {
 }
 
 /******************************
@@ -61,10 +67,10 @@ cell_grammar * create_cell_grammar(void);
 void cleanup_cell_grammar(cell_grammar *cg);
 
 // Allocates a new cell grammar expansion.
-cell_grammar_expansion * create_cell_grammar_expansion(void);
+cg_expansion * create_cell_grammar_expansion(void);
 
 // Cleans up the memory associated with a cell grammar expansion.
-void cleanup_cell_grammar_expansion(cell_grammar_expansion *cge);
+void cleanup_cell_grammar_expansion(cg_expansion *cge);
 
 /*************
  * Functions *
@@ -74,7 +80,7 @@ void cleanup_cell_grammar_expansion(cell_grammar_expansion *cge);
 void build_grammar_from_string(string *definition);
 
 // TODO: Comment this
-cell_grammmar_expansion* pick_expansion(
+cg_expansion* pick_expansion(
   cell *cell_neighborhood[],
   cell_grammar *cg
 );
@@ -82,7 +88,7 @@ cell_grammmar_expansion* pick_expansion(
 // TODO: Comment this
 int apply_expansion(
   cell *cell_neighborhood[],
-  cell_grammar_expansion *cge
+  cg_expansion *cge
 );
 
 #endif // ifndef GRAMMAR_H

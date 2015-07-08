@@ -151,15 +151,16 @@ struct APPROX_DATA_SN(3); typedef struct APPROX_DATA_SN(3) APPROX_DATA_TN(3);
 struct APPROX_DATA_SN(4); typedef struct APPROX_DATA_SN(4) APPROX_DATA_TN(4);
 
 // Macros and types for the size of a chunk:
+// Note that CHUNK_BITS shouldn't be greater than 10, or a chunk index won't be
+// packable into a 32-bit int.
 #define CHUNK_BITS 5
 #define CHUNK_SIZE (1 << CHUNK_BITS)
 #define TOTAL_CHUNK_CELLS (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
 #define CH_MASK (CHUNK_SIZE - 1) // Chunk mask
-typedef uint8_t ch_idx_t; // Needs to be big enough to hold CHUNK_BITS bits.
 
 // Picks out a cell within a chunk:
-struct chunk_index_s;
-typedef struct chunk_index_s chunk_index;
+union chunk_index_u;
+typedef union chunk_index_u chunk_index;
 
 /*************
  * Constants *
@@ -178,16 +179,23 @@ static chunk_flag const   CF_QUEUED_FOR_BIOGEN = 0x0040;
  *************************/
 
 struct global_pos_s {
-  gl_pos_t x, y, z;
+  gl_pos_t x, y, z, w;
 };
 
 struct global_chunk_pos_s {
   gl_cpos_t x, y, z;
 };
 
-struct chunk_index_s {
-  ch_idx_t x, y, z;
-};
+
+struct chunk_index_parts_s {
+  uint8_t x, y, z, w;
+} __attribute__((packed)); // Packed so that we can union with a uint32_t.
+
+union chunk_index_u {
+  uint32_t combined;
+  struct chunk_index_parts_s xyz;
+}; // defined this way, chunk indices can fit in a void*, so we can put them
+// into lists, maps, etc.
 
 // (16 * 16 * 16) * 16 = 65536 bits = 8 KB
 // (16 * 16 * 16) * 32 = 131072 bits = 16 KB
@@ -268,6 +276,7 @@ static inline void glcpos__glpos(
   glpos->x = ((gl_pos_t) glcpos->x) << CHUNK_BITS;
   glpos->y = ((gl_pos_t) glcpos->y) << CHUNK_BITS;
   glpos->z = ((gl_pos_t) glcpos->z) << CHUNK_BITS;
+  glpos->w = 0;
 }
 
 static inline void glpos__glcpos(
@@ -285,9 +294,10 @@ static inline void cidx__glpos(
   global_pos *pos
 ) {
   glcpos__glpos(&(c->glcpos), pos);
-  pos->x += idx->x;
-  pos->y += idx->y;
-  pos->z += idx->z;
+  pos->x += idx->xyz.x;
+  pos->y += idx->xyz.y;
+  pos->z += idx->xyz.z;
+  pos->w = idx->xyz.w;
 }
 
 static inline void caidx__glpos(
@@ -296,18 +306,20 @@ static inline void caidx__glpos(
   global_pos *pos
 ) {
   glcpos__glpos(&(ca->glcpos), pos);
-  pos->x += idx->x;
-  pos->y += idx->y;
-  pos->z += idx->z;
+  pos->x += idx->xyz.x;
+  pos->y += idx->xyz.y;
+  pos->z += idx->xyz.z;
+  pos->w = idx->xyz.w;
 }
 
 static inline void glpos__cidx(
   global_pos const * const glpos,
   chunk_index *idx
 ) {
-  idx->x = glpos->x & CH_MASK;
-  idx->y = glpos->y & CH_MASK;
-  idx->z = glpos->z & CH_MASK;
+  idx->xyz.x = glpos->x & CH_MASK;
+  idx->xyz.y = glpos->y & CH_MASK;
+  idx->xyz.z = glpos->z & CH_MASK;
+  idx->xyz.w = glpos->w;
 }
 
 static inline void glpos__vec(
@@ -328,6 +340,7 @@ static inline void vec__glpos(
   result->x = origin->x + fastfloor(v->x);
   result->y = origin->y + fastfloor(v->y);
   result->z = origin->z + fastfloor(v->z);
+  result->w = 0;
 }
 
 // Takes a vector references from one global position and turns it into a
@@ -361,6 +374,7 @@ static inline void copy_glpos(
   destination->x = source->x;
   destination->y = source->y;
   destination->z = source->z;
+  destination->w = source->w;
 }
 
 static inline void copy_glcpos(
@@ -375,15 +389,22 @@ static inline void copy_glcpos(
 // Indexing functions:
 // These must be super-fast 'cause they crop up in all sorts of inner loops.
 
-static inline cell *c_cell(
+static inline cell* c_cell(
   chunk *c,
   chunk_index idx
 ) {
   return &(c->cells[
-    (idx.x & CH_MASK) +
-    ((idx.y & CH_MASK) << CHUNK_BITS) +
-    ((idx.z & CH_MASK) << (CHUNK_BITS*2))
+    (idx.xyz.x & CH_MASK) +
+    ((idx.xyz.y & CH_MASK) << CHUNK_BITS) +
+    ((idx.xyz.z & CH_MASK) << (CHUNK_BITS*2))
   ]);
+}
+
+static inline block* c_block(
+  chunk *c,
+  chunk_index idx
+) {
+  return &(c_cell(c, idx)->blocks[idx.xyz.w]);
 }
 
 static inline void c_paste_cell(
@@ -406,12 +427,12 @@ static inline void c_erase_cell_data(chunk *c) {
 }
 
 static inline void c_fill_with_block(chunk *c, block b) {
-  chunk_index idx = { .x = 0, .y = 0, .z = 0 };
+  chunk_index idx = { .xyz = { .x = 0, .y = 0, .z = 0, .w=0 } };
   c_erase_cell_data(c);
-  for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
-    for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
-      for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
-        c_cell(c, idx)->primary = b;
+  for (idx.xyz.x = 0; idx.xyz.x < CHUNK_SIZE; ++idx.xyz.x) {
+    for (idx.xyz.y = 0; idx.xyz.y < CHUNK_SIZE; ++idx.xyz.y) {
+      for (idx.xyz.z = 0; idx.xyz.z < CHUNK_SIZE; ++idx.xyz.z) {
+        *c_block(c, idx) = b;
       }
     }
   }

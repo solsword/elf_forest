@@ -57,7 +57,7 @@ size_t INDEX_COUNT = 0;
 static inline void push_top_face(
   vertex_buffer *vb,
   chunk_index idx,
-  ch_idx_t scale,
+  int scale,
   tcoords st,
   face_illumination light,
   float offset,
@@ -70,20 +70,20 @@ static inline void push_top_face(
 #endif
   vertex v = { .g = 0, .b = 0 };
   // bottom left
-  v.x = idx.x + scale * west;            v.nx =  0;    v.s = st.s + west;
-  v.y = idx.y + scale * south;           v.ny =  0;    v.t = st.t + 1 - south;
-  v.z = idx.z + scale * (1 - offset);    v.nz = P1;
+  v.x = idx.xyz.x + scale * west;           v.nx =  0;   v.s = st.s + west;
+  v.y = idx.xyz.y + scale * south;          v.ny =  0;   v.t = st.t + 1 - south;
+  v.z = idx.xyz.z + scale * (1 - offset);   v.nz = P1;
   v.r = vertex_light(light, 0);
   v.z += zf_off * Z_RECONCILIATION_OFFSET;
   vb_add_vertex(&v, vb);
 
   // top left
-  v.y = idx.y + scale * (1 - north);                   v.t = st.t + north;
+  v.y = idx.xyz.y + scale * (1 - north);                 v.t = st.t + north;
   v.r = vertex_light(light, 1);
   vb_add_vertex(&v, vb);
 
   // top right
-  v.x = idx.x + scale * (1 - east);                    v.s = st.s + 1 - east;
+  v.x = idx.xyz.x + scale * (1 - east);                  v.s = st.s + 1 - east;
   v.r = vertex_light(light, 2);
   vb_add_vertex(&v, vb);
 
@@ -92,7 +92,7 @@ static inline void push_top_face(
   vb_reuse_vertex(1, vb); // reuse top right
 
   // bottom right
-  v.y = idx.y + scale * south;                         v.t = st.t + 1 - south;
+  v.y = idx.xyz.y + scale * south;                       v.t = st.t + 1 - south;
   v.r = vertex_light(light, 3);
   vb_add_vertex(&v, vb);
 }
@@ -100,7 +100,7 @@ static inline void push_top_face(
 static inline void push_bottom_face(
   vertex_buffer *vb,
   chunk_index idx,
-  ch_idx_t scale,
+  int scale,
   tcoords st,
   face_illumination light,
   float offset,
@@ -113,20 +113,20 @@ static inline void push_bottom_face(
 #endif
   vertex v = { .g = 0, .b = 0 };
   // bottom left
-  v.x = idx.x + scale * (1 - east);    v.nx =  0;    v.s = st.s + east;
-  v.y = idx.y + scale * south;         v.ny =  0;    v.t = st.t + 1 - south;
-  v.z = idx.z + offset;                v.nz = N1;
+  v.x = idx.xyz.x + scale * (1 - east);   v.nx =  0;   v.s = st.s + east;
+  v.y = idx.xyz.y + scale * south;        v.ny =  0;   v.t = st.t + 1 - south;
+  v.z = idx.xyz.z + offset;               v.nz = N1;
   v.r = vertex_light(light, 0);
   v.z -= zf_off * Z_RECONCILIATION_OFFSET;
   vb_add_vertex(&v, vb);
 
   // top left
-  v.y = idx.y + scale * (1 - north);                 v.t = st.t + north;
+  v.y = idx.xyz.y + scale * (1 - north);               v.t = st.t + north;
   v.r = vertex_light(light, 1);
   vb_add_vertex(&v, vb);
 
   // top right
-  v.x = idx.x + scale * west;                        v.s = st.s + 1 - west;
+  v.x = idx.xyz.x + scale * west;                      v.s = st.s + 1 - west;
   v.r = vertex_light(light, 2);
   vb_add_vertex(&v, vb);
 
@@ -135,7 +135,7 @@ static inline void push_bottom_face(
   vb_reuse_vertex(1, vb); // reuse top right
 
   // bottom right
-  v.y = idx.y + scale * south;                       v.t = st.t + 1 - south;
+  v.y = idx.xyz.y + scale * south;                     v.t = st.t + 1 - south;
   v.r = vertex_light(light, 3);
   vb_add_vertex(&v, vb);
 }
@@ -143,7 +143,7 @@ static inline void push_bottom_face(
 static inline void push_north_face(
   vertex_buffer *vb,
   chunk_index idx,
-  ch_idx_t scale,
+  int scale,
   tcoords st,
   face_illumination light,
   float offset,
@@ -156,20 +156,20 @@ static inline void push_north_face(
 #endif
   vertex v = { .g = 0, .b = 0 };
   // bottom left
-  v.x = idx.x + scale * (1 - left)  ;    v.nx =  0;    v.s = st.s + left;
-  v.y = idx.y + scale * (1 - offset);    v.ny = P1;    v.t = st.t + 1 - bot;
-  v.z = idx.z + scale * bot;             v.nz =  0;
+  v.x = idx.xyz.x + scale * (1 - left)  ;   v.nx =  0;   v.s = st.s + left;
+  v.y = idx.xyz.y + scale * (1 - offset);   v.ny = P1;   v.t = st.t + 1 - bot;
+  v.z = idx.xyz.z + scale * bot;            v.nz =  0;
   v.r = vertex_light(light, 0);
   v.y += zf_off * Z_RECONCILIATION_OFFSET;
   vb_add_vertex(&v, vb);
 
   // top left
-  v.z = idx.z + scale * (1 - top);                     v.t = st.t + top;
+  v.z = idx.xyz.z + scale * (1 - top);                   v.t = st.t + top;
   v.r = vertex_light(light, 1);
   vb_add_vertex(&v, vb);
 
   // top right
-  v.x = idx.x + scale * right;                         v.s = st.s + 1 - right;
+  v.x = idx.xyz.x + scale * right;                       v.s = st.s + 1 - right;
   v.r = vertex_light(light, 2);
   vb_add_vertex(&v, vb);
 
@@ -178,7 +178,7 @@ static inline void push_north_face(
   vb_reuse_vertex(1, vb); // reuse top right
 
   // bottom right
-  v.z = idx.z + scale * bot;                           v.t = st.t + 1 - bot;
+  v.z = idx.xyz.z + scale * bot;                         v.t = st.t + 1 - bot;
   v.r = vertex_light(light, 3);
   vb_add_vertex(&v, vb);
 }
@@ -186,7 +186,7 @@ static inline void push_north_face(
 static inline void push_south_face(
   vertex_buffer *vb,
   chunk_index idx,
-  ch_idx_t scale,
+  int scale,
   tcoords st,
   face_illumination light,
   float offset,
@@ -199,20 +199,20 @@ static inline void push_south_face(
 #endif
   vertex v = { .g = 0, .b = 0 };
   // bottom left
-  v.x = idx.x + scale * left;      v.nx =  0;    v.s = st.s + left;
-  v.y = idx.y + scale * offset;    v.ny = N1;    v.t = st.t + 1 - bot;
-  v.z = idx.z + scale * bot;       v.nz =  0;
+  v.x = idx.xyz.x + scale * left;      v.nx =  0;    v.s = st.s + left;
+  v.y = idx.xyz.y + scale * offset;    v.ny = N1;    v.t = st.t + 1 - bot;
+  v.z = idx.xyz.z + scale * bot;       v.nz =  0;
   v.r = vertex_light(light, 0);
   v.y -= zf_off * Z_RECONCILIATION_OFFSET;
   vb_add_vertex(&v, vb);
 
   // top left
-  v.z = idx.z + scale * (1 - top);               v.t = st.t + top;
+  v.z = idx.xyz.z + scale * (1 - top);               v.t = st.t + top;
   v.r = vertex_light(light, 1);
   vb_add_vertex(&v, vb);
 
   // top right
-  v.x = idx.x + scale * (1 - right);             v.s = st.s + 1 - right;
+  v.x = idx.xyz.x + scale * (1 - right);             v.s = st.s + 1 - right;
   v.r = vertex_light(light, 2);
   vb_add_vertex(&v, vb);
 
@@ -221,7 +221,7 @@ static inline void push_south_face(
   vb_reuse_vertex(1, vb); // reuse top right
 
   // bottom right
-  v.z = idx.z + scale * bot;                     v.t = st.t + 1 - bot;
+  v.z = idx.xyz.z + scale * bot;                     v.t = st.t + 1 - bot;
   v.r = vertex_light(light, 3);
   vb_add_vertex(&v, vb);
 }
@@ -229,7 +229,7 @@ static inline void push_south_face(
 static inline void push_east_face(
   vertex_buffer *vb,
   chunk_index idx,
-  ch_idx_t scale,
+  int scale,
   tcoords st,
   face_illumination light,
   float offset,
@@ -242,20 +242,20 @@ static inline void push_east_face(
 #endif
   vertex v = { .g = 0, .b = 0 };
   // bottom left
-  v.x = idx.x + scale * (1 - offset);    v.nx = P1;    v.s = st.s + left;
-  v.y = idx.y + scale * left;            v.ny =  0;    v.t = st.t + 1 - bot;
-  v.z = idx.z + scale * bot;             v.nz =  0;
+  v.x = idx.xyz.x + scale * (1 - offset);   v.nx = P1;   v.s = st.s + left;
+  v.y = idx.xyz.y + scale * left;           v.ny =  0;   v.t = st.t + 1 - bot;
+  v.z = idx.xyz.z + scale * bot;            v.nz =  0;
   v.r = vertex_light(light, 0);
   v.x += zf_off * Z_RECONCILIATION_OFFSET;
   vb_add_vertex(&v, vb);
 
   // top left
-  v.z = idx.z + scale * (1 - top);                     v.t = st.t + top;
+  v.z = idx.xyz.z + scale * (1 - top);                   v.t = st.t + top;
   v.r = vertex_light(light, 1);
   vb_add_vertex(&v, vb);
 
   // top right
-  v.y = idx.y + scale * (1 - right);                   v.s = st.s + 1 - right;
+  v.y = idx.xyz.y + scale * (1 - right);                 v.s = st.s + 1 - right;
   v.r = vertex_light(light, 2);
   vb_add_vertex(&v, vb);
 
@@ -264,7 +264,7 @@ static inline void push_east_face(
   vb_reuse_vertex(1, vb); // reuse top right
 
   // bottom right
-  v.z = idx.z + scale * bot;                           v.t = st.t + 1 - bot;
+  v.z = idx.xyz.z + scale * bot;                         v.t = st.t + 1 - bot;
   v.r = vertex_light(light, 3);
   vb_add_vertex(&v, vb);
 }
@@ -272,7 +272,7 @@ static inline void push_east_face(
 static inline void push_west_face(
   vertex_buffer *vb,
   chunk_index idx,
-  ch_idx_t scale,
+  int scale,
   tcoords st,
   face_illumination light,
   float offset,
@@ -285,20 +285,20 @@ static inline void push_west_face(
 #endif
   vertex v = { .g = 0, .b = 0 };
   // bottom left
-  v.x = idx.x + scale * offset;          v.nx = N1;    v.s = st.s + left;
-  v.y = idx.y + scale * (1 - left);      v.ny =  0;    v.t = st.t + 1 - bot;
-  v.z = idx.z + scale * bot;             v.nz =  0;
+  v.x = idx.xyz.x + scale * offset;         v.nx = N1;   v.s = st.s + left;
+  v.y = idx.xyz.y + scale * (1 - left);     v.ny =  0;   v.t = st.t + 1 - bot;
+  v.z = idx.xyz.z + scale * bot;            v.nz =  0;
   v.r = vertex_light(light, 0);
   v.x -= zf_off * Z_RECONCILIATION_OFFSET;
   vb_add_vertex(&v, vb);
 
   // top left
-  v.z = idx.z + scale * (1 - top);                     v.t = st.t + top;
+  v.z = idx.xyz.z + scale * (1 - top);                   v.t = st.t + top;
   v.r = vertex_light(light, 1);
   vb_add_vertex(&v, vb);
 
   // top right
-  v.y = idx.y + scale * right;                         v.s = st.s + 1 - right;
+  v.y = idx.xyz.y + scale * right;                       v.s = st.s + 1 - right;
   v.r = vertex_light(light, 2);
   vb_add_vertex(&v, vb);
 
@@ -307,7 +307,7 @@ static inline void push_west_face(
   vb_reuse_vertex(1, vb); // reuse top right
 
   // bottom right
-  v.z = idx.z + scale * bot;                           v.t = st.t + 1 - bot;
+  v.z = idx.xyz.z + scale * bot;                         v.t = st.t + 1 - bot;
   v.r = vertex_light(light, 3);
   vb_add_vertex(&v, vb);
 }
@@ -323,7 +323,7 @@ static inline void add_solid_block(
   block exposure,
   cube_illumination* lighting,
   chunk_index idx,
-  ch_idx_t step,
+  int step,
   int zf_off
 ) {
   tcoords st = { .s=0, .t=0 };
@@ -367,7 +367,7 @@ static inline void add_grass_block(
   cube_illumination* ext_lighting,
   cube_illumination* int_lighting,
   chunk_index idx,
-  ch_idx_t step,
+  int step,
   int zf_off
 ) {
   tcoords st = { .s=0, .t=0 };
@@ -403,8 +403,7 @@ static inline void add_grass_block(
 
 void compile_chunk_or_approx(chunk_or_approx *coa) {
   static cell dummy = {
-    .primary = 0,
-    .secondary = 0,
+    .blocks = { 0, 0 }
   };
   chunk *c;
   chunk_approximation *ca;
@@ -413,7 +412,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   cell* neighborhood[27]; // also zxy order
   vertex_buffer *vb;
   block_info geom;
-  ch_idx_t step = 1;
+  int step = 1;
   cube_illumination ext_lighting;
   cube_illumination int_lighting;
 
@@ -454,9 +453,9 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   chunk_index idx;
   cell *here = NULL;
   block exposure = 0;
-  for (idx.x = 0; idx.x < CHUNK_SIZE; idx.x += step) {
-    for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
-      for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
+  for (idx.xyz.x = 0; idx.xyz.x < CHUNK_SIZE; idx.xyz.x += step) {
+    for (idx.xyz.y = 0; idx.xyz.y < CHUNK_SIZE; idx.xyz.y += step) {
+      for (idx.xyz.z = 0; idx.xyz.z < CHUNK_SIZE; idx.xyz.z += step) {
         if (coa->type == CA_TYPE_CHUNK) {
           here = c_cell(c, idx);
         } else {
@@ -467,14 +466,14 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
           (exposure & BF_EXPOSED_ANY)
         &&
           !(
-            b_is_invisible(here->primary)
+            b_is_invisible(here->blocks[0])
           &&
-            b_is_invisible(here->secondary)
+            b_is_invisible(here->blocks[1])
           )
         ) {
           total += 1;
-          counts[block_layer(here->primary)] += 1;
-          counts[block_layer(here->secondary)] += 1;
+          counts[block_layer(here->blocks[0])] += 1;
+          counts[block_layer(here->blocks[1])] += 1;
         }
       }
     }
@@ -519,22 +518,22 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
 #endif
   }
 
-  for (idx.x = 0; idx.x < CHUNK_SIZE; idx.x += step) {
-    for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
-      for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
+  for (idx.xyz.x = 0; idx.xyz.x < CHUNK_SIZE; idx.xyz.x += step) {
+    for (idx.xyz.y = 0; idx.xyz.y < CHUNK_SIZE; idx.xyz.y += step) {
+      for (idx.xyz.z = 0; idx.xyz.z < CHUNK_SIZE; idx.xyz.z += step) {
         // get local cell and neighbors:
         get_cell_neighborhood(idx, chunk_neighbors, neighborhood, step, &dummy);
         here = neighborhood[13];
         exposure = compute_cell_exposure(coa, idx, chunk_neighbors);
-        if (!b_is_invisible(here->primary)) {
-          ensure_mapped(here->primary);
-          geom = bi_geom(here->primary);
-          vb = &((*layers)[block_layer(here->primary)]);
+        if (!b_is_invisible(here->blocks[0])) {
+          ensure_mapped(here->blocks[0]);
+          geom = bi_geom(here->blocks[0]);
+          vb = &((*layers)[block_layer(here->blocks[0])]);
           if (geom == BI_GEOM_SOLID || geom == BI_GEOM_LIQUID) {
             compute_lighting(neighborhood, 0, &ext_lighting);
             add_solid_block(
               vb,
-              here->primary,
+              here->blocks[0],
               exposure,
               &ext_lighting,
               idx,
@@ -546,7 +545,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
             compute_lighting(neighborhood, 1, &int_lighting);
             add_grass_block(
               vb,
-              here->primary,
+              here->blocks[0],
               exposure,
               &ext_lighting,
               &int_lighting,
@@ -558,7 +557,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
             compute_lighting(neighborhood, 0, &ext_lighting);
             add_solid_block(
               vb,
-              here->primary,
+              here->blocks[0],
               exposure,
               &ext_lighting,
               idx,
@@ -567,10 +566,10 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
             );
           }
         }
-        if (!b_is_invisible(here->secondary)) {
-          ensure_mapped(here->secondary);
-          geom = bi_geom(here->secondary);
-          vb = &((*layers)[block_layer(here->secondary)]);
+        if (!b_is_invisible(here->blocks[1])) {
+          ensure_mapped(here->blocks[1]);
+          geom = bi_geom(here->blocks[1]);
+          vb = &((*layers)[block_layer(here->blocks[1])]);
           if (
             geom == BI_GEOM_SOLID
           || geom == BI_GEOM_VINE
@@ -580,7 +579,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
             compute_lighting(neighborhood, 0, &ext_lighting);
             add_solid_block(
               vb,
-              here->secondary,
+              here->blocks[1],
               exposure,
               &ext_lighting,
               idx,
@@ -592,7 +591,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
           else {
             printf(
               "Undrawn secondary: %s ~ %d\n",
-              BLOCK_NAMES[b_id(here->secondary)],
+              BLOCK_NAMES[b_id(here->blocks[1])],
               geom
             );
           }

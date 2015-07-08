@@ -258,8 +258,8 @@ void world_cell(world_map *wm, global_pos *glpos, cell *result) {
   static world_region *neighborhood[9];
   world_map_pos wmpos;
   // default values:
-  result->primary = b_make_block(B_VOID);
-  result->secondary = b_make_block(B_VOID);
+  result->blocks[0] = b_make_block(B_VOID);
+  result->blocks[1] = b_make_block(B_VOID);
 
   // get neighborhood pointers:
   glpos__wmpos(glpos, &wmpos);
@@ -267,12 +267,12 @@ void world_cell(world_map *wm, global_pos *glpos, cell *result) {
 
   if (glpos->z < 0 || neighborhood[4] == NULL) {
     // Outside the world:
-    result->primary = b_make_block(B_BOUNDARY);
+    result->blocks[0] = b_make_block(B_BOUNDARY);
   } else {
     terrain_cell(wm, neighborhood, glpos, result);
   }
-  if (b_is(result->primary, B_VOID)) {
-    result->primary = b_make_block(B_AIR);
+  if (b_is(result->blocks[0], B_VOID)) {
+    result->blocks[0] = b_make_block(B_AIR);
   }
 }
 
@@ -280,9 +280,10 @@ void generate_chunk(chunk *c) {
   chunk_index idx;
   global_pos glpos;
   // Generate base materials:
-  for (idx.x = 0; idx.x < CHUNK_SIZE; ++idx.x) {
-    for (idx.y = 0; idx.y < CHUNK_SIZE; ++idx.y) {
-      for (idx.z = 0; idx.z < CHUNK_SIZE; ++idx.z) {
+  idx.xyz.w = 0;
+  for (idx.xyz.x = 0; idx.xyz.x < CHUNK_SIZE; ++idx.xyz.x) {
+    for (idx.xyz.y = 0; idx.xyz.y < CHUNK_SIZE; ++idx.xyz.y) {
+      for (idx.xyz.z = 0; idx.xyz.z < CHUNK_SIZE; ++idx.xyz.z) {
         cidx__glpos(c, &idx, &glpos);
         world_cell(THE_WORLD, &glpos, c_cell(c, idx));
       }

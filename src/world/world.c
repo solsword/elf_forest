@@ -21,9 +21,9 @@
 #define CA_CELL_DEF(BITS) \
   CA_CELL_SIG(CA_CELL_FN(BITS)) { \
     return &(ca->data->d ## BITS.cells[ \
-      ((idx->x & CH_MASK) >> BITS) + \
-      (((idx->y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
-      (((idx->z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
+      ((idx->xyz.x & CH_MASK) >> BITS) + \
+      (((idx->xyz.y & CH_MASK) >> BITS) << (CHUNK_BITS - BITS)) + \
+      (((idx->xyz.z & CH_MASK) >> BITS) << ((CHUNK_BITS - BITS)*2)) \
     ]); \
   }
 

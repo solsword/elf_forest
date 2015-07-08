@@ -31,7 +31,7 @@ float set_player_cursor(
   if (cell == NULL) {
     return 0;
   }
-  if (b_is_solid(cell->primary) || b_is_solid(cell->secondary)) {
+  if (b_is_solid(cell->blocks[0]) || b_is_solid(cell->blocks[1])) {
     cursor->valid = 1;
     copy_glpos(pos, &(cursor->pos));
     return 0;

@@ -653,15 +653,16 @@ void load_chunk(chunk *c) {
 void load_chunk_approx(chunk_approximation *ca) {
   // TODO: Data from disk!
   // TODO: Cell entities!
-  ch_idx_t step = (1 << (ca->detail));
+  int step = (1 << (ca->detail));
   chunk_index idx;
   global_pos glpos;
   chunk_or_approx coa;
   lod previous_detail;
   // TODO: Better approximation?
-  for (idx.x = 0; idx.x < CHUNK_SIZE; idx.x += step) {
-    for (idx.y = 0; idx.y < CHUNK_SIZE; idx.y += step) {
-      for (idx.z = 0; idx.z < CHUNK_SIZE; idx.z += step) {
+  idx.xyz.w = 0;
+  for (idx.xyz.x = 0; idx.xyz.x < CHUNK_SIZE; idx.xyz.x += step) {
+    for (idx.xyz.y = 0; idx.xyz.y < CHUNK_SIZE; idx.xyz.y += step) {
+      for (idx.xyz.z = 0; idx.xyz.z < CHUNK_SIZE; idx.xyz.z += step) {
         caidx__glpos(ca, &idx, &glpos);
         world_cell(THE_WORLD, &glpos, ca_cell(ca, idx));
       }
