@@ -278,9 +278,10 @@ static inline void fill_chunk_neighborhood(
   }
 }
 
-// Neighborhood should be a pointer to a 27-entry array of cell pointers in zxy
-// order. The step value indicates how far to go to reach a "neighbor." The
-// dummy value is substituted for missing cells.
+// The step value indicates how far to go to reach a "neighbor." The dummy
+// value is substituted for missing cells. Note that the base index should be
+// within the central chunk, to guarantee that its neighbors don't overflow the
+// bounds of the entire chunk neighborhood.
 static inline void fill_cell_neighborhood(
   chunk_index idx,
   approx_neighborhood* nbh,
@@ -288,10 +289,7 @@ static inline void fill_cell_neighborhood(
   int step,
   cell* dummy
 ) {
-  // Note that the underflow should wrap correctly here, but we're fixing up
-  // the values anyways.
   chunk_index nbr;
-  int dx, dy, dz;
   chunk_or_approx *coa = &(nbh->members[NBH_CENTER]);
   lod center_detail = coa_detail_level(coa);
   size_t i = 0, j = 0;
@@ -303,36 +301,38 @@ static inline void fill_cell_neighborhood(
     caidx__glpos((chunk_approximation*) coa->ptr, &idx, &(result->glpos));
   }
 
-  for (dx = -step; dx <= step; dx += step) {
-    for (dy = -step; dy <= step; dy += step) {
-      for (dz = -step; dz <= step; dz += step) {
-        nbr.xyz.x = idx.xyz.x + dx;
-        nbr.xyz.y = idx.xyz.y + dy;
-        nbr.xyz.z = idx.xyz.z + dz;
+  for (
+    nbr.xyz.x = idx.xyz.x - step;
+    nbr.xyz.x <= idx.xyz.x + step;
+    nbr.xyz.x += step
+  ) {
+    for (
+      nbr.xyz.y = idx.xyz.y - step;
+      nbr.xyz.y <= idx.xyz.y + step;
+      nbr.xyz.y += step
+    ) {
+      for (
+        nbr.xyz.z = idx.xyz.z - step;
+        nbr.xyz.z <= idx.xyz.z + step;
+        nbr.xyz.z += step
+      ) {
         j = NBH_CENTER; // the center of the chunk neighborhood
-        if (idx.xyz.x < step && dx == -step) {
+        if (nbr.xyz.x < 0) {
           j -= 9;
-          nbr.xyz.x = CHUNK_SIZE - 1;
-        }
-        if (idx.xyz.x >= CHUNK_SIZE - step && dx == step) {
+        } else if (idx.xyz.x >= CHUNK_SIZE) {
           j += 9;
-          nbr.xyz.x = 0;
         }
-        if (idx.xyz.y < step && dy == -step) {
+
+        if (idx.xyz.y < 0) {
           j -= 3;
-          nbr.xyz.y = CHUNK_SIZE - 1;
-        }
-        if (idx.xyz.y >= CHUNK_SIZE - step && dy == step) {
+        } else if (idx.xyz.y >= CHUNK_SIZE) {
           j += 3;
-          nbr.xyz.y = 0;
         }
-        if (idx.xyz.z < step && dz == -step) {
+
+        if (idx.xyz.z < 0) {
           j -= 1;
-          nbr.xyz.z = CHUNK_SIZE - 1;
-        }
-        if (idx.xyz.z >= CHUNK_SIZE - step && dz == step) {
+        } else if (idx.xyz.z >= CHUNK_SIZE) {
           j += 1;
-          nbr.xyz.z = 0;
         }
         coa = &(nbh->members[j]);
         if (center_detail > coa_detail_level(coa)) {
@@ -343,11 +343,11 @@ static inline void fill_cell_neighborhood(
           // an approximation borders a more-detailed approximation or a real
           // chunk.
           result->members[i] = dummy;
-        } else if (coa->type == CA_TYPE_CHUNK) {
-          result->members[i] = c_cell((chunk*) (coa->ptr), nbr);
-        } else if (coa->type == CA_TYPE_APPROXIMATION) {
-          result->members[i] = ca_cell((chunk_approximation*) (coa->ptr), nbr);
         } else {
+          result->members[i] = nb_approx_cell(nbh, nbr);
+        }
+
+        if (result->members[i] == NULL) {
           result->members[i] = dummy;
         }
         i += 1;
@@ -366,14 +366,22 @@ static inline void fill_cell_neighborhood_exact(
   // Note that the underflow should wrap correctly here, but we're fixing up
   // the values anyways.
   chunk_index n_idx;
-  int dx, dy, dz;
   size_t i = 0;
-  for (dx = -1; dx <= 1; dx += 1) {
-    for (dy = -1; dy <= 1; dy += 1) {
-      for (dz = -1; dz <= 1; dz += 1) {
-        n_idx.xyz.x = idx.xyz.x + dx;
-        n_idx.xyz.y = idx.xyz.y + dy;
-        n_idx.xyz.z = idx.xyz.z + dz;
+  for (
+    n_idx.xyz.x = idx.xyz.x - 1;
+    n_idx.xyz.x <= idx.xyz.x + 1;
+    n_idx.xyz.x += 1
+  ) {
+    for (
+      n_idx.xyz.y = idx.xyz.y - 1;
+      n_idx.xyz.y <= idx.xyz.y + 1;
+      n_idx.xyz.y += 1
+    ) {
+      for (
+        n_idx.xyz.z = idx.xyz.z - 1;
+        n_idx.xyz.z <= idx.xyz.z + 1;
+        n_idx.xyz.z += 1
+      ) {
         result->members[i] = nb_cell(nbh, n_idx);
         i += 1;
       }

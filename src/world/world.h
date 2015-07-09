@@ -458,9 +458,9 @@ static inline cell* c_cell(
   chunk_index idx
 ) {
   return &(c->cells[
-    (idx.xyz.x & CH_MASK) +
-    ((idx.xyz.y & CH_MASK) << CHUNK_BITS) +
-    ((idx.xyz.z & CH_MASK) << (CHUNK_BITS*2))
+    (((int) idx.xyz.x) & CH_MASK) +
+    ((((int) idx.xyz.y) & CH_MASK) << CHUNK_BITS) +
+    ((((int) idx.xyz.z) & CH_MASK) << (CHUNK_BITS*2))
   ]);
 }
 
@@ -568,6 +568,45 @@ static inline cell* ca_cell(
   chunk_index idx
 ) {
   return ca_cell_table[ca->detail](ca, &idx);
+}
+
+// Picks out a cell from an approximate neighborhood based on an extended chunk
+// index. Returns NULL if it is within an unloaded chunk.
+static inline cell* nb_approx_cell(
+  approx_neighborhood *nbh,
+  chunk_index idx
+) {
+  size_t nb_i = NBH_CENTER; // default is central chunk of the neighborhood
+  chunk_or_approx *coa;
+  if (idx.xyz.x < 0) {
+    idx.xyz.x += CHUNK_SIZE;
+    nb_i -= 9;
+  } else if (idx.xyz.x >= CHUNK_SIZE) {
+    idx.xyz.x -= CHUNK_SIZE;
+    nb_i += 9;
+  }
+  if (idx.xyz.y < 0) {
+    idx.xyz.y += CHUNK_SIZE;
+    nb_i -= 3;
+  } else if (idx.xyz.y >= CHUNK_SIZE) {
+    idx.xyz.y -= CHUNK_SIZE;
+    nb_i += 3;
+  }
+  if (idx.xyz.z < 0) {
+    idx.xyz.z += CHUNK_SIZE;
+    nb_i -= 1;
+  } else if (idx.xyz.z >= CHUNK_SIZE) {
+    idx.xyz.z -= CHUNK_SIZE;
+    nb_i += 1;
+  }
+  coa = &(nbh->members[nb_i]);
+  if (coa->type == CA_TYPE_CHUNK) {
+    return c_cell((chunk*) (coa->ptr), idx);
+  } else if (coa->type == CA_TYPE_APPROXIMATION) {
+    return ca_cell((chunk_approximation*) (coa->ptr), idx);
+  } else {
+    return NULL;
+  }
 }
 
 // cell_at returns the cell at the given global position according to the best
