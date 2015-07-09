@@ -159,13 +159,13 @@ void update_growth(block *b);
 
 // Given a cell neighborhood with a seed block in the center, grows the seed
 // block.
-void grow_seed_block(cell **cell_neighborhood, int is_primary);
+void grow_seed_block(chunk_neighborhood *nbh, chunk_index idx);
 
 // Given a chunk neighborhood and the index of a growth core block within the
 // central chunk, runs a cycle of growth particles from that growth core.
 // Checks growth cycle info according to the given growth timer t.
 void grow_from_core(
-  chunk **chunk_neighborhood,
+  chunk_neighborhood *nbh,
   chunk_index idx,
   ptrdiff_t t
 );

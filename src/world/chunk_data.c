@@ -38,12 +38,12 @@ static inline int occludes_face(block neighbor, block occluded) {
 block compute_cell_exposure(
   chunk_or_approx *coa,
   chunk_index idx,
-  chunk_or_approx *chunk_neighbors
+  approx_neighborhood *apx_nbh
 ) {
   static cell dummy = {
     .blocks = { 0, 0 }
   };
-  static cell* neighborhood[27]; // also zxy order
+  static cell_neighborhood cl_nbh;
   block result = 0;
   int step = 1;
 
@@ -57,14 +57,14 @@ block compute_cell_exposure(
   }
 
   // Get main block and neighbors:
-  get_cell_neighborhood(idx, chunk_neighbors, neighborhood, step, &dummy);
+  fill_cell_neighborhood(idx, apx_nbh, &cl_nbh, step, &dummy);
 
   // Check exposure:
   // TODO: non-primary blocks!
   if (
     !occludes_face(
-      neighborhood[13+9]->blocks[0],
-      neighborhood[13]->blocks[0]
+      cl_nbh.members[NBH_CENTER+1]->blocks[0],
+      cl_nbh.members[NBH_CENTER]->blocks[0]
     )
   ) {
     result |= BF_EXPOSED_ABOVE;
@@ -73,8 +73,8 @@ block compute_cell_exposure(
   }
   if (
     !occludes_face(
-      neighborhood[13-9]->blocks[0],
-      neighborhood[13]->blocks[0]
+      cl_nbh.members[NBH_CENTER-1]->blocks[0],
+      cl_nbh.members[NBH_CENTER]->blocks[0]
     )
   ) {
     result |= BF_EXPOSED_BELOW;
@@ -83,8 +83,8 @@ block compute_cell_exposure(
   }
   if (
     !occludes_face(
-      neighborhood[13+1]->blocks[0],
-      neighborhood[13]->blocks[0]
+      cl_nbh.members[NBH_CENTER+3]->blocks[0],
+      cl_nbh.members[NBH_CENTER]->blocks[0]
     )
   ) {
     result |= BF_EXPOSED_NORTH;
@@ -93,8 +93,8 @@ block compute_cell_exposure(
   }
   if (
     !occludes_face(
-      neighborhood[13-1]->blocks[0],
-      neighborhood[13]->blocks[0]
+      cl_nbh.members[NBH_CENTER-3]->blocks[0],
+      cl_nbh.members[NBH_CENTER]->blocks[0]
     )
   ) {
     result |= BF_EXPOSED_SOUTH;
@@ -103,8 +103,8 @@ block compute_cell_exposure(
   }
   if (
     !occludes_face(
-      neighborhood[13+3]->blocks[0],
-      neighborhood[13]->blocks[0]
+      cl_nbh.members[NBH_CENTER+1]->blocks[0],
+      cl_nbh.members[NBH_CENTER]->blocks[0]
     )
   ) {
     result |= BF_EXPOSED_EAST;
@@ -113,8 +113,8 @@ block compute_cell_exposure(
   }
   if (
     !occludes_face(
-      neighborhood[13-3]->blocks[0],
-      neighborhood[13]->blocks[0]
+      cl_nbh.members[NBH_CENTER-1]->blocks[0],
+      cl_nbh.members[NBH_CENTER]->blocks[0]
     )
   ) {
     result |= BF_EXPOSED_WEST;

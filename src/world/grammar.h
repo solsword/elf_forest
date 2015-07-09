@@ -15,12 +15,15 @@
  ****************/
 
 // Different expansion types.
-enum cg_condition_type_e {
-  CGCT_EXACT,
-  CGCT_EITHER_BLOCK,
-  CGCT_FUZZY
+enum cg_expansion_type_e {
+  CGCT_BLOCK_RELATIVE,
+  CGCT_BLOCK_EXACT,
+  CGCT_BLOCK_EITHER,
+  CGCT_LOGICAL_AND,
+  CGCT_LOGICAL_OR,
+  CGCT_LOGICAL_NOT
 };
-typedef enum cg_condition_type_e cg_condition_type;
+typedef enum cg_expansion_type_e cg_expansion_type;
 
 /**************
  * Structures *
@@ -34,61 +37,79 @@ typedef struct cell_grammar_s cell_grammar;
 struct cg_expansion_s;
 typedef struct cg_expansion_s cg_expansion;
 
-// An individual condition of a grammar expansion rule.
-struct cg_condition_s;
-typedef struct cg_condition_s cg_condition;
-
 /*************************
  * Structure Definitions *
  *************************/
 
 struct cell_grammar_s {
+  list* expansions;
 };
 
 struct cg_expansion_s {
+  cg_expansion_type type;
+  // For all expansions:
+  chunk_index offset;
+  // For BLOCK-type expansions:
+  block cmp_mask;
+  block compare;
+  block rpl_mask;
+  block replace;
+  // For LOGICAL-type expansions:
+  list* children;
+  // For use during expansion:
+  block* target;
 };
-
-/********************
- * Inline Functions *
- ********************/
-
-static inline void i_dont_know(void) {
-}
 
 /******************************
  * Constructors & Destructors *
  ******************************/
 
 // Allocates a new cell grammar.
-cell_grammar * create_cell_grammar(void);
+cell_grammar* create_cell_grammar(void);
 
 // Cleans up memory allocated for the given cell grammar, including its
 // expansions.
 void cleanup_cell_grammar(cell_grammar *cg);
 
 // Allocates a new cell grammar expansion.
-cg_expansion * create_cell_grammar_expansion(void);
+cg_expansion* create_cell_grammar_expansion(void);
 
 // Cleans up the memory associated with a cell grammar expansion.
 void cleanup_cell_grammar_expansion(cg_expansion *cge);
+
+// Allocates and returns a new copy of the given cell grammar expansion.
+// Recursively copies any children of the original as well, so it's a deep copy
+// operation. Note that current block target information is copied as well.
+cg_expansion* copy_cell_grammar_expansion(cg_expansion *cge);
 
 /*************
  * Functions *
  *************/
 
-// TODO: Comment this
-void build_grammar_from_string(string *definition);
+// Checks whether the given expansion fits at the given location. As it does so
+// it sets target blocks for the members of that expansion tree. It returns 1
+// on success and 0 on failure.
+int check_expansion(
+  chunk_neighborhood* nbh,
+  chunk_index root,
+  cg_expansion *cge
+);
 
 // TODO: Comment this
 cg_expansion* pick_expansion(
-  cell *cell_neighborhood[],
+  chunk_neighborhood* nbh,
+  chunk_index root,
   cell_grammar *cg
 );
 
 // TODO: Comment this
 int apply_expansion(
-  cell *cell_neighborhood[],
+  chunk_neighborhood* nbh,
+  chunk_index root,
   cg_expansion *cge
 );
+
+// TODO: Comment this
+void build_grammar_from_string(string *definition);
 
 #endif // ifndef GRAMMAR_H

@@ -10,13 +10,16 @@
 
 
 void add_biology(chunk *c) {
-  chunk* chunk_neighbors[27];
-  cell* cell_neighbors[27];
+  chunk_neighborhood ch_nbh;
+  cell_neighborhood cl_nbh;
   cell* cl;
   chunk_index idx;
   global_pos glpos;
-  get_exact_chunk_neighborhood(&(c->glcpos), chunk_neighbors);
-  if (chunk_neighbors[0] == NULL || c->chunk_flags & CF_HAS_BIOLOGY) {
+  if (c->chunk_flags & CF_HAS_BIOLOGY) {
+    return; // Already has biology
+  }
+  fill_chunk_neighborhood(&(c->glcpos), &ch_nbh);
+  if (ch_nbh.members[0] == NULL || c->chunk_flags & CF_HAS_BIOLOGY) {
     return; // Return without setting the CF_HAS_BIOLOGY flag.
   }
   ptrdiff_t seed_hash = prng(chunk_hash(c) + 616485);
@@ -27,17 +30,19 @@ void add_biology(chunk *c) {
       for (idx.xyz.z = 0; idx.xyz.z < CHUNK_SIZE; ++idx.xyz.z) {
         // Get global cell position for hashing:
         cidx__glpos(c, &idx, &glpos);
-        get_cell_neighborhood_exact(idx, chunk_neighbors, cell_neighbors);
-        cl = cell_neighbors[13]; // shortcut for the central cell
-        // Array is in zxy order so up/down is +/- 9, east/west is +/- 3, and
-        // north/south is +/- 1.
+        fill_cell_neighborhood_exact(idx, &ch_nbh, &cl_nbh);
+        cl = cl_nbh.members[NBH_CENTER]; // shortcut for the central cell
+        // Array is in xyz order so up/down is +/- 1, north/south is +/- 3, and
+        // east/west is +/- 9.
 
         // If our secondary is empty we can put a seed here...
         if (b_is_void(cl->blocks[1])) {
           if (b_is_same_type(cl->blocks[0], B_AIR)) {
             // Grass seeds, mushroom spores, and moss spores settle in the air
             // directly on top of dirt/sand/mud/etc.
-            if (b_is_natural_terrain(cell_neighbors[13-9]->blocks[0])) {
+            if (
+              b_is_natural_terrain(cl_nbh.members[NBH_CENTER-1]->blocks[0])
+            ) {
               // TODO: Species distributions!
               // TODO: Feed in ground block type.
               cl->blocks[1] = b_make_species(
@@ -48,7 +53,9 @@ void add_biology(chunk *c) {
                 idx.xyz.x + idx.xyz.y + glpos.z +
                 prng(seed_hash + glpos.x + glpos.y + idx.xyz.z)
               );
-            } else if (b_is_natural_terrain(cell_neighbors[13+9]->blocks[0])) {
+            } else if (
+              b_is_natural_terrain(cl_nbh.members[NBH_CENTER+1]->blocks[0])
+            ) {
               // Some grasses, msuhrooms, and mosses grow below ceilings.
               // TODO: Species distributions!
               cl->blocks[1] = b_make_species(
@@ -63,7 +70,9 @@ void add_biology(chunk *c) {
           } else if (b_is_same_type(cl->blocks[0], B_WATER)) {
             // Aquatic grass seeds and coral start in water above
             // dirt/sand/mud/etc.
-            if (b_is_natural_terrain(cell_neighbors[13-9]->blocks[0])) {
+            if (
+              b_is_natural_terrain(cl_nbh.members[NBH_CENTER-1]->blocks[0])
+            ) {
               // TODO: Species distributions!
               // TODO: Feed in ground block type.
               cl->blocks[1] = b_make_species(
@@ -76,7 +85,9 @@ void add_biology(chunk *c) {
               );
             }
           } else if (b_is_natural_terrain(cl->blocks[0])) {
-            if (b_is_same_type(cell_neighbors[13+9]->blocks[0], B_AIR)) {
+            if (
+              b_is_same_type(cl_nbh.members[NBH_CENTER+1]->blocks[0], B_AIR)
+            ) {
               // Vines, herbs, bushes, shrubs, and trees sprout from seeds in
               // the top layer of soil with air above.
               cl->blocks[1] = b_make_species(
@@ -87,7 +98,9 @@ void add_biology(chunk *c) {
                 idx.xyz.x + idx.xyz.y + glpos.z +
                 prng(seed_hash + glpos.x + glpos.y + idx.xyz.z)
               );
-            } else if (b_is_same_type(cell_neighbors[13+9]->blocks[0],B_WATER)){
+            } else if (
+              b_is_same_type(cl_nbh.members[NBH_CENTER+1]->blocks[0], B_WATER)
+            ) {
               // Aquatic plants sprout from seeds in terrain below water.
               cl->blocks[1] = b_make_species(
                 B_AQUATIC_PLANT_SEEDS,
@@ -97,7 +110,9 @@ void add_biology(chunk *c) {
                 idx.xyz.x + idx.xyz.y + glpos.z +
                 prng(seed_hash + glpos.x + glpos.y + idx.xyz.z)
               );
-            } else if (b_is_same_type(cell_neighbors[13-9]->blocks[0], B_AIR)) {
+            } else if (
+              b_is_same_type(cl_nbh.members[NBH_CENTER-1]->blocks[0], B_AIR)
+            ) {
               // Some plants can also grow down into air from ceilings.
               cl->blocks[1] = b_make_species(
                 B_VINE_SEEDS,

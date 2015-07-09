@@ -88,7 +88,7 @@ static inline face_illumination face_light(
 // illumination, unless internal is 1, in which case it computes internal
 // illumination.
 static inline void compute_lighting(
-  cell** neighborhood,
+  cell_neighborhood* nbh,
   int internal,
   cube_illumination* result
 ) {
@@ -151,9 +151,9 @@ static inline void compute_lighting(
       o_base = 0;
     }
     for (vertex = 0; vertex < 4; ++vertex) {
-      i0 = 13 + o_base;
-      i1 = 13 + o_base;
-      ic = 13 + o_base;
+      i0 = NBH_CENTER + o_base;
+      i1 = NBH_CENTER + o_base;
+      ic = NBH_CENTER + o_base;
       switch (vertex) {
         case 0:
         default:
@@ -178,9 +178,9 @@ static inline void compute_lighting(
           break;
       }
       // TODO: non-primary blocks!
-      side0 = b_is_opaque(neighborhood[i0]->blocks[0]);
-      side1 = b_is_opaque(neighborhood[i1]->blocks[0]);
-      corner = b_is_opaque(neighborhood[ic]->blocks[0]);
+      side0 = b_is_opaque(nbh->members[i0]->blocks[0]);
+      side1 = b_is_opaque(nbh->members[i1]->blocks[0]);
+      corner = b_is_opaque(nbh->members[ic]->blocks[0]);
       // DEBUG:
       /*
       if (face == BD_FACE_FRONT) {

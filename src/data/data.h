@@ -234,32 +234,32 @@ void load_chunk_approx(chunk_approximation *ca);
  * Extra Inline Functions *
  **************************/
 
-// neighborhood should be a 27-entry array of chunk_or_approxes, which will be
-// filled in in zxy order.
-static inline void get_chunk_neighborhood(
+// Fills in an approx_neighborhood struct using the best available data.
+static inline void fill_approx_neighborhood(
   global_chunk_pos* glcpos,
-  chunk_or_approx* r_neighborhood
+  approx_neighborhood* r_neighborhood
 ) {
+  copy_glcpos(glcpos, &(r_neighborhood->glcpos));
   global_chunk_pos nbpos;
   size_t i = 0;
-  for (nbpos.z = glcpos->z - 1; nbpos.z <= glcpos->z + 1; nbpos.z += 1) {
-    for (nbpos.x = glcpos->x - 1; nbpos.x <= glcpos->x + 1; nbpos.x += 1) {
-      for (nbpos.y = glcpos->y - 1; nbpos.y <= glcpos->y + 1; nbpos.y += 1) {
-        get_best_data(&nbpos, &(r_neighborhood[i]));
+  for (nbpos.x = glcpos->x - 1; nbpos.x <= glcpos->x + 1; nbpos.x += 1) {
+    for (nbpos.y = glcpos->y - 1; nbpos.y <= glcpos->y + 1; nbpos.y += 1) {
+      for (nbpos.z = glcpos->z - 1; nbpos.z <= glcpos->z + 1; nbpos.z += 1) {
+        get_best_data(&nbpos, &(r_neighborhood->members[i]));
         i += 1;
       }
     }
   }
 }
 
-// Works like get_chunk_neighborhood, but only returns actual chunks, never
-// approximations. If the entire neighborhood isn't available, it will set the
-// first entry in r_neighborhood to NULL (the others may or may not be changed
-// as well, but their values shouldn't be depended upon).
-static inline void get_exact_chunk_neighborhood(
+// Fills in a chunk_neighborhood struct. If the entire neighborhood isn't
+// available, it will set the first entry in the result to NULL (the others may
+// or may not be changed as well, but their values shouldn't be depended upon).
+static inline void fill_chunk_neighborhood(
   global_chunk_pos *glcpos,
-  chunk** r_neighborhood
+  chunk_neighborhood* r_neighborhood
 ) {
+  copy_glcpos(glcpos, &(r_neighborhood->glcpos));
   chunk_or_approx* coa = NULL;
   global_chunk_pos nbpos;
   size_t i = 0;
@@ -268,24 +268,23 @@ static inline void get_exact_chunk_neighborhood(
       for (nbpos.y = glcpos->y - 1; nbpos.y <= glcpos->y + 1; nbpos.y += 1) {
         get_best_data(&nbpos, coa);
         if (coa->type != CA_TYPE_CHUNK) {
-          r_neighborhood[0] = NULL;
+          r_neighborhood->members[0] = NULL;
           return;
         }
-        r_neighborhood[i] = (chunk*) coa->ptr;
+        r_neighborhood->members[i] = (chunk*) coa->ptr;
         i += 1;
       }
     }
   }
 }
 
-// chunk_neighbors should be a 27-entry array of chunk_or_approxes in zxy
-// order, while neighborhood should be a pointer to a 27-entry array of cell
-// pointers in zxy order. The step value indicates how far to go to reach a
-// "neighbor." The dummy value is substituted for missing cells.
-static inline void get_cell_neighborhood(
+// Neighborhood should be a pointer to a 27-entry array of cell pointers in zxy
+// order. The step value indicates how far to go to reach a "neighbor." The
+// dummy value is substituted for missing cells.
+static inline void fill_cell_neighborhood(
   chunk_index idx,
-  chunk_or_approx* chunk_neighbors,
-  cell* neighborhood[],
+  approx_neighborhood* nbh,
+  cell_neighborhood* result,
   int step,
   cell* dummy
 ) {
@@ -293,50 +292,63 @@ static inline void get_cell_neighborhood(
   // the values anyways.
   chunk_index nbr;
   int dx, dy, dz;
-  chunk_or_approx *coa;
-  capprox_type center_type = chunk_neighbors[13].type;
+  chunk_or_approx *coa = &(nbh->members[NBH_CENTER]);
+  lod center_detail = coa_detail_level(coa);
   size_t i = 0, j = 0;
-  for (dz = -step; dz <= step; dz += step) {
-    for (dx = -step; dx <= step; dx += step) {
-      for (dy = -step; dy <= step; dy += step) {
+
+  // Set the global position of the neighborhood:
+  if (center_detail == LOD_BASE) {
+    cidx__glpos((chunk*) coa->ptr, &idx, &(result->glpos));
+  } else {
+    caidx__glpos((chunk_approximation*) coa->ptr, &idx, &(result->glpos));
+  }
+
+  for (dx = -step; dx <= step; dx += step) {
+    for (dy = -step; dy <= step; dy += step) {
+      for (dz = -step; dz <= step; dz += step) {
         nbr.xyz.x = idx.xyz.x + dx;
         nbr.xyz.y = idx.xyz.y + dy;
         nbr.xyz.z = idx.xyz.z + dz;
-        j = 13; // the center of the chunk neighborhood
-        if (idx.xyz.z < step && dz == -step) {
-          j -= 9;
-          nbr.xyz.z = CHUNK_SIZE - 1;
-        }
-        if (idx.xyz.z >= CHUNK_SIZE - step && dz == step) {
-          j += 9;
-          nbr.xyz.z = 0;
-        }
+        j = NBH_CENTER; // the center of the chunk neighborhood
         if (idx.xyz.x < step && dx == -step) {
-          j -= 3;
+          j -= 9;
           nbr.xyz.x = CHUNK_SIZE - 1;
         }
         if (idx.xyz.x >= CHUNK_SIZE - step && dx == step) {
-          j += 3;
+          j += 9;
           nbr.xyz.x = 0;
         }
         if (idx.xyz.y < step && dy == -step) {
-          j -= 1;
+          j -= 3;
           nbr.xyz.y = CHUNK_SIZE - 1;
         }
         if (idx.xyz.y >= CHUNK_SIZE - step && dy == step) {
-          j += 1;
+          j += 3;
           nbr.xyz.y = 0;
         }
-        coa = &(chunk_neighbors[j]);
-        if (center_type == CA_TYPE_APPROXIMATION && coa->type == CA_TYPE_CHUNK){
-          // Expose all faces of approximations that border actual chunks
-          neighborhood[i] = dummy;
+        if (idx.xyz.z < step && dz == -step) {
+          j -= 1;
+          nbr.xyz.z = CHUNK_SIZE - 1;
+        }
+        if (idx.xyz.z >= CHUNK_SIZE - step && dz == step) {
+          j += 1;
+          nbr.xyz.z = 0;
+        }
+        coa = &(nbh->members[j]);
+        if (center_detail > coa_detail_level(coa)) {
+          // If the central chunk is less-detailed than its neighbor, we use
+          // dummy data instead of the neighbor's data. This helps the
+          // rendering algorithm assume that faces of approximations are
+          // exposed (their neighbors get the dummy value which is empty) when
+          // an approximation borders a more-detailed approximation or a real
+          // chunk.
+          result->members[i] = dummy;
         } else if (coa->type == CA_TYPE_CHUNK) {
-          neighborhood[i] = c_cell((chunk*) (coa->ptr), nbr);
+          result->members[i] = c_cell((chunk*) (coa->ptr), nbr);
         } else if (coa->type == CA_TYPE_APPROXIMATION) {
-          neighborhood[i] = ca_cell((chunk_approximation*) (coa->ptr), nbr);
+          result->members[i] = ca_cell((chunk_approximation*) (coa->ptr), nbr);
         } else {
-          neighborhood[i] = dummy;
+          result->members[i] = dummy;
         }
         i += 1;
       }
@@ -344,34 +356,25 @@ static inline void get_cell_neighborhood(
   }
 }
 
-// Works like get_cell_neighborhood but requires and exact chunk neighborhood
-// and produces an exact cell neighborhood.
-static inline void get_cell_neighborhood_exact(
+// Works like fill_cell_neighborhood but requires a chunk neighborhood and
+// produces an exact cell neighborhood.
+static inline void fill_cell_neighborhood_exact(
   chunk_index idx,
-  chunk* exact_chunk_neighbors[],
-  cell* neighborhood[]
+  chunk_neighborhood* nbh,
+  cell_neighborhood* result
 ) {
   // Note that the underflow should wrap correctly here, but we're fixing up
   // the values anyways.
-  chunk_index nbr;
+  chunk_index n_idx;
   int dx, dy, dz;
-  chunk *c;
-  size_t i = 0, j = 0;
-  for (dz = -1; dz <= 1; dz += 1) {
-    for (dx = -1; dx <= 1; dx += 1) {
-      for (dy = -1; dy <= 1; dy += 1) {
-        nbr.xyz.x = idx.xyz.x + dx;
-        nbr.xyz.y = idx.xyz.y + dy;
-        nbr.xyz.z = idx.xyz.z + dz;
-        j = 13; // the center of the chunk neighborhood
-        if (idx.xyz.z < 1 && dz == -1) { j -= 9; nbr.xyz.z = CHUNK_SIZE - 1; }
-        if (idx.xyz.z >= CHUNK_SIZE - 1 && dz == 1) { j += 9; nbr.xyz.z = 0; }
-        if (idx.xyz.x < 1 && dx == -1) { j -= 3; nbr.xyz.x = CHUNK_SIZE - 1; }
-        if (idx.xyz.x >= CHUNK_SIZE - 1 && dx == 1) { j += 3; nbr.xyz.x = 0; }
-        if (idx.xyz.y < 1 && dy == -1) { j -= 1; nbr.xyz.y = CHUNK_SIZE - 1; }
-        if (idx.xyz.y >= CHUNK_SIZE - 1 && dy == 1) { j += 1; nbr.xyz.y = 0; }
-        c = exact_chunk_neighbors[j];
-        neighborhood[i] = c_cell(c, nbr);
+  size_t i = 0;
+  for (dx = -1; dx <= 1; dx += 1) {
+    for (dy = -1; dy <= 1; dy += 1) {
+      for (dz = -1; dz <= 1; dz += 1) {
+        n_idx.xyz.x = idx.xyz.x + dx;
+        n_idx.xyz.y = idx.xyz.y + dy;
+        n_idx.xyz.z = idx.xyz.z + dz;
+        result->members[i] = nb_cell(nbh, n_idx);
         i += 1;
       }
     }

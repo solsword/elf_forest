@@ -20,7 +20,7 @@
 block compute_cell_exposure(
   chunk_or_approx *coa,
   chunk_index idx,
-  chunk_or_approx *chunk_neighbors
+  approx_neighborhood *apx_nbh
 );
 
 #endif // ifndef CHUNK_DATA_H

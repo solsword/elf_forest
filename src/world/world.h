@@ -150,9 +150,23 @@ struct APPROX_DATA_SN(2); typedef struct APPROX_DATA_SN(2) APPROX_DATA_TN(2);
 struct APPROX_DATA_SN(3); typedef struct APPROX_DATA_SN(3) APPROX_DATA_TN(3);
 struct APPROX_DATA_SN(4); typedef struct APPROX_DATA_SN(4) APPROX_DATA_TN(4);
 
+// A 3x3x3 neighborhood of chunks (contains a pointer to each). By convention
+// ordering is xyz, so an offset of +/- 1 moves you up/down, +/- 3 north/south,
+// and +/- 9 east/west.
+struct chunk_neighborhood_s;
+typedef struct chunk_neighborhood_s chunk_neighborhood;
+
+// A 3x3x3 neighborhood of chunk_or_approxs. Ordering is xyz.
+struct approx_neighborhood_s;
+typedef struct approx_neighborhood_s approx_neighborhood;
+
+// Holds pointers to 27 cells in a 3x3x3 neighborhood. Ordering is xyz.
+struct cell_neighborhood_s;
+typedef struct cell_neighborhood_s cell_neighborhood;
+
 // Macros and types for the size of a chunk:
-// Note that CHUNK_BITS shouldn't be greater than 10, or a chunk index won't be
-// packable into a 32-bit int.
+// Note that CHUNK_BITS shouldn't be greater than 6, or extended chunk indices
+// won't be packable into 32-bit ints.
 #define CHUNK_BITS 5
 #define CHUNK_SIZE (1 << CHUNK_BITS)
 #define TOTAL_CHUNK_CELLS (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
@@ -174,6 +188,9 @@ static chunk_flag const      CF_QUEUED_TO_LOAD = 0x0010;
 static chunk_flag const   CF_QUEUED_TO_COMPILE = 0x0020;
 static chunk_flag const   CF_QUEUED_FOR_BIOGEN = 0x0040;
 
+// The index of the central member in a 3x3x3 neighborhood:
+static int const NBH_CENTER = 13;
+
 /*************************
  * Structure Definitions *
  *************************/
@@ -188,7 +205,10 @@ struct global_chunk_pos_s {
 
 
 struct chunk_index_parts_s {
-  uint8_t x, y, z, w;
+  int8_t x, y, z, w;
+    // Note that the bit width here must be >= CHUNK_BITS + 2 so that we can
+    // have a sign bit and enough room to index chunks within a 3x3x3
+    // neighborhood.
 } __attribute__((packed)); // Packed so that we can union with a uint32_t.
 
 union chunk_index_u {
@@ -238,6 +258,24 @@ union approx_data_u {
   APPROX_DATA_TN(2) d2;
   APPROX_DATA_TN(3) d3;
   APPROX_DATA_TN(4) d4;
+};
+
+struct chunk_neighborhood_s {
+  global_chunk_pos glcpos; // Absolute location of central chunk.
+  chunk* members[27]; // Pointers to each member chunk in xyz order.
+};
+
+struct approx_neighborhood_s {
+  // Note that unlike a chunk_neighborhood, this structure actually contains
+  // the chunk_or_approx elements directly, since a chunk_or_approx is kinda
+  // like a pointer itself.
+  global_chunk_pos glcpos; // Absolute location of central chunk.
+  chunk_or_approx members[27]; // chunk_or_approx members in xyz order.
+};
+
+struct cell_neighborhood_s {
+  global_pos glpos; // Absolute location of the central cell.
+  cell* members[27]; // Pointers to each member cell in xyz order.
 };
 
 /********************
@@ -365,6 +403,18 @@ static inline void aprx__coa(chunk_approximation *ca, chunk_or_approx *coa) {
   coa->ptr = (void *) ca;
 }
 
+// Returns the level of detail of a chunk or approximation. Returns N_LODS if
+// the given chunk or approximation has type CA_TYPE_NOT_LOADED.
+static inline lod coa_detail_level(chunk_or_approx *coa) {
+  if (coa->type == CA_TYPE_CHUNK) {
+    return LOD_BASE;
+  } else if (coa->type == CA_TYPE_APPROXIMATION) {
+    return ((chunk_approximation*)coa->ptr)->detail;
+  } else {
+    return N_LODS;
+  }
+}
+
 // Copying, adding, and other pseudo-conversion functions:
 
 static inline void copy_glpos(
@@ -384,6 +434,20 @@ static inline void copy_glcpos(
   destination->x = source->x;
   destination->y = source->y;
   destination->z = source->z;
+}
+
+static inline chunk_index cidx_add(
+  chunk_index first,
+  chunk_index second
+) {
+  chunk_index result;
+  result.combined = first.combined;
+  result.xyz.x += second.xyz.x;
+  result.xyz.y += second.xyz.y;
+  result.xyz.z += second.xyz.z;
+  result.xyz.w += second.xyz.w;
+  result.xyz.w = posmod(result.xyz.w, 2);
+  return result;
 }
 
 // Indexing functions:
@@ -414,6 +478,36 @@ static inline void c_paste_cell(
 ) {
   cell *dst = c_cell(c, idx);
   copy_cell(cl, dst);
+}
+
+// Picks out a cell from a chunk neighborhood based on an extended chunk index.
+static inline cell* nb_cell(
+  chunk_neighborhood *nbh,
+  chunk_index idx
+) {
+  size_t nb_i = NBH_CENTER; // default is central chunk of the neighborhood
+  if (idx.xyz.x < 0) {
+    idx.xyz.x += CHUNK_SIZE;
+    nb_i -= 9;
+  } else if (idx.xyz.x >= CHUNK_SIZE) {
+    idx.xyz.x -= CHUNK_SIZE;
+    nb_i += 9;
+  }
+  if (idx.xyz.y < 0) {
+    idx.xyz.y += CHUNK_SIZE;
+    nb_i -= 3;
+  } else if (idx.xyz.y >= CHUNK_SIZE) {
+    idx.xyz.y -= CHUNK_SIZE;
+    nb_i += 3;
+  }
+  if (idx.xyz.z < 0) {
+    idx.xyz.z += CHUNK_SIZE;
+    nb_i -= 1;
+  } else if (idx.xyz.z >= CHUNK_SIZE) {
+    idx.xyz.z -= CHUNK_SIZE;
+    nb_i += 1;
+  }
+  return c_cell(nbh->members[nb_i], idx);
 }
 
 // General utility functions:

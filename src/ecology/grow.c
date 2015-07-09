@@ -23,17 +23,17 @@ void update_growth(block *b) {
   // TODO: decay of dead parts...
 }
 
-void grow_seed_block(cell **cell_neighborhood, int is_primary) {
+void grow_seed_block(chunk_neighborhood *nbh, chunk_index idx) {
   // TODO: HERE
 }
 
 void grow_from_core(
-  chunk **chunk_neighborhood,
+  chunk_neighborhood *nbh,
   chunk_index idx,
   ptrdiff_t t
 ) {
   global_pos cell_position;
-  chunk *c = chunk_neighborhood[13];
+  chunk *c = nbh->members[NBH_CENTER];
   block *b = c_block(c, idx);
   cidx__glpos(c, &idx, &cell_position);
   ptrdiff_t growth_rate = get_growth_rate(*b);
@@ -45,14 +45,14 @@ void grow_from_core(
 }
 
 int grow_plants(chunk *c, ptrdiff_t cycles) {
-  chunk* neighborhood[27];
+  chunk_neighborhood nbh;
   chunk_index idx;
   ptrdiff_t t;
   cell* cl;
   block* b;
 
-  get_exact_chunk_neighborhood(&(c->glcpos), neighborhood);
-  if (neighborhood[0] == NULL) {
+  fill_chunk_neighborhood(&(c->glcpos), &nbh);
+  if (nbh.members[0] == NULL) {
     return 0; // failure: insufficient data
   }
 
@@ -66,7 +66,6 @@ int grow_plants(chunk *c, ptrdiff_t cycles) {
     for (idx.xyz.x = 0; idx.xyz.x < CHUNK_SIZE; ++idx.xyz.x) {
       for (idx.xyz.y = 0; idx.xyz.y < CHUNK_SIZE; ++idx.xyz.y) {
         for (idx.xyz.z = 0; idx.xyz.z < CHUNK_SIZE; ++idx.xyz.z) {
-          // TODO: Merge this with the loop below!
           cl = c_cell(c, idx);
           b = &(cl->blocks[0]);
           if (bi_grws(*b)) {

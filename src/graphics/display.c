@@ -408,8 +408,8 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   chunk *c;
   chunk_approximation *ca;
   global_chunk_pos* glcpos;
-  chunk_or_approx chunk_neighbors[27]; // zxy order
-  cell* neighborhood[27]; // also zxy order
+  approx_neighborhood apx_nbh;
+  cell_neighborhood cl_nbh;
   vertex_buffer *vb;
   block_info geom;
   int step = 1;
@@ -440,7 +440,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   }
 
   // Get the chunk neighborhood:
-  get_chunk_neighborhood(glcpos, chunk_neighbors);
+  fill_approx_neighborhood(glcpos, &apx_nbh);
 
   uint16_t counts[N_LAYERS];
   uint16_t total = 0;
@@ -461,7 +461,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
         } else {
           here = ca_cell(ca, idx);
         }
-        exposure = compute_cell_exposure(coa, idx, chunk_neighbors);
+        exposure = compute_cell_exposure(coa, idx, &apx_nbh);
         if (
           (exposure & BF_EXPOSED_ANY)
         &&
@@ -522,15 +522,15 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
     for (idx.xyz.y = 0; idx.xyz.y < CHUNK_SIZE; idx.xyz.y += step) {
       for (idx.xyz.z = 0; idx.xyz.z < CHUNK_SIZE; idx.xyz.z += step) {
         // get local cell and neighbors:
-        get_cell_neighborhood(idx, chunk_neighbors, neighborhood, step, &dummy);
-        here = neighborhood[13];
-        exposure = compute_cell_exposure(coa, idx, chunk_neighbors);
+        fill_cell_neighborhood(idx, &apx_nbh, &cl_nbh, step, &dummy);
+        here = cl_nbh.members[NBH_CENTER];
+        exposure = compute_cell_exposure(coa, idx, &apx_nbh);
         if (!b_is_invisible(here->blocks[0])) {
           ensure_mapped(here->blocks[0]);
           geom = bi_geom(here->blocks[0]);
           vb = &((*layers)[block_layer(here->blocks[0])]);
           if (geom == BI_GEOM_SOLID || geom == BI_GEOM_LIQUID) {
-            compute_lighting(neighborhood, 0, &ext_lighting);
+            compute_lighting(&cl_nbh, 0, &ext_lighting);
             add_solid_block(
               vb,
               here->blocks[0],
@@ -541,8 +541,8 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
               0
             );
           } else if (geom == BI_GEOM_GRASS) {
-            compute_lighting(neighborhood, 0, &ext_lighting);
-            compute_lighting(neighborhood, 1, &int_lighting);
+            compute_lighting(&cl_nbh, 0, &ext_lighting);
+            compute_lighting(&cl_nbh, 1, &int_lighting);
             add_grass_block(
               vb,
               here->blocks[0],
@@ -554,7 +554,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
               2
             );
           } else { // fall-back case is solid geometry:
-            compute_lighting(neighborhood, 0, &ext_lighting);
+            compute_lighting(&cl_nbh, 0, &ext_lighting);
             add_solid_block(
               vb,
               here->blocks[0],
@@ -576,7 +576,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
           || geom == BI_GEOM_ROOT
           ) {
             // TODO: this probably isn't necessary a second time
-            compute_lighting(neighborhood, 0, &ext_lighting);
+            compute_lighting(&cl_nbh, 0, &ext_lighting);
             add_solid_block(
               vb,
               here->blocks[1],
