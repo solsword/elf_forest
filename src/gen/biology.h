@@ -23,4 +23,18 @@
 // will set the chunk's CF_HAS_BIOLOGY flag.
 void add_biology(chunk *c);
 
+// Species generation functions:
+
+species create_new_fungus_species(ptrdiff_t seed);
+species create_new_moss_species(ptrdiff_t seed);
+species create_new_grass_species(ptrdiff_t seed);
+species create_new_vine_species(ptrdiff_t seed);
+species create_new_herb_species(ptrdiff_t seed);
+species create_new_bush_species(ptrdiff_t seed);
+species create_new_shrub_species(ptrdiff_t seed);
+species create_new_tree_species(ptrdiff_t seed);
+species create_new_aquatic_grass_species(ptrdiff_t seed);
+species create_new_aquatic_plant_species(ptrdiff_t seed);
+species create_new_coral_species(ptrdiff_t seed);
+
 #endif // ifndef BIOLOGY_H

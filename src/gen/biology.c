@@ -134,3 +134,49 @@ void add_biology(chunk *c) {
   // Set the CF_HAS_BIOLOGY flag for this chunk:
   c->chunk_flags |= CF_HAS_BIOLOGY;
 }
+
+
+species create_new_fungus_species(ptrdiff_t seed) {
+  return create_fungus_species();
+}
+
+species create_new_moss_species(ptrdiff_t seed) {
+  return create_moss_species();
+}
+
+species create_new_grass_species(ptrdiff_t seed) {
+  return create_grass_species();
+}
+
+species create_new_vine_species(ptrdiff_t seed) {
+  return create_vine_species();
+}
+
+species create_new_herb_species(ptrdiff_t seed) {
+  return create_herb_species();
+}
+
+species create_new_bush_species(ptrdiff_t seed) {
+  return create_bush_species();
+}
+
+species create_new_shrub_species(ptrdiff_t seed) {
+  return create_shrub_species();
+}
+
+species create_new_tree_species(ptrdiff_t seed) {
+  return create_tree_species();
+}
+
+species create_new_aquatic_grass_species(ptrdiff_t seed) {
+  return create_aquatic_grass_species();
+}
+
+species create_new_aquatic_plant_species(ptrdiff_t seed) {
+  return create_aquatic_plant_species();
+}
+
+species create_new_coral_species(ptrdiff_t seed) {
+  return create_coral_species();
+}
+
