@@ -95,19 +95,19 @@ int check_expansion(
   cg_expansion *cge
 );
 
-// TODO: Comment this
+// Chooses a random expansion from the given grammar that's valid at the given
+// location. Calls check_expansion to do so, so the returned expansion has its
+// target blocks bound at that location.
 cg_expansion* pick_expansion(
   chunk_neighborhood* nbh,
   chunk_index root,
-  cell_grammar *cg
+  cell_grammar *cg,
+  ptrdiff_t seed
 );
 
-// TODO: Comment this
-int apply_expansion(
-  chunk_neighborhood* nbh,
-  chunk_index root,
-  cg_expansion *cge
-);
+// Takes a bound grammar expansion and applies it. This will cause a segfault
+// if any member of the grammar is not bound to a block.
+void apply_expansion(cg_expansion *cge);
 
 // TODO: Comment this
 void build_grammar_from_string(string *definition);

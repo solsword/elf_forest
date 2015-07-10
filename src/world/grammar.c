@@ -76,40 +76,155 @@ int check_expansion(
   chunk_index root,
   cg_expansion *cge
 ) {
+  cell *cl;
+  size_t i;
+  int subresult;
+  chunk_index oidx;
+  cg_expansion* child;
+  block b;
   switch (cge->type) {
     default:
     case CGCT_BLOCK_RELATIVE:
-      // TODO: HERE
-      //cge->target = cidx_add(
-      break;
+      cge->target = nb_block(nbh, cidx_add(root, cge->offset));
+      b = *(cge->target);
+      if ((b & cge->cmp_mask) == cge->compare) {
+        return 1;
+      } else {
+        return 0;
+      }
     case CGCT_BLOCK_EXACT:
-      break;
+      cge->target = &(
+        nb_cell(
+          nbh,
+          cidx_add(root, cge->offset)
+        )->blocks[cge->offset.xyz.w]
+      );
+      b = *(cge->target);
+      if ((b & cge->cmp_mask) == cge->compare) {
+        return 1;
+      } else {
+        return 0;
+      }
     case CGCT_BLOCK_EITHER:
-      break;
+      cl = nb_cell(nbh, cidx_add(root, cge->offset));
+      // Try the first block:
+      cge->target = &(cl->blocks[cge->offset.xyz.w]);
+      b = *(cge->target);
+      if ((b & cge->cmp_mask) == cge->compare) {
+        return 1;
+      }
+      // Try the other block:
+      cge->target = &(cl->blocks[cge->offset.xyz.w ^ 1]);
+      b = *(cge->target);
+      if ((b & cge->cmp_mask) == cge->compare) {
+        return 1;
+      } else {
+        return 0;
+      }
     case CGCT_LOGICAL_AND:
-      break;
+      oidx = cidx_add(root, cge->offset);
+      cge->target = nb_block(nbh, oidx);
+      for(i = 0; i < l_get_length(cge->children); ++i) {
+        subresult = check_expansion(
+          nbh,
+          oidx,
+          (cg_expansion*) l_get_item(cge->children, i)
+        );
+        if (!subresult) { return 0; }
+      }
+      return 1;
     case CGCT_LOGICAL_OR:
-      break;
+      oidx = cidx_add(root, cge->offset);
+      cge->target = nb_block(nbh, oidx);
+      for(i = 0; i < l_get_length(cge->children); ++i) {
+        child = (cg_expansion*) l_get_item(cge->children, i);
+        subresult = check_expansion(
+          nbh,
+          oidx,
+          child
+        );
+        if (subresult) {
+          return 1;
+        } else {
+          child->target = NULL; // mark this child as failed
+        }
+      }
+      return 0;
     case CGCT_LOGICAL_NOT:
-      break;
+      oidx = cidx_add(root, cge->offset);
+      cge->target = nb_block(nbh, oidx);
+      for(i = 0; i < l_get_length(cge->children); ++i) {
+        child = (cg_expansion*) l_get_item(cge->children, i);
+        subresult = check_expansion(
+          nbh,
+          oidx,
+          child
+        );
+        if (subresult) { return 0; }
+      }
+      return 1;
   }
-  return 1;
+#ifdef DEBUG
+  return 0; // Should be unreachable
+#endif
 }
 
 cg_expansion* pick_expansion(
   chunk_neighborhood* nbh,
   chunk_index root,
-  cell_grammar *cg
+  cell_grammar *cg,
+  ptrdiff_t seed
 ) {
-  return NULL;
+  size_t i;
+  int success;
+  cg_expansion *exp;
+  list *options = create_list();
+  for (i = 0; i < l_get_length(cg->expansions); ++i) {
+    exp = (cg_expansion*) l_get_item(cg->expansions, i);
+    success = check_expansion(nbh, root, exp);
+    if (success) {
+      l_append_element(options, (void*) exp);
+    }
+  }
+  if (l_is_empty(options)) {
+    cleanup_list(options);
+    return NULL;
+  }
+  // Choose an option based on our seed:
+  i = posmod(prng(seed + 819991), l_get_length(options));
+  exp = (cg_expansion*) l_get_item(options, i);
+  cleanup_list(options);
+  return exp;
 }
 
-int apply_expansion(
-  chunk_neighborhood* nbh,
-  chunk_index root,
-  cg_expansion *cge
-) {
-  return 0;
+void apply_expansion(cg_expansion *cge) {
+  size_t i;
+  cg_expansion* child;
+  switch (cge->type) {
+    default:
+    case CGCT_BLOCK_RELATIVE:
+    case CGCT_BLOCK_EXACT:
+    case CGCT_BLOCK_EITHER:
+      *(cge->target) &= ~(cge->rpl_mask);
+      *(cge->target) |= (cge->rpl_mask & cge->replace);
+      break;
+    case CGCT_LOGICAL_AND:
+      for(i = 0; i < l_get_length(cge->children); ++i) {
+        apply_expansion((cg_expansion*) l_get_item(cge->children, i));
+      }
+      break;
+    case CGCT_LOGICAL_OR:
+      for(i = 0; i < l_get_length(cge->children); ++i) {
+        child = (cg_expansion*) l_get_item(cge->children, i);
+        if (child->target != NULL) {
+          apply_expansion(child);
+          break;
+        }
+      }
+      break;
+    case CGCT_LOGICAL_NOT:
+      break;
+  }
 }
 
 void build_grammar_from_string(string *definition) {

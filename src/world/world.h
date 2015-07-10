@@ -445,8 +445,7 @@ static inline chunk_index cidx_add(
   result.xyz.x += second.xyz.x;
   result.xyz.y += second.xyz.y;
   result.xyz.z += second.xyz.z;
-  result.xyz.w += second.xyz.w;
-  result.xyz.w = posmod(result.xyz.w, 2);
+  result.xyz.w ^= second.xyz.w;
   return result;
 }
 
@@ -481,10 +480,7 @@ static inline void c_paste_cell(
 }
 
 // Picks out a cell from a chunk neighborhood based on an extended chunk index.
-static inline cell* nb_cell(
-  chunk_neighborhood *nbh,
-  chunk_index idx
-) {
+static inline cell* nb_cell(chunk_neighborhood *nbh, chunk_index idx) {
   size_t nb_i = NBH_CENTER; // default is central chunk of the neighborhood
   if (idx.xyz.x < 0) {
     idx.xyz.x += CHUNK_SIZE;
@@ -508,6 +504,11 @@ static inline cell* nb_cell(
     nb_i += 1;
   }
   return c_cell(nbh->members[nb_i], idx);
+}
+
+static inline block* nb_block(chunk_neighborhood *nbh, chunk_index idx) {
+  cell *cl = nb_cell(nbh, idx);
+  return &(cl->blocks[idx.xyz.w]);
 }
 
 // General utility functions:

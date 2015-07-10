@@ -105,46 +105,46 @@ static inline void compute_lighting(
     switch (face) {
       case M_BD_FACE_FRONT:
       default:
-        o_base = 1;
-        o_n = 9;
-        o_e = -3;
-        o_s = -9;
-        o_w = 3;
+        o_base = 3;
+        o_n = 1;
+        o_e = -9;
+        o_s = -1;
+        o_w = 9;
         break;
       case M_BD_FACE_BACK:
-        o_base = -1;
-        o_n = 9;
-        o_e = 3;
-        o_s = -9;
-        o_w = -3;
+        o_base = -3;
+        o_n = 1;
+        o_e = 9;
+        o_s = -1;
+        o_w = -9;
         break;
       case M_BD_FACE_RIGHT:
-        o_base = -3;
-        o_n = 9;
-        o_e = -1;
-        o_s = -9;
-        o_w = 1;
+        o_base = -9;
+        o_n = 1;
+        o_e = -3;
+        o_s = -1;
+        o_w = 3;
         break;
       case M_BD_FACE_LEFT:
-        o_base = 3;
-        o_n = 9;
-        o_e = 1;
-        o_s = -9;
-        o_w = -1;
-        break;
-      case M_BD_FACE_TOP:
         o_base = 9;
         o_n = 1;
         o_e = 3;
         o_s = -1;
         o_w = -3;
         break;
+      case M_BD_FACE_TOP:
+        o_base = 1;
+        o_n = 3;
+        o_e = 9;
+        o_s = -3;
+        o_w = -9;
+        break;
       case M_BD_FACE_BOT:
-        o_base = -9;
-        o_n = 1;
-        o_e = -3;
-        o_s = -1;
-        o_w = 3;
+        o_base = -1;
+        o_n = 3;
+        o_e = -9;
+        o_s = -3;
+        o_w = 9;
         break;
     }
     if (internal) {

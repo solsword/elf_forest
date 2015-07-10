@@ -103,7 +103,7 @@ block compute_cell_exposure(
   }
   if (
     !occludes_face(
-      cl_nbh.members[NBH_CENTER+1]->blocks[0],
+      cl_nbh.members[NBH_CENTER+9]->blocks[0],
       cl_nbh.members[NBH_CENTER]->blocks[0]
     )
   ) {
@@ -113,7 +113,7 @@ block compute_cell_exposure(
   }
   if (
     !occludes_face(
-      cl_nbh.members[NBH_CENTER-1]->blocks[0],
+      cl_nbh.members[NBH_CENTER-9]->blocks[0],
       cl_nbh.members[NBH_CENTER]->blocks[0]
     )
   ) {
