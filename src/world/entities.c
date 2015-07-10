@@ -155,7 +155,7 @@ cell * head_cell(entity *e) {
   chunk_or_approx coa;
   global_pos glpos;
   global_chunk_pos glcpos;
-  chunk_index idx;
+  block_index idx;
 
   get_head_glpos(e, &glpos);
   glpos__glcpos(&glpos, &glcpos);

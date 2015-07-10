@@ -48,7 +48,7 @@ struct cell_grammar_s {
 struct cg_expansion_s {
   cg_expansion_type type;
   // For all expansions:
-  chunk_index offset;
+  block_index offset;
   // For BLOCK-type expansions:
   block cmp_mask;
   block compare;
@@ -91,7 +91,7 @@ cg_expansion* copy_cell_grammar_expansion(cg_expansion *cge);
 // on success and 0 on failure.
 int check_expansion(
   chunk_neighborhood* nbh,
-  chunk_index root,
+  block_index root,
   cg_expansion *cge
 );
 
@@ -100,7 +100,7 @@ int check_expansion(
 // target blocks bound at that location.
 cg_expansion* pick_expansion(
   chunk_neighborhood* nbh,
-  chunk_index root,
+  block_index root,
   cell_grammar *cg,
   ptrdiff_t seed
 );

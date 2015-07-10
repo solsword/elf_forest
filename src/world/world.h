@@ -45,14 +45,14 @@
 #define CA_CELL_SIG(NAME) \
   cell * NAME( \
     chunk_approximation const * const ca, \
-    chunk_index const * const idx \
+    block_index const * const idx \
   )
 
 #define CA_PASTE_CELL_FN(SCALE) ca_paste_cell_ ## SCALE
 #define CA_PASTE_CELL_SIG(NAME) \
   void NAME( \
     chunk_approximation const * const ca, \
-    chunk_index const * const idx, \
+    block_index const * const idx, \
     cell *cl \
   )
 
@@ -172,9 +172,9 @@ typedef struct cell_neighborhood_s cell_neighborhood;
 #define TOTAL_CHUNK_CELLS (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE)
 #define CH_MASK (CHUNK_SIZE - 1) // Chunk mask
 
-// Picks out a cell within a chunk:
-union chunk_index_u;
-typedef union chunk_index_u chunk_index;
+// Picks out a block within a chunk:
+union block_index_u;
+typedef union block_index_u block_index;
 
 /*************
  * Constants *
@@ -204,16 +204,16 @@ struct global_chunk_pos_s {
 };
 
 
-struct chunk_index_parts_s {
+struct block_index_parts_s {
   int8_t x, y, z, w;
     // Note that the bit width here must be >= CHUNK_BITS + 2 so that we can
     // have a sign bit and enough room to index chunks within a 3x3x3
     // neighborhood.
 } __attribute__((packed)); // Packed so that we can union with a uint32_t.
 
-union chunk_index_u {
+union block_index_u {
   uint32_t combined;
-  struct chunk_index_parts_s xyz;
+  struct block_index_parts_s xyz;
 }; // defined this way, chunk indices can fit in a void*, so we can put them
 // into lists, maps, etc.
 
@@ -328,7 +328,7 @@ static inline void glpos__glcpos(
 
 static inline void cidx__glpos(
   chunk const * const c,
-  chunk_index const * const idx,
+  block_index const * const idx,
   global_pos *pos
 ) {
   glcpos__glpos(&(c->glcpos), pos);
@@ -340,7 +340,7 @@ static inline void cidx__glpos(
 
 static inline void caidx__glpos(
   chunk_approximation const * const ca,
-  chunk_index const * const idx,
+  block_index const * const idx,
   global_pos *pos
 ) {
   glcpos__glpos(&(ca->glcpos), pos);
@@ -352,7 +352,7 @@ static inline void caidx__glpos(
 
 static inline void glpos__cidx(
   global_pos const * const glpos,
-  chunk_index *idx
+  block_index *idx
 ) {
   idx->xyz.x = glpos->x & CH_MASK;
   idx->xyz.y = glpos->y & CH_MASK;
@@ -436,11 +436,11 @@ static inline void copy_glcpos(
   destination->z = source->z;
 }
 
-static inline chunk_index cidx_add(
-  chunk_index first,
-  chunk_index second
+static inline block_index cidx_add(
+  block_index first,
+  block_index second
 ) {
-  chunk_index result;
+  block_index result;
   result.combined = first.combined;
   result.xyz.x += second.xyz.x;
   result.xyz.y += second.xyz.y;
@@ -454,7 +454,7 @@ static inline chunk_index cidx_add(
 
 static inline cell* c_cell(
   chunk *c,
-  chunk_index idx
+  block_index idx
 ) {
   return &(c->cells[
     (((int) idx.xyz.x) & CH_MASK) +
@@ -465,14 +465,14 @@ static inline cell* c_cell(
 
 static inline block* c_block(
   chunk *c,
-  chunk_index idx
+  block_index idx
 ) {
   return &(c_cell(c, idx)->blocks[idx.xyz.w]);
 }
 
 static inline void c_paste_cell(
   chunk *c,
-  chunk_index idx,
+  block_index idx,
   cell *cl
 ) {
   cell *dst = c_cell(c, idx);
@@ -480,7 +480,7 @@ static inline void c_paste_cell(
 }
 
 // Picks out a cell from a chunk neighborhood based on an extended chunk index.
-static inline cell* nb_cell(chunk_neighborhood *nbh, chunk_index idx) {
+static inline cell* nb_cell(chunk_neighborhood *nbh, block_index idx) {
   size_t nb_i = NBH_CENTER; // default is central chunk of the neighborhood
   if (idx.xyz.x < 0) {
     idx.xyz.x += CHUNK_SIZE;
@@ -506,7 +506,7 @@ static inline cell* nb_cell(chunk_neighborhood *nbh, chunk_index idx) {
   return c_cell(nbh->members[nb_i], idx);
 }
 
-static inline block* nb_block(chunk_neighborhood *nbh, chunk_index idx) {
+static inline block* nb_block(chunk_neighborhood *nbh, block_index idx) {
   cell *cl = nb_cell(nbh, idx);
   return &(cl->blocks[idx.xyz.w]);
 }
@@ -522,7 +522,7 @@ static inline void c_erase_cell_data(chunk *c) {
 }
 
 static inline void c_fill_with_block(chunk *c, block b) {
-  chunk_index idx = { .xyz = { .x = 0, .y = 0, .z = 0, .w=0 } };
+  block_index idx = { .xyz = { .x = 0, .y = 0, .z = 0, .w=0 } };
   c_erase_cell_data(c);
   for (idx.xyz.x = 0; idx.xyz.x < CHUNK_SIZE; ++idx.xyz.x) {
     for (idx.xyz.y = 0; idx.xyz.y < CHUNK_SIZE; ++idx.xyz.y) {
@@ -566,7 +566,7 @@ DECLARE_APPROX_FN_VARIANTS(CA_PASTE_CELL_SIG, CA_PASTE_CELL_FN)
 // defined by the macros above:
 static inline cell* ca_cell(
   chunk_approximation const * const ca,
-  chunk_index idx
+  block_index idx
 ) {
   return ca_cell_table[ca->detail](ca, &idx);
 }
@@ -575,7 +575,7 @@ static inline cell* ca_cell(
 // index. Returns NULL if it is within an unloaded chunk.
 static inline cell* nb_approx_cell(
   approx_neighborhood *nbh,
-  chunk_index idx
+  block_index idx
 ) {
   size_t nb_i = NBH_CENTER; // default is central chunk of the neighborhood
   chunk_or_approx *coa;

@@ -56,7 +56,7 @@ size_t INDEX_COUNT = 0;
 #define N1 sminof(GLshort) // -1
 static inline void push_top_face(
   vertex_buffer *vb,
-  chunk_index idx,
+  block_index idx,
   int scale,
   tcoords st,
   face_illumination light,
@@ -99,7 +99,7 @@ static inline void push_top_face(
 
 static inline void push_bottom_face(
   vertex_buffer *vb,
-  chunk_index idx,
+  block_index idx,
   int scale,
   tcoords st,
   face_illumination light,
@@ -142,7 +142,7 @@ static inline void push_bottom_face(
 
 static inline void push_north_face(
   vertex_buffer *vb,
-  chunk_index idx,
+  block_index idx,
   int scale,
   tcoords st,
   face_illumination light,
@@ -185,7 +185,7 @@ static inline void push_north_face(
 
 static inline void push_south_face(
   vertex_buffer *vb,
-  chunk_index idx,
+  block_index idx,
   int scale,
   tcoords st,
   face_illumination light,
@@ -228,7 +228,7 @@ static inline void push_south_face(
 
 static inline void push_east_face(
   vertex_buffer *vb,
-  chunk_index idx,
+  block_index idx,
   int scale,
   tcoords st,
   face_illumination light,
@@ -271,7 +271,7 @@ static inline void push_east_face(
 
 static inline void push_west_face(
   vertex_buffer *vb,
-  chunk_index idx,
+  block_index idx,
   int scale,
   tcoords st,
   face_illumination light,
@@ -322,7 +322,7 @@ static inline void add_solid_block(
   block b,
   block exposure,
   cube_illumination* lighting,
-  chunk_index idx,
+  block_index idx,
   int step,
   int zf_off
 ) {
@@ -366,7 +366,7 @@ static inline void add_grass_block(
   block exposure,
   cube_illumination* ext_lighting,
   cube_illumination* int_lighting,
-  chunk_index idx,
+  block_index idx,
   int step,
   int zf_off
 ) {
@@ -450,7 +450,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
     counts[i] = 0;
     reset_vertex_buffer(&((*layers)[i]));
   }
-  chunk_index idx;
+  block_index idx;
   cell *here = NULL;
   block exposure = 0;
   for (idx.xyz.x = 0; idx.xyz.x < CHUNK_SIZE; idx.xyz.x += step) {

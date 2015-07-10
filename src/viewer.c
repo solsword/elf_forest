@@ -206,7 +206,7 @@ chunk *get_observed_chunk() {
 
 void set_center_block(block b) {
   chunk *c = get_observed_chunk();
-  chunk_index idx;
+  block_index idx;
   idx.x = CHUNK_SIZE/2;
   idx.y = CHUNK_SIZE/2;
   idx.z = CHUNK_SIZE/2;
@@ -219,7 +219,7 @@ void set_center_block(block b) {
 
 block get_center_block() {
   chunk *c = get_observed_chunk();
-  chunk_index idx;
+  block_index idx;
   idx.x = CHUNK_SIZE/2;
   idx.y = CHUNK_SIZE/2;
   idx.z = CHUNK_SIZE/2;

@@ -23,13 +23,13 @@ void update_growth(block *b) {
   // TODO: decay of dead parts...
 }
 
-void grow_seed_block(chunk_neighborhood *nbh, chunk_index idx) {
+void grow_seed_block(chunk_neighborhood *nbh, block_index idx) {
   // TODO: HERE
 }
 
 void grow_from_core(
   chunk_neighborhood *nbh,
-  chunk_index idx,
+  block_index idx,
   ptrdiff_t t
 ) {
   global_pos cell_position;
@@ -46,7 +46,7 @@ void grow_from_core(
 
 int grow_plants(chunk *c, ptrdiff_t cycles) {
   chunk_neighborhood nbh;
-  chunk_index idx;
+  block_index idx;
   ptrdiff_t t;
   cell* cl;
   block* b;
@@ -72,6 +72,8 @@ int grow_plants(chunk *c, ptrdiff_t cycles) {
             update_growth(b);
             if (bi_gcore(*b)) {
               // TODO: process here!
+            } else if (bi_seed(*b)) {
+              // TODO: process here!
             }
           }
           b = &(cl->blocks[1]);
@@ -79,14 +81,8 @@ int grow_plants(chunk *c, ptrdiff_t cycles) {
             update_growth(b);
             if (bi_gcore(*b)) {
               // TODO: process here!
-            }
-          }
-          if (bi_grws(cl->blocks[0]) || bi_grws(cl->blocks[1])) {
-            // All growing things are subject to decay if not renewed:
-            // Primary:
-            // Secondary:
-            // TODO: decay of dead parts...
-            if (bi_gcore(cl->blocks[0]) || bi_gcore(cl->blocks[1])) {
+            } else if (bi_seed(*b)) {
+              // TODO: process here!
             }
           }
         }

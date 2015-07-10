@@ -37,7 +37,7 @@ static inline int occludes_face(block neighbor, block occluded) {
 
 block compute_cell_exposure(
   chunk_or_approx *coa,
-  chunk_index idx,
+  block_index idx,
   approx_neighborhood *apx_nbh
 ) {
   static cell dummy = {

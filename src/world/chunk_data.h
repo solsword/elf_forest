@@ -19,7 +19,7 @@
 // to unavailable neighbors are not exposed.
 block compute_cell_exposure(
   chunk_or_approx *coa,
-  chunk_index idx,
+  block_index idx,
   approx_neighborhood *apx_nbh
 );
 

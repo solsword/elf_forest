@@ -283,13 +283,13 @@ static inline void fill_chunk_neighborhood(
 // within the central chunk, to guarantee that its neighbors don't overflow the
 // bounds of the entire chunk neighborhood.
 static inline void fill_cell_neighborhood(
-  chunk_index idx,
+  block_index idx,
   approx_neighborhood* nbh,
   cell_neighborhood* result,
   int step,
   cell* dummy
 ) {
-  chunk_index nbr;
+  block_index nbr;
   chunk_or_approx *coa = &(nbh->members[NBH_CENTER]);
   lod center_detail = coa_detail_level(coa);
   size_t i = 0, j = 0;
@@ -359,13 +359,13 @@ static inline void fill_cell_neighborhood(
 // Works like fill_cell_neighborhood but requires a chunk neighborhood and
 // produces an exact cell neighborhood.
 static inline void fill_cell_neighborhood_exact(
-  chunk_index idx,
+  block_index idx,
   chunk_neighborhood* nbh,
   cell_neighborhood* result
 ) {
   // Note that the underflow should wrap correctly here, but we're fixing up
   // the values anyways.
-  chunk_index n_idx;
+  block_index n_idx;
   size_t i = 0;
   for (
     n_idx.xyz.x = idx.xyz.x - 1;

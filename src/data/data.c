@@ -654,7 +654,7 @@ void load_chunk_approx(chunk_approximation *ca) {
   // TODO: Data from disk!
   // TODO: Cell entities!
   int step = (1 << (ca->detail));
-  chunk_index idx;
+  block_index idx;
   global_pos glpos;
   chunk_or_approx coa;
   lod previous_detail;

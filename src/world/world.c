@@ -139,7 +139,7 @@ cell* cell_at(global_pos const * const glpos) {
   static global_chunk_pos last_glcpos = { .x = 0, .y = 0, .z = 0 };
   chunk_or_approx coa;
   static chunk_or_approx last_coa = { .type=CA_TYPE_NOT_LOADED, .ptr=NULL };
-  chunk_index cidx;
+  block_index cidx;
   static uint8_t last_salt = 1;
 
   glpos__glcpos(glpos, &glcpos);

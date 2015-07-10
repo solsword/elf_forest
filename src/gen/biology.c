@@ -13,7 +13,7 @@ void add_biology(chunk *c) {
   chunk_neighborhood ch_nbh;
   cell_neighborhood cl_nbh;
   cell* cl;
-  chunk_index idx;
+  block_index idx;
   global_pos glpos;
   if (c->chunk_flags & CF_HAS_BIOLOGY) {
     return; // Already has biology

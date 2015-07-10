@@ -73,13 +73,13 @@ cg_expansion* copy_cell_grammar_expansion(cg_expansion *cge) {
 
 int check_expansion(
   chunk_neighborhood* nbh,
-  chunk_index root,
+  block_index root,
   cg_expansion *cge
 ) {
   cell *cl;
   size_t i;
   int subresult;
-  chunk_index oidx;
+  block_index oidx;
   cg_expansion* child;
   block b;
   switch (cge->type) {
@@ -171,7 +171,7 @@ int check_expansion(
 
 cg_expansion* pick_expansion(
   chunk_neighborhood* nbh,
-  chunk_index root,
+  block_index root,
   cell_grammar *cg,
   ptrdiff_t seed
 ) {

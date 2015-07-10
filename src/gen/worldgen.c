@@ -277,7 +277,7 @@ void world_cell(world_map *wm, global_pos *glpos, cell *result) {
 }
 
 void generate_chunk(chunk *c) {
-  chunk_index idx;
+  block_index idx;
   global_pos glpos;
   // Generate base materials:
   idx.xyz.w = 0;
