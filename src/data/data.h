@@ -319,19 +319,19 @@ static inline void fill_cell_neighborhood(
         j = NBH_CENTER; // the center of the chunk neighborhood
         if (nbr.xyz.x < 0) {
           j -= 9;
-        } else if (idx.xyz.x >= CHUNK_SIZE) {
+        } else if (nbr.xyz.x >= CHUNK_SIZE) {
           j += 9;
         }
 
-        if (idx.xyz.y < 0) {
+        if (nbr.xyz.y < 0) {
           j -= 3;
-        } else if (idx.xyz.y >= CHUNK_SIZE) {
+        } else if (nbr.xyz.y >= CHUNK_SIZE) {
           j += 3;
         }
 
-        if (idx.xyz.z < 0) {
+        if (nbr.xyz.z < 0) {
           j -= 1;
-        } else if (idx.xyz.z >= CHUNK_SIZE) {
+        } else if (nbr.xyz.z >= CHUNK_SIZE) {
           j += 1;
         }
         coa = &(nbh->members[j]);
