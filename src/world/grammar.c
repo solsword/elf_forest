@@ -72,9 +72,10 @@ cg_expansion* copy_cell_grammar_expansion(cg_expansion *cge) {
  *************/
 
 int check_expansion(
+  cg_expansion *cge,
   chunk_neighborhood* nbh,
-  block_index root,
-  cg_expansion *cge
+  block_index base,
+  block root_block
 ) {
   cell *cl;
   size_t i;
@@ -82,10 +83,13 @@ int check_expansion(
   block_index oidx;
   cg_expansion* child;
   block b;
+  if (cge->check_relative) {
+    cge->compare = root_block;
+  }
   switch (cge->type) {
     default:
     case CGCT_BLOCK_RELATIVE:
-      cge->target = nb_block(nbh, cidx_add(root, cge->offset));
+      cge->target = nb_block(nbh, cidx_add(base, cge->offset));
       b = *(cge->target);
       if ((b & cge->cmp_mask) == cge->compare) {
         return 1;
@@ -96,7 +100,7 @@ int check_expansion(
       cge->target = &(
         nb_cell(
           nbh,
-          cidx_add(root, cge->offset)
+          cidx_add(base, cge->offset)
         )->blocks[cge->offset.xyz.w]
       );
       b = *(cge->target);
@@ -106,7 +110,7 @@ int check_expansion(
         return 0;
       }
     case CGCT_BLOCK_EITHER:
-      cl = nb_cell(nbh, cidx_add(root, cge->offset));
+      cl = nb_cell(nbh, cidx_add(base, cge->offset));
       // Try the first block:
       cge->target = &(cl->blocks[cge->offset.xyz.w]);
       b = *(cge->target);
@@ -122,26 +126,28 @@ int check_expansion(
         return 0;
       }
     case CGCT_LOGICAL_AND:
-      oidx = cidx_add(root, cge->offset);
+      oidx = cidx_add(base, cge->offset);
       cge->target = nb_block(nbh, oidx);
       for(i = 0; i < l_get_length(cge->children); ++i) {
         subresult = check_expansion(
+          (cg_expansion*) l_get_item(cge->children, i),
           nbh,
           oidx,
-          (cg_expansion*) l_get_item(cge->children, i)
+          root_block
         );
         if (!subresult) { return 0; }
       }
       return 1;
     case CGCT_LOGICAL_OR:
-      oidx = cidx_add(root, cge->offset);
+      oidx = cidx_add(base, cge->offset);
       cge->target = nb_block(nbh, oidx);
       for(i = 0; i < l_get_length(cge->children); ++i) {
         child = (cg_expansion*) l_get_item(cge->children, i);
         subresult = check_expansion(
+          child,
           nbh,
           oidx,
-          child
+          root_block
         );
         if (subresult) {
           return 1;
@@ -151,14 +157,15 @@ int check_expansion(
       }
       return 0;
     case CGCT_LOGICAL_NOT:
-      oidx = cidx_add(root, cge->offset);
+      oidx = cidx_add(base, cge->offset);
       cge->target = nb_block(nbh, oidx);
       for(i = 0; i < l_get_length(cge->children); ++i) {
         child = (cg_expansion*) l_get_item(cge->children, i);
         subresult = check_expansion(
+          child,
           nbh,
           oidx,
-          child
+          root_block
         );
         if (subresult) { return 0; }
       }
@@ -171,7 +178,7 @@ int check_expansion(
 
 cg_expansion* pick_expansion(
   chunk_neighborhood* nbh,
-  block_index root,
+  block_index base,
   cell_grammar *cg,
   ptrdiff_t seed
 ) {
@@ -179,9 +186,10 @@ cg_expansion* pick_expansion(
   int success;
   cg_expansion *exp;
   list *options = create_list();
+  block root_block = nb_block(nbh, base);
   for (i = 0; i < l_get_length(cg->expansions); ++i) {
     exp = (cg_expansion*) l_get_item(cg->expansions, i);
-    success = check_expansion(nbh, root, exp);
+    success = check_expansion(exp, nbh, base, root_block);
     if (success) {
       l_append_element(options, (void*) exp);
     }
@@ -197,7 +205,7 @@ cg_expansion* pick_expansion(
   return exp;
 }
 
-void apply_expansion(cg_expansion *cge) {
+void apply_expansion(cg_expansion *cge, block root_block) {
   size_t i;
   cg_expansion* child;
   switch (cge->type) {
@@ -205,6 +213,9 @@ void apply_expansion(cg_expansion *cge) {
     case CGCT_BLOCK_RELATIVE:
     case CGCT_BLOCK_EXACT:
     case CGCT_BLOCK_EITHER:
+      if (cge->replace_relative) {
+        cge->replace = root_block;
+      }
       *(cge->target) &= ~(cge->rpl_mask);
       *(cge->target) |= (cge->rpl_mask & cge->replace);
       break;

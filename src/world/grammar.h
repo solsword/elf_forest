@@ -50,6 +50,8 @@ struct cg_expansion_s {
   // For all expansions:
   block_index offset;
   // For BLOCK-type expansions:
+  int check_relative;
+  int replace_relative;
   block cmp_mask;
   block compare;
   block rpl_mask;
@@ -90,24 +92,26 @@ cg_expansion* copy_cell_grammar_expansion(cg_expansion *cge);
 // it sets target blocks for the members of that expansion tree. It returns 1
 // on success and 0 on failure.
 int check_expansion(
+  cg_expansion *cge,
   chunk_neighborhood* nbh,
-  block_index root,
-  cg_expansion *cge
+  block_index base,
+  block root_block
 );
 
 // Chooses a random expansion from the given grammar that's valid at the given
 // location. Calls check_expansion to do so, so the returned expansion has its
 // target blocks bound at that location.
 cg_expansion* pick_expansion(
-  chunk_neighborhood* nbh,
-  block_index root,
   cell_grammar *cg,
+  chunk_neighborhood* nbh,
+  block_index base,
   ptrdiff_t seed
 );
 
-// Takes a bound grammar expansion and applies it. This will cause a segfault
-// if any member of the grammar is not bound to a block.
-void apply_expansion(cg_expansion *cge);
+// Takes a bound grammar expansion and a root block and applies the expansion.
+// This will cause a segfault if any member of the grammar is not bound to a
+// block.
+void apply_expansion(cg_expansion *cge, block root_block);
 
 // TODO: Comment this
 void build_grammar_from_string(string *definition);

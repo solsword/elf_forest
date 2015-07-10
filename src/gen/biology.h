@@ -11,6 +11,9 @@
  * Constants *
  *************/
 
+extern cell_grammar BIO_CG_SPROUT_ABOVE_SOIL;
+extern cell_grammar BIO_CG_SPROUT_IN_SOIL;
+
 /*************
  * Functions *
  *************/
@@ -36,5 +39,11 @@ species create_new_tree_species(ptrdiff_t seed);
 species create_new_aquatic_grass_species(ptrdiff_t seed);
 species create_new_aquatic_plant_species(ptrdiff_t seed);
 species create_new_coral_species(ptrdiff_t seed);
+
+// Individual attribute generation functions:
+
+void determine_new_plant_materials(plant_materials *target, ptrdiff_t seed);
+void determine_new_herb_appearance(herb_appearance *target, seed);
+void determine_new_herb_core_growth(core_growth *target, seed);
 
 #endif // ifndef BIOLOGY_H

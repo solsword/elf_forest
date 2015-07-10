@@ -60,6 +60,9 @@ typedef enum leaf_shape_e leaf_shape;
  * Structures *
  **************/
 
+struct seeds_filter_args_s;
+typedef struct seeds_filter_args_s seed_filter_args;
+
 struct branch_filter_args_s;
 typedef struct branch_filter_args_s branch_filter_args;
 
@@ -80,7 +83,7 @@ typedef struct width_func_args_s width_func_args;
  *************************/
 
 struct branch_filter_args_s {
-  size_t seed; // integer seed
+  size_t seed; // random seed
   int gnarled; // whether to generate gnarled- or normal-type branches (0 or 1)
   int direction;
     // directionality of branch pattern:
@@ -101,7 +104,7 @@ struct branch_filter_args_s {
 };
 
 struct leaf_filter_args_s {
-  size_t seed; // integer seed
+  size_t seed; // random seed
   leaf_type type; // which algorithm to use
   leaf_shape shape; // which width function to use
   float angle; // what angle to pose at
@@ -115,7 +118,7 @@ struct leaf_filter_args_s {
 };
 
 struct leaves_filter_args_s {
-  size_t seed; // integer seed
+  size_t seed; // random seed
   size_t x_spacing, y_spacing; // leaf spacing
   leaf_filter_args leaf_args; // arguments for the individual leaves
 };

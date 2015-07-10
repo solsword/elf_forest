@@ -1240,7 +1240,7 @@ void determine_new_igneous_material(
 
   // A much tighter distribution of specific heats that correlates a bit with
   // density:
-  float base_specific_heat = (norm_hash_1d(seed) + norm_hash_1d(seed))/2.0;
+  float base_specific_heat = (norm_hash_1d(seed)+norm_hash_1d(prng(seed)))/2.0;
   base_specific_heat = 0.7*base_specific_heat + 0.3*(1 - base_density);
   seed = prng(seed);
 

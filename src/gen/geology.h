@@ -575,7 +575,7 @@ float sheet_height(
 // Generates geology for the given world.
 void generate_geology(world_map *wm);
 
-// Computes the heigh of the given stratum at the given coordinates (ignores z):
+// Computes the height of the given stratum at the given position (ignores z):
 gl_pos_t compute_stratum_height(stratum *st, global_pos *glpos);
 
 // Functions that create new types of stone:

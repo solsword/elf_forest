@@ -86,6 +86,14 @@ typedef struct seed_growth_pattern_s seed_growth_pattern;
 struct core_growth_pattern_s;
 typedef struct core_growth_pattern_s core_growth_pattern;
 
+// A collection of different materials common to most types of plant:
+struct plant_materials_s;
+typedef struct plant_materials_s plant_materials;
+
+// Various parameters that determine the appearance of an herb:
+struct herb_appearance_s;
+typedef struct herb_appearance_s herb_appearance;
+
 /**********************
  * Primary Structures *
  **********************/
@@ -169,13 +177,40 @@ extern map *FIBER_SPECIES; // various sources; uniform use
  * Structure Definitions *
  *************************/
 
+// Secondary structures:
+
 struct seed_growth_pattern_s {
-  // TODO: HERE
+  cell_grammar *grammar;
+  // TODO: More complex growth speeds (by block type; age; for different growth
+  // events; etc.)
+  ptrdiff_t growth_rate;
+  // TODO: More here?
 };
 
 struct core_growth_pattern_s {
   // TODO: HERE
 };
+
+struct plant_materials_s {
+  material seeds_material;
+  material root_material;
+  material leaf_material;
+  material fruit_material;
+};
+
+struct herb_appearance_s {
+  // TODO: More appearance diversity?
+  leaves_filter_args seeds;
+  branch_filter_args roots;
+  herb_leaves_filter_args shoots;
+  herb_leaves_filter_args leaves;
+  leaves_filter_args buds;
+  leaves_filter_args flowers;
+  leaves_filter_args fruit;
+};
+
+
+// Primary structures:
 
 /*
 struct dirt_species_s {
@@ -228,8 +263,8 @@ struct vine_species_s {
 */
 
 struct herb_species_s {
-  material material;
-  herb_leaves_filter_args appearance; // TODO: more appearance variety
+  plant_materials materials;
+  herb_appearance appearance;
   seed_growth_pattern seed_growth;
   core_growth_pattern core_growth;
 };
