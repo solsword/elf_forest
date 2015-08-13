@@ -40,6 +40,7 @@ char const * const WORLD_MAP_FILE_LRAIN = "out/world_map_land_rain.png";
 
 void setup_worldgen(ptrdiff_t seed) {
   setup_terrain_gen();
+  setup_biology_gen();
   THE_WORLD = create_world_map(prng(seed + 71), WORLD_WIDTH, WORLD_HEIGHT);
   printf("  ...initializing world...\n");
   init_world_map(THE_WORLD);

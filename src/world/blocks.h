@@ -114,6 +114,8 @@ static block const   BF_EXPOSED_WEST = 1 << BFS_EXPOSED_WEST_SHIFT;
 static block const BM_ORIENTATION = ((1 << BLOCK_ORI_BITS) - 1) << BS_ORI;
 static block const        BM_DATA = ((1 << BLOCK_DAT_BITS) - 1) << BS_DAT;
 static block const     BM_SPECIES = ((1 << BLOCK_SPC_BITS) - 1) << BS_SPC;
+static block const          BM_ID = ((1 << BLOCK_ID_BITS ) - 1) << BS_ID;
+static block const  BM_FULL_BLOCK = umaxof(block);
 
 // Info Masks:
 // -----------
@@ -135,12 +137,14 @@ static block_info const    BIM_GEOMETRY = 0x0f << BIMS_GEOMETRY;
 #define        BIFS_GROWS 0xc
 #define         BIFS_SEED 0xd
 #define  BIFS_GROWTH_CORE 0xe
+#define      BIFS_AQUATIC 0xf
 
 static block_info const  BIF_ANISOTROPIC = 1 << BIFS_ANISOTROPIC;
 static block_info const   BIF_ORIENTABLE = 1 << BIFS_ORIENTABLE;
 static block_info const        BIF_GROWS = 1 << BIFS_GROWS;
 static block_info const         BIF_SEED = 1 << BIFS_SEED;
 static block_info const  BIF_GROWTH_CORE = 1 << BIFS_GROWTH_CORE;
+static block_info const      BIF_AQUATIC = 1 << BIFS_AQUATIC;
 
 /********
  * Info *
@@ -337,17 +341,19 @@ static block const ROTATE_FACE[8][8] = {
 #define                   B_MUSHROOM_SPORES 0x040
 #define                   B_MUSHROOM_SHOOTS 0x041
 #define                    B_MUSHROOM_GROWN 0x042
-#define               B_GIANT_MUSHROOM_CORE 0x043
-#define           B_GIANT_MUSHROOM_MYCELIUM 0x044
-#define             B_GIANT_MUSHROOM_SPROUT 0x045
-#define              B_GIANT_MUSHROOM_STALK 0x046
-#define                B_GIANT_MUSHROOM_CAP 0x047
 
-#define                       B_MOSS_SPORES 0x048
-#define                       B_MOSS_SHOOTS 0x049
-#define                        B_MOSS_GROWN 0x04a
-#define                    B_MOSS_FLOWERING 0x04b
-#define                     B_MOSS_FRUITING 0x04c
+#define             B_GIANT_MUSHROOM_SPORES 0x044
+#define               B_GIANT_MUSHROOM_CORE 0x045
+#define           B_GIANT_MUSHROOM_MYCELIUM 0x046
+#define             B_GIANT_MUSHROOM_SPROUT 0x047
+#define              B_GIANT_MUSHROOM_STALK 0x048
+#define                B_GIANT_MUSHROOM_CAP 0x049
+
+#define                       B_MOSS_SPORES 0x04a
+#define                       B_MOSS_SHOOTS 0x04b
+#define                        B_MOSS_GROWN 0x04c
+#define                    B_MOSS_FLOWERING 0x04d
+#define                     B_MOSS_FRUITING 0x04e
 
 #define                       B_GRASS_SEEDS 0x050
 #define                       B_GRASS_ROOTS 0x051
@@ -540,6 +546,7 @@ static inline species b_species(block b) { return (b & BM_SPECIES) >> BS_SPC; }
 static inline block b_idspc(block b) { return b >> BS_SPC; }
 static inline block b_data(block b) { return (b & BM_DATA) >> BS_DAT; }
 static inline block b_ori(block b) { return (b & BM_ORIENTATION) >> BS_ORI; }
+static inline block_info b_info(block b) { return BLOCK_INFO[b_id(b)]; }
 
 // Per-block-type properties:
 static inline block_info bi_vis(block b) {
@@ -565,6 +572,9 @@ static inline block_info bi_seed(block b) {
 }
 static inline block_info bi_gcore(block b) {
   return (BLOCK_INFO[b_id(b)] & BIF_GROWTH_CORE) >> BIFS_GROWTH_CORE;
+}
+static inline block_info bi_gaqua(block b) {
+  return (BLOCK_INFO[b_id(b)] & BIF_AQUATIC) >> BIFS_AQUATIC;
 }
 
 // Constructors:

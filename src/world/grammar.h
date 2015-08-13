@@ -16,14 +16,38 @@
 
 // Different expansion types.
 enum cg_expansion_type_e {
-  CGCT_BLOCK_RELATIVE,
-  CGCT_BLOCK_EXACT,
-  CGCT_BLOCK_EITHER,
-  CGCT_LOGICAL_AND,
-  CGCT_LOGICAL_OR,
-  CGCT_LOGICAL_NOT
+  CGET_BLOCK_RELATIVE,
+  CGET_BLOCK_EXACT,
+  CGET_BLOCK_EITHER,
+  CGET_LOGICAL_AND,
+  CGET_LOGICAL_OR,
+  CGET_LOGICAL_NOT
 };
 typedef enum cg_expansion_type_e cg_expansion_type;
+
+// Different comparison strategies.
+enum cg_comparison_strategy_e {
+  CGCS_EXACT,
+  CGCS_CAN_GROW,
+  CGCS_CANT_GROW,
+  CGCS_BLOCKS_GROWTH,
+  CGCS_ROOT,
+  CGCS_ROOT_ID,
+  CGCS_ROOT_SPECIES,
+  CGCS_ROOT_CAN_GROW,
+  CGCS_ROOT_CANT_GROW,
+  CGCS_BLOCK_INFO
+};
+typedef enum cg_comparison_strategy_e cg_comparison_strategy;
+
+// Different replacement strategies.
+enum cg_replacement_strategy_e {
+  CGRS_NONE,
+  CGRS_EXACT,
+  CGRS_ROOT,
+  CGRS_ROOT_SPECIES
+};
+typedef enum cg_replacement_strategy_e cg_replacement_strategy;
 
 /**************
  * Structures *
@@ -47,15 +71,19 @@ struct cell_grammar_s {
 
 struct cg_expansion_s {
   cg_expansion_type type;
+
   // For all expansions:
   block_index offset;
+
   // For BLOCK-type expansions:
-  int check_relative;
-  int replace_relative;
+  cg_comparison_strategy cmp_strategy;
   block cmp_mask;
   block compare;
+
+  cg_replacement_strategy rpl_strategy;
   block rpl_mask;
   block replace;
+
   // For LOGICAL-type expansions:
   list* children;
   // For use during expansion:
@@ -87,6 +115,12 @@ cg_expansion* copy_cell_grammar_expansion(cg_expansion *cge);
 /*************
  * Functions *
  *************/
+
+// Adds the given expansion to the given grammar.
+void cg_add_expansion(cell_grammar *cg, cg_expansion *cge);
+
+// Adds the given expansion to the children list of the given parent.
+void cge_add_child(cg_expansion *parent, cg_expansion *child);
 
 // Checks whether the given expansion fits at the given location. As it does so
 // it sets target blocks for the members of that expansion tree. It returns 1

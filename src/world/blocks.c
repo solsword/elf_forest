@@ -8,15 +8,18 @@
  **********************/
 
 // Bits are:
-//  1-2: Visibility (visible, invisible, transparent, translucent)
-//  3-4: Substance (solid, liquid, empty, obstructed)
-//  5-8: Geometry (full, half, liquid, grass, etc.)
-//  9: Anisotropic (different textures for different faces)
-//  10: Orientable (can be placed facing multiple directions)
+//  0-1: Visibility (visible, invisible, transparent, translucent)
+//  2-3: Substance (solid, liquid, empty, obstructed)
 //
-//  13: Grows (will be processed by the ecology subsystem)
-//  14: Seed (grows by grammar transformations)
-//  15: Growth core (grows using growth particles)
+//  4-7: Geometry (full, half, liquid, grass, etc.)
+//
+//  8: Anisotropic (different textures for different faces)
+//  9: Orientable (can be placed facing multiple directions)
+//
+//  12: Grows (will be processed by the ecology subsystem)
+//  13: Seed (grows by grammar transformations)
+//  14: Growth core (grows using growth particles)
+//  15: Aquatic (grows in water instead of air)
 
 block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 //  VOID:             BOUNDARY:         AIR:              ETHER:
@@ -51,14 +54,14 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x03f
-//  MUSHROOM_SPORES:  MUSHROOM_SHOOTS:  MUSHROOM:         GIANT_MSH_CORE:
-    0x000030f9,       0x0000304a,       0x0000304a,       0x0000506e,
-//  GIANT_MSH_MYCEL   GIANT_MSH_SPROUT  GIANT_MSH_STALK:  GIANT_MSH_CAP:
-    0x0000106e,       0x0000104e,       0x00001300,       0x00001300,
-//  MOSS_SPORES:      MOSS_SHOOTS:      MOSS:             MOSS_FLOWERS:
-    0x000030f9,       0x0000305a,       0x0000305a,       0x0000305a,
-//  MOSS_FRUIT:       ____:              ____:            ____:
-    0x0003045a,       0x00000000,       0x00000000,       0x00000000, // 0x04f
+//  MUSHROOM_SPORES:  MUSHROOM_SHOOTS:  MUSHROOM:         ____:
+    0x000030f9,       0x0000304a,       0x0000304a,       0x00000000,
+//  GIANT_MSH_SPORES: GIANT_MSH_CORE:   GIANT_MSH_MYCEL:  GIANT_MSH_SPROUT:
+    0x0000306a,       0x0000506e,       0x0000106e,       0x0000104e,
+//  GIANT_MSH_STALK:  GIANT_MSH_CAP:    MOSS_SPORES       MOSS:
+    0x00001300,       0x00001300,       0x000030f9,       0x0000305a,
+//  MOSS_SHOOTS:      MOSS_FLOWERS:     MOSS_FRUIT:       ____:
+    0x0000305a,       0x0000305a,       0x0000305a,       0x00000000, // 0x04f
 //  GRASS_SEEDS:      GRASS_ROOTS:      GRASS_SHOOTS:     GRASS:
     0x0000306a,       0x0000306e,       0x0000303a,       0x0000303a,
 //  GRASS_BUDS:       GRASS_FLOWERS:    GRASS_FRUIT:      ____:
@@ -106,15 +109,15 @@ block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
 //  FRT_TREE_LEAVES:  SHD_TREE_LEAVES:  DMT_TREE_LEAVES:  ____:
     0x0000100e,       0x0000100e,       0x0000100e,       0x00000000,
 //  AQ_GRASS_SEEDS:   AQ_GRASS_ROOTS:   AQ_GRASS_SHOOTS:  AQ_GRASS:
-    0x0000306a,       0x0000306e,       0x0000304e,       0x0000304e, // 0x0af
+    0x0000b06a,       0x0000b06e,       0x0000b04e,       0x0000b04e, // 0x0af
 //  AQ_GRASS_FLOWERS: AQ_GRASS_FRUIT:   ____:             ____:
-    0x0000304e,       0x0000304e,       0x00000000,       0x00000000,
+    0x0000b04e,       0x0000b04e,       0x00000000,       0x00000000,
 //  AQ_PLANT_SEEDS:   AQ_PLANT_CORE:    AQ_PLANT_ANCHORS: AQ_PLANT_SHOOTS:
-    0x0000306a,       0x0000506e,       0x0000106e,       0x0000104e,
+    0x0000b06a,       0x0000d06e,       0x0000906e,       0x0000904e,
 //  AQ_PLANT_STEMS:   AQ_PLANT_LEAVES:  AQ_PLANT_FLOWERS: AQ_PLANT_FRUIT:
-    0x0000107e,       0x0000107e,       0x0000107e,       0x0000107e,
+    0x0000907e,       0x0000907e,       0x0000907e,       0x0000907e,
 //  YOUNG_CORAL:      CORAL_CORE:       CORAL_BODY:       CORAL_FROND:
-    0x0000304e,       0x00005000,       0x00001000,       0x0000104e, // 0x0bf
+    0x0000b04e,       0x0000d000,       0x00009000,       0x0000904e, // 0x0bf
 //  SMOOTHED_ROCK:    HEWN_ROCK_GRATE:  ____:             ____:
     0x00000000,       0x000002c2,       0x00000000,       0x00000000,
 //  ____:             ____:             ____:             ____:
@@ -298,10 +301,10 @@ char const * const BLOCK_NAMES[TOTAL_BLOCK_TYPES] = {
 "____"             ,"____"             ,"____"             ,"____"             ,
 "____"             ,"____"             ,"____"             ,"____"             ,
 // 0x03f                                                   
-"mushroom_spores"  ,"mushroom_shoots"  ,"mushroom"         ,"g_mushroom_core"  ,
-"giant_mycelium"   ,"g_mushroom_sprout","g_mushroom_stalk" ,"g_mushroom_cap"   ,
-"moss_spores"      ,"moss_shoots"      ,"moss"             ,"flowering_moss"   ,
-"fruiting_moss"    ,"____"             ,"____"             ,"____"             ,
+"mushroom_spores"  ,"mushroom_shoots"  ,"mushroom"         ,"____"             ,
+"g_mushroom_spores","g_mushroom_core"  ,"giant_mycelium"   ,"g_mushroom_sprout",
+"g_mushroom_stalk" ,"g_mushroom_cap"   ,"moss_spores"      ,"moss_shoots"      ,
+"moss"             ,"flowering_moss"   , "fruiting_moss"    ,"____"            ,
 // 0x04f
 "grass_seeds"      ,"grass_roots"      ,"grass_shoots"     ,"grass"            ,
 "budding_grass"    ,"flowering_grass"  ,"fruiting_grass"   ,"____"             ,

@@ -6,17 +6,35 @@
 
 #include "world/world_map.h"
 #include "world/species.h"
+#include "world/grammar.h"
 
 /*************
  * Constants *
  *************/
 
-extern cell_grammar BIO_CG_SPROUT_ABOVE_SOIL;
-extern cell_grammar BIO_CG_SPROUT_IN_SOIL;
+extern cell_grammar *BIO_CG_SPROUT_IN_SOIL;
+extern cell_grammar *BIO_CG_SPROUT_ABOVE_SOIL;
+extern cell_grammar *BIO_CG_SPROUT_IN_SOIL_UNDERWATER;
+extern cell_grammar *BIO_CG_SPROUT_ABOVE_SOIL_UNDERWATER;
 
 /*************
  * Functions *
  *************/
+
+// Adds an expansion to one of the four default sprouting grammars for
+// sprouting the given seed into the given root and shoots within the given
+// substrate (or above it), possibly underwater.
+cell_grammar* add_sprout_grammar(
+  block seed,
+  block root,
+  block shoots,
+  block substrate,
+  int above_soil,
+  int underwater
+);
+
+// Setup for the biology generation module.
+void setup_biology_gen(void);
 
 // Adds biology to the given chunk as part of chunk initialization. Should be
 // called after the chunk's base cell contents (rocks, soil, air, water) have
@@ -25,6 +43,10 @@ extern cell_grammar BIO_CG_SPROUT_IN_SOIL;
 // flag is already set, it will fail and return immediately. If it succeeds, it
 // will set the chunk's CF_HAS_BIOLOGY flag.
 void add_biology(chunk *c);
+
+// Generalized access functions:
+
+ptrdiff_t get_species_growth_strength(block b, int resist);
 
 // Species generation functions:
 

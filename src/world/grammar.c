@@ -17,6 +17,33 @@ void _iter_cleanup_cell_grammar_expansions(void* vcge) {
   cleanup_cell_grammar_expansion(cge);
 }
 
+/********************
+ * Helper Functions *
+ ********************/
+
+static inline int _check_block(
+  cg_comparison_strategy strategy,
+  block b,
+  block compare,
+  block mask
+) {
+  if (strategy == CGCS_CAN_GROW || strategy == CGCS_ROOT_CAN_GROW) {
+    ptrdiff_t resist = get_species_growth_strength(b, 1);
+    ptrdiff_t strength = get_species_growth_strength(compare, 0);
+    return resist < strength;
+  } else if (strategy == CGCS_CANT_GROW || strategy == CGCS_ROOT_CANT_GROW) {
+    ptrdiff_t resist = get_species_growth_strength(b, 1);
+    ptrdiff_t strength = get_species_growth_strength(compare, 0);
+    return resist >= strength;
+  } else if (strategy == CGCS_BLOCKS_GROWTH) {
+    return get_species_growth_strength(b, 1) >= compare;
+  } else if (strategy == CGCS_BLOCK_INFO) {
+    return b_info(b) & mask == (block_info) (compare & mask);
+  } else {
+    return b & mask == compare & mask;
+  }
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -71,6 +98,14 @@ cg_expansion* copy_cell_grammar_expansion(cg_expansion *cge) {
  * Functions *
  *************/
 
+void cg_add_expansion(cell_grammar *cg, cg_expansion *cge) {
+  l_append_element(cg->expansions, (void*) cge);
+}
+
+void cge_add_child(cg_expansion *parent, cg_expansion *child) {
+  l_append_element(parent->children, (void*) child);
+}
+
 int check_expansion(
   cg_expansion *cge,
   chunk_neighborhood* nbh,
@@ -83,20 +118,39 @@ int check_expansion(
   block_index oidx;
   cg_expansion* child;
   block b;
-  if (cge->check_relative) {
-    cge->compare = root_block;
+  block compare;
+  switch (cge->cmp_strategy) {
+    default:
+    case CGCS_EXACT:
+    case CGCS_CAN_GROW:
+    case CGCS_CANT_GROW:
+    case CGCS_BLOCKS_GROWTH:
+    case CGCS_BLOCK_INFO:
+      compare = cge->compare;
+      break;
+    case CGCS_ROOT:
+    case CGCS_ROOT_CAN_GROW:
+    case CGCS_ROOT_CANT_GROW:
+      compare = root_block;
+      break;
+    case CGCS_ROOT_ID:
+      compare = cge->compare;
+      compare &= ~BM_ID;
+      compare |= (root_block & BM_ID);
+      break;
+    case CGCS_ROOT_SPECIES:
+      compare = cge->compare;
+      compare &= ~BM_SPECIES;
+      compare |= (root_block & BM_SPECIES);
+      break;
   }
   switch (cge->type) {
     default:
-    case CGCT_BLOCK_RELATIVE:
+    case CGET_BLOCK_RELATIVE:
       cge->target = nb_block(nbh, cidx_add(base, cge->offset));
       b = *(cge->target);
-      if ((b & cge->cmp_mask) == cge->compare) {
-        return 1;
-      } else {
-        return 0;
-      }
-    case CGCT_BLOCK_EXACT:
+      return _check_block(cge->cmp_strategy, b, compare, cge->cmp_mask);
+    case CGET_BLOCK_EXACT:
       cge->target = &(
         nb_cell(
           nbh,
@@ -104,28 +158,23 @@ int check_expansion(
         )->blocks[cge->offset.xyz.w]
       );
       b = *(cge->target);
-      if ((b & cge->cmp_mask) == cge->compare) {
-        return 1;
-      } else {
-        return 0;
-      }
-    case CGCT_BLOCK_EITHER:
+      return _check_block(cge->cmp_strategy, b, compare, cge->cmp_mask);
+    case CGET_BLOCK_EITHER:
       cl = nb_cell(nbh, cidx_add(base, cge->offset));
       // Try the first block:
       cge->target = &(cl->blocks[cge->offset.xyz.w]);
       b = *(cge->target);
-      if ((b & cge->cmp_mask) == cge->compare) {
+      if ((b & cge->cmp_mask) == compare) {
+        return 1;
+      }
+      if (_check_block(cge->cmp_strategy, b, compare, cge->cmp_mask)) {
         return 1;
       }
       // Try the other block:
       cge->target = &(cl->blocks[cge->offset.xyz.w ^ 1]);
       b = *(cge->target);
-      if ((b & cge->cmp_mask) == cge->compare) {
-        return 1;
-      } else {
-        return 0;
-      }
-    case CGCT_LOGICAL_AND:
+      return _check_block(cge->cmp_strategy, b, compare, cge->cmp_mask);
+    case CGET_LOGICAL_AND:
       oidx = cidx_add(base, cge->offset);
       cge->target = nb_block(nbh, oidx);
       for(i = 0; i < l_get_length(cge->children); ++i) {
@@ -138,7 +187,7 @@ int check_expansion(
         if (!subresult) { return 0; }
       }
       return 1;
-    case CGCT_LOGICAL_OR:
+    case CGET_LOGICAL_OR:
       oidx = cidx_add(base, cge->offset);
       cge->target = nb_block(nbh, oidx);
       for(i = 0; i < l_get_length(cge->children); ++i) {
@@ -156,7 +205,7 @@ int check_expansion(
         }
       }
       return 0;
-    case CGCT_LOGICAL_NOT:
+    case CGET_LOGICAL_NOT:
       oidx = cidx_add(base, cge->offset);
       cge->target = nb_block(nbh, oidx);
       for(i = 0; i < l_get_length(cge->children); ++i) {
@@ -207,24 +256,30 @@ cg_expansion* pick_expansion(
 
 void apply_expansion(cg_expansion *cge, block root_block) {
   size_t i;
+  block replace = cge->replace;
   cg_expansion* child;
   switch (cge->type) {
     default:
-    case CGCT_BLOCK_RELATIVE:
-    case CGCT_BLOCK_EXACT:
-    case CGCT_BLOCK_EITHER:
-      if (cge->replace_relative) {
-        cge->replace = root_block;
+    case CGET_BLOCK_RELATIVE:
+    case CGET_BLOCK_EXACT:
+    case CGET_BLOCK_EITHER:
+      if (cge->rpl_strategy == CGRS_NONE) {
+        break;
+      } else if (cge->rpl_strategy == CGRS_ROOT) {
+        replace = root_block;
+      } else if (cge->rpl_strategy == CGRS_ROOT_SPECIES) {
+        replace &= ~BM_SPECIES;
+        replace |= (root_block & BM_SPECIES);
       }
       *(cge->target) &= ~(cge->rpl_mask);
       *(cge->target) |= (cge->rpl_mask & cge->replace);
       break;
-    case CGCT_LOGICAL_AND:
+    case CGET_LOGICAL_AND:
       for(i = 0; i < l_get_length(cge->children); ++i) {
         apply_expansion((cg_expansion*) l_get_item(cge->children, i));
       }
       break;
-    case CGCT_LOGICAL_OR:
+    case CGET_LOGICAL_OR:
       for(i = 0; i < l_get_length(cge->children); ++i) {
         child = (cg_expansion*) l_get_item(cge->children, i);
         if (child->target != NULL) {
@@ -233,7 +288,7 @@ void apply_expansion(cg_expansion *cge, block root_block) {
         }
       }
       break;
-    case CGCT_LOGICAL_NOT:
+    case CGET_LOGICAL_NOT:
       break;
   }
 }

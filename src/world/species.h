@@ -6,6 +6,8 @@
 #include "txgen/txg_minerals.h"
 #include "txgen/txg_plants.h"
 
+#include "world/grammar.h"
+
 #include "materials.h"
 
 // species.h
@@ -77,6 +79,11 @@ _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
  * Secondary Structures *
  ************************/
 
+// Growth properties are common across all growing things and contain
+// information like growth priority and patterns.
+struct growth_properties_s;
+typedef struct growth_properties_s growth_properties;
+
 // Growth patterns determine how growing things grow.
 // Seed growth patterns are used for seed-type blocks.
 struct seed_growth_pattern_s;
@@ -86,11 +93,21 @@ typedef struct seed_growth_pattern_s seed_growth_pattern;
 struct core_growth_pattern_s;
 typedef struct core_growth_pattern_s core_growth_pattern;
 
-// A collection of different materials common to most types of plant:
+
+// These materials structures each bundle together a few materials that define
+// different parts of an organism:
+
+struct fungus_materials_s;
+typedef struct fungus_materials_s fungus_materials;
+
 struct plant_materials_s;
 typedef struct plant_materials_s plant_materials;
 
-// Various parameters that determine the appearance of an herb:
+struct coral_materials_s;
+typedef struct coral_materials_s coral_materials;
+
+
+// Various parameters that determine the appearance of an herb.
 struct herb_appearance_s;
 typedef struct herb_appearance_s herb_appearance;
 
@@ -179,11 +196,19 @@ extern map *FIBER_SPECIES; // various sources; uniform use
 
 // Secondary structures:
 
+struct growth_properties_s {
+  ptrdiff_t seed_growth_resist;
+  ptrdiff_t growth_resist;
+  ptrdiff_t growth_strength;
+  seed_growth_pattern seed_growth;
+  core_growth_pattern core_growth;
+}
+
 struct seed_growth_pattern_s {
   cell_grammar *grammar;
   // TODO: More complex growth speeds (by block type; age; for different growth
   // events; etc.)
-  ptrdiff_t growth_rate;
+  ptrdiff_t sprout_time;
   // TODO: More here?
 };
 
@@ -191,11 +216,26 @@ struct core_growth_pattern_s {
   // TODO: HERE
 };
 
+struct fungus_materials_s {
+  material spores;
+  material mycelium;
+  material stalk;
+  material cap;
+};
+
 struct plant_materials_s {
-  material seeds_material;
-  material root_material;
-  material leaf_material;
-  material fruit_material;
+  material seeds;
+  material root;
+  material wood;
+  material dry_wood;
+  material stem;
+  material leaf;
+  material fruit;
+};
+
+struct coral_materials_s {
+  material anchor;
+  material frond;
 };
 
 struct herb_appearance_s {
@@ -234,83 +274,75 @@ struct metal_species_s {
   material material;
   metal_texture_params appearance;
 };
+*/
 
 struct fungus_species_s {
-  material material;
-  fungus_texture_params appearance;
-  seed_growth_pattern_s seed_growth;
-  core_growth_pattern core_growth;
+  fungus_materials materials;
+  // fungus_texture_params appearance;
+  growth_properties growth;
 };
 
 struct moss_species_s {
-  material material;
-  moss_texture_params appearance;
-  seed_growth_pattern_s seed_growth;
+  plant_materials materials;
+  // moss_texture_params appearance;
+  growth_properties growth;
 };
 
 struct grass_species_s {
-  material material;
-  grass_texture_params appearance;
-  seed_growth_pattern seed_growth;
+  plant_materials materials;
+  // grass_texture_params appearance;
+  growth_properties growth;
 };
 
 struct vine_species_s {
-  material material;
-  vine_texture_params appearance;
-  seed_growth_pattern seed_growth;
-  core_growth_pattern core_growth;
+  plant_materials materials;
+  // vine_texture_params appearance;
+  growth_properties growth;
 };
-*/
 
 struct herb_species_s {
   plant_materials materials;
   herb_appearance appearance;
-  seed_growth_pattern seed_growth;
-  core_growth_pattern core_growth;
+  growth_properties growth;
 };
 
-/*
 struct bush_species_s {
-  material material;
-  bush_texture_params appearance;
-  seed_growth_pattern seed_growth;
-  core_growth_pattern core_growth;
+  plant_materials materials;
+  // bush_texture_params appearance;
+  growth_properties growth;
 };
 
 struct shrub_species_s {
-  material material;
-  shrub_texture_params appearance;
-  seed_growth_pattern seed_growth;
-  core_growth_pattern core_growth;
+  plant_materials materials;
+  // shrub_texture_params appearance;
+  growth_properties growth;
 };
 
 struct tree_species_s {
-  material material;
-  tree_texture_params appearance;
-  seed_growth_pattern seed_growth;
-  core_growth_pattern core_growth;
+  plant_materials materials;
+  // tree_texture_params appearance;
+  growth_properties growth;
 };
 
 struct aquatic_grass_species_s {
-  material material;
-  aquatic_grass_texture_params appearance;
-  seed_growth_pattern seed_growth;
+  plant_materials materials;
+  // aquatic_grass_texture_params appearance;
+  growth_properties growth;
 };
 
 struct aquatic_plant_species_s {
-  material material;
-  aquatic_plant_texture_params appearance;
-  seed_growth_pattern seed_growth;
-  core_growth_pattern core_growth;
+  plant_materials materials;
+  // aquatic_plant_texture_params appearance;
+  growth_properties growth;
 };
 
 struct coral_species_s {
-  material material;
-  coral_texture_params appearance;
-  seed_growth_pattern seed_growth;
-  core_growth_pattern core_growth;
+  coral_materials materials;
+  // coral_texture_params appearance;
+  growth_properties growth;
 };
 
+/*
 struct animal_species_s {
   material material;
   entity_texture_params appearance;
