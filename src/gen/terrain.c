@@ -845,7 +845,7 @@ void terrain_cell(
     result->blocks[0] = b_make_block(B_WATER);
     result->blocks[1] = b_make_block(B_VOID);
   } else { // we're above the ground
-    // TODO: HERE!
+    // TODO: Add more here?
     result->blocks[0] = b_make_block(B_AIR);
     result->blocks[1] = b_make_block(B_VOID);
   }

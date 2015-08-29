@@ -71,11 +71,11 @@ struct cell_s {
 #define TOTAL_BLOCK_SPECIES (1 << (BLOCK_ID_BITS + BLOCK_SPC_BITS))
 #define SPECIES_PER_BLOCK (1 << BLOCK_SPC_BITS)
 
-extern block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES];
+extern block_info BLOCK_INFO[TOTAL_BLOCK_TYPES];
 
-#define MAX_BLOCK_NAME_LENGTH 17
+#define MAX_BLOCK_NAME_LENGTH 128
 
-extern char const * const BLOCK_NAMES[TOTAL_BLOCK_TYPES];
+extern char* BLOCK_NAMES[TOTAL_BLOCK_TYPES];
 
 /*******************
  * Flags and Masks *
@@ -120,31 +120,36 @@ static block const  BM_FULL_BLOCK = umaxof(block);
 // Info Masks:
 // -----------
 
-#define   BIMS_VISIBILITY 0
-#define    BIMS_SUBSTANCE 2
-#define     BIMS_GEOMETRY 4
+#define    BIMS_VISIBILITY 0x0
+#define     BIMS_SUBSTANCE 0x2
+#define      BIMS_GEOMETRY 0x4
+#define  BIMS_SPECIES_TYPE 0x14
 
-static block_info const  BIM_VISIBILITY = 0x03 << BIMS_VISIBILITY;
-static block_info const   BIM_SUBSTANCE = 0x03 << BIMS_SUBSTANCE;
-static block_info const    BIM_GEOMETRY = 0x0f << BIMS_GEOMETRY;
+static block_info const    BIM_VISIBILITY = 0x03 << BIMS_VISIBILITY;
+static block_info const     BIM_SUBSTANCE = 0x03 << BIMS_SUBSTANCE;
+static block_info const      BIM_GEOMETRY = 0x0f << BIMS_GEOMETRY;
+static block_info const  BIM_SPECIES_TYPE = 0x0f << BIMS_SPECIES_TYPE;
 
 // Info Flags:
 // -----------
 
-#define  BIFS_ANISOTROPIC 0x8
-#define   BIFS_ORIENTABLE 0x9
+#define   BIFS_ANISOTROPIC 0x8
+#define    BIFS_ORIENTABLE 0x9
 // 0xa and 0xb are free
-#define        BIFS_GROWS 0xc
-#define         BIFS_SEED 0xd
-#define  BIFS_GROWTH_CORE 0xe
-#define      BIFS_AQUATIC 0xf
+#define         BIFS_GROWS 0xc
+#define   BIFS_GROWTH_SITE 0xd
+#define   BIFS_GROWTH_CORE 0xe
+#define       BIFS_AQUATIC 0xf
+#define          BIFS_SEED 0x10
+// 0x11, 0x12, and 13 are free
 
 static block_info const  BIF_ANISOTROPIC = 1 << BIFS_ANISOTROPIC;
 static block_info const   BIF_ORIENTABLE = 1 << BIFS_ORIENTABLE;
 static block_info const        BIF_GROWS = 1 << BIFS_GROWS;
-static block_info const         BIF_SEED = 1 << BIFS_SEED;
+static block_info const  BIF_GROWTH_SITE = 1 << BIFS_GROWTH_SITE;
 static block_info const  BIF_GROWTH_CORE = 1 << BIFS_GROWTH_CORE;
 static block_info const      BIF_AQUATIC = 1 << BIFS_AQUATIC;
+static block_info const         BIF_SEED = 1 << BIFS_SEED;
 
 /********
  * Info *
@@ -299,10 +304,7 @@ static block const ROTATE_FACE[8][8] = {
 // Invisible blocks:
 #define                               B_AIR 0x002
 #define                             B_ETHER 0x003
-#define                         B_BLACKDAMP 0x004
-#define                         B_WHITEDAMP 0x005
-#define                          B_FIREDAMP 0x006
-#define                         B_STINKDAMP 0x007
+#define                             B_FUMES 0x004
 
 // Translucent liquid blocks:
 #define                             B_WATER 0x00a
@@ -325,7 +327,7 @@ static block const ROTATE_FACE[8][8] = {
 #define                            B_MIASMA 0x022
 
 // Opaque non-solid blocks:
-#define                       B_BLACK_SMOKE 0x028
+#define                       B_THICK_SMOKE 0x028
 
 // Mineral blocks:
 #define                              B_DIRT 0x030
@@ -567,14 +569,20 @@ static inline block_info bi_oabl(block b) {
 static inline block_info bi_grws(block b) {
   return (BLOCK_INFO[b_id(b)] & BIF_GROWS) >> BIFS_GROWS;
 }
-static inline block_info bi_seed(block b) {
-  return (BLOCK_INFO[b_id(b)] & BIF_SEED) >> BIFS_SEED;
+static inline block_info bi_gsite(block b) {
+  return (BLOCK_INFO[b_id(b)] & BIF_GROWTH_SITE) >> BIFS_GROWTH_SITE;
 }
 static inline block_info bi_gcore(block b) {
   return (BLOCK_INFO[b_id(b)] & BIF_GROWTH_CORE) >> BIFS_GROWTH_CORE;
 }
 static inline block_info bi_gaqua(block b) {
   return (BLOCK_INFO[b_id(b)] & BIF_AQUATIC) >> BIFS_AQUATIC;
+}
+static inline block_info bi_seed(block b) {
+  return (BLOCK_INFO[b_id(b)] & BIF_SEED) >> BIFS_SEED;
+}
+static inline block_info bi_species_type(block b) {
+  return (BLOCK_INFO[b_id(b)] & BIM_SPECIES_TYPE) >> BIMS_SPECIES_TYPE;
 }
 
 // Constructors:
@@ -658,5 +666,12 @@ static inline void copy_cell(cell const * const src, cell * dst) {
   dst->blocks[0] = src->blocks[0];
   dst->blocks[1] = src->blocks[1];
 }
+
+/*************
+ * Functions *
+ *************/
+
+// Fills in the block info table.
+void init_blocks(void);
 
 #endif // ifndef BLOCKS_H

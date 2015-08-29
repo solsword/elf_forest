@@ -290,6 +290,4 @@ void generate_chunk(chunk *c) {
       }
     }
   }
-  // Queue the chunk for biology generation:
-  // TODO: HERE
 }

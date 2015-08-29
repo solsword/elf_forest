@@ -34,9 +34,13 @@ world_map *TEST_WORLD = NULL;
 
 size_t test_create_world(void) {
   init_strings();
+  init_blocks();
+  //setup_render();
+  //setup_shaders();
+  //setup_textures();
   setup_data();
-  setup_persist(DEFAULT_WORLD_DIRECTORY);
-  setup_entities();
+  //setup_persist(DEFAULT_WORLD_DIRECTORY);
+  //setup_entities();
   setup_species();
   setup_worldgen(1821271);
   TEST_WORLD = create_world_map(178352, 64, 64);

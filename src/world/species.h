@@ -6,8 +6,7 @@
 #include "txgen/txg_minerals.h"
 #include "txgen/txg_plants.h"
 
-#include "world/grammar.h"
-
+#include "grammar.h"
 #include "materials.h"
 
 // species.h
@@ -75,6 +74,40 @@ _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
 
 // TODO: thread safety here!
 
+/*********
+ * Enums *
+ *********/
+
+enum species_type_e {
+  SPT_NO_SPECIES = 0,
+
+  SPT_GAS = 1,
+
+  SPT_DIRT = 2,
+  SPT_CLAY = 3,
+  SPT_STONE = 4,
+  SPT_METAL = 5,
+  
+  SPT_FUNGUS = 6,
+  SPT_MOSS = 7,
+  SPT_GRASS = 8,
+  SPT_VINE = 9,
+  SPT_HERB = 10,
+  SPT_BUSH = 11,
+  SPT_SHRUB = 12,
+  SPT_TREE = 13,
+  SPT_AQUATIC = 14,
+  SPT_AQUATIC = 15,
+  SPT_CORAL = 16,
+  
+  SPT_ANIMAL = 17,
+  SPT_MYTHICAL = 18,
+  SPT_SENTIENT = 19,
+  
+  SPT_FIBER = 20
+};
+typedef enum species_type_e species_type;
+
 /************************
  * Secondary Structures *
  ************************/
@@ -114,6 +147,10 @@ typedef struct herb_appearance_s herb_appearance;
 /**********************
  * Primary Structures *
  **********************/
+
+// Inorganics:
+struct gas_species_s;
+typedef struct gas_species_s gas_species;
 
 // Minerals:
 struct dirt_species_s;
@@ -159,9 +196,19 @@ typedef struct sentient_species_s sentient_species;
 struct fiber_species_s;
 typedef struct fiber_species_s fiber_species;
 
+// Any species type:
+// The any_species structure just holds a species id along with a species_type
+// identifier. Together this information can be used to look up a specific
+// species structure.
+struct any_species_s;
+typedef struct any_species_s any_species;
+
 /***********
  * Globals *
  ***********/
+
+// Inorganics:
+extern map *GAS_SPECIES;
 
 // Minerals:
 extern map *DIRT_SPECIES;
@@ -253,6 +300,12 @@ struct herb_appearance_s {
 // Primary structures:
 
 /*
+struct gas_species_s {
+  material material;
+  gas_texture_params appearance;
+};
+
+
 struct dirt_species_s {
   material material;
   dirt_texture_params appearance;
@@ -359,18 +412,58 @@ struct fiber_species_s {
 };
 */
 
+// The any_species structure
+
+struct any_species_s {
+  species_type type;
+  species id;
+};
 
 /********************
  * Inline Functions *
  ********************/
 
+// Fills in the given any_species struct with information from the given block.
+static inline void block__any_species(block b, any_species *sp) {
+  sp->type = bi_species_type(b);
+  sp->id = b_species(b);
+}
 
 /*************
  * Functions *
  *************/
 
+// Required setup for the species tables.
 void setup_species(void);
 
+// Returns a pointer to a species info struct for the given species. Which
+// species struct type to cast the pointer to can be determined by the type
+// parameter of the any_species argument.
+void* get_species_data(any_species sp);
+
+SPECIES_ACCESS_FUNCTIONS_DECL(gas);
+
+SPECIES_ACCESS_FUNCTIONS_DECL(dirt);
+SPECIES_ACCESS_FUNCTIONS_DECL(clay);
 SPECIES_ACCESS_FUNCTIONS_DECL(stone);
+SPECIES_ACCESS_FUNCTIONS_DECL(metal);
+
+SPECIES_ACCESS_FUNCTIONS_DECL(fungus);
+SPECIES_ACCESS_FUNCTIONS_DECL(moss);
+SPECIES_ACCESS_FUNCTIONS_DECL(grass);
+SPECIES_ACCESS_FUNCTIONS_DECL(vine);
+SPECIES_ACCESS_FUNCTIONS_DECL(herb);
+SPECIES_ACCESS_FUNCTIONS_DECL(bush);
+SPECIES_ACCESS_FUNCTIONS_DECL(shrub);
+SPECIES_ACCESS_FUNCTIONS_DECL(tree);
+SPECIES_ACCESS_FUNCTIONS_DECL(aquatic_grass);
+SPECIES_ACCESS_FUNCTIONS_DECL(aquatic_plant);
+SPECIES_ACCESS_FUNCTIONS_DECL(coral);
+
+SPECIES_ACCESS_FUNCTIONS_DECL(animal);
+SPECIES_ACCESS_FUNCTIONS_DECL(mythical);
+SPECIES_ACCESS_FUNCTIONS_DECL(sentient);
+
+SPECIES_ACCESS_FUNCTIONS_DECL(fiber);
 
 #endif // ifndef SPECIES_H

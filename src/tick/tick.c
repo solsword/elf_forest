@@ -69,6 +69,8 @@ void _get_everything_set_up(ptrdiff_t seed, int argc, char** argv) {
   init_tick(1);
   printf("  ...ptime...\n");
   init_ptime();
+  printf("  ...blocks...\n");
+  init_blocks();
 
   // Setup stateful subsystems:
   // TODO: Do we need/want this subsystem?

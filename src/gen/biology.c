@@ -1,6 +1,10 @@
 // biology.c
 // General biology generation.
 
+#ifdef DEBUG
+  #include <stdio.h>
+#endif
+
 #include "world/world_map.h"
 #include "world/species.h"
 #include "world/grammar.h"
@@ -212,7 +216,7 @@ cell_grammar* add_sprout_grammar(
 
       // Check for air above the seed and turn it into a sprout:
       child = create_cell_grammar_expansion();
-      child->type = CGCT_BLOCK_EITHER; // TODO: Find lower growth resist...
+      child->type = CGCT_BLOCK_EITHER;
       child->offset = { .xyz = {.x = 0, .y = 0, .z = 1, .w = 0 } };
       child->cmp_strategy = CGCS_ROOT_CAN_GROW;
       child->cmp_mask = 0; // ignored due to the strategy
@@ -413,6 +417,7 @@ void add_biology(chunk *c) {
                 B_GRASS_SEEDS,
                 seed_hash % SPECIES_PER_BLOCK
               );
+              gri_set_sprout_timer(&(cl->blocks[1]), 
               seed_hash = prng(
                 idx.xyz.x + idx.xyz.y + glpos.z +
                 prng(seed_hash + glpos.x + glpos.y + idx.xyz.z)
@@ -494,11 +499,205 @@ void add_biology(chunk *c) {
     }
   }
   // Grow plants a bit:
-  // TODO: HERE
+  // TODO: How many cycles to use?
+#ifdef DEBUG
+  if (!grow_plants(c, 2)) {
+    // At this point if growth fails (it really shouldn't) the best we can do
+    // is emit a warning...
+    fprintf(
+      stderr,
+      "WARNING: Growth failed after adding seeds during biology generation.\n"
+    );
+  }
+#else
+  grow_plants(c, 2);
+#endif
   // Set the CF_HAS_BIOLOGY flag for this chunk:
   c->chunk_flags |= CF_HAS_BIOLOGY;
 }
 
+
+growth_properties* get_growth_properties(block b) {
+  block id = b_id(b);
+  species sp = b_species(b);
+  growth_properties *result = NULL;
+  if (
+     id == B_MUSHROOM_SPORES
+  || id == B_MUSHROOM_SHOOTS
+  || id == B_MUSHROOM_GROWN
+  || id == B_GIANT_MUSHROOM_SPORES
+  || id == B_GIANT_MUSHROOM_CORE
+  || id == B_GIANT_MUSHROOM_MYCELIUM
+  || id == B_GIANT_MUSHROOM_SPROUT
+  || id == B_GIANT_MUSHROOM_STALK
+  || id == B_GIANT_MUSHROOM_CAP
+  ) {
+    grp = &(get_fungus_species(sp)->growth);
+    is_seed = (id == B_MUSHROOM_SPORES);
+  } else if (
+       id == B_MOSS_SPORES
+    || id == B_MOSS_SHOOTS
+    || id == B_MOSS_GROWN
+    || id == B_MOSS_FLOWERING
+    || id == B_MOSS_FRUITING
+  ) {
+    grp = &(get_moss_species(sp)->growth);
+    is_seed = (id == B_MOSS_SPORES);
+  } else if (
+       id == B_GRASS_SEEDS
+    || id == B_GRASS_ROOTS
+    || id == B_GRASS_SHOOTS
+    || id == B_GRASS_GROWN
+    || id == B_GRASS_BUDDING
+    || id == B_GRASS_FLOWERING
+    || id == B_GRASS_FRUITING
+  ) {
+    grp = &(get_grass_species(sp)->growth);
+    is_seed = (id == B_GRASS_SEEDS);
+  } else if (
+       id == B_VINE_SEEDS
+    || id == B_VINE_CORE
+    || id == B_VINE_ROOTS
+    || id == B_VINE_SHOOTS
+    || id == B_VINE_SPROUTING
+    || id == B_VINE_GROWN
+    || id == B_VINE_BUDDING
+    || id == B_VINE_FLOWERING
+    || id == B_VINE_FRUITING
+    || id == B_VINE_SHEDDING
+    || id == B_VINE_DORMANT
+  ) {
+    grp = &(get_vine_species(sp)->growth);
+    is_seed = (id == B_VINE_SEEDS);
+  } else if (
+       id == B_HERB_SEEDS
+    || id == B_HERB_CORE
+    || id == B_HERB_ROOTS
+    || id == B_HERB_SHOOTS
+    || id == B_HERB_GROWN
+    || id == B_HERB_BUDDING
+    || id == B_HERB_FLOWERING
+    || id == B_HERB_FRUITING
+  ) {
+    grp = &(get_herb_species(sp)->growth);
+    is_seed = (id == B_HERB_SEEDS);
+  } else if (
+       id == B_BUSH_SEEDS
+    || id == B_BUSH_CORE
+    || id == B_BUSH_ROOTS
+    || id == B_BUSH_SHOOTS
+    || id == B_BUSH_BRANCHES_SPROUTING
+    || id == B_BUSH_BRANCHES_GROWN
+    || id == B_BUSH_BRANCHES_BUDDING
+    || id == B_BUSH_BRANCHES_FLOWERING
+    || id == B_BUSH_BRANCHES_FRUITING
+    || id == B_BUSH_BRANCHES_SHEDDING
+    || id == B_BUSH_BRANCHES_DORMANT
+    || id == B_BUSH_LEAVES_SPROUTING
+    || id == B_BUSH_LEAVES_GROWN
+    || id == B_BUSH_LEAVES_BUDDING
+    || id == B_BUSH_LEAVES_FLOWERING
+    || id == B_BUSH_LEAVES_FRUITING
+    || id == B_BUSH_LEAVES_SHEDDING
+    || id == B_BUSH_LEAVES_DORMANT
+  ) {
+    grp = &(get_bush_species(sp)->growth);
+    is_seed = (id == B_BUSH_SEEDS);
+  } else if (
+       id == B_SHRUB_SEEDS
+    || id == B_SHRUB_CORE
+    || id == B_SHRUB_ROOTS
+    || id == B_SHRUB_THICK_ROOTS
+    || id == B_SHRUB_SHOOTS
+    || id == B_SHRUB_BRANCHES_SPROUTING
+    || id == B_SHRUB_BRANCHES_GROWN
+    || id == B_SHRUB_BRANCHES_BUDDING
+    || id == B_SHRUB_BRANCHES_FLOWERING
+    || id == B_SHRUB_BRANCHES_FRUITING
+    || id == B_SHRUB_BRANCHES_SHEDDING
+    || id == B_SHRUB_BRANCHES_DORMANT
+    || id == B_SHRUB_LEAVES_SPROUTING
+    || id == B_SHRUB_LEAVES_GROWN
+    || id == B_SHRUB_LEAVES_BUDDING
+    || id == B_SHRUB_LEAVES_FLOWERING
+    || id == B_SHRUB_LEAVES_FRUITING
+    || id == B_SHRUB_LEAVES_SHEDDING
+    || id == B_SHRUB_LEAVES_DORMANT
+  ) {
+    grp = &(get_shrub_species(sp)->growth);
+    is_seed = (id == B_SHRUB_SEEDS);
+  } else if (
+       id == B_TREE_SEEDS
+    || id == B_TREE_CORE
+    || id == B_TREE_THICK_CORE
+    || id == B_TREE_ROOTS
+    || id == B_TREE_THICK_ROOTS
+    || id == B_TREE_HEART_ROOTS
+    || id == B_TREE_SHOOTS
+    || id == B_TREE_TRUNK
+    || id == B_TREE_BARE_BRANCHES
+    || id == B_TREE_BRANCHES_SPROUTING
+    || id == B_TREE_BRANCHES_GROWN
+    || id == B_TREE_BRANCHES_BUDDING
+    || id == B_TREE_BRANCHES_FLOWERING
+    || id == B_TREE_BRANCHES_FRUITING
+    || id == B_TREE_BRANCHES_SHEDDING
+    || id == B_TREE_BRANCHES_DORMANT
+    || id == B_TREE_LEAVES_SPROUTING
+    || id == B_TREE_LEAVES_GROWN
+    || id == B_TREE_LEAVES_BUDDING
+    || id == B_TREE_LEAVES_FLOWERING
+    || id == B_TREE_LEAVES_FRUITING
+    || id == B_TREE_LEAVES_SHEDDING
+    || id == B_TREE_LEAVES_DORMANT
+  ) {
+    grp = &(get_tree_species(sp)->growth);
+    is_seed = (id == B_TREE_SEEDS);
+  } else if (
+       id == B_AQUATIC_GRASS_SEEDS
+    || id == B_AQUATIC_GRASS_ROOTS
+    || id == B_AQUATIC_GRASS_SHOOTS
+    || id == B_AQUATIC_GRASS_GROWN
+    || id == B_AQUATIC_GRASS_FLOWERING
+    || id == B_AQUATIC_GRASS_FRUITING
+  ) {
+    grp = &(get_aquatic_grass_species(sp)->growth);
+    is_seed = (id == B_AQUATIC_GRASS_SEEDS);
+  } else if (
+       id == B_AQUATIC_PLANT_SEEDS
+    || id == B_AQUATIC_PLANT_CORE
+    || id == B_AQUATIC_PLANT_ANCHORS
+    || id == B_AQUATIC_PLANT_SHOOTS
+    || id == B_AQUATIC_PLANT_STEMS
+    || id == B_AQUATIC_PLANT_LEAVES_GROWN
+    || id == B_AQUATIC_PLANT_LEAVES_FLOWERING
+    || id == B_AQUATIC_PLANT_LEAVES_FRUITING
+  ) {
+    grp = &(get_aquatic_plant_species(sp)->growth);
+    is_seed = (id == B_AQUATIC_PLANT_SEEDS);
+  } else if (
+       id == B_YOUNG_CORAL
+    || id == B_CORAL_CORE
+    || id == B_CORAL_BODY
+    || id == B_CORAL_FROND
+  ) {
+    grp = &(get_coral_species(sp)->growth);
+    is_seed = (id == B_YOUNG_CORAL);
+  } else {
+    // A non-air non-water non-plant block: can't grow here.
+    return 1000;
+  }
+  // Unpack the desired property:
+  if (resist) {
+    if (is_seed) {
+      return grp->seed_growth_resist;
+    } else {
+      return grp->growth_resist;
+    }
+  } else {
+    return grp->growth_strength;
+  }
+}
 
 
 ptrdiff_t get_species_growth_strength(block b, int resist) {

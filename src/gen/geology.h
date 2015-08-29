@@ -338,7 +338,7 @@ static inline float sheet_max_z(tectonic_sheet *ts) {
 }
 
 static inline float geothermal_temperature(global_pos *glpos) {
-  return 100.0; // TODO: HERE!
+  return 100.0; // TODO: Geothermal temperature?
 }
 
 // Computes stratum base thickness at the given region position.

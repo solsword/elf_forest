@@ -54,13 +54,20 @@ int main(int argc, char** argv) {
 
   // Initialize stateless subsystems:
   init_control();
-  init_textures();
   init_tick(0);
+  init_ptime();
+  init_blocks();
 
   // Setup stateful subsystems:
+  setup_render();
+  setup_shaders();
+  setup_textures();
   setup_ui();
   setup_data();
+  setup_persist(DEFAULT_WORLD_DIRECTORY);
   setup_entities(&origin);
+  setup_species();
+  //setup_worldgen(1821271);
 
   printf("...done.\n");
 

@@ -46,6 +46,10 @@ void add_biology(chunk *c);
 
 // Generalized access functions:
 
+// Returns a pointer to a growth_properties struct for the given block, or NULL
+// if the given block is not a growing block.
+growth_properties* get_growth_properties(block b);
+
 ptrdiff_t get_species_growth_strength(block b, int resist);
 
 // Species generation functions:

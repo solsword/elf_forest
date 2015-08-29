@@ -20,9 +20,15 @@
 #define         GR_BS_VITALITY 0
 #define          GR_BS_RENEWAL 2
 #define  GR_BS_TRAJECTORY_BIAS 3
-//#define  GR_BS_??? 6
+//#define              GR_BS_??? 6
+
+// Seeds:
+// Vitality in bits 0 and 1
+#define     GR_BS_SPROUT_TIMER 2
+//#define              GR_BS_??? 6
 
 // Growth core blocks:
+// Vitality in bits 0 and 1
 #define        GR_BS_BODY_PLAN 2
 #define              GR_BS_AGE 4
 #define     GR_BS_LEAF_BALANCE 6
@@ -31,6 +37,8 @@
 #define         GR_BM_VITALITY 0x3
 #define          GR_BM_RENEWAL 0x1
 #define  GR_BM_TRAJECTORY_BIAS 0x7
+
+#define     GR_BM_SPROUT_TIMER 0xf
 
 #define        GR_BM_BODY_PLAN 0x3
 #define              GR_BM_AGE 0x3
@@ -46,7 +54,6 @@
  * Inline Functions *
  ********************/
 
-// TODO: Update these!
 // Getters and setters for growth potential, growth direction, and vitality.
 // Growth potential goes from 0 to 7, growth direction uses BD_ORI_* constants,
 // and vitality uses GR_VITALITY_* constants.
@@ -73,6 +80,10 @@ static inline block_data gri_age(block b) {
 
 static inline block_data gri_leaf_balance(block b) {
   return (block_data) ((b >> GR_BS_LEAF_BALANCE) && GR_BM_LEAF_BALANCE);
+}
+
+static inline block_data gri_sprout_timer(block b) {
+  return (block_data) ((b >> GR_BS_SPROUT_TIMER) && GR_BM_SPROUT_TIMER);
 }
 
 
@@ -142,6 +153,17 @@ static inline void gri_set_leaf_balance(block *b, block_data balance) {
   );
 }
 
+static inline void gri_set_sprout_timer(block *b, block_data ticks) {
+  b_set_data(
+    b,
+    (
+      (b_data(*b) & ~(GR_BM_SPROUT_TIMER << GR_BS_SPROUT_TIMER))
+    |
+      ((ticks & GR_BM_SPROUT_TIMER) << GR_BS_SPROUT_TIMER)
+    )
+  );
+}
+
 // Function for getting the growth rate of a block:
 static inline ptrdiff_t get_growth_rate(block b) {
   // TODO: Get this from the species info...
@@ -157,13 +179,25 @@ static inline ptrdiff_t get_growth_rate(block b) {
 // block expansion (see grow_seed_block and grow_from_core).
 void update_growth(block *b);
 
-// Given a cell neighborhood with a seed block in the center, grows the seed
-// block.
-void grow_seed_block(chunk_neighborhood *nbh, block_index idx);
+// Checks the vitality and growth timing info for the given block and if the
+// block should grow, calls either grow_at_site or grow_from_core as
+// appropriate.
+void grow_block(
+  chunk_neighborhood *nbh,
+  block_index idx,
+  ptrdiff_t t
+);
+
+// Given a cell neighborhood with a growth site block in the center, grows the
+// growth site block.
+void grow_at_site(
+  chunk_neighborhood *nbh,
+  block_index idx,
+  ptrdiff_t t
+);
 
 // Given a chunk neighborhood and the index of a growth core block within the
 // central chunk, runs a cycle of growth particles from that growth core.
-// Checks growth cycle info according to the given growth timer t.
 void grow_from_core(
   chunk_neighborhood *nbh,
   block_index idx,

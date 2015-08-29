@@ -356,9 +356,9 @@ void fltr_leaf(texture *tx, void const * const fargs) {
     // draw the leaf:
     draw_leaf(tx, &c, lfargs);
   } else if (lfargs->type == LT_TRIPARTITE) {
-    // TODO: HERE!
+    // TODO: Tripartite leaves!
   } else if (lfargs->type == LT_NEEDLES) {
-    // TODO: HERE!
+    // TODO: Needles!
   }
 #ifdef DEBUG
   else {

@@ -3,6 +3,8 @@
 
 #include "blocks.h"
 
+#include "species.h"
+
 /**********************
  * Constants and Data *
  **********************/
@@ -17,272 +19,238 @@
 //  9: Orientable (can be placed facing multiple directions)
 //
 //  12: Grows (will be processed by the ecology subsystem)
-//  13: Seed (grows by grammar transformations)
+//  13: Growth site (grows by grammar transformations)
 //  14: Growth core (grows using growth particles)
 //  15: Aquatic (grows in water instead of air)
+//
+//  16: Seed (generally more transient)
+//
+//  19-23: Species type (see species_type_e in species.h)
 
-block_info const BLOCK_INFO[TOTAL_BLOCK_TYPES] = {
-//  VOID:             BOUNDARY:         AIR:              ETHER:
-    0x00000009,       0x00000000,       0x00000009,       0x00000009,
-//  BLACKDAMP:        WHITEDAMP:        FIREDAMP:         STINKDAMP:
-    0x00000009,       0x00000009,       0x00000009,       0x00000009,
-//  ____:             ____:             WATER:            WATER_FLOW:
-    0x00000117,       0x00000117,       0x00000117,       0x00000117,
-//  SLIME:            SLIME_FLOW:       ACID:             ACID_FLOW:
-    0x00000117,       0x00000117,       0x00000117,       0x00000117, // 0x00f
-//  ____:             ____:             ____:             ____:
-    0x00000117,       0x00000117,       0x00000117,       0x00000117,
-//  QUICKSAND:        ____:             LAVA:             LAVA_FLOW:
-    0x00000115,       0x00000115,       0x00000115,       0x00000115,
-//  ____:             ____:             ____:             ____:
-    0x00000115,       0x00000115,       0x00000115,       0x00000115,
-//  ____:             ____:             ____:             ____:
-    0x00000115,       0x00000115,       0x00000115,       0x00000115, // 0x01f
-//  SMOKE:            MIASMA:           ____:             ____:
-    0x0000000b,       0x0000000b,       0x0000000b,       0x0000000b,
-//  ____:             ____:             ____:             ____:
-    0x0000000b,       0x0000000b,       0x0000000b,       0x0000000b,
-//  BLACK_SMOKE:      ____:             ____:             ____:
-    0x00000008,       0x00000008,       0x00000008,       0x00000008,
-//  ____:             ____:             ____:             ____:
-    0x00000008,       0x00000008,       0x00000008,       0x00000008, // 0x02f
-//  DIRT:             MUD:              CLAY:             SAND:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  GRAVEL:           SCREE:            STONE:            NATIVE_METAL:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
-    0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x03f
-//  MUSHROOM_SPORES:  MUSHROOM_SHOOTS:  MUSHROOM:         ____:
-    0x000030f9,       0x0000304a,       0x0000304a,       0x00000000,
-//  GIANT_MSH_SPORES: GIANT_MSH_CORE:   GIANT_MSH_MYCEL:  GIANT_MSH_SPROUT:
-    0x0000306a,       0x0000506e,       0x0000106e,       0x0000104e,
-//  GIANT_MSH_STALK:  GIANT_MSH_CAP:    MOSS_SPORES       MOSS:
-    0x00001300,       0x00001300,       0x000030f9,       0x0000305a,
-//  MOSS_SHOOTS:      MOSS_FLOWERS:     MOSS_FRUIT:       ____:
+block_info BLOCK_INFO[TOTAL_BLOCK_TYPES];
+//  B_MOSS_SHOOTS:      B_MOSS_FLOWERS:     B_MOSS_FRUIT:       B_____:
     0x0000305a,       0x0000305a,       0x0000305a,       0x00000000, // 0x04f
-//  GRASS_SEEDS:      GRASS_ROOTS:      GRASS_SHOOTS:     GRASS:
-    0x0000306a,       0x0000306e,       0x0000303a,       0x0000303a,
-//  GRASS_BUDS:       GRASS_FLOWERS:    GRASS_FRUIT:      ____:
+//  B_GRASS_SEEDS:      B_GRASS_ROOTS:      B_GRASS_SHOOTS:     B_GRASS:
+    0x0001306a,       0x0000306e,       0x0000303a,       0x0000303a,
+//  B_GRASS_BUDS:       B_GRASS_FLOWERS:    B_GRASS_FRUIT:      B_____:
     0x0000303a,       0x0000303a,       0x0000303a,       0x00000000,
-//  VINE_SEEDS:       VINE_CORE:        VINE_ROOTS:       VINE_SHOOTS:
-    0x0000306a,       0x0000506e,       0x0000106e,       0x0000125e,
-//  SPROUTING_VINE:   VINE:             VINE_BUDS:        VINE_FLOWERS:
+//  B_VINE_SEEDS:       B_VINE_CORE:        B_VINE_ROOTS:       B_VINE_SHOOTS:
+    0x0001306a,       0x0000506e,       0x0000106e,       0x0000125e,
+//  B_SPROUTING_VINE:   B_VINE:             B_VINE_BUDS:        B_VINE_FLOWERS:
     0x0000125e,       0x0000125e,       0x0000125e,       0x0000125e, // 0x05f
-//  VINE_FRUIT:       SHEDDING_VINE:    DORMANT_VINE:     ____:
+//  B_VINE_FRUIT:       B_SHEDDING_VINE:    B_DORMANT_VINE:     B_____:
     0x0000125e,       0x0000125e,       0x0000125e,       0x00000000,
-//  HERB_SEEDS:       HERB_CORE:        HERB_ROOTS:       HERB_SHOOTS:
-    0x0000306a,       0x0000506e,       0x0000106e,       0x0000104e,
-//  HERB:             HERB_BUDS:        HERB_FLOWERS:     HERB_FRUIT:
+//  B_HERB_SEEDS:       B_HERB_CORE:        B_HERB_ROOTS:       B_HERB_SHOOTS:
+    0x0001306a,       0x0000506e,       0x0000106e,       0x0000104e,
+//  B_HERB:             B_HERB_BUDS:        B_HERB_FLOWERS:     B_HERB_FRUIT:
     0x0000104e,       0x0000104e,       0x0000104e,       0x0000104e,
-//  BUSH_SEEDS:       BUSH_CORE:        BUSH_ROOTS:       BUSH_SHOOTS:
-    0x0000306a,       0x0000506e,       0x0000106e,       0x0000104e, // 0x06f
-//  SPR_BUSH_BRNCHES: BUSH_BRANCHES:    BUD_BUSH_BRNCHES: FLR_BUSH_BRNCHES:
+//  B_BUSH_SEEDS:       B_BUSH_CORE:        B_BUSH_ROOTS:       B_BUSH_SHOOTS:
+    0x0001306a,       0x0000506e,       0x0000106e,       0x0000104e, // 0x06f
+//  B_SPR_BUSH_BRNCHES: B_BUSH_BRANCHES:    B_BUD_BUSH_BRNCHES: B_FLR_BUSH_BRNCHES:
     0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e,
-//  FRT_BUSH_BRNCHES: SHD_BUSH_BRNCHES: DMT_BUSH_BRNCHES: SPR_BUSH_LEAVES:
+//  B_FRT_BUSH_BRNCHES: B_SHD_BUSH_BRNCHES: B_DMT_BUSH_BRNCHES: B_SPR_BUSH_LEAVES:
     0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e,
-//  BUSH_LEAVES:      BUD_BUSH_LEAVES:  FLR_BUSH_LEAVES:  FRT_BUSH_LEAVES:
+//  B_BUSH_LEAVES:      B_BUD_BUSH_LEAVES:  B_FLR_BUSH_LEAVES:  B_FRT_BUSH_LEAVES:
     0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e,
-//  SHD_BUSH_LEAVES:  DMT_BUSH_LEAVES:  ____:             ____:
+//  B_SHD_BUSH_LEAVES:  B_DMT_BUSH_LEAVES:  B_____:             B_____:
     0x0000100e,       0x0000100e,       0x00000000,       0x00000000, // 0x07f
-//  SHRUB_SEEDS:      SHRUB_CORE:       SHRUB_ROOTS:      SHRUB_THCK_ROOTS:
-    0x0000306a,       0x0000506e,       0x0000106e,       0x0000106e,
-//  SHRUB_SHOOTS:     SPR_SHRUB_BRNCHS: SHRUB_BRANCHES:   BUD_SHRUB_BRNCHS:
+//  B_SHRUB_SEEDS:      B_SHRUB_CORE:       B_SHRUB_ROOTS:      B_SHRUB_THCK_ROOTS:
+    0x0001306a,       0x0000506e,       0x0000106e,       0x0000106e,
+//  B_SHRUB_SHOOTS:     B_SPR_SHRUB_BRNCHS: B_SHRUB_BRANCHES:   B_BUD_SHRUB_BRNCHS:
     0x0000104e,       0x0000100e,       0x0000100e,       0x0000100e,
-//  FLR_SHRUB_BRNCHS: FRT_SHRUB_BRNCHS: SHD_SHRUB_BRNCHS: DMT_SHRUB_BRNCHS:
+//  B_FLR_SHRUB_BRNCHS: B_FRT_SHRUB_BRNCHS: B_SHD_SHRUB_BRNCHS: B_DMT_SHRUB_BRNCHS:
     0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e,
-//  SPR_SHRUB_LEAVES: SHRUB_LEAVES:     BUD_SHRUB_LEAVES: FLR_SHRUB_LEAVES:
+//  B_SPR_SHRUB_LEAVES: B_SHRUB_LEAVES:     B_BUD_SHRUB_LEAVES: B_FLR_SHRUB_LEAVES:
     0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e, // 0x08f
-//  FRT_SHRUB_LEAVES: SHD_SHRUB_LEAVES: DMT_SHRUB_LEAVES: ____:
+//  B_FRT_SHRUB_LEAVES: B_SHD_SHRUB_LEAVES: B_DMT_SHRUB_LEAVES: B_____:
     0x0000100e,       0x0000100e,       0x0000100e,       0x00000000,
-//  TREE_SEEDS:       TREE_CORE:        TREE_THICK_CORE:  TREE_ROOTS:
-    0x0000306a,       0x0000506e,       0x00005000,       0x0000106e,
-//  TREE_THICK_ROOTS: TREE_HEART_ROOTS: TREE_SHOOTS:      TREE_TRUNK:
+//  B_TREE_SEEDS:       B_TREE_CORE:        B_TREE_THICK_CORE:  B_TREE_ROOTS:
+    0x0001306a,       0x0000506e,       0x00005000,       0x0000106e,
+//  B_TREE_THICK_ROOTS: B_TREE_HEART_ROOTS: B_TREE_SHOOTS:      B_TREE_TRUNK:
     0x0000106e,       0x00001000,       0x0000104e,       0x00001300,
-//  TREE_BARE_BRNCHS: SPR_TREE_BRNCHES: TREE_BRANCHES:    BUD_TREE_BRNCHS:
+//  B_TREE_BARE_BRNCHS: B_SPR_TREE_BRNCHES: B_TREE_BRANCHES:    B_BUD_TREE_BRNCHS:
     0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e, // 0x09f
-//  FLR_TREE_BRNCHS:  FRT_TREE_BRNCHS:  SHD_TREE_BRNCHS:  DMT_TREE_BRNCHS:
+//  B_FLR_TREE_BRNCHS:  B_FRT_TREE_BRNCHS:  B_SHD_TREE_BRNCHS:  B_DMT_TREE_BRNCHS:
     0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e,
-//  SPR_TREE_LEAVES:  TREE_LEAVES:      BUD_TREE_LEAVES:  FLR_TREE_LEAVES:
+//  B_SPR_TREE_LEAVES:  B_TREE_LEAVES:      B_BUD_TREE_LEAVES:  B_FLR_TREE_LEAVES:
     0x0000100e,       0x0000100e,       0x0000100e,       0x0000100e,
-//  FRT_TREE_LEAVES:  SHD_TREE_LEAVES:  DMT_TREE_LEAVES:  ____:
+//  B_FRT_TREE_LEAVES:  B_SHD_TREE_LEAVES:  B_DMT_TREE_LEAVES:  B_____:
     0x0000100e,       0x0000100e,       0x0000100e,       0x00000000,
-//  AQ_GRASS_SEEDS:   AQ_GRASS_ROOTS:   AQ_GRASS_SHOOTS:  AQ_GRASS:
-    0x0000b06a,       0x0000b06e,       0x0000b04e,       0x0000b04e, // 0x0af
-//  AQ_GRASS_FLOWERS: AQ_GRASS_FRUIT:   ____:             ____:
+//  B_AQ_GRASS_SEEDS:   B_AQ_GRASS_ROOTS:   B_AQ_GRASS_SHOOTS:  B_AQ_GRASS:
+    0x0001b06a,       0x0000b06e,       0x0000b04e,       0x0000b04e, // 0x0af
+//  B_AQ_GRASS_FLOWERS: B_AQ_GRASS_FRUIT:   B_____:             B_____:
     0x0000b04e,       0x0000b04e,       0x00000000,       0x00000000,
-//  AQ_PLANT_SEEDS:   AQ_PLANT_CORE:    AQ_PLANT_ANCHORS: AQ_PLANT_SHOOTS:
-    0x0000b06a,       0x0000d06e,       0x0000906e,       0x0000904e,
-//  AQ_PLANT_STEMS:   AQ_PLANT_LEAVES:  AQ_PLANT_FLOWERS: AQ_PLANT_FRUIT:
+//  B_AQ_PLANT_SEEDS:   B_AQ_PLANT_CORE:    B_AQ_PLANT_ANCHORS: B_AQ_PLANT_SHOOTS:
+    0x0001b06a,       0x0000d06e,       0x0000906e,       0x0000904e,
+//  B_AQ_PLANT_STEMS:   B_AQ_PLANT_LEAVES:  B_AQ_PLANT_FLOWERS: B_AQ_PLANT_FRUIT:
     0x0000907e,       0x0000907e,       0x0000907e,       0x0000907e,
-//  YOUNG_CORAL:      CORAL_CORE:       CORAL_BODY:       CORAL_FROND:
-    0x0000b04e,       0x0000d000,       0x00009000,       0x0000904e, // 0x0bf
-//  SMOOTHED_ROCK:    HEWN_ROCK_GRATE:  ____:             ____:
+//  B_YOUNG_CORAL:      B_CORAL_CORE:       B_CORAL_BODY:       B_CORAL_FROND:
+    0x0001b04e,       0x0000d000,       0x00009000,       0x0000904e, // 0x0bf
+//  B_SMOOTHED_ROCK:    B_HEWN_ROCK_GRATE:  B_____:             B_____:
     0x00000000,       0x000002c2,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x0cf
-//  BALE:             THATCH:           WATTLE:           WOODEN_PLANK:
+//  B_BALE:             B_THATCH:           B_WATTLE:           B_WOODEN_PLANK:
     0x00000300,       0x00000300,       0x00000292,       0x00000000,
-//  WOODEN_BEAM:      WOODEN_PANEL:     WOODEN_PILLAR:    CORDWOOD:
+//  B_WOODEN_BEAM:      B_WOODEN_PANEL:     B_WOODEN_PILLAR:    B_CORDWOOD:
     0x000000a2,       0x000002c0,       0x000003d0,       0x00000300,
-//  COB:              RAMMED_EARTH:     STACKED_STONE:    FITTED_STONE:
+//  B_COB:              B_RAMMED_EARTH:     B_STACKED_STONE:    B_FITTED_STONE:
     0x00000000,       0x00000100,       0x00000100,       0x00000000,
-//  MORTARED_STONE:   METAL_BARS:       STONE_POST:       STONE_PILLAR:
+//  B_MORTARED_STONE:   B_METAL_BARS:       B_STONE_POST:       B_STONE_PILLAR:
     0x00000000,       0x000002c2,       0x000000a2,       0x000003d0, // 0x0df
-//  MUD_BRICK:        CLAY_BRICK:       STONE_BRICK:      STONE_TILE:
+//  B_MUD_BRICK:        B_CLAY_BRICK:       B_STONE_BRICK:      B_STONE_TILE:
     0x00000000,       0x00000000,       0x00000000,       0x000002c0,
-//  CERAMIC_TILE:     WOODEN_SHINGLE:   WOODEN_GRATE:     STONE_GRATE:
+//  B_CERAMIC_TILE:     B_WOODEN_SHINGLE:   B_WOODEN_GRATE:     B_STONE_GRATE:
     0x000002c0,       0x000002c0,       0x000002c2,       0x000002c2,
-//  METAL_GRATE:      GLASS_BLOCK:      GLASS_PANE:       FRAMED_GLASS:
+//  B_METAL_GRATE:      B_GLASS_BLOCK:      B_GLASS_PANE:       B_FRAMED_GLASS:
     0x000002c2,       0x00000003,       0x000002c3,       0x000002c3,
-//  METAL_BLOCK:      ____:             ____:             ____:
+//  B_METAL_BLOCK:      B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x0ef
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x0ff
-//  WOODEN_GATE:      METAL_GATE:       WD_PLANK_DOOR:    WOODEN_PANEL_DOOR:
+//  B_WOODEN_GATE:      B_METAL_GATE:       B_WD_PLANK_DOOR:    B_WOODEN_PANEL_DOOR:
     0x000002b2,       0x000002b2,       0x000003b2,       0x000003b2,
-//  STONE_DOOR:       METAL_DOOR:       ____:             ____:
+//  B_STONE_DOOR:       B_METAL_DOOR:       B_____:             B_____:
     0x000003b0,       0x000003b0,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x10f
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x11f
-//  PLASTER:          STUCCO:           PAINT:            BANNER:
+//  B_PLASTER:          B_STUCCO:           B_PAINT:            B_BANNER:
     0x00000028,       0x00000028,       0x00000028,       0x000002ca,
-//  TAPESTRY:         PAINTING:         ENGRAVING:        CARPET:
+//  B_TAPESTRY:         B_PAINTING:         B_ENGRAVING:        B_CARPET:
     0x000002ca,       0x000002c0,       0x0000030a,       0x000002ca,
-//  RUG:              CLOTH_MAT:        STEM_MAT:         ____:
+//  B_RUG:              B_CLOTH_MAT:        B_STEM_MAT:         B_____:
     0x000002ca,       0x000002ca,       0x000002ca,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x12f
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x13f
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x14f
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x15f
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x16f
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x17f
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x18f
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x19f
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x1af
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x1bf
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x1cf
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x1df
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000, // 0x1ef
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000,
-//  ____:             ____:             ____:             ____:
+//  B_____:             B_____:             B_____:             B_____:
     0x00000000,       0x00000000,       0x00000000,       0x00000000 // 0x1ff
 };
 
-char const * const BLOCK_NAMES[TOTAL_BLOCK_TYPES] = {
+char* BLOCK_NAMES[TOTAL_BLOCK_TYPES] = {
 "void"             ,"boundary"         ,"air"              ,"ether"            ,
-"blackdamp"        ,"whitedamp"        ,"firedamp"         ,"stinkdamp"        ,
+"fumes"            ,"____"             ,"____"             ,"____"             ,
 "____"             ,"____"             ,"water"            ,"water_flow"       ,
 "slime"            ,"slime_flow"       ,"acid"             ,"acid_flow"        ,
 // 0x00f                                                   
@@ -442,3 +410,387 @@ char const * const BLOCK_NAMES[TOTAL_BLOCK_TYPES] = {
 "____"             ,"____"             ,"____"             ,"____"
 // 0x1ff
 };
+
+
+/*********************
+ * Private Functions *
+ *********************/
+
+void _bdef(
+  block id,
+  char* name,
+  block_info vis,
+  block_info sbst,
+  block_info geom,
+  species_type spt,
+  block_info flags
+) {
+  BLOCK_NAMES[id] = name;
+  BLOCK_INFO[id] = (
+    (vis << BIMS_VISIBILITY)
+  & (sbst << BIMS_SUBSTANCE)
+  & (geom << BIMS_GEOMETRY)
+  & (spt << BIMS_SPECIES_TYPE)
+  & flags
+  );
+}
+
+/*************
+ * Functions *
+ *************/
+
+void init_blocks(void) {
+// All flags:
+// TODO: Keep this up-to-date
+//  BIF_ANISOTROPIC
+//  BIF_ORIENTABLE
+//  BIF_GROWS
+//  BIF_GROWTH_SITE
+//  BIF_GROWTH_CORE
+//  BIF_AQUATIC
+//  BIF_SEED
+
+  _bdef( B_VOID, "void",
+    BI_VIS_INVISIBLE,    BI_SBST_EMPTY,       BI_GEOM_EMPTY,   SPT_NO_SPECIES,
+    0);
+
+  _bdef( B_BOUNDARY, "boundary",
+    BI_VIS_OPAQUE,       BI_SBST_SOLID,       BI_GEOM_SOLID,   SPT_NO_SPECIES,
+    0);
+
+  _bdef( B_AIR, "air",
+    BI_VIS_INVISIBLE,    BI_SBST_EMPTY,       BI_GEOM_EMPTY,   SPT_NO_SPECIES,
+    0);
+  _bdef( B_ETHER, "ether",
+    BI_VIS_INVISIBLE,    BI_SBST_EMPTY,       BI_GEOM_EMPTY,   SPT_NO_SPECIES,
+    0);
+
+  _bdef( B_FUMES, "fumes",
+    BI_VIS_INVISIBLE,    BI_SBST_EMPTY,       BI_GEOM_EMPTY,   SPT_GAS,
+    0);
+
+  _bdef( B_WATER, "water",
+    BI_VIS_TRANSLUCENT,  BI_SBST_LIQUID,      BI_GEOM_LIQUID,  SPT_NO_SPECIES,
+    BIF_ANISOTROPIC);
+  _bdef( B_WATER_FLOW, "water_flow",
+    BI_VIS_TRANSLUCENT,  BI_SBST_LIQUID,      BI_GEOM_LIQUID,  SPT_NO_SPECIES,
+    BIF_ANISOTROPIC | BIF_ORIENTABLE);
+
+  _bdef( B_SLIME, "slime",
+    BI_VIS_TRANSLUCENT,  BI_SBST_LIQUID,      BI_GEOM_LIQUID,  SPT_NO_SPECIES,
+    BIF_ANISOTROPIC);
+  _bdef( B_SLIME_FLOW, "slime_flow",
+    BI_VIS_TRANSLUCENT,  BI_SBST_LIQUID,      BI_GEOM_LIQUID,  SPT_NO_SPECIES,
+    BIF_ANISOTROPIC | BIF_ORIENTABLE);
+
+  _bdef( B_ACID, "acid",
+    BI_VIS_TRANSLUCENT,  BI_SBST_LIQUID,      BI_GEOM_LIQUID,  SPT_NO_SPECIES,
+    BIF_ANISOTROPIC);
+  _bdef( B_ACID_FLOW, "acid_flow",
+    BI_VIS_TRANSLUCENT,  BI_SBST_LIQUID,      BI_GEOM_LIQUID,  SPT_NO_SPECIES,
+    BIF_ANISOTROPIC | BIF_ORIENTABLE);
+
+  _bdef( B_QUICKSAND, "quicksand",
+    BI_VIS_OPAQUE,       BI_SBST_LIQUID,      BI_GEOM_LIQUID,  SPT_STONE,
+    BIF_ANISOTROPIC);
+
+  _bdef( B_LAVA, "lava",
+    BI_VIS_OPAQUE,       BI_SBST_LIQUID,      BI_GEOM_LIQUID,  SPT_STONE,
+    BIF_ANISOTROPIC);
+  _bdef( B_LAVA_FLOW, "lava_flow",
+    BI_VIS_OPAQUE,       BI_SBST_LIQUID,      BI_GEOM_LIQUID,  SPT_STONE,
+    BIF_ANISOTROPIC | BIF_ORIENTABLE);
+
+  _bdef( B_SMOKE, "smoke",
+    BI_VIS_TRANSLUCENT,  BI_SBST_EMPTY,       BI_GEOM_SOLID,   SPT_GAS,
+    0);
+  _bdef( B_MIASMA, "miasma",
+    BI_VIS_TRANSLUCENT,  BI_SBST_EMPTY,       BI_GEOM_SOLID,   SPT_GAS,
+    0);
+
+  _bdef( B_THICK_SMOKE, "thick_smoke",
+    BI_VIS_OPAQUE,       BI_SBST_EMPTY,       BI_GEOM_SOLID,   SPT_GAS,
+    0);
+
+  _bdef( B_DIRT, "dirt",
+    BI_VIS_OPAQUE,       BI_SBST_SOLID,       BI_GEOM_SOLID,   SPT_DIRT,
+    0);
+  _bdef( B_MUD, "mud",
+    BI_VIS_OPAQUE,       BI_SBST_SOLID,       BI_GEOM_SOLID,   SPT_DIRT,
+    0);
+  _bdef( B_CLAY, "clay",
+    BI_VIS_OPAQUE,       BI_SBST_SOLID,       BI_GEOM_SOLID,   SPT_CLAY,
+    0);
+  _bdef( B_SAND, "sand",
+    BI_VIS_OPAQUE,       BI_SBST_SOLID,       BI_GEOM_SOLID,   SPT_STONE,
+    0);
+  _bdef( B_GRAVEL, "gravel",
+    BI_VIS_OPAQUE,       BI_SBST_SOLID,       BI_GEOM_SOLID,   SPT_STONE,
+    0);
+  _bdef( B_SCREE, "scree",
+    BI_VIS_OPAQUE,       BI_SBST_SOLID,       BI_GEOM_SOLID,   SPT_STONE,
+    0);
+  _bdef( B_STONE, "stone",
+    BI_VIS_OPAQUE,       BI_SBST_SOLID,       BI_GEOM_SOLID,   SPT_STONE,
+    0);
+  _bdef( B_NATIVE_METAL, "native_metal",
+    BI_VIS_OPAQUE,       BI_SBST_SOLID,       BI_GEOM_SOLID,   SPT_METAL,
+    0);
+
+  _bdef( B_MUSHROOM_SPORES, "mushroom_spores",
+    BI_VIS_INVISIBLE,    BI_SBST_EMPTY,       BI_GEOM_EMPTY,   SPT_FUNGUS,
+    BIF_GROWS | BIF_GROWTH_SITE | BIF_SEED);
+  _bdef( B_MUSHROOM_SHOOTS, "mushroom_shoots",
+    BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_HERB,    SPT_FUNGUS,
+    BIF_GROWS | BIF_GROWTH_SITE);
+  _bdef( B_MUSHROOM_GROWN, "mushroom",
+    BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_HERB,    SPT_FUNGUS,
+    BIF_GROWS | BIF_GROWTH_SITE);
+
+  _bdef( B_GIANT_MUSHROOM_SPORES, "giant_mushroom_spores",
+    BI_VIS_INVISIBLE,    BI_SBST_EMPTY,       BI_GEOM_EMPTY,   SPT_FUNGUS,
+    BIF_GROWS | BIF_GROWTH_SITE | BIF_SEED);
+  _bdef( B_GIANT_MUSHROOM_CORE, "giant_mushroom_core",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_ROOT,    SPT_FUNGUS,
+    BIF_GROWS | BIF_GROWTH_CORE);
+  _bdef( B_GIANT_MUSHROOM_MYCELIUM, "giant_mushroom_mycelium",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_ROOT,    SPT_FUNGUS,
+    BIF_GROWS);
+  _bdef( B_GIANT_MUSHROOM_SPROUT, "giant_mushroom_sprout",
+    BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_HERB,    SPT_FUNGUS,
+    BIF_GROWS);
+  _bdef( B_GIANT_MUSHROOM_STALK, "giant_mushroom_stalk",
+    BI_VIS_OPAQUE,       BI_SBST_SOLID,       BI_GEOM_SOLID,   SPT_FUNGUS,
+    BIF_GROWS);
+  _bdef( B_GIANT_MUSHROOM_CAP, "giant_mushroom_cap",
+    BI_VIS_OPAQUE,       BI_SBST_SOLID,       BI_GEOM_SOLID,   SPT_FUNGUS,
+    BIF_GROWS);
+
+  _bdef( B_MOSS_SPORES, "moss_spores",
+    BI_VIS_INVISIBLE,    BI_SBST_EMPTY,       BI_GEOM_EMPTY,   SPT_MOSS,
+    BIF_GROWS | BIF_GROWTH_SITE | BIF_SEED);
+  _bdef( B_MOSS_SHOOTS, "moss_shoots",
+    BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_VINE,    SPT_MOSS,
+    BIF_GROWS | BIF_GROWTH_SITE);
+  _bdef( B_MOSS_GROWN, "moss",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_VINE,    SPT_MOSS,
+    BIF_GROWS | BIF_GROWTH_SITE);
+  _bdef( B_MOSS_FLOWERING, "flowering_moss",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_VINE,    SPT_MOSS,
+    BIF_GROWS | BIF_GROWTH_SITE);
+  _bdef( B_MOSS_FRUITING, "fruiting_moss",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_VINE,    SPT_MOSS,
+    BIF_GROWS | BIF_GROWTH_SITE);
+
+  _bdef( B_GRASS_SEEDS, "grass_seeds",
+    BI_VIS_INVISIBLE,    BI_SBST_EMPTY,       BI_GEOM_EMPTY,   SPT_GRASS,
+    BIF_GROWS | BIF_GROWTH_SITE | BIF_SEED);
+  _bdef( B_GRASS_ROOTS, "grass_roots",
+    BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_ROOT,    SPT_GRASS,
+    BIF_GROWS | BIF_GROWTH_SITE);
+  _bdef( B_GRASS_SHOOTS, "grass_shoots",
+    BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_GRASS,   SPT_GRASS,
+    BIF_GROWS | BIF_GROWTH_SITE);
+  _bdef( B_GRASS_GROWN, "grass",
+    BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_GRASS,   SPT_GRASS,
+    BIF_GROWS | BIF_GROWTH_SITE);
+  _bdef( B_GRASS_FLOWERING, "flowering_grass",
+    BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_GRASS,   SPT_GRASS,
+    BIF_GROWS | BIF_GROWTH_SITE);
+  _bdef( B_GRASS_FRUITING, "fruiting_grass",
+    BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_GRASS,   SPT_GRASS,
+    BIF_GROWS | BIF_GROWTH_SITE);
+
+  _bdef( B_VINE_SEEDS, "vine_seeds",
+    BI_VIS_INVISIBLE,    BI_SBST_EMPTY,       BI_GEOM_EMPTY,   SPT_VINE,
+    BIF_GROWS | BIF_GROWTH_SITE | BIF_SEED);
+  _bdef( B_VINE_CORE, "vine_core",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_ROOT,    SPT_VINE,
+    BIF_GROWS | BIF_GROWTH_CORE);
+  _bdef( B_VINE_ROOTS, "vine_roots",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_ROOT,    SPT_VINE,
+    BIF_GROWS);
+  _bdef( B_VINE_SHOOTS, "vine_shoots",
+    BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_VINE,   SPT_VINE,
+    BIF_GROWS);
+  _bdef( B_VINE_SPROUTING, "vine_sprouting",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_VINE,   SPT_VINE,
+    BIF_GROWS);
+  _bdef( B_VINE_GROWN, "vine",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_VINE,   SPT_VINE,
+    BIF_GROWS);
+  _bdef( B_VINE_BUDDING, "budding_vine",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_VINE,   SPT_VINE,
+    BIF_GROWS);
+  _bdef( B_VINE_FLOWERING, "flowering_vine",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_VINE,   SPT_VINE,
+    BIF_GROWS);
+  _bdef( B_VINE_FRUITING, "fruiting_vine",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_VINE,   SPT_VINE,
+    BIF_GROWS);
+  _bdef( B_VINE_SHEDDING, "shedding_vine",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_VINE,   SPT_VINE,
+    BIF_GROWS);
+  _bdef( B_VINE_DORMANT, "dormant_vine",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_VINE,   SPT_VINE,
+    BIF_GROWS);
+
+#define                        B_HERB_SEEDS 0x064
+#define                         B_HERB_CORE 0x065
+#define                        B_HERB_ROOTS 0x066
+#define                       B_HERB_SHOOTS 0x067
+#define                        B_HERB_GROWN 0x068
+#define                      B_HERB_BUDDING 0x069
+#define                    B_HERB_FLOWERING 0x06a
+#define                     B_HERB_FRUITING 0x06b
+
+#define                        B_BUSH_SEEDS 0x06c
+#define                         B_BUSH_CORE 0x06d
+#define                        B_BUSH_ROOTS 0x06e
+#define                       B_BUSH_SHOOTS 0x06f
+#define           B_BUSH_BRANCHES_SPROUTING 0x070
+#define               B_BUSH_BRANCHES_GROWN 0x071
+#define             B_BUSH_BRANCHES_BUDDING 0x072
+#define           B_BUSH_BRANCHES_FLOWERING 0x073
+#define            B_BUSH_BRANCHES_FRUITING 0x074
+#define            B_BUSH_BRANCHES_SHEDDING 0x075
+#define             B_BUSH_BRANCHES_DORMANT 0x076
+#define             B_BUSH_LEAVES_SPROUTING 0x077
+#define                 B_BUSH_LEAVES_GROWN 0x078
+#define               B_BUSH_LEAVES_BUDDING 0x079
+#define             B_BUSH_LEAVES_FLOWERING 0x07a
+#define              B_BUSH_LEAVES_FRUITING 0x07b
+#define              B_BUSH_LEAVES_SHEDDING 0x07c
+#define               B_BUSH_LEAVES_DORMANT 0x07d
+
+#define                       B_SHRUB_SEEDS 0x080
+#define                        B_SHRUB_CORE 0x081
+#define                       B_SHRUB_ROOTS 0x082
+#define                 B_SHRUB_THICK_ROOTS 0x083
+#define                      B_SHRUB_SHOOTS 0x084
+#define          B_SHRUB_BRANCHES_SPROUTING 0x085
+#define              B_SHRUB_BRANCHES_GROWN 0x086
+#define            B_SHRUB_BRANCHES_BUDDING 0x087
+#define          B_SHRUB_BRANCHES_FLOWERING 0x088
+#define           B_SHRUB_BRANCHES_FRUITING 0x089
+#define           B_SHRUB_BRANCHES_SHEDDING 0x08a
+#define            B_SHRUB_BRANCHES_DORMANT 0x08b
+#define            B_SHRUB_LEAVES_SPROUTING 0x08c
+#define                B_SHRUB_LEAVES_GROWN 0x08d
+#define              B_SHRUB_LEAVES_BUDDING 0x08e
+#define            B_SHRUB_LEAVES_FLOWERING 0x08f
+#define             B_SHRUB_LEAVES_FRUITING 0x090
+#define             B_SHRUB_LEAVES_SHEDDING 0x091
+#define              B_SHRUB_LEAVES_DORMANT 0x092
+
+#define                        B_TREE_SEEDS 0x094
+#define                         B_TREE_CORE 0x095
+#define                   B_TREE_THICK_CORE 0x096
+#define                        B_TREE_ROOTS 0x097
+#define                  B_TREE_THICK_ROOTS 0x098
+#define                  B_TREE_HEART_ROOTS 0x099
+#define                       B_TREE_SHOOTS 0x09a
+#define                        B_TREE_TRUNK 0x09b
+#define                B_TREE_BARE_BRANCHES 0x09c
+#define           B_TREE_BRANCHES_SPROUTING 0x09d
+#define               B_TREE_BRANCHES_GROWN 0x09e
+#define             B_TREE_BRANCHES_BUDDING 0x09f
+#define           B_TREE_BRANCHES_FLOWERING 0x0a0
+#define            B_TREE_BRANCHES_FRUITING 0x0a1
+#define            B_TREE_BRANCHES_SHEDDING 0x0a2
+#define             B_TREE_BRANCHES_DORMANT 0x0a3
+#define             B_TREE_LEAVES_SPROUTING 0x0a4
+#define                 B_TREE_LEAVES_GROWN 0x0a5
+#define               B_TREE_LEAVES_BUDDING 0x0a6
+#define             B_TREE_LEAVES_FLOWERING 0x0a7
+#define              B_TREE_LEAVES_FRUITING 0x0a8
+#define              B_TREE_LEAVES_SHEDDING 0x0a9
+#define               B_TREE_LEAVES_DORMANT 0x0aa
+
+#define               B_AQUATIC_GRASS_SEEDS 0x0ac
+#define               B_AQUATIC_GRASS_ROOTS 0x0ad
+#define              B_AQUATIC_GRASS_SHOOTS 0x0ae
+#define               B_AQUATIC_GRASS_GROWN 0x0af
+#define           B_AQUATIC_GRASS_FLOWERING 0x0b0
+#define            B_AQUATIC_GRASS_FRUITING 0x0b1
+
+#define               B_AQUATIC_PLANT_SEEDS 0x0b4
+#define                B_AQUATIC_PLANT_CORE 0x0b5
+#define             B_AQUATIC_PLANT_ANCHORS 0x0b6
+#define              B_AQUATIC_PLANT_SHOOTS 0x0b7
+#define               B_AQUATIC_PLANT_STEMS 0x0b8
+#define        B_AQUATIC_PLANT_LEAVES_GROWN 0x0b9
+#define    B_AQUATIC_PLANT_LEAVES_FLOWERING 0x0ba
+#define     B_AQUATIC_PLANT_LEAVES_FRUITING 0x0bb
+
+#define                       B_YOUNG_CORAL 0x0bc
+#define                        B_CORAL_CORE 0x0bd
+#define                        B_CORAL_BODY 0x0be
+#define                       B_CORAL_FROND 0x0bf
+
+// Hewn Blocks:
+#define                     B_SMOOTHED_ROCK 0x0c0
+#define                   B_HEWN_ROCK_GRATE 0x0c1
+
+// Construction Materials:
+#define                              B_BALE 0x0d0
+#define                            B_THATCH 0x0d1
+#define                            B_WATTLE 0x0d2
+
+#define                      B_WOODEN_PLANK 0x0d3
+#define                       B_WOODEN_BEAM 0x0d4
+#define                      B_WOODEN_PANEL 0x0d5
+#define                     B_WOODEN_PILLAR 0x0d6
+
+#define                          B_CORDWOOD 0x0d7
+#define                               B_COB 0x0d8
+#define                      B_RAMMED_EARTH 0x0d9
+#define                     B_STACKED_STONE 0x0da
+#define                      B_FITTED_STONE 0x0db
+#define                    B_MORTARED_STONE 0x0dc
+#define                        B_METAL_BARS 0x0dd
+
+#define                        B_STONE_POST 0x0de
+#define                      B_STONE_PILLAR 0x0df
+
+#define                         B_MUD_BRICK 0x0e0
+#define                        B_CLAY_BRICK 0x0e1
+#define                       B_STONE_BRICK 0x0e2
+
+#define                        B_STONE_TILE 0x0e3
+#define                      B_CERAMIC_TILE 0x0e4
+#define                    B_WOODEN_SHINGLE 0x0e5
+
+#define                      B_WOODEN_GRATE 0x0e6
+#define                       B_STONE_GRATE 0x0e7
+#define                       B_METAL_GRATE 0x0e8
+
+#define                       B_GLASS_BLOCK 0x0e9
+#define                        B_GLASS_PANE 0x0ea
+#define                      B_FRAMED_GLASS 0x0eb
+
+#define                       B_METAL_BLOCK 0x0ec
+
+// Interactive blocks:
+#define                       B_WOODEN_GATE 0x100
+#define                        B_METAL_GATE 0x101
+#define                 B_WOODEN_PLANK_DOOR 0x102
+#define                 B_WOODEN_PANEL_DOOR 0x103
+#define                        B_STONE_DOOR 0x104
+#define                        B_METAL_DOOR 0x105
+
+// Decorative blocks:
+#define                           B_PLASTER 0x120
+#define                            B_STUCCO 0x121
+#define                             B_PAINT 0x122
+
+#define                            B_BANNER 0x123
+#define                          B_TAPESTRY 0x124
+#define                          B_PAINTING 0x125
+#define                         B_ENGRAVING 0x126
+
+#define                            B_CARPET 0x127
+#define                               B_RUG 0x128
+#define                         B_CLOTH_MAT 0x129
+#define                          B_STEM_MAT 0x12a
+}

@@ -1,6 +1,10 @@
 // species.c
 // Manages species info for different block/item/entity types.
 
+#ifdef DEBUG
+  #include <stdio.h>
+#endif
+
 #include "datatypes/map.h"
 
 #include "materials.h"
@@ -10,6 +14,8 @@
 /***********
  * Globals *
  ***********/
+
+map *GAS_SPECIES = NULL;
 
 map *DIRT_SPECIES = NULL;
 map *CLAY_SPECIES = NULL;
@@ -39,6 +45,7 @@ map *FIBER_SPECIES = NULL; // various sources; uniform use
  *************/
 
 void setup_species(void) {
+  GAS_SPECIES = create_map(1, 1024);
   DIRT_SPECIES = create_map(1, 1024);
   CLAY_SPECIES = create_map(1, 1024);
   STONE_SPECIES = create_map(1, 1024); // also used for sand, gravel etc.
@@ -63,7 +70,67 @@ void setup_species(void) {
   FIBER_SPECIES = create_map(1, 1024); // various sources; uniform use
 }
 
+void* get_species_data(any_species sp) {
+  switch(sp.type) {
+    case SPT_GAS:
+      return (void*) get_gas_species(sp.id);
+    case SPT_DIRT:
+      return (void*) get_dirt_species(sp.id);
+    case SPT_CLAY:
+      return (void*) get_clay_species(sp.id);
+    case SPT_STONE:
+      return (void*) get_stone_species(sp.id);
+    case SPT_METAL:
+      return (void*) get_metal_species(sp.id);
+  
+    case SPT_FUNGUS:
+      return (void*) get_fungus_speciesspecies(sp.id);
+    case SPT_MOSS:
+      return (void*) get_moss_speciesspecies(sp.id);
+    case SPT_GRASS:
+      return (void*) get_grass_speciesspecies(sp.id);
+    case SPT_VINE:
+      return (void*) get_vine_speciesspecies(sp.id);
+    case SPT_HERB:
+      return (void*) get_herb_speciesspecies(sp.id);
+    case SPT_BUSH:
+      return (void*) get_bush_speciesspecies(sp.id);
+    case SPT_SHRUB:
+      return (void*) get_shrub_speciesspecies(sp.id);
+    case SPT_TREE:
+      return (void*) get_tree_speciesspecies(sp.id);
+    case SPT_AQUATIC:
+      return (void*) get_aquatic_grass_speciesspecies(sp.id);
+    case SPT_AQUATIC:
+      return (void*) get_aquatic_grass_speciesspeciesspecies(sp.id);
+    case SPT_CORAL:
+      return (void*) get_coral_speciesspecies(sp.id);
+  
+    case SPT_ANIMAL:
+      return (void*) get_animal_species(sp.id);
+    case SPT_MYTHICAL:
+      return (void*) get_mythical_species(sp.id);
+    case SPT_SENTIENT:
+      return (void*) get_sentient_species(sp.id);
+  
+    case SPT_FIBER:
+      return (void*) get_fibe_species(sp.id);
+
+    default:
+#ifdef DEBUG
+      fprintf(
+        stderr,
+        "ERROR: Requested species data for unknown species type %d.\n",
+        sp.type
+      );
+#endif
+      return NULL;
+  }
+}
+
 // create/get functions for various species types:
+SPECIES_ACCESS_FUNCTIONS(gas, GAS)
+
 SPECIES_ACCESS_FUNCTIONS(dirt, DIRT)
 SPECIES_ACCESS_FUNCTIONS(clay, CLAY)
 SPECIES_ACCESS_FUNCTIONS(stone, STONE)
