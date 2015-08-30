@@ -427,7 +427,7 @@ static block const ROTATE_FACE[8][8] = {
 
 #define                        B_TREE_SEEDS 0x094
 #define                         B_TREE_CORE 0x095
-#define                   B_TREE_THICK_CORE 0x096
+#define                   B_TREE_HEART_CORE 0x096
 #define                        B_TREE_ROOTS 0x097
 #define                  B_TREE_THICK_ROOTS 0x098
 #define                  B_TREE_HEART_ROOTS 0x099
@@ -499,9 +499,9 @@ static block const ROTATE_FACE[8][8] = {
 #define                        B_CLAY_BRICK 0x0e1
 #define                       B_STONE_BRICK 0x0e2
 
-#define                        B_STONE_TILE 0x0e3
-#define                      B_CERAMIC_TILE 0x0e4
-#define                    B_WOODEN_SHINGLE 0x0e5
+#define                    B_WOODEN_SHINGLE 0x0e3
+#define                        B_STONE_TILE 0x0e4
+#define                      B_CERAMIC_TILE 0x0e5
 
 #define                      B_WOODEN_GRATE 0x0e6
 #define                       B_STONE_GRATE 0x0e7
@@ -509,17 +509,25 @@ static block const ROTATE_FACE[8][8] = {
 
 #define                       B_GLASS_BLOCK 0x0e9
 #define                        B_GLASS_PANE 0x0ea
-#define                      B_FRAMED_GLASS 0x0eb
 
-#define                       B_METAL_BLOCK 0x0ec
+#define                     B_WOODEN_EDGING 0x0ec
+#define                      B_STONE_EDGING 0x0ed
+#define                      B_METAL_EDGING 0x0ee
+
+#define                      B_WOODEN_FRAME 0x0f0
+#define                       B_STONE_FRAME 0x0f1
+#define                       B_METAL_FRAME 0x0f2
+
+#define                       B_METAL_BLOCK 0x0f4
 
 // Interactive blocks:
 #define                       B_WOODEN_GATE 0x100
-#define                        B_METAL_GATE 0x101
-#define                 B_WOODEN_PLANK_DOOR 0x102
-#define                 B_WOODEN_PANEL_DOOR 0x103
-#define                        B_STONE_DOOR 0x104
-#define                        B_METAL_DOOR 0x105
+#define                        B_STONE_GATE 0x101
+#define                        B_METAL_GATE 0x102
+#define                 B_WOODEN_PLANK_DOOR 0x103
+#define                 B_WOODEN_PANEL_DOOR 0x104
+#define                        B_STONE_DOOR 0x105
+#define                        B_METAL_DOOR 0x106
 
 // Decorative blocks:
 #define                           B_PLASTER 0x120
@@ -533,8 +541,7 @@ static block const ROTATE_FACE[8][8] = {
 
 #define                            B_CARPET 0x127
 #define                               B_RUG 0x128
-#define                         B_CLOTH_MAT 0x129
-#define                          B_STEM_MAT 0x12a
+#define                          B_STEM_MAT 0x129
 
 /********************
  * Inline Functions *

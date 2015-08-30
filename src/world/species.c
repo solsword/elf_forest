@@ -39,6 +39,7 @@ map *MYTHICAL_SPECIES = NULL;
 map *SENTIENT_SPECIES = NULL;
 
 map *FIBER_SPECIES = NULL; // various sources; uniform use
+map *PIGMENT_SPECIES = NULL; // various sources; uniform use
 
 /*************
  * Functions *
@@ -68,6 +69,7 @@ void setup_species(void) {
   SENTIENT_SPECIES = create_map(1, 1024);
   
   FIBER_SPECIES = create_map(1, 1024); // various sources; uniform use
+  PIGMENT_SPECIES = create_map(1, 1024); // various sources; uniform use
 }
 
 void* get_species_data(any_species sp) {
@@ -84,27 +86,27 @@ void* get_species_data(any_species sp) {
       return (void*) get_metal_species(sp.id);
   
     case SPT_FUNGUS:
-      return (void*) get_fungus_speciesspecies(sp.id);
+      return (void*) get_fungus_species(sp.id);
     case SPT_MOSS:
-      return (void*) get_moss_speciesspecies(sp.id);
+      return (void*) get_moss_species(sp.id);
     case SPT_GRASS:
-      return (void*) get_grass_speciesspecies(sp.id);
+      return (void*) get_grass_species(sp.id);
     case SPT_VINE:
-      return (void*) get_vine_speciesspecies(sp.id);
+      return (void*) get_vine_species(sp.id);
     case SPT_HERB:
-      return (void*) get_herb_speciesspecies(sp.id);
+      return (void*) get_herb_species(sp.id);
     case SPT_BUSH:
-      return (void*) get_bush_speciesspecies(sp.id);
+      return (void*) get_bush_species(sp.id);
     case SPT_SHRUB:
-      return (void*) get_shrub_speciesspecies(sp.id);
+      return (void*) get_shrub_species(sp.id);
     case SPT_TREE:
-      return (void*) get_tree_speciesspecies(sp.id);
-    case SPT_AQUATIC:
-      return (void*) get_aquatic_grass_speciesspecies(sp.id);
-    case SPT_AQUATIC:
-      return (void*) get_aquatic_grass_speciesspeciesspecies(sp.id);
+      return (void*) get_tree_species(sp.id);
+    case SPT_AQUATIC_GRASS:
+      return (void*) get_aquatic_grass_species(sp.id);
+    case SPT_AQUATIC_PLANT:
+      return (void*) get_aquatic_plant_species(sp.id);
     case SPT_CORAL:
-      return (void*) get_coral_speciesspecies(sp.id);
+      return (void*) get_coral_species(sp.id);
   
     case SPT_ANIMAL:
       return (void*) get_animal_species(sp.id);
@@ -114,7 +116,9 @@ void* get_species_data(any_species sp) {
       return (void*) get_sentient_species(sp.id);
   
     case SPT_FIBER:
-      return (void*) get_fibe_species(sp.id);
+      return (void*) get_fiber_species(sp.id);
+    case SPT_PIGMENT:
+      return (void*) get_pigment_species(sp.id);
 
     default:
 #ifdef DEBUG
@@ -148,8 +152,9 @@ SPECIES_ACCESS_FUNCTIONS(aquatic_grass, AQUATIC_GRASS)
 SPECIES_ACCESS_FUNCTIONS(aquatic_plant, AQUATIC_PLANT)
 SPECIES_ACCESS_FUNCTIONS(coral, CORAL)
 
-SPECIES_ACCESS_FUNCTIONS(animal, ANIMAL)
-SPECIES_ACCESS_FUNCTIONS(mythical, MYTHICAL)
-SPECIES_ACCESS_FUNCTIONS(sentient, SENTIENT)
+// SPECIES_ACCESS_FUNCTIONS(animal, ANIMAL)
+// SPECIES_ACCESS_FUNCTIONS(mythical, MYTHICAL)
+// SPECIES_ACCESS_FUNCTIONS(sentient, SENTIENT)
 
 SPECIES_ACCESS_FUNCTIONS(fiber, FIBER)
+SPECIES_ACCESS_FUNCTIONS(pigment, PIGMENT)

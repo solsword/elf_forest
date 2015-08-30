@@ -96,15 +96,16 @@ enum species_type_e {
   SPT_BUSH = 11,
   SPT_SHRUB = 12,
   SPT_TREE = 13,
-  SPT_AQUATIC = 14,
-  SPT_AQUATIC = 15,
+  SPT_AQUATIC_GRASS = 14,
+  SPT_AQUATIC_PLANT = 15,
   SPT_CORAL = 16,
   
   SPT_ANIMAL = 17,
   SPT_MYTHICAL = 18,
   SPT_SENTIENT = 19,
   
-  SPT_FIBER = 20
+  SPT_FIBER = 20,
+  SPT_PIGMENT = 21
 };
 typedef enum species_type_e species_type;
 
@@ -196,6 +197,9 @@ typedef struct sentient_species_s sentient_species;
 struct fiber_species_s;
 typedef struct fiber_species_s fiber_species;
 
+struct pigment_species_s;
+typedef struct pigment_species_s pigment_species;
+
 // Any species type:
 // The any_species structure just holds a species id along with a species_type
 // identifier. Together this information can be used to look up a specific
@@ -221,7 +225,7 @@ extern map *FUNGUS_SPECIES;
 extern map *MOSS_SPECIES;
 extern map *GRASS_SPECIES;
 extern map *VINE_SPECIES;
-extern map *HERB_SPECIES;
+extern map *HERB_SPECIES; // also used for bales, thatch, straw mats, etc.
 extern map *BUSH_SPECIES;
 extern map *SHRUB_SPECIES;
 extern map *TREE_SPECIES; // also used for wood
@@ -236,20 +240,13 @@ extern map *SENTIENT_SPECIES;
 
 // Items:
 extern map *FIBER_SPECIES; // various sources; uniform use
+extern map *PIGMENT_SPECIES; // various sources; uniform use
 
 /*************************
  * Structure Definitions *
  *************************/
 
 // Secondary structures:
-
-struct growth_properties_s {
-  ptrdiff_t seed_growth_resist;
-  ptrdiff_t growth_resist;
-  ptrdiff_t growth_strength;
-  seed_growth_pattern seed_growth;
-  core_growth_pattern core_growth;
-}
 
 struct seed_growth_pattern_s {
   cell_grammar *grammar;
@@ -261,6 +258,14 @@ struct seed_growth_pattern_s {
 
 struct core_growth_pattern_s {
   // TODO: HERE
+};
+
+struct growth_properties_s {
+  ptrdiff_t seed_growth_resist;
+  ptrdiff_t growth_resist;
+  ptrdiff_t growth_strength;
+  seed_growth_pattern seed_growth;
+  core_growth_pattern core_growth;
 };
 
 struct fungus_materials_s {
@@ -410,6 +415,11 @@ struct fiber_species_s {
   material material;
   fiber_texture_params appearance;
 };
+
+struct pigment_species_s {
+  material material;
+  pigment_texture_params appearance;
+};
 */
 
 // The any_species structure
@@ -460,10 +470,11 @@ SPECIES_ACCESS_FUNCTIONS_DECL(aquatic_grass);
 SPECIES_ACCESS_FUNCTIONS_DECL(aquatic_plant);
 SPECIES_ACCESS_FUNCTIONS_DECL(coral);
 
-SPECIES_ACCESS_FUNCTIONS_DECL(animal);
-SPECIES_ACCESS_FUNCTIONS_DECL(mythical);
-SPECIES_ACCESS_FUNCTIONS_DECL(sentient);
+// SPECIES_ACCESS_FUNCTIONS_DECL(animal);
+// SPECIES_ACCESS_FUNCTIONS_DECL(mythical);
+// SPECIES_ACCESS_FUNCTIONS_DECL(sentient);
 
 SPECIES_ACCESS_FUNCTIONS_DECL(fiber);
+SPECIES_ACCESS_FUNCTIONS_DECL(pigment);
 
 #endif // ifndef SPECIES_H
