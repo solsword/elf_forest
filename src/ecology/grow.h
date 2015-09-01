@@ -192,16 +192,14 @@ void grow_block(
 // growth site block.
 void grow_at_site(
   chunk_neighborhood *nbh,
-  block_index idx,
-  ptrdiff_t t
+  block_index idx
 );
 
 // Given a chunk neighborhood and the index of a growth core block within the
 // central chunk, runs a cycle of growth particles from that growth core.
 void grow_from_core(
   chunk_neighborhood *nbh,
-  block_index idx,
-  ptrdiff_t t
+  block_index idx
 );
 
 // Grows plants in the given chunk for the given number of cycles. It returns 1

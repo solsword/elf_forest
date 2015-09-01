@@ -8,6 +8,8 @@
 
 #include "datatypes/list.h"
 
+#include "gen/biology.h"
+
 /********************
  * Helper Functions *
  ********************/
@@ -38,9 +40,9 @@ static inline int _check_block(
   } else if (strategy == CGCS_BLOCKS_GROWTH) {
     return get_species_growth_strength(b, 1) >= compare;
   } else if (strategy == CGCS_BLOCK_INFO) {
-    return b_info(b) & mask == (block_info) (compare & mask);
+    return (b_info(b) & mask) == (block_info) (compare & mask);
   } else {
-    return b & mask == compare & mask;
+    return (b & mask) == (compare & mask);
   }
 }
 
@@ -226,16 +228,16 @@ int check_expansion(
 }
 
 cg_expansion* pick_expansion(
+  cell_grammar *cg,
   chunk_neighborhood* nbh,
   block_index base,
-  cell_grammar *cg,
   ptrdiff_t seed
 ) {
   size_t i;
   int success;
   cg_expansion *exp;
   list *options = create_list();
-  block root_block = nb_block(nbh, base);
+  block root_block = *nb_block(nbh, base);
   for (i = 0; i < l_get_length(cg->expansions); ++i) {
     exp = (cg_expansion*) l_get_item(cg->expansions, i);
     success = check_expansion(exp, nbh, base, root_block);
@@ -276,14 +278,17 @@ void apply_expansion(cg_expansion *cge, block root_block) {
       break;
     case CGET_LOGICAL_AND:
       for(i = 0; i < l_get_length(cge->children); ++i) {
-        apply_expansion((cg_expansion*) l_get_item(cge->children, i));
+        apply_expansion(
+          (cg_expansion*) l_get_item(cge->children, i),
+          root_block
+        );
       }
       break;
     case CGET_LOGICAL_OR:
       for(i = 0; i < l_get_length(cge->children); ++i) {
         child = (cg_expansion*) l_get_item(cge->children, i);
         if (child->target != NULL) {
-          apply_expansion(child);
+          apply_expansion(child, root_block);
           break;
         }
       }

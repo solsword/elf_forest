@@ -27,7 +27,6 @@ void grow_block(chunk_neighborhood *nbh, block_index idx, ptrdiff_t t) {
   global_pos cell_position;
   chunk *c = nbh->members[NBH_CENTER];
   block *b = c_block(c, idx);
-  block_data sprout_timer = 0;
   cidx__glpos(c, &idx, &cell_position);
   ptrdiff_t growth_rate = get_growth_rate(*b);
   ptrdiff_t growth_offset = posmod(cell_hash(&cell_position), growth_rate);
@@ -36,9 +35,9 @@ void grow_block(chunk_neighborhood *nbh, block_index idx, ptrdiff_t t) {
   && ((t - growth_offset) % growth_rate == 0)
   ) {
     if (bi_gcore(*b)) {
-      grow_from_core(&nbh, idx);
+      grow_from_core(nbh, idx);
     } else if (bi_gsite(*b)) {
-      grow_at_site(&nbh, idx);
+      grow_at_site(nbh, idx);
     }
   }
 }
@@ -52,14 +51,15 @@ void grow_at_site(
   block *b = c_block(c, idx);
   block_data sprout_timer = 0;
   cidx__glpos(c, &idx, &cell_position);
-  ptrdiff_t hash = cell_hash(&cell_position);
+  // TODO: We'll probably need this...
+  // ptrdiff_t hash = cell_hash(&cell_position);
   if (bi_seed(*b)) {
     // This growth site is a seed: check the sprout timer.
     sprout_timer = gri_sprout_timer(*b);
     if (sprout_timer > 0) {
       // This seed isn't ready to sprout yet: just tick down the sprout timer
       // TODO: Implement sprout timer ticking conditions here!
-      gri_set_sprout_timer(sprout_timer - 1);
+      gri_set_sprout_timer(b, sprout_timer - 1);
       return;
     }
   }
@@ -70,19 +70,14 @@ void grow_at_site(
 
 void grow_from_core(
   chunk_neighborhood *nbh,
-  block_index idx,
-  ptrdiff_t t
+  block_index idx
 ) {
   global_pos cell_position;
   chunk *c = nbh->members[NBH_CENTER];
-  block *b = c_block(c, idx);
+  // TODO: We'll need this.
+  // block *b = c_block(c, idx);
   cidx__glpos(c, &idx, &cell_position);
-  ptrdiff_t growth_rate = get_growth_rate(*b);
-  ptrdiff_t growth_offset = posmod(cell_hash(&cell_position), growth_rate);
-  if ((t - growth_offset) % growth_rate == 0) {
-    // This block grows this tick:
-    // TODO: Implement growth algorithm here!
-  }
+  // TODO: Implement growth algorithm here!
 }
 
 int grow_plants(chunk *c, ptrdiff_t cycles) {
@@ -91,7 +86,6 @@ int grow_plants(chunk *c, ptrdiff_t cycles) {
   ptrdiff_t t;
   cell* cl;
   block* b;
-  block bid;
 
   fill_chunk_neighborhood(&(c->glcpos), &nbh);
   if (nbh.members[0] == NULL) {

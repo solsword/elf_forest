@@ -188,8 +188,10 @@ struct coral_species_s;
 typedef struct coral_species_s coral_species;
 
 // Animals:
-struct animal_species_s; // non-sentient animals & mythical beasts
+struct animal_species_s; // non-sentient animals
 typedef struct animal_species_s animal_species;
+struct mythical_species_s; // mythical creatures
+typedef struct mythical_species_s mythical_species;
 struct sentient_species_s; // sentient species
 typedef struct sentient_species_s sentient_species;
 
@@ -276,7 +278,7 @@ struct fungus_materials_s {
 };
 
 struct plant_materials_s {
-  material seeds;
+  material seed;
   material root;
   material wood;
   material dry_wood;
@@ -303,36 +305,33 @@ struct herb_appearance_s {
 
 
 // Primary structures:
+// TODO: Fill in all structures here.
 
-/*
 struct gas_species_s {
   material material;
-  gas_texture_params appearance;
+  // gas_texture_params appearance;
 };
 
 
 struct dirt_species_s {
   material material;
-  dirt_texture_params appearance;
+  // dirt_texture_params appearance;
 };
 
 struct clay_species_s {
   material material;
-  clay_texture_params appearance;
+  // clay_texture_params appearance;
 };
-*/
 
 struct stone_species_s {
   material material;
   stone_filter_args appearance;
 };
 
-/*
 struct metal_species_s {
   material material;
-  metal_texture_params appearance;
+  // metal_texture_params appearance;
 };
-*/
 
 struct fungus_species_s {
   fungus_materials materials;
@@ -400,26 +399,31 @@ struct coral_species_s {
   growth_properties growth;
 };
 
-/*
 struct animal_species_s {
   material material;
-  entity_texture_params appearance;
+  // entity_texture_params appearance;
+};
+
+struct mythical_species_s {
+  material material;
+  // entity_texture_params appearance;
 };
 
 struct sentient_species_s {
   material material;
-  entity_texture_params appearance;
+  // entity_texture_params appearance;
 };
 
 struct fiber_species_s {
   material material;
-  fiber_texture_params appearance;
+  // fiber_texture_params appearance;
 };
 
 struct pigment_species_s {
   material material;
-  pigment_texture_params appearance;
+  // pigment_texture_params appearance;
 };
+/*
 */
 
 // The any_species structure
@@ -470,9 +474,9 @@ SPECIES_ACCESS_FUNCTIONS_DECL(aquatic_grass);
 SPECIES_ACCESS_FUNCTIONS_DECL(aquatic_plant);
 SPECIES_ACCESS_FUNCTIONS_DECL(coral);
 
-// SPECIES_ACCESS_FUNCTIONS_DECL(animal);
-// SPECIES_ACCESS_FUNCTIONS_DECL(mythical);
-// SPECIES_ACCESS_FUNCTIONS_DECL(sentient);
+SPECIES_ACCESS_FUNCTIONS_DECL(animal);
+SPECIES_ACCESS_FUNCTIONS_DECL(mythical);
+SPECIES_ACCESS_FUNCTIONS_DECL(sentient);
 
 SPECIES_ACCESS_FUNCTIONS_DECL(fiber);
 SPECIES_ACCESS_FUNCTIONS_DECL(pigment);

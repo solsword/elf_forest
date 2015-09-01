@@ -24,7 +24,7 @@ extern cell_grammar *BIO_CG_SPROUT_ABOVE_SOIL_UNDERWATER;
 // Adds an expansion to one of the four default sprouting grammars for
 // sprouting the given seed into the given root and shoots within the given
 // substrate (or above it), possibly underwater.
-cell_grammar* add_sprout_grammar(
+void add_sprout_grammar(
   block seed,
   block root,
   block shoots,
