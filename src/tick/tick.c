@@ -143,6 +143,7 @@ void start_game(
       glpos__glcpos(&(ACTIVE_AREA->origin), &area_origin);
       tick_load_chunks(&area_origin);
       tick_compile_chunks();
+      tick_biogen();
       render(WINDOW);
       glfwPollEvents();
     }
@@ -206,6 +207,7 @@ void start_game(
 #endif
           load_surroundings(&last_origin);
           tick_load_chunks(&last_origin);
+          tick_biogen();
 #ifdef PROFILE_TIME
           end_duration(&DATA_TIME);
 #endif

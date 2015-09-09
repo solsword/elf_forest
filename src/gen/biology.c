@@ -430,7 +430,7 @@ void add_biology(chunk *c) {
     return; // Already has biology
   }
   fill_chunk_neighborhood(&(c->glcpos), &ch_nbh);
-  if (ch_nbh.members[0] == NULL || c->chunk_flags & CF_HAS_BIOLOGY) {
+  if (ch_nbh.members[0] == NULL) {
     return; // Return without setting the CF_HAS_BIOLOGY flag.
   }
   ptrdiff_t seed_hash = prng(chunk_hash(c) + 616485);
@@ -448,7 +448,7 @@ void add_biology(chunk *c) {
 
         // If our secondary is empty we can put a seed here...
         if (b_is_void(cl->blocks[1])) {
-          if (b_is_same_type(cl->blocks[0], B_AIR)) {
+          if (b_id(cl->blocks[0]) == B_AIR) {
             // Grass seeds, mushroom spores, and moss spores settle in the air
             // directly on top of dirt/sand/mud/etc.
             if (
@@ -481,7 +481,7 @@ void add_biology(chunk *c) {
                 prng(seed_hash + glpos.x + glpos.y + idx.xyz.z)
               );
             }
-          } else if (b_is_same_type(cl->blocks[0], B_WATER)) {
+          } else if (b_id(cl->blocks[0]) == B_WATER) {
             // Aquatic grass seeds and coral start in water above
             // dirt/sand/mud/etc.
             if (
@@ -500,9 +500,7 @@ void add_biology(chunk *c) {
               );
             }
           } else if (b_is_natural_terrain(cl->blocks[0])) {
-            if (
-              b_is_same_type(cl_nbh.members[NBH_CENTER+1]->blocks[0], B_AIR)
-            ) {
+            if (b_id(cl_nbh.members[NBH_CENTER+1]->blocks[0]) == B_AIR) {
               // Vines, herbs, bushes, shrubs, and trees sprout from seeds in
               // the top layer of soil with air above.
               cl->blocks[1] = b_make_species(
@@ -514,9 +512,7 @@ void add_biology(chunk *c) {
                 idx.xyz.x + idx.xyz.y + glpos.z +
                 prng(seed_hash + glpos.x + glpos.y + idx.xyz.z)
               );
-            } else if (
-              b_is_same_type(cl_nbh.members[NBH_CENTER+1]->blocks[0], B_WATER)
-            ) {
+            } else if (b_id(cl_nbh.members[NBH_CENTER+1]->blocks[0])==B_WATER) {
               // Aquatic plants sprout from seeds in terrain below water.
               cl->blocks[1] = b_make_species(
                 B_AQUATIC_PLANT_SEEDS,
@@ -527,9 +523,7 @@ void add_biology(chunk *c) {
                 idx.xyz.x + idx.xyz.y + glpos.z +
                 prng(seed_hash + glpos.x + glpos.y + idx.xyz.z)
               );
-            } else if (
-              b_is_same_type(cl_nbh.members[NBH_CENTER-1]->blocks[0], B_AIR)
-            ) {
+            } else if (b_id(cl_nbh.members[NBH_CENTER-1]->blocks[0]) == B_AIR) {
               // Some plants can also grow down into air from ceilings.
               cl->blocks[1] = b_make_species(
                 B_VINE_SEEDS,

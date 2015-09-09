@@ -574,11 +574,13 @@ void tick_compile_chunks(void) {
 }
 
 void tick_biogen(void) {
-  int n = 0, ns = 0;
+  int n = 0, ns = 0, in_queue = 0;
   chunk *c = NULL;
+  chunk_or_approx coa;
   queue *q = BIOGEN_QUEUES->levels[LOD_BASE];
   map *m = BIOGEN_QUEUES->maps[LOD_BASE];
-  while (n < BIOGEN_CAP && q_get_length(q) > 0) {
+  in_queue = q_get_length(q);
+  while (n < BIOGEN_CAP && (n + ns) < in_queue) {
     c = (chunk *) q_pop_element(q);
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
     m3_pop_value(
@@ -593,8 +595,14 @@ void tick_biogen(void) {
       n += 1;
       persist_chunk(c); // when the chunk was loaded we saved a bare-terrain
       // version, now that we've added biology let's save that too.
+      // Mark this chunk for re-compilation now that it's been changed.
+      coa.type = CA_TYPE_CHUNK;
+      coa.ptr = c;
+      mark_for_compilation(&coa);
     } else {
       ns += 1;
+      // Put it back in the queue:
+      mark_for_biogen(c); // infinite loop avoided in_queue isn't changed
     }
     c->chunk_flags &= ~CF_QUEUED_FOR_BIOGEN;
   }

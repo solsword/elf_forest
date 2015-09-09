@@ -260,18 +260,18 @@ static inline void fill_chunk_neighborhood(
   chunk_neighborhood* r_neighborhood
 ) {
   copy_glcpos(glcpos, &(r_neighborhood->glcpos));
-  chunk_or_approx* coa = NULL;
+  chunk_or_approx coa;
   global_chunk_pos nbpos;
   size_t i = 0;
   for (nbpos.z = glcpos->z - 1; nbpos.z <= glcpos->z + 1; nbpos.z += 1) {
     for (nbpos.x = glcpos->x - 1; nbpos.x <= glcpos->x + 1; nbpos.x += 1) {
       for (nbpos.y = glcpos->y - 1; nbpos.y <= glcpos->y + 1; nbpos.y += 1) {
-        get_best_data(&nbpos, coa);
-        if (coa->type != CA_TYPE_CHUNK) {
+        get_best_data(&nbpos, &coa);
+        if (coa.type != CA_TYPE_CHUNK) {
           r_neighborhood->members[0] = NULL;
           return;
         }
-        r_neighborhood->members[i] = (chunk*) coa->ptr;
+        r_neighborhood->members[i] = (chunk*) coa.ptr;
         i += 1;
       }
     }
