@@ -25,11 +25,11 @@ char const * const DEFAULT_WORLD_DIRECTORY = "world";
  * Globals *
  ***********/
 
-string* WORLD_DIRECTORY;
+string* WORLD_DIRECTORY = NULL;
 
-string* DIRSEP;
+string* DIRSEP = NULL;
 
-string* PS_BLOCK_DIR_PREFIX;
+string* PS_BLOCK_DIR_PREFIX = NULL;
 
 ps_block PS_BLOCK_CACHE[PS_BLOCK_CACHE_SIZE];
 
@@ -78,6 +78,12 @@ string* block_filename(ps_block_pos* pos) {
   // TODO: Wraparound at the edge of the world!!!
   string* result;
   string* s = s_sprintf("b%u-%u-%u.efb", pos->x, pos->y, pos->z);
+#ifdef DEBUG
+  if (PS_BLOCK_DIR_PREFIX == NULL) {
+    fprintf(stderr, "ERROR: setup_persist wasn't called!\n");
+    exit(1);
+  }
+#endif
   result = s_concat(PS_BLOCK_DIR_PREFIX, s);
   cleanup_string(s);
   return result;

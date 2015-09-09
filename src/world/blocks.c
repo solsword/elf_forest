@@ -47,10 +47,10 @@ void _bdef(
   BLOCK_NAMES[id] = name;
   BLOCK_INFO[id] = (
     (vis << BIMS_VISIBILITY)
-  & (sbst << BIMS_SUBSTANCE)
-  & (geom << BIMS_GEOMETRY)
-  & (spt << BIMS_SPECIES_TYPE)
-  & flags
+  | (sbst << BIMS_SUBSTANCE)
+  | (geom << BIMS_GEOMETRY)
+  | (spt << BIMS_SPECIES_TYPE)
+  | flags
   );
 }
 

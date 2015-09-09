@@ -175,9 +175,9 @@ void _iter_grow_rivers(void *v_river, void *v_wm) {
   geopt__glpos(wm, &phandle, &ctrl_glpos);
   wr = get_world_region(wm, &wmpos);
   if (
-    wr == NULL
- || wr->climate.water.body != NULL
- || (intptr_t) l_get_item(r->widths, l_get_length(r->widths) - 1) == 0
+     wr == NULL
+  || wr->climate.water.body != NULL
+  || (intptr_t) l_get_item(r->widths, l_get_length(r->widths) - 1) == 0
   ) {
     // if we're off the map, in water, or dried up, ignore this river
     return;
@@ -217,18 +217,41 @@ void _iter_grow_rivers(void *v_river, void *v_wm) {
     next.x = last_glpos.x + next_dist * cosf(cont_flow);
     next.y = last_glpos.y + next_dist * sinf(cont_flow);
   }
-  glpos__geopt(wm, &next, &nextpt);
+  // Check if we're going off the map:
+  glpos__wmpos(&next, &wmpos);
+  nextwr = get_world_region(wm, &wmpos);
+  if (nextwr == NULL) { // if we are, snap to the edge of the world and end:
+    if (next.x < 0) {
+      next.x = 0;
+    } else if (next.x >= wm->width * WORLD_REGION_BLOCKS) {
+      next.x = wm->width * WORLD_REGION_BLOCKS - 1;
+    }
+    if (next.y < 0) {
+      next.y = 0;
+    } else if (next.y >= wm->height * WORLD_REGION_BLOCKS) {
+      next.y = wm->height * WORLD_REGION_BLOCKS - 1;
+    }
+    glpos__geopt(wm, &next, &nextpt);
+    l_append_element(r->path, (void*) nextpt);
+    l_append_element(r->control_points, (void*) nextpt);
+    // End the river here:
+    l_append_element(r->widths, (void*) 0);
+    l_append_element(r->depths, (void*) 0);
+  } else { // if not grow the river as normal:
+    glpos__geopt(wm, &next, &nextpt);
 
-  // Add a new element to our river:
-  l_append_element(r->path, (void*) nextpt);
-  // Just use a downhill control point:
-  gd_glpos.x = next.x + cosf(gross_dnh) * next_dist/3.0;
-  gd_glpos.y = next.y + sinf(gross_dnh) * next_dist/3.0;
-  glpos__geopt(wm, &gd_glpos, &ctlpt);
-  l_append_element(r->control_points, (void*) ctlpt);
-  // Add width/depth values:
-  l_append_element(r->widths, (void*) 1);
-  l_append_element(r->depths, (void*) 1);
+    // Add a new element to our river:
+    l_append_element(r->path, (void*) nextpt);
+    // Just use a downhill control point:
+    gd_glpos.x = next.x + cosf(gross_dnh) * next_dist/3.0;
+    gd_glpos.y = next.y + sinf(gross_dnh) * next_dist/3.0;
+    glpos__geopt(wm, &gd_glpos, &ctlpt);
+    l_append_element(r->control_points, (void*) ctlpt);
+    // Add width/depth values:
+    // TODO: Real width/depth values!
+    l_append_element(r->widths, (void*) 1);
+    l_append_element(r->depths, (void*) 1);
+  }
 
   // Update our new region if necessary:
   geopt__wmpos(wm, &nextpt, &wmpos);

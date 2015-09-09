@@ -56,6 +56,8 @@ DEFINE_IMPORTED_BUILDER
 DEFINE_IMPORTED_BUILDER
 #include "suites/test_map3.h"
 DEFINE_IMPORTED_BUILDER
+#include "suites/test_blocks.h"
+DEFINE_IMPORTED_BUILDER
 #include "suites/test_tex.h"
 DEFINE_IMPORTED_BUILDER
 #include "suites/test_txgen.h"
@@ -82,6 +84,9 @@ void setup_unit_tests(void) {
   ALL_TEST_SUITES = create_list();
   // Note that these #includes must be reimports or their syntax will be wrong.
   #include "suites/test_util.h"
+  ts = INVOKE_IMPORTED_BUILDER;
+  l_append_element(ALL_TEST_SUITES, ts);
+  #include "suites/test_blocks.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
   #include "suites/test_tex.h"
