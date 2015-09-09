@@ -169,8 +169,8 @@ typedef struct biome_s biome;
 //#define WORLD_WIDTH 400
 //#define WORLD_HEIGHT 360
 // 240*200 = 48000 regions
-#define WORLD_WIDTH 240
-#define WORLD_HEIGHT 200
+//#define WORLD_WIDTH 240
+//#define WORLD_HEIGHT 200
 // 128*108 = 13824 regions
 //#define WORLD_WIDTH 128
 //#define WORLD_HEIGHT 108
@@ -178,8 +178,8 @@ typedef struct biome_s biome;
 //#define WORLD_WIDTH 96
 //#define WORLD_HEIGHT 96
 // 32*32 = 1024 regions
-//#define WORLD_WIDTH 32
-//#define WORLD_HEIGHT 32
+#define WORLD_WIDTH 32
+#define WORLD_HEIGHT 32
 
 // Bits per world region (8 -> 256x256 chunks).
 // 128*108 = 13824 regions / world

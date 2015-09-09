@@ -16,6 +16,7 @@
 #include "prof/ptime.h"
 #include "prof/pmem.h"
 #include "control/ctl.h"
+#include "control/interact.h"
 #include "world/entities.h"
 #include "world/blocks.h"
 #include "gen/terrain.h" // to draw geoform and other terrain data
@@ -350,6 +351,8 @@ static inline void draw_pos_info(int *h) {
   global_pos player_pos;
   get_head_glpos(PLAYER, &player_pos);
   glpos__wmpos(&player_pos, &wmpos);
+  refresh_cell_at_cache();
+  cell *c = cell_at(&(PLAYER_CURSOR.pos));
 
   // Draw geoform data:
   /*
@@ -363,12 +366,12 @@ static inline void draw_pos_info(int *h) {
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
   *h -= 30;
-  */
+  // */
 
   // Draw fractional height:
-  /*
+  //*
   manifold_point dontcare, th;
-  compute_terrain_height(&player_pos, &dontcare, &dontcare, &th);
+  compute_terrain_height(THE_WORLD, &player_pos, &dontcare, &dontcare, &th);
   sprintf(
     TXT,
     "h: %.4f",
@@ -376,7 +379,7 @@ static inline void draw_pos_info(int *h) {
   );
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
   *h -= 30;
-  */
+  // */
 
   // DEBUG:
   if (PLAYER->area != NULL) {
@@ -406,6 +409,23 @@ static inline void draw_pos_info(int *h) {
     "area :: %0.1f x    %0.1f y    %0.1f z",
     PLAYER->pos.x, PLAYER->pos.y, PLAYER->pos.z
   );
+  render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
+  *h -= 30;
+
+  // Draw block type under cursor:
+  if (c != NULL) {
+    sprintf(
+      TXT,
+      "cursor cell :: %s // %s",
+      BLOCK_NAMES[b_id(c->blocks[0])],
+      BLOCK_NAMES[b_id(c->blocks[1])]
+    );
+  } else {
+    sprintf(
+      TXT,
+      "cursor cell :: N/A"
+    );
+  }
   render_string_shadow(TXT, FRESH_CREAM, LEAF_SHADOW, 1, 20, 30, *h);
   *h -= 30;
 

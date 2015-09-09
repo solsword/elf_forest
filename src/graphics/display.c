@@ -420,7 +420,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   // solid blocks). We use the cached exposure data here (call compute_exposure
   // first!).
 
- // A pointer to an array of vertex buffers:
+  // A pointer to an array of vertex buffers:
   vertex_buffer (*layers)[] = NULL;
   if (coa->type == CA_TYPE_CHUNK) {
     c = (chunk *) (coa->ptr);
@@ -506,7 +506,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
   // active vertex arrays. Of course, hills and valleys might increase this,
   // but culling should usually decrease it, and it's the right order of
   // magnitude.
-  
+
   // (Re)allocate caches for the vertex buffers. Note that we might cull some
   // faces later, but we're going to ignore that for now, since these arrays
   // are temporary.
