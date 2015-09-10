@@ -16,6 +16,8 @@
 #include "terrain.h"
 #include "geology.h"
 #include "climate.h"
+#include "soil.h"
+#include "ecology.h"
 #include "biology.h"
 
 #include "worldgen.h"
@@ -54,8 +56,13 @@ void setup_worldgen(ptrdiff_t seed) {
   generate_climate(THE_WORLD);
   printf("  ...generating geology...\n");
   generate_geology(THE_WORLD);
-  printf("  ...writing world maps...\n");
+  printf("  ...generating soil...\n");
+  generate_soil(THE_WORLD);
+  printf("  ...generating ecology...\n");
+  generate_ecology(THE_WORLD);
 
+
+  printf("  ...writing world maps...\n");
   texture *base_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
   texture *regions_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);
   texture *temp_map = create_texture(WORLD_WIDTH, WORLD_HEIGHT);

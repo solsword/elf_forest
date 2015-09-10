@@ -426,7 +426,9 @@ struct stratum_s {
 
  // Derived species information:
  // ----------------------------------
-  species base_species; // exact material type for main mass
+  // TODO: Clay deposits?
+  // TODO: Native metal veins / inclusions?
+  species base_species; // exact stone species for main mass
   species vein_species[WM_N_VEIN_TYPES]; // types for veins
   species inclusion_species[WM_N_INCLUSION_TYPES]; // types for inclusions
 };

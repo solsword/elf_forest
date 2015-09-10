@@ -508,6 +508,107 @@ static inline void _water_sim_finish_next(world_region *wr) {
  * Functions *
  *************/
 
+step_result fill_water(
+  search_step step,
+  world_region *wr,
+  void* v_body
+) {
+  static list *interior, *shore;
+  body_of_water *body = (body_of_water*) v_body;
+  if (step == SSTEP_INIT) {
+    interior = create_list();
+    shore = create_list();
+    copy_wmpos(&(wr->pos), &(body->origin));
+    return SRESULT_CONTINUE;
+  } else if (step == SSTEP_CLEANUP) {
+    cleanup_list(interior);
+    cleanup_list(shore);
+    return SRESULT_CONTINUE;
+  } else if (step == SSTEP_FINISH) {
+    l_witheach(interior, v_body, &_iter_flag_as_water_interior);
+    l_witheach(shore, v_body, &_iter_flag_as_water_shore);
+    return SRESULT_CONTINUE;
+  } else if (step == SSTEP_PROCESS) {
+    if (wr->climate.water.body != NULL) {
+      return SRESULT_ABORT;
+    } else if (
+      (
+        wr->topography.terrain_height.z
+      - (TR_SCALE_HILLS + TR_SCALE_RIDGES + TR_SCALE_MOUNDS)
+      )
+    > body->level
+    ) {
+      // This is a pure land region: do nothing
+      return SRESULT_IGNORE;
+    } else if (wr->topography.terrain_height.z < body->level) {
+      // This is an interior region
+      l_append_element(interior, wr);
+      body->area += 1;
+      return SRESULT_CONTINUE;
+    } else {
+      // This is a shore region
+      if (l_get_length(shore) == 0) { // the first one becomes the shorigin
+        copy_wmpos(&(wr->pos), &(body->shorigin));
+      }
+      l_append_element(shore, wr);
+      body->shore_area += 1;
+      return SRESULT_CONTINUE;
+    }
+#ifdef DEBUG
+  } else {
+    printf("Unknown search/fill step: %d\n", step);
+    return SRESULT_ABORT;
+#endif
+  }
+}
+
+void release_river(world_region *wr) {
+  river *r;
+  geopt rseed;
+  ptrdiff_t salt;
+  float dnh;
+  global_pos glpos;
+  size_t ridx;
+  for (ridx = 0; ridx < WM_MAX_RIVERS; ++ridx) {
+    if (wr->climate.water.rivers[ridx] == NULL) {
+      break;
+    }
+  }
+  if (ridx == WM_MAX_RIVERS) {
+    // There's no room to create another river here
+    return;
+  }
+
+  salt = (wr->seed * 71414) + 112;
+
+  // Seed a new river here:
+  r = create_river();
+  rseed = inner_pt(wr, &salt);
+  salt = prng(salt);
+  l_append_element(r->widths, (void*) 1); // widths are 1 before flow analysis
+  l_append_element(r->depths, (void*) 1); // same with depths
+  l_append_element(r->path, rseed); // A random starting point
+  rseed = (geopt) l_get_item(r->path, 0);
+  geopt__glpos(wr->world, &rseed, &glpos);
+  dnh = mani_downhill(&(wr->topography.terrain_height)); // flow downhill
+  // TODO: Add a random element here?
+  glpos.x += CL_RIVER_SEED_CPT_DIST * CL_RIVER_SEP_BASE * cosf(dnh);
+  glpos.y += CL_RIVER_SEED_CPT_DIST * CL_RIVER_SEP_BASE * sinf(dnh);
+  if (glpos.x < 0) { glpos.x = 0; } // snap in control point if necessary
+  if (glpos.y < 0) { glpos.y = 0; }
+  if (glpos.x > wr->world->width * WORLD_REGION_BLOCKS) {
+    glpos.x = wr->world->width * WORLD_REGION_BLOCKS;
+  }
+  if (glpos.y > wr->world->height * WORLD_REGION_BLOCKS) {
+    glpos.y = wr->world->height * WORLD_REGION_BLOCKS;
+  }
+  glpos__geopt(wr->world, &glpos, &rseed); // recycle rseed here
+  l_append_element(r->control_points, rseed);
+  rseed = (geopt) l_get_item(r->control_points, 0);
+  wr->climate.water.rivers[ridx] = r;
+  l_append_element(wr->world->all_rivers, r);
+}
+
 void generate_hydrology(world_map *wm) {
   world_map_pos xy, nbxy;
   world_region *wr, *nb;
@@ -632,6 +733,68 @@ void generate_hydrology(world_map *wm) {
   printf("    ...processing %zu lake sites...\n", l_get_length(lake_sites));
   l_witheach(lake_sites, (void*) &lakes_seed, &_iter_fill_lake_site);
   cleanup_list(lake_sites);
+}
+
+void simulate_water_cycle(world_map *wm) {
+  world_map_pos xy;
+  world_region *wr;
+  size_t step;
+
+  for (step = 0; step < CL_WATER_CYCLE_SIM_STEPS; ++step) {
+    // Each cycle has four iteration phases with different orientations, which
+    // should balance each other out in terms of running updates. The running
+    // updates in turn allow precipitation information to reach far inland in
+    // only a few cycles.
+
+    // Safe order-independent updates:
+    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+        wr = get_world_region(wm, &xy);
+        _water_sim_step(wr);
+      }
+    }
+    // State flopping and water recharge:
+    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+        wr = get_world_region(wm, &xy);
+        _water_sim_next(wr);
+      }
+    }
+    printf(
+      "    ...%zu / %d water cycle simulation steps completed...\r",
+      step,
+      CL_WATER_CYCLE_SIM_STEPS
+    );
+  }
+  printf(
+    "    ...%zu / %d water cycle simulation steps completed...\n",
+    step,
+    CL_WATER_CYCLE_SIM_STEPS
+  );
+  // Divide out precipitation totals:
+  for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+    for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+      wr = get_world_region(wm, &xy);
+      wr->climate.atmosphere.total_precipitation /=
+        ((float) CL_WATER_CYCLE_SIM_STEPS);
+      wr->climate.atmosphere.total_precipitation *= CL_WATER_CYCLE_AVG_ADJ;
+    }
+  }
+  // Finish the water simulation with some final averaging:
+  for (step = 0; step < CL_WATER_CYCLE_FINISH_STEPS; ++step) {
+    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+        wr = get_world_region(wm, &xy);
+        _water_sim_finish(wr);
+      }
+    }
+    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
+      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
+        wr = get_world_region(wm, &xy);
+        _water_sim_finish_next(wr);
+      }
+    }
+  }
 }
 
 void generate_climate(world_map *wm) {
@@ -793,167 +956,3 @@ void generate_climate(world_map *wm) {
     }
   }
 }
-
-void simulate_water_cycle(world_map *wm) {
-  world_map_pos xy;
-  world_region *wr;
-  size_t step;
-
-  for (step = 0; step < CL_WATER_CYCLE_SIM_STEPS; ++step) {
-    // Each cycle has four iteration phases with different orientations, which
-    // should balance each other out in terms of running updates. The running
-    // updates in turn allow precipitation information to reach far inland in
-    // only a few cycles.
-
-    // Safe order-independent updates:
-    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
-      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
-        wr = get_world_region(wm, &xy);
-        _water_sim_step(wr);
-      }
-    }
-    // State flopping and water recharge:
-    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
-      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
-        wr = get_world_region(wm, &xy);
-        _water_sim_next(wr);
-      }
-    }
-    printf(
-      "    ...%zu / %d water cycle simulation steps completed...\r",
-      step,
-      CL_WATER_CYCLE_SIM_STEPS
-    );
-  }
-  printf(
-    "    ...%zu / %d water cycle simulation steps completed...\n",
-    step,
-    CL_WATER_CYCLE_SIM_STEPS
-  );
-  // Divide out precipitation totals:
-  for (xy.x = 0; xy.x < wm->width; ++xy.x) {
-    for (xy.y = 0; xy.y < wm->height; ++xy.y) {
-      wr = get_world_region(wm, &xy);
-      wr->climate.atmosphere.total_precipitation /=
-        ((float) CL_WATER_CYCLE_SIM_STEPS);
-      wr->climate.atmosphere.total_precipitation *= CL_WATER_CYCLE_AVG_ADJ;
-    }
-  }
-  // Finish the water simulation with some final averaging:
-  for (step = 0; step < CL_WATER_CYCLE_FINISH_STEPS; ++step) {
-    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
-      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
-        wr = get_world_region(wm, &xy);
-        _water_sim_finish(wr);
-      }
-    }
-    for (xy.x = 0; xy.x < wm->width; ++xy.x) {
-      for (xy.y = 0; xy.y < wm->height; ++xy.y) {
-        wr = get_world_region(wm, &xy);
-        _water_sim_finish_next(wr);
-      }
-    }
-  }
-}
-
-step_result fill_water(
-  search_step step,
-  world_region *wr,
-  void* v_body
-) {
-  static list *interior, *shore;
-  body_of_water *body = (body_of_water*) v_body;
-  if (step == SSTEP_INIT) {
-    interior = create_list();
-    shore = create_list();
-    copy_wmpos(&(wr->pos), &(body->origin));
-    return SRESULT_CONTINUE;
-  } else if (step == SSTEP_CLEANUP) {
-    cleanup_list(interior);
-    cleanup_list(shore);
-    return SRESULT_CONTINUE;
-  } else if (step == SSTEP_FINISH) {
-    l_witheach(interior, v_body, &_iter_flag_as_water_interior);
-    l_witheach(shore, v_body, &_iter_flag_as_water_shore);
-    return SRESULT_CONTINUE;
-  } else if (step == SSTEP_PROCESS) {
-    if (wr->climate.water.body != NULL) {
-      return SRESULT_ABORT;
-    } else if (
-      (
-        wr->topography.terrain_height.z
-      - (TR_SCALE_HILLS + TR_SCALE_RIDGES + TR_SCALE_MOUNDS)
-      )
-    > body->level
-    ) {
-      // This is a pure land region: do nothing
-      return SRESULT_IGNORE;
-    } else if (wr->topography.terrain_height.z < body->level) {
-      // This is an interior region
-      l_append_element(interior, wr);
-      body->area += 1;
-      return SRESULT_CONTINUE;
-    } else {
-      // This is a shore region
-      if (l_get_length(shore) == 0) { // the first one becomes the shorigin
-        copy_wmpos(&(wr->pos), &(body->shorigin));
-      }
-      l_append_element(shore, wr);
-      body->shore_area += 1;
-      return SRESULT_CONTINUE;
-    }
-#ifdef DEBUG
-  } else {
-    printf("Unknown search/fill step: %d\n", step);
-    return SRESULT_ABORT;
-#endif
-  }
-}
-
-void release_river(world_region *wr) {
-  river *r;
-  geopt rseed;
-  ptrdiff_t salt;
-  float dnh;
-  global_pos glpos;
-  size_t ridx;
-  for (ridx = 0; ridx < WM_MAX_RIVERS; ++ridx) {
-    if (wr->climate.water.rivers[ridx] == NULL) {
-      break;
-    }
-  }
-  if (ridx == WM_MAX_RIVERS) {
-    // There's no room to create another river here
-    return;
-  }
-
-  salt = (wr->seed * 71414) + 112;
-
-  // Seed a new river here:
-  r = create_river();
-  rseed = inner_pt(wr, &salt);
-  salt = prng(salt);
-  l_append_element(r->widths, (void*) 1); // widths are 1 before flow analysis
-  l_append_element(r->depths, (void*) 1); // same with depths
-  l_append_element(r->path, rseed); // A random starting point
-  rseed = (geopt) l_get_item(r->path, 0);
-  geopt__glpos(wr->world, &rseed, &glpos);
-  dnh = mani_downhill(&(wr->topography.terrain_height)); // flow downhill
-  // TODO: Add a random element here?
-  glpos.x += CL_RIVER_SEED_CPT_DIST * CL_RIVER_SEP_BASE * cosf(dnh);
-  glpos.y += CL_RIVER_SEED_CPT_DIST * CL_RIVER_SEP_BASE * sinf(dnh);
-  if (glpos.x < 0) { glpos.x = 0; } // snap in control point if necessary
-  if (glpos.y < 0) { glpos.y = 0; }
-  if (glpos.x > wr->world->width * WORLD_REGION_BLOCKS) {
-    glpos.x = wr->world->width * WORLD_REGION_BLOCKS;
-  }
-  if (glpos.y > wr->world->height * WORLD_REGION_BLOCKS) {
-    glpos.y = wr->world->height * WORLD_REGION_BLOCKS;
-  }
-  glpos__geopt(wr->world, &glpos, &rseed); // recycle rseed here
-  l_append_element(r->control_points, rseed);
-  rseed = (geopt) l_get_item(r->control_points, 0);
-  wr->climate.water.rivers[ridx] = r;
-  l_append_element(wr->world->all_rivers, r);
-}
-

@@ -803,7 +803,7 @@ void terrain_cell(
   // */
 
   // DEBUG: Caves to show things off more:
-  /*
+  //*
   if (
     sxnoise_3d(glpos->x*1/12.0, glpos->y*1/12.0, glpos->z*1/12.0, 17) >
       sxnoise_3d(glpos->x*1/52.0, glpos->y*1/52.0, glpos->z*1/52.0, 18)
@@ -888,7 +888,7 @@ void stone_cell(
     strsecond *= st->persistence;
   }
 
- // Now that we know which stratum to use, set the cell's block data:
+  // Now that we know which stratum to use, set the cell's block data:
   if (strsecond > strbest) {
     best = secondbest;
   }
@@ -900,6 +900,7 @@ void stone_cell(
     // TODO: veins and inclusions here!
     result->blocks[0] = b_make_species(B_STONE, st->base_species);
   }
+  result->blocks[1] = b_make_block(B_VOID);
 }
 
 void dirt_cell(
@@ -921,6 +922,7 @@ void dirt_cell(
   if (wr == NULL) {
     // TODO: better fallback for edges
     result->blocks[0] = b_make_block(B_DIRT);
+    result->blocks[1] = b_make_block(B_VOID);
     return;
   }
 
@@ -988,4 +990,5 @@ void dirt_cell(
     }
   }
   result->blocks[0] = b_make_species(soil_type, soil_species);
+  result->blocks[1] = b_make_block(B_VOID);
 }

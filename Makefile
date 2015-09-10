@@ -73,6 +73,8 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/climate.o \
              $(OBJ_DIR)/geology.o \
              $(OBJ_DIR)/biology.o \
+             $(OBJ_DIR)/ecology.o \
+             $(OBJ_DIR)/soil.o \
              $(OBJ_DIR)/txgen.o \
              $(OBJ_DIR)/txg_plants.o \
              $(OBJ_DIR)/txg_minerals.o \

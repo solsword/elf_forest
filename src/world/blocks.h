@@ -22,20 +22,13 @@ typedef uint32_t block;
 typedef uint16_t species;
 
 // Used for storing block data separately. Meaning depends on block ID.
+// Layouts for various block IDs can be found in the following places:
+//   Growing blocks   -   ecology/grow.h
+//   Soil blocks      -   gen/soil.h
 // For flowing liquids:
 //   2 bits of level.
 //   3 bits of flow direction.
 //   3 bits of flow rate.
-// For plant blocks (see ecology/growth.h):
-//   2 bits of vitality (healthy, sick, dying, dead).
-//   1 bit of renewal.
-//   3 bits of trajectory bias (BD_ORI_* values; out=no bias; in=block growth).
-//   2 extra bits (TODO: THESE!)
-// For growth centers: TODO: How to distinguish growth centers? Add block types?
-//   2 bits of vitality (healthy, sick, dying, dead).
-//   2 bits of body plan seed.
-//   2 bits of age.
-//   2 bits of leaf balance.
 typedef uint8_t block_data;
 
 // Extra static block data and flags stored in the BLOCK_INFO table.
