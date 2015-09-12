@@ -97,6 +97,27 @@ void bm_unlock(bitmap *bm) { omp_unset_lock(&(bm->lock)); }
  * Functions *
  *************/
 
+size_t bm_size(bitmap *bm) {
+  return bm->size;
+}
+
+size_t bm_check_bit(bitmap *bm, size_t index) {
+  return bm_get_bit(bm, index);
+}
+
+void bm_set_bits(bitmap *bm, size_t index, size_t size) {
+  size_t i;
+  for (i = index; i < index + size && i < bm->size; ++i) {
+    bm_set_bit(bm, i);
+  }
+}
+void bm_clear_bits(bitmap *bm, size_t index, size_t size) {
+  size_t i;
+  for (i = index; i < index + size && i < bm->size; ++i) {
+    bm_clear_bit(bm, i);
+  }
+}
+
 ptrdiff_t bm_find_space(bitmap *bm, size_t required) {
   size_t i, j;
   int hit = 0;
@@ -116,15 +137,77 @@ ptrdiff_t bm_find_space(bitmap *bm, size_t required) {
   return -1;
 }
 
-void bm_set_bits(bitmap *bm, size_t index, size_t size) {
+size_t bm_popcount(bitmap *bm) {
+  size_t result = 0;
   size_t i;
-  for (i = index; i < index + size && i < bm->size; ++i) {
-    bm_set_bit(bm, i);
+  for (i = 0; i < bm->rows; ++i) {
+    // TODO: Integer-size-dependent compilation?!?
+    result += __builtin_popcount(bm->data[i]);
+    // No need to worry about trailing bits in the row beyond the size, because
+    // they should always be zeroes.
   }
+  return result;
 }
-void bm_clear_bits(bitmap *bm, size_t index, size_t size) {
-  size_t i;
-  for (i = index; i < index + size && i < bm->size; ++i) {
-    bm_clear_bit(bm, i);
+
+ptrdiff_t bm_select_open(bitmap *bm, size_t n) {
+  size_t i, j;
+  size_t bits_here;
+  ptrdiff_t result;
+  bitmap_row row;
+  i = 0;
+  result = 0;
+  for (i = 0; i < bm->rows; ++i) {
+    bits_here = BITMAP_ROW_WIDTH - __builtin_popcount(bm->data[i]);
+    // Ignore zeroes on the last row past the exact size:
+    if (i == bm->rows - 1) {
+      bits_here -= BITMAP_ROW_WIDTH - (size-(BITMAP_ROW_WIDTH * (bm->rows - 1)))
+    }
+    row = bm->rows[i];
+    if (bits_here > n) {
+      for (j = 0; j < BITMAP_ROW_WIDTH; ++j) {
+        if (!(row & 1)) {
+          n -= 1;
+        }
+        if (n == 0) {
+          return result;
+        }
+        row = row >> 1;
+        result += 1;
+      }
+    }
+    n -= bits_here;
+    result += BITMAP_ROW_WIDTH;
   }
+  // n is too large
+  return -1;
+}
+
+size_t bm_select_closed(bitmap *bm, ptrdiff_t seed) {
+  size_t i, j;
+  size_t bits_here;
+  ptrdiff_t result;
+  bitmap_row row;
+  i = 0;
+  result = 0;
+  for (i = 0; i < bm->rows; ++i) {
+    bits_here = __builtin_popcount(bm->data[i]);
+    // Fine even for the last row, because excess bits should be zeroes.
+    row = bm->rows[i];
+    if (bits_here > n) {
+      for (j = 0; j < BITMAP_ROW_WIDTH; ++j) {
+        if (row & 1) {
+          n -= 1;
+        }
+        if (n == 0) {
+          return result;
+        }
+        row = row >> 1;
+        result += 1;
+      }
+    }
+    n -= bits_here;
+    result += BITMAP_ROW_WIDTH;
+  }
+  // n is too large
+  return -1;
 }

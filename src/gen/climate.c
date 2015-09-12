@@ -649,14 +649,14 @@ void generate_hydrology(world_map *wm) {
   // Clean up the extra body of water:
   cleanup_body_of_water(next_water);
 
-  // Find river headwaters (using base dirt as a temporary buffer):
+  // Find river headwaters (using soil block type as a temporary buffer):
   for (xy.x = 0; xy.x < wm->width; ++xy.x) {
     for (xy.y = 0; xy.y < wm->height; ++xy.y) {
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
       if (wr->topography.flow_potential > CL_HEADWATERS_FLOW_THRESHOLD) {
-        wr->climate.soil.base_dirt = 1;
+        wr->climate.soil.base_soil.main_block_type = 1;
       } else {
-        wr->climate.soil.base_dirt = 0;
+        wr->climate.soil.base_soil.main_block_type = 0;
       }
     }
   }
@@ -668,11 +668,11 @@ void generate_hydrology(world_map *wm) {
     for (xy.x = 0; xy.x < wm->width; ++xy.x) {
       for (xy.y = 0; xy.y < wm->height; ++xy.y) {
         wr = get_world_region(wm, &xy); // no need to worry about NULL here
-        if (wr->climate.soil.base_dirt == 1) {
+        if (wr->climate.soil.base_soil.main_block_type == 1) {
           for (nbxy.x = xy.x - 1; nbxy.x <= xy.x + 1; ++nbxy.x) {
             for (nbxy.y = xy.y - 1; nbxy.y <= xy.y + 1; ++nbxy.y) {
               nb = get_world_region(wm, &nbxy);
-              if (nb == NULL || nb->climate.soil.base_dirt == 0) {
+              if (nb == NULL || nb->climate.soil.base_soil.main_block_type==0) {
                 continue;
               }
               if (
@@ -682,13 +682,13 @@ void generate_hydrology(world_map *wm) {
               > wr->topography.terrain_height.z
                 )
               ) {
-                wr->climate.soil.base_dirt = 0;
+                wr->climate.soil.base_soil.main_block_type = 0;
                 changed_something = 1;
                 break;
               }
             }
           }
-          if (wr->climate.soil.base_dirt == 0) {
+          if (wr->climate.soil.base_soil.main_block_type == 0) {
             break;
           }
         }
@@ -698,17 +698,17 @@ void generate_hydrology(world_map *wm) {
 
   // Run major rivers downwards from headwaters:
   printf("    ...generating rivers...\n");
-  // Seed rivers (and reset base_dirt array that we've been using as a temp):
+  // Seed rivers (and reset soil array that we've been using as a temp):
   for (xy.x = 0; xy.x < wm->width; ++xy.x) {
     for (xy.y = 0; xy.y < wm->height; ++xy.y) {
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
       if (
-        wr->climate.soil.base_dirt == 1
+        wr->climate.soil.base_soil.main_block_type == 1
      && wr->climate.water.state == HYDRO_LAND
       ) {
         release_river(wr);
       }
-      wr->climate.soil.base_dirt = 0;
+      wr->climate.soil.base_soil.main_block_type = 0;
     }
   }
   // DEBUG: REMOVE
@@ -938,20 +938,6 @@ void generate_climate(world_map *wm) {
         wr->climate.atmosphere.temp_low[i] = 16;
         wr->climate.atmosphere.temp_mean[i] = 24;
         wr->climate.atmosphere.temp_high[i] = 32;
-      }
-      wr->climate.soil.base_dirt = 0;
-      for (i = 0; i < WM_MAX_ALT_DIRTS; ++i) {
-        wr->climate.soil.alt_dirt_blocks[i] = B_DIRT;
-        wr->climate.soil.alt_dirt_species[i] = 0;
-        wr->climate.soil.alt_dirt_strengths[i] = 0;
-        wr->climate.soil.alt_dirt_hdeps[i] = 0;
-      }
-      wr->climate.soil.base_sand = 0;
-      for (i = 0; i < WM_MAX_ALT_SANDS; ++i) {
-        wr->climate.soil.alt_sand_blocks[i] = B_SAND;
-        wr->climate.soil.alt_sand_species[i] = 0;
-        wr->climate.soil.alt_sand_strengths[i] = 0;
-        wr->climate.soil.alt_sand_hdeps[i] = 0;
       }
     }
   }

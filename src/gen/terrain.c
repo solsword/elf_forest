@@ -948,7 +948,7 @@ void dirt_cell(
     alt_hdeps = wr->climate.soil.alt_dirt_hdeps;
     alt_blocks = wr->climate.soil.alt_dirt_blocks;
     alt_species = wr->climate.soil.alt_dirt_species;
-    max_alts = WM_MAX_ALT_DIRTS;
+    max_alts = WM_MAX_SOIL_ALTS;
   } else {
     soil_type = B_SAND;
     soil_species = wr->climate.soil.base_sand;
@@ -956,7 +956,7 @@ void dirt_cell(
     alt_hdeps = wr->climate.soil.alt_sand_hdeps;
     alt_blocks = wr->climate.soil.alt_sand_blocks;
     alt_species = wr->climate.soil.alt_sand_species;
-    max_alts = WM_MAX_ALT_SANDS;
+    max_alts = WM_MAX_SOIL_ALTS;
   }
   for (i = 0; i < max_alts; ++i) {
     // TODO: Moisture dependence?

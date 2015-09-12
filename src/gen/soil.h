@@ -47,6 +47,14 @@
 #define       SL_NITROGEN_LEVEL_HIGH 3
 
 
+// Soil generation parameters:
+#define SL_REGION_MAX_SIZE 320
+
+// "Change Points" define difference thresholds above which soil types are
+// forced to change:
+#define SL_CP_ALTITUDE 450 // blocks
+#define SL_CP_MEAN_TEMP 8 // degrees Celsius
+#define SL_CP_PRECIPITATION 250 // mm/year
 
 /*************
  * Functions *
@@ -54,5 +62,10 @@
 
 // Generates soil information for the given world map.
 void generate_soil(world_map *wm);
+
+
+// Creates new soil species that are appropriate for the given world region,
+// filling in the region's soil_composition.
+void create_appropriate_soil(world_region *wr);
 
 #endif // ifndef SOIL_H

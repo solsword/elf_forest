@@ -147,6 +147,9 @@ typedef struct weather_s weather;
 struct soil_composition_s;
 typedef struct soil_composition_s soil_composition;
 
+struct soil_type_s;
+typedef struct soil_type_s soil_type;
+
 // Biology
 // -------
 
@@ -246,8 +249,7 @@ typedef struct biome_s biome;
 #define WM_N_SEASONS 4
 
 // Maximum alternate dirt/sand types:
-#define WM_MAX_ALT_DIRTS 5
-#define WM_MAX_ALT_SANDS 3
+#define WM_MAX_SOIL_ALTS 3
 
 // Maximum rivers in a single region:
 #define WM_MAX_RIVERS 4
@@ -356,16 +358,26 @@ struct weather_s {
 };
 
 struct soil_composition_s {
-  species base_dirt; // dirt (/sand/mud) species for normal soil
-  block alt_dirt_blocks[WM_MAX_ALT_DIRTS];
-  species alt_dirt_species[WM_MAX_ALT_DIRTS];
-  float alt_dirt_strengths[WM_MAX_ALT_DIRTS];
-  float alt_dirt_hdeps[WM_MAX_ALT_DIRTS]; // height-dependence
-  species base_sand; // sand species (for beaches, rivers, & oceans)
-  block alt_sand_blocks[WM_MAX_ALT_SANDS];
-  species alt_sand_species[WM_MAX_ALT_SANDS];
-  float alt_sand_strengths[WM_MAX_ALT_SANDS];
-  float alt_sand_hdeps[WM_MAX_ALT_SANDS]; // height-dependence
+  soil_type base_soil; // normal soil
+  soil_type river_banks;
+  soil_type river_bottoms;
+  soil_type lake_shores;
+  soil_type lake_bottoms;
+  soil_type beaches;
+  soil_type ocean_floor;
+};
+
+struct soil_type_s {
+  block main_block_type; // should be one of B_DIRT, B_MUD, B_SAND, or B_CLAY
+  block topsoil_block_type;
+  species main_species; // the species specifier
+  species topsoil_species;
+  block alt_block_types[WM_MAX_SOIL_ALTS]; // other soil types
+  block alt_topsoil_block_types[WM_MAX_SOIL_ALTS];
+  species alt_species[WM_MAX_SOIL_ALTS];
+  species alt_topsoil_species[WM_MAX_SOIL_ALTS];
+  float alt_strengths[WM_MAX_SOIL_ALTS];
+  float alt_hdeps[WM_MAX_SOIL_ALTS]; // height-dependence
 };
 
 // Geology
@@ -668,6 +680,127 @@ static inline void compute_region_anchor(
   anchor->y += float_hash_1d(hash) * (WORLD_REGION_BLOCKS - 1);
   hash += 1;
   anchor->z = WORLD_REGION_ANCHOR_HEIGHT * ( 0.2 + 0.6 * float_hash_1d(hash));
+}
+
+// Copies all soil data from one region to another.
+static inline void copy_soil(world_region *from, world_region *to) {
+  size_t i;
+  soil_composition *from_s, *to_s;
+  from_s = &(from->climate.soil);
+  to_s = &(to->climate.soil);
+
+  from_s.base_soil.main_block_type = to_s.base_soil.main_block_type;
+  from_s.base_soil.topsoil_block_type = to_s.base_soil.topsoil_block_type;
+  from_s.base_soil.main_species = to_s.base_soil.main_species;
+  from_s.base_soil.topsoil_species = to_s.base_soil.topsoil_species;
+  for (i = 0; i < WM_MAX_SOIL_ALTS; ++i) {
+    from_s.base_soil.alt_block_types[i] = \
+      to_s.base_soil.alt_block_types[i];
+    from_s.base_soil.alt_topsoil_block_types[i] = \
+      to_s.base_soil.alt_topsoil_block_types[i]
+    from_s.base_soil.alt_species[i] = to_s.base_soil.alt_species[i];
+    from_s.base_soil.alt_topsoil_species[i] = \
+      to_s.base_soil.alt_topsoil_species[i];
+    from_s.base_soil.alt_strengths[i] = to_s.base_soil.alt_strengths[i];
+    from_s.base_soil.alt_hdeps[i] = to_s.base_soil.alt_hdeps[i];
+  }
+
+  from_s.river_banks.main_block_type = to_s.river_banks.main_block_type;
+  from_s.river_banks.topsoil_block_type = to_s.river_banks.topsoil_block_type;
+  from_s.river_banks.main_species = to_s.river_banks.main_species;
+  from_s.river_banks.topsoil_species = to_s.river_banks.topsoil_species;
+  for (i = 0; i < WM_MAX_SOIL_ALTS; ++i) {
+    from_s.river_banks.alt_block_types[i] = \
+      to_s.river_banks.alt_block_types[i];
+    from_s.river_banks.alt_topsoil_block_types[i] = \
+      to_s.river_banks.alt_topsoil_block_types[i]
+    from_s.river_banks.alt_species[i] = to_s.river_banks.alt_species[i];
+    from_s.river_banks.alt_topsoil_species[i] = \
+      to_s.river_banks.alt_topsoil_species[i];
+    from_s.river_banks.alt_strengths[i] = to_s.river_banks.alt_strengths[i];
+    from_s.river_banks.alt_hdeps[i] = to_s.river_banks.alt_hdeps[i];
+  }
+
+  from_s.river_bottoms.main_block_type = to_s.river_bottoms.main_block_type;
+  from_s.river_bottoms.topsoil_block_type = \
+    to_s.river_bottoms.topsoil_block_type;
+  from_s.river_bottoms.main_species = to_s.river_bottoms.main_species;
+  from_s.river_bottoms.topsoil_species = to_s.river_bottoms.topsoil_species;
+  for (i = 0; i < WM_MAX_SOIL_ALTS; ++i) {
+    from_s.river_bottoms.alt_block_types[i] = \
+      to_s.river_bottoms.alt_block_types[i];
+    from_s.river_bottoms.alt_topsoil_block_types[i] = \
+      to_s.river_bottoms.alt_topsoil_block_types[i]
+    from_s.river_bottoms.alt_species[i] = to_s.river_bottoms.alt_species[i];
+    from_s.river_bottoms.alt_topsoil_species[i] = \
+      to_s.river_bottoms.alt_topsoil_species[i];
+    from_s.river_bottoms.alt_strengths[i] = to_s.river_bottoms.alt_strengths[i];
+    from_s.river_bottoms.alt_hdeps[i] = to_s.river_bottoms.alt_hdeps[i];
+  }
+
+  from_s.lake_shores.main_block_type = to_s.lake_shores.main_block_type;
+  from_s.lake_shores.topsoil_block_type = to_s.lake_shores.topsoil_block_type;
+  from_s.lake_shores.main_species = to_s.lake_shores.main_species;
+  from_s.lake_shores.topsoil_species = to_s.lake_shores.topsoil_species;
+  for (i = 0; i < WM_MAX_SOIL_ALTS; ++i) {
+    from_s.lake_shores.alt_block_types[i] = \
+      to_s.lake_shores.alt_block_types[i];
+    from_s.lake_shores.alt_topsoil_block_types[i] = \
+      to_s.lake_shores.alt_topsoil_block_types[i]
+    from_s.lake_shores.alt_species[i] = to_s.lake_shores.alt_species[i];
+    from_s.lake_shores.alt_topsoil_species[i] = \
+      to_s.lake_shores.alt_topsoil_species[i];
+    from_s.lake_shores.alt_strengths[i] = to_s.lake_shores.alt_strengths[i];
+    from_s.lake_shores.alt_hdeps[i] = to_s.lake_shores.alt_hdeps[i];
+  }
+
+  from_s.lake_bottoms.main_block_type = to_s.lake_bottoms.main_block_type;
+  from_s.lake_bottoms.topsoil_block_type = to_s.lake_bottoms.topsoil_block_type;
+  from_s.lake_bottoms.main_species = to_s.lake_bottoms.main_species;
+  from_s.lake_bottoms.topsoil_species = to_s.lake_bottoms.topsoil_species;
+  for (i = 0; i < WM_MAX_SOIL_ALTS; ++i) {
+    from_s.lake_bottoms.alt_block_types[i] = \
+      to_s.lake_bottoms.alt_block_types[i];
+    from_s.lake_bottoms.alt_topsoil_block_types[i] = \
+      to_s.lake_bottoms.alt_topsoil_block_types[i]
+    from_s.lake_bottoms.alt_species[i] = to_s.lake_bottoms.alt_species[i];
+    from_s.lake_bottoms.alt_topsoil_species[i] = \
+      to_s.lake_bottoms.alt_topsoil_species[i];
+    from_s.lake_bottoms.alt_strengths[i] = to_s.lake_bottoms.alt_strengths[i];
+    from_s.lake_bottoms.alt_hdeps[i] = to_s.lake_bottoms.alt_hdeps[i];
+  }
+
+  from_s.beaches.main_block_type = to_s.beaches.main_block_type;
+  from_s.beaches.topsoil_block_type = to_s.beaches.topsoil_block_type;
+  from_s.beaches.main_species = to_s.beaches.main_species;
+  from_s.beaches.topsoil_species = to_s.beaches.topsoil_species;
+  for (i = 0; i < WM_MAX_SOIL_ALTS; ++i) {
+    from_s.beaches.alt_block_types[i] = \
+      to_s.beaches.alt_block_types[i];
+    from_s.beaches.alt_topsoil_block_types[i] = \
+      to_s.beaches.alt_topsoil_block_types[i]
+    from_s.beaches.alt_species[i] = to_s.beaches.alt_species[i];
+    from_s.beaches.alt_topsoil_species[i] = \
+      to_s.beaches.alt_topsoil_species[i];
+    from_s.beaches.alt_strengths[i] = to_s.beaches.alt_strengths[i];
+    from_s.beaches.alt_hdeps[i] = to_s.beaches.alt_hdeps[i];
+  }
+
+  from_s.ocean_floor.main_block_type = to_s.ocean_floor.main_block_type;
+  from_s.ocean_floor.topsoil_block_type = to_s.ocean_floor.topsoil_block_type;
+  from_s.ocean_floor.main_species = to_s.ocean_floor.main_species;
+  from_s.ocean_floor.topsoil_species = to_s.ocean_floor.topsoil_species;
+  for (i = 0; i < WM_MAX_SOIL_ALTS; ++i) {
+    from_s.ocean_floor.alt_block_types[i] = \
+      to_s.ocean_floor.alt_block_types[i];
+    from_s.ocean_floor.alt_topsoil_block_types[i] = \
+      to_s.ocean_floor.alt_topsoil_block_types[i]
+    from_s.ocean_floor.alt_species[i] = to_s.ocean_floor.alt_species[i];
+    from_s.ocean_floor.alt_topsoil_species[i] = \
+      to_s.ocean_floor.alt_topsoil_species[i];
+    from_s.ocean_floor.alt_strengths[i] = to_s.ocean_floor.alt_strengths[i];
+    from_s.ocean_floor.alt_hdeps[i] = to_s.ocean_floor.alt_hdeps[i];
+  }
 }
 
 /******************************
