@@ -1,5 +1,5 @@
-#ifndef SPECIES_H
-#define SPECIES_H
+#ifndef MINERAL_SPECIES_H
+#define MINERAL_SPECIES_H
 // Mineral-based species types.
 
 /*********
@@ -7,60 +7,65 @@
  *********/
 
 // Categories for the primary composition of minerals:
-enum mineral_primary_e {
-  MC_PR_SILLICATE,
-  MC_PR_CARBONATE,
-  MC_PR_OXIDE,
-  MC_PR_HALIDE,
-  MC_PR_SULFIDE,
-  MC_PR_SULFATE,
-  MC_PR_PHOSPHATE,
-  MC_PR_RARE_METAL
+enum mineral_composition_e {
+  MC_COMP_SILLICATE,
+  MC_COMP_CARBONATE,
+  MC_COMP_OXIDE,
+  MC_COMP_HALIDE,
+  MC_COMP_SULFIDE,
+  MC_COMP_SULFATE,
+  MC_COMP_PHOSPHATE,
+  MC_COMP_RARE_METAL
 };
-typedef enum mineral_primary_e mineral_primary;
+typedef enum mineral_composition_e mineral_composition;
 
-// Categories for mineral secondary composition
-enum mineral_secondary_e {
+// Individual elements that appear in minerals:
+// TODO: generate this stuff procedurally
+enum mineral_constituent_e {
+  // Used when a constituent slot is empty:
+  MC_CNST_NO_CONSTITUENT = 0,
+
   // Common elements:
-  MC_SC_IRON,
-  MC_SC_MAGNESIUM,
-  MC_SC_ALUMINUM,
-  MC_SC_SODIUM,
-  MC_SC_CALCIUM,
-  MC_SC_POTASSIUM,
+  MC_CNST_IRON,
+  MC_CNST_MAGNESIUM,
+  MC_CNST_ALUMINUM,
+  MC_CNST_SODIUM,
+  MC_CNST_CALCIUM,
+  MC_CNST_POTASSIUM,
 
   // Halide constituents:
-  MC_SC_CHLORINE,
-  MC_SC_BROMINE,
-  MC_SC_FLUORINE, // flux for iron smelting; sometimes fluorescent
+  MC_CNST_CHLORINE,
+  MC_CNST_BROMINE,
+  MC_CNST_FLUORINE, // flux for iron smelting; sometimes fluorescent
 
   // Less common metals:
-  MC_SC_LEAD,
-  MC_SC_TIN,
-  MC_SC_ZINC,
-  MC_SC_NICKEL,
-  MC_SC_COPPER,
-  MC_SC_SILVER,
+  MC_CNST_LEAD,
+  MC_CNST_TIN,
+  MC_CNST_ZINC,
+  MC_CNST_NICKEL,
+  MC_CNST_COPPER,
+  MC_CNST_SILVER,
 
   // Less common elements known in ancient times:
-  MC_SC_MERCURY, // alchemy
-  MC_SC_COBALT, // blue dye
-  MC_SC_CHROMIUM, // red and yellow pigments; ore coloration
-  MC_SC_MANGANESE, // dark-colored ores; used in glass dyeing; ancient pigments
+  MC_CNST_MERCURY, // alchemy
+  MC_CNST_COBALT, // blue dye
+  MC_CNST_CHROMIUM, // red and yellow pigments; ore coloration
+  MC_CNST_MANGANESE, // dark-colored ores; used in glass dyeing; ancient pigments
 
   // Other less common elements
-  MC_SC_MOLYBDENUM, // lubricating, like graphite
-  MC_SC_TITANIUM, // white paint (modern process)
-  MC_SC_BARIUM, // heavy
-  MC_SC_BERRYLIUM, // gems (emerald; aquamarine)
-  MC_SC_PLATINUM // precious metal
+  MC_CNST_MOLYBDENUM, // lubricating, like graphite
+  MC_CNST_TITANIUM, // white paint (modern process)
+  MC_CNST_BARIUM, // heavy
+  MC_CNST_BERRYLIUM, // gems (emerald; aquamarine)
+  MC_CNST_PLATINUM // precious metal
 };
-typedef enum mineral_secondary_e mineral_secondary;
+typedef enum mineral_constituent_e mineral_constituent;
 
 /**************
  * Structures *
  **************/
 
+// Primary species structures:
 struct dirt_species_s;
 typedef struct dirt_species_s dirt_species;
 struct clay_species_s;
@@ -74,7 +79,12 @@ typedef struct metal_species_s metal_species;
  * Constants *
  *************/
 
-#define MAX_STONE_TRACE_MINERALS 3
+#define MAX_DIRT_TRACE_CONSTITUENTS 3
+
+#define MAX_STONE_SECONDARY_CONSTITUENTS 2
+#define MAX_STONE_TRACE_CONSTITUENTS 3
+
+#define MAX_ALLOY_CONSTITUENTS 8
 
 /*************************
  * Structure Definitions *
@@ -151,6 +161,9 @@ struct dirt_species_s {
   uint8_t base_sulfur;
   uint8_t base_magnesium;
   uint8_t base_calcium;
+
+  // Trace minerals help determine things like soil color
+  mineral_constituent trace_minerals[MAX_DIRT_TRACE_CONSTITUENTS];
 };
 
 struct clay_species_s {
@@ -165,13 +178,62 @@ struct stone_species_s {
 
   // Fundamental composition:
   // Note: elemental minerals use B_NATIVE_METAL and metal_species
-  mineral_primary primary_composition;
-  mineral_secondary secondary_composition;
-  mineral_secondary tertiary_composition;
-  mineral_secondary trace_composition[MAX_STONE_TRACE_MINERALS];
+  mineral_composition primary_composition;
+  mineral_constituent secondary_composition[MAX_STONE_SECONDARY_CONSTITUENTS];
+  mineral_constituent trace_composition[MAX_STONE_TRACE_CONSTITUENTS];
 };
 
 struct metal_species_s {
   material material;
   // metal_texture_params appearance;
+
+  // The elements that make up the alloy:
+  mineral_constituent constituents[MAX_ALLOY_CONSTITUENTS];
+  // The relative abundance of the constituents:
+  uint8_t composition[MAX_ALLOY_CONSTITUENTS];
 };
+
+/********************
+ * Inline Functions *
+ ********************/
+
+static inline int dirt_contains_trace_mineral(
+  dirt_species *sp,
+  mineral_constituent m
+) {
+  size_t i;
+  for (i = 0; i < MAX_DIRT_TRACE_CONSTITUENTS; ++i) {
+    if (sp->trace_minerals[i] == m) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static inline int stone_contains_mineral(
+  stone_species *sp,
+  mineral_constituent m
+) {
+  size_t i;
+  for (i = 0; i < MAX_STONE_SECONDARY_CONSTITUENTS; ++i) {
+    if (sp->secondary_composition[i] == m) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static inline int stone_contains_trace_mineral(
+  stone_species *sp,
+  mineral_constituent m
+) {
+  size_t i;
+  for (i = 0; i < MAX_STONE_TRACE_CONSTITUENTS; ++i) {
+    if (sp->trace_composition[i] == m) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+#endif // #ifndef MINERAL_SPECIES_H
