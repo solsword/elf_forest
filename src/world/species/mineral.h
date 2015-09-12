@@ -8,9 +8,10 @@
 
 // Categories for the primary composition of minerals:
 enum mineral_composition_e {
-  MC_COMP_SILLICATE,
+  MC_COMP_SILICATE,
   MC_COMP_CARBONATE,
   MC_COMP_OXIDE,
+  MC_COMP_HYDROXIDE,
   MC_COMP_HALIDE,
   MC_COMP_SULFIDE,
   MC_COMP_SULFATE,
@@ -50,14 +51,18 @@ enum mineral_constituent_e {
   MC_CNST_MERCURY, // alchemy
   MC_CNST_COBALT, // blue dye
   MC_CNST_CHROMIUM, // red and yellow pigments; ore coloration
-  MC_CNST_MANGANESE, // dark-colored ores; used in glass dyeing; ancient pigments
+  MC_CNST_MANGANESE, // dark-colored ores; glass dyeing; ancient pigments
 
   // Other less common elements
   MC_CNST_MOLYBDENUM, // lubricating, like graphite
   MC_CNST_TITANIUM, // white paint (modern process)
   MC_CNST_BARIUM, // heavy
   MC_CNST_BERRYLIUM, // gems (emerald; aquamarine)
-  MC_CNST_PLATINUM // precious metal
+  MC_CNST_PLATINUM, // precious metal
+
+  // Other non-elemental constituents
+  MC_CNST_HYDROXIDE, // a trailing OH group
+  MC_CNST_HYDROUS // hydrous minerals
 };
 typedef enum mineral_constituent_e mineral_constituent;
 
@@ -81,7 +86,7 @@ typedef struct metal_species_s metal_species;
 
 #define MAX_DIRT_TRACE_CONSTITUENTS 3
 
-#define MAX_STONE_SECONDARY_CONSTITUENTS 2
+#define MAX_STONE_SECONDARY_CONSTITUENTS 3
 #define MAX_STONE_TRACE_CONSTITUENTS 3
 
 #define MAX_ALLOY_CONSTITUENTS 8
@@ -178,9 +183,9 @@ struct stone_species_s {
 
   // Fundamental composition:
   // Note: elemental minerals use B_NATIVE_METAL and metal_species
-  mineral_composition primary_composition;
-  mineral_constituent secondary_composition[MAX_STONE_SECONDARY_CONSTITUENTS];
-  mineral_constituent trace_composition[MAX_STONE_TRACE_CONSTITUENTS];
+  mineral_composition composition;
+  mineral_constituent constituents[MAX_STONE_SECONDARY_CONSTITUENTS];
+  mineral_constituent traces[MAX_STONE_TRACE_CONSTITUENTS];
 };
 
 struct metal_species_s {

@@ -8,17 +8,29 @@
 #include <stdio.h>
 
 #include "blocks.h"
+#include "measures.h"
 
 /************************
  * Types and Structures *
  ************************/
 
-typedef uint8_t material_origin;
-
-// Various material properties:
-typedef uint8_t density; // see BASE_DENSITY
-typedef uint8_t specific_heat; // see BASE_SPECIFIC_HEAT
-typedef int16_t temperature; // in degrees Celsius
+enum material_origin_e {
+  MO_UNKNOWN, // ???
+  MO_ATMOSPHERE, // air
+  MO_WATER, // water; clouds
+  MO_IGNEOUS_MINERAL, // stone
+  MO_SEDIMENTARY_MINERAL, // stone
+  MO_METAMORPHIC_MINERAL, // stone
+  MO_METALLIC, // iron
+  MO_ERODED, // clay
+  MO_DECOMPOSED, // dirt; coal
+  MO_ORGANIC, // hay; flesh; wood
+  MO_REACTION, // acid
+  MO_COMBUSTION, // charcoal; smoke
+  MO_MIXTURE, // plaster; cement
+  MO_MAGIC, // ectoplasm; ether
+};
+typedef enum material_origin_e material_origin;
 
 // A material carries with it the basic properties of origin and form as well
 // as general physical properties, some of which are only applicable to certain
@@ -26,33 +38,6 @@ typedef int16_t temperature; // in degrees Celsius
 
 struct material_s;
 typedef struct material_s material;
-
-/*************
- * Constants *
- *************/
-
-static material_origin const              MO_UNKNOWN = 0x0; // ???
-static material_origin const           MO_ATMOSPHERE = 0x1; // air
-static material_origin const                MO_WATER = 0x2; // water; clouds
-static material_origin const      MO_IGNEOUS_MINERAL = 0x3; // stone
-static material_origin const  MO_SEDIMENTARY_MINERAL = 0x4; // stone
-static material_origin const  MO_METAMORPHIC_MINERAL = 0x5; // stone
-static material_origin const             MO_METALLIC = 0x6; // iron
-static material_origin const               MO_ERODED = 0x7; // clay
-static material_origin const           MO_DECOMPOSED = 0x8; // dirt; coal
-static material_origin const              MO_ORGANIC = 0x9; // hay; flesh; wood
-static material_origin const             MO_REACTION = 0xa; // acid
-static material_origin const           MO_COMBUSTION = 0xb; // charcoal; smoke
-static material_origin const              MO_MIXTURE = 0xc; // plaster; cement
-static material_origin const                MO_MAGIC = 0xd; // ectoplasm; ether
-
-// Density of water (~1000 kg/m^3) on the 0-255 scale used for solid and liquid
-// densities and of air (~1.2 kg/m^3) on the 0-255 scale used for gas
-// densities.
-static density const BASE_DENSITY = 12;
-
-// Specific heat of air (~1 J/gK) on the 0-255 scale used for specific heat.
-static specific_heat const BASE_SPECIFIC_HEAT = 16;
 
 
 /*************************
@@ -63,13 +48,6 @@ struct material_s {
   // origin:
   material_origin origin;
   // density of the material:
-  // For solid and liquid density, water (density ~1000 kg/m^3) is set at a
-  // value of 12, so the lightest representable material (value 1) has a
-  // density of ~83 kg/m^3 while the heaviest (value 255) weighs 21250 kg/m^3.
-  // For gas density, air (~1.2 kg/m^3) is set at a value of 12, so the
-  // lightest representable gas has a density of ~0.1 kg/m^3 while the heaviest
-  // has a density of ~25.5 kg/m^3. See http://en.wikipedia.org/wiki/Density
-  // for a table of densities for various substances.
   density solid_density;
   density liquid_density;
   density gas_density;
@@ -85,12 +63,13 @@ struct material_s {
   temperature ignition_point;
   temperature flash_point;
   // fine structure info:
-  uint8_t malleability; // in solid phase
-  float viscosity; // in liquid phase, measured relative to water at 1.0
-  uint8_t hardness; // 60 ~= wood, fingernails; most stone is 100-220
-  // 4 bits each of impact, compressive, tensile, and shear strength:
-  // TODO: remove this?
-  //uint16_t strength;
+  temperature cold_plastic_temp; // temperature of minimum plasticity
+  temperature warm_plastic_temp; // temperature of maximum plasticity
+  plasticity cold_plasticity; // plasticity at the cold plastic point
+  plasticity warm_plasticity; // plasticity at the warm plastic point
+  hardness hardness; // in solid phase
+  viscosity viscosity; // in liquid phase, measured relative to water at 1.0
+  pH pH; // in liquid phase
 };
 
 /********************

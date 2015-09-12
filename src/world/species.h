@@ -81,31 +81,33 @@ _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
 enum species_type_e {
   SPT_NO_SPECIES = 0,
 
-  SPT_GAS = 1,
+  SPT_ELEMENT = 1,
 
-  SPT_DIRT = 2,
-  SPT_CLAY = 3,
-  SPT_STONE = 4,
-  SPT_METAL = 5,
+  SPT_GAS = 2,
+
+  SPT_DIRT = 3,
+  SPT_CLAY = 4,
+  SPT_STONE = 5,
+  SPT_METAL = 7,
   
-  SPT_FUNGUS = 6,
-  SPT_MOSS = 7,
-  SPT_GRASS = 8,
-  SPT_VINE = 9,
-  SPT_HERB = 10,
-  SPT_BUSH = 11,
-  SPT_SHRUB = 12,
-  SPT_TREE = 13,
-  SPT_AQUATIC_GRASS = 14,
-  SPT_AQUATIC_PLANT = 15,
-  SPT_CORAL = 16,
+  SPT_FUNGUS = 7,
+  SPT_MOSS = 8,
+  SPT_GRASS = 9,
+  SPT_VINE = 10,
+  SPT_HERB = 11,
+  SPT_BUSH = 12,
+  SPT_SHRUB = 13,
+  SPT_TREE = 14,
+  SPT_AQUATIC_GRASS = 15,
+  SPT_AQUATIC_PLANT = 16,
+  SPT_CORAL = 17,
   
-  SPT_ANIMAL = 17,
-  SPT_MYTHICAL = 18,
-  SPT_SENTIENT = 19,
+  SPT_ANIMAL = 18,
+  SPT_MYTHICAL = 19,
+  SPT_SENTIENT = 20,
   
-  SPT_FIBER = 20,
-  SPT_PIGMENT = 21
+  SPT_FIBER = 21,
+  SPT_PIGMENT = 22
 };
 typedef enum species_type_e species_type;
 
@@ -117,6 +119,9 @@ typedef enum species_type_e species_type;
 /**********************
  * Primary Structures *
  **********************/
+
+// Elements:
+#include "world/species/element.h"
 
 // Inorganic:
 #include "world/species/substance.h"
@@ -207,6 +212,8 @@ void setup_species(void);
 // species struct type to cast the pointer to can be determined by the type
 // parameter of the any_species argument.
 void* get_species_data(any_species sp);
+
+SPECIES_ACCESS_FUNCTIONS_DECL(element);
 
 SPECIES_ACCESS_FUNCTIONS_DECL(gas);
 

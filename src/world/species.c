@@ -74,6 +74,8 @@ void setup_species(void) {
 
 void* get_species_data(any_species sp) {
   switch(sp.type) {
+    case SPT_ELEMENT:
+      return (void*) get_element_species(sp.id);
     case SPT_GAS:
       return (void*) get_gas_species(sp.id);
     case SPT_DIRT:
@@ -133,6 +135,8 @@ void* get_species_data(any_species sp) {
 }
 
 // create/get functions for various species types:
+SPECIES_ACCESS_FUNCTIONS(element, ELEMENT)
+
 SPECIES_ACCESS_FUNCTIONS(gas, GAS)
 
 SPECIES_ACCESS_FUNCTIONS(dirt, DIRT)

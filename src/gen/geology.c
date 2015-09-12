@@ -27,6 +27,326 @@ float const GN_DISTORTION_SCALE = 784;
 float const GN_LARGE_VAR_SCALE = 2563;
 float const GN_MED_VAR_SCALE = 1345;
 
+/**********
+ * Tables *
+ **********/
+
+rngtable const STONE_SOURCE_DISTRIBUTION = {
+  .size = 3,
+  .values = {
+    (void*) GEO_IGNEOUS,
+    (void*) GEO_METAMORPHIC,
+    (void*) GEO_SEDIMENTARY
+  },
+  .weights = { 0.5, 0.3, 0.2 }
+  // skewed relative to Earth for extra sedimentary rocks
+}
+
+// Composition distributions:
+
+rngtable const IGNEOUS_COMPOSITIONS = {
+  .size = 3,
+  .values = {
+    (void*) MC_COMP_SILICATE,
+    (void*) MC_COMP_SULFIDE,
+    (void*) MC_COMP_PHOSPHATE
+  },
+  .weights = { 0.95, 0.03, 0.02 }
+};
+rngtable const METAMORPHIC_COMPOSITIONS = {
+  .size = 8,
+  .values = {
+    (void*) MC_COMP_SILICATE,
+    (void*) MC_COMP_CARBONATE,
+    (void*) MC_COMP_OXIDE,
+    (void*) MC_COMP_HYDROXIDE,
+    (void*) MC_COMP_SULFATE,
+    (void*) MC_COMP_SULFIDE,
+    (void*) MC_COMP_PHOSPHATE,
+    (void*) MC_COMP_RARE_METAL
+  },
+  .weights = { 0.3, 0.15, 0.15, 0.1, 0.1, 0.1, 0.05, 0.05 }
+};
+rngtable const SEDIMENTARY_COMPOSITIONS = {
+  .size = 6,
+  .values = {
+    (void*) MC_COMP_CARBONATE,
+    (void*) MC_COMP_SILICATE,
+    (void*) MC_COMP_HALIDE,
+    (void*) MC_COMP_SULFATE,
+    (void*) MC_COMP_SULFIDE,
+    (void*) MC_COMP_PHOSPHATE
+  },
+  .weights = { 0.5, 0.24, 0.1, 0.06, 0.06, 0.04 }
+};
+
+// Constituent count distributions:
+
+rngtable const IGNEOUS_SILICATE_CONSTITUENT_COUNTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.8, 0.15, 0.05 }
+};
+rngtable const IGNEOUS_SULFIDE_CONSTITUENT_COUNTS = {
+  .size = 2,
+  .values = { 1, 2 },
+  .weights = { 0.75, 0.25 }
+};
+rngtable const IGNEOUS_PHOSPHATE_CONSTITUENT_COUNTS = {
+  .size = 2,
+  .values = { 1, 2 },
+  .weights = { 0.75, 0.25 }
+};
+
+rngtable const METAMORPHIC_SILICATE_CONSTITUENT_COUNTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.6, 0.25, 0.15 }
+};
+rngtable const METAMORPHIC_CARBONATE_CONSTITUENT_COUNTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.6, 0.25, 0.15 }
+};
+rngtable const METAMORPHIC_OXIDE_CONSTITUENT_COUNTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.8, 0.17, 0.03 }
+};
+rngtable const METAMORPHIC_HYDROXIDE_CONSTITUENT_COUNTS = {
+  .size = 2,
+  .values = { 1, 2 },
+  .weights = { 0.85, 0.15 }
+};
+rngtable const METAMORPHIC_SULFATE_CONSTITUENT_COUNTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.6, 0.25, 0.15 }
+};
+rngtable const METAMORPHIC_SULFIDE_CONSTITUENT_COUNTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.6, 0.35, 0.05 }
+};
+rngtable const METAMORPHIC_PHOSPHATE_CONSTITUENT_COUNTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.1, 0.65, 0.25 }
+};
+rngtable const METAMORPHIC_RARE_METAL_CONSTITUENT_COUNTS = {
+  .size = 2,
+  .values = { 2, 3 },
+  .weights = { 0.65, 0.35 }
+};
+
+rngtable const SEDIMENTARY_CARBONATE_CONSTITUENT_COUNTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.7, 0.25, 0.05 }
+};
+rngtable const SEDIMENTARY_SILICATE_CONSTITUENT_COUNTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.7, 0.25, 0.05 }
+};
+rngtable const SEDIMENTARY_HALIDE_CONSTITUENT_COUNTS = {
+  .size = 2,
+  .values = { 2, 3 },
+  .weights = { 0.8, 0.2 }
+};
+rngtable const SEDIMENTARY_SULFATE_CONSTITUENT_COUNTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.7, 0.25, 0.05 }
+};
+rngtable const SEDIMENTARY_SULFIDE_CONSTITUENT_COUNTS = {
+  .size = 2,
+  .values = { 1, 2 },
+  .weights = { 0.7, 0.3 }
+};
+rngtable const SEDIMENTARY_PHOSPHATE_CONSTITUENT_COUNTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.2, 0.6, 0.2 }
+};
+
+// Constituent distributions:
+
+void* ALL_POSSIBLE_MINERAL_CONSTITUENTS[] = {
+  (void*) MC_CNST_IRON,
+  (void*) MC_CNST_MAGNESIUM,
+  (void*) MC_CNST_ALUMINUM,
+  (void*) MC_CNST_SODIUM,
+  (void*) MC_CNST_CALCIUM,
+  (void*) MC_CNST_POTASSIUM,
+
+  (void*) MC_CNST_CHLORINE,
+  (void*) MC_CNST_BROMINE,
+  (void*) MC_CNST_FLUORINE,
+
+  (void*) MC_CNST_LEAD,
+  (void*) MC_CNST_TIN,
+  (void*) MC_CNST_ZINC,
+  (void*) MC_CNST_NICKEL,
+  (void*) MC_CNST_COPPER,
+  (void*) MC_CNST_SILVER,
+
+  (void*) MC_CNST_MERCURY,
+  (void*) MC_CNST_COBALT,
+  (void*) MC_CNST_CHROMIUM,
+  (void*) MC_CNST_MANGANESE,
+
+  (void*) MC_CNST_MOLYBDENUM,
+  (void*) MC_CNST_TITANIUM,
+  (void*) MC_CNST_BARIUM,
+  (void*) MC_CNST_BERRYLIUM,
+  (void*) MC_CNST_PLATINUM,
+
+  (void*) MC_CNST_HYDROXIDE,
+  (void*) MC_CNST_HYDROUS
+};
+
+rngtable const IGNEOUS_SILICATE_CONSTITUENTS = {
+  .size = 26,
+  .values = ALL_POSSIBLE_MINERAL_CONSTITUENTS,
+  .weights = {
+    1, 1, 0.7, 0.7, 0.6, 0.6,
+    0, 0, 0,
+    0.3, 0.3, 0.3, 0.3, 0.4, 0.2,
+    0.05, 0.05, 0.03, 0.03,
+    0.01, 0.01, 0.01, 0.01, 0.005,
+    0.2, 0.2
+  }
+};
+rngtable const IGNEOUS_SULFIDE_CONSTITUENTS = {
+  .size = 2,
+  .values = { 1, 2 },
+  .weights = { 0.75, 0.25 }
+};
+rngtable const IGNEOUS_PHOSPHATE_CONSTITUENTS = {
+  .size = 2,
+  .values = { 1, 2 },
+  .weights = { 0.75, 0.25 }
+};
+
+rngtable const METAMORPHIC_SILICATE_CONSTITUENTS = {
+  .size = 26,
+  .values = ALL_POSSIBLE_MINERAL_CONSTITUENTS,
+  .weights = {
+    1.0, 1.0, 1.0, 1, 1, 1.0,
+    0, 0, 0,
+    0.8, 0.8, 0.8, 0.8, 1.0, 0.6,
+    0.1, 0.1, 0.1, 0.1,
+    0.05, 0.05, 0.05, 0.05, 0.03,
+    0.5, 0.5
+  }
+};
+rngtable const METAMORPHIC_CARBONATE_CONSTITUENTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.6, 0.25, 0.15 }
+};
+rngtable const METAMORPHIC_OXIDE_CONSTITUENTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.8, 0.17, 0.03 }
+};
+rngtable const METAMORPHIC_HYDROXIDE_CONSTITUENTS = {
+  .size = 2,
+  .values = { 1, 2 },
+  .weights = { 0.85, 0.15 }
+};
+rngtable const METAMORPHIC_SULFATE_CONSTITUENTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.6, 0.25, 0.15 }
+};
+rngtable const METAMORPHIC_SULFIDE_CONSTITUENTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.6, 0.35, 0.05 }
+};
+rngtable const METAMORPHIC_PHOSPHATE_CONSTITUENTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.1, 0.65, 0.25 }
+};
+rngtable const METAMORPHIC_RARE_METAL_CONSTITUENTS = {
+  .size = 2,
+  .values = { 2, 3 },
+  .weights = { 0.65, 0.35 }
+};
+
+rngtable const SEDIMENTARY_CARBONATE_CONSTITUENTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.7, 0.25, 0.05 }
+};
+rngtable const SEDIMENTARY_SILICATE_CONSTITUENTS = {
+  .size = 26,
+  .values = ALL_POSSIBLE_MINERAL_CONSTITUENTS,
+  .weights = {
+    0.8, 0.8, 0.9, 1, 1, 0.6,
+    0, 0, 0,
+    0.4, 0.4, 0.4, 0.4, 0.5, 0.3,
+    0.05, 0.07, 0.05, 0.05,
+    0.015, 0.015, 0.015, 0.015, 0.007,
+    0.5, 0.5
+  }
+};
+rngtable const SEDIMENTARY_HALIDE_CONSTITUENTS = {
+  .size = 2,
+  .values = { 2, 3 },
+  .weights = { 0.8, 0.2 }
+};
+rngtable const SEDIMENTARY_SULFATE_CONSTITUENTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.7, 0.25, 0.05 }
+};
+rngtable const SEDIMENTARY_SULFIDE_CONSTITUENTS = {
+  .size = 2,
+  .values = { 1, 2 },
+  .weights = { 0.7, 0.3 }
+};
+rngtable const SEDIMENTARY_PHOSPHATE_CONSTITUENTS = {
+  .size = 3,
+  .values = { 1, 2, 3 },
+  .weights = { 0.2, 0.6, 0.2 }
+};
+
+rngtable const IGNEOUS_TRACE_COUNTS = {
+  .size = 5,
+  .values = {},
+  .weights = {}
+};
+rngtable const SEDIMENTARY_TRACE_COUNTS = {
+  .size = 5,
+  .values = {},
+  .weights = {}
+};
+rngtable const METAMORPHIC_TRACE_COUNTS = {
+  .size = 5,
+  .values = {},
+  .weights = {}
+};
+
+rngtable const IGNEOUS_TRACE_ELEMENTS = {
+  .size = 5,
+  .values = {},
+  .weights = {}
+};
+rngtable const SEDIMENTARY_TRACE_ELEMENTS = {
+  .size = 5,
+  .values = {},
+  .weights = {}
+};
+rngtable const METAMORPHIC_TRACE_ELEMENTS = {
+  .size = 5,
+  .values = {},
+  .weights = {}
+};
+
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -188,7 +508,7 @@ stratum *create_stratum(
       }
       break;
 
-    case GEO_SEDIMENTAY:
+    case GEO_SEDIMENTARY:
     default:
       result->base_species = create_new_sedimentary_species(seed);
 
@@ -1054,7 +1374,7 @@ void generate_geology(world_map *wm) {
   avg_size *= WORLD_REGION_BLOCKS;
 
   map_function profile = MFN_SPREAD_UP;
-  geologic_source source = GEO_SEDIMENTAY;
+  geologic_source source = GEO_SEDIMENTARY;
   ptrdiff_t hash, h1, h2, h3, h4, h5;
   world_region *wr;
   for (i = 0; i < WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY; ++i) {
@@ -1077,18 +1397,7 @@ void generate_geology(world_map *wm) {
         profile = MFN_HILL;
         break;
     }
-    switch (h5 % 3) {
-      case 0:
-        source = GEO_IGNEOUS;
-        break;
-      case 1:
-        source = GEO_METAMORPHIC;
-        break;
-      case 2:
-      default:
-        source = GEO_SEDIMENTAY;
-        break;
-    }
+    source = (geologic_source) rt_pick_result(STONE_SOURCE_DISTRIBUTION, h5);
     s = create_stratum(
       hash,
       float_hash_1d(hash)*wm->width, float_hash_1d(h1)*wm->height,
@@ -1182,14 +1491,55 @@ gl_pos_t compute_stratum_height(stratum *st, global_pos *glpos) {
 species create_new_igneous_species(ptrdiff_t seed) {
   species result = create_stone_species();
   stone_species* ssp = get_stone_species(result);
+  size_t count;
+  size_t i;
+  rngtable *constituent_count_table;
+  rngtable *constituent_table;
 
+  ssp->composition = (mineral_composition) rt_pick_result(
+    IGNEOUS_COMPOSITIONS,
+    seed
+  );
   seed = prng(seed);
 
-  float base_density = pow(norm_hash_1d(seed), 0.8);
-
-  determine_new_igneous_material(&(ssp->material), seed, base_density);
+  switch (ssp->composition) {
+    case MC_COMP_SILICATE:
+    default:
+      constituent_count_table = &IGNEOUS_SILICATE_CONSTITUENT_COUNTS;
+      constituent_table = &IGNEOUS_SILICATE_CONSTITUENTS;
+      break;
+    case MC_COMP_SULFIDE:
+      constituent_count_table = &IGNEOUS_SULFIDE_CONSTITUENT_COUNTS;
+      constituent_table = &IGNEOUS_SULFIDE_CONSTITUENTS;
+      break;
+    case MC_COMP_PHOSPHATE:
+      constituent_count_table = &IGNEOUS_PHOSPHATE_CONSTITUENT_COUNTS;
+      constituent_table = &IGNEOUS_PHOSPHATE_CONSTITUENTS;
+      break;
+  }
+  count = (size_t) rt_pick_result(constituent_count_table, seed);
   seed = prng(seed);
-  determine_new_igneous_appearance(&(ssp->appearance), seed, base_density);
+  for (i = 0; i < count; ++i) {
+    ssp->constituents[i] = (mineral_constituent) rt_pick_result(
+      constituent_table,
+      seed
+    );
+    seed = prng(seed);
+  }
+
+  count = (size_t) rt_pick_result(IGNEOUS_TRACE_COUNTS, seed);
+  seed = prng(seed);
+  for (i = 0; i < count; ++i) {
+    ssp->constituents[i] = (mineral_constituent) rt_pick_result(
+      IGNEOUS_TRACES,
+      seed
+    );
+    seed = prng(seed);
+  }
+
+  determine_new_igneous_material(&(ssp->material), ssp, seed);
+  seed = prng(seed);
+  determine_new_igneous_appearance(&(ssp->appearance), ssp, seed);
 
   return result;
 }
@@ -1197,14 +1547,77 @@ species create_new_igneous_species(ptrdiff_t seed) {
 species create_new_metamorphic_species(ptrdiff_t seed) {
   species result = create_stone_species();
   stone_species* ssp = get_stone_species(result);
+  size_t count;
+  size_t i;
+  rngtable *constituent_count_table;
+  rngtable *constituent_table;
 
+  ssp->composition = (mineral_composition) rt_pick_result(
+    METAMORPHIC_COMPOSITIONS,
+    seed
+  );
   seed = prng(seed);
 
-  float base_density = norm_hash_1d(seed);
+  switch (ssp->composition) {
+    case MC_COMP_SILICATE:
+      constituent_count_table = &METAMORPHIC_SILICATE_CONSTITUENT_COUNTS;
+      constituent_table = &METAMORPHIC_SILICATE_CONSTITUENTS;
+      break;
+    case MC_COMP_CARBONATE:
+    default:
+      constituent_count_table = &METAMORPHIC_CARBONATE_CONSTITUENT_COUNTS;
+      constituent_table = &METAMORPHIC_CARBONATE_CONSTITUENTS;
+      break;
+    case MC_COMP_OXIDE:
+    default:
+      constituent_count_table = &METAMORPHIC_OXIDE_CONSTITUENT_COUNTS;
+      constituent_table = &METAMORPHIC_OXIDE_CONSTITUENTS;
+      break;
+    case MC_COMP_HYDROXIDE:
+      constituent_count_table = &METAMORPHIC_HYDROXIDE_CONSTITUENT_COUNTS;
+      constituent_table = &METAMORPHIC_HYDROXIDE_CONSTITUENTS;
+      break;
+    case MC_COMP_SULFATE:
+      constituent_count_table = &METAMORPHIC_SULFATE_CONSTITUENT_COUNTS;
+      constituent_table = &METAMORPHIC_SULFATE_CONSTITUENTS;
+      break;
+    case MC_COMP_SULFIDE:
+      constituent_count_table = &METAMORPHIC_SULFIDE_CONSTITUENT_COUNTS;
+      constituent_table = &METAMORPHIC_SULFIDE_CONSTITUENTS;
+      break;
+    case MC_COMP_PHOSPHATE:
+      constituent_count_table = &METAMORPHIC_PHOSPHATE_CONSTITUENT_COUNTS;
+      constituent_table = &METAMORPHIC_PHOSPHATE_CONSTITUENTS;
+      break;
+    case MC_COMP_RARE_METAL:
+      constituent_count_table = &METAMORPHIC_RARE_METAL_CONSTITUENT_COUNTS;
+      constituent_table = &METAMORPHIC_RARE_METAL_CONSTITUENTS;
+      break;
+  }
 
-  determine_new_metamorphic_material(&(ssp->material), seed, base_density);
+  count = (size_t) rt_pick_result(constituent_count_table, seed);
   seed = prng(seed);
-  determine_new_metamorphic_appearance(&(ssp->appearance), seed, base_density);
+  for (i = 0; i < count; ++i) {
+    ssp->constituents[i] = (mineral_constituent) rt_pick_result(
+      constituent_table,
+      seed
+    );
+    seed = prng(seed);
+  }
+
+  count = (size_t) rt_pick_result(METAMORPHIC_TRACE_COUNTS, seed);
+  seed = prng(seed);
+  for (i = 0; i < count; ++i) {
+    ssp->constituents[i] = (mineral_constituent) rt_pick_result(
+      METAMORPHIC_TRACE_ELEMENTS,
+      seed
+    );
+    seed = prng(seed);
+  }
+
+  determine_new_metamorphic_material(&(ssp->material), ssp, seed);
+  seed = prng(seed);
+  determine_new_metamorphic_appearance(&(ssp->appearance), ssp, seed);
 
   return result;
 }
@@ -1212,22 +1625,76 @@ species create_new_metamorphic_species(ptrdiff_t seed) {
 species create_new_sedimentary_species(ptrdiff_t seed) {
   species result = create_stone_species();
   stone_species* ssp = get_stone_species(result);
+  size_t count;
+  size_t i;
+  rngtable *constituent_count_table;
+  rngtable *constituent_table;
 
+  ssp->composition = (mineral_composition) rt_pick_result(
+    SEDIMENTARY_COMPOSITIONS,
+    seed
+  );
   seed = prng(seed);
 
-  float base_density = pow(norm_hash_1d(seed), 0.8);
+  switch (ssp->composition) {
+    case MC_COMP_CARBONATE:
+    default:
+      constituent_count_table = &SEDIMENTARY_CARBONATE_CONSTITUENT_COUNTS;
+      constituent_table = &SEDIMENTARY_CARBONATE_CONSTITUENTS;
+      break;
+    case MC_COMP_SILICATE:
+      constituent_count_table = &SEDIMENTARY_SILICATE_CONSTITUENT_COUNTS;
+      constituent_table = &SEDIMENTARY_SILICATE_CONSTITUENTS;
+      break;
+    case MC_COMP_HALIDE:
+      constituent_count_table = &SEDIMENTARY_HALIDE_CONSTITUENT_COUNTS;
+      constituent_table = &SEDIMENTARY_HALIDE_CONSTITUENTS;
+      break;
+    case MC_COMP_SULFATE:
+      constituent_count_table = &SEDIMENTARY_SULFATE_CONSTITUENT_COUNTS;
+      constituent_table = &SEDIMENTARY_SULFATE_CONSTITUENTS;
+      break;
+    case MC_COMP_SULFIDE:
+      constituent_count_table = &SEDIMENTARY_SULFIDE_CONSTITUENT_COUNTS;
+      constituent_table = &SEDIMENTARY_SULFIDE_CONSTITUENTS;
+      break;
+    case MC_COMP_PHOSPHATE:
+      constituent_count_table = &SEDIMENTARY_PHOSPHATE_CONSTITUENT_COUNTS;
+      constituent_table = &SEDIMENTARY_PHOSPHATE_CONSTITUENTS;
+      break;
+  }
 
-  determine_new_sedimentary_material(&(ssp->material), seed, base_density);
+  count = (size_t) rt_pick_result(constituent_count_table, seed);
   seed = prng(seed);
-  determine_new_sedimentary_appearance(&(ssp->appearance), seed, base_density);
+  for (i = 0; i < count; ++i) {
+    ssp->constituents[i] = (mineral_constituent) rt_pick_result(
+      constituent_table,
+      seed
+    );
+    seed = prng(seed);
+  }
+
+  count = (size_t) rt_pick_result(SEDIMENTARY_TRACE_COUNTS, seed);
+  seed = prng(seed);
+  for (i = 0; i < count; ++i) {
+    ssp->constituents[i] = (mineral_constituent) rt_pick_result(
+      SEDIMENTARY_TRACE_ELEMENTS,
+      seed
+    );
+    seed = prng(seed);
+  }
+
+  determine_new_sedimentary_material(&(ssp->material), ssp, seed);
+  seed = prng(seed);
+  determine_new_sedimentary_appearance(&(ssp->appearance), ssp, seed);
 
   return result;
 }
 
 void determine_new_igneous_material(
   material *target,
-  ptrdiff_t seed,
-  float base_density
+  stone_species *species,
+  ptrdiff_t seed
 ) {
   target->origin = MO_IGNEOUS_MINERAL;
 
@@ -1285,8 +1752,8 @@ void determine_new_igneous_material(
 
 void determine_new_metamorphic_material(
   material *target,
-  ptrdiff_t seed,
-  float base_density
+  stone_species *species,
+  ptrdiff_t seed
 ) {
   target->origin = MO_METAMORPHIC_MINERAL;
 
@@ -1348,8 +1815,8 @@ void determine_new_metamorphic_material(
 
 void determine_new_sedimentary_material(
   material *target,
-  ptrdiff_t seed,
-  float base_density
+  stone_species *species,
+  ptrdiff_t seed
 ) {
   target->origin = MO_SEDIMENTARY_MINERAL;
 
@@ -1412,8 +1879,8 @@ void determine_new_sedimentary_material(
 
 void determine_new_igneous_appearance(
   stone_filter_args *target,
-  ptrdiff_t seed,
-  float base_density
+  stone_species *species,
+  ptrdiff_t seed
 ) {
   seed = prng(seed);
   target->seed = seed;
@@ -1495,8 +1962,8 @@ void determine_new_igneous_appearance(
 
 void determine_new_metamorphic_appearance(
   stone_filter_args *target,
-  ptrdiff_t seed,
-  float base_density
+  stone_species *species,
+  ptrdiff_t seed
 ) {
   seed = prng(seed);
   target->seed = seed;
@@ -1576,8 +2043,8 @@ void determine_new_metamorphic_appearance(
 
 void determine_new_sedimentary_appearance(
   stone_filter_args *target,
-  ptrdiff_t seed,
-  float base_density
+  stone_species *species,
+  ptrdiff_t seed
 ) {
   seed = prng(seed);
   target->seed = seed;

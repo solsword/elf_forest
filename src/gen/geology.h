@@ -8,6 +8,7 @@
 #include <math.h>
 
 #include "math/functions.h"
+#include "datatypes/rngtable.h"
 
 #include "txgen/txg_minerals.h"
 #include "world/materials.h"
