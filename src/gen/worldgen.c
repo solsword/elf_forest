@@ -13,6 +13,7 @@
 #include "math/manifold.h"
 #include "util.h"
 
+#include "elements.h"
 #include "terrain.h"
 #include "geology.h"
 #include "climate.h"
@@ -46,6 +47,8 @@ void setup_worldgen(ptrdiff_t seed) {
   THE_WORLD = create_world_map(prng(seed + 71), WORLD_WIDTH, WORLD_HEIGHT);
   printf("  ...initializing world...\n");
   init_world_map(THE_WORLD);
+  printf("  ...generating elements...\n");
+  generate_elements(THE_WORLD);
   printf("  ...generating tectonics...\n");
   generate_tectonics(THE_WORLD);
   printf("  ...generating topography...\n");

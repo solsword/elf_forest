@@ -151,6 +151,10 @@ static inline float ptrf(ptrdiff_t seed) {
   return ((seed % 524309) + 524309) / 1048617.0;
 }
 
+static inline ptrdiff_t rint(seed, ptrdiff_t min, ptrdiff_t max, ptrdiff_t) {
+  return min + prng(seed) % ((max - min) + 1);
+}
+
 // Packs two floats (both of which should be in [0, 1]) into a single void*.
 // Depending on the platform's pointer size, the resolution will be different.
 // Floating point errors should be expected.

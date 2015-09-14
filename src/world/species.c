@@ -15,6 +15,8 @@
  * Globals *
  ***********/
 
+map *ELEMENT_SPECIES = NULL;
+
 map *GAS_SPECIES = NULL;
 
 map *DIRT_SPECIES = NULL;
@@ -46,12 +48,15 @@ map *PIGMENT_SPECIES = NULL; // various sources; uniform use
  *************/
 
 void setup_species(void) {
+  ELEMENT_SPECIES = create_map(1, 1024);
+
   GAS_SPECIES = create_map(1, 1024);
+
   DIRT_SPECIES = create_map(1, 1024);
   CLAY_SPECIES = create_map(1, 1024);
   STONE_SPECIES = create_map(1, 1024); // also used for sand, gravel etc.
   METAL_SPECIES = create_map(1, 1024);
-  
+
   FUNGUS_SPECIES = create_map(1, 1024);
   MOSS_SPECIES = create_map(1, 1024);
   GRASS_SPECIES = create_map(1, 1024);
@@ -63,11 +68,11 @@ void setup_species(void) {
   AQUATIC_GRASS_SPECIES = create_map(1, 1024);
   AQUATIC_PLANT_SPECIES = create_map(1, 1024);
   CORAL_SPECIES = create_map(1, 1024);
-  
+
   ANIMAL_SPECIES = create_map(1, 1024);
   MYTHICAL_SPECIES = create_map(1, 1024);
   SENTIENT_SPECIES = create_map(1, 1024);
-  
+
   FIBER_SPECIES = create_map(1, 1024); // various sources; uniform use
   PIGMENT_SPECIES = create_map(1, 1024); // various sources; uniform use
 }
@@ -86,7 +91,7 @@ void* get_species_data(any_species sp) {
       return (void*) get_stone_species(sp.id);
     case SPT_METAL:
       return (void*) get_metal_species(sp.id);
-  
+
     case SPT_FUNGUS:
       return (void*) get_fungus_species(sp.id);
     case SPT_MOSS:
@@ -109,14 +114,14 @@ void* get_species_data(any_species sp) {
       return (void*) get_aquatic_plant_species(sp.id);
     case SPT_CORAL:
       return (void*) get_coral_species(sp.id);
-  
+
     case SPT_ANIMAL:
       return (void*) get_animal_species(sp.id);
     case SPT_MYTHICAL:
       return (void*) get_mythical_species(sp.id);
     case SPT_SENTIENT:
       return (void*) get_sentient_species(sp.id);
-  
+
     case SPT_FIBER:
       return (void*) get_fiber_species(sp.id);
     case SPT_PIGMENT:

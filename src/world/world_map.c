@@ -33,6 +33,8 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
   result->width = width;
   result->height = height;
   result->regions = (world_region *) calloc(width*height, sizeof(world_region));
+  result->n_elements = 0;
+  result->elements = NULL;
   result->tectonics = create_tectonic_sheet(
     prng(seed + 65442),
     (size_t) (2.0 * (width / TECTONIC_SHEET_SCALE)),

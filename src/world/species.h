@@ -149,6 +149,9 @@ typedef struct any_species_s any_species;
  * Globals *
  ***********/
 
+// Elements:
+extern map *ELEMENT_SPECIES;
+
 // Inorganics:
 extern map *GAS_SPECIES;
 
