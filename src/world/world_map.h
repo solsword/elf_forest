@@ -504,14 +504,17 @@ struct world_region_s {
 struct world_map_s {
   ptrdiff_t seed;
   wm_pos_t width, height;
-  size_t n_main_elements;
-  size_t n_common_elements;
-  size_t n_uncommon_elements;
-  species *main_elements;
-  species *common_elements;
-  species *uncommon_elements;
   world_region *regions;
   tectonic_sheet *tectonics;
+
+  list *air_elements;
+  list *water_elements;
+  list *life_elements;
+  list *stone_elements;
+  list *metal_elements;
+  list *rare_elements;
+
+  list *all_elements;
   list *all_strata;
   list *all_water;
   list *all_rivers;

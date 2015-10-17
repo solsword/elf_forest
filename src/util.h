@@ -132,16 +132,11 @@ static inline float rounddenom(float x, int denom) {
   return roundf(x*denom)/((float) denom);
 }
 
-// (Poor quality) floating point rand:
-static inline float randf(float min, float max) {
-  float result = rand();
-  result /= RAND_MAX;
-  return min + result*(max - min);;
-}
-
 // Stupid-simple PRNG:
 static inline ptrdiff_t prng(ptrdiff_t seed) {
-  return (seed * 49103) + 2147483659; // both are primes
+  return (seed * 49103) + 2147483659; // both are prime
+  // TODO: Would this be better in any way?
+  // return (((seed * 49103) + 2147483659) * 78157) + 11665001; // all prime
 }
 
 // Simple ptrdiff_t->float
@@ -151,8 +146,28 @@ static inline float ptrf(ptrdiff_t seed) {
   return ((seed % 524309) + 524309) / 1048617.0;
 }
 
-static inline ptrdiff_t rint(seed, ptrdiff_t min, ptrdiff_t max, ptrdiff_t) {
+// Simple random int within specific range:
+static inline ptrdiff_t randi(
+  ptrdiff_t seed,
+  ptrdiff_t min,
+  ptrdiff_t max
+) {
   return min + prng(seed) % ((max - min) + 1);
+}
+
+// Random floating point number in specific range:
+static inline float randf(ptrdiff_t seed, float min, float max) {
+  return min + ptrf(seed)*(max - min);;
+}
+
+// Returns a random floating point number within the specified range drawn from
+// a pseudo-normal distribution with variance of about 1/4 the given range and
+// mean at the center of the given range.
+static inline float randf_pnorm(ptrdiff_t seed, float min, float max) {
+  float result = randf(seed, min, max);
+  result += randf(prng(seed+7488), min, max);
+  result += randf(prng(prng(seed+18712)+4657), min, max);
+  return result / 3.0;
 }
 
 // Packs two floats (both of which should be in [0, 1]) into a single void*.

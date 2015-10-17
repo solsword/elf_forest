@@ -8,29 +8,27 @@
 
 #include "world/species.h"
 
+/*********
+ * Enums *
+ *********/
+
+enum pH_category_e {
+  PHC_NEUTRAL,
+  PHC_ACIDIC,
+  PHC_BASIC
+};
+typedef enum pH_category_e pH_category;
+
 /*************
  * Constants *
  *************/
 
+// Note: many generation parameters are stored as static variables in the .c
+// file (rngtables specifically).
+
 // Element generation parameters:
-#define MIN_MAIN_ELEMENTS 3
-#define MAX_MAIN_ELEMENTS 5
-#define MIN_COMMON_ELEMENTS 7
-#define MAX_COMMON_ELEMENTS 12
-#define MIN_UNCOMMON_ELEMENTS 6
-#define MAX_UNCOMMON_ELEMENTS 10
 
-#define MIN_LIQUID_ELEMENTS 2.0
-#define MIN_GASEOUS_ELEMENTS 3.0
-
-#define MIN_MAIN_METALLIC_ELEMENTS 0
-#define MAX_MAIN_METALLIC_ELEMENTS 2
-
-#define MIN_COMMON_METALLIC_ELEMENTS 2
-#define MAX_COMMON_METALLIC_ELEMENTS 4
-
-#define MIN_UNCOMMON_METALLIC_ELEMENTS 4
-#define MAX_UNCOMMON_METALLIC_ELEMENTS 7
+// TODO: Any of these here?
 
 /*************
  * Functions *
@@ -39,12 +37,7 @@
 // Generates elements for the world.
 void generate_elements(world_map *wm);
 
-
-// Creates a new element.
-void create_new_element(
-  element_frequency frequency,
-  phase phase,
-  size_t is_metallic,
-);
+// Takes a categorized element and fills out all of its properties.
+void fill_out_element(element_species *esp);
 
 #endif // ifndef ELEMENTS_H

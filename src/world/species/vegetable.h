@@ -149,7 +149,7 @@ struct seed_growth_pattern_s {
 };
 
 struct core_growth_pattern_s {
-  // TODO: HERE
+  // TODO: This
 };
 
 struct growth_properties_s {

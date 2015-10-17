@@ -16,6 +16,7 @@
 
 enum material_origin_e {
   MO_UNKNOWN, // ???
+  MO_PURE_ELEMENT, // a pure element
   MO_ATMOSPHERE, // air
   MO_WATER, // water; clouds
   MO_IGNEOUS_MINERAL, // stone

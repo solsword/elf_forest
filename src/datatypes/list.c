@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include <stdint.h>
-#include <assert.h>
 #include <stdio.h>
 #include <errno.h>
 #include <omp.h>
