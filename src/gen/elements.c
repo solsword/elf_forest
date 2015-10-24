@@ -115,6 +115,32 @@ static rngtable PH_DISTRIBUTION = {
   .weights = { 1, 3, 1 },
 };
 
+static rngtable LIFE_SOLUBILITY_DISTRIBUTION = {
+  .size = 3,
+  .values = {
+    SOLUBILITY_SOLUBLE,
+    SOLUBILITY_SLIGHTLY_SOLUBLE,
+    SOLUBILITY_INSOLUBLE
+  },
+  .weights = { 7, 5, 1 }
+};
+
+static rngtable METAL_SOLUBILITY_DISTRIBUTION = {
+  .size = 2,
+  .values = { SOLUBILITY_SLIGHTLY_SOLUBLE, SOLUBILITY_INSOLUBLE },
+  .weights = { 4, 1 }
+};
+
+static rngtable GENERAL_SOLUBILITY_DISTRIBUTION = {
+  .size = 3,
+  .values = {
+    SOLUBILITY_SOLUBLE,
+    SOLUBILITY_SLIGHTLY_SOLUBLE,
+    SOLUBILITY_INSOLUBLE
+  },
+  .weights = { 12, 8, 5 }
+};
+
 /*********************
  * Private Functions *
  *********************/
@@ -342,6 +368,9 @@ void generate_elements(world_map *wm) {
 // Creates a new element.
 void fill_out_element(element_species *esp, ptrdiff_t seed) {
   float x;
+  // for building colors
+  float hue, sat, val;
+  // pH tendency
   pH_category phc = (pH_category) rt_pick_result(PH_DISTRIBUTION, seed);
   seed = prng(seed);
   switch (phc) {
@@ -367,14 +396,79 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
       seed = prng(seed);
       break;
   }
-  // TODO: HERE and below
-  esp->solubility = ;
-  esp->corrosion_resistance = ;
 
-  stone_density_tendency;
-  stone_hardness_tendency;
-  stone_cohesion_tendency;
-  stone_light_dark_tendency;
+  // solubility
+  if (el_is_member(esp, EL_CATEGORY_WATER)) {
+    esp->solubility = SOLUBILITY_SOLUBLE;
+  } else if (el_is_member(esp, EL_CATEGORY_LIFE)) {
+    esp->solubility = (solubility) rt_pick_result(
+      LIFE_SOLUBILITY_DISTRIBUTION,
+      seed
+    );
+    seed = prng(seed);
+  } else if (el_is_member(esp, EL_CATEGORY_METAL)) {
+    esp->solubility = (solubility) rt_pick_result(
+      METAL_SOLUBILITY_DISTRIBUTION,
+      seed
+    );
+    seed = prng(seed);
+  } else {
+    esp->solubility = (solubility) rt_pick_result(
+      GENERAL_SOLUBILITY_DISTRIBUTION,
+      seed
+    );
+    seed = prng(seed);
+  }
+
+  // corrosion resistance
+  switch (esp->solubility) {
+    case SOLUBILITY_SOLUBLE:
+      esp->corrosion_resistance = randi(
+        seed,
+        MIN_SOLUBLE_CORROSION_RESISTANCE,
+        MAX_SOLUBLE_CORROSION_RESISTANCE
+      );
+      seed = prng(seed);
+      break;
+    default:
+    case SOLUBILITY_SLIGHTLY_SOLUBLE:
+      esp->corrosion_resistance = randi(
+        seed,
+        MIN_SLIGHTLY_CORROSION_RESISTANCE,
+        MAX_SLIGHTLY_CORROSION_RESISTANCE
+      );
+      seed = prng(seed);
+      break;
+    case SOLUBILITY_INSOLUBLE:
+      esp->corrosion_resistance = randi(
+        seed,
+        MIN_INSOLUBLE_CORROSION_RESISTANCE,
+        MAX_INSOLUBLE_CORROSION_RESISTANCE
+      );
+      seed = prng(seed);
+      break;
+  }
+
+  // TODO: HERE and below
+  esp->stone_density_tendency = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  esp->stone_hardness_tendency = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  esp->stone_cohesion_tendency = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  esp->stone_light_dark_tendency = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+
+  // TODO: Constrain these a bit.
+  hue = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  sat = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  val = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  esp->stone_chroma = float_color(hue, sat, val, 1.0);
+  px_set_sat
+  px_set_val
   stone_chroma;
   stone_oxide_chroma;
   stone_tint_chroma;

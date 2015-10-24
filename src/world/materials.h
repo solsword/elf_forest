@@ -87,8 +87,8 @@ static inline material mt_from_block(block b) {
 */
 
 // Takes a specific weight (floating point density in terms of a base density)
-// and returns an absolute material density. Prints a warning if the specific
-// weight given can't be accurately represented in absolute terms.
+// and returns an absolute material density. In debug mode, it prints a warning
+// if the specific weight given can't be adequately represented.
 static inline density mat_density(float specific_weight) {
   ptrdiff_t i = fastfloor(((float) BASE_DENSITY) * specific_weight);
 #ifdef DEBUG

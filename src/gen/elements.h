@@ -28,7 +28,12 @@ typedef enum pH_category_e pH_category;
 
 // Element generation parameters:
 
-// TODO: Any of these here?
+#define MIN_SOLUBLE_CORROSION_RESISTANCE 0
+#define MAX_SOLUBLE_CORROSION_RESISTANCE 32
+#define MIN_SLIGHTLY_CORROSION_RESISTANCE 0
+#define MAX_SLIGHTLY_CORROSION_RESISTANCE 128
+#define MIN_INSOLUBLE_CORROSION_RESISTANCE 64
+#define MAX_INSOLUBLE_CORROSION_RESISTANCE 255
 
 /*************
  * Functions *
