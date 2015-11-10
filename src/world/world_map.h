@@ -876,6 +876,7 @@ int find_geopt_in_wr(void *v_gpt, void *v_wr_ptr);
 // local minimum. The input position is edited directly.
 void find_valley(world_map *wm, world_map_pos *pos);
 
+// Arbitrary breadth-first iteration within a world map.
 int breadth_first_iter(
   world_map *wm,
   world_map_pos *origin,
@@ -883,6 +884,18 @@ int breadth_first_iter(
   int max_size,
   void *arg,
   step_result (*process)(search_step, world_region*, void*)
+);
+
+// Picks an element present in the given world using a uniform distribution
+// over all elements subject to the given constraints: a category constraint,
+// and a list of elements to ignore (which may be given as NULL if there aren't
+// any elements to ignore). If it's impossible to pick such an element, it will
+// return 0 (the generic/invalid species).
+species pick_element(
+  world_map *wm,
+  element_categorization constraints,
+  list *exclude,
+  ptrdiff_t seed
 );
 
 #endif // ifndef WORLD_MAP_H

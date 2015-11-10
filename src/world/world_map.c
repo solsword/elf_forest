@@ -358,3 +358,31 @@ int breadth_first_iter(
   process(SSTEP_CLEANUP, NULL, arg);
   return 1;
 }
+
+species pick_element(
+  world_map *wm,
+  element_categorization constraints,
+  list *exclude,
+  ptrdiff_t seed
+) {
+  size_t i;
+  list *valid = create_list();
+  species result = 0;
+  for (i = 0; i < l_get_length(wm->all_elements); ++i) {
+    element_species *el = (element_species*) l_get_item(wm->all_elements, i);
+    if (
+       el_is_member(el, constraints)
+    && (
+         exclude == NULL
+      || !l_contains(exclude, (void*) el)
+       )
+    ) {
+      l_append_element(valid, (void*) el);
+    }
+  }
+  if (!l_is_empty(valid)) {
+    result = l_pick_random(valid, seed);
+  } // else result is still 0
+  cleanup_list(valid);
+  return result;
+}

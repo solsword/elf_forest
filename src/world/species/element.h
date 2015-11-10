@@ -45,12 +45,14 @@ typedef struct element_species_s element_species;
 #define EL_CATEGORY_METAL  0x10
 #define EL_CATEGORY_RARE   0x20
 
+typedef uint8_t element_categorization;
+
 /*************************
  * Structure Definitions *
  *************************/
 
 struct element_species_s {
-  uint8_t categories; // Bitmask for which categories we're part of
+  element_categorization categories; // Bitmask for categories we're part of
   element_frequency frequency; // ubiquitous, common, uncommon, or rare
 
   // Note: elements don't have a pure physical form. When isolated (using magic
@@ -64,6 +66,9 @@ struct element_species_s {
 
   // Tendencies when forming stone:
   float stone_density_tendency;
+  float stone_specific_heat_tendency;
+  float stone_transition_temp_tendency;
+  float stone_plasticity_tendency;
   float stone_hardness_tendency;
   float stone_cohesion_tendency;
   float stone_light_dark_tendency;
@@ -90,8 +95,11 @@ struct element_species_s {
  * Inline Functions *
  ********************/
 
-static inline size_t el_is_member(element_species *sp, uint8_t category) {
-  return (sp->categories & category) != 0;
+static inline size_t el_is_member(
+  element_species *sp,
+  element_categorization category
+) {
+  return (sp->categories & category) == category;
 }
 
 #endif // #ifndef ELEMENT_SPECIES_H

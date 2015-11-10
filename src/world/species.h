@@ -49,7 +49,7 @@ _Pragma("GCC diagnostic ignored \"-Wint-to-pointer-cast\"") \
       (map_key_t) s \
     ); \
 _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
-    if (result == NULL) { \
+    if (s != 0 && result == NULL) { \
       fprintf( \
         stderr, \
         "Error: tried to lookup unknown " #SP_LOWER " species %d.\n" \
@@ -63,7 +63,7 @@ _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
   } \
   \
   species create_ ## SP_LOWER ## _species(void) { \
-    species result = m_get_count(SP_CAPS ## _SPECIES); \
+    species result = 1 + m_get_count(SP_CAPS ## _SPECIES); \
     SP_LOWER ## _species* new_species = (SP_LOWER ## _species*) calloc( \
       1, \
       sizeof(SP_LOWER ## _species) \

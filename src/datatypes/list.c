@@ -282,6 +282,13 @@ void l_reverse(list *l) {
   }
 }
 
+void l_pick_random(list *l, ptrdiff_t seed) {
+  if (l_get_length(l) == 0) {
+    return NULL;
+  }
+  return l_get_item(l, (seed * 39181 + 19991) % l_get_length(l));
+}
+
 // A simple in-place Fisher-Yates shuffle using a weak in-place PRNG.
 void l_shuffle(list *l, ptrdiff_t seed) {
   size_t i;

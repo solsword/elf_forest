@@ -111,6 +111,9 @@ extern float const GN_DISTORTION_SCALE;
 extern float const GN_LARGE_VAR_SCALE;
 extern float const GN_MED_VAR_SCALE;
 
+// Weights when averaging the properties of stone constituent elements:
+static float[] const STONE_CONSTITUENT_AVERAGING_WEIGHTS;
+
 /********************
  * Inline Functions *
  ********************/
@@ -422,6 +425,21 @@ static inline stratum* get_stratum(
   return result;
 }
 
+static inline float get_base_density(stone_species *ssp, ptrdiff_t seed) {
+  size_t i;
+  float result = 2 * ptrf(seed);
+  float denom = 2;
+  element_species *element;
+  for (i = 0; i < MAX_PRIMARY_CONSTITUENTS; ++i) {
+    element = get_element_species(ssp->constituents[i]);
+    if (element != NULL) {
+      result += element->stone_density_tendency;
+      denom += 1;
+    }
+  }
+  return result / denom;
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -441,6 +459,7 @@ void cleanup_tectonic_sheet(tectonic_sheet *ts);
 
 // Allocates and returns a new stratum with the given parameters.
 stratum *create_stratum(
+  world_map *wm,
   ptrdiff_t seed,
   float cx, float cy,
   float size, float thickness,
@@ -580,9 +599,24 @@ void generate_geology(world_map *wm);
 gl_pos_t compute_stratum_height(stratum *st, global_pos *glpos);
 
 // Functions that create new types of stone:
-species create_new_igneous_species(ptrdiff_t seed);
-species create_new_metamorphic_species(ptrdiff_t seed);
-species create_new_sedimentary_species(ptrdiff_t seed);
+species create_new_igneous_species(world_map *wm, ptrdiff_t seed);
+species create_new_metamorphic_species(world_map *wm, ptrdiff_t seed);
+species create_new_sedimentary_species(world_map *wm, ptrdiff_t seed);
+
+// Helper functions for filling in compositions:
+void determine_new_elemental_composition(
+  world_map *wm,
+  mineral_composition comp,
+  species *comp_array,
+  ptrdiff_t seed
+);
+
+void determine_new_elemental_traces(
+  world_map *wm,
+  mineral_trace_composition comp,
+  species *trace_array,
+  ptrdiff_t seed
+);
 
 // Helper functions for creating materials:
 void determine_new_igneous_material(

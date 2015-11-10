@@ -282,8 +282,8 @@ void generate_elements(world_map *wm) {
   }
 
   // Note: Metal overlap is a bit noisy as the joint life/stone/metal overlap
-  // isn't regulated. In other words, actual metal/life overlap could be as
-  // high as o_life_stone + min(o_life_stone, o_life_metal) if the metal
+  // isn't fully regulated. In other words, actual metal/life overlap could be
+  // as high as o_life_stone + min(o_life_stone, o_life_metal) if the metal
   // elements taken from the stone pool for stone/metal overlap happen to be
   // stone/life overlap elements.
 
@@ -450,13 +450,20 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
   }
 
   // TODO: HERE and below
-  esp->stone_density_tendency = randf(seed, 0.0, 1.0);
+  // TODO: distributions based on categories...
+  esp->stone_density_tendency = ptrf(seed);
   seed = prng(seed);
-  esp->stone_hardness_tendency = randf(seed, 0.0, 1.0);
+  esp->stone_specific_heat_tendency = ptrf(seed);
   seed = prng(seed);
-  esp->stone_cohesion_tendency = randf(seed, 0.0, 1.0);
+  esp->stone_transition_temp_tendency = ptrf(seed);
   seed = prng(seed);
-  esp->stone_light_dark_tendency = randf(seed, 0.0, 1.0);
+  esp->stone_plasticity_tendency = ptrf(seed);
+  seed = prng(seed);
+  esp->stone_hardness_tendency = ptrf(seed);
+  seed = prng(seed);
+  esp->stone_cohesion_tendency = ptrf(seed);
+  seed = prng(seed);
+  esp->stone_light_dark_tendency = ptrf(seed);
   seed = prng(seed);
 
   // TODO: Constrain these a bit.
@@ -467,22 +474,65 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
   val = randf(seed, 0.0, 1.0);
   seed = prng(seed);
   esp->stone_chroma = float_color(hue, sat, val, 1.0);
-  px_set_sat
-  px_set_val
-  stone_chroma;
-  stone_oxide_chroma;
-  stone_tint_chroma;
+
+  // TODO: Constrain these a bit.
+  hue = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  sat = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  val = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  esp->stone_oxide_chroma = float_color(hue, sat, val, 1.0);
+
+  // TODO: Constrain these a bit.
+  hue = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  sat = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  val = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  esp->stone_tint_chroma = float_color(hue, sat, val, 1.0);
 
   // Tendencies when forming metals and alloys:
-  metal_luster_tendency;
-  metal_hardness_tendency;
-  metal_plasticity_tendency;
-  metal_light_dark_tendency;
-  metal_chroma;
-  metal_tint_chroma;
-  alloy_performance; // -1 to 1: tendency to synergize in alloys
+  // TODO: distributions based on categories...
+  esp->metal_luster_tendency = ptrf(seed);
+  seed = prng(seed);
+  esp->metal_hardness_tendency = ptrf(seed);
+  seed = prng(seed);
+  esp->metal_plasticity_tendency = ptrf(seed);
+  seed = prng(seed);
+  esp->metal_light_dark_tendency = ptrf(seed);
+  seed = prng(seed);
+
+  // TODO: Constrain these a bit.
+  hue = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  sat = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  val = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  esp->metal_chroma = float_color(hue, sat, val, 1.0);
+
+  // TODO: Constrain these a bit.
+  hue = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  sat = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  val = randf(seed, 0.0, 1.0);
+  seed = prng(seed);
+  esp->metal_tint_chroma = float_color(hue, sat, val, 1.0);
+
+  // [-1,1) tendency to synergize in alloys:
+  // TODO: distributions based on categories...
+  esp->alloy_performance = -1  +  2 * ptrf(seed);
+  seed = prng(seed);
 
   // Biological properties:
-  nutrient = 0;
-  poison = 0;
+  // TODO: distributions based on categories...
+  esp->nutrient = randi(seed, 0, 1);
+  seed = prng(seed);
+  if (!esp->nutrient) {
+    esp->poison = randi(seed, 0, 1);
+    seed = prng(seed);
+  }
 }

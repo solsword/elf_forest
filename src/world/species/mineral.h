@@ -8,63 +8,40 @@
 
 // Categories for the primary composition of minerals:
 enum mineral_composition_e {
-  MC_COMP_SILICATE,
-  MC_COMP_CARBONATE,
-  MC_COMP_OXIDE,
-  MC_COMP_HYDROXIDE,
-  MC_COMP_HALIDE,
-  MC_COMP_SULFIDE,
-  MC_COMP_SULFATE,
-  MC_COMP_PHOSPHATE,
-  MC_COMP_RARE_METAL
+  MNRL_COMP_STONE,
+  MNRL_COMP_LIFE,
+  MNRL_COMP_STONE_AIR,
+  MNRL_COMP_STONE_WATER,
+  MNRL_COMP_STONE_LIFE,
+  MNRL_COMP_STONE_STONE,
+  MNRL_COMP_STONE_STONE_LIFE,
+  MNRL_COMP_STONE_STONE_STONE,
+  MNRL_COMP_STONE_METAL,
+  MNRL_COMP_STONE_STONE_METAL,
+  MNRL_COMP_STONE_METAL_METAL,
+  MNRL_COMP_STONE_METAL_RARE,
+  MNRL_COMP_STONE_RARE,
+  MNRL_COMP_STONE_STONE_RARE,
+  MNRL_COMP_STONE_RARE_RARE,
+  MNRL_COMP_RARE_RARE
 };
 typedef enum mineral_composition_e mineral_composition;
 
-// Individual elements that appear in minerals:
-// TODO: generate this stuff procedurally
-enum mineral_constituent_e {
-  // Used when a constituent slot is empty:
-  MC_CNST_NO_CONSTITUENT = 0,
-
-  // Common elements:
-  MC_CNST_IRON,
-  MC_CNST_MAGNESIUM,
-  MC_CNST_ALUMINUM,
-  MC_CNST_SODIUM,
-  MC_CNST_CALCIUM,
-  MC_CNST_POTASSIUM,
-
-  // Halide constituents:
-  MC_CNST_CHLORINE,
-  MC_CNST_BROMINE,
-  MC_CNST_FLUORINE, // flux for iron smelting; sometimes fluorescent
-
-  // Less common metals:
-  MC_CNST_LEAD,
-  MC_CNST_TIN,
-  MC_CNST_ZINC,
-  MC_CNST_NICKEL,
-  MC_CNST_COPPER,
-  MC_CNST_SILVER,
-
-  // Less common elements known in ancient times:
-  MC_CNST_MERCURY, // alchemy
-  MC_CNST_COBALT, // blue dye
-  MC_CNST_CHROMIUM, // red and yellow pigments; ore coloration
-  MC_CNST_MANGANESE, // dark-colored ores; glass dyeing; ancient pigments
-
-  // Other less common elements
-  MC_CNST_MOLYBDENUM, // lubricating, like graphite
-  MC_CNST_TITANIUM, // white paint (modern process)
-  MC_CNST_BARIUM, // heavy
-  MC_CNST_BERRYLIUM, // gems (emerald; aquamarine)
-  MC_CNST_PLATINUM, // precious metal
-
-  // Other non-elemental constituents
-  MC_CNST_HYDROXIDE, // a trailing OH group
-  MC_CNST_HYDROUS // hydrous minerals
+// Categories for mineral trace content:
+enum mineral_trace_composition_e {
+  MNRL_TRACE_NONE = 0,
+  MNRL_TRACE_AIR,
+  MNRL_TRACE_WATER,
+  MNRL_TRACE_LIFE,
+  MNRL_TRACE_STONE,
+  MNRL_TRACE_STONE_METAL,
+  MNRL_TRACE_METAL,
+  MNRL_TRACE_METAL_METAL,
+  MNRL_TRACE_METAL_RARE,
+  MNRL_TRACE_RARE,
+  MNRL_TRACE_RARE_RARE
 };
-typedef enum mineral_constituent_e mineral_constituent;
+typedef enum mineral_trace_composition_e mineral_trace_composition;
 
 /**************
  * Structures *
@@ -84,10 +61,8 @@ typedef struct metal_species_s metal_species;
  * Constants *
  *************/
 
-#define MAX_DIRT_TRACE_CONSTITUENTS 3
-
-#define MAX_STONE_SECONDARY_CONSTITUENTS 3
-#define MAX_STONE_TRACE_CONSTITUENTS 3
+#define MAX_PRIMARY_CONSTITUENTS 3
+#define MAX_TRACE_CONSTITUENTS 2
 
 #define MAX_ALLOY_CONSTITUENTS 8
 
@@ -157,6 +132,7 @@ struct dirt_species_s {
   // These are the primary nutrient values for the soil. Levels are expressed
   // on a scale of 1-255, where 32 is a "standard level" which neither enhances
   // nor impedes growth.
+  // TODO: Account for element generation!
   uint8_t base_phosphorus;
   uint8_t base_nitrogen;
   uint8_t base_potassium;
@@ -168,7 +144,7 @@ struct dirt_species_s {
   uint8_t base_calcium;
 
   // Trace minerals help determine things like soil color
-  mineral_constituent trace_minerals[MAX_DIRT_TRACE_CONSTITUENTS];
+  species trace_minerals[MAX_TRACE_CONSTITUENTS];
 };
 
 struct clay_species_s {
@@ -182,10 +158,11 @@ struct stone_species_s {
   stone_filter_args appearance;
 
   // Fundamental composition:
-  // Note: elemental minerals use B_NATIVE_METAL and metal_species
+  // Note: pure metals use B_NATIVE_METAL and metal_species
   mineral_composition composition;
-  mineral_constituent constituents[MAX_STONE_SECONDARY_CONSTITUENTS];
-  mineral_constituent traces[MAX_STONE_TRACE_CONSTITUENTS];
+  mineral_trace_composition trace_composition;
+  species constituents[MAX_PRIMARY_CONSTITUENTS];
+  species traces[MAX_TRACE_CONSTITUENTS];
 };
 
 struct metal_species_s {
@@ -193,48 +170,92 @@ struct metal_species_s {
   // metal_texture_params appearance;
 
   // The elements that make up the alloy:
-  mineral_constituent constituents[MAX_ALLOY_CONSTITUENTS];
+  species constituents[MAX_ALLOY_CONSTITUENTS];
   // The relative abundance of the constituents:
   uint8_t composition[MAX_ALLOY_CONSTITUENTS];
 };
+
+/**********
+ * Macros *
+ **********/
+
+// Given an array of species values that are element species, the length of
+// that array, an iteration variable (should be a size_t) I, an
+// element_species* variable EL, a DENOM float, a property name (such as
+// 'stone_density_tendency'), and a RESULT float, this generates code to look
+// up and average the given property across all elements in the given species
+// array. The variables I, EL, SUM, DENOM, and RESULT will be overwritten as
+// part of this process, with the result ending up in RESULT. Only works for
+// floating point properties. If there are no non-zero species in the array,
+// both RESULT and DENOM will be 0.
+#define AVERAGE_ELEMENT_PROPERTY(SPECIES, LEN, I, EL, DENOM, PROP, RESULT) \
+  DENOM = 0; \
+  RESULT = 0; \
+  for (I = 0; I < LEN; ++I) { \
+    EL = get_element_species(SPECIES[I]); \
+    if (EL != NULL) { \
+      RESULT += (EL)->PROP; \
+      DENOM += 1; \
+    } \
+  } \
+  if (DENOM > 0) { \
+    RESULT /= DENOM; \
+  }
+
+// As above, but also takes a weights array (same length as the species array)
+// of floats and averages according to those weights. None of the weights
+// should be negative.
+#define WEIGHTED_ELEMENT_PROPERTY(SPC, WGTS, LEN, I, EL, DENOM, PROP, RESULT) \
+  DENOM = 0; \
+  RESULT = 0; \
+  for (I = 0; I < LEN; ++I) { \
+    EL = get_element_species(SPC[I]); \
+    if (EL != NULL) { \
+      RESULT += (WGTS[I]) * ((EL)->PROP); \
+      DENOM += WGTS[I]; \
+    } \
+  } \
+  if (DENOM > 0) { \
+    RESULT /= DENOM; \
+  }
 
 /********************
  * Inline Functions *
  ********************/
 
-static inline int dirt_contains_trace_mineral(
+static inline int dirt_contains_trace_element(
   dirt_species *sp,
-  mineral_constituent m
+  species el
 ) {
   size_t i;
-  for (i = 0; i < MAX_DIRT_TRACE_CONSTITUENTS; ++i) {
-    if (sp->trace_minerals[i] == m) {
+  for (i = 0; i < MAX_TRACE_CONSTITUENTS; ++i) {
+    if (sp->trace_minerals[i] == el) {
       return 1;
     }
   }
   return 0;
 }
 
-static inline int stone_contains_mineral(
+static inline int stone_contains_element(
   stone_species *sp,
-  mineral_constituent m
+  species el
 ) {
   size_t i;
-  for (i = 0; i < MAX_STONE_SECONDARY_CONSTITUENTS; ++i) {
-    if (sp->secondary_composition[i] == m) {
+  for (i = 0; i < MAX_PRIMARY_CONSTITUENTS; ++i) {
+    if (sp->constituents[i] == el) {
       return 1;
     }
   }
   return 0;
 }
 
-static inline int stone_contains_trace_mineral(
+static inline int stone_contains_trace_element(
   stone_species *sp,
-  mineral_constituent m
+  species el
 ) {
   size_t i;
-  for (i = 0; i < MAX_STONE_TRACE_CONSTITUENTS; ++i) {
-    if (sp->trace_composition[i] == m) {
+  for (i = 0; i < MAX_TRACE_CONSTITUENTS; ++i) {
+    if (sp->traces[i] == el) {
       return 1;
     }
   }

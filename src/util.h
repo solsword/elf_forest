@@ -152,12 +152,12 @@ static inline ptrdiff_t randi(
   ptrdiff_t min,
   ptrdiff_t max
 ) {
-  return min + prng(seed) % ((max - min) + 1);
+  return min + prng(seed + 81882) % ((max - min) + 1);
 }
 
 // Random floating point number in specific range:
 static inline float randf(ptrdiff_t seed, float min, float max) {
-  return min + ptrf(seed)*(max - min);;
+  return min + ptrf(prng(seed + 45201))*(max - min);;
 }
 
 // Returns a random floating point number within the specified range drawn from

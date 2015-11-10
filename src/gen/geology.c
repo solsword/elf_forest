@@ -27,6 +27,12 @@ float const GN_DISTORTION_SCALE = 784;
 float const GN_LARGE_VAR_SCALE = 2563;
 float const GN_MED_VAR_SCALE = 1345;
 
+static float[] const STONE_CONSTITUENT_AVERAGING_WEIGHTS = {
+  1.5,
+  1.0,
+  0.7
+};
+
 /**********
  * Tables *
  **********/
@@ -45,306 +51,154 @@ rngtable const STONE_SOURCE_DISTRIBUTION = {
 // Composition distributions:
 
 rngtable const IGNEOUS_COMPOSITIONS = {
-  .size = 3,
+  .size = 7,
   .values = {
-    (void*) MC_COMP_SILICATE,
-    (void*) MC_COMP_SULFIDE,
-    (void*) MC_COMP_PHOSPHATE
+    (void*) MNRL_COMP_STONE,
+    (void*) MNRL_COMP_STONE_STONE,
+
+    (void*) MNRL_COMP_STONE_LIFE,
+
+    (void*) MNRL_COMP_STONE_METAL,
+    (void*) MNRL_COMP_STONE_METAL_METAL,
+
+    (void*) MNRL_COMP_STONE_RARE,
+    (void*) MNRL_COMP_LIFE
   },
-  .weights = { 0.95, 0.03, 0.02 }
+  .weights = {
+    0.4, 0.35,  // 75% |  75%
+    0.10,       // 10% |  85%
+    0.05, 0.05, // 10% |  95%
+    0.03, 0.02  //  5% | 100%
+  }
 };
 rngtable const METAMORPHIC_COMPOSITIONS = {
-  .size = 8,
+  .size = 15,
   .values = {
-    (void*) MC_COMP_SILICATE,
-    (void*) MC_COMP_CARBONATE,
-    (void*) MC_COMP_OXIDE,
-    (void*) MC_COMP_HYDROXIDE,
-    (void*) MC_COMP_SULFATE,
-    (void*) MC_COMP_SULFIDE,
-    (void*) MC_COMP_PHOSPHATE,
-    (void*) MC_COMP_RARE_METAL
+    (void*) MNRL_COMP_STONE_WATER,
+    (void*) MNRL_COMP_STONE_STONE,
+    (void*) MNRL_COMP_STONE_METAL,
+
+    (void*) MNRL_COMP_STONE_STONE_STONE,
+    (void*) MNRL_COMP_STONE_STONE_METAL,
+    (void*) MNRL_COMP_STONE_METAL_METAL,
+
+    (void*) MNRL_COMP_STONE_STONE_LIFE,
+    (void*) MNRL_COMP_STONE_AIR,
+    (void*) MNRL_COMP_STONE_STONE,
+    (void*) MNRL_COMP_RARE_RARE,
+
+    (void*) MNRL_COMP_STONE_LIFE,
+    (void*) MNRL_COMP_STONE_METAL_RARE,
+    (void*) MNRL_COMP_STONE_RARE,
+
+    (void*) MNRL_COMP_STONE_STONE_RARE,
+    (void*) MNRL_COMP_STONE_RARE_RARE
   },
-  .weights = { 0.3, 0.15, 0.15, 0.1, 0.1, 0.1, 0.05, 0.05 }
+  .weights = {
+    0.17, 0.12, 0.12,        // 41% |  41%
+    0.09, 0.09, 0.07,        // 25% |  66%
+    0.06, 0.06, 0.06, 0.05,  // 23% |  89%
+    0.04, 0.03, 0.02,        //  9% |  98%
+    0.01, 0.01               //  2% | 100%
+  }
 };
 rngtable const SEDIMENTARY_COMPOSITIONS = {
-  .size = 6,
+  .size = 7,
   .values = {
-    (void*) MC_COMP_CARBONATE,
-    (void*) MC_COMP_SILICATE,
-    (void*) MC_COMP_HALIDE,
-    (void*) MC_COMP_SULFATE,
-    (void*) MC_COMP_SULFIDE,
-    (void*) MC_COMP_PHOSPHATE
+    (void*) MNRL_COMP_STONE_LIFE,
+    (void*) MNRL_COMP_STONE_WATER,
+    (void*) MNRL_COMP_STONE_AIR,
+
+    (void*) MNRL_COMP_LIFE,
+
+    (void*) MNRL_COMP_STONE,
+    (void*) MNRL_COMP_STONE_STONE,
+
+    (void*) MNRL_COMP_RARE_RARE
   },
-  .weights = { 0.5, 0.24, 0.1, 0.06, 0.06, 0.04 }
-};
-
-// Constituent count distributions:
-
-rngtable const IGNEOUS_SILICATE_CONSTITUENT_COUNTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.8, 0.15, 0.05 }
-};
-rngtable const IGNEOUS_SULFIDE_CONSTITUENT_COUNTS = {
-  .size = 2,
-  .values = { 1, 2 },
-  .weights = { 0.75, 0.25 }
-};
-rngtable const IGNEOUS_PHOSPHATE_CONSTITUENT_COUNTS = {
-  .size = 2,
-  .values = { 1, 2 },
-  .weights = { 0.75, 0.25 }
-};
-
-rngtable const METAMORPHIC_SILICATE_CONSTITUENT_COUNTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.6, 0.25, 0.15 }
-};
-rngtable const METAMORPHIC_CARBONATE_CONSTITUENT_COUNTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.6, 0.25, 0.15 }
-};
-rngtable const METAMORPHIC_OXIDE_CONSTITUENT_COUNTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.8, 0.17, 0.03 }
-};
-rngtable const METAMORPHIC_HYDROXIDE_CONSTITUENT_COUNTS = {
-  .size = 2,
-  .values = { 1, 2 },
-  .weights = { 0.85, 0.15 }
-};
-rngtable const METAMORPHIC_SULFATE_CONSTITUENT_COUNTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.6, 0.25, 0.15 }
-};
-rngtable const METAMORPHIC_SULFIDE_CONSTITUENT_COUNTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.6, 0.35, 0.05 }
-};
-rngtable const METAMORPHIC_PHOSPHATE_CONSTITUENT_COUNTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.1, 0.65, 0.25 }
-};
-rngtable const METAMORPHIC_RARE_METAL_CONSTITUENT_COUNTS = {
-  .size = 2,
-  .values = { 2, 3 },
-  .weights = { 0.65, 0.35 }
-};
-
-rngtable const SEDIMENTARY_CARBONATE_CONSTITUENT_COUNTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.7, 0.25, 0.05 }
-};
-rngtable const SEDIMENTARY_SILICATE_CONSTITUENT_COUNTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.7, 0.25, 0.05 }
-};
-rngtable const SEDIMENTARY_HALIDE_CONSTITUENT_COUNTS = {
-  .size = 2,
-  .values = { 2, 3 },
-  .weights = { 0.8, 0.2 }
-};
-rngtable const SEDIMENTARY_SULFATE_CONSTITUENT_COUNTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.7, 0.25, 0.05 }
-};
-rngtable const SEDIMENTARY_SULFIDE_CONSTITUENT_COUNTS = {
-  .size = 2,
-  .values = { 1, 2 },
-  .weights = { 0.7, 0.3 }
-};
-rngtable const SEDIMENTARY_PHOSPHATE_CONSTITUENT_COUNTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.2, 0.6, 0.2 }
-};
-
-// Constituent distributions:
-
-void* ALL_POSSIBLE_MINERAL_CONSTITUENTS[] = {
-  (void*) MC_CNST_IRON,
-  (void*) MC_CNST_MAGNESIUM,
-  (void*) MC_CNST_ALUMINUM,
-  (void*) MC_CNST_SODIUM,
-  (void*) MC_CNST_CALCIUM,
-  (void*) MC_CNST_POTASSIUM,
-
-  (void*) MC_CNST_CHLORINE,
-  (void*) MC_CNST_BROMINE,
-  (void*) MC_CNST_FLUORINE,
-
-  (void*) MC_CNST_LEAD,
-  (void*) MC_CNST_TIN,
-  (void*) MC_CNST_ZINC,
-  (void*) MC_CNST_NICKEL,
-  (void*) MC_CNST_COPPER,
-  (void*) MC_CNST_SILVER,
-
-  (void*) MC_CNST_MERCURY,
-  (void*) MC_CNST_COBALT,
-  (void*) MC_CNST_CHROMIUM,
-  (void*) MC_CNST_MANGANESE,
-
-  (void*) MC_CNST_MOLYBDENUM,
-  (void*) MC_CNST_TITANIUM,
-  (void*) MC_CNST_BARIUM,
-  (void*) MC_CNST_BERRYLIUM,
-  (void*) MC_CNST_PLATINUM,
-
-  (void*) MC_CNST_HYDROXIDE,
-  (void*) MC_CNST_HYDROUS
-};
-
-rngtable const IGNEOUS_SILICATE_CONSTITUENTS = {
-  .size = 26,
-  .values = ALL_POSSIBLE_MINERAL_CONSTITUENTS,
   .weights = {
-    1, 1, 0.7, 0.7, 0.6, 0.6,
-    0, 0, 0,
-    0.3, 0.3, 0.3, 0.3, 0.4, 0.2,
-    0.05, 0.05, 0.03, 0.03,
-    0.01, 0.01, 0.01, 0.01, 0.005,
-    0.2, 0.2
+    0.26, 0.23, 0.21,    // 70% |  70%
+    0.12,                // 12% |  82%
+    0.08, 0.06,          // 14% |  96%
+    0.04                 //  4% | 100%
   }
 };
-rngtable const IGNEOUS_SULFIDE_CONSTITUENTS = {
-  .size = 2,
-  .values = { 1, 2 },
-  .weights = { 0.75, 0.25 }
-};
-rngtable const IGNEOUS_PHOSPHATE_CONSTITUENTS = {
-  .size = 2,
-  .values = { 1, 2 },
-  .weights = { 0.75, 0.25 }
-};
 
-rngtable const METAMORPHIC_SILICATE_CONSTITUENTS = {
-  .size = 26,
-  .values = ALL_POSSIBLE_MINERAL_CONSTITUENTS,
+rngtable const IGNEOUS_TRACES = {
+  .size = 9,
+  .values = {
+    (void*) MNRL_TRACE_NONE,
+
+    (void*) MNRL_TRACE_LIFE,
+    (void*) MNRL_TRACE_METAL,
+    (void*) MNRL_TRACE_METAL_METAL,
+
+    (void*) MNRL_TRACE_RARE,
+    (void*) MNRL_TRACE_METAL_RARE,
+
+    (void*) MNRL_TRACE_RARE_RARE,
+    (void*) MNRL_TRACE_STONE,
+    (void*) MNRL_TRACE_STONE_METAL
+  },
   .weights = {
-    1.0, 1.0, 1.0, 1, 1, 1.0,
-    0, 0, 0,
-    0.8, 0.8, 0.8, 0.8, 1.0, 0.6,
-    0.1, 0.1, 0.1, 0.1,
-    0.05, 0.05, 0.05, 0.05, 0.03,
-    0.5, 0.5
+    0.5,               // 50% |  50%
+    0.12, 0.11, 0.11,  // 34% |  84%
+    0.06, 0.05,        // 11% |  95%
+    0.02, 0.02, 0.01   //  5% | 100%
   }
 };
-rngtable const METAMORPHIC_CARBONATE_CONSTITUENTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.6, 0.25, 0.15 }
-};
-rngtable const METAMORPHIC_OXIDE_CONSTITUENTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.8, 0.17, 0.03 }
-};
-rngtable const METAMORPHIC_HYDROXIDE_CONSTITUENTS = {
-  .size = 2,
-  .values = { 1, 2 },
-  .weights = { 0.85, 0.15 }
-};
-rngtable const METAMORPHIC_SULFATE_CONSTITUENTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.6, 0.25, 0.15 }
-};
-rngtable const METAMORPHIC_SULFIDE_CONSTITUENTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.6, 0.35, 0.05 }
-};
-rngtable const METAMORPHIC_PHOSPHATE_CONSTITUENTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.1, 0.65, 0.25 }
-};
-rngtable const METAMORPHIC_RARE_METAL_CONSTITUENTS = {
-  .size = 2,
-  .values = { 2, 3 },
-  .weights = { 0.65, 0.35 }
-};
 
-rngtable const SEDIMENTARY_CARBONATE_CONSTITUENTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.7, 0.25, 0.05 }
-};
-rngtable const SEDIMENTARY_SILICATE_CONSTITUENTS = {
-  .size = 26,
-  .values = ALL_POSSIBLE_MINERAL_CONSTITUENTS,
+rngtable const METAMORPHIC_TRACES = {
+  .size = 11,
+  .values = {
+    (void*) MNRL_TRACE_NONE,
+
+    (void*) MNRL_TRACE_RARE,
+    (void*) MNRL_TRACE_METAL,
+
+    (void*) MNRL_TRACE_WATER,
+    (void*) MNRL_TRACE_AIR,
+
+    (void*) MNRL_TRACE_METAL_RARE,
+    (void*) MNRL_TRACE_RARE_RARE,
+    (void*) MNRL_TRACE_METAL_METAL,
+
+    (void*) MNRL_TRACE_LIFE,
+    (void*) MNRL_TRACE_STONE_METAL,
+    (void*) MNRL_TRACE_STONE
+  },
   .weights = {
-    0.8, 0.8, 0.9, 1, 1, 0.6,
-    0, 0, 0,
-    0.4, 0.4, 0.4, 0.4, 0.5, 0.3,
-    0.05, 0.07, 0.05, 0.05,
-    0.015, 0.015, 0.015, 0.015, 0.007,
-    0.5, 0.5
+    0.20,              // 20% |  20%
+    0.15, 0.13,        // 28% |  48%
+    0.10, 0.09,        // 19% |  67%
+    0.07, 0.07, 0.07,  // 21% |  88%
+    0.05, 0.04, 0.03   // 12% | 100%
   }
 };
-rngtable const SEDIMENTARY_HALIDE_CONSTITUENTS = {
-  .size = 2,
-  .values = { 2, 3 },
-  .weights = { 0.8, 0.2 }
-};
-rngtable const SEDIMENTARY_SULFATE_CONSTITUENTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.7, 0.25, 0.05 }
-};
-rngtable const SEDIMENTARY_SULFIDE_CONSTITUENTS = {
-  .size = 2,
-  .values = { 1, 2 },
-  .weights = { 0.7, 0.3 }
-};
-rngtable const SEDIMENTARY_PHOSPHATE_CONSTITUENTS = {
-  .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 0.2, 0.6, 0.2 }
-};
 
-rngtable const IGNEOUS_TRACE_COUNTS = {
-  .size = 5,
-  .values = {},
-  .weights = {}
-};
-rngtable const SEDIMENTARY_TRACE_COUNTS = {
-  .size = 5,
-  .values = {},
-  .weights = {}
-};
-rngtable const METAMORPHIC_TRACE_COUNTS = {
-  .size = 5,
-  .values = {},
-  .weights = {}
-};
+rngtable const SEDIMENTARY_TRACES = {
+  .size = 8,
+  .values = {
+    (void*) MNRL_TRACE_NONE,
 
-rngtable const IGNEOUS_TRACE_ELEMENTS = {
-  .size = 5,
-  .values = {},
-  .weights = {}
-};
-rngtable const SEDIMENTARY_TRACE_ELEMENTS = {
-  .size = 5,
-  .values = {},
-  .weights = {}
-};
-rngtable const METAMORPHIC_TRACE_ELEMENTS = {
-  .size = 5,
-  .values = {},
-  .weights = {}
+    (void*) MNRL_TRACE_STONE,
+
+    (void*) MNRL_TRACE_LIFE,
+
+    (void*) MNRL_TRACE_WATER,
+    (void*) MNRL_TRACE_AIR,
+
+    (void*) MNRL_TRACE_METAL,
+    (void*) MNRL_TRACE_STONE_METAL,
+    (void*) MNRL_TRACE_RARE
+  },
+  .weights = {
+    0.5,               // 50% |  50%
+    0.17,              // 17% |  67%
+    0.12,              // 12% |  79%
+    0.08, 0.06,        // 14% |  93%
+    0.03, 0.02, 0.02   //  7% | 100%
+  }
 };
 
 /******************************
@@ -395,6 +249,7 @@ void cleanup_tectonic_sheet(tectonic_sheet *ts) {
 }
 
 stratum *create_stratum(
+  world_map *wm,
   ptrdiff_t seed,
   float cx, float cy,
   float size, float thickness,
@@ -415,38 +270,38 @@ stratum *create_stratum(
 
   switch (source) {
     case GEO_IGNEOUS:
-      result->base_species = create_new_igneous_species(seed);
+      result->base_species = create_new_igneous_species(wm, seed);
 
-      result->persistence = 1.2 + 0.4 * float_hash_1d(seed);
+      result->persistence = 1.2 + 0.4 * ptrf(seed);
       seed = prng(seed);
-      result->scale_bias = 0.7 + 0.4 * float_hash_1d(seed);
-      seed = prng(seed);
-
-      result->radial_frequency = M_PI/(2.4 + 1.6*float_hash_1d(seed));
-      seed = prng(seed);
-      result->radial_variance = 0.1 + 0.3*float_hash_1d(seed);
+      result->scale_bias = 0.7 + 0.4 * ptrf(seed);
       seed = prng(seed);
 
-      result->gross_distortion = 900 + 500.0*float_hash_1d(seed);
+      result->radial_frequency = M_PI/(2.4 + 1.6*ptrf(seed));
       seed = prng(seed);
-      result->fine_distortion = 110 + 40.0*float_hash_1d(seed);
-      seed = prng(seed);
-
-      result->large_var = result->thickness * (0.6 + 0.3*float_hash_1d(seed));
-      seed = prng(seed);
-      result->med_var = result->thickness * (0.4 + 0.25*float_hash_1d(seed));
-      seed = prng(seed);
-      result->small_var = result->thickness * (0.17 + 0.05*float_hash_1d(seed));
-      seed = prng(seed);
-      result->tiny_var = result->thickness * (0.04 + 0.06*float_hash_1d(seed));
+      result->radial_variance = 0.1 + 0.3*ptrf(seed);
       seed = prng(seed);
 
-      result->detail_var = 1.0 + 2.0*float_hash_1d(seed);
+      result->gross_distortion = 900 + 500.0*ptrf(seed);
       seed = prng(seed);
-      result->ridges = 2.0 + 3.0*float_hash_1d(seed);
+      result->fine_distortion = 110 + 40.0*ptrf(seed);
       seed = prng(seed);
 
-      result->smoothing = 0.15 + 0.2*float_hash_1d(seed);
+      result->large_var = result->thickness * (0.6 + 0.3*ptrf(seed));
+      seed = prng(seed);
+      result->med_var = result->thickness * (0.4 + 0.25*ptrf(seed));
+      seed = prng(seed);
+      result->small_var = result->thickness * (0.17 + 0.05*ptrf(seed));
+      seed = prng(seed);
+      result->tiny_var = result->thickness * (0.04 + 0.06*ptrf(seed));
+      seed = prng(seed);
+
+      result->detail_var = 1.0 + 2.0*ptrf(seed);
+      seed = prng(seed);
+      result->ridges = 2.0 + 3.0*ptrf(seed);
+      seed = prng(seed);
+
+      result->smoothing = 0.15 + 0.2*ptrf(seed);
       seed = prng(seed);
 
       for (i = 0; i < WM_N_VEIN_TYPES; ++i) {
@@ -462,38 +317,38 @@ stratum *create_stratum(
       break;
 
     case GEO_METAMORPHIC:
-      result->base_species = create_new_metamorphic_species(seed);
+      result->base_species = create_new_metamorphic_species(wm, seed);
 
-      result->persistence = 0.8 + 0.5 * float_hash_1d(seed);
+      result->persistence = 0.8 + 0.5 * ptrf(seed);
       seed = prng(seed);
-      result->scale_bias = 0.8 + 0.4 * float_hash_1d(seed);
-      seed = prng(seed);
-
-      result->radial_frequency = M_PI/(2.8 + 2.0*float_hash_1d(seed));
-      seed = prng(seed);
-      result->radial_variance = 0.4 + 0.4*float_hash_1d(seed);
+      result->scale_bias = 0.8 + 0.4 * ptrf(seed);
       seed = prng(seed);
 
-      result->gross_distortion = 1200 + 900.0*float_hash_1d(seed);
+      result->radial_frequency = M_PI/(2.8 + 2.0*ptrf(seed));
       seed = prng(seed);
-      result->fine_distortion = 180 + 110.0*float_hash_1d(seed);
-      seed = prng(seed);
-
-      result->large_var = result->thickness * (0.5 + 0.3*float_hash_1d(seed));
-      seed = prng(seed);
-      result->med_var = result->thickness * (0.3 + 0.25*float_hash_1d(seed));
-      seed = prng(seed);
-      result->small_var = result->thickness * (0.16 + 0.06*float_hash_1d(seed));
-      seed = prng(seed);
-      result->tiny_var = result->thickness * (0.02 + 0.03*float_hash_1d(seed));
+      result->radial_variance = 0.4 + 0.4*ptrf(seed);
       seed = prng(seed);
 
-      result->detail_var = 0.3 + 1.8*float_hash_1d(seed);
+      result->gross_distortion = 1200 + 900.0*ptrf(seed);
       seed = prng(seed);
-      result->ridges = 0.4 + 3.4*float_hash_1d(seed);
+      result->fine_distortion = 180 + 110.0*ptrf(seed);
       seed = prng(seed);
 
-      result->smoothing = 0.15 + 0.45*float_hash_1d(seed);
+      result->large_var = result->thickness * (0.5 + 0.3*ptrf(seed));
+      seed = prng(seed);
+      result->med_var = result->thickness * (0.3 + 0.25*ptrf(seed));
+      seed = prng(seed);
+      result->small_var = result->thickness * (0.16 + 0.06*ptrf(seed));
+      seed = prng(seed);
+      result->tiny_var = result->thickness * (0.02 + 0.03*ptrf(seed));
+      seed = prng(seed);
+
+      result->detail_var = 0.3 + 1.8*ptrf(seed);
+      seed = prng(seed);
+      result->ridges = 0.4 + 3.4*ptrf(seed);
+      seed = prng(seed);
+
+      result->smoothing = 0.15 + 0.45*ptrf(seed);
       seed = prng(seed);
 
       for (i = 0; i < WM_N_VEIN_TYPES; ++i) {
@@ -510,38 +365,38 @@ stratum *create_stratum(
 
     case GEO_SEDIMENTARY:
     default:
-      result->base_species = create_new_sedimentary_species(seed);
+      result->base_species = create_new_sedimentary_species(wm, seed);
 
-      result->persistence = 1.3 + 0.5 * float_hash_1d(seed);
+      result->persistence = 1.3 + 0.5 * ptrf(seed);
       seed = prng(seed);
-      result->scale_bias = 1.1 + 0.3 * float_hash_1d(seed);
-      seed = prng(seed);
-
-      result->radial_frequency = M_PI/(2.1 + 1.2*float_hash_1d(seed));
-      seed = prng(seed);
-      result->radial_variance = 0.05 + 0.2*float_hash_1d(seed);
+      result->scale_bias = 1.1 + 0.3 * ptrf(seed);
       seed = prng(seed);
 
-      result->gross_distortion = 700 + 400.0*float_hash_1d(seed);
+      result->radial_frequency = M_PI/(2.1 + 1.2*ptrf(seed));
       seed = prng(seed);
-      result->fine_distortion = 30 + 30.0*float_hash_1d(seed);
-      seed = prng(seed);
-
-      result->large_var = result->thickness * (0.4 + 0.25*float_hash_1d(seed));
-      seed = prng(seed);
-      result->med_var = result->thickness * (0.2 + 0.15*float_hash_1d(seed));
-      seed = prng(seed);
-      result->small_var = result->thickness * (0.11 + 0.05*float_hash_1d(seed));
-      seed = prng(seed);
-      result->tiny_var = result->thickness * (0.03 + 0.07*float_hash_1d(seed));
+      result->radial_variance = 0.05 + 0.2*ptrf(seed);
       seed = prng(seed);
 
-      result->detail_var = 0.7 + 3.2*float_hash_1d(seed);
+      result->gross_distortion = 700 + 400.0*ptrf(seed);
       seed = prng(seed);
-      result->ridges = 0.8 + 4.5*float_hash_1d(seed);
+      result->fine_distortion = 30 + 30.0*ptrf(seed);
       seed = prng(seed);
 
-      result->smoothing = 0.12 + 0.4*float_hash_1d(seed);
+      result->large_var = result->thickness * (0.4 + 0.25*ptrf(seed));
+      seed = prng(seed);
+      result->med_var = result->thickness * (0.2 + 0.15*ptrf(seed));
+      seed = prng(seed);
+      result->small_var = result->thickness * (0.11 + 0.05*ptrf(seed));
+      seed = prng(seed);
+      result->tiny_var = result->thickness * (0.03 + 0.07*ptrf(seed));
+      seed = prng(seed);
+
+      result->detail_var = 0.7 + 3.2*ptrf(seed);
+      seed = prng(seed);
+      result->ridges = 0.8 + 4.5*ptrf(seed);
+      seed = prng(seed);
+
+      result->smoothing = 0.12 + 0.4*ptrf(seed);
       seed = prng(seed);
 
       for (i = 0; i < WM_N_VEIN_TYPES; ++i) {
@@ -887,9 +742,9 @@ void add_continents_to_sheet(
   dyseed = prng(dxseed);
 
   seed = prng(seed + 18291);
-  xphase = float_hash_1d(seed);
+  xphase = ptrf(seed);
   seed = prng(seed + 6546);
-  yphase = float_hash_1d(seed);
+  yphase = ptrf(seed);
 
   pw = sheet_pwidth(ts);
   ph = sheet_pwidth(ts);
@@ -955,9 +810,9 @@ void add_ridges_to_sheet(
   ph = sheet_pwidth(ts);
 
   seed = prng(seed + 5448);
-  xphase = float_hash_1d(seed);
+  xphase = ptrf(seed);
   seed = prng(seed + 88166);
-  yphase = float_hash_1d(seed);
+  yphase = ptrf(seed);
 
   // Only pass: add ridge height
   for (i = 0; i < pw; ++i) {
@@ -1399,10 +1254,11 @@ void generate_geology(world_map *wm) {
     }
     source = (geologic_source) rt_pick_result(STONE_SOURCE_DISTRIBUTION, h5);
     s = create_stratum(
+      wm,
       hash,
-      float_hash_1d(hash)*wm->width, float_hash_1d(h1)*wm->height,
-      avg_size * (0.6 + float_hash_1d(h2)*0.8), // size
-      BASE_STRATUM_THICKNESS * exp(-0.5 + float_hash_1d(h3)*3.5), // thickness
+      ptrf(hash)*wm->width, ptrf(h1)*wm->height,
+      avg_size * (0.6 + ptrf(h2)*0.8), // size
+      BASE_STRATUM_THICKNESS * exp(-0.5 + ptrf(h3)*3.5), // thickness
       profile, // profile
       source
     );
@@ -1488,207 +1344,343 @@ gl_pos_t compute_stratum_height(stratum *st, global_pos *glpos) {
   return (gl_pos_t) fastfloor(base + lfn);
 }
 
-species create_new_igneous_species(ptrdiff_t seed) {
+species create_new_igneous_species(world_map *wm, ptrdiff_t seed) {
   species result = create_stone_species();
   stone_species* ssp = get_stone_species(result);
-  size_t count;
-  size_t i;
-  rngtable *constituent_count_table;
-  rngtable *constituent_table;
 
+  // composition
   ssp->composition = (mineral_composition) rt_pick_result(
     IGNEOUS_COMPOSITIONS,
     seed
   );
   seed = prng(seed);
-
-  switch (ssp->composition) {
-    case MC_COMP_SILICATE:
-    default:
-      constituent_count_table = &IGNEOUS_SILICATE_CONSTITUENT_COUNTS;
-      constituent_table = &IGNEOUS_SILICATE_CONSTITUENTS;
-      break;
-    case MC_COMP_SULFIDE:
-      constituent_count_table = &IGNEOUS_SULFIDE_CONSTITUENT_COUNTS;
-      constituent_table = &IGNEOUS_SULFIDE_CONSTITUENTS;
-      break;
-    case MC_COMP_PHOSPHATE:
-      constituent_count_table = &IGNEOUS_PHOSPHATE_CONSTITUENT_COUNTS;
-      constituent_table = &IGNEOUS_PHOSPHATE_CONSTITUENTS;
-      break;
-  }
-  count = (size_t) rt_pick_result(constituent_count_table, seed);
+  ssp->trace_composition = (mineral_trace_composition) rt_pick_result(
+    IGNEOUS_TRACES,
+    seed
+  );
   seed = prng(seed);
-  for (i = 0; i < count; ++i) {
-    ssp->constituents[i] = (mineral_constituent) rt_pick_result(
-      constituent_table,
-      seed
-    );
-    seed = prng(seed);
-  }
 
-  count = (size_t) rt_pick_result(IGNEOUS_TRACE_COUNTS, seed);
+  determine_new_elemental_composition(
+    wm,
+    ssp->composition,
+    ssp->constituents,
+    seed
+  );
   seed = prng(seed);
-  for (i = 0; i < count; ++i) {
-    ssp->constituents[i] = (mineral_constituent) rt_pick_result(
-      IGNEOUS_TRACES,
-      seed
-    );
-    seed = prng(seed);
-  }
 
+  determine_new_elemental_traces(
+    wm,
+    ssp->trace_composition,
+    ssp->traces,
+    seed
+  );
+  seed = prng(seed);
+
+  // material
   determine_new_igneous_material(&(ssp->material), ssp, seed);
   seed = prng(seed);
+  // appearance
   determine_new_igneous_appearance(&(ssp->appearance), ssp, seed);
 
   return result;
 }
 
-species create_new_metamorphic_species(ptrdiff_t seed) {
+species create_new_metamorphic_species(world_map *wm, ptrdiff_t seed) {
   species result = create_stone_species();
   stone_species* ssp = get_stone_species(result);
-  size_t count;
-  size_t i;
-  rngtable *constituent_count_table;
-  rngtable *constituent_table;
 
+  // composition
   ssp->composition = (mineral_composition) rt_pick_result(
     METAMORPHIC_COMPOSITIONS,
     seed
   );
   seed = prng(seed);
-
-  switch (ssp->composition) {
-    case MC_COMP_SILICATE:
-      constituent_count_table = &METAMORPHIC_SILICATE_CONSTITUENT_COUNTS;
-      constituent_table = &METAMORPHIC_SILICATE_CONSTITUENTS;
-      break;
-    case MC_COMP_CARBONATE:
-    default:
-      constituent_count_table = &METAMORPHIC_CARBONATE_CONSTITUENT_COUNTS;
-      constituent_table = &METAMORPHIC_CARBONATE_CONSTITUENTS;
-      break;
-    case MC_COMP_OXIDE:
-    default:
-      constituent_count_table = &METAMORPHIC_OXIDE_CONSTITUENT_COUNTS;
-      constituent_table = &METAMORPHIC_OXIDE_CONSTITUENTS;
-      break;
-    case MC_COMP_HYDROXIDE:
-      constituent_count_table = &METAMORPHIC_HYDROXIDE_CONSTITUENT_COUNTS;
-      constituent_table = &METAMORPHIC_HYDROXIDE_CONSTITUENTS;
-      break;
-    case MC_COMP_SULFATE:
-      constituent_count_table = &METAMORPHIC_SULFATE_CONSTITUENT_COUNTS;
-      constituent_table = &METAMORPHIC_SULFATE_CONSTITUENTS;
-      break;
-    case MC_COMP_SULFIDE:
-      constituent_count_table = &METAMORPHIC_SULFIDE_CONSTITUENT_COUNTS;
-      constituent_table = &METAMORPHIC_SULFIDE_CONSTITUENTS;
-      break;
-    case MC_COMP_PHOSPHATE:
-      constituent_count_table = &METAMORPHIC_PHOSPHATE_CONSTITUENT_COUNTS;
-      constituent_table = &METAMORPHIC_PHOSPHATE_CONSTITUENTS;
-      break;
-    case MC_COMP_RARE_METAL:
-      constituent_count_table = &METAMORPHIC_RARE_METAL_CONSTITUENT_COUNTS;
-      constituent_table = &METAMORPHIC_RARE_METAL_CONSTITUENTS;
-      break;
-  }
-
-  count = (size_t) rt_pick_result(constituent_count_table, seed);
+  ssp->trace_composition = (mineral_trace_composition) rt_pick_result(
+    METAMORPHIC_TRACES,
+    seed
+  );
   seed = prng(seed);
-  for (i = 0; i < count; ++i) {
-    ssp->constituents[i] = (mineral_constituent) rt_pick_result(
-      constituent_table,
-      seed
-    );
-    seed = prng(seed);
-  }
 
-  count = (size_t) rt_pick_result(METAMORPHIC_TRACE_COUNTS, seed);
+  determine_new_elemental_composition(
+    wm,
+    ssp->composition,
+    ssp->constituents,
+    seed
+  );
   seed = prng(seed);
-  for (i = 0; i < count; ++i) {
-    ssp->constituents[i] = (mineral_constituent) rt_pick_result(
-      METAMORPHIC_TRACE_ELEMENTS,
-      seed
-    );
-    seed = prng(seed);
-  }
 
+  determine_new_elemental_traces(
+    wm,
+    ssp->trace_composition,
+    ssp->traces,
+    seed
+  );
+  seed = prng(seed);
+
+  // material
   determine_new_metamorphic_material(&(ssp->material), ssp, seed);
   seed = prng(seed);
+  // appearance
   determine_new_metamorphic_appearance(&(ssp->appearance), ssp, seed);
 
   return result;
 }
 
-species create_new_sedimentary_species(ptrdiff_t seed) {
+species create_new_sedimentary_species(world_map *wm, ptrdiff_t seed) {
   species result = create_stone_species();
   stone_species* ssp = get_stone_species(result);
-  size_t count;
-  size_t i;
-  rngtable *constituent_count_table;
-  rngtable *constituent_table;
 
+  // composition
   ssp->composition = (mineral_composition) rt_pick_result(
     SEDIMENTARY_COMPOSITIONS,
     seed
   );
   seed = prng(seed);
-
-  switch (ssp->composition) {
-    case MC_COMP_CARBONATE:
-    default:
-      constituent_count_table = &SEDIMENTARY_CARBONATE_CONSTITUENT_COUNTS;
-      constituent_table = &SEDIMENTARY_CARBONATE_CONSTITUENTS;
-      break;
-    case MC_COMP_SILICATE:
-      constituent_count_table = &SEDIMENTARY_SILICATE_CONSTITUENT_COUNTS;
-      constituent_table = &SEDIMENTARY_SILICATE_CONSTITUENTS;
-      break;
-    case MC_COMP_HALIDE:
-      constituent_count_table = &SEDIMENTARY_HALIDE_CONSTITUENT_COUNTS;
-      constituent_table = &SEDIMENTARY_HALIDE_CONSTITUENTS;
-      break;
-    case MC_COMP_SULFATE:
-      constituent_count_table = &SEDIMENTARY_SULFATE_CONSTITUENT_COUNTS;
-      constituent_table = &SEDIMENTARY_SULFATE_CONSTITUENTS;
-      break;
-    case MC_COMP_SULFIDE:
-      constituent_count_table = &SEDIMENTARY_SULFIDE_CONSTITUENT_COUNTS;
-      constituent_table = &SEDIMENTARY_SULFIDE_CONSTITUENTS;
-      break;
-    case MC_COMP_PHOSPHATE:
-      constituent_count_table = &SEDIMENTARY_PHOSPHATE_CONSTITUENT_COUNTS;
-      constituent_table = &SEDIMENTARY_PHOSPHATE_CONSTITUENTS;
-      break;
-  }
-
-  count = (size_t) rt_pick_result(constituent_count_table, seed);
+  ssp->trace_composition = (mineral_trace_composition) rt_pick_result(
+    SEDIMENTARY_TRACES,
+    seed
+  );
   seed = prng(seed);
-  for (i = 0; i < count; ++i) {
-    ssp->constituents[i] = (mineral_constituent) rt_pick_result(
-      constituent_table,
-      seed
-    );
-    seed = prng(seed);
-  }
 
-  count = (size_t) rt_pick_result(SEDIMENTARY_TRACE_COUNTS, seed);
+  determine_new_elemental_composition(
+    wm,
+    ssp->composition,
+    ssp->constituents,
+    seed
+  );
   seed = prng(seed);
-  for (i = 0; i < count; ++i) {
-    ssp->constituents[i] = (mineral_constituent) rt_pick_result(
-      SEDIMENTARY_TRACE_ELEMENTS,
-      seed
-    );
-    seed = prng(seed);
-  }
 
+  determine_new_elemental_traces(
+    wm,
+    ssp->trace_composition,
+    ssp->traces,
+    seed
+  );
+  seed = prng(seed);
+
+  // material
   determine_new_sedimentary_material(&(ssp->material), ssp, seed);
   seed = prng(seed);
+  // appearance
   determine_new_sedimentary_appearance(&(ssp->appearance), ssp, seed);
 
   return result;
+}
+
+
+void determine_new_elemental_composition(
+  world_map *wm,
+  mineral_composition comp,
+  species *comp_array,
+  ptrdiff_t seed
+) {
+  list* used = create_list();
+  size_t count;
+  size_t i;
+  element_categorization first_category = 0;
+  element_categorization second_category = 0;
+  element_categorization third_category = 0;
+
+  seed = prng(seed + 178818);
+
+  switch (comp) {
+    case MNRL_COMP_STONE:
+    default:
+      first_category = EL_CATEGORY_STONE;
+      break;
+
+    case MNRL_COMP_LIFE:
+      first_category = EL_CATEGORY_LIFE;
+      break;
+
+    case MNRL_COMP_STONE_AIR:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_AIR;
+      break;
+
+    case MNRL_COMP_STONE_WATER:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_WATER;
+      break;
+
+    case MNRL_COMP_STONE_LIFE:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_LIFE;
+      break;
+
+    case MNRL_COMP_STONE_STONE:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_STONE;
+      break;
+
+    case MNRL_COMP_STONE_STONE_LIFE:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_STONE;
+      third_category = EL_CATEGORY_LIFE;
+      break;
+
+    case MNRL_COMP_STONE_STONE_STONE:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_STONE;
+      third_category = EL_CATEGORY_STONE;
+      break;
+
+    case MNRL_COMP_STONE_METAL:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_METAL;
+      break;
+
+    case MNRL_COMP_STONE_STONE_METAL:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_STONE;
+      third_category = EL_CATEGORY_METAL;
+      break;
+
+    case MNRL_COMP_STONE_METAL_METAL:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_METAL;
+      third_category = EL_CATEGORY_METAL;
+      break;
+
+    case MNRL_COMP_STONE_METAL_RARE:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_METAL;
+      third_category = EL_CATEGORY_RARE;
+      break;
+
+    case MNRL_COMP_STONE_RARE:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_RARE;
+      break;
+
+    case MNRL_COMP_STONE_STONE_RARE:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_STONE;
+      third_category = EL_CATEGORY_RARE;
+      break;
+
+    case MNRL_COMP_STONE_RARE_RARE:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_RARE;
+      third_category = EL_CATEGORY_RARE;
+      break;
+
+    case MNRL_COMP_RARE_RARE:
+      first_category = EL_CATEGORY_RARE;
+      second_category = EL_CATEGORY_RARE;
+      break;
+  }
+  i = 0;
+  if (first_category != 0) {
+    comp_array[i] = pick_element(wm, first_category, used, seed);
+    l_append_element(used, comp_array[i]);
+    i += 1;
+    seed = prng(seed);
+  }
+  if (second_category != 0) {
+    comp_array[i] = pick_element(wm, second_category, used, seed);
+    l_append_element(used, comp_array[i]);
+    i += 1;
+    seed = prng(seed);
+  }
+  if (third_category != 0) {
+    comp_array[i] = pick_element(wm, third_category, used, seed);
+    // l_append_element(used, comp_array[i]);
+    i += 1;
+    seed = prng(seed);
+  }
+  for (; i < MAX_PRIMARY_CONSTITUENTS; ++i) {
+    comp_array[i] = 0;
+  }
+
+  cleanup_list(used);
+}
+
+void determine_new_elemental_traces(
+  world_map *wm,
+  mineral_trace_composition comp,
+  species *trace_array,
+  ptrdiff_t seed
+) {
+  list* used = create_list();
+  size_t count;
+  size_t i;
+  element_categorization first_category = 0;
+  element_categorization second_category = 0;
+
+  seed = prng(seed + 81771);
+
+  switch (comp) {
+    case MNRL_TRACE_NONE:
+    default:
+      break;
+
+    case MNRL_TRACE_AIR:
+    default:
+      first_category = EL_CATEGORY_AIR;
+      break;
+
+    case MNRL_TRACE_WATER:
+    default:
+      first_category = EL_CATEGORY_WATER;
+      break;
+
+    case MNRL_TRACE_LIFE:
+    default:
+      first_category = EL_CATEGORY_LIFE;
+      break;
+
+    case MNRL_TRACE_STONE:
+    default:
+      first_category = EL_CATEGORY_STONE;
+      break;
+
+    case MNRL_TRACE_STONE_METAL:
+      first_category = EL_CATEGORY_STONE;
+      second_category = EL_CATEGORY_METAL;
+      break;
+
+    case MNRL_TRACE_METAL:
+      first_category = EL_CATEGORY_METAL;
+      break;
+
+    case MNRL_TRACE_METAL_METAL:
+      first_category = EL_CATEGORY_METAL;
+      second_category = EL_CATEGORY_METAL;
+      break;
+
+    case MNRL_TRACE_METAL_RARE:
+      first_category = EL_CATEGORY_METAL;
+      second_category = EL_CATEGORY_RARE;
+      break;
+
+    case MNRL_TRACE_RARE:
+      first_category = EL_CATEGORY_RARE;
+      break;
+
+    case MNRL_TRACE_RARE_RARE:
+      first_category = EL_CATEGORY_RARE;
+      second_category = EL_CATEGORY_RARE;
+      break;
+  }
+  i = 0;
+  if (first_category != 0) {
+    trace_array[i] = pick_element(wm, first_category, used, seed);
+    l_append_element(used, trace_array[i]);
+    i += 1;
+    seed = prng(seed);
+  }
+  if (second_category != 0) {
+    trace_array[i] = pick_element(wm, second_category, used, seed);
+    l_append_element(used, trace_array[i]);
+    i += 1;
+    seed = prng(seed);
+  }
+  for (; i < MAX_TRACE_CONSTITUENTS; ++i) {
+    trace_array[i] = 0;
+  }
+
+  cleanup_list(used);
 }
 
 void determine_new_igneous_material(
@@ -1696,40 +1688,85 @@ void determine_new_igneous_material(
   stone_species *species,
   ptrdiff_t seed
 ) {
+  ptrdiff_t i;
+  element_species *element;
+  float denom;
+  float avg;
+
   target->origin = MO_IGNEOUS_MINERAL;
 
+  // The "base density" as influenced by the elemental composition of the
+  // species determines standard material properties, each of which is then
+  // further influenced a bit by the constituent elements.
+  WEIGHTED_ELEMENT_PROPERTY(
+    ssp->constituents,
+    STONE_CONSTITUENT_AVERAGING_WEIGHTS,
+    MAX_PRIMARY_CONSTITUENTS,
+    i,
+    element,
+    denom,
+    stone_density_tendency,
+    avg
+  );
+  float base_density = (ptrf(seed) * 0.4  +  avg * 0.6);
   seed = prng(seed);
 
-  // Base density is taken from the external argument:
-  target->solid_density = mat_density(0.25 + 4.75 * base_density);
-  target->liquid_density = mat_density(2.5 + 0.5 * base_density);
-  target->gas_density = mat_density(1.8 + 1.5 * base_density);
+  // Base density directly controls density (element influences are already
+  // rolled into base density).
+  target->solid_density = mat_density(0.25  +  4.75 * base_density);
+  target->liquid_density = mat_density(2.5  +  0.5 * base_density);
+  target->gas_density = mat_density(1.8  +  1.5 * base_density);
 
   // A much tighter distribution of specific heats that correlates a bit with
   // density:
-  float base_specific_heat = (norm_hash_1d(seed)+norm_hash_1d(prng(seed)))/2.0;
-  base_specific_heat = 0.7*base_specific_heat + 0.3*(1 - base_density);
+  WEIGHTED_ELEMENT_PROPERTY(
+    ssp->constituents,
+    STONE_CONSTITUENT_AVERAGING_WEIGHTS,
+    MAX_PRIMARY_CONSTITUENTS,
+    i,
+    element,
+    denom,
+    stone_specific_heat_tendency,
+    avg
+  );
+  float base_specific_heat = (
+    randf_pnorm(seed, 0, 1)
+  + randf_pnorm(prng(seed), 0, 1)
+  )/2.0;
+  base_specific_heat = 0.7 * base_specific_heat  +  0.3 * (1 - base_density);
+  base_specific_heat = 0.6 * base_specific_heat  +  0.4 * avg;
   seed = prng(seed);
 
   target->solid_specific_heat = mat_specific_heat(
-    0.3 + 1.1*base_specific_heat
+    0.3  +  1.1 * base_specific_heat
   );
   target->liquid_specific_heat = mat_specific_heat(
-    0.8 + 1.4*base_specific_heat
+    0.8  +  1.4 * base_specific_heat
   );
   target->gas_specific_heat = mat_specific_heat(
-    0.65 + 0.45*base_specific_heat
+    0.65  +  0.45 * base_specific_heat
   );
 
   target->cold_damage_temp = 0; // stones aren't vulnerable to cold
 
   // A flat distribution of melting points, slightly correlated with density:
-  float base_transition_temp = float_hash_1d(seed);
-  base_transition_temp = 0.8*base_transition_temp + 0.2*base_density;
+  WEIGHTED_ELEMENT_PROPERTY(
+    ssp->constituents,
+    STONE_CONSTITUENT_AVERAGING_WEIGHTS,
+    MAX_PRIMARY_CONSTITUENTS,
+    i,
+    element,
+    denom,
+    stone_transition_temp_tendency,
+    avg
+  );
+  float base_transition_temp = ptrf(seed);
+  base_transition_temp = 0.8 * base_transition_temp  +  0.2 * base_density;
+  base_transition_temp = 0.6 * base_transition_temp  +  0.4 * avg;
   seed = prng(seed);
 
   target->solidus = 550 + 700 * base_transition_temp;
-  target->liquidus = target->solidus + 50 + norm_hash_1d(seed) * 200;
+  target->liquidus = target->solidus + randf_pnorm(seed, 50, 250);
   seed = prng(seed);
 
   target->boiling_point = 1800 + base_transition_temp * 600;
@@ -1738,17 +1775,69 @@ void determine_new_igneous_material(
   target->ignition_point = smaxof(temperature);
   target->flash_point = smaxof(temperature);
 
-  // it is generally not very malleable, and may be as brittle as glass:
-  target->malleability = 80 * norm_hash_1d(seed);
+  // igneous rock can begin to exhibit plasticity at temperatures as low as 20%
+  // of its solidus, and can reach max plasticity by 60% of its solidus:
+  float base_plastic_temp = pow(randf_pnorm(seed, 0, 1), 1.2);
+  seed = prng(seed);
+  target->cold_plastic_temp = target->solidus * (0.2 + base_plastic_temp * 0.5);
+  target->warm_plastic_temp = target->solidus * (0.6 + base_plastic_temp * 0.4);
+
+  // it is generally not very plastic, and may be as brittle as glass:
+  WEIGHTED_ELEMENT_PROPERTY(
+    ssp->constituents,
+    STONE_CONSTITUENT_AVERAGING_WEIGHTS,
+    MAX_PRIMARY_CONSTITUENTS,
+    i,
+    element,
+    denom,
+    stone_plasticity_tendency,
+    avg
+  );
+  // using this distribution more than 75% of values fall into [0, 0.33]...
+  float base_plasticity = expdist(ptrf(seed), 5);
+  seed = prng(seed);
+  base_plasticity = 0.8 * base_plasticity  +  0.2 * avg;
+
+  // ...so since the first 1/3 of results are mapped to 0, >75% of igneous
+  // rocks have 0 cold plasticity (ignoring elemental constituent effects):
+  float tmp = (-5.0 + base_plasticity * 15.0);
+  if (tmp < 0) { tmp = 0; }
+  target->cold_plasticity = (plasticity) tmp;
+
+  base_plasticity = expdist(ptrf(seed), 3);
+  seed = prng(seed);
+  base_plasticity = 0.6 * base_plasticity + 0.4 * avg;
+  target->warm_plasticity = 5 + base_plasticity * 75;
+
+  // Magma is extremely viscous (but also has a huge range of possible
+  // viscosities). The composing elements' plasticity values are used.
+  target->viscosity = pow(
+    10.0,
+    4.0
+  + 2.0 * ptrf(seed)
+  + 3.0 * base_density
+  + 3.0 * avg
+  );
   seed = prng(seed);
 
-  // magma is extremely viscous:
-  target->viscosity = pow(10.0, 6.0 + 10.0*float_hash_1d(seed));
-  seed = prng(seed);
-
-  // igneous rocks are pretty hard (and again this correlates with density):
-  target->hardness = 100+120*(0.8*norm_hash_1d(seed) + 0.2*base_density);
+  // igneous rocks are pretty hard (this correlates with density):
+  WEIGHTED_ELEMENT_PROPERTY(
+    ssp->constituents,
+    STONE_CONSTITUENT_AVERAGING_WEIGHTS,
+    MAX_PRIMARY_CONSTITUENTS,
+    i,
+    element,
+    denom,
+    stone_hardness_tendency,
+    avg
+  );
+  float base_hardness = randf_pnorm(0, 1);
+  base_hardness = 0.8 * base_hardness  +  0.2 * base_density;
+  base_hardness = 0.6 * base_hardness  +  0.4 * avg;
+  target->hardness = 100  +  120 * base_hardness;
 }
+
+// TODO: retool metamorphic sedimentary creation routines as above...
 
 void determine_new_metamorphic_material(
   material *target,
@@ -1766,7 +1855,7 @@ void determine_new_metamorphic_material(
 
   // A tighter distribution of specific heats that correlates a bit with
   // density:
-  float base_specific_heat = norm_hash_1d(seed);
+  float base_specific_heat = randf_pnorm(seed, 0, 1);
   base_specific_heat = 0.7*base_specific_heat + 0.3*(1 - base_density);
   seed = prng(seed);
 
@@ -1783,12 +1872,12 @@ void determine_new_metamorphic_material(
   target->cold_damage_temp = 0; // stones aren't vulnerable to cold
 
   // A flat distribution of melting points, slightly correlated with density:
-  float base_transition_temp = float_hash_1d(seed);
+  float base_transition_temp = ptrf(seed);
   base_transition_temp = 0.8*base_transition_temp + 0.2*base_density;
   seed = prng(seed);
 
   target->solidus = 520 + 760 * base_transition_temp;
-  target->liquidus = target->solidus + 20 + norm_hash_1d(seed) * 300;
+  target->liquidus = target->solidus + randf_pnorm(seed, 20, 320);
   seed = prng(seed);
 
   target->boiling_point = 1700 + base_transition_temp * 800;
@@ -1799,17 +1888,17 @@ void determine_new_metamorphic_material(
   target->flash_point = smaxof(temperature);
 
   // it may be somewhat malleable, and is never completely brittle
-  target->malleability = 10 + 90 * norm_hash_1d(seed);
+  target->cold_plasticity = randf_pnorm(seed, 10, 100);
   seed = prng(seed);
 
   // magma is extremely viscous:
-  target->viscosity = pow(10.0, 6.0 + 10.0*float_hash_1d(seed));
+  target->viscosity = pow(10.0, 6.0 + 10.0*ptrf(seed));
   seed = prng(seed);
 
   // metamorphic rocks can be pretty soft, but are mostly hard (again this
   // correlates with density):
   target->hardness = 40 + 190*(
-    0.8*sqrtf(norm_hash_1d(seed)) + 0.2*base_density
+    0.8*sqrtf(randf_pnorm(seed, 0, 1)) + 0.2*base_density
   );
 }
 
@@ -1829,7 +1918,7 @@ void determine_new_sedimentary_material(
 
   // A tighter distribution of specific heats that correlates a bit with
   // density:
-  float base_specific_heat = norm_hash_1d(seed);
+  float base_specific_heat = randf_pnorm(seed, 0, 1);
   base_specific_heat = 0.7*base_specific_heat + 0.3*(1 - base_density);
   seed = prng(seed);
 
@@ -1846,12 +1935,12 @@ void determine_new_sedimentary_material(
   target->cold_damage_temp = 0; // stones aren't vulnerable to cold
 
   // A flat distribution of melting points, slightly correlated with density:
-  float base_transition_temp = float_hash_1d(seed);
+  float base_transition_temp = ptrf(seed);
   base_transition_temp = 0.8*base_transition_temp + 0.2*base_density;
   seed = prng(seed);
 
   target->solidus = 440 + 780 * base_transition_temp;
-  target->liquidus = target->solidus + 10 + norm_hash_1d(seed) * 180;
+  target->liquidus = target->solidus + randf_pnorm(seed, 10, 190);
   seed = prng(seed);
 
   target->boiling_point = 1550 + base_transition_temp * 600;
@@ -1863,16 +1952,16 @@ void determine_new_sedimentary_material(
   target->flash_point = smaxof(temperature);
 
   // it may be somewhat malleable, but it can also be quite brittle
-  target->malleability = 5 + 110 * norm_hash_1d(seed);
+  target->cold_plasticity = randf_pnorm(seed, 5, 115);
   seed = prng(seed);
 
   // sedimentary magma is generally more viscous than other types (says I):
-  target->viscosity = pow(10.0, 5.0 + 8.0*float_hash_1d(seed));
+  target->viscosity = pow(10.0, 5.0 + 8.0*ptrf(seed));
   seed = prng(seed);
 
   // sedimentary rocks are generally a bit softer than other types:
   target->hardness = 30 + 150*(
-    0.8*pow(norm_hash_1d(seed), 0.8) + 0.2*base_density
+    0.8*pow(randf_pnorm(seed, 0, 1), 0.8) + 0.2*base_density
   );
 }
 
@@ -1886,47 +1975,47 @@ void determine_new_igneous_appearance(
   target->seed = seed;
 
   // Lighter rocks tend to have smaller noise scales.
-  target->scale = 0.1 + 0.08*(0.8*float_hash_1d(seed) + 0.2*base_density);
+  target->scale = 0.1 + 0.08*(0.8*ptrf(seed) + 0.2*base_density);
   seed = prng(seed);
 
   // Igneous rock types are relatively gritty. Denser rocks tend to be slightly
   // less gritty though.
-  target->gritty = 1.4 + 2.3*(0.7*float_hash_1d(seed) + 0.3*(1-base_density));
+  target->gritty = 1.4 + 2.3*(0.7*ptrf(seed) + 0.3*(1-base_density));
   seed = prng(seed);
 
   // Denser rocks tend to be more contoured.
-  target->contoured = 3.5 + 3.5*(0.8*float_hash_1d(seed) + 0.2*base_density);
+  target->contoured = 3.5 + 3.5*(0.8*ptrf(seed) + 0.2*base_density);
   seed = prng(seed);
 
   // Lighter igneous rocks are far more porous.
-  target->porous = 2.0 + 8.5*(0.5*float_hash_1d(seed) + 0.5*(1-base_density));
+  target->porous = 2.0 + 8.5*(0.5*ptrf(seed) + 0.5*(1-base_density));
   seed = prng(seed);
 
   // Igneous rocks don't tend to be very bumpy.
-  target->bumpy = 1.0 + 4.0*float_hash_1d(seed);
+  target->bumpy = 1.0 + 4.0*ptrf(seed);
   seed = prng(seed);
 
   // Igneous rocks rarely have significant inclusions.
-  target->inclusions = pow(norm_hash_1d(seed), 2.5);
+  target->inclusions = pow(randf_pnorm(seed, 0, 1), 2.5);
   seed = prng(seed);
 
   // The distortion scale is within 10% of the base scale.
-  target->dscale = target->scale * 1 + 0.2*(float_hash_1d(seed) - 0.5);
+  target->dscale = target->scale * 1 + 0.2*(ptrf(seed) - 0.5);
   seed = prng(seed);
 
   // Igneous rocks can have at most moderate distortion, and largely have very
   // little distortion.
-  target->distortion = 4.4*pow(norm_hash_1d(seed), 2);
+  target->distortion = 4.4*pow(randf_pnorm(seed, 0, 1), 2);
   seed = prng(seed);
 
   // Igneous rocks can be squashed in either direction
-  target->squash = 0.7 + 0.6*norm_hash_1d(seed);
+  target->squash = randf_pnorm(seed, 0.7, 1.3);
   seed = prng(seed);
-  target->squash /= 0.7 + 0.6*norm_hash_1d(seed);
+  target->squash /= randf_pnorm(seed, 0.7, 1.3);
   seed = prng(seed);
 
   // Hues range from blue to orange:
-  float hue = -0.2 + 0.3*float_hash_1d(seed);
+  float hue = -0.2 + 0.3*ptrf(seed);
   seed = prng(seed);
   if (hue < 0) {
     hue = 1 + hue;
@@ -1934,17 +2023,17 @@ void determine_new_igneous_appearance(
 
   // Saturation is usually negligible though:
   float sat = 0;
-  if (float_hash_1d(seed) < 0.7) {
+  if (ptrf(seed) < 0.7) {
     seed = prng(seed);
-    sat = 0.05*float_hash_1d(seed);
+    sat = 0.05*ptrf(seed);
   } else {
     seed = prng(seed);
-    sat = 0.3*float_hash_1d(seed);
+    sat = 0.3*ptrf(seed);
   }
   seed = prng(seed);
 
   // Base values are correlated with density, and are mostly dark:
-  float val = 0.6*float_hash_1d(seed) + 0.4*(1-base_density);
+  float val = 0.6*ptrf(seed) + 0.4*(1-base_density);
   seed = prng(seed);
   val *= val;
 
@@ -1957,7 +2046,7 @@ void determine_new_igneous_appearance(
   hsv__rgb(hsv, &(target->alt_color));
 
   // TODO: A skewed binary distribution here!
-  target->brightness = -0.2 + 0.4*norm_hash_1d(seed);
+  target->brightness = randf_pnorm(seed, -0.2, 0.2);
 }
 
 void determine_new_metamorphic_appearance(
@@ -1969,56 +2058,56 @@ void determine_new_metamorphic_appearance(
   target->seed = seed;
 
   // Metamorphic rocks exhibit a wide range of noise scales:
-  target->scale = 0.08 + 0.12*float_hash_1d(seed);
+  target->scale = 0.08 + 0.12*ptrf(seed);
   seed = prng(seed);
 
   // Metamorphic rock types are usually not very gritty, especially when
   // they're very dense.
-  target->gritty = 0.8 + 2.5*(0.7*float_hash_1d(seed) + 0.3*(1-base_density));
+  target->gritty = 0.8 + 2.5*(0.7*ptrf(seed) + 0.3*(1-base_density));
   seed = prng(seed);
 
   // Denser rocks tend to be more contoured.
-  target->contoured = 1.5 + 7.5*(0.8*float_hash_1d(seed) + 0.2*base_density);
+  target->contoured = 1.5 + 7.5*(0.8*ptrf(seed) + 0.2*base_density);
   seed = prng(seed);
 
   // Lighter metamorphic rocks are a bit more porous.
-  target->porous = 1.0 + 8.0*(0.7*float_hash_1d(seed) + 0.3*(1-base_density));
+  target->porous = 1.0 + 8.0*(0.7*ptrf(seed) + 0.3*(1-base_density));
   seed = prng(seed);
 
   // Metamorphic rocks can be quite bumpy, especially when less dense.
-  target->bumpy = 1.0 + 9.0*(0.6*float_hash_1d(seed) + 0.4*(1-base_density));
+  target->bumpy = 1.0 + 9.0*(0.6*ptrf(seed) + 0.4*(1-base_density));
   seed = prng(seed);
 
   // Metamorphic rocks often have significant inclusions.
-  target->inclusions = pow(float_hash_1d(seed), 1.3);
+  target->inclusions = pow(ptrf(seed), 1.3);
   seed = prng(seed);
 
   // The distortion scale is within 10% of the base scale.
-  target->dscale = target->scale * 1 + 0.2*(float_hash_1d(seed) - 0.5);
+  target->dscale = target->scale * 1 + 0.2*(ptrf(seed) - 0.5);
   seed = prng(seed);
 
   // Metamorphic rocks can have quite a bit of distortion.
-  target->distortion = 6.5*norm_hash_1d(seed);
+  target->distortion = randf_pnorm(seed, 0, 6.5);
   seed = prng(seed);
 
   // And they can be squashed quite a bit.
-  target->squash = 0.6 + 0.8*norm_hash_1d(seed);
+  target->squash = randf_pnorm(seed, 0.6, 1.4);
   seed = prng(seed);
-  target->squash /= 0.6 + 0.8*norm_hash_1d(seed);
+  target->squash /= randf_pnorm(seed, 0.6, 1.4);
   seed = prng(seed);
 
   // All kinds of hues are possible.
-  float hue = float_hash_1d(seed);
+  float hue = ptrf(seed);
   seed = prng(seed);
 
   // Saturation is usually small.
-  float sat = norm_hash_1d(seed);
+  float sat = randf_pnorm(seed, 0, 1);
   sat *= sat;
   sat *= 0.4;
   seed = prng(seed);
 
   // Base values have a wide range:
-  float val = 0.2 + 0.6*float_hash_1d(seed);
+  float val = 0.2 + 0.6*ptrf(seed);
   seed = prng(seed);
 
   // Construct the base color:
@@ -2027,18 +2116,18 @@ void determine_new_metamorphic_appearance(
 
   // Metamorphic inclusions use the same distributions as the base rock, but
   // have a wider range of saturations:
-  hue = float_hash_1d(seed);
+  hue = ptrf(seed);
   seed = prng(seed);
-  sat = 0.6*pow(norm_hash_1d(seed), 1.5);
+  sat = 0.6*pow(randf_pnorm(seed, 0, 1), 1.5);
   seed = prng(seed);
-  val = 0.2 + 0.6*float_hash_1d(seed);
+  val = 0.2 + 0.6*ptrf(seed);
   seed = prng(seed);
 
   hsv = float_color(hue, sat, val, 1.0);
   hsv__rgb(hsv, &(target->alt_color));
 
   // Metamorphic rocks have a slight bias towards brightness:
-  target->brightness = -0.25 + 0.6*norm_hash_1d(seed);
+  target->brightness = randf_pnorm(seed, -0.25, 0.35);
 }
 
 void determine_new_sedimentary_appearance(
@@ -2050,51 +2139,51 @@ void determine_new_sedimentary_appearance(
   target->seed = seed;
 
   // Sedimentary rocks often have smaller scales than other rocks.
-  target->scale = 0.07 + 0.07*float_hash_1d(seed);
+  target->scale = 0.07 + 0.07*ptrf(seed);
   seed = prng(seed);
 
   // Sedimentary rock types are usually gritty.
-  target->gritty = 3.1 + 2.5*float_hash_1d(seed);
+  target->gritty = 3.1 + 2.5*ptrf(seed);
   seed = prng(seed);
 
   // Denser rocks tend to be more contoured.
-  target->contoured = 1.5 + 9.5*(0.7*float_hash_1d(seed) + 0.3*base_density);
+  target->contoured = 1.5 + 9.5*(0.7*ptrf(seed) + 0.3*base_density);
   seed = prng(seed);
 
   // Lighter sedimentary rocks are a bit more porous.
-  target->porous = 3.0 + 5.0*(0.7*float_hash_1d(seed) + 0.3*(1-base_density));
+  target->porous = 3.0 + 5.0*(0.7*ptrf(seed) + 0.3*(1-base_density));
   seed = prng(seed);
 
   // Sedimentary rocks can be quite bumpy.
-  target->bumpy = 3.0 + 6.0*float_hash_1d(seed);
+  target->bumpy = 3.0 + 6.0*ptrf(seed);
   seed = prng(seed);
 
   // Sedimentary rocks usually don't have inclusions.
-  target->inclusions = pow(norm_hash_1d(seed), 2.5);
+  target->inclusions = pow(randf_pnorm(seed, 0, 1), 2.5);
   seed = prng(seed);
 
   // The distortion scale is within 20% of the base scale.
-  target->dscale = target->scale * 1 + 0.4*(float_hash_1d(seed) - 0.5);
+  target->dscale = target->scale * 1 + 0.4*(ptrf(seed) - 0.5);
   seed = prng(seed);
 
   // Sedimentary rocks can have little to medium distortion.
-  target->distortion = 4.5*pow(norm_hash_1d(seed), 1.4);
+  target->distortion = 4.5*pow(randf_pnorm(seed, 0, 1), 1.4);
   seed = prng(seed);
 
   // Sedimentary rocks are usually squashed horizontally.
-  target->squash = 0.6 + 0.6*norm_hash_1d(seed);
+  target->squash = randf_pnorm(seed, 0.6, 1.2);
   seed = prng(seed);
-  target->squash /= 0.8 + 0.6*norm_hash_1d(seed);
+  target->squash /= randf_pnorm(seed, 0.8, 1.4);
   seed = prng(seed);
 
   // Sedimentary rocks can be yellowish to bluish, or just gray:
-  float hue = 0.15 + 0.5*float_hash_1d(seed);
+  float hue = 0.15 + 0.5*ptrf(seed);
   seed = prng(seed);
 
   // Saturation is usually small.
-  float sat = norm_hash_1d(seed);
+  float sat = randf_pnorm(seed, 0, 1);
   seed = prng(seed);
-  if (float_hash_1d(seed) < 0.4) {
+  if (ptrf(seed) < 0.4) {
     sat = 0;
   }
   sat *= sat;
@@ -2102,7 +2191,7 @@ void determine_new_sedimentary_appearance(
   seed = prng(seed);
 
   // Base values have a wide range:
-  float val = 0.1 + 0.8*float_hash_1d(seed);
+  float val = 0.1 + 0.8*ptrf(seed);
   seed = prng(seed);
 
   // Construct the base color:
@@ -2111,16 +2200,16 @@ void determine_new_sedimentary_appearance(
 
   // Sedimentary inclusions use the same distributions as the base rock, but
   // have a wider range of saturations:
-  hue = float_hash_1d(seed);
+  hue = ptrf(seed);
   seed = prng(seed);
-  sat = 0.5*pow(norm_hash_1d(seed), 1.2);
+  sat = 0.5*pow(randf_pnorm(seed, 0, 1), 1.2);
   seed = prng(seed);
-  val = 0.1 + 0.8*float_hash_1d(seed);
+  val = 0.1 + 0.8*ptrf(seed);
   seed = prng(seed);
 
   hsv = float_color(hue, sat, val, 1.0);
   hsv__rgb(hsv, &(target->alt_color));
 
   // Sedimentary rocks are generally bright.
-  target->brightness = -0.05 + 0.35*norm_hash_1d(seed);
+  target->brightness = -0.05 + 0.35*randf_pnorm(seed, 0, 1);
 }

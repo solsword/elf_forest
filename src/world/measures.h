@@ -25,8 +25,29 @@ typedef uint8_t density;
 // specific heat of air being set at 16.
 typedef uint8_t specific_heat;
 
-// Viscosity is measured relative to water, at 16
-typedef uint8_t viscosity;
+// Viscosity is measured in centiPoise. A few reference points:
+//   water @ 10C = 1.3
+//   water @ 20C = 1.0
+//   water @ 100C = 0.28
+//
+//      air @ 27C = 0.018
+// hydrogen @ 27C = 0.009
+//
+//   blood @ 37C ~ 3-4
+//
+//          honey ~ 2,000-10,000
+//   molten glass ~ 10,000-1,000,000
+//        ketchup ~ 50,000-100,000
+//           lard ~ 100,000
+//     shortening ~ 250,000
+//
+//       acetone ~ 0.3
+// sulfuric acid ~ 24
+//     olive oil ~ 80
+//    castor oil ~ 1000
+//    corn syrup ~ 1400
+//         pitch ~ 2.3e11
+typedef float viscosity;
 
 // Temperature is just in degrees Celsius
 typedef int16_t temperature;
@@ -39,9 +60,10 @@ typedef uint8_t hardness;
 // perfectly plastic. It's a simplification that captures both malleability and
 // ductility. Non-plastic substances like glass and ceramics are at 0, while
 // most metals have at least 10 plasticity, even when extremely chilled.
-// Highly malleable metals like copper have values around 120, while the scale
-// beyond that is used to represent materials which are easily deformable even
-// though they're not technically plastic, such as clay.
+// Highly malleable metals like copper have values around 120 near room
+// temperature, while the scale beyond that is used to represent materials
+// which are easily deformable even though they're not technically plastic,
+// such as clay, as well as values for partially-melted materials.
 typedef uint8_t plasticity;
 
 // pH values are on the standard scale from 0 to 14.
@@ -59,8 +81,8 @@ static density const BASE_DENSITY = 12;
 // Specific heat of air (~1 J/gK) on the 0-255 scale used for specific heat.
 static specific_heat const BASE_SPECIFIC_HEAT = 16;
 
-// Viscosity of water on the 0-255 scale use for viscosity.
-static viscosity const BASE_VISCOSITY = 16;
+// Viscosity of water in centiPoise at ~20C:
+static viscosity const WATER_VISCOSITY = 1.0;
 
 // Hardness is an arbitrary scale, but the following constants pin it down:
 static hardness const GENERIC_WOOD_HARDNESS = 60;
