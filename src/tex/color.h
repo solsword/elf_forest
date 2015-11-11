@@ -28,6 +28,7 @@ typedef struct precise_color_s precise_color;
 
 struct precise_color_s {
   float x, y, z;
+  float alpha;
 }
 
 /*************
@@ -237,20 +238,13 @@ static inline pixel px_interp(pixel from, pixel to, float interp) {
   return result;
 }
 
-
-// Takes RGBA floating point values in [0, 1] and returns a pixel.
-static inline pixel float_color(float r, float g, float b, float a) {
-  pixel result = PX_EMPTY;
-  px_set_red(&result, fastfloor(CHANNEL_MAX * r));
-  px_set_green(&result, fastfloor(CHANNEL_MAX * g));
-  px_set_blue(&result, fastfloor(CHANNEL_MAX * b));
-  px_set_alpha(&result, fastfloor(CHANNEL_MAX * a));
-  return result;
-}
-
 /*************
  * Functions *
  *************/
+
+// Takes RGBA floating point values in [0, 1] and returns a pixel. Out-of-range
+// values are clamped.
+pixel float_color(float r, float g, float b, float a);
 
 // Format conversion functions:
 
@@ -272,9 +266,17 @@ pixel xyz__rgb(precise_color* color);
 void xyz__lab(precise_color *color);
 void lab__xyz(precise_color *color);
 
+// Conversions between L*a*b* and L*c*h* color spaces for even better color
+// gradients. Same code source as above. Note that these functions cheat: our
+// internal L*c*h* representations uses radians for h instead of degrees to
+// avoid pointless conversion math. Don't be surprised if h* values don't line
+// up with results from other sources.
+void lab__lch(precise_color *color);
+void lch__lab(precise_color *color);
+
 // Takes two RGB pixels and blends them precisely using:
 //   blend * a + (1 - blend) * b
-// in CIE L*a*b* color space.
+// in CIE L*c*h* color space.
 pixel blend_precisely(pixel a, pixel b, float blend);
 
 #endif //ifndef COLOR_H

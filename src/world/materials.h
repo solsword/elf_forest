@@ -68,9 +68,8 @@ struct material_s {
   temperature warm_plastic_temp; // temperature of maximum plasticity
   plasticity cold_plasticity; // plasticity at the cold plastic point
   plasticity warm_plasticity; // plasticity at the warm plastic point
-  hardness hardness; // in solid phase
   viscosity viscosity; // in liquid phase, measured relative to water at 1.0
-  pH pH; // in liquid phase
+  hardness hardness; // in solid phase
 };
 
 /********************

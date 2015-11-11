@@ -598,12 +598,22 @@ void generate_geology(world_map *wm);
 // Computes the height of the given stratum at the given position (ignores z):
 gl_pos_t compute_stratum_height(stratum *st, global_pos *glpos);
 
-// Functions that create new types of stone:
-species create_new_igneous_species(world_map *wm, ptrdiff_t seed);
-species create_new_metamorphic_species(world_map *wm, ptrdiff_t seed);
-species create_new_sedimentary_species(world_map *wm, ptrdiff_t seed);
+// Function for creating a new type of stone and determining its composition:
+species create_new_stone_species(
+  world_map *wm,
+  geologic_source source,
+  ptrdiff_t seed
+);
 
 // Helper functions for filling in compositions:
+void determine_new_stone_composition(
+  stone_species *ssp,
+  world_map *wm,
+  rngtable* composition,
+  rngtable* trace_composition,
+  ptrdiff_t seed
+);
+
 void determine_new_elemental_composition(
   world_map *wm,
   mineral_composition comp,
@@ -618,18 +628,19 @@ void determine_new_elemental_traces(
   ptrdiff_t seed
 );
 
-// Helper functions for creating materials:
-void determine_new_igneous_material(
+// Helper functions for creating materials. These return the base_density value
+// that they compute for use by the appearance functions.
+float determine_new_igneous_material(
   material *target,
   ptrdiff_t seed,
   float base_density
 );
-void determine_new_metamorphic_material(
+float determine_new_metamorphic_material(
   material *target,
   ptrdiff_t seed,
   float base_density
 );
-void determine_new_sedimentary_material(
+float determine_new_sedimentary_material(
   material *target,
   ptrdiff_t seed,
   float base_density
@@ -638,20 +649,28 @@ void determine_new_sedimentary_material(
 // Helper functions for creating appearances:
 void determine_new_igneous_appearance(
   stone_filter_args *target,
-  ptrdiff_t seed,
-  float base_density
+  float base_density,
+  ptrdiff_t seed
 );
 
 void determine_new_metamorphic_appearance(
   stone_filter_args *target,
-  ptrdiff_t seed,
-  float base_density
+  float base_density,
+  ptrdiff_t seed
 );
 
 void determine_new_sedimentary_appearance(
   stone_filter_args *target,
-  ptrdiff_t seed,
-  float base_density
+  float base_density,
+  ptrdiff_t seed
+);
+
+// Function for computing colors using constituent element colors:
+void compute_combined_color(
+  stone_species *species,
+  float base_density,
+  precise_color *color,
+  ptrdiff_t seed
 );
 
 #endif // ifndef GEOLOGY_H

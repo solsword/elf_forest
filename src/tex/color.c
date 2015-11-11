@@ -9,6 +9,27 @@
  * Functions *
  *************/
 
+pixel float_color(float r, float g, float b, float a) {
+  pixel result = PX_EMPTY;
+  int cr = fastfloor(CHANNEL_MAX * r);
+  int cg = fastfloor(CHANNEL_MAX * g);
+  int cb = fastfloor(CHANNEL_MAX * b);
+  int ca = fastfloor(CHANNEL_MAX * a);
+  if (cr < 0) { cr = 0; }
+  if (cr > CHANNEL_MAX) { cr = CHANNEL_MAX; }
+  if (cg < 0) { cg = 0; }
+  if (cg > CHANNEL_MAX) { cg = CHANNEL_MAX; }
+  if (cb < 0) { cb = 0; }
+  if (cb > CHANNEL_MAX) { cb = CHANNEL_MAX; }
+  if (ca < 0) { ca = 0; }
+  if (ca > CHANNEL_MAX) { ca = CHANNEL_MAX; }
+  px_set_red(&result, (channel) cr);
+  px_set_green(&result, (channel) cg);
+  px_set_blue(&result, (channel) cb);
+  px_set_alpha(&result, (channel) ca);
+  return result;
+}
+
 pixel rgb__hsv(pixel p) {
   pixel result = PX_BLACK;
   float r = px_red(p) / (float) CHANNEL_MAX;
@@ -136,6 +157,7 @@ void rgb__xyz(pixel p, precise_color *result) {
   float r = px_red(p) / (float) CHANNEL_MAX;
   float g = px_green(p) / (float) CHANNEL_MAX;
   float b = px_blue(p) / (float) CHANNEL_MAX;
+  float a = px_alpha(p) / (float) CHANNEL_MAX;
   if (r > 0.04045) {
     r = pow(((r + 0.055) / 1.055), 2.4);
   } else {
@@ -159,6 +181,7 @@ void rgb__xyz(pixel p, precise_color *result) {
   result->x = r * 0.4124 + g * 0.3576 + b * 0.1805;
   result->y = r * 0.2126 + g * 0.7152 + b * 0.0722;
   result->z = r * 0.0193 + g * 0.1192 + b * 0.9505;
+  result->alpha = a;
 }
 
 pixel xyz__rgb(precise_color* color) {
@@ -166,6 +189,7 @@ pixel xyz__rgb(precise_color* color) {
   float r = color->x *  3.2406 + color->y * -1.5372 + color->z * -0.4986;
   float g = color->x * -0.9689 + color->y *  1.8758 + color->z *  0.0415;
   float b = color->x *  0.0557 + color->y * -0.2040 + color->z *  1.0570;
+  float a = color->alpha;
 
   if (r > 0.0031308) {
     r = 1.055 * (pow(r, 1.0/2.4)) - 0.055;
@@ -183,9 +207,25 @@ pixel xyz__rgb(precise_color* color) {
     b *= 12.92;
   }
 
-  px_set_red(&result, (channel) (r * 255));
-  px_set_green(&result, (channel) (g * 255));
-  px_set_blue(&result, (channel) (b * 255));
+  // clamp out-of-gamut colors
+  r *= 255.0;
+  if (r < 0) { r = 0; }
+  if (r > 255) { r = 255; }
+  g *= 255.0;
+  if (g < 0) { g = 0; }
+  if (g > 255) { g = 255; }
+  b *= 255.0;
+  if (b < 0) { b = 0; }
+  if (b > 255) { b = 255; }
+  a *= 255.0;
+  if (a < 0) { a = 0; }
+  if (a > 255) { a = 255; }
+
+  // write results
+  px_set_red(&result, (channel) r);
+  px_set_green(&result, (channel) g);
+  px_set_blue(&result, (channel) b);
+  px_set_alpha(&result, (channel) a);
 
   return result;
 }
@@ -244,15 +284,28 @@ void lab__xyz(precise_color *color) {
   color->z = 108.883 * tz;
 }
 
+void lab__lch(precise_color *color) {
+  // Note: L ('x' in our struct) is unchanged
+  float h = atan2(color->z, color->y);
+  color->y = sqrtf( pow(color->y, 2) + pow(color->z, 2) );
+  color->z = h;
+}
+
+void lch__lab(precise_color *color) {
+  float y = cosf(color->z) * color->y;
+  float z = sinf(color->z) * color->y;
+  color->y = y;
+  color->z = z;
+}
+
 pixel blend_precisely(pixel a, pixel b, float blend) {
   precise_color ca, cb;
-  rgb__xyz(a, &ca);
-  rgb__xyz(b, &cb);
-  xyz__lab(&ca);
-  xyz__lab(&cb);
+  rgb__xyz(a, &ca); /*->*/ xyz__lab(&ca); /*->*/ lab__lch(&ca);
+  rgb__xyz(b, &cb); /*->*/ xyz__lab(&cb); /*->*/ lab__lch(&cb);
   ca->x = blend * ca->x + (1 - blend) * cb->x;
   ca->y = blend * ca->y + (1 - blend) * cb->y;
   ca->z = blend * ca->z + (1 - blend) * cb->z;
-  lab__xyz(&ca);
+  ca->alpha = blend * ca->alpha + (1 - blend) * cb->alpha;
+  lch__lab(&ca); /*->*/ lab__xyz(&ca);
   return xyz__rgb(&ca);
 }

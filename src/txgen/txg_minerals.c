@@ -43,8 +43,8 @@ void fltr_stone(texture *tx, void const * const fargs) {
   pixel hsv; // temp hsv color
   pixel rgb; // final rgb color
   stone_filter_args *sfargs = (stone_filter_args *) fargs;
-  rgb__hsv(sfargs->base_color, &base_hsv);
-  rgb__hsv(sfargs->alt_color, &alt_hsv);
+  base_hsv = rgb__hsv(sfargs->base_color);
+  alt_hsv = rgb__hsv(sfargs->alt_color);
 
   salt1 = prng(prng(sfargs->seed-5));
   salt2 = prng(salt1);
@@ -162,7 +162,7 @@ void fltr_stone(texture *tx, void const * const fargs) {
         px_set_sat(&hsv, 0.5*px_sat(hsv));
         px_set_val(&hsv, (px_val(hsv) + CHANNEL_MAX * alternate)/2.0);
       }
-      hsv__rgb(hsv, &rgb);
+      rgb = hsv__rgb(hsv);
       rgb = px_relight(rgb, sfargs->brightness);
 
       tx_set_px(tx, rgb, col, row);

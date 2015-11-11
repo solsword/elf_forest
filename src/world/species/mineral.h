@@ -6,6 +6,14 @@
  * Enums *
  *********/
 
+// Geologic sources influence how stone species are generated.
+enum geologic_source_e {
+  GEO_IGNEOUS,
+  GEO_METAMORPHIC,
+  GEO_SEDIMENTARY
+};
+typedef enum geologic_source_e geologic_source;
+
 // Categories for the primary composition of minerals:
 enum mineral_composition_e {
   MNRL_COMP_STONE,
@@ -154,6 +162,7 @@ struct clay_species_s {
 
 struct stone_species_s {
   // Reference: http://www.physicalgeography.net/fundamentals/10d.html
+  geologic_source source;
   material material;
   stone_filter_args appearance;
 
@@ -174,50 +183,6 @@ struct metal_species_s {
   // The relative abundance of the constituents:
   uint8_t composition[MAX_ALLOY_CONSTITUENTS];
 };
-
-/**********
- * Macros *
- **********/
-
-// Given an array of species values that are element species, the length of
-// that array, an iteration variable (should be a size_t) I, an
-// element_species* variable EL, a DENOM float, a property name (such as
-// 'stone_density_tendency'), and a RESULT float, this generates code to look
-// up and average the given property across all elements in the given species
-// array. The variables I, EL, SUM, DENOM, and RESULT will be overwritten as
-// part of this process, with the result ending up in RESULT. Only works for
-// floating point properties. If there are no non-zero species in the array,
-// both RESULT and DENOM will be 0.
-#define AVERAGE_ELEMENT_PROPERTY(SPECIES, LEN, I, EL, DENOM, PROP, RESULT) \
-  DENOM = 0; \
-  RESULT = 0; \
-  for (I = 0; I < LEN; ++I) { \
-    EL = get_element_species(SPECIES[I]); \
-    if (EL != NULL) { \
-      RESULT += (EL)->PROP; \
-      DENOM += 1; \
-    } \
-  } \
-  if (DENOM > 0) { \
-    RESULT /= DENOM; \
-  }
-
-// As above, but also takes a weights array (same length as the species array)
-// of floats and averages according to those weights. None of the weights
-// should be negative.
-#define WEIGHTED_ELEMENT_PROPERTY(SPC, WGTS, LEN, I, EL, DENOM, PROP, RESULT) \
-  DENOM = 0; \
-  RESULT = 0; \
-  for (I = 0; I < LEN; ++I) { \
-    EL = get_element_species(SPC[I]); \
-    if (EL != NULL) { \
-      RESULT += (WGTS[I]) * ((EL)->PROP); \
-      DENOM += WGTS[I]; \
-    } \
-  } \
-  if (DENOM > 0) { \
-    RESULT /= DENOM; \
-  }
 
 /********************
  * Inline Functions *

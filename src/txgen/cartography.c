@@ -299,18 +299,18 @@ pixel ly_terrain_height(world_region *wr) {
     if (wr->climate.water.state == HYDRO_SHORE) {
       // shores are a bit greener and a bit darker
       pixel hsv;
-      rgb__hsv(result, &hsv);
+      hsv = rgb__hsv(result);
       channel hue = px_hue(hsv);
       channel val = px_val(hsv);
       hue += SHORE_HUE_ADJUST;
       if (hue < 0) { hue = 0; }
-      else if (hue > CHANNEL_MAX) { hue = CHANNEL_MAX; }
+      else if (hue > CHANNEL_MAX) { hue -= CHANNEL_MAX; }
       val += SHORE_VAL_ADJUST;
       if (val < 0) { val = 0; }
       else if (val > CHANNEL_MAX) { val = CHANNEL_MAX; }
       px_set_hue(&hsv, hue);
       px_set_val(&hsv, val);
-      hsv__rgb(hsv, &result);
+      result = hsv__rgb(hsv);
     }
     return result;
   } else {

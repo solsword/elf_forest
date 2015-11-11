@@ -18,18 +18,6 @@
  * Enums *
  *********/
 
-// Geology
-// -------
-
-// Geologic sources influence how material types and other stratum parameters
-// are chosen.
-enum geologic_source_e {
-  GEO_IGNEOUS,
-  GEO_METAMORPHIC,
-  GEO_SEDIMENTARY
-};
-typedef enum geologic_source_e geologic_source;
-
 // Climate & Hydrology
 // -------------------
 

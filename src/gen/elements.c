@@ -463,35 +463,16 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
   seed = prng(seed);
   esp->stone_cohesion_tendency = ptrf(seed);
   seed = prng(seed);
+
+  // TODO: Constrain these a bit.
   esp->stone_light_dark_tendency = ptrf(seed);
   seed = prng(seed);
-
-  // TODO: Constrain these a bit.
-  hue = randf(seed, 0.0, 1.0);
+  esp->stone_chroma = randf(seed, 0, 2*M_PI);
   seed = prng(seed);
-  sat = randf(seed, 0.0, 1.0);
+  esp->stone_oxide_chroma = randf(seed, 0, 2*M_PI);
   seed = prng(seed);
-  val = randf(seed, 0.0, 1.0);
+  esp->stone_tint_chroma = randf(seed, 0, 2*M_PI);
   seed = prng(seed);
-  esp->stone_chroma = float_color(hue, sat, val, 1.0);
-
-  // TODO: Constrain these a bit.
-  hue = randf(seed, 0.0, 1.0);
-  seed = prng(seed);
-  sat = randf(seed, 0.0, 1.0);
-  seed = prng(seed);
-  val = randf(seed, 0.0, 1.0);
-  seed = prng(seed);
-  esp->stone_oxide_chroma = float_color(hue, sat, val, 1.0);
-
-  // TODO: Constrain these a bit.
-  hue = randf(seed, 0.0, 1.0);
-  seed = prng(seed);
-  sat = randf(seed, 0.0, 1.0);
-  seed = prng(seed);
-  val = randf(seed, 0.0, 1.0);
-  seed = prng(seed);
-  esp->stone_tint_chroma = float_color(hue, sat, val, 1.0);
 
   // Tendencies when forming metals and alloys:
   // TODO: distributions based on categories...
@@ -501,26 +482,14 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
   seed = prng(seed);
   esp->metal_plasticity_tendency = ptrf(seed);
   seed = prng(seed);
+
+  // TODO: Constrain these a bit.
   esp->metal_light_dark_tendency = ptrf(seed);
   seed = prng(seed);
-
-  // TODO: Constrain these a bit.
-  hue = randf(seed, 0.0, 1.0);
+  esp->metal_chroma = randf(seed, 0, 2*M_PI);
   seed = prng(seed);
-  sat = randf(seed, 0.0, 1.0);
+  esp->metal_tint_chroma = randf(seed, 0, 2*M_PI);
   seed = prng(seed);
-  val = randf(seed, 0.0, 1.0);
-  seed = prng(seed);
-  esp->metal_chroma = float_color(hue, sat, val, 1.0);
-
-  // TODO: Constrain these a bit.
-  hue = randf(seed, 0.0, 1.0);
-  seed = prng(seed);
-  sat = randf(seed, 0.0, 1.0);
-  seed = prng(seed);
-  val = randf(seed, 0.0, 1.0);
-  seed = prng(seed);
-  esp->metal_tint_chroma = float_color(hue, sat, val, 1.0);
 
   // [-1,1) tendency to synergize in alloys:
   // TODO: distributions based on categories...
