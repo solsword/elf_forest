@@ -12,6 +12,7 @@
 #include "tex.h"
 
 #include "dta.h"
+#include "color.h"
 
 #include "datatypes/bitmap.h"
 #include "datatypes/map.h"
