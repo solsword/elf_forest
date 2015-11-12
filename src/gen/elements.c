@@ -5,6 +5,7 @@
 
 #include "datatypes/rngtable.h"
 #include "world/species.h"
+#include "world/world_map.h"
 
 #include "util.h"
 
@@ -156,7 +157,8 @@ void generate_elements(world_map *wm) {
          o_stone_metal;
   species sp;
   element_species *esp;
-  size_t i, j, sofar;
+  size_t i, j, sofar, count;
+  list *possibly_nutritious;
   ptrdiff_t seed = prng(wm->seed + 81811);
   // Figure out how many of each element category we have:
   c_air = (size_t) rt_pick_result(N_AIR_ELEMENTS, seed);
@@ -358,18 +360,351 @@ void generate_elements(world_map *wm) {
 
   // Fill out element information now that category and frequency information
   // has been decided:
+  possibly_nutritious = create_list();
   for (i = 0; i < l_get_length(wm->all_elements); ++i) {
-    fill_out_element((element_species*) l_get_item(wm->all_elements, i), seed);
+    esp = (element_species*) l_get_item(wm->all_elements, i);
+    if (
+      !el_is_member_of_any(
+        esp,
+        EL_CATEGORY_AIR | EL_CATEGORY_WATER | EL_CATEGORY_LIFE
+      )
+    ) {
+      l_append_element(possibly_nutritious, esp);
+    }
+    fill_out_element(esp, seed);
     seed = prng(seed + i);
   }
+
+  // Add nutrition properties to hit our quotas:
+  size_t n_ex_plant_critical, n_ex_animal_critical;
+  size_t n_plant_beneficial, n_animal_beneficial;
+  size_t n_plant_detrimental, n_animal_detrimental;
+  size_t n_plant_poisons, n_animal_poisons;
+  size_t total_plant_nutrients, total_animal_nutrients;
+
+  n_ex_plant_critical = randi(
+    seed,
+    MIN_EXTRA_PLANT_CRITICAL_NUTRIENTS,
+    MAX_EXTRA_PLANT_CRITICAL_NUTRIENTS
+  );
+  seed = prng(seed);
+  n_ex_animal_critical = randi(
+    seed,
+    MIN_EXTRA_ANIMAL_CRITICAL_NUTRIENTS,
+    MAX_EXTRA_ANIMAL_CRITICAL_NUTRIENTS
+  );
+  seed = prng(seed);
+
+  n_plant_beneficial = randi(
+    seed,
+    MIN_PLANT_BENEFICIAL_NUTRIENTS,
+    MAX_PLANT_BENEFICIAL_NUTRIENTS
+  );
+  seed = prng(seed);
+  n_animal_beneficial = randi(
+    seed,
+    MIN_ANIMAL_BENEFICIAL_NUTRIENTS,
+    MAX_ANIMAL_BENEFICIAL_NUTRIENTS
+  );
+  seed = prng(seed);
+
+  n_plant_detrimental = randi(
+    seed,
+    MIN_PLANT_DETRIMENTAL_NUTRIENTS,
+    MAX_PLANT_DETRIMENTAL_NUTRIENTS
+  );
+  seed = prng(seed);
+  n_animal_detrimental = randi(
+    seed,
+    MIN_ANIMAL_DETRIMENTAL_NUTRIENTS,
+    MAX_ANIMAL_DETRIMENTAL_NUTRIENTS
+  );
+  seed = prng(seed);
+
+  n_plant_poisons = randi(
+    seed,
+    MIN_PLANT_POISONS,
+    MAX_PLANT_POISONS
+  );
+  seed = prng(seed);
+  n_animal_poisons = randi(
+    seed,
+    MIN_ANIMAL_POISONS,
+    MAX_ANIMAL_POISONS
+  );
+  seed = prng(seed);
+
+  total_plant_nutrients = (
+    n_ex_plant_critical
+  + n_plant_beneficial
+  + n_plant_detrimental
+  + n_plant_poisons
+  );
+
+  total_animal_nutrients = (
+    n_ex_animal_critical
+  + n_animal_beneficial
+  + n_animal_detrimental
+  + n_animal_poisons
+  );
+
+  // Limit plant numbers to what's available:
+
+  int try_next = 0;
+  size_t last_count = total_plant_nutrients + 1;
+  size_t available = l_get_length(possibly_nutritious);
+  // If we randomly decided to generate more nutrients than there are elements
+  // that could possibly be nutrients (hopefully a rare case) we need to reduce
+  // the number of nutrients we're asking for.
+  while (
+     total_plant_nutrients > available
+  && last_count > total_plant_nutrients
+  ) {
+    last_count = total_plant_nutrients;
+    // This code tries to be fair about which counts we reduce (although it
+    // doesn't take into account which numbers rolled high/low, which maybe it
+    // should). To do so, it loops through all possible things to decrement
+    // twice, starting at a different place in the first half every time, so
+    // that each time it has different priorities but will always try
+    // everything it can.
+    switch (try_next) {
+      case 0:
+      default:
+        if (n_plant_detrimental > MIN_PLANT_DETRIMENTAL_NUTRIENTS) {
+          n_plant_detrimental -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+      case 1:
+        if (n_plant_beneficial > MIN_PLANT_BENEFICIAL_NUTRIENTS) {
+          n_plant_beneficial -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+      case 2:
+        if (n_plant_poisons > MIN_PLANT_POISONS) {
+          n_plant_poisons -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+      case 3:
+        if (n_ex_plant_critical > MIN_EXTRA_PLANT_CRITICAL_NUTRIENTS) {
+          n_ex_plant_critical -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+        // Here we try each again so that no matter which cases we skipped,
+        // every possibility will be tried at least once.
+        if (n_plant_detrimental > MIN_PLANT_DETRIMENTAL_NUTRIENTS) {
+          n_plant_detrimental -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+        if (n_plant_beneficial > MIN_PLANT_BENEFICIAL_NUTRIENTS) {
+          n_plant_beneficial -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+        if (n_plant_poisons > MIN_PLANT_POISONS) {
+          n_plant_poisons -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+        if (n_ex_plant_critical > MIN_EXTRA_PLANT_CRITICAL_NUTRIENTS) {
+          n_ex_plant_critical -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+        // At this point we've exhausted our options, so the last_count check
+        // will presumably terminate the while loop.
+    }
+    try_next += 1;
+    if (try_next > 3) { try_next = 0; }
+  }
+
+  if (total_plant_nutrients > available) {
+    // This can only happen if we've pushed all target nutrient counts to their
+    // minimums and we're still above the total number of pure-stone +
+    // pure-metal + pure-rare elements that were generated. In this case, we'll
+    // have to live without hitting our minimum nutrient targets.
+    n_ex_plant_critical = 0;
+    n_plant_beneficial = 0;
+    n_plant_detrimental = 0;
+    n_plant_poisons = 0;
+
+    if (available >= 1) { n_ex_plant_critical += 1; }
+    if (available >= 2) { n_plant_beneficial += 1; }
+    if (available >= 3) { n_plant_poisons += 1; }
+    if (available >= 4) { n_plant_detrimental += 1; }
+
+    if (available >= 5) { n_plant_beneficial += 1; }
+    if (available >= 6) { n_plant_detrimental += 1; }
+    if (available >= 7) { n_plant_poisons += 1; }
+  }
+
+  // Limit animal numbers to what's available:
+  try_next = 0;
+  last_count = total_animal_nutrients + 1;
+  // See above...
+  while (
+     total_animal_nutrients > available
+  && last_count > total_animal_nutrients
+  ) {
+    last_count = total_animal_nutrients;
+    // See above...
+    switch (try_next) {
+      case 0:
+      default:
+        if (n_animal_detrimental > MIN_ANIMAL_DETRIMENTAL_NUTRIENTS) {
+          n_animal_detrimental -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+      case 1:
+        if (n_animal_beneficial > MIN_ANIMAL_BENEFICIAL_NUTRIENTS) {
+          n_animal_beneficial -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+      case 2:
+        if (n_animal_poisons > MIN_ANIMAL_POISONS) {
+          n_animal_poisons -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+      case 3:
+        if (n_ex_animal_critical > MIN_EXTRA_ANIMAL_CRITICAL_NUTRIENTS) {
+          n_ex_animal_critical -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+        // Here we try each again so that no matter which cases we skipped,
+        // every possibility will be tried at least once.
+        if (n_animal_detrimental > MIN_ANIMAL_DETRIMENTAL_NUTRIENTS) {
+          n_animal_detrimental -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+        if (n_animal_beneficial > MIN_ANIMAL_BENEFICIAL_NUTRIENTS) {
+          n_animal_beneficial -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+        if (n_animal_poisons > MIN_ANIMAL_POISONS) {
+          n_animal_poisons -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+        if (n_ex_animal_critical > MIN_EXTRA_ANIMAL_CRITICAL_NUTRIENTS) {
+          n_ex_animal_critical -= 1;
+          total_nutrients -= 1;
+          break;
+        } // else flow through
+        // At this point we've exhausted our options, so the last_count check
+        // will presumably terminate the while loop.
+    }
+    try_next += 1;
+    if (try_next > 3) { try_next = 0; }
+  }
+
+  if (total_nutrients > available) {
+    // This can only happen if we've pushed all target nutrient counts to their
+    // minimums and we're still above the total number of pure-stone +
+    // pure-metal + pure-rare elements that were generated. In this case, we'll
+    // have to live without hitting our minimum nutrient targets.
+    n_ex_animal_critical = 0;
+    n_animal_beneficial = 0;
+    n_animal_detrimental = 0;
+    n_animal_poisons = 0;
+
+    if (available >= 1) { n_ex_animal_critical += 1; }
+    if (available >= 2) { n_animal_beneficial += 1; }
+    if (available >= 3) { n_animal_poisons += 1; }
+    if (available >= 4) { n_animal_detrimental += 1; }
+
+    if (available >= 5) { n_animal_beneficial += 1; }
+    if (available >= 6) { n_animal_detrimental += 1; }
+    if (available >= 7) { n_animal_poisons += 1; }
+  }
+
+  // Shuffle our list and then assign plant nutrients:
+  l_shuffle(possibly_nutritious, seed);
+  seed = prng(seed);
+
+  total_plant_nutrients = n_ex_plant_critical;
+  for (i = 0; i < total_plant_nutrients; ++i) {
+    esp = (element_species*) l_get_item(possibly_nutritious, i);
+    if (ptrf(seed) < 0.7) {
+      esp->plant_nutrition = NT_CAT_CRITICAL;
+    } else {
+      esp->plant_nutrition = NT_CAT_CRITICAL_CAN_OVERDOSE;
+    }
+    seed = prng(seed);
+  }
+  total_plant_nutrients += n_plant_beneficial;
+  for (; i < total_plant_nutrients; ++i) {
+    esp = (element_species*) l_get_item(possibly_nutritious, i);
+    if (ptrf(seed) < 0.5) {
+      esp->plant_nutrition = NT_CAT_BENEFICIAL;
+    } else {
+      esp->plant_nutrition = NT_CAT_BENEFICIAL_CAN_OVERDOSE;
+    }
+    seed = prng(seed);
+  }
+  total_plant_nutrients += n_plant_detrimental;
+  for (; i < total_plant_nutrients; ++i) {
+    esp = (element_species*) l_get_item(possibly_nutritious, i);
+    esp->plant_nutrition = NT_CAT_DETRIMENTAL;
+  }
+  total_plant_nutrients += n_plant_poisons;
+  for (; i < total_plant_nutrients; ++i) {
+    esp = (element_species*) l_get_item(possibly_nutritious, i);
+    esp->plant_nutrition = NT_CAT_POISONOUS;
+  }
+
+  // Re-shuffle the same list and assign animal nutrients (animal/plant
+  // nutrient overlap is thus random).
+  l_shuffle(possibly_nutritious, seed);
+  seed = prng(seed);
+
+  total_animal_nutrients = n_ex_animal_critical;
+  for (i = 0; i < total_animal_nutrients; ++i) {
+    esp = (element_species*) l_get_item(possibly_nutritious, i);
+    if (ptrf(seed) < 0.7) {
+      esp->animal_nutrition = NT_CAT_CRITICAL;
+    } else {
+      esp->animal_nutrition = NT_CAT_CRITICAL_CAN_OVERDOSE;
+    }
+    seed = prng(seed);
+  }
+  total_animal_nutrients += n_animal_beneficial;
+  for (; i < total_animal_nutrients; ++i) {
+    esp = (element_species*) l_get_item(possibly_nutritious, i);
+    if (ptrf(seed) < 0.5) {
+      esp->animal_nutrition = NT_CAT_BENEFICIAL;
+    } else {
+      esp->animal_nutrition = NT_CAT_BENEFICIAL_CAN_OVERDOSE;
+    }
+    seed = prng(seed);
+  }
+  total_animal_nutrients += n_animal_detrimental;
+  for (; i < total_animal_nutrients; ++i) {
+    esp = (element_species*) l_get_item(possibly_nutritious, i);
+    esp->animal_nutrition = NT_CAT_DETRIMENTAL;
+  }
+  total_animal_nutrients += n_animal_poisons;
+  for (; i < total_animal_nutrients; ++i) {
+    esp = (element_species*) l_get_item(possibly_nutritious, i);
+    esp->animal_nutrition = NT_CAT_POISONOUS;
+  }
+
+  cleanup_list(possibly_nutritious);
 }
 
 
 // Creates a new element.
 void fill_out_element(element_species *esp, ptrdiff_t seed) {
-  float x;
-  // for building colors
-  float hue, sat, val;
+  float rng;
   // pH tendency
   pH_category phc = (pH_category) rt_pick_result(PH_DISTRIBUTION, seed);
   seed = prng(seed);
@@ -498,10 +833,22 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
 
   // Biological properties:
   // TODO: distributions based on categories...
-  esp->nutrient = randi(seed, 0, 1);
-  seed = prng(seed);
-  if (!esp->nutrient) {
-    esp->poison = randi(seed, 0, 1);
+  esp->plant_nutrition = NT_CAT_NONE;
+  esp->animal_nutrition = NT_CAT_NONE;
+
+  // Life elements are critical nutrients:
+  if (el_is_member(esp, EL_CATEGORY_LIFE)) {
+    if (ptrf(seed) < 0.85) {
+      esp->plant_nutrition = NT_CAT_CRITICAL;
+    } else {
+      esp->plant_nutrition = NT_CAT_CRITICAL_CAN_OVERDOSE;
+    }
+    seed = prng(seed);
+    if (ptrf(seed) < 0.85) {
+      esp->animal_nutrition = NT_CAT_CRITICAL;
+    } else {
+      esp->animal_nutrition = NT_CAT_CRITICAL_CAN_OVERDOSE;
+    }
     seed = prng(seed);
   }
 }

@@ -73,66 +73,88 @@ typedef struct herb_appearance_s herb_appearance;
 // Primary structures:
 
 struct fungus_species_s {
+  species id;
+
   fungus_materials materials;
   // fungus_texture_params appearance;
   growth_properties growth;
 };
 
 struct moss_species_s {
+  species id;
+
   plant_materials materials;
   // moss_texture_params appearance;
   growth_properties growth;
 };
 
 struct grass_species_s {
+  species id;
+
   plant_materials materials;
   // grass_texture_params appearance;
   growth_properties growth;
 };
 
 struct vine_species_s {
+  species id;
+
   plant_materials materials;
   // vine_texture_params appearance;
   growth_properties growth;
 };
 
 struct herb_species_s {
+  species id;
+
   plant_materials materials;
   herb_appearance appearance;
   growth_properties growth;
 };
 
 struct bush_species_s {
+  species id;
+
   plant_materials materials;
   // bush_texture_params appearance;
   growth_properties growth;
 };
 
 struct shrub_species_s {
+  species id;
+
   plant_materials materials;
   // shrub_texture_params appearance;
   growth_properties growth;
 };
 
 struct tree_species_s {
+  species id;
+
   plant_materials materials;
   // tree_texture_params appearance;
   growth_properties growth;
 };
 
 struct aquatic_grass_species_s {
+  species id;
+
   plant_materials materials;
   // aquatic_grass_texture_params appearance;
   growth_properties growth;
 };
 
 struct aquatic_plant_species_s {
+  species id;
+
   plant_materials materials;
   // aquatic_plant_texture_params appearance;
   growth_properties growth;
 };
 
 struct coral_species_s {
+  species id;
+
   coral_materials materials;
   // coral_texture_params appearance;
   growth_properties growth;

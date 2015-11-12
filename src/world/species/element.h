@@ -25,6 +25,31 @@ enum solubility_e {
 };
 typedef enum solubility_e solubility;
 
+enum nutrient_category_e {
+  NT_CAT_NONE = 0,
+  NT_CAT_CRITICAL = 1,
+  NT_CAT_CRITICAL_CAN_OVERDOSE = 2,
+  NT_CAT_BENEFICIAL = 3,
+  NT_CAT_BENEFICIAL_CAN_OVERDOSE = 4,
+  NT_CAT_DETRIMENTAL = 5,
+  NT_CAT_POISONOUS = 6
+};
+typedef enum nutrient_category_e nutrient_category;
+
+/*********
+ * Types *
+ *********/
+
+// Each element is a member of one or more categories:
+typedef uint8_t element_categorization;
+
+#define EL_CATEGORY_AIR    0x01
+#define EL_CATEGORY_WATER  0x02
+#define EL_CATEGORY_LIFE   0x04
+#define EL_CATEGORY_STONE  0x08
+#define EL_CATEGORY_METAL  0x10
+#define EL_CATEGORY_RARE   0x20
+
 /**************
  * Structures *
  **************/
@@ -33,25 +58,13 @@ typedef enum solubility_e solubility;
 struct element_species_s;
 typedef struct element_species_s element_species;
 
-/*************
- * Constants *
- *************/
-
-// Each element is a member of one or more categories:
-#define EL_CATEGORY_AIR    0x01
-#define EL_CATEGORY_WATER  0x02
-#define EL_CATEGORY_LIFE   0x04
-#define EL_CATEGORY_STONE  0x08
-#define EL_CATEGORY_METAL  0x10
-#define EL_CATEGORY_RARE   0x20
-
-typedef uint8_t element_categorization;
-
 /*************************
  * Structure Definitions *
  *************************/
 
 struct element_species_s {
+  species id;
+
   element_categorization categories; // Bitmask for categories we're part of
   element_frequency frequency; // ubiquitous, common, uncommon, or rare
 
@@ -86,8 +99,10 @@ struct element_species_s {
   float alloy_performance; // -1 to 1: tendency to synergize in alloys
 
   // Biological properties:
-  size_t nutrient;
-  size_t poison;
+  nutrient_category plant_nutrition;
+  nutrient_category animal_nutrition;
+
+  // TODO: Magical properties!
 };
 
 /**********
@@ -143,6 +158,13 @@ static inline size_t el_is_member(
   element_categorization category
 ) {
   return (sp->categories & category) == category;
+}
+
+static inline size_t el_is_member_of_any(
+  element_species *sp,
+  element_categorization categories
+) {
+  return (sp->categories & categories) != 0;
 }
 
 #endif // #ifndef ELEMENT_SPECIES_H

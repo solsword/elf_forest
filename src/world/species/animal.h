@@ -19,16 +19,22 @@ typedef struct sentient_species_s sentient_species;
  *************************/
 
 struct animal_species_s {
+  species id;
+
   material material;
   // entity_texture_params appearance;
 };
 
 struct mythical_species_s {
+  species id;
+
   material material;
   // entity_texture_params appearance;
 };
 
 struct sentient_species_s {
+  species id;
+
   material material;
   // entity_texture_params appearance;
 };

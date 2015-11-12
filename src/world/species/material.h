@@ -16,11 +16,15 @@ typedef struct pigment_species_s pigment_species;
  *************************/
 
 struct fiber_species_s {
+  species id;
+
   material material;
   // fiber_texture_params appearance;
 };
 
 struct pigment_species_s {
+  species id;
+
   material material;
   // pigment_texture_params appearance;
 };

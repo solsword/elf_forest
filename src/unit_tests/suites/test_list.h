@@ -31,6 +31,29 @@ size_t test_list_growth(void) {
   for (i = 0; i < 100000; ++i) {
     l_append_element(l, NULL);
   }
+
+  list *ex = create_list();
+  for (i = 0; i < 10000; ++i) {
+    l_append_element(ex, (void*) i);
+  }
+
+  for (i = 0; i < 3; ++i) {
+    l_extend_element(l, ex);
+  }
+
+  if (l_get_item(l, 0) != NULL) { return 1; }
+  if (l_get_item(l, 10000) != NULL) { return 2; }
+  if (l_get_item(l, 99999) != NULL) { return 3; }
+  if ((size_t) l_get_item(l, 100000) != 0) { return 4; }
+  if ((size_t) l_get_item(l, 100001) != 1) { return 5; }
+  if ((size_t) l_get_item(l, 100002) != 2) { return 6; }
+  if ((size_t) l_get_item(l, 109999) != 9999) { return 7; }
+  if ((size_t) l_get_item(l, 110000) != 0) { return 8; }
+  if ((size_t) l_get_item(l, 110003) != 3) { return 9; }
+  if ((size_t) l_get_item(l, 119999) != 9999) { return 10; }
+  if ((size_t) l_get_item(l, 129999) != 9999) { return 11; }
+  if (l_get_length(l) != 130000) { return 12; }
+
   cleanup_list(l);
   return 0;
 }

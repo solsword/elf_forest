@@ -69,9 +69,12 @@ typedef struct metal_species_s metal_species;
  * Constants *
  *************/
 
+// Maximum number of primary constituent elements of stone etc.
 #define MAX_PRIMARY_CONSTITUENTS 3
+// Maximum trace elements
 #define MAX_TRACE_CONSTITUENTS 2
 
+// Maximum number of elements present in an alloy
 #define MAX_ALLOY_CONSTITUENTS 8
 
 /*************************
@@ -79,6 +82,8 @@ typedef struct metal_species_s metal_species;
  *************************/
 
 struct dirt_species_s {
+  species id;
+
   material material;
   // dirt_texture_params appearance;
 
@@ -138,29 +143,59 @@ struct dirt_species_s {
   float base_ph;
 
   // These are the primary nutrient values for the soil. Levels are expressed
-  // on a scale of 1-255, where 32 is a "standard level" which neither enhances
-  // nor impedes growth.
-  // TODO: Account for element generation!
-  uint8_t base_phosphorus;
-  uint8_t base_nitrogen;
-  uint8_t base_potassium;
-
-  // These are secondary nutrient levels, which again use a scale of 0-255 with
-  // 32 as the "standard level."
-  uint8_t base_sulfur;
-  uint8_t base_magnesium;
-  uint8_t base_calcium;
+  // on a scale of 1-255, where 32 is a "standard level." Effects are roughly
+  // as follows:
+  //   Category:    Concentration:  Effect:
+  //     critical        0-5          fast starvation
+  //     critical        6-9          slow starvation
+  //     critical       10-16         sickness
+  //     critical       17-22         slowed growth
+  //     critical       23-45         normal growth
+  //     critical       46-96         accelerated growth factor
+  //     critical       97-160        strong accelerated growth factor
+  //     critical      161-192        *slowed growth
+  //     critical      193-220        *sickness
+  //     critical        221+         *slow death
+  //
+  //     * same as previous positive category if nutrient is non-overdosing
+  //
+  //     helpful         0-12         sickness
+  //     helpful        13-24         no effect
+  //     helpful        25-60         accelerated growth factor
+  //     helpful        61-128        strong accelerated growth factor
+  //     helpful       129-180        *slowed growth
+  //     helpful       181-220        *sickness
+  //     helpful         221+         *slow death
+  //
+  //     * same as previous positive category if nutrient is non-overdosing
+  //
+  //     detrimental     0-12         no effect
+  //     detrimental    13-32         slowed growth
+  //     detrimental    33-96         sickness
+  //     detrimental    97-192        slow death
+  //     detrimental     193+         fast death
+  //
+  //     poisonous       0-9          no effect
+  //     poisonous      10-16         slowed growth
+  //     poisonous      17-32         sickness
+  //     poisonous      33-96         slow death
+  //     poisonous       97+          fast death
+  uint8_t nutrients[MAX_TOTAL_NUTRIENTS];
 
   // Trace minerals help determine things like soil color
   species trace_minerals[MAX_TRACE_CONSTITUENTS];
 };
 
 struct clay_species_s {
+  species id;
+
   material material;
   // clay_texture_params appearance;
 };
 
 struct stone_species_s {
+  species id;
+
   // Reference: http://www.physicalgeography.net/fundamentals/10d.html
   geologic_source source;
   material material;
@@ -175,6 +210,8 @@ struct stone_species_s {
 };
 
 struct metal_species_s {
+  species id;
+
   material material;
   // metal_texture_params appearance;
 

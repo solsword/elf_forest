@@ -33,10 +33,10 @@ struct list_s {
  *********************/
 
 static inline void _grow_if_necessary(list *l) {
-  if (l->count == l->size*LIST_CHUNK_SIZE) { // We need more memory.
+  if (l->count == l->size * LIST_CHUNK_SIZE) { // We need more memory.
     void ** new_elements = (void **) realloc(
       l->elements,
-      sizeof(void *) * ((l->size + 1)*LIST_CHUNK_SIZE)
+      sizeof(void *) * ((l->size + 1) * LIST_CHUNK_SIZE)
     );
     if (new_elements == NULL) {
       perror("Failed to allocate additional list chunk.");
@@ -44,6 +44,23 @@ static inline void _grow_if_necessary(list *l) {
     }
     l->elements = new_elements;
     l->size += 1;
+  }
+}
+
+static inline void _grow_to_fit(list *l, size_t add_count) {
+  size_t new_size;
+  if (new_count >= l->size * LIST_CHUNK_SIZE) {
+    new_size = (l->count + add_count + 1) / LIST_CHUNK_SIZE;
+    void ** new_elements = (void **) realloc(
+      l->elements,
+      sizeof(void*) * ((new_size) * LIST_CHUNK_SIZE)
+    );
+    if (new_elements == NULL) {
+      perror("Failed to allocate additional list chunk.");
+      exit(errno);
+    }
+    l->elements = new_elements;
+    l->size = new_size;
   }
 }
 
@@ -221,6 +238,15 @@ void l_append_element(list *l, void *element) {
   _grow_if_necessary(l);
   l->elements[l->count] = element;
   l->count += 1;
+}
+
+void l_extend(list *l, list *other) {
+  size_t i;
+  _grow_to_fit(l, other->count);
+  for (i = 0; i < other->count; ++i) {
+    l->elements[l->count] = other->elements[i];
+    l->count += 1;
+  }
 }
 
 void * l_pop_element(list *l) {

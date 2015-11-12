@@ -94,6 +94,10 @@ void * l_replace_item(list *l, size_t i, void *element);
 // expand the list as necessary.
 void l_append_element(list *l, void *element);
 
+// Adds all members of the other list to this list, without altering the other
+// list.
+void l_extend(list *l, list *other);
+
 // Removes and returns the last element of the given list. Returns NULL if the
 // list is already empty.
 void * l_pop_element(list *l);

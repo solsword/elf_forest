@@ -69,6 +69,7 @@ _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
       sizeof(SP_LOWER ## _species) \
     ); \
     add_ ## SP_LOWER ## _species(result, new_species); \
+    new_species->id = result; \
     return result; \
   }
 
@@ -111,10 +112,19 @@ enum species_type_e {
 };
 typedef enum species_type_e species_type;
 
-/************************
- * Secondary Structures *
- ************************/
+/***************************
+ * Cross-Species Constants *
+ ***************************/
 
+// This number needs to be at least as large as the maximum number of life
+// elements (each of which is a nutrient) plus the sum of the maximums of each
+// nutrient category (for animals and plants). That number is currently:
+//   life     plants            animals
+//    4 + (2 + 6 + 7 + 5) + (2 + 6 + 7 + 5)
+//  = 44
+// This number is used for sizing arrays intended to represent comprehensive
+// nutrient compositions.
+#define MAX_TOTAL_NUTRIENTS 50
 
 /**********************
  * Primary Structures *

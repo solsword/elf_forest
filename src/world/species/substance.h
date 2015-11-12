@@ -13,6 +13,8 @@ typedef struct gas_species_s gas_species;
  *************************/
 
 struct gas_species_s {
+  species id;
+
   material material;
   // gas_texture_params appearance;
 };

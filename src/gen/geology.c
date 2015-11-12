@@ -1455,6 +1455,7 @@ void determine_new_elemental_composition(
 ) {
   list* used = create_list();
   size_t i;
+  element_species *esp;
   element_categorization first_category = 0;
   element_categorization second_category = 0;
   element_categorization third_category = 0;
@@ -1550,20 +1551,23 @@ void determine_new_elemental_composition(
   }
   i = 0;
   if (first_category != 0) {
-    comp_array[i] = pick_element(wm, first_category, used, seed);
-    l_append_element(used, comp_array[i]);
+    esp = pick_element(wm, first_category, used, seed);
+    comp_array[i] = esp->id;
+    l_append_element(used, (void*) esp);
     i += 1;
     seed = prng(seed);
   }
   if (second_category != 0) {
-    comp_array[i] = pick_element(wm, second_category, used, seed);
-    l_append_element(used, comp_array[i]);
+    esp = pick_element(wm, first_category, used, seed);
+    comp_array[i] = esp->id;
+    l_append_element(used, (void*) esp);
     i += 1;
     seed = prng(seed);
   }
   if (third_category != 0) {
-    comp_array[i] = pick_element(wm, third_category, used, seed);
-    // l_append_element(used, comp_array[i]);
+    esp = pick_element(wm, first_category, used, seed);
+    comp_array[i] = esp->id;
+    // l_append_element(used, (void*) esp);
     i += 1;
     seed = prng(seed);
   }
@@ -1582,6 +1586,7 @@ void determine_new_elemental_traces(
 ) {
   list* used = create_list();
   size_t i;
+  element_species *esp;
   element_categorization first_category = 0;
   element_categorization second_category = 0;
 
@@ -1642,14 +1647,16 @@ void determine_new_elemental_traces(
   }
   i = 0;
   if (first_category != 0) {
-    trace_array[i] = pick_element(wm, first_category, used, seed);
-    l_append_element(used, trace_array[i]);
+    esp = pick_element(wm, first_category, used, seed);
+    trace_array[i] = esp->id;
+    l_append_element(used, (void*) esp);
     i += 1;
     seed = prng(seed);
   }
   if (second_category != 0) {
-    trace_array[i] = pick_element(wm, second_category, used, seed);
-    l_append_element(used, trace_array[i]);
+    esp = pick_element(wm, first_category, used, seed);
+    trace_array[i] = esp->id;
+    // l_append_element(used, (void*) esp);
     i += 1;
     seed = prng(seed);
   }
