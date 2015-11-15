@@ -1277,12 +1277,15 @@ void draw_image(float[] heights, PImage pixels, String cmode, boolean norm) {
 }
 
 void setup() {
+  size(800, 600);
+  WINDOW_WIDTH = 800;
+  WINDOW_HEIGHT = 600;
+
   randomSeed(17);
   noiseSeed(17);
   // TODO: some way of seeding the Perlin library?
 
   colorMode(HSB, 1.0, 1.0, 1.0);
-  size(WINDOW_WIDTH, WINDOW_HEIGHT);
 
   THE_MAP = new Map(MAP_WIDTH, MAP_HEIGHT);
   THE_IMAGE = new PImage(IMAGE_WIDTH, IMAGE_HEIGHT);

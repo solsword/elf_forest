@@ -681,10 +681,12 @@ float CONTINENT_RADIUS;
 float[] HISTOGRAM;
 
 void setup() {
+  size(800, 600);
+  WIDTH = 400;
+  HEIGHT = 300;
   noiseDetail(1,0.5);
   noiseSeed(17);
   colorMode(HSB, 1.0, 1.0, 1.0);
-  size(WIDTH*2, HEIGHT*2);
   THE_MAP = new Map();
   int x, y, i, j;
   float str;

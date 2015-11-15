@@ -1687,13 +1687,15 @@ float[] SAVE;
 float[] EX_SAVE;
 
 void setup() {
+  size(800, 640);
   int i;
 
   randomSeed(17);
   // TODO: some way of seeding the Perlin library?
 
   colorMode(HSB, 1.0, 1.0, 1.0);
-  size(WINDOW_WIDTH, WINDOW_HEIGHT);
+  WINDOW_WIDTH = 800;
+  WINDOW_HEIGHT = 640;
 
   THE_MAP = new Map(GRID_WIDTH, GRID_HEIGHT);
 

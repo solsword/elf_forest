@@ -430,6 +430,9 @@ void build_mountains() {
 }
 
 void setup() {
+  size(900, 600);
+  WINDOW_WIDTH = 900;
+  WINDOW_HEIGHT = 600;
   int i;
 
   randomSeed(17);
@@ -437,7 +440,6 @@ void setup() {
   // TODO: some way of seeding the Perlin library?
 
   colorMode(HSB, 1.0, 1.0, 1.0);
-  size(WINDOW_WIDTH, WINDOW_HEIGHT);
 
   MATRIX = new float[MAP_WIDTH*MAP_HEIGHT];
   TMP = new float[MAP_WIDTH*MAP_HEIGHT];
