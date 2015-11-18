@@ -173,9 +173,9 @@ void rgb__xyz(pixel p, precise_color *result) {
     g = g / 12.92;
   }
 
-  r *= 100;
-  b *= 100;
-  g *= 100;
+  r *= 100.0;
+  b *= 100.0;
+  g *= 100.0;
 
   result->x = r * 0.4124 + g * 0.3576 + b * 0.1805;
   result->y = r * 0.2126 + g * 0.7152 + b * 0.0722;
@@ -185,9 +185,13 @@ void rgb__xyz(pixel p, precise_color *result) {
 
 pixel xyz__rgb(precise_color* color) {
   pixel result = PX_BLACK;
-  float r = color->x *  3.2406 + color->y * -1.5372 + color->z * -0.4986;
-  float g = color->x * -0.9689 + color->y *  1.8758 + color->z *  0.0415;
-  float b = color->x *  0.0557 + color->y * -0.2040 + color->z *  1.0570;
+  float x = color->x / 100.0;
+  float y = color->y / 100.0;
+  float z = color->z / 100.0;
+
+  float r = x *  3.2406 + y * -1.5372 + z * -0.4986;
+  float g = x * -0.9689 + y *  1.8758 + z *  0.0415;
+  float b = x *  0.0557 + y * -0.2040 + z *  1.0570;
   float a = color->alpha;
 
   if (r > 0.0031308) {
