@@ -1564,24 +1564,30 @@ void determine_new_elemental_composition(
   i = 0;
   if (first_category != 0) {
     esp = pick_element(wm, first_category, used, seed);
-    comp_array[i] = esp->id;
-    l_append_element(used, (void*) esp);
-    i += 1;
-    seed = prng(seed);
+    if (esp != NULL) {
+      comp_array[i] = esp->id;
+      l_append_element(used, (void*) esp);
+      i += 1;
+      seed = prng(seed);
+    }
   }
   if (second_category != 0) {
-    esp = pick_element(wm, first_category, used, seed);
-    comp_array[i] = esp->id;
-    l_append_element(used, (void*) esp);
-    i += 1;
-    seed = prng(seed);
+    esp = pick_element(wm, second_category, used, seed);
+    if (esp != NULL) {
+      comp_array[i] = esp->id;
+      l_append_element(used, (void*) esp);
+      i += 1;
+      seed = prng(seed);
+    }
   }
   if (third_category != 0) {
-    esp = pick_element(wm, first_category, used, seed);
-    comp_array[i] = esp->id;
-    // l_append_element(used, (void*) esp);
-    i += 1;
-    seed = prng(seed);
+    esp = pick_element(wm, third_category, used, seed);
+    if (esp != NULL) {
+      comp_array[i] = esp->id;
+      // l_append_element(used, (void*) esp);
+      i += 1;
+      seed = prng(seed);
+    }
   }
   for (; i < MAX_PRIMARY_CONSTITUENTS; ++i) {
     comp_array[i] = 0;
@@ -1656,17 +1662,21 @@ void determine_new_elemental_traces(
   i = 0;
   if (first_category != 0) {
     esp = pick_element(wm, first_category, used, seed);
-    trace_array[i] = esp->id;
-    l_append_element(used, (void*) esp);
-    i += 1;
-    seed = prng(seed);
+    if (esp != NULL) {
+      trace_array[i] = esp->id;
+      l_append_element(used, (void*) esp);
+      i += 1;
+      seed = prng(seed);
+    }
   }
   if (second_category != 0) {
-    esp = pick_element(wm, first_category, used, seed);
-    trace_array[i] = esp->id;
-    // l_append_element(used, (void*) esp);
-    i += 1;
-    seed = prng(seed);
+    esp = pick_element(wm, second_category, used, seed);
+    if (esp != NULL) {
+      trace_array[i] = esp->id;
+      // l_append_element(used, (void*) esp);
+      i += 1;
+      seed = prng(seed);
+    }
   }
   for (; i < MAX_TRACE_CONSTITUENTS; ++i) {
     trace_array[i] = 0;
