@@ -418,6 +418,7 @@ void generate_elements(world_map *wm) {
     MIN_PLANT_BENEFICIAL_NUTRIENTS,
     MAX_PLANT_BENEFICIAL_NUTRIENTS
   );
+
   seed = prng(seed);
   n_animal_beneficial = randi(
     seed,

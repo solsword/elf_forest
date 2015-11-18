@@ -152,7 +152,7 @@ static inline ptrdiff_t randi(
   ptrdiff_t min,
   ptrdiff_t max
 ) {
-  return min + prng(seed + 81882) % ((max - min) + 1);
+  return min + posmod(prng(seed + 81882), ((max - min) + 1));
 }
 
 // Random floating point number in specific range:
