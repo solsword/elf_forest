@@ -6,6 +6,8 @@
 
 #include <stdint.h>
 
+#include "util.h"
+
 /*********
  * Types *
  *********/
@@ -29,7 +31,7 @@ typedef struct precise_color_s precise_color;
 struct precise_color_s {
   float x, y, z;
   float alpha;
-}
+};
 
 /*************
  * Constants *

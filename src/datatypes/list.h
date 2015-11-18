@@ -116,7 +116,7 @@ void l_reverse(list *l);
 
 // Picks a random element from the list using a uniform distribution. Returns
 // NULL if called on an empty list.
-void l_pick_random(list *l, ptrdiff_t seed);
+void* l_pick_random(list *l, ptrdiff_t seed);
 
 // Shuffles the given list using the given seed. The shuffle is notably not
 // cryptographically sound.

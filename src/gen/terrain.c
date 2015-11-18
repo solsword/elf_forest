@@ -904,20 +904,15 @@ void stone_cell(
 }
 
 void dirt_cell(
-  world_map *wm, global_pos *glpos,
+  world_map *wm,
+  global_pos *glpos,
   float h,
   float elev,
   world_region *wr,
   cell *result
 ) {
-  size_t i, max_alts;
-  block soil_type;
-  species soil_species;
-  float beach_height, rel_h, str, beststr;
-  float *alt_strengths;
-  float *alt_hdeps;
-  block *alt_blocks;
-  species *alt_species;
+  float beach_height, beach_top, beach_roots;
+  int topsoil = 0;
 
   if (wr == NULL) {
     // TODO: better fallback for edges
@@ -934,31 +929,95 @@ void dirt_cell(
     wr->seed + 18294
   );
 
-  rel_h = elev - TR_HEIGHT_SEA_LEVEL + beach_height;
-  beststr = TR_SOIL_ALT_THRESHOLD;
+  beach_top = TR_HEIGHT_SEA_LEVEL + beach_height;
+  beach_roots = TR_HEIGHT_SEA_LEVEL - beach_height * 1.5;
+
+  topsoil = elev - glpos->z <= 1.0;
+
   if (
-    rel_h > 0
+    glpos->z > beach_top // above the top of the beach
   ||
-    h < 1 - (-rel_h / TR_BEACH_HEIGHT_VAR)
+    glpos->z < beach_roots
     // TODO: Test this!
-  ) { // TODO: lakes!
-    soil_type = B_DIRT;
-    soil_species = wr->climate.soil.base_dirt;
-    alt_strengths = wr->climate.soil.alt_dirt_strengths;
-    alt_hdeps = wr->climate.soil.alt_dirt_hdeps;
-    alt_blocks = wr->climate.soil.alt_dirt_blocks;
-    alt_species = wr->climate.soil.alt_dirt_species;
-    max_alts = WM_MAX_SOIL_ALTS;
+  ) { // TODO: lakes and rivers!
+    if (glpos->z < TR_HEIGHT_SEA_LEVEL) {
+      if (topsoil) {
+        pick_dirt_block(
+          wr,
+          glpos,
+          h,
+          &(wr->climate.soil.ocean_floor_topsoil),
+          result
+        );
+      } else {
+        pick_dirt_block(
+          wr,
+          glpos,
+          h,
+          &(wr->climate.soil.ocean_floor),
+          result
+        );
+      }
+    } else {
+      if (topsoil) {
+        pick_dirt_block(
+          wr,
+          glpos,
+          h,
+          &(wr->climate.soil.top_soil),
+          result
+        );
+      } else {
+        pick_dirt_block(
+          wr,
+          glpos,
+          h,
+          &(wr->climate.soil.base_soil),
+          result
+        );
+      }
+    }
   } else {
-    soil_type = B_SAND;
-    soil_species = wr->climate.soil.base_sand;
-    alt_strengths = wr->climate.soil.alt_sand_strengths;
-    alt_hdeps = wr->climate.soil.alt_sand_hdeps;
-    alt_blocks = wr->climate.soil.alt_sand_blocks;
-    alt_species = wr->climate.soil.alt_sand_species;
-    max_alts = WM_MAX_SOIL_ALTS;
+    if (topsoil) {
+      pick_dirt_block(
+        wr,
+        glpos,
+        h,
+        &(wr->climate.soil.beach_topsoil),
+        result
+      );
+    } else {
+      pick_dirt_block(
+        wr,
+        glpos,
+        h,
+        &(wr->climate.soil.beaches),
+        result
+      );
+    }
   }
-  for (i = 0; i < max_alts; ++i) {
+}
+
+void pick_dirt_block(
+  world_region *wr,
+  global_pos *glpos,
+  float h,
+  soil_type *soil,
+  cell *result
+) {
+  size_t i;
+
+  block soil_type = soil->main_block_type;
+  species soil_species = soil->main_species;
+  block *alt_blocks = soil->alt_block_types;
+  species *alt_species = soil->alt_species;
+  float *alt_strengths = soil->alt_strengths;
+  float *alt_hdeps = soil->alt_hdeps;
+
+  float beststr = TR_SOIL_ALT_THRESHOLD;
+  float str = 0;
+
+  for (i = 0; i < WM_MAX_SOIL_ALTS; ++i) {
     // TODO: Moisture dependence?
     str = sxnoise_3d(
       glpos->x * TR_SOIL_ALT_NOISE_SCALE,

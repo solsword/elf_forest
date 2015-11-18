@@ -503,9 +503,19 @@ void stone_cell(
 
 // Computes a dirt cell from the dirt layer.
 void dirt_cell(
-  world_map *wm, global_pos *glpos,
+  world_map *wm,
+  global_pos *glpos,
   float h, float elev,
   world_region *wr,
+  cell *result
+);
+
+// Given just a soil type fills in block info in the given result cell.
+void pick_dirt_block(
+  world_region *wr,
+  global_pos *glpos,
+  float h,
+  soil_type *soil,
   cell *result
 );
 

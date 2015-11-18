@@ -112,7 +112,7 @@ extern float const GN_LARGE_VAR_SCALE;
 extern float const GN_MED_VAR_SCALE;
 
 // Weights when averaging the properties of stone constituent elements:
-static float[] const STONE_CONSTITUENT_AVERAGING_WEIGHTS;
+static float const STONE_CONSTITUENT_AVERAGING_WEIGHTS[];
 
 /********************
  * Inline Functions *
@@ -609,8 +609,8 @@ species create_new_stone_species(
 void determine_new_stone_composition(
   stone_species *ssp,
   world_map *wm,
-  rngtable* composition,
-  rngtable* trace_composition,
+  rngtable const * const composition,
+  rngtable const * const trace_composition,
   ptrdiff_t seed
 );
 
@@ -631,36 +631,33 @@ void determine_new_elemental_traces(
 // Helper functions for creating materials. These return the base_density value
 // that they compute for use by the appearance functions.
 float determine_new_igneous_material(
-  material *target,
-  ptrdiff_t seed,
-  float base_density
+  stone_species *species,
+  ptrdiff_t seed
 );
 float determine_new_metamorphic_material(
-  material *target,
-  ptrdiff_t seed,
-  float base_density
+  stone_species *species,
+  ptrdiff_t seed
 );
 float determine_new_sedimentary_material(
-  material *target,
-  ptrdiff_t seed,
-  float base_density
+  stone_species *species,
+  ptrdiff_t seed
 );
 
 // Helper functions for creating appearances:
 void determine_new_igneous_appearance(
-  stone_filter_args *target,
+  stone_species *species,
   float base_density,
   ptrdiff_t seed
 );
 
 void determine_new_metamorphic_appearance(
-  stone_filter_args *target,
+  stone_species *species,
   float base_density,
   ptrdiff_t seed
 );
 
 void determine_new_sedimentary_appearance(
-  stone_filter_args *target,
+  stone_species *species,
   float base_density,
   ptrdiff_t seed
 );

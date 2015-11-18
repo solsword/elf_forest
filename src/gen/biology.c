@@ -795,13 +795,37 @@ void determine_new_plant_materials(plant_materials *target, ptrdiff_t seed) {
   target->fruit.flash_point = 200;
 
   // TODO: Real numbers here!
-  target->seed.malleability = 0;
-  target->root.malleability = 0;
-  target->wood.malleability = 0;
-  target->dry_wood.malleability = 0;
-  target->stem.malleability = 0;
-  target->leaf.malleability = 0;
-  target->fruit.malleability = 0;
+  target->seed.cold_plastic_temp = 0;
+  target->root.cold_plastic_temp = 0;
+  target->wood.cold_plastic_temp = 0;
+  target->dry_wood.cold_plastic_temp = 0;
+  target->stem.cold_plastic_temp = 0;
+  target->leaf.cold_plastic_temp = 0;
+  target->fruit.cold_plastic_temp = 0;
+
+  target->seed.warm_plastic_temp = 0;
+  target->root.warm_plastic_temp = 0;
+  target->wood.warm_plastic_temp = 0;
+  target->dry_wood.warm_plastic_temp = 0;
+  target->stem.warm_plastic_temp = 0;
+  target->leaf.warm_plastic_temp = 0;
+  target->fruit.warm_plastic_temp = 0;
+
+  target->seed.cold_plasticity = 0;
+  target->root.cold_plasticity = 0;
+  target->wood.cold_plasticity = 0;
+  target->dry_wood.cold_plasticity = 0;
+  target->stem.cold_plasticity = 0;
+  target->leaf.cold_plasticity = 0;
+  target->fruit.cold_plasticity = 0;
+
+  target->seed.warm_plasticity = 0;
+  target->root.warm_plasticity = 0;
+  target->wood.warm_plasticity = 0;
+  target->dry_wood.warm_plasticity = 0;
+  target->stem.warm_plasticity = 0;
+  target->leaf.warm_plasticity = 0;
+  target->fruit.warm_plasticity = 0;
 
   // Relative to water.
   target->seed.viscosity = 0;

@@ -52,6 +52,7 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/ctl.o \
              $(OBJ_DIR)/interact.o \
              $(OBJ_DIR)/tex.o \
+             $(OBJ_DIR)/color.o \
              $(OBJ_DIR)/noise.o \
              $(OBJ_DIR)/physics.o \
              $(OBJ_DIR)/entities.o \
@@ -65,11 +66,13 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/string.o \
              $(OBJ_DIR)/bitmap.o \
              $(OBJ_DIR)/heightmap.o \
+             $(OBJ_DIR)/rngtable.o \
              $(OBJ_DIR)/octree.o \
              $(OBJ_DIR)/terrain.o \
              $(OBJ_DIR)/worldgen.o \
              $(OBJ_DIR)/data.o \
              $(OBJ_DIR)/persist.o \
+             $(OBJ_DIR)/elements.o \
              $(OBJ_DIR)/climate.o \
              $(OBJ_DIR)/geology.o \
              $(OBJ_DIR)/biology.o \

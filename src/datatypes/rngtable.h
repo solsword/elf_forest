@@ -4,6 +4,8 @@
 // rngtable.h
 // A fixed-size table of values with weights for random selection.
 
+#include <stddef.h>
+
 /**************
  * Structures *
  **************/
@@ -41,6 +43,6 @@ void cleanup_rngtable(rngtable *t);
 // if the table is empty. Note that the resolution of the selection algorithm
 // is a bit limited, so some distortion is expected when very small weights (in
 // relation to the total weight) are used.
-void* rt_pick_result(rngtable *t, ptrdiff_t seed);
+void* rt_pick_result(rngtable const * const t, ptrdiff_t seed);
 
 #endif // #ifndef RNGTABLE_H

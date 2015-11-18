@@ -89,7 +89,7 @@ enum species_type_e {
   SPT_DIRT = 3,
   SPT_CLAY = 4,
   SPT_STONE = 5,
-  SPT_METAL = 7,
+  SPT_METAL = 6,
   
   SPT_FUNGUS = 7,
   SPT_MOSS = 8,

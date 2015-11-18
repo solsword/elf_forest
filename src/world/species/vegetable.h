@@ -70,6 +70,61 @@ typedef struct herb_appearance_s herb_appearance;
  * Structure Definitions *
  *************************/
 
+// Secondary structures:
+
+struct seed_growth_pattern_s {
+  cell_grammar *grammar;
+  // TODO: More complex growth speeds (by block type; age; for different growth
+  // events; etc.)
+  int sprout_time;
+  // TODO: More here?
+};
+
+struct core_growth_pattern_s {
+  // TODO: This
+};
+
+struct growth_properties_s {
+  int seed_growth_resist;
+  int growth_resist;
+  int growth_strength;
+  seed_growth_pattern seed_growth;
+  core_growth_pattern core_growth;
+};
+
+struct fungus_materials_s {
+  material spores;
+  material mycelium;
+  material stalk;
+  material cap;
+};
+
+struct plant_materials_s {
+  material seed;
+  material root;
+  material wood;
+  material dry_wood;
+  material stem;
+  material leaf;
+  material fruit;
+};
+
+struct coral_materials_s {
+  material anchor;
+  material frond;
+};
+
+struct herb_appearance_s {
+  // TODO: More appearance diversity?
+  leaves_filter_args seeds;
+  branch_filter_args roots;
+  herb_leaves_filter_args shoots;
+  herb_leaves_filter_args leaves;
+  leaves_filter_args buds;
+  leaves_filter_args flowers;
+  leaves_filter_args fruit;
+};
+
 // Primary structures:
 
 struct fungus_species_s {
@@ -158,61 +213,6 @@ struct coral_species_s {
   coral_materials materials;
   // coral_texture_params appearance;
   growth_properties growth;
-};
-
-// Secondary structures:
-
-struct seed_growth_pattern_s {
-  cell_grammar *grammar;
-  // TODO: More complex growth speeds (by block type; age; for different growth
-  // events; etc.)
-  int sprout_time;
-  // TODO: More here?
-};
-
-struct core_growth_pattern_s {
-  // TODO: This
-};
-
-struct growth_properties_s {
-  int seed_growth_resist;
-  int growth_resist;
-  int growth_strength;
-  seed_growth_pattern seed_growth;
-  core_growth_pattern core_growth;
-};
-
-struct fungus_materials_s {
-  material spores;
-  material mycelium;
-  material stalk;
-  material cap;
-};
-
-struct plant_materials_s {
-  material seed;
-  material root;
-  material wood;
-  material dry_wood;
-  material stem;
-  material leaf;
-  material fruit;
-};
-
-struct coral_materials_s {
-  material anchor;
-  material frond;
-};
-
-struct herb_appearance_s {
-  // TODO: More appearance diversity?
-  leaves_filter_args seeds;
-  branch_filter_args roots;
-  herb_leaves_filter_args shoots;
-  herb_leaves_filter_args leaves;
-  leaves_filter_args buds;
-  leaves_filter_args flowers;
-  leaves_filter_args fruit;
 };
 
 #endif // #ifndef VEGETABLE_SPECIES_H

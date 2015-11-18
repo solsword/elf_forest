@@ -160,9 +160,12 @@ ptrdiff_t bm_select_open(bitmap *bm, size_t n) {
     bits_here = BITMAP_ROW_WIDTH - __builtin_popcount(bm->data[i]);
     // Ignore zeroes on the last row past the exact size:
     if (i == bm->rows - 1) {
-      bits_here -= BITMAP_ROW_WIDTH - (size-(BITMAP_ROW_WIDTH * (bm->rows - 1)))
+      bits_here -= BITMAP_ROW_WIDTH - (
+        bm->size
+      - (BITMAP_ROW_WIDTH * (bm->rows - 1))
+      );
     }
-    row = bm->rows[i];
+    row = bm->data[i];
     if (bits_here > n) {
       for (j = 0; j < BITMAP_ROW_WIDTH; ++j) {
         if (!(row & 1)) {
@@ -182,7 +185,7 @@ ptrdiff_t bm_select_open(bitmap *bm, size_t n) {
   return -1;
 }
 
-size_t bm_select_closed(bitmap *bm, ptrdiff_t seed) {
+ptrdiff_t bm_select_closed(bitmap *bm, size_t n) {
   size_t i, j;
   size_t bits_here;
   ptrdiff_t result;
@@ -192,7 +195,7 @@ size_t bm_select_closed(bitmap *bm, ptrdiff_t seed) {
   for (i = 0; i < bm->rows; ++i) {
     bits_here = __builtin_popcount(bm->data[i]);
     // Fine even for the last row, because excess bits should be zeroes.
-    row = bm->rows[i];
+    row = bm->data[i];
     if (bits_here > n) {
       for (j = 0; j < BITMAP_ROW_WIDTH; ++j) {
         if (row & 1) {

@@ -6,7 +6,7 @@
 #include "noise/noise.h"
 #include "tex/tex.h"
 #include "tex/draw.h"
-#include "math/curve.h"
+#include "math/functions.h"
 
 #include "util.h"
 

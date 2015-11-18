@@ -64,6 +64,6 @@ typedef enum pH_category_e pH_category;
 void generate_elements(world_map *wm);
 
 // Takes a categorized element and fills out all of its properties.
-void fill_out_element(element_species *esp);
+void fill_out_element(element_species *esp, ptrdiff_t seed);
 
 #endif // ifndef ELEMENTS_H

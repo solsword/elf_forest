@@ -31,7 +31,7 @@ void cleanup_rngtable(rngtable *t) {
  * Functions *
  *************/
 
-void* rt_pick_result(rngtable *t, ptrdiff_t seed) {
+void* rt_pick_result(rngtable const * const t, ptrdiff_t seed) {
   float total_weight = 0;
   float choice = 0;
   size_t i;

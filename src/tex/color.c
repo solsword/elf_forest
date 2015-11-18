@@ -50,7 +50,7 @@ pixel rgb__hsv(pixel p) {
     px_set_red(&result, 0);
     px_set_blue(&result, 0);
     px_set_green(&result, 0);
-    return;
+    return result;
   } else {
     px_set_sat(&result, CHANNEL_MAX * (chroma / max));
   }
@@ -114,7 +114,7 @@ pixel hsv__rgb(pixel p) {
     px_set_red(&result, CHANNEL_MAX*v);
     px_set_green(&result, CHANNEL_MAX*v);
     px_set_blue(&result, CHANNEL_MAX*v);
-    return;
+    return result;
   }
   switch (sector) {
     case 0:
@@ -153,7 +153,6 @@ pixel hsv__rgb(pixel p) {
 }
 
 void rgb__xyz(pixel p, precise_color *result) {
-  float x, y, z;
   float r = px_red(p) / (float) CHANNEL_MAX;
   float g = px_green(p) / (float) CHANNEL_MAX;
   float b = px_blue(p) / (float) CHANNEL_MAX;
@@ -302,10 +301,10 @@ pixel blend_precisely(pixel a, pixel b, float blend) {
   precise_color ca, cb;
   rgb__xyz(a, &ca); /*->*/ xyz__lab(&ca); /*->*/ lab__lch(&ca);
   rgb__xyz(b, &cb); /*->*/ xyz__lab(&cb); /*->*/ lab__lch(&cb);
-  ca->x = blend * ca->x + (1 - blend) * cb->x;
-  ca->y = blend * ca->y + (1 - blend) * cb->y;
-  ca->z = blend * ca->z + (1 - blend) * cb->z;
-  ca->alpha = blend * ca->alpha + (1 - blend) * cb->alpha;
+  ca.x = blend * ca.x + (1 - blend) * cb.x;
+  ca.y = blend * ca.y + (1 - blend) * cb.y;
+  ca.z = blend * ca.z + (1 - blend) * cb.z;
+  ca.alpha = blend * ca.alpha + (1 - blend) * cb.alpha;
   lch__lab(&ca); /*->*/ lab__xyz(&ca);
   return xyz__rgb(&ca);
 }

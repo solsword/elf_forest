@@ -22,124 +22,142 @@
 
 static rngtable N_AIR_ELEMENTS = {
   .size = 3,
-  .values = { 1, 2, 3 },
-  .weights = { 1, 2, 2 }
+  .values = (void*[]) { (void*) 1, (void*) 2, (void*) 3 },
+  .weights = (float[]) { 1, 2, 2 }
 };
 
 static rngtable N_WATER_ELEMENTS = {
   .size = 2,
-  .values = { 2, 3 },
-  .weights = { 4, 3 }
+  .values = (void*[]) { (void*) 2, (void*) 3 },
+  .weights = (float[]) { 4, 3 }
 };
 
 static rngtable N_LIFE_ELEMENTS = {
   .size = 2,
-  .values = { 3, 4 },
-  .weights = { 4, 1 }
+  .values = (void*[]) { (void*) 3, (void*) 4 },
+  .weights = (float[]) { 4, 1 }
 };
 
 static rngtable N_STONE_ELEMENTS = {
   .size = 3,
-  .values = { 3, 4, 5 },
-  .weights = { 2, 3, 2 }
+  .values = (void*[]) { (void*) 3, (void*) 4, (void*) 5 },
+  .weights = (float[]) { 2, 3, 2 }
 };
 
 static rngtable N_METAL_ELEMENTS = {
   .size = 3,
-  .values = { 4, 5, 6 },
-  .weights = { 2, 3, 3 }
+  .values = (void*[]) { (void*) 4, (void*) 5, (void*) 6 },
+  .weights = (float[]) { 2, 3, 3 }
 };
 
 static rngtable N_RARE_ELEMENTS = {
   .size = 6,
-  .values = { 7, 8, 9, 10, 11, 12 },
-  .weights = { 9, 10, 11, 10, 9, 9 }
+  .values = (void*[]) {
+    (void*) 7,
+    (void*) 8,
+    (void*) 9,
+    (void*) 10,
+    (void*) 11,
+    (void*) 12
+  },
+  .weights = (float[]) { 9, 10, 11, 10, 9, 9 }
 };
 
 // Element category overlaps:
 
 static rngtable O_AIR_WATER = {
   .size = 2,
-  .values = { 0, 1 },
-  .weights = { 2, 3 }
+  .values = (void*[]) { (void*) 0, (void*) 1 },
+  .weights = (float[]) { 2, 3 }
 };
 
 static rngtable O_AIR_WATER_LIFE = {
   .size = 2,
-  .values = { 1, 2 },
-  .weights = { 3, 2 }
+  .values = (void*[]) { (void*) 1, (void*) 2 },
+  .weights = (float[]) { 3, 2 }
 };
 
 static rngtable O_LIFE_STONE = {
   .size = 3,
-  .values = { 0, 1, 2 },
-  .weights = { 3, 5, 2 }
+  .values = (void*[]) { (void*) 0, (void*) 1, (void*) 2 },
+  .weights = (float[]) { 3, 5, 2 }
 };
 
 static rngtable O_LIFE_METAL = {
   .size = 2,
-  .values = { 0, 1 },
-  .weights = { 4, 3 }
+  .values = (void*[]) { (void*) 0, (void*) 1 },
+  .weights = (float[]) { 4, 3 }
 };
 
 static rngtable O_STONE_METAL = {
   .size = 3,
-  .values = { 0, 1, 2 },
-  .weights = { 2, 3, 2 }
+  .values = (void*[]) { (void*) 0, (void*) 1, (void*) 2 },
+  .weights = (float[]) { 2, 3, 2 }
 };
 
 // Element frequency distributions by category:
 
 static rngtable STONE_FREQ_DIST = {
   .size = 2,
-  .values = { EL_FREQ_COMMON, EL_FREQ_UNCOMMON },
-  .weights = { 3, 1 }
+  .values = (void*[]) { (void*) EL_FREQ_COMMON, (void*) EL_FREQ_UNCOMMON },
+  .weights = (float[]) { 3, 1 }
 };
 
 static rngtable METAL_FREQ_DIST = {
   .size = 3,
-  .values = { EL_FREQ_COMMON, EL_FREQ_UNCOMMON, EL_FREQ_RARE },
-  .weights = { 10, 70, 20 }
+  .values = (void*[]) {
+    (void*) EL_FREQ_COMMON,
+    (void*) EL_FREQ_UNCOMMON,
+    (void*) EL_FREQ_RARE
+  },
+  .weights = (float[]) { 10, 70, 20 }
 };
 
 static rngtable RARE_FREQ_DIST = {
   .size = 2,
-  .values = { EL_FREQ_UNCOMMON, EL_FREQ_RARE },
-  .weights = { 1, 4 }
+  .values = (void*[]) { (void*) EL_FREQ_UNCOMMON, (void*) EL_FREQ_RARE },
+  .weights = (float[]) { 1, 4 }
 };
 
 // Tables for various element properties:
 
 static rngtable PH_DISTRIBUTION = {
   .size = 3,
-  .values = { PHC_ACIDIC, PHC_NEUTRAL, PHC_BASIC },
-  .weights = { 1, 3, 1 },
+  .values = (void*[]) {
+    (void*) PHC_ACIDIC,
+    (void*) PHC_NEUTRAL,
+    (void*) PHC_BASIC
+  },
+  .weights = (float[]) { 1, 3, 1 },
 };
 
 static rngtable LIFE_SOLUBILITY_DISTRIBUTION = {
   .size = 3,
-  .values = {
-    SOLUBILITY_SOLUBLE,
-    SOLUBILITY_SLIGHTLY_SOLUBLE,
-    SOLUBILITY_INSOLUBLE
+  .values = (void*[]) {
+    (void*) SOLUBILITY_SOLUBLE,
+    (void*) SOLUBILITY_SLIGHTLY_SOLUBLE,
+    (void*) SOLUBILITY_INSOLUBLE
   },
-  .weights = { 7, 5, 1 }
+  .weights = (float[]) { 7, 5, 1 }
 };
 
 static rngtable METAL_SOLUBILITY_DISTRIBUTION = {
   .size = 2,
-  .values = { SOLUBILITY_SLIGHTLY_SOLUBLE, SOLUBILITY_INSOLUBLE },
-  .weights = { 4, 1 }
+  .values = (void*[]) {
+    (void*) SOLUBILITY_SLIGHTLY_SOLUBLE,
+    (void*) SOLUBILITY_INSOLUBLE
+  },
+  .weights = (float[]) { 4, 1 }
 };
 
 static rngtable GENERAL_SOLUBILITY_DISTRIBUTION = {
   .size = 3,
-  .values = {
-    SOLUBILITY_SOLUBLE,
-    SOLUBILITY_SLIGHTLY_SOLUBLE,
-    SOLUBILITY_INSOLUBLE
+  .values = (void*[]) {
+    (void*) SOLUBILITY_SOLUBLE,
+    (void*) SOLUBILITY_SLIGHTLY_SOLUBLE,
+    (void*) SOLUBILITY_INSOLUBLE
   },
-  .weights = { 12, 8, 5 }
+  .weights = (float[]) { 12, 8, 5 }
 };
 
 /*********************
@@ -157,46 +175,46 @@ void generate_elements(world_map *wm) {
          o_stone_metal;
   species sp;
   element_species *esp;
-  size_t i, j, sofar, count;
+  size_t i, j, sofar;
   list *possibly_nutritious;
   ptrdiff_t seed = prng(wm->seed + 81811);
   // Figure out how many of each element category we have:
-  c_air = (size_t) rt_pick_result(N_AIR_ELEMENTS, seed);
+  c_air = (size_t) rt_pick_result(&N_AIR_ELEMENTS, seed);
   seed = prng(seed);
-  c_water = (size_t) rt_pick_result(N_WATER_ELEMENTS, seed);
+  c_water = (size_t) rt_pick_result(&N_WATER_ELEMENTS, seed);
   seed = prng(seed);
-  c_life = (size_t) rt_pick_result(N_LIFE_ELEMENTS, seed);
+  c_life = (size_t) rt_pick_result(&N_LIFE_ELEMENTS, seed);
   seed = prng(seed);
-  c_stone = (size_t) rt_pick_result(N_STONE_ELEMENTS, seed);
+  c_stone = (size_t) rt_pick_result(&N_STONE_ELEMENTS, seed);
   seed = prng(seed);
-  c_metal = (size_t) rt_pick_result(N_METAL_ELEMENTS, seed);
+  c_metal = (size_t) rt_pick_result(&N_METAL_ELEMENTS, seed);
   seed = prng(seed);
-  c_rare = (size_t) rt_pick_result(N_RARE_ELEMENTS, seed);
+  c_rare = (size_t) rt_pick_result(&N_RARE_ELEMENTS, seed);
   seed = prng(seed);
 
   // And decide on the overlap between categories:
-  o_air_water = (size_t) rt_pick_result(O_AIR_WATER, seed);
+  o_air_water = (size_t) rt_pick_result(&O_AIR_WATER, seed);
   seed = prng(seed);
   if (c_air < o_air_water) { o_air_water = c_air; }
   if (c_water < o_air_water) { o_air_water = c_water; }
 
-  o_air_water_life = (size_t) rt_pick_result(O_AIR_WATER_LIFE, seed);
+  o_air_water_life = (size_t) rt_pick_result(&O_AIR_WATER_LIFE, seed);
   seed = prng(seed);
   if (o_air_water_life > (c_air + c_water - o_air_water)) {
     o_air_water_life = (c_air + c_water - o_air_water);
   }
   if (c_life < o_air_water_life) { o_air_water_life = c_life; }
 
-  o_life_stone = (size_t) rt_pick_result(O_LIFE_STONE, seed);
+  o_life_stone = (size_t) rt_pick_result(&O_LIFE_STONE, seed);
   seed = prng(seed);
   if (c_life < o_life_stone) { o_life_stone = c_life; }
   if (c_stone < o_life_stone) { o_life_stone = c_stone; }
-  o_life_metal = (size_t) rt_pick_result(O_LIFE_METAL, seed);
+  o_life_metal = (size_t) rt_pick_result(&O_LIFE_METAL, seed);
   seed = prng(seed);
   if (c_life < o_life_metal) { o_life_metal = c_life; }
   if (c_metal < o_life_metal) { o_life_metal = c_metal; }
 
-  o_stone_metal = (size_t) rt_pick_result(O_STONE_METAL, seed);
+  o_stone_metal = (size_t) rt_pick_result(&O_STONE_METAL, seed);
   seed = prng(seed);
   if (c_stone < o_stone_metal) { o_stone_metal = c_stone; }
   if (c_metal < o_stone_metal) { o_stone_metal = c_metal; }
@@ -277,7 +295,7 @@ void generate_elements(world_map *wm) {
     sp = create_element_species();
     esp = get_element_species(sp);
     esp->categories = EL_CATEGORY_STONE;
-    esp->frequency = (element_frequency) rt_pick_result(STONE_FREQ_DIST, seed);
+    esp->frequency = (element_frequency) rt_pick_result(&STONE_FREQ_DIST, seed);
     seed = prng(seed);
     l_append_element(wm->stone_elements, (void*) esp);
     l_append_element(wm->all_elements, (void*) esp);
@@ -341,7 +359,7 @@ void generate_elements(world_map *wm) {
     sp = create_element_species();
     esp = get_element_species(sp);
     esp->categories = EL_CATEGORY_METAL;
-    esp->frequency = (element_frequency) rt_pick_result(METAL_FREQ_DIST, seed);
+    esp->frequency = (element_frequency) rt_pick_result(&METAL_FREQ_DIST, seed);
     seed = prng(seed);
     l_append_element(wm->metal_elements, (void*) esp);
     l_append_element(wm->all_elements, (void*) esp);
@@ -352,7 +370,7 @@ void generate_elements(world_map *wm) {
     sp = create_element_species();
     esp = get_element_species(sp);
     esp->categories = EL_CATEGORY_RARE;
-    esp->frequency = (element_frequency) rt_pick_result(RARE_FREQ_DIST, seed);
+    esp->frequency = (element_frequency) rt_pick_result(&RARE_FREQ_DIST, seed);
     seed = prng(seed);
     l_append_element(wm->rare_elements, (void*) esp);
     l_append_element(wm->all_elements, (void*) esp);
@@ -472,47 +490,47 @@ void generate_elements(world_map *wm) {
       default:
         if (n_plant_detrimental > MIN_PLANT_DETRIMENTAL_NUTRIENTS) {
           n_plant_detrimental -= 1;
-          total_nutrients -= 1;
+          total_plant_nutrients -= 1;
           break;
         } // else flow through
       case 1:
         if (n_plant_beneficial > MIN_PLANT_BENEFICIAL_NUTRIENTS) {
           n_plant_beneficial -= 1;
-          total_nutrients -= 1;
+          total_plant_nutrients -= 1;
           break;
         } // else flow through
       case 2:
         if (n_plant_poisons > MIN_PLANT_POISONS) {
           n_plant_poisons -= 1;
-          total_nutrients -= 1;
+          total_plant_nutrients -= 1;
           break;
         } // else flow through
       case 3:
         if (n_ex_plant_critical > MIN_EXTRA_PLANT_CRITICAL_NUTRIENTS) {
           n_ex_plant_critical -= 1;
-          total_nutrients -= 1;
+          total_plant_nutrients -= 1;
           break;
         } // else flow through
         // Here we try each again so that no matter which cases we skipped,
         // every possibility will be tried at least once.
         if (n_plant_detrimental > MIN_PLANT_DETRIMENTAL_NUTRIENTS) {
           n_plant_detrimental -= 1;
-          total_nutrients -= 1;
+          total_plant_nutrients -= 1;
           break;
         } // else flow through
         if (n_plant_beneficial > MIN_PLANT_BENEFICIAL_NUTRIENTS) {
           n_plant_beneficial -= 1;
-          total_nutrients -= 1;
+          total_plant_nutrients -= 1;
           break;
         } // else flow through
         if (n_plant_poisons > MIN_PLANT_POISONS) {
           n_plant_poisons -= 1;
-          total_nutrients -= 1;
+          total_plant_nutrients -= 1;
           break;
         } // else flow through
         if (n_ex_plant_critical > MIN_EXTRA_PLANT_CRITICAL_NUTRIENTS) {
           n_ex_plant_critical -= 1;
-          total_nutrients -= 1;
+          total_plant_nutrients -= 1;
           break;
         } // else flow through
         // At this point we've exhausted our options, so the last_count check
@@ -557,47 +575,47 @@ void generate_elements(world_map *wm) {
       default:
         if (n_animal_detrimental > MIN_ANIMAL_DETRIMENTAL_NUTRIENTS) {
           n_animal_detrimental -= 1;
-          total_nutrients -= 1;
+          total_animal_nutrients -= 1;
           break;
         } // else flow through
       case 1:
         if (n_animal_beneficial > MIN_ANIMAL_BENEFICIAL_NUTRIENTS) {
           n_animal_beneficial -= 1;
-          total_nutrients -= 1;
+          total_animal_nutrients -= 1;
           break;
         } // else flow through
       case 2:
         if (n_animal_poisons > MIN_ANIMAL_POISONS) {
           n_animal_poisons -= 1;
-          total_nutrients -= 1;
+          total_animal_nutrients -= 1;
           break;
         } // else flow through
       case 3:
         if (n_ex_animal_critical > MIN_EXTRA_ANIMAL_CRITICAL_NUTRIENTS) {
           n_ex_animal_critical -= 1;
-          total_nutrients -= 1;
+          total_animal_nutrients -= 1;
           break;
         } // else flow through
         // Here we try each again so that no matter which cases we skipped,
         // every possibility will be tried at least once.
         if (n_animal_detrimental > MIN_ANIMAL_DETRIMENTAL_NUTRIENTS) {
           n_animal_detrimental -= 1;
-          total_nutrients -= 1;
+          total_animal_nutrients -= 1;
           break;
         } // else flow through
         if (n_animal_beneficial > MIN_ANIMAL_BENEFICIAL_NUTRIENTS) {
           n_animal_beneficial -= 1;
-          total_nutrients -= 1;
+          total_animal_nutrients -= 1;
           break;
         } // else flow through
         if (n_animal_poisons > MIN_ANIMAL_POISONS) {
           n_animal_poisons -= 1;
-          total_nutrients -= 1;
+          total_animal_nutrients -= 1;
           break;
         } // else flow through
         if (n_ex_animal_critical > MIN_EXTRA_ANIMAL_CRITICAL_NUTRIENTS) {
           n_ex_animal_critical -= 1;
-          total_nutrients -= 1;
+          total_animal_nutrients -= 1;
           break;
         } // else flow through
         // At this point we've exhausted our options, so the last_count check
@@ -607,7 +625,7 @@ void generate_elements(world_map *wm) {
     if (try_next > 3) { try_next = 0; }
   }
 
-  if (total_nutrients > available) {
+  if (total_animal_nutrients > available) {
     // This can only happen if we've pushed all target nutrient counts to their
     // minimums and we're still above the total number of pure-stone +
     // pure-metal + pure-rare elements that were generated. In this case, we'll
@@ -704,9 +722,8 @@ void generate_elements(world_map *wm) {
 
 // Creates a new element.
 void fill_out_element(element_species *esp, ptrdiff_t seed) {
-  float rng;
   // pH tendency
-  pH_category phc = (pH_category) rt_pick_result(PH_DISTRIBUTION, seed);
+  pH_category phc = (pH_category) rt_pick_result(&PH_DISTRIBUTION, seed);
   seed = prng(seed);
   switch (phc) {
     default:
@@ -737,19 +754,19 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
     esp->solubility = SOLUBILITY_SOLUBLE;
   } else if (el_is_member(esp, EL_CATEGORY_LIFE)) {
     esp->solubility = (solubility) rt_pick_result(
-      LIFE_SOLUBILITY_DISTRIBUTION,
+      &LIFE_SOLUBILITY_DISTRIBUTION,
       seed
     );
     seed = prng(seed);
   } else if (el_is_member(esp, EL_CATEGORY_METAL)) {
     esp->solubility = (solubility) rt_pick_result(
-      METAL_SOLUBILITY_DISTRIBUTION,
+      &METAL_SOLUBILITY_DISTRIBUTION,
       seed
     );
     seed = prng(seed);
   } else {
     esp->solubility = (solubility) rt_pick_result(
-      GENERAL_SOLUBILITY_DISTRIBUTION,
+      &GENERAL_SOLUBILITY_DISTRIBUTION,
       seed
     );
     seed = prng(seed);

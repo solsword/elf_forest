@@ -33,13 +33,20 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
   result->width = width;
   result->height = height;
   result->regions = (world_region *) calloc(width*height, sizeof(world_region));
-  result->n_elements = 0;
-  result->elements = NULL;
   result->tectonics = create_tectonic_sheet(
     prng(seed + 65442),
     (size_t) (2.0 * (width / TECTONIC_SHEET_SCALE)),
     (size_t) (height / TECTONIC_SHEET_SCALE)
   );
+
+  result->air_elements = create_list();
+  result->water_elements = create_list();
+  result->life_elements = create_list();
+  result->stone_elements = create_list();
+  result->metal_elements = create_list();
+  result->rare_elements = create_list();
+
+  result->all_elements = create_list();
   result->all_strata = create_list();
   result->all_water = create_list();
   result->all_rivers = create_list();
@@ -367,7 +374,7 @@ element_species* pick_element(
 ) {
   size_t i;
   list *valid = create_list();
-  species result = 0;
+  element_species* result = NULL;
   for (i = 0; i < l_get_length(wm->all_elements); ++i) {
     element_species *el = (element_species*) l_get_item(wm->all_elements, i);
     if (
@@ -384,7 +391,9 @@ element_species* pick_element(
     }
   }
   if (!l_is_empty(valid)) {
+//#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
     result = (element_species*) l_pick_random(valid, seed);
+//#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
   } // else result is still 0
   cleanup_list(valid);
   return result;

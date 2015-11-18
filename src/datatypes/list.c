@@ -49,7 +49,7 @@ static inline void _grow_if_necessary(list *l) {
 
 static inline void _grow_to_fit(list *l, size_t add_count) {
   size_t new_size;
-  if (new_count >= l->size * LIST_CHUNK_SIZE) {
+  if (l->count + add_count >= l->size * LIST_CHUNK_SIZE) {
     new_size = (l->count + add_count + 1) / LIST_CHUNK_SIZE;
     void ** new_elements = (void **) realloc(
       l->elements,
@@ -308,7 +308,7 @@ void l_reverse(list *l) {
   }
 }
 
-void l_pick_random(list *l, ptrdiff_t seed) {
+void* l_pick_random(list *l, ptrdiff_t seed) {
   if (l_get_length(l) == 0) {
     return NULL;
   }
