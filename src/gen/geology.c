@@ -2414,7 +2414,7 @@ void compute_combined_color(
   }
 
   // Saturation
-  color->y = expdist(ptrf(seed), 3) * 60.0;
+  color->y = expdist(ptrf(seed), 5) * 60.0;
   seed = prng(seed);
 
   // Lightness
@@ -2460,7 +2460,7 @@ void compute_combined_color(
       seed = prng(seed);
 
       // Saturation may be boosted a bit:
-      weight = randf_pnorm(seed, 0, 0.6);
+      weight = randf_pnorm(seed, 0, 0.4);
       seed = prng(seed);
       color->y = (1 - weight) * color->y + weight * (30.0 + ptrf(seed) * 70.0);
       seed = prng(seed);

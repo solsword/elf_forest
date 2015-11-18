@@ -26,7 +26,7 @@ size_t test_list_setup_cleanup(void) {
 }
 
 size_t test_list_growth(void) {
-  int i = 0;
+  ptrdiff_t i = 0;
   list *l = create_list();
   for (i = 0; i < 100000; ++i) {
     l_append_element(l, NULL);
@@ -38,7 +38,7 @@ size_t test_list_growth(void) {
   }
 
   for (i = 0; i < 3; ++i) {
-    l_extend_element(l, ex);
+    l_extend(l, ex);
   }
 
   if (l_get_item(l, 0) != NULL) { return 1; }
