@@ -441,7 +441,9 @@ void add_biology(chunk *c) {
       for (idx.xyz.z = 0; idx.xyz.z < CHUNK_SIZE; ++idx.xyz.z) {
         // Get global cell position for hashing:
         cidx__glpos(c, &idx, &glpos);
+        // TODO: optimize this within a loop...
         fill_cell_neighborhood_exact(idx, &ch_nbh, &cl_nbh);
+
         cl = cl_nbh.members[NBH_CENTER]; // shortcut for the central cell
         // Array is in xyz order so up/down is +/- 1, north/south is +/- 3, and
         // east/west is +/- 9.
@@ -469,7 +471,7 @@ void add_biology(chunk *c) {
             } else if (
               b_is_natural_terrain(cl_nbh.members[NBH_CENTER+1]->blocks[0])
             ) {
-              // Some grasses, msuhrooms, and mosses grow below ceilings.
+              // Some grasses, mushrooms, and mosses grow below ceilings.
               // TODO: Species distributions!
               cl->blocks[1] = b_make_species(
                 B_MOSS_SPORES,
