@@ -37,8 +37,9 @@
  * Constants *
  *************/
 
-float const AIR_FOG_DENSITY = 0.0005; // TODO: adjust these.
-float const WATER_FOG_DENSITY = 0.01;
+// TODO: Why isn't there fog?
+float const AIR_FOG_DENSITY = 0.05; // TODO: adjust these.
+float const WATER_FOG_DENSITY = 0.1;
 
 // TODO: Good values here (match data.c!)
 #define WCRD WORST_CASE_RENDER_DISTANCE

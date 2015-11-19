@@ -7,6 +7,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include <GL/glew.h> // glBindBuffer etc.
 
@@ -25,6 +26,9 @@
  *************/
 
 float const Z_RECONCILIATION_OFFSET = 0.0005;
+
+float const DF_LOWER = 0.5 - M_SQRT2/4.0;
+float const DF_UPPER = 0.5 + M_SQRT2/4.0;
 
 uint8_t const BASE_LIGHT_LEVEL = 80;
 uint8_t const AMBIENT_LIGHT_STRENGTH = 30;
@@ -45,8 +49,8 @@ size_t INDEX_COUNT = 0;
 // The various push_* functions add vertex/index data for faces to the given
 // vertex buffer. They use local xyz coordinates to specify the position of the
 // triangles that they're adding. These faces are parameterized by offsets
-// relative to their default positions, which are the faces of a unit cube.
-// These offsets are all subtractive: "offset" moves the face towards the
+// relative to their default positions, which are mostly the faces of a unit
+// cube. These offsets are all subtractive: "offset" moves the face towards the
 // center of the cube (or past if if > 0.5), while the four side offsets move
 // the edges inwards. A zf_off index can be given which adds a tiny offset to
 // avoid z-fighting (positive indices push things outside the default cube).
@@ -54,6 +58,8 @@ size_t INDEX_COUNT = 0;
 // values, we temporarily define some macros to make this easier.
 #define P1 smaxof(GLshort) // +1
 #define N1 sminof(GLshort) // -1
+#define PRT ((GLshort) M_SQRT1_2 * smaxof(GLshort)) // + sqrt(1/2)
+#define NRT ((GLshort) M_SQRT1_2 * sminof(GLshort)) // - sqrt(1/2)
 static inline void push_top_face(
   vertex_buffer *vb,
   block_index idx,
@@ -311,9 +317,238 @@ static inline void push_west_face(
   v.r = vertex_light(light, 3);
   vb_add_vertex(&v, vb);
 }
+
+static inline void push_ne_sw_face(
+  vertex_buffer *vb,
+  block_index idx,
+  int scale,
+  tcoords st,
+  face_illumination light,
+  float offset,
+  float top, float right, float bot, float left,
+  int zf_off
+) {
+#ifdef DEBUG
+  VERTEX_COUNT += 4;
+  INDEX_COUNT += 6;
+#endif
+  vertex v = { .g = 0, .b = 0 };
+  // bottom left
+  v.x = idx.xyz.x + scale * (DF_UPPER - left * M_SQRT1_2 + offset * M_SQRT1_2);
+  v.y = idx.xyz.y + scale * (DF_UPPER - left * M_SQRT1_2 - offset * M_SQRT1_2);
+  v.z = idx.xyz.z + scale * bot;
+  v.x -= zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.y += zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.nx = NRT;
+  v.ny = PRT;
+  v.nz =  0;
+  v.s = st.s + left;
+  v.t = st.t + 1 - bot;
+
+  v.r = vertex_light(light, 0);
+  vb_add_vertex(&v, vb);
+
+  // top left
+  v.z = idx.xyz.z + scale * (1 - top);
+  v.t = st.t + top;
+  v.r = vertex_light(light, 1);
+  vb_add_vertex(&v, vb);
+
+  // top right
+  v.x = idx.xyz.x + scale * (DF_LOWER + right * M_SQRT1_2 + offset * M_SQRT1_2);
+  v.y = idx.xyz.y + scale * (DF_LOWER + right * M_SQRT1_2 - offset * M_SQRT1_2);
+  v.x -= zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.y += zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.s = st.s + 1 - right;
+  v.r = vertex_light(light, 2);
+  vb_add_vertex(&v, vb);
+
+  vb_reuse_vertex(2, vb); // reuse bottom left
+
+  vb_reuse_vertex(1, vb); // reuse top right
+
+  // bottom right
+  v.z = idx.xyz.z + scale * bot;
+  v.t = st.t + 1 - bot;
+  v.r = vertex_light(light, 3);
+  vb_add_vertex(&v, vb);
+}
+
+static inline void push_sw_ne_face(
+  vertex_buffer *vb,
+  block_index idx,
+  int scale,
+  tcoords st,
+  face_illumination light,
+  float offset,
+  float top, float right, float bot, float left,
+  int zf_off
+) {
+#ifdef DEBUG
+  VERTEX_COUNT += 4;
+  INDEX_COUNT += 6;
+#endif
+  vertex v = { .g = 0, .b = 0 };
+  // bottom left
+  v.x = idx.xyz.x + scale * (DF_LOWER + left * M_SQRT1_2 - offset * M_SQRT1_2);
+  v.y = idx.xyz.y + scale * (DF_LOWER + left * M_SQRT1_2 + offset * M_SQRT1_2);
+  v.z = idx.xyz.z + scale * bot;
+  v.x += zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.y -= zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.nx = PRT;
+  v.ny = NRT;
+  v.nz =  0;
+  v.s = st.s + left;
+  v.t = st.t + 1 - bot;
+
+  v.r = vertex_light(light, 0);
+  vb_add_vertex(&v, vb);
+
+  // top left
+  v.z = idx.xyz.z + scale * (1 - top);
+  v.t = st.t + top;
+  v.r = vertex_light(light, 1);
+  vb_add_vertex(&v, vb);
+
+  // top right
+  v.x = idx.xyz.x + scale * (DF_UPPER - right * M_SQRT1_2 - offset * M_SQRT1_2);
+  v.y = idx.xyz.y + scale * (DF_UPPER - right * M_SQRT1_2 + offset * M_SQRT1_2);
+  v.x += zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.y -= zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.s = st.s + 1 - right;
+  v.r = vertex_light(light, 2);
+  vb_add_vertex(&v, vb);
+
+  vb_reuse_vertex(2, vb); // reuse bottom left
+
+  vb_reuse_vertex(1, vb); // reuse top right
+
+  // bottom right
+  v.z = idx.xyz.z + scale * bot;
+  v.t = st.t + 1 - bot;
+  v.r = vertex_light(light, 3);
+  vb_add_vertex(&v, vb);
+}
+
+static inline void push_nw_se_face(
+  vertex_buffer *vb,
+  block_index idx,
+  int scale,
+  tcoords st,
+  face_illumination light,
+  float offset,
+  float top, float right, float bot, float left,
+  int zf_off
+) {
+#ifdef DEBUG
+  VERTEX_COUNT += 4;
+  INDEX_COUNT += 6;
+#endif
+  vertex v = { .g = 0, .b = 0 };
+  // bottom left
+  v.x = idx.xyz.x + scale * (DF_LOWER + left * M_SQRT1_2 + offset * M_SQRT1_2);
+  v.y = idx.xyz.y + scale * (DF_UPPER - left * M_SQRT1_2 + offset * M_SQRT1_2);
+  v.z = idx.xyz.z + scale * bot;
+  v.x -= zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.y -= zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.nx = NRT;
+  v.ny = NRT;
+  v.nz =  0;
+  v.s = st.s + left;
+  v.t = st.t + 1 - bot;
+
+  v.r = vertex_light(light, 0);
+  vb_add_vertex(&v, vb);
+
+  // top left
+  v.z = idx.xyz.z + scale * (1 - top);
+  v.t = st.t + top;
+  v.r = vertex_light(light, 1);
+  vb_add_vertex(&v, vb);
+
+  // top right
+  v.x = idx.xyz.x + scale * (DF_UPPER - right * M_SQRT1_2 + offset * M_SQRT1_2);
+  v.y = idx.xyz.y + scale * (DF_LOWER + right * M_SQRT1_2 + offset * M_SQRT1_2);
+  v.x -= zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.y -= zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.s = st.s + 1 - right;
+  v.r = vertex_light(light, 2);
+  vb_add_vertex(&v, vb);
+
+  vb_reuse_vertex(2, vb); // reuse bottom left
+
+  vb_reuse_vertex(1, vb); // reuse top right
+
+  // bottom right
+  v.z = idx.xyz.z + scale * bot;
+  v.t = st.t + 1 - bot;
+  v.r = vertex_light(light, 3);
+  vb_add_vertex(&v, vb);
+}
+
+static inline void push_se_nw_face(
+  vertex_buffer *vb,
+  block_index idx,
+  int scale,
+  tcoords st,
+  face_illumination light,
+  float offset,
+  float top, float right, float bot, float left,
+  int zf_off
+) {
+#ifdef DEBUG
+  VERTEX_COUNT += 4;
+  INDEX_COUNT += 6;
+#endif
+  vertex v = { .g = 0, .b = 0 };
+  // bottom left
+  v.x = idx.xyz.x + scale * (DF_UPPER - left * M_SQRT1_2 - offset * M_SQRT1_2);
+  v.y = idx.xyz.y + scale * (DF_LOWER + left * M_SQRT1_2 - offset * M_SQRT1_2);
+  v.z = idx.xyz.z + scale * bot;
+  v.x += zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.y += zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.nx = PRT;
+  v.ny = PRT;
+  v.nz =  0;
+  v.s = st.s + left;
+  v.t = st.t + 1 - bot;
+
+  v.r = vertex_light(light, 0);
+  vb_add_vertex(&v, vb);
+
+  // top left
+  v.z = idx.xyz.z + scale * (1 - top);
+  v.t = st.t + top;
+  v.r = vertex_light(light, 1);
+  vb_add_vertex(&v, vb);
+
+  // top right
+  v.x = idx.xyz.x + scale * (DF_LOWER + right * M_SQRT1_2 - offset * M_SQRT1_2);
+  v.y = idx.xyz.y + scale * (DF_UPPER - right * M_SQRT1_2 - offset * M_SQRT1_2);
+  v.x += zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.y += zf_off * Z_RECONCILIATION_OFFSET * M_SQRT1_2;
+  v.s = st.s + 1 - right;
+  v.r = vertex_light(light, 2);
+  vb_add_vertex(&v, vb);
+
+  vb_reuse_vertex(2, vb); // reuse bottom left
+
+  vb_reuse_vertex(1, vb); // reuse top right
+
+  // bottom right
+  v.z = idx.xyz.z + scale * bot;
+  v.t = st.t + 1 - bot;
+  v.r = vertex_light(light, 3);
+  vb_add_vertex(&v, vb);
+}
+
+// TODO: More face types here?
+
 // Clean up our short macro definitions:
 #undef P1
 #undef N1
+#undef PRT
+#undef NRT
 
 // Block geometry construction functions:
 
@@ -381,6 +616,7 @@ static inline void add_grass_block(
     light = face_light(int_lighting, BD_FACE_BOT);
     push_bottom_face(vb, idx, step, st, light, 1, 0, 0, 0, 0, zf_off);
   } else {
+    // TODO: Something else here...
     compute_dynamic_face_tc(b, BD_ORI_OUT, &st);
     light = face_light(ext_lighting, BD_FACE_TOP);
     push_top_face(vb, idx, step, st, light, 0.2, 0.2, 0.2, 0.2, 0.2, zf_off);
@@ -395,6 +631,28 @@ static inline void add_grass_block(
     light = face_light(ext_lighting, BD_FACE_RIGHT);
     push_west_face(vb, idx, step, st, light, 0.2, 0.2, 0.2, 0.2, 0.2, zf_off);
   }
+}
+
+static inline void add_herb_block(
+  vertex_buffer *vb,
+  block b,
+  block exposure,
+  cube_illumination* ext_lighting,
+  cube_illumination* int_lighting,
+  block_index idx,
+  int step,
+  int zf_off
+) {
+  tcoords st = { .s=0, .t=0 };
+  face_illumination light = 0xff;
+  // TODO: Care about exposure?
+  compute_dynamic_face_tc(b, BD_ORI_OUT, &st);
+  // TODO: Better than this!
+  light = face_light(ext_lighting, BD_FACE_OUTSIDE);
+  push_ne_sw_face(vb, idx, step, st, light, 0, 0, 0, 0, 0, zf_off);
+  push_sw_ne_face(vb, idx, step, st, light, 0, 0, 0, 0, 0, zf_off);
+  push_nw_se_face(vb, idx, step, st, light, 0, 0, 0, 0, 0, zf_off);
+  push_se_nw_face(vb, idx, step, st, light, 0, 0, 0, 0, 0, zf_off);
 }
 
 /*************
@@ -540,7 +798,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
               step,
               0
             );
-          } else if (geom == BI_GEOM_GRASS) {
+          } else if (geom == BI_GEOM_GRASS || geom == BI_GEOM_FILM) {
             compute_lighting(&cl_nbh, 0, &ext_lighting);
             compute_lighting(&cl_nbh, 1, &int_lighting);
             add_grass_block(
@@ -552,6 +810,19 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
               idx,
               step,
               2
+            );
+          } else if (geom == BI_GEOM_HERB) {
+            compute_lighting(&cl_nbh, 0, &ext_lighting);
+            compute_lighting(&cl_nbh, 1, &int_lighting);
+            add_herb_block(
+              vb,
+              here->blocks[0],
+              exposure,
+              &ext_lighting,
+              &int_lighting,
+              idx,
+              step,
+              0
             );
           } else { // fall-back case is solid geometry:
             compute_lighting(&cl_nbh, 0, &ext_lighting);
@@ -582,6 +853,19 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
               here->blocks[1],
               exposure,
               &ext_lighting,
+              idx,
+              step,
+              1
+            );
+          } else if (geom == BI_GEOM_HERB) {
+            compute_lighting(&cl_nbh, 0, &ext_lighting);
+            compute_lighting(&cl_nbh, 1, &int_lighting);
+            add_herb_block(
+              vb,
+              here->blocks[0],
+              exposure,
+              &ext_lighting,
+              &int_lighting,
               idx,
               step,
               1

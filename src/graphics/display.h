@@ -36,6 +36,10 @@ typedef uint8_t face_vertex;
 // How far to push things to prevent z-fighting:
 extern float const Z_RECONCILIATION_OFFSET;
 
+// Where to place the corners of diagonal faces to avoid distortion:
+extern float const DF_LOWER;
+extern float const DF_UPPER;
+
 // Lighting parameters for ambient occlusion lighting:
 extern uint8_t const BASE_LIGHT_LEVEL;
 extern uint8_t const AMBIENT_LIGHT_STRENGTH;
