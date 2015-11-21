@@ -191,31 +191,39 @@ void cleanup_expansion_site(tx_grammar_expansion_site *ges) {
 texture* gen_block_texture(block b) {
   char filename[1024];
   block id = b_id(b);
-  texture *tx;
-  switch (id) {
-    case B_STONE:
-      tx = gen_stone_texture(b_species(b));
-      break;
-    /*
-    case B_GRASS:
-      // TODO: Fix me!
-      tx = NULL;
-      break;
-    */
-    default:
-      sprintf(
-        filename, 
-        "%s/%s.png",
-        BLOCK_TEXTURE_DIR,
-        BLOCK_NAMES[id]
-      );
-      if (access(filename, R_OK) != -1) {
-        tx = load_texture_from_png(filename);
-      } else {
-        tx = NULL;
-      }
+  if (b_species(b) != 0) {
+    switch (id) {
+      default:
+        // Fall out to the file base case below
+        break;
+      case B_DIRT:
+        return gen_dirt_texture(b_species(b));
+      case B_SAND:
+        return gen_sand_texture(b_species(b));
+      case B_CLAY:
+        return gen_clay_texture(b_species(b));
+      case B_STONE:
+        return gen_stone_texture(b_species(b));
+      /*
+      case B_GRASS:
+        // TODO: Fix me!
+        return NULL;
+        break;
+      */
+    }
   }
-  return tx;
+  // Base case if species is 0 or block type isn't gen-able: look for a file.
+  sprintf(
+    filename, 
+    "%s/%s.png",
+    BLOCK_TEXTURE_DIR,
+    BLOCK_NAMES[id]
+  );
+  if (access(filename, R_OK) != -1) {
+    return load_texture_from_png(filename);
+  }
+  // Give up
+  return NULL;
 }
 
 void run_grammar(tx_grammar_literal *lit) {

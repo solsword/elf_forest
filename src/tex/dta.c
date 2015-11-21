@@ -43,16 +43,18 @@ dynamic_texture_atlas *create_dynamic_atlas(size_t size) {
   );
   dta->handle = 0;
 
-  // Reserve indices 0 and 1 as 'invalid' textures so that failed map lookups
-  // (which return NULL) won't be ambiguous.
+  // Reserve indices 0 through 3 as 'invalid' textures so that failed map
+  // lookups (which return NULL) will be obvious.
   texture *invalid = load_texture_from_png("res/textures/invalid.png");
-  // Mark 0 and 1 as used:
-  bm_set_bits(dta->vacancies, 0, 2);
+  // Mark 0 through 3 as used:
+  bm_set_bits(dta->vacancies, 0, 4);
   // Add B_VOID -> 1 to our block id/variant -> index mapping:
   dta_set_index(dta, b_make_block(B_VOID), 1);
-  // Copy the invalid texture into our texture atlas:
+  // Copy the invalid texture four times into our texture atlas:
   tx_paste(dta->atlas, invalid, 0, 0);
   tx_paste(dta->atlas, invalid, BLOCK_TEXTURE_SIZE, 0);
+  tx_paste(dta->atlas, invalid, BLOCK_TEXTURE_SIZE*2, 0);
+  tx_paste(dta->atlas, invalid, BLOCK_TEXTURE_SIZE*3, 0);
   // Clean up the loaded texture as it's no longer needed:
   cleanup_texture(invalid);
 
@@ -83,23 +85,29 @@ void ensure_mapped(block b) {
   texture *tx;
   if (i == 0) {
     // We need to load the block's texture:
-    //* TODO: Real error checking/reporting!!
+    // TODO: Real error checking/reporting!!
+#ifdef DEBUG
     printf(
       "Loading texture for block %s:%d...\n",
       BLOCK_NAMES[b_id(b)],
       b_species(b)
     );
-    // */
+#endif
     tx = gen_block_texture(b);
     if (tx) {
+#ifdef DEBUG
       printf("  ...done.\n");
+#endif
+      // TODO: Handle anisotropy
       dta_add_block(dta, b, tx);
       dta_update_texture(dta);
     } else {
+#ifdef DEBUG
       printf("  ...failed (no texture found).\n");
+#endif
       // If there's no texture for the block, we'll mark it as
       // invalid-no-texture, and it will use the default "invalid" texture.
-      dta_set_index(dta, b, 1);
+      dta_set_index(dta, b, 0);
     }
   }
 }
@@ -117,10 +125,10 @@ ptrdiff_t dta_add_block(
   block b,
   texture *facemap
 ) {
-  size_t spots_needed = 4;
+  size_t spots_needed = 1;
   size_t index;
-  if (!bi_anis(b)) {
-    spots_needed = 1;
+  if (bi_anis(b)) {
+    spots_needed = 4;
   }
   index = bm_find_space(dta->vacancies, spots_needed);
   if (index == -1) {

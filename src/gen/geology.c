@@ -2151,7 +2151,7 @@ void determine_new_igneous_appearance(
   float base_density,
   ptrdiff_t seed
 ) {
-  stone_filter_args *target = &(species->appearance);
+  mineral_filter_args *target = &(species->appearance);
   seed = prng(seed);
   target->seed = seed;
 
@@ -2161,19 +2161,31 @@ void determine_new_igneous_appearance(
 
   // Igneous rock types are relatively gritty. Denser rocks tend to be slightly
   // less gritty though.
-  target->gritty = 1.4 + 2.3*(0.7*ptrf(seed) + 0.3*(1-base_density));
+  target->gritty = 0.14 + 0.23*(0.7*ptrf(seed) + 0.3*(1-base_density));
   seed = prng(seed);
 
   // Denser rocks tend to be more contoured.
-  target->contoured = 3.5 + 3.5*(0.8*ptrf(seed) + 0.2*base_density);
+  target->contoured = 0.35 + 0.35*(0.8*ptrf(seed) + 0.2*base_density);
   seed = prng(seed);
 
   // Lighter igneous rocks are far more porous.
-  target->porous = 2.0 + 8.5*(0.5*ptrf(seed) + 0.5*(1-base_density));
+  target->porous = 0.2 + 0.8*(0.5*ptrf(seed) + 0.5*(1-base_density));
   seed = prng(seed);
 
   // Igneous rocks don't tend to be very bumpy.
-  target->bumpy = 1.0 + 4.0*ptrf(seed);
+  target->bumpy = 0.1 + 0.4*ptrf(seed);
+  seed = prng(seed);
+
+  // Igneous rocks don't usually exhibit strong layering.
+  target->layered = 0.0 + 0.4*ptrf(seed);
+  seed = prng(seed);
+  target->layerscale = 1.0 / (3.0 + 4.0*ptrf(seed));
+  seed = prng(seed);
+
+  // Igneous layers (if they exist) are usually wavy:
+  target->layerwaves = 0.5 + 3.0*ptrf(seed);
+  seed = prng(seed);
+  target->wavescale = 1.0 / (4.0 + 5.0*ptrf(seed));
   seed = prng(seed);
 
   // Igneous rocks rarely have significant inclusions.
@@ -2189,10 +2201,14 @@ void determine_new_igneous_appearance(
   target->distortion = 7*pow(randf_pnorm(seed, 0, 1), 1.5);
   seed = prng(seed);
 
-  // Igneous rocks can be squashed in either direction
+  // Igneous rocks can be squashed in either direction.
   target->squash = randf_pnorm(seed, 0.7, 1.3);
   seed = prng(seed);
   target->squash /= randf_pnorm(seed, 0.7, 1.3);
+  seed = prng(seed);
+
+  // Igneous rocks tend to have little saturation noise.
+  target->sat_noise = randf(seed, 0.0, 0.6);
   seed = prng(seed);
 
   // We define our color in L*c*h*, and convert to RGB later, potentially
@@ -2224,7 +2240,7 @@ void determine_new_metamorphic_appearance(
   float base_density,
   ptrdiff_t seed
 ) {
-  stone_filter_args *target = &(species->appearance);
+  mineral_filter_args *target = &(species->appearance);
   seed = prng(seed);
   target->seed = seed;
 
@@ -2249,6 +2265,18 @@ void determine_new_metamorphic_appearance(
   target->bumpy = 1.0 + 9.0*(0.6*ptrf(seed) + 0.4*(1-base_density));
   seed = prng(seed);
 
+  // Metamorphic rocks may exhibit strong layering but usually don't.
+  target->layered = 0.1 + 0.6*expdist(ptrf(seed), 3);
+  seed = prng(seed);
+  target->layerscale = 1.0 / (2.5 + 7.5*ptrf(seed));
+  seed = prng(seed);
+
+  // Metamorphic layers are usually wavy:
+  target->layerwaves = 0.8 + 4.2*ptrf(seed);
+  seed = prng(seed);
+  target->wavescale = 1.0 / (3.0 + 5.0*ptrf(seed));
+  seed = prng(seed);
+
   // Metamorphic rocks often have significant inclusions.
   target->inclusions = pow(ptrf(seed), 1.3);
   seed = prng(seed);
@@ -2265,6 +2293,10 @@ void determine_new_metamorphic_appearance(
   target->squash = randf_pnorm(seed, 0.6, 1.4);
   seed = prng(seed);
   target->squash /= randf_pnorm(seed, 0.6, 1.4);
+  seed = prng(seed);
+
+  // Metamorphic rocks tend to have moderate saturation noise.
+  target->sat_noise = randf(seed, 0.1, 0.9);
   seed = prng(seed);
 
   // We define our color in L*c*h*, and convert to RGB later, potentially
@@ -2300,7 +2332,7 @@ void determine_new_sedimentary_appearance(
   float base_density,
   ptrdiff_t seed
 ) {
-  stone_filter_args *target = &(species->appearance);
+  mineral_filter_args *target = &(species->appearance);
   seed = prng(seed);
   target->seed = seed;
 
@@ -2324,6 +2356,18 @@ void determine_new_sedimentary_appearance(
   target->bumpy = 3.0 + 6.0*ptrf(seed);
   seed = prng(seed);
 
+  // Sedimentary rocks often exhibit strong layering.
+  target->layered = 0.1 + 0.9*ptrf(seed);
+  seed = prng(seed);
+  target->layerscale = 1.0 / (2.0 + 8.0*ptrf(seed));
+  seed = prng(seed);
+
+  // Sedimentary layers are usually pretty straight.
+  target->layerwaves = 0.5 + 4.0*expdist(ptrf(seed), 2);
+  seed = prng(seed);
+  target->wavescale = 1.0 / (2.5 + 3.5*ptrf(seed));
+  seed = prng(seed);
+
   // Sedimentary rocks usually don't have inclusions.
   target->inclusions = pow(randf_pnorm(seed, 0, 1), 2.5);
   seed = prng(seed);
@@ -2340,6 +2384,10 @@ void determine_new_sedimentary_appearance(
   target->squash = randf_pnorm(seed, 0.6, 1.2);
   seed = prng(seed);
   target->squash /= randf_pnorm(seed, 0.8, 1.4);
+  seed = prng(seed);
+
+  // Sedimentary rocks tend to have medium saturation noise.
+  target->sat_noise = randf(seed, 0.1, 0.7);
   seed = prng(seed);
 
   // We define our color in L*c*h*, and convert to RGB later, potentially

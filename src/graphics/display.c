@@ -862,7 +862,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
             compute_lighting(&cl_nbh, 1, &int_lighting);
             add_herb_block(
               vb,
-              here->blocks[0],
+              here->blocks[1],
               exposure,
               &ext_lighting,
               &int_lighting,
@@ -872,6 +872,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
             );
           } // else don't draw the secondary
 #ifdef DEBUG
+          /* TODO: DEBUG
           else {
             printf(
               "Undrawn secondary: %s ~ %d\n",
@@ -879,6 +880,7 @@ void compile_chunk_or_approx(chunk_or_approx *coa) {
               geom
             );
           }
+          */
 #endif
         }
       }

@@ -85,7 +85,7 @@ struct dirt_species_s {
   species id;
 
   material material;
-  // dirt_texture_params appearance;
+  mineral_filter_args appearance;
 
   // These three primary properties should add up to 100. Along with
   // organic_content and acidity, they determine most of the other properties
@@ -190,7 +190,7 @@ struct clay_species_s {
   species id;
 
   material material;
-  // clay_texture_params appearance;
+  mineral_filter_args appearance;
 };
 
 struct stone_species_s {
@@ -199,7 +199,7 @@ struct stone_species_s {
   // Reference: http://www.physicalgeography.net/fundamentals/10d.html
   geologic_source source;
   material material;
-  stone_filter_args appearance;
+  mineral_filter_args appearance;
 
   // Fundamental composition:
   // Note: pure metals use B_NATIVE_METAL and metal_species
