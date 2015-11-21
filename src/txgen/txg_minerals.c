@@ -39,8 +39,8 @@ void fltr_mineral(texture *tx, void const * const fargs) {
 
   float dontcare;
 
-  // salt values for noise:
-  ptrdiff_t salt1, salt2, salt3, salt4, salt5, salt6, salt7;
+  // Seeds for the different noise functions:
+  ptrdiff_t salt1, salt2, salt3, salt4, salt5, salt6, salt7, salt8;
 
   pixel base_hsv, alt_hsv; // base and alternate colors in hsv
   pixel hsv; // temp hsv color
@@ -49,13 +49,14 @@ void fltr_mineral(texture *tx, void const * const fargs) {
   base_hsv = rgb__hsv(mfargs->base_color);
   alt_hsv = rgb__hsv(mfargs->alt_color);
 
-  salt1 = prng(prng(mfargs->seed-5));
+  salt1 = prng(mfargs->seed - 5);
   salt2 = prng(salt1);
   salt3 = prng(salt2);
   salt4 = prng(salt3);
   salt5 = prng(salt4);
   salt6 = prng(salt5);
   salt7 = prng(salt6);
+  salt8 = prng(salt7);
 
   // Round all scale values so that the scaled coordinate-space texture
   // boundaries are integers (for simplex noise wrapping purposes):
@@ -108,17 +109,26 @@ void fltr_mineral(texture *tx, void const * const fargs) {
           WORLEY_FLAG_INCLUDE_NEXTBEST
         )
       );
-      wavescale = tx->width * rounddenom(mfargs->wavescale, tx->width);
-      layerscale = tx->height * rounddenom(mfargs->layerscale, tx->height);
-      lphase = 1.0 + sinf(x * 2 * M_PI / wavescale) / 2.0;
-      lphase = (y + lphase * mfargs->layerwaves) / layerscale;
+
+      wavescale = ((float) tx->width) / roundf(1.0 / mfargs->wavescale);
+      lphase = (1.0 + sinf(((float) col) * 2 * M_PI / wavescale)) / 2.0;
+      wavescale = ((float) tx->width) / roundf(3.0 / mfargs->wavescale);
+      lphase += 0.5 * (1.0 + sinf(((float) col) * 2 * M_PI / wavescale)) / 2.0;
+      lphase /= 1.5;
+
+      layerscale = ((float) tx->height) / roundf(1.0 / mfargs->layerscale);
+      lphase = (((float) row) + lphase * mfargs->layerwaves) / layerscale;
       lphase -= fastfloor(lphase);
-      layers = 1 - expdist(lphase, 2.5);
+      if (ptrf(salt5) > 0.5) {
+        layers = 1 - expdist(lphase, 2.5);
+      } else {
+        layers = expdist(lphase, 2.5);
+      }
 
       alx = col * alscx;
       aly = row * alscy;
       alternate = wrnoise_2d_fancy(
-        alx, aly, salt5,
+        alx, aly, salt6,
         fastfloor(wx), fastfloor(wy),
         &dontcare, &dontcare,
         WORLEY_FLAG_INCLUDE_NEXTBEST
@@ -128,7 +138,7 @@ void fltr_mineral(texture *tx, void const * const fargs) {
             &sxnoise_2d,
             alx, aly,
             alwx, alwy,
-            salt6
+            salt7
           )
         ) / 2.0
       );
@@ -140,22 +150,22 @@ void fltr_mineral(texture *tx, void const * const fargs) {
       + mfargs->contoured * contours
       + mfargs->porous * matrix
       + mfargs->bumpy * bumps
-      + mfargs->layered * layers * 0 // DEBUG
       ) / (
         mfargs->gritty
       + mfargs->contoured
       + mfargs->porous
       + mfargs->bumpy
-      + mfargs->layered * 0 // DEBUG
       );
+
+      value *= (mfargs->layered) * layers + (1 - mfargs->layered);
 
       // saturation variance:
       saturation = (
-        0.4 + 0.6 * tiled_func(
+        0.7 + 0.3 * tiled_func(
           &sxnoise_2d,
           x, y,
           wx, wy,
-          salt7
+          salt8
         )
       );
       snoise = ptrf(prng(prng(col + fastfloor(x)) + row + fastfloor(y)));
@@ -163,6 +173,8 @@ void fltr_mineral(texture *tx, void const * const fargs) {
         (1.0 - mfargs->sat_noise) * saturation
       + mfargs->sat_noise * snoise
       );
+
+      saturation *= (1 - mfargs->desaturate);
 
       // figure out the base color:
       hsv = base_hsv;

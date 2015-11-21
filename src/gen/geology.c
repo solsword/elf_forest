@@ -2177,7 +2177,7 @@ void determine_new_igneous_appearance(
   seed = prng(seed);
 
   // Igneous rocks don't usually exhibit strong layering.
-  target->layered = 0.0 + 0.4*ptrf(seed);
+  target->layered = 0.0 + 0.5*ptrf(seed);
   seed = prng(seed);
   target->layerscale = 1.0 / (3.0 + 4.0*ptrf(seed));
   seed = prng(seed);
@@ -2185,7 +2185,7 @@ void determine_new_igneous_appearance(
   // Igneous layers (if they exist) are usually wavy:
   target->layerwaves = 0.5 + 3.0*ptrf(seed);
   seed = prng(seed);
-  target->wavescale = 1.0 / (4.0 + 5.0*ptrf(seed));
+  target->wavescale = 1.0 / (3.0 + 3.0*ptrf(seed));
   seed = prng(seed);
 
   // Igneous rocks rarely have significant inclusions.
@@ -2205,6 +2205,10 @@ void determine_new_igneous_appearance(
   target->squash = randf_pnorm(seed, 0.7, 1.3);
   seed = prng(seed);
   target->squash /= randf_pnorm(seed, 0.7, 1.3);
+  seed = prng(seed);
+
+  // Igneous rocks tend to be fairy desaturated.
+  target->desaturate = randf(seed, 0.4, 0.8);
   seed = prng(seed);
 
   // Igneous rocks tend to have little saturation noise.
@@ -2266,7 +2270,7 @@ void determine_new_metamorphic_appearance(
   seed = prng(seed);
 
   // Metamorphic rocks may exhibit strong layering but usually don't.
-  target->layered = 0.1 + 0.6*expdist(ptrf(seed), 3);
+  target->layered = 0.1 + 0.7*expdist(ptrf(seed), 3);
   seed = prng(seed);
   target->layerscale = 1.0 / (2.5 + 7.5*ptrf(seed));
   seed = prng(seed);
@@ -2274,7 +2278,7 @@ void determine_new_metamorphic_appearance(
   // Metamorphic layers are usually wavy:
   target->layerwaves = 0.8 + 4.2*ptrf(seed);
   seed = prng(seed);
-  target->wavescale = 1.0 / (3.0 + 5.0*ptrf(seed));
+  target->wavescale = 1.0 / (3.0 + 4.0*ptrf(seed));
   seed = prng(seed);
 
   // Metamorphic rocks often have significant inclusions.
@@ -2293,6 +2297,10 @@ void determine_new_metamorphic_appearance(
   target->squash = randf_pnorm(seed, 0.6, 1.4);
   seed = prng(seed);
   target->squash /= randf_pnorm(seed, 0.6, 1.4);
+  seed = prng(seed);
+
+  // Metamorphic rocks tend to be fairy saturated.
+  target->desaturate = randf(seed, 0.0, 0.6);
   seed = prng(seed);
 
   // Metamorphic rocks tend to have moderate saturation noise.
@@ -2365,7 +2373,7 @@ void determine_new_sedimentary_appearance(
   // Sedimentary layers are usually pretty straight.
   target->layerwaves = 0.5 + 4.0*expdist(ptrf(seed), 2);
   seed = prng(seed);
-  target->wavescale = 1.0 / (2.5 + 3.5*ptrf(seed));
+  target->wavescale = 1.0 / (2.5 + 2.5*ptrf(seed));
   seed = prng(seed);
 
   // Sedimentary rocks usually don't have inclusions.
@@ -2384,6 +2392,10 @@ void determine_new_sedimentary_appearance(
   target->squash = randf_pnorm(seed, 0.6, 1.2);
   seed = prng(seed);
   target->squash /= randf_pnorm(seed, 0.8, 1.4);
+  seed = prng(seed);
+
+  // Sedimentary rocks tend to be fairy desaturated.
+  target->desaturate = randf(seed, 0.3, 0.8);
   seed = prng(seed);
 
   // Sedimentary rocks tend to have medium saturation noise.

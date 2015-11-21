@@ -42,6 +42,7 @@ struct mineral_filter_args_s {
 
   pixel base_color, alt_color; // Base and alternate colors
   float sat_noise; // post-hoc saturation noise for the base color
+  float desaturate; // post-hoc saturation attenuation [0, 1]
   float brightness; // how much to brighten/darken the color [-1, 1]
   // (practically, this should be within about [-0.2, 0.5])
 };
