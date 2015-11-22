@@ -585,15 +585,10 @@ texture* gen_bush_fruiting_leaves_texture(bush_appearance *appearance) {
 }
 
 texture* gen_bush_shedding_leaves_texture(bush_appearance *appearance) {
-  // TODO: Fix compiler segfault on this function!!
-  /*
+  // TODO: Fix compiler segfault on this function when optimizing!!
   texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
-  //fltr_leaves(result, &(appearance->shedding_leaves));
-  //fltr_leaves(result, &(appearance->leaves));
   fltr_leaves(result, &(appearance->shedding_leaves));
   return result;
-  */
-  return NULL;
 }
 
 texture* gen_bush_dormant_leaves_texture(bush_appearance *appearance) {
