@@ -266,7 +266,10 @@ void init_blocks(void) {
   _bdef( B_HERB_SHOOTS, "herb_shoots",
     BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_HERB,   SPT_HERB,
     BIF_GROWS);
-  _bdef( B_HERB_GROWN, "herb",
+  _bdef( B_HERB_STEMS, "herb_stems",
+    BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_HERB,   SPT_HERB,
+    BIF_GROWS);
+  _bdef( B_HERB_LEAVES, "herb_leaves",
     BI_VIS_TRANSPARENT,  BI_SBST_OBSTRUCTED,  BI_GEOM_HERB,   SPT_HERB,
     BIF_GROWS);
   _bdef( B_HERB_BUDDING, "budding_herb",
@@ -472,6 +475,9 @@ void init_blocks(void) {
     BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_GRASS,  SPT_AQUATIC_GRASS,
     BIF_GROWS | BIF_GROWTH_SITE | BIF_AQUATIC);
   _bdef( B_AQUATIC_GRASS_GROWN, "aquatic_grass",
+    BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_GRASS,  SPT_AQUATIC_GRASS,
+    BIF_GROWS | BIF_GROWTH_SITE | BIF_AQUATIC);
+  _bdef( B_AQUATIC_GRASS_BUDDING, "budding_aquatic_grass",
     BI_VIS_TRANSPARENT,  BI_SBST_EMPTY,       BI_GEOM_GRASS,  SPT_AQUATIC_GRASS,
     BIF_GROWS | BIF_GROWTH_SITE | BIF_AQUATIC);
   _bdef( B_AQUATIC_GRASS_FLOWERING, "flowering_aquatic_grass",

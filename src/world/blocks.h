@@ -370,11 +370,13 @@ static block const ROTATE_FACE[8][8] = {
 #define                     B_VINE_SHEDDING 0x061
 #define                      B_VINE_DORMANT 0x062
 
-#define                        B_HERB_SEEDS 0x064
-#define                         B_HERB_CORE 0x065
-#define                        B_HERB_ROOTS 0x066
-#define                       B_HERB_SHOOTS 0x067
-#define                        B_HERB_GROWN 0x068
+// TODO: realign these?
+#define                        B_HERB_SEEDS 0x063
+#define                         B_HERB_CORE 0x064
+#define                        B_HERB_ROOTS 0x065
+#define                       B_HERB_SHOOTS 0x066
+#define                        B_HERB_STEMS 0x067
+#define                       B_HERB_LEAVES 0x068
 #define                      B_HERB_BUDDING 0x069
 #define                    B_HERB_FLOWERING 0x06a
 #define                     B_HERB_FRUITING 0x06b
@@ -446,15 +448,18 @@ static block const ROTATE_FACE[8][8] = {
 #define               B_AQUATIC_GRASS_ROOTS 0x0ad
 #define              B_AQUATIC_GRASS_SHOOTS 0x0ae
 #define               B_AQUATIC_GRASS_GROWN 0x0af
-#define           B_AQUATIC_GRASS_FLOWERING 0x0b0
-#define            B_AQUATIC_GRASS_FRUITING 0x0b1
+#define             B_AQUATIC_GRASS_BUDDING 0x0b0
+#define           B_AQUATIC_GRASS_FLOWERING 0x0b1
+#define            B_AQUATIC_GRASS_FRUITING 0x0b2
 
-#define               B_AQUATIC_PLANT_SEEDS 0x0b4
-#define                B_AQUATIC_PLANT_CORE 0x0b5
-#define             B_AQUATIC_PLANT_ANCHORS 0x0b6
-#define              B_AQUATIC_PLANT_SHOOTS 0x0b7
-#define               B_AQUATIC_PLANT_STEMS 0x0b8
-#define        B_AQUATIC_PLANT_LEAVES_GROWN 0x0b9
+// TODO: Realign this?
+#define               B_AQUATIC_PLANT_SEEDS 0x0b3
+#define                B_AQUATIC_PLANT_CORE 0x0b4
+#define             B_AQUATIC_PLANT_ANCHORS 0x0b5
+#define              B_AQUATIC_PLANT_SHOOTS 0x0b6
+#define               B_AQUATIC_PLANT_STEMS 0x0b7
+#define        B_AQUATIC_PLANT_LEAVES_GROWN 0x0b8
+#define      B_AQUATIC_PLANT_LEAVES_BUDDING 0x0b9
 #define    B_AQUATIC_PLANT_LEAVES_FLOWERING 0x0ba
 #define     B_AQUATIC_PLANT_LEAVES_FRUITING 0x0bb
 

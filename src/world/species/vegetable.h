@@ -61,11 +61,6 @@ typedef struct plant_materials_s plant_materials;
 struct coral_materials_s;
 typedef struct coral_materials_s coral_materials;
 
-
-// Various parameters that determine the appearance of an herb.
-struct herb_appearance_s;
-typedef struct herb_appearance_s herb_appearance;
-
 /*************************
  * Structure Definitions *
  *************************/
@@ -114,17 +109,6 @@ struct coral_materials_s {
   material frond;
 };
 
-struct herb_appearance_s {
-  // TODO: More appearance diversity?
-  leaves_filter_args seeds;
-  branch_filter_args roots;
-  herb_leaves_filter_args shoots;
-  herb_leaves_filter_args leaves;
-  leaves_filter_args buds;
-  leaves_filter_args flowers;
-  leaves_filter_args fruit;
-};
-
 // Primary structures:
 
 struct fungus_species_s {
@@ -139,7 +123,7 @@ struct moss_species_s {
   species id;
 
   plant_materials materials;
-  // moss_texture_params appearance;
+  herbaceous_appearance appearance;
   growth_properties growth;
 };
 
@@ -147,7 +131,7 @@ struct grass_species_s {
   species id;
 
   plant_materials materials;
-  // grass_texture_params appearance;
+  herbaceous_appearance appearance;
   growth_properties growth;
 };
 
@@ -155,7 +139,7 @@ struct vine_species_s {
   species id;
 
   plant_materials materials;
-  // vine_texture_params appearance;
+  bush_appearance appearance;
   growth_properties growth;
 };
 
@@ -163,7 +147,7 @@ struct herb_species_s {
   species id;
 
   plant_materials materials;
-  herb_appearance appearance;
+  herbaceous_appearance appearance;
   growth_properties growth;
 };
 
@@ -171,7 +155,7 @@ struct bush_species_s {
   species id;
 
   plant_materials materials;
-  // bush_texture_params appearance;
+  bush_appearance appearance;
   growth_properties growth;
 };
 
@@ -179,7 +163,7 @@ struct shrub_species_s {
   species id;
 
   plant_materials materials;
-  // shrub_texture_params appearance;
+  bush_appearance appearance;
   growth_properties growth;
 };
 
@@ -187,7 +171,7 @@ struct tree_species_s {
   species id;
 
   plant_materials materials;
-  // tree_texture_params appearance;
+  tree_appearance appearance;
   growth_properties growth;
 };
 
@@ -195,7 +179,7 @@ struct aquatic_grass_species_s {
   species id;
 
   plant_materials materials;
-  // aquatic_grass_texture_params appearance;
+  herbaceous_appearance appearance;
   growth_properties growth;
 };
 
@@ -203,7 +187,7 @@ struct aquatic_plant_species_s {
   species id;
 
   plant_materials materials;
-  // aquatic_plant_texture_params appearance;
+  herbaceous_appearance appearance;
   growth_properties growth;
 };
 
@@ -211,7 +195,7 @@ struct coral_species_s {
   species id;
 
   coral_materials materials;
-  // coral_texture_params appearance;
+  coral_appearance appearance;
   growth_properties growth;
 };
 

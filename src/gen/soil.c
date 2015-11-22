@@ -237,6 +237,7 @@ static rngtable WET_SAND_ALTS = {
   }
 };
 
+// TODO: Use this
 static rngtable MUD_ALTS = {
   .size = 7,
   .values = (void*[]) {

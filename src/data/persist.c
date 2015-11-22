@@ -53,7 +53,6 @@ uint64_t EMPTY_INDICES[PS_BLOCK_TOTAL_CHUNKS];
 void setup_persist(char const * const world_directory) {
   size_t i;
   char *dir;
-  struct stat st;
   string *rdir;
   // Convert some char*s to strings and set up the PS_BLOCK_DIR_PREFIX string:
   DIRSEP = create_string_from_ntchars(RAW_DIRSEP);

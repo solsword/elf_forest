@@ -198,21 +198,168 @@ texture* gen_block_texture(block b) {
         break;
       case B_DIRT:
         return gen_dirt_texture(b_species(b));
+
+      case B_MUD:
+        return gen_mud_texture(b_species(b));
+
       case B_SAND:
         return gen_sand_texture(b_species(b));
+
       case B_CLAY:
         return gen_clay_texture(b_species(b));
+
       case B_STONE:
         return gen_stone_texture(b_species(b));
-      /*
-      case B_GRASS:
-        // TODO: Fix me!
-        return NULL;
-        break;
-      */
+
+      case B_MUSHROOM_SPORES:
+      case B_MUSHROOM_SHOOTS:
+      case B_MUSHROOM_GROWN:
+        return gen_mushroom_texture(b);
+
+      case B_GIANT_MUSHROOM_SPORES:
+      case B_GIANT_MUSHROOM_CORE:
+      case B_GIANT_MUSHROOM_MYCELIUM:
+      case B_GIANT_MUSHROOM_SPROUT:
+      case B_GIANT_MUSHROOM_STALK:
+      case B_GIANT_MUSHROOM_CAP:
+        return gen_giant_mushroom_texture(b);
+
+      case B_MOSS_SPORES:
+      case B_MOSS_SHOOTS:
+      case B_MOSS_GROWN:
+      case B_MOSS_FLOWERING:
+      case B_MOSS_FRUITING:
+        return gen_moss_texture(b);
+
+      case B_GRASS_SEEDS:
+      case B_GRASS_ROOTS:
+      case B_GRASS_SHOOTS:
+      case B_GRASS_GROWN:
+      case B_GRASS_BUDDING:
+      case B_GRASS_FLOWERING:
+      case B_GRASS_FRUITING:
+        return gen_grass_texture(b);
+
+      case B_VINE_SEEDS:
+      case B_VINE_CORE:
+      case B_VINE_ROOTS:
+      case B_VINE_SHOOTS:
+      case B_VINE_SPROUTING:
+      case B_VINE_GROWN:
+      case B_VINE_BUDDING:
+      case B_VINE_FLOWERING:
+      case B_VINE_FRUITING:
+      case B_VINE_SHEDDING:
+      case B_VINE_DORMANT:
+        return gen_vine_texture(b);
+
+      case B_HERB_SEEDS:
+      case B_HERB_CORE:
+      case B_HERB_ROOTS:
+      case B_HERB_SHOOTS:
+      case B_HERB_STEMS:
+      case B_HERB_LEAVES:
+      case B_HERB_BUDDING:
+      case B_HERB_FLOWERING:
+      case B_HERB_FRUITING:
+        return gen_herb_texture(b);
+
+      case B_BUSH_SEEDS:
+      case B_BUSH_CORE:
+      case B_BUSH_ROOTS:
+      case B_BUSH_SHOOTS:
+      case B_BUSH_BRANCHES_SPROUTING:
+      case B_BUSH_BRANCHES_GROWN:
+      case B_BUSH_BRANCHES_BUDDING:
+      case B_BUSH_BRANCHES_FLOWERING:
+      case B_BUSH_BRANCHES_FRUITING:
+      case B_BUSH_BRANCHES_SHEDDING:
+      case B_BUSH_BRANCHES_DORMANT:
+      case B_BUSH_LEAVES_SPROUTING:
+      case B_BUSH_LEAVES_GROWN:
+      case B_BUSH_LEAVES_BUDDING:
+      case B_BUSH_LEAVES_FLOWERING:
+      case B_BUSH_LEAVES_FRUITING:
+      case B_BUSH_LEAVES_SHEDDING:
+      case B_BUSH_LEAVES_DORMANT:
+        return gen_bush_texture(b);
+
+      case B_SHRUB_SEEDS:
+      case B_SHRUB_CORE:
+      case B_SHRUB_ROOTS:
+      case B_SHRUB_THICK_ROOTS:
+      case B_SHRUB_SHOOTS:
+      case B_SHRUB_BRANCHES_SPROUTING:
+      case B_SHRUB_BRANCHES_GROWN:
+      case B_SHRUB_BRANCHES_BUDDING:
+      case B_SHRUB_BRANCHES_FLOWERING:
+      case B_SHRUB_BRANCHES_FRUITING:
+      case B_SHRUB_BRANCHES_SHEDDING:
+      case B_SHRUB_BRANCHES_DORMANT:
+      case B_SHRUB_LEAVES_SPROUTING:
+      case B_SHRUB_LEAVES_GROWN:
+      case B_SHRUB_LEAVES_BUDDING:
+      case B_SHRUB_LEAVES_FLOWERING:
+      case B_SHRUB_LEAVES_FRUITING:
+      case B_SHRUB_LEAVES_SHEDDING:
+      case B_SHRUB_LEAVES_DORMANT:
+        return gen_shrub_texture(b);
+
+      case B_TREE_SEEDS:
+      case B_TREE_CORE:
+      case B_TREE_HEART_CORE:
+      case B_TREE_ROOTS:
+      case B_TREE_THICK_ROOTS:
+      case B_TREE_HEART_ROOTS:
+      case B_TREE_SHOOTS:
+      case B_TREE_TRUNK:
+      case B_TREE_BARE_BRANCHES:
+      case B_TREE_BRANCHES_SPROUTING:
+      case B_TREE_BRANCHES_GROWN:
+      case B_TREE_BRANCHES_BUDDING:
+      case B_TREE_BRANCHES_FLOWERING:
+      case B_TREE_BRANCHES_FRUITING:
+      case B_TREE_BRANCHES_SHEDDING:
+      case B_TREE_BRANCHES_DORMANT:
+      case B_TREE_LEAVES_SPROUTING:
+      case B_TREE_LEAVES_GROWN:
+      case B_TREE_LEAVES_BUDDING:
+      case B_TREE_LEAVES_FLOWERING:
+      case B_TREE_LEAVES_FRUITING:
+      case B_TREE_LEAVES_SHEDDING:
+      case B_TREE_LEAVES_DORMANT:
+        return gen_tree_texture(b);
+
+      case B_AQUATIC_GRASS_SEEDS:
+      case B_AQUATIC_GRASS_ROOTS:
+      case B_AQUATIC_GRASS_SHOOTS:
+      case B_AQUATIC_GRASS_GROWN:
+      case B_AQUATIC_GRASS_FLOWERING:
+      case B_AQUATIC_GRASS_FRUITING:
+        return gen_aquatic_grass_texture(b);
+
+      case B_AQUATIC_PLANT_SEEDS:
+      case B_AQUATIC_PLANT_CORE:
+      case B_AQUATIC_PLANT_ANCHORS:
+      case B_AQUATIC_PLANT_SHOOTS:
+      case B_AQUATIC_PLANT_STEMS:
+      case B_AQUATIC_PLANT_LEAVES_GROWN:
+      case B_AQUATIC_PLANT_LEAVES_FLOWERING:
+      case B_AQUATIC_PLANT_LEAVES_FRUITING:
+        return gen_aquatic_plant_texture(b);
+
+      case B_YOUNG_CORAL:
+      case B_CORAL_CORE:
+      case B_CORAL_BODY:
+      case B_CORAL_FROND:
+        return gen_coral_texture(b);
+
+// TODO: More block types here!!
+
     }
   }
   // Base case if species is 0 or block type isn't gen-able: look for a file.
+  // TODO: switch to using string.h...
   sprintf(
     filename, 
     "%s/%s.png",

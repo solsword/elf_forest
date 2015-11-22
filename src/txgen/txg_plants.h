@@ -9,6 +9,8 @@
 #include "math/curve.h"
 #include "noise/noise.h"
 
+#include "txg_minerals.h"
+
 /*********
  * Types *
  *********/
@@ -78,6 +80,20 @@ typedef struct herb_leaves_filter_args_s herb_leaves_filter_args;
 struct width_func_args_s;
 typedef struct width_func_args_s width_func_args;
 
+// These appearance structures bundle several filter structures that define
+// different parts and/or growth stages of an organism:
+struct herbaceous_appearance_s;
+typedef struct herbaceous_appearance_s herbaceous_appearance;
+
+struct bush_appearance_s;
+typedef struct bush_appearance_s bush_appearance;
+
+struct tree_appearance_s;
+typedef struct tree_appearance_s tree_appearance;
+
+struct coral_appearance_s;
+typedef struct coral_appearance_s coral_appearance;
+
 /*************************
  * Structure Definitions *
  *************************/
@@ -143,6 +159,54 @@ struct width_func_args_s {
   float base_width; // width of the widest point
 };
 
+struct herbaceous_appearance_s {
+  // TODO: More appearance diversity?
+  leaves_filter_args seeds;
+  branch_filter_args roots;
+  herb_leaves_filter_args shoots;
+  herb_leaves_filter_args stems;
+  herb_leaves_filter_args leaves;
+  leaves_filter_args buds;
+  leaves_filter_args flowers;
+  leaves_filter_args fruit;
+};
+
+struct bush_appearance_s {
+  leaves_filter_args seeds;
+  branch_filter_args roots;
+  branch_filter_args thick_roots;
+  herb_leaves_filter_args shoots;
+  leaves_filter_args sprouting_leaves;
+  leaves_filter_args leaves;
+  leaves_filter_args shedding_leaves;
+  branch_filter_args thin_branches;
+  branch_filter_args thick_branches;
+  leaves_filter_args buds;
+  leaves_filter_args flowers;
+  leaves_filter_args fruit;
+};
+
+struct tree_appearance_s {
+  leaves_filter_args seeds;
+  branch_filter_args roots;
+  branch_filter_args thick_roots;
+  herb_leaves_filter_args shoots;
+  leaves_filter_args leaves;
+  leaves_filter_args shedding_leaves;
+  branch_filter_args trunk;
+  branch_filter_args thin_branches;
+  branch_filter_args thick_branches;
+  leaves_filter_args buds;
+  leaves_filter_args flowers;
+  leaves_filter_args fruit;
+};
+
+struct coral_appearance_s {
+  mineral_filter_args skin;
+  leaves_filter_args decorations;
+  branch_filter_args fronds;
+};
+
 /*************
  * Functions *
  *************/
@@ -150,6 +214,74 @@ struct width_func_args_s {
 // Function for drawing a leaf along the given curve using the given leaf
 // filter arguments:
 void draw_leaf(texture *tx, curve *c, leaf_filter_args *lfargs);
+
+// High-level functions that switch on block types:
+texture *gen_mushroom_texture(block b);
+texture *gen_giant_mushroom_texture(block b);
+texture *gen_moss_texture(block b);
+texture *gen_grass_texture(block b);
+texture *gen_vine_texture(block b);
+texture *gen_herb_texture(block b);
+texture *gen_bush_texture(block b);
+texture *gen_shrub_texture(block b);
+texture *gen_tree_texture(block b);
+texture *gen_aquatic_grass_texture(block b);
+texture *gen_aquatic_plant_texture(block b);
+texture *gen_coral_texture(block b);
+
+// Low-level functions that don't care about block types:
+texture* gen_herbaceous_seeds_texture(herbaceous_appearance *appearance);
+texture* gen_herbaceous_roots_texture(herbaceous_appearance *appearance);
+texture* gen_herbaceous_shoots_texture(herbaceous_appearance *appearance);
+texture* gen_herbaceous_stems_texture(herbaceous_appearance *appearance);
+texture* gen_herbaceous_leaves_texture(herbaceous_appearance *appearance);
+texture* gen_herbaceous_budding_texture(herbaceous_appearance *appearance);
+texture* gen_herbaceous_flowering_texture(herbaceous_appearance *appearance);
+texture* gen_herbaceous_fruiting_texture(herbaceous_appearance *appearance);
+
+texture* gen_bush_seeds_texture(bush_appearance *appearance);
+texture* gen_bush_roots_texture(bush_appearance *appearance);
+texture* gen_bush_thick_roots_texture(bush_appearance *appearance);
+texture* gen_bush_shoots_texture(bush_appearance *appearance);
+texture* gen_bush_sprouting_branches_texture(bush_appearance *appearance);
+texture* gen_bush_branches_texture(bush_appearance *appearance);
+texture* gen_bush_budding_branches_texture(bush_appearance *appearance);
+texture* gen_bush_flowering_branches_texture(bush_appearance *appearance);
+texture* gen_bush_fruiting_branches_texture(bush_appearance *appearance);
+texture* gen_bush_shedding_branches_texture(bush_appearance *appearance);
+texture* gen_bush_dormant_branches_texture(bush_appearance *appearance);
+texture* gen_bush_sprouting_leaves_texture(bush_appearance *appearance);
+texture* gen_bush_leaves_texture(bush_appearance *appearance);
+texture* gen_bush_budding_leaves_texture(bush_appearance *appearance);
+texture* gen_bush_flowering_leaves_texture(bush_appearance *appearance);
+texture* gen_bush_fruiting_leaves_texture(bush_appearance *appearance);
+texture* gen_bush_shedding_leaves_texture(bush_appearance *appearance);
+texture* gen_bush_dormant_leaves_texture(bush_appearance *appearance);
+
+texture* gen_tree_seeds_texture(tree_appearance *appearance);
+texture* gen_tree_roots_texture(tree_appearance *appearance);
+texture* gen_tree_thick_roots_texture(tree_appearance *appearance);
+texture* gen_tree_heart_roots_texture(tree_appearance *appearance);
+texture* gen_tree_shoots_texture(tree_appearance *appearance);
+texture* gen_tree_trunk_texture(tree_appearance *appearance);
+texture* gen_tree_sprouting_branches_texture(tree_appearance *appearance);
+texture* gen_tree_branches_texture(tree_appearance *appearance);
+texture* gen_tree_budding_branches_texture(tree_appearance *appearance);
+texture* gen_tree_flowering_branches_texture(tree_appearance *appearance);
+texture* gen_tree_fruiting_branches_texture(tree_appearance *appearance);
+texture* gen_tree_shedding_branches_texture(tree_appearance *appearance);
+texture* gen_tree_dormant_branches_texture(tree_appearance *appearance);
+texture* gen_tree_sprouting_leaves_texture(tree_appearance *appearance);
+texture* gen_tree_leaves_texture(tree_appearance *appearance);
+texture* gen_tree_budding_leaves_texture(tree_appearance *appearance);
+texture* gen_tree_flowering_leaves_texture(tree_appearance *appearance);
+texture* gen_tree_fruiting_leaves_texture(tree_appearance *appearance);
+texture* gen_tree_shedding_leaves_texture(tree_appearance *appearance);
+texture* gen_tree_dormant_leaves_texture(tree_appearance *appearance);
+
+texture* gen_young_coral_texture(coral_appearance *appearance);
+texture* gen_coral_body_texture(coral_appearance *appearance);
+texture* gen_coral_frond_texture(coral_appearance *appearance);
 
 /*******************
  * Width Functions *

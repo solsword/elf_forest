@@ -3,6 +3,7 @@
 
 #include "world/blocks.h"
 #include "world/world.h"
+#include "world/species.h"
 #include "noise/noise.h"
 #include "tex/tex.h"
 #include "tex/draw.h"
@@ -59,6 +60,667 @@ void draw_leaf(texture *tx, curve *c, leaf_filter_args *lfargs) {
   draw_curve(tx, c, lfargs->vein_color);
   // TODO: secondary veins
 }
+
+texture *gen_mushroom_texture(block b) {
+  switch (b_id(b)) {
+    default:
+#ifdef DEBUG
+      printf("Bad mushroom block type during txgen: %d\n", b_id(b));
+#endif
+      return NULL;
+    case B_MUSHROOM_SPORES:
+      return NULL;
+    case B_MUSHROOM_SHOOTS:
+      return NULL;
+    case B_MUSHROOM_GROWN:
+      return NULL;
+  }
+}
+
+texture *gen_giant_mushroom_texture(block b) {
+  switch (b_id(b)) {
+    default:
+#ifdef DEBUG
+      printf("Bad giant mushroom block type during txgen: %d\n", b_id(b));
+#endif
+      return NULL;
+    case B_GIANT_MUSHROOM_SPORES:
+      return NULL;
+    case B_GIANT_MUSHROOM_CORE:
+      return NULL;
+    case B_GIANT_MUSHROOM_MYCELIUM:
+      return NULL;
+    case B_GIANT_MUSHROOM_SPROUT:
+      return NULL;
+    case B_GIANT_MUSHROOM_STALK:
+      return NULL;
+    case B_GIANT_MUSHROOM_CAP:
+      return NULL;
+  }
+}
+
+texture *gen_moss_texture(block b) {
+  moss_species *msp = get_moss_species(b_species(b));
+  switch (b_id(b)) {
+    default:
+#ifdef DEBUG
+      printf("Bad moss block type during txgen: %d\n", b_id(b));
+#endif
+      return NULL;
+    case B_MOSS_SPORES:
+      return gen_herbaceous_seeds_texture(&(msp->appearance));
+    case B_MOSS_SHOOTS:
+      return gen_herbaceous_shoots_texture(&(msp->appearance));
+    case B_MOSS_GROWN:
+      return gen_herbaceous_leaves_texture(&(msp->appearance));
+    case B_MOSS_FLOWERING:
+      return gen_herbaceous_flowering_texture(&(msp->appearance));
+    case B_MOSS_FRUITING:
+      return gen_herbaceous_fruiting_texture(&(msp->appearance));
+  }
+}
+
+texture *gen_grass_texture(block b) {
+  grass_species *gsp = get_grass_species(b_species(b));
+  switch (b_id(b)) {
+    default:
+#ifdef DEBUG
+      printf("Bad grass block type during txgen: %d\n", b_id(b));
+#endif
+      return NULL;
+    case B_GRASS_SEEDS:
+      return gen_herbaceous_seeds_texture(&(gsp->appearance));
+    case B_GRASS_ROOTS:
+      return gen_herbaceous_roots_texture(&(gsp->appearance));
+    case B_GRASS_SHOOTS:
+      return gen_herbaceous_shoots_texture(&(gsp->appearance));
+    case B_GRASS_GROWN:
+      return gen_herbaceous_leaves_texture(&(gsp->appearance));
+    case B_GRASS_BUDDING:
+      return gen_herbaceous_budding_texture(&(gsp->appearance));
+    case B_GRASS_FLOWERING:
+      return gen_herbaceous_flowering_texture(&(gsp->appearance));
+    case B_GRASS_FRUITING:
+      return gen_herbaceous_fruiting_texture(&(gsp->appearance));
+  }
+}
+
+texture *gen_vine_texture(block b) {
+  vine_species *vsp = get_vine_species(b_species(b));
+  switch (b_id(b)) {
+    default:
+#ifdef DEBUG
+      printf("Bad vine block type during txgen: %d\n", b_id(b));
+#endif
+      return NULL;
+    case B_VINE_SEEDS:
+      return gen_bush_seeds_texture(&(vsp->appearance));
+    case B_VINE_CORE:
+    case B_VINE_ROOTS:
+      return gen_bush_roots_texture(&(vsp->appearance));
+    case B_VINE_SHOOTS:
+      return gen_bush_shoots_texture(&(vsp->appearance));
+    case B_VINE_SPROUTING:
+      return gen_bush_sprouting_branches_texture(&(vsp->appearance));
+    case B_VINE_GROWN:
+      return gen_bush_branches_texture(&(vsp->appearance));
+    case B_VINE_BUDDING:
+      return gen_bush_budding_branches_texture(&(vsp->appearance));
+    case B_VINE_FLOWERING:
+      return gen_bush_flowering_branches_texture(&(vsp->appearance));
+    case B_VINE_FRUITING:
+      return gen_bush_fruiting_branches_texture(&(vsp->appearance));
+    case B_VINE_SHEDDING:
+      return gen_bush_shedding_branches_texture(&(vsp->appearance));
+    case B_VINE_DORMANT:
+      return gen_bush_dormant_branches_texture(&(vsp->appearance));
+  }
+}
+
+texture *gen_herb_texture(block b) {
+  herb_species *hsp = get_herb_species(b_species(b));
+  switch (b_id(b)) {
+    default:
+#ifdef DEBUG
+      printf("Bad herb block type during txgen: %d\n", b_id(b));
+#endif
+      return NULL;
+    case B_HERB_SEEDS:
+      return gen_herbaceous_seeds_texture(&(hsp->appearance));
+    case B_HERB_CORE:
+    case B_HERB_ROOTS:
+      return gen_herbaceous_roots_texture(&(hsp->appearance));
+    case B_HERB_SHOOTS:
+      return gen_herbaceous_shoots_texture(&(hsp->appearance));
+    case B_HERB_STEMS:
+      return gen_herbaceous_stems_texture(&(hsp->appearance));
+    case B_HERB_LEAVES:
+      return gen_herbaceous_leaves_texture(&(hsp->appearance));
+    case B_HERB_BUDDING:
+      return gen_herbaceous_budding_texture(&(hsp->appearance));
+    case B_HERB_FLOWERING:
+      return gen_herbaceous_flowering_texture(&(hsp->appearance));
+    case B_HERB_FRUITING:
+      return gen_herbaceous_fruiting_texture(&(hsp->appearance));
+  }
+}
+
+texture *gen_bush_texture(block b) {
+  bush_species *bsp = get_bush_species(b_species(b));
+  switch (b_id(b)) {
+    default:
+#ifdef DEBUG
+      printf("Bad bush block type during txgen: %d\n", b_id(b));
+#endif
+      return NULL;
+    case B_BUSH_SEEDS:
+      return gen_bush_seeds_texture(&(bsp->appearance));
+    case B_BUSH_CORE:
+    case B_BUSH_ROOTS:
+      return gen_bush_roots_texture(&(bsp->appearance));
+    case B_BUSH_SHOOTS:
+      return gen_bush_shoots_texture(&(bsp->appearance));
+    case B_BUSH_BRANCHES_SPROUTING:
+      return gen_bush_sprouting_branches_texture(&(bsp->appearance));
+    case B_BUSH_BRANCHES_GROWN:
+      return gen_bush_branches_texture(&(bsp->appearance));
+    case B_BUSH_BRANCHES_BUDDING:
+      return gen_bush_budding_branches_texture(&(bsp->appearance));
+    case B_BUSH_BRANCHES_FLOWERING:
+      return gen_bush_flowering_branches_texture(&(bsp->appearance));
+    case B_BUSH_BRANCHES_FRUITING:
+      return gen_bush_fruiting_branches_texture(&(bsp->appearance));
+    case B_BUSH_BRANCHES_SHEDDING:
+      return gen_bush_shedding_branches_texture(&(bsp->appearance));
+    case B_BUSH_BRANCHES_DORMANT:
+      return gen_bush_dormant_branches_texture(&(bsp->appearance));
+    case B_BUSH_LEAVES_SPROUTING:
+      return gen_bush_sprouting_leaves_texture(&(bsp->appearance));
+    case B_BUSH_LEAVES_GROWN:
+      return gen_bush_leaves_texture(&(bsp->appearance));
+    case B_BUSH_LEAVES_BUDDING:
+      return gen_bush_budding_leaves_texture(&(bsp->appearance));
+    case B_BUSH_LEAVES_FLOWERING:
+      return gen_bush_flowering_leaves_texture(&(bsp->appearance));
+    case B_BUSH_LEAVES_FRUITING:
+      return gen_bush_fruiting_leaves_texture(&(bsp->appearance));
+    case B_BUSH_LEAVES_SHEDDING:
+      return gen_bush_shedding_leaves_texture(&(bsp->appearance));
+    case B_BUSH_LEAVES_DORMANT:
+      return gen_bush_dormant_leaves_texture(&(bsp->appearance));
+  }
+}
+
+texture *gen_shrub_texture(block b) {
+  shrub_species *ssp = get_shrub_species(b_species(b));
+  switch (b_id(b)) {
+    default:
+#ifdef DEBUG
+      printf("Bad shrub block type during txgen: %d\n", b_id(b));
+#endif
+      return NULL;
+    case B_SHRUB_SEEDS:
+      return gen_bush_seeds_texture(&(ssp->appearance));
+    case B_SHRUB_ROOTS:
+      return gen_bush_roots_texture(&(ssp->appearance));
+    case B_SHRUB_CORE:
+    case B_SHRUB_THICK_ROOTS:
+      return gen_bush_thick_roots_texture(&(ssp->appearance));
+    case B_SHRUB_SHOOTS:
+      return gen_bush_shoots_texture(&(ssp->appearance));
+    case B_SHRUB_BRANCHES_SPROUTING:
+      return gen_bush_sprouting_branches_texture(&(ssp->appearance));
+    case B_SHRUB_BRANCHES_GROWN:
+      return gen_bush_branches_texture(&(ssp->appearance));
+    case B_SHRUB_BRANCHES_BUDDING:
+      return gen_bush_budding_branches_texture(&(ssp->appearance));
+    case B_SHRUB_BRANCHES_FLOWERING:
+      return gen_bush_flowering_branches_texture(&(ssp->appearance));
+    case B_SHRUB_BRANCHES_FRUITING:
+      return gen_bush_fruiting_branches_texture(&(ssp->appearance));
+    case B_SHRUB_BRANCHES_SHEDDING:
+      return gen_bush_shedding_branches_texture(&(ssp->appearance));
+    case B_SHRUB_BRANCHES_DORMANT:
+      return gen_bush_dormant_branches_texture(&(ssp->appearance));
+    case B_SHRUB_LEAVES_SPROUTING:
+      return gen_bush_sprouting_leaves_texture(&(ssp->appearance));
+    case B_SHRUB_LEAVES_GROWN:
+      return gen_bush_leaves_texture(&(ssp->appearance));
+    case B_SHRUB_LEAVES_BUDDING:
+      return gen_bush_budding_leaves_texture(&(ssp->appearance));
+    case B_SHRUB_LEAVES_FLOWERING:
+      return gen_bush_flowering_leaves_texture(&(ssp->appearance));
+    case B_SHRUB_LEAVES_FRUITING:
+      return gen_bush_fruiting_leaves_texture(&(ssp->appearance));
+    case B_SHRUB_LEAVES_SHEDDING:
+      return gen_bush_shedding_leaves_texture(&(ssp->appearance));
+    case B_SHRUB_LEAVES_DORMANT:
+      return gen_bush_dormant_leaves_texture(&(ssp->appearance));
+  }
+}
+
+texture *gen_tree_texture(block b) {
+  tree_species *tsp = get_tree_species(b_species(b));
+  switch (b_id(b)) {
+    default:
+#ifdef DEBUG
+      printf("Bad tree block type during txgen: %d\n", b_id(b));
+#endif
+      return NULL;
+    case B_TREE_SEEDS:
+      return gen_tree_seeds_texture(&(tsp->appearance));
+    case B_TREE_ROOTS:
+      return gen_tree_roots_texture(&(tsp->appearance));
+    case B_TREE_CORE:
+    case B_TREE_THICK_ROOTS:
+      return gen_tree_thick_roots_texture(&(tsp->appearance));
+    case B_TREE_HEART_CORE:
+    case B_TREE_HEART_ROOTS:
+      return gen_tree_heart_roots_texture(&(tsp->appearance));
+    case B_TREE_SHOOTS:
+      return gen_tree_shoots_texture(&(tsp->appearance));
+    case B_TREE_TRUNK:
+      return gen_tree_trunk_texture(&(tsp->appearance));
+    case B_TREE_BRANCHES_SPROUTING:
+      return gen_tree_sprouting_branches_texture(&(tsp->appearance));
+    case B_TREE_BRANCHES_GROWN:
+      return gen_tree_branches_texture(&(tsp->appearance));
+    case B_TREE_BRANCHES_BUDDING:
+      return gen_tree_budding_branches_texture(&(tsp->appearance));
+    case B_TREE_BRANCHES_FLOWERING:
+      return gen_tree_flowering_branches_texture(&(tsp->appearance));
+    case B_TREE_BRANCHES_FRUITING:
+      return gen_tree_fruiting_branches_texture(&(tsp->appearance));
+    case B_TREE_BRANCHES_SHEDDING:
+      return gen_tree_shedding_branches_texture(&(tsp->appearance));
+    case B_TREE_BARE_BRANCHES:
+    case B_TREE_BRANCHES_DORMANT:
+      return gen_tree_dormant_branches_texture(&(tsp->appearance));
+    case B_TREE_LEAVES_SPROUTING:
+      return gen_tree_sprouting_leaves_texture(&(tsp->appearance));
+    case B_TREE_LEAVES_GROWN:
+      return gen_tree_leaves_texture(&(tsp->appearance));
+    case B_TREE_LEAVES_BUDDING:
+      return gen_tree_budding_leaves_texture(&(tsp->appearance));
+    case B_TREE_LEAVES_FLOWERING:
+      return gen_tree_flowering_leaves_texture(&(tsp->appearance));
+    case B_TREE_LEAVES_FRUITING:
+      return gen_tree_fruiting_leaves_texture(&(tsp->appearance));
+    case B_TREE_LEAVES_SHEDDING:
+      return gen_tree_shedding_leaves_texture(&(tsp->appearance));
+    case B_TREE_LEAVES_DORMANT:
+      return gen_tree_dormant_leaves_texture(&(tsp->appearance));
+  }
+}
+
+texture *gen_aquatic_grass_texture(block b) {
+  aquatic_grass_species *asp = get_aquatic_grass_species(b_species(b));
+  switch (b_id(b)) {
+    default:
+#ifdef DEBUG
+      printf("Bad aquatic grass block type during txgen: %d\n", b_id(b));
+#endif
+      return NULL;
+    case B_AQUATIC_GRASS_SEEDS:
+      return gen_herbaceous_seeds_texture(&(asp->appearance));
+    case B_AQUATIC_GRASS_ROOTS:
+      return gen_herbaceous_roots_texture(&(asp->appearance));
+    case B_AQUATIC_GRASS_SHOOTS:
+      return gen_herbaceous_shoots_texture(&(asp->appearance));
+    case B_AQUATIC_GRASS_GROWN:
+      return gen_herbaceous_leaves_texture(&(asp->appearance));
+    case B_AQUATIC_GRASS_BUDDING:
+      return gen_herbaceous_budding_texture(&(asp->appearance));
+    case B_AQUATIC_GRASS_FLOWERING:
+      return gen_herbaceous_flowering_texture(&(asp->appearance));
+    case B_AQUATIC_GRASS_FRUITING:
+      return gen_herbaceous_fruiting_texture(&(asp->appearance));
+  }
+}
+
+texture *gen_aquatic_plant_texture(block b) {
+  aquatic_plant_species *asp = get_aquatic_plant_species(b_species(b));
+  switch (b_id(b)) {
+    default:
+#ifdef DEBUG
+      printf("Bad aquatic plant block type during txgen: %d\n", b_id(b));
+#endif
+      return NULL;
+    case B_AQUATIC_PLANT_SEEDS:
+      return gen_herbaceous_seeds_texture(&(asp->appearance));
+    case B_AQUATIC_PLANT_CORE:
+    case B_AQUATIC_PLANT_ANCHORS:
+      return gen_herbaceous_roots_texture(&(asp->appearance));
+    case B_AQUATIC_PLANT_SHOOTS:
+      return gen_herbaceous_shoots_texture(&(asp->appearance));
+    case B_AQUATIC_PLANT_STEMS:
+      return gen_herbaceous_stems_texture(&(asp->appearance));
+    case B_AQUATIC_PLANT_LEAVES_GROWN:
+      return gen_herbaceous_leaves_texture(&(asp->appearance));
+    case B_AQUATIC_PLANT_LEAVES_BUDDING:
+      return gen_herbaceous_budding_texture(&(asp->appearance));
+    case B_AQUATIC_PLANT_LEAVES_FLOWERING:
+      return gen_herbaceous_flowering_texture(&(asp->appearance));
+    case B_AQUATIC_PLANT_LEAVES_FRUITING:
+      return gen_herbaceous_fruiting_texture(&(asp->appearance));
+  }
+}
+
+texture *gen_coral_texture(block b) {
+  coral_species *csp = get_coral_species(b_species(b));
+  switch (b_id(b)) {
+    default:
+#ifdef DEBUG
+      printf("Bad aquatic plant block type during txgen: %d\n", b_id(b));
+#endif
+      return NULL;
+    case B_YOUNG_CORAL:
+      return gen_young_coral_texture(&(csp->appearance));
+    case B_CORAL_CORE:
+    case B_CORAL_BODY:
+      return gen_coral_body_texture(&(csp->appearance));
+    case B_CORAL_FROND:
+      return gen_coral_frond_texture(&(csp->appearance));
+  }
+}
+
+texture* gen_herbaceous_seeds_texture(herbaceous_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_leaves(result, &(appearance->seeds));
+  return result;
+}
+
+texture* gen_herbaceous_roots_texture(herbaceous_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_branches(result, &(appearance->roots));
+  return result;
+}
+
+texture* gen_herbaceous_shoots_texture(herbaceous_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_herb_leaves(result, &(appearance->shoots));
+  return result;
+}
+
+texture* gen_herbaceous_stems_texture(herbaceous_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_herb_stems(result, &(appearance->stems));
+  return result;
+}
+
+texture* gen_herbaceous_leaves_texture(herbaceous_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_herb_leaves(result, &(appearance->leaves));
+  return result;
+}
+
+texture* gen_herbaceous_budding_texture(herbaceous_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_herb_leaves(result, &(appearance->leaves));
+  fltr_leaves(result, &(appearance->buds));
+  return result;
+}
+
+texture* gen_herbaceous_flowering_texture(herbaceous_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_herb_leaves(result, &(appearance->leaves));
+  fltr_leaves(result, &(appearance->flowers));
+  return result;
+}
+
+texture* gen_herbaceous_fruiting_texture(herbaceous_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_herb_leaves(result, &(appearance->leaves));
+  fltr_leaves(result, &(appearance->fruit));
+  return result;
+}
+
+
+texture* gen_bush_seeds_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_leaves(result, &(appearance->seeds));
+  return result;
+}
+
+texture* gen_bush_roots_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_branches(result, &(appearance->roots));
+  return result;
+}
+
+texture* gen_bush_thick_roots_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_branches(result, &(appearance->thick_roots));
+  return result;
+}
+
+texture* gen_bush_shoots_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_herb_leaves(result, &(appearance->shoots));
+  return result;
+}
+
+texture* gen_bush_sprouting_branches_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_branches(result, &(appearance->thin_branches));
+  fltr_leaves(result, &(appearance->sprouting_leaves));
+  return result;
+}
+
+texture* gen_bush_branches_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_branches(result, &(appearance->thick_branches));
+  fltr_leaves(result, &(appearance->leaves));
+  return result;
+}
+
+texture* gen_bush_budding_branches_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_branches(result, &(appearance->thick_branches));
+  fltr_leaves(result, &(appearance->leaves));
+  fltr_leaves(result, &(appearance->buds));
+  return result;
+}
+
+texture* gen_bush_flowering_branches_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_branches(result, &(appearance->thick_branches));
+  fltr_leaves(result, &(appearance->leaves));
+  fltr_leaves(result, &(appearance->flowers));
+  return result;
+}
+
+texture* gen_bush_fruiting_branches_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_branches(result, &(appearance->thick_branches));
+  fltr_leaves(result, &(appearance->leaves));
+  fltr_leaves(result, &(appearance->fruit));
+  return result;
+}
+
+texture* gen_bush_shedding_branches_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_branches(result, &(appearance->thick_branches));
+  fltr_leaves(result, &(appearance->shedding_leaves));
+  return result;
+}
+
+texture* gen_bush_dormant_branches_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_branches(result, &(appearance->thick_branches));
+  return result;
+}
+
+texture* gen_bush_sprouting_leaves_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_leaves(result, &(appearance->sprouting_leaves));
+  return result;
+}
+
+texture* gen_bush_leaves_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_leaves(result, &(appearance->leaves));
+  return result;
+}
+
+texture* gen_bush_budding_leaves_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_leaves(result, &(appearance->leaves));
+  fltr_leaves(result, &(appearance->buds));
+  return result;
+}
+
+texture* gen_bush_flowering_leaves_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_leaves(result, &(appearance->leaves));
+  fltr_leaves(result, &(appearance->flowers));
+  return result;
+}
+
+texture* gen_bush_fruiting_leaves_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_leaves(result, &(appearance->leaves));
+  fltr_leaves(result, &(appearance->fruit));
+  return result;
+}
+
+texture* gen_bush_shedding_leaves_texture(bush_appearance *appearance) {
+  // TODO: Fix compiler segfault on this function!!
+  /*
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  //fltr_leaves(result, &(appearance->shedding_leaves));
+  //fltr_leaves(result, &(appearance->leaves));
+  fltr_leaves(result, &(appearance->shedding_leaves));
+  return result;
+  */
+  return NULL;
+}
+
+texture* gen_bush_dormant_leaves_texture(bush_appearance *appearance) {
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_leaves(result, &(appearance->shedding_leaves));
+  // TODO: something else here?
+  return result;
+}
+
+
+texture* gen_tree_seeds_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_roots_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_thick_roots_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_heart_roots_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_shoots_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_trunk_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_sprouting_branches_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_branches_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_budding_branches_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_flowering_branches_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_fruiting_branches_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_shedding_branches_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_dormant_branches_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_sprouting_leaves_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_leaves_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_budding_leaves_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_flowering_leaves_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_fruiting_leaves_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_shedding_leaves_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_tree_dormant_leaves_texture(tree_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+
+texture* gen_young_coral_texture(coral_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_coral_body_texture(coral_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+texture* gen_coral_frond_texture(coral_appearance *appearance) {
+  // TODO: HERE
+  return NULL;
+}
+
+
 
 /*******************
  * Width Functions *
@@ -383,7 +1045,6 @@ void fltr_leaves(texture *tx, void const * const fargs) {
   lhargs.leaf = &one_leaf;
   lhargs.lfargs = &(lfargs->leaf_args);
 
-  tx_clear(tx);
   ateach_scattered(
     lfargs->seed,
     lfargs->x_spacing, lfargs->y_spacing,

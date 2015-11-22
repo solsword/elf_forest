@@ -206,6 +206,53 @@ texture* gen_dirt_texture(species s) {
   return result;
 }
 
+texture* gen_mud_texture(species s) {
+  dirt_species* dsp = get_dirt_species(s);
+  ptrdiff_t seed = prng(dsp->appearance.seed + 77677);
+
+  // Store original stone texture parameters:
+  float old_grit = dsp->appearance.gritty;
+  float old_contoured = dsp->appearance.contoured;
+  float old_porous = dsp->appearance.porous;
+  float old_bumpy = dsp->appearance.bumpy;
+  float old_layered = dsp->appearance.layered;
+  float old_brightness = dsp->appearance.brightness;
+
+  // Temporarily edit texture parameters:
+  dsp->appearance.gritty = old_grit * randf(seed, 0.5, 1.1);
+  seed = prng(seed);
+  dsp->appearance.contoured = old_contoured * randf(seed, 0.9, 1.8);
+  seed = prng(seed);
+  dsp->appearance.porous = old_porous * randf(seed, 0.9, 1.3);
+  seed = prng(seed);
+  dsp->appearance.bumpy = old_bumpy * randf(seed, 0.09, 1.3);
+  seed = prng(seed);
+  dsp->appearance.layered = old_layered * randf(seed, 0.9, 1.5);
+  seed = prng(seed);
+  if (dsp->appearance.layered > 1.0) {
+    dsp->appearance.layered = 1.0;
+  }
+  dsp->appearance.brightness = old_brightness + randf(seed, -0.4, -0.1);
+  seed = prng(seed);
+  if (dsp->appearance.brightness < -0.35) {
+    dsp->appearance.brightness = -0.35;
+  }
+
+  // Generate our texture:
+  texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
+  fltr_mineral(result, &(dsp->appearance));
+
+  // Restore the old parameters:
+  dsp->appearance.gritty = old_grit;
+  dsp->appearance.contoured = old_contoured;
+  dsp->appearance.porous = old_porous;
+  dsp->appearance.bumpy = old_bumpy;
+  dsp->appearance.layered = old_layered;
+  dsp->appearance.brightness = old_brightness;
+
+  return result;
+}
+
 texture* gen_sand_texture(species s) {
   stone_species* ssp = get_stone_species(s);
   ptrdiff_t seed = prng(ssp->appearance.seed + 189912);

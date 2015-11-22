@@ -848,9 +848,14 @@ void determine_new_plant_materials(plant_materials *target, ptrdiff_t seed) {
   target->fruit.hardness = 15;
 }
 
-void determine_new_herb_appearance(herb_appearance *target, ptrdiff_t seed) {
+void determine_new_herb_appearance(
+  herbaceous_appearance *target,
+  ptrdiff_t seed
+) {
+  // TODO: HERE
 }
 
 void determine_new_herb_core_growth(core_growth_pattern *target,ptrdiff_t seed){
+  // TODO: HERE
 }
 

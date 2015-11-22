@@ -69,7 +69,10 @@ species create_new_coral_species(ptrdiff_t seed);
 // Individual attribute generation functions:
 
 void determine_new_plant_materials(plant_materials *target, ptrdiff_t seed);
-void determine_new_herb_appearance(herb_appearance *target, ptrdiff_t seed);
+void determine_new_herb_appearance(
+  herbaceous_appearance *target,
+  ptrdiff_t seed
+);
 void determine_new_herb_core_growth(core_growth_pattern *target,ptrdiff_t seed);
 
 #endif // ifndef BIOLOGY_H

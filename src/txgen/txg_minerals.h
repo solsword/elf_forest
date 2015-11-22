@@ -58,12 +58,11 @@ void fltr_mineral(texture *tx, void const * const fargs);
  * Functions *
  *************/
 
+// Functions for generating per-species textures:
 texture* gen_dirt_texture(species s);
-
+texture* gen_mud_texture(species s);
 texture* gen_sand_texture(species s);
-
 texture* gen_clay_texture(species s);
-
 texture* gen_stone_texture(species s);
 
 void mutate_mineral_appearance(
