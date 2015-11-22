@@ -554,11 +554,11 @@ step_result fill_water(
       body->shore_area += 1;
       return SRESULT_CONTINUE;
     }
-#ifdef DEBUG
   } else {
+#ifdef DEBUG
     printf("Unknown search/fill step: %d\n", step);
-    return SRESULT_ABORT;
 #endif
+    return SRESULT_ABORT;
   }
 }
 

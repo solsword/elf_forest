@@ -40,7 +40,7 @@
 world_map_pos WORLD_ORIGIN = { .x = WORLD_WIDTH/2, .y=WORLD_HEIGHT/2 };
 
 //ptrdiff_t SEED = 18224347; // oceans bug!
-ptrdiff_t SEED = 18224349;
+//ptrdiff_t SEED = 18224349;
 //ptrdiff_t SEED = 18224350;
 //ptrdiff_t SEED = 18224353;
 //ptrdiff_t SEED = 705403;
@@ -48,7 +48,7 @@ ptrdiff_t SEED = 18224349;
 //ptrdiff_t SEED = 705408;
 //ptrdiff_t SEED = 705409;
 //ptrdiff_t SEED = 705411;
-//ptrdiff_t SEED = 6457801;
+ptrdiff_t SEED = 6457801;
 
 /********
  * Main *

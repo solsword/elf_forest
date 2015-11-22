@@ -18,18 +18,29 @@
  * Constants *
  *************/
 
-char const * const BLOCKS_DIRECTORY = "blocks";
+// TODO: Better OS branching!
+#ifdef __linux__
+char const * const RAW_DIRSEP = "/";
+#elif _WIN32
+char const * const RAW_DIRSEP = "\\";
+#else
+#error "OS not supported!"
+#endif
+char const * const RAW_BLOCKS_DIRECTORY = "blocks";
+char const * const RAW_MAPS_DIRECTORY = "maps";
 char const * const DEFAULT_WORLD_DIRECTORY = "world";
 
 /***********
  * Globals *
  ***********/
 
-string* WORLD_DIRECTORY = NULL;
-
 string* DIRSEP = NULL;
 
+string* PS_WORLD_DIRECTORY = NULL;
+
 string* PS_BLOCK_DIR_PREFIX = NULL;
+
+string* PS_MAPS_DIR_PREFIX = NULL;
 
 ps_block PS_BLOCK_CACHE[PS_BLOCK_CACHE_SIZE];
 
@@ -41,18 +52,40 @@ uint64_t EMPTY_INDICES[PS_BLOCK_TOTAL_CHUNKS];
 
 void setup_persist(char const * const world_directory) {
   size_t i;
+  char *dir;
+  struct stat st;
+  string *rdir;
   // Convert some char*s to strings and set up the PS_BLOCK_DIR_PREFIX string:
-  WORLD_DIRECTORY = create_string_from_ntchars(world_directory);
-  if (s_contains_nul(WORLD_DIRECTORY)) {
+  DIRSEP = create_string_from_ntchars(RAW_DIRSEP);
+  PS_WORLD_DIRECTORY = create_string_from_ntchars(world_directory);
+  if (s_contains_nul(PS_WORLD_DIRECTORY)) {
     perror("World directory string contains NUL!");
     exit(-1);
   }
-  DIRSEP = create_string_from_ntchars("/"); // TODO: OS-specific branches
-  string* rdir = create_string_from_ntchars(BLOCKS_DIRECTORY);
-  PS_BLOCK_DIR_PREFIX = s_join(DIRSEP, WORLD_DIRECTORY, rdir, NULL);
+
+  rdir = create_string_from_ntchars(RAW_BLOCKS_DIRECTORY);
+  PS_BLOCK_DIR_PREFIX = s_join(DIRSEP, PS_WORLD_DIRECTORY, rdir, NULL);
   cleanup_string(rdir);
+
+  rdir = create_string_from_ntchars(RAW_MAPS_DIRECTORY);
+  PS_MAPS_DIR_PREFIX = s_join(DIRSEP, PS_WORLD_DIRECTORY, rdir, NULL);
+  cleanup_string(rdir);
+
   s_append(PS_BLOCK_DIR_PREFIX, DIRSEP);
-// TODO: Create directories as needed!
+  s_append(PS_MAPS_DIR_PREFIX, DIRSEP);
+
+  // Create directories as needed:
+  dir = s_encode_nt(PS_WORLD_DIRECTORY);
+  mkdir_p(dir, 0755);
+  free(dir);
+
+  dir = s_encode_nt(PS_BLOCK_DIR_PREFIX);
+  mkdir_p(dir, 0755);
+  free(dir);
+
+  dir = s_encode_nt(PS_MAPS_DIR_PREFIX);
+  mkdir_p(dir, 0755);
+  free(dir);
 
   // Initialize the block arrays:
   for (i = 0; i < PS_BLOCK_CACHE_SIZE; ++i) {

@@ -648,7 +648,7 @@ static inline void add_herb_block(
   // TODO: Care about exposure?
   compute_dynamic_face_tc(b, BD_ORI_OUT, &st);
   // TODO: Better than this!
-  light = face_light(ext_lighting, BD_FACE_OUTSIDE);
+  light = face_light(ext_lighting, BD_FACE_TOP);
   push_ne_sw_face(vb, idx, step, st, light, 0, 0, 0, 0, 0, zf_off);
   push_sw_ne_face(vb, idx, step, st, light, 0, 0, 0, 0, 0, zf_off);
   push_nw_se_face(vb, idx, step, st, light, 0, 0, 0, 0, 0, zf_off);

@@ -71,11 +71,11 @@ step_result _iter_spread_soil(
     copy_soil(origin, wr);
     bm_set_bits(has_data, wr->pos.x + wr->pos.y * wr->world->width, 1);
     return SRESULT_CONTINUE;
-#ifdef DEBUG
   } else {
+#ifdef DEBUG
     printf("Unknown search/fill step: %d\n", step);
-    return SRESULT_ABORT;
 #endif
+    return SRESULT_ABORT;
   }
 }
 
@@ -1255,6 +1255,9 @@ rngtable* pick_alt_dirt_table(soil_factors *factors, ptrdiff_t seed) {
   // shouldn't be possible
   printf("ERROR: fell out of if/else in pick_alt_dirt_table!");
   exit(1);
+#else
+  // last-resort default
+  return &LOAMY_DIRT_ALTS;
 #endif
 }
 

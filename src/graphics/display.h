@@ -79,8 +79,7 @@ static inline vertex_illumination vertex_light(
   );
 }
 
-// Looks up a face illumination (8 bits) in a cube_illumination value. The
-// vertex argument should be either 0, 1, 2, or 3.
+// Looks up a face illumination (8 bits) in a cube_illumination value.
 static inline face_illumination face_light(
   cube_illumination* i,
   block_data face

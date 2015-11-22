@@ -39,6 +39,8 @@ void init_strings(void);
 
 string* create_string(void);
 
+string* copy_string(string *base);
+
 string* create_string_from_ntchars(char const * const chars);
   // chars must be in local encoding & null-terminated
 

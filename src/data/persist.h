@@ -81,14 +81,17 @@ struct ps_block_s {
  * Globals *
  ***********/
 
-// The world directory
-extern string* WORLD_DIRECTORY;
-
 // The directory separator for this OS
 extern string* DIRSEP;
 
+// The world directory
+extern string* PS_WORLD_DIRECTORY;
+
 // The full prefix for block filenames
 extern string* PS_BLOCK_DIR_PREFIX;
+
+// The full prefix for map filenames
+extern string* PS_MAPS_DIR_PREFIX;
 
 // The persist block cache
 extern ps_block PS_BLOCK_CACHE[];

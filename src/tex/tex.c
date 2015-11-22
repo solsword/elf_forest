@@ -155,11 +155,13 @@ texture* load_texture_from_png(char const * const filename) {
   // We assume that it'll be correct (32 bpp RGBA). The transforms that we did
   // when reading should help with this.
 
-  // Find out the number of bytes/row:
-  uint32_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
 
   // Malloc our pixels array:
 #ifdef DEBUG
+  // Find out the number of bytes/row:
+  uint32_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
+
+  // Double check the format:
   if (row_bytes != sizeof(pixel)*result->width) {
     fprintf(
       stderr,

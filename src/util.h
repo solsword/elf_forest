@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <errno.h>
+#include <sys/stat.h>
 
 #include <GL/gl.h>
 
@@ -322,6 +324,20 @@ static inline char * load_file(char const * const filename, size_t *size) {
   fread(buffer, 1, *size, f);
   fclose(f);
   return buffer;
+}
+
+static inline void mkdir_p(char const * const filename, mode_t mode) {
+  struct stat st;
+  if (stat(filename, &st) != 0) {
+#ifdef DEBUG
+    // TODO: Careful around that user-supplied string!
+    printf("Creating directory '%s'...\n", filename);
+#endif
+    if (mkdir(filename, mode) != 0) {
+      perror("Failed to create directory.");
+      exit(errno);
+    }
+  }
 }
 
 #endif // ifndef UTIL_H

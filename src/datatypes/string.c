@@ -53,6 +53,22 @@ string* create_string(void) {
   return s;
 }
 
+string* copy_string(string *base) {
+  string *s = (string*) malloc(sizeof(string));
+  if (s == NULL) {
+    perror("Failed to create string for copy.");
+    exit(errno);
+  }
+  s->bytes = (uint8_t*) malloc(sizeof(uint8_t) * base->length);
+  if (s->bytes == NULL) {
+    perror("Failed to create bytes for string copy.");
+    exit(errno);
+  }
+  s->length = base->length;
+  memcpy(s->bytes, base->bytes, base->length);
+  return s;
+}
+
 string* create_string_from_ntchars(char const * const chars) {
   string* s = (string*) malloc(sizeof(string));
   if (s == NULL) {
@@ -160,10 +176,17 @@ char* s_encode_nt(string* s) {
 }
 
 void s_append(string* base, string const * const extension) {
-  uint8_t* newbytes = (uint8_t*) realloc(
-    base->bytes,
-    sizeof(uint8_t) * (base->length + extension->length)
-  );
+  uint8_t* newbytes;
+  if (base->bytes == NULL) {
+    newbytes = (uint8_t*) malloc(
+      sizeof(uint8_t) * (base->length + extension->length)
+    );
+  } else {
+    newbytes = (uint8_t*) realloc(
+      base->bytes,
+      sizeof(uint8_t) * (base->length + extension->length)
+    );
+  }
   if (newbytes == NULL) {
     perror("Failed to allocate new bytes for appending.");
     exit(errno);
