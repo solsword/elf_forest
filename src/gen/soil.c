@@ -658,8 +658,8 @@ void generate_soil(world_map *wm) {
   // generating endemic soil for them, and spreading that soil around, until
   // all world regions have soil data:
   bitmap *has_data = create_bitmap(wm->width * wm->height);
-  count = bm_size(has_data) - bm_popcount(has_data);
-  choice = seed % count;
+  count = bm_size(has_data);
+  choice = posmod(seed, count);
   seed = prng(seed);
   index = bm_select_open(has_data, choice);
   while (index != -1) {
@@ -681,7 +681,7 @@ void generate_soil(world_map *wm) {
     );
     count = bm_size(has_data) - bm_popcount(has_data);
     if (count == 0) { break; }
-    choice = seed % count;
+    choice = posmod(seed, count);
     seed = prng(seed);
     index = bm_select_open(has_data, choice);
   }
@@ -721,7 +721,6 @@ void create_appropriate_soil(world_region *wr) {
   }
   seed = prng(seed);
 
-  /* DEBUG
   create_local_silt(wr, &(wr->climate.soil.river_banks), &factors);
   if (ptrf(seed) < 0.5) {
     copy_soil_type(
@@ -738,7 +737,6 @@ void create_appropriate_soil(world_region *wr) {
   }
   seed = prng(seed);
 
-  /*
   create_local_mud(wr, &(wr->climate.soil.river_bottoms), &factors);
   if (ptrf(seed) < 0.5) {
     copy_soil_type(
@@ -755,7 +753,6 @@ void create_appropriate_soil(world_region *wr) {
   }
   seed = prng(seed);
 
-  /*
   create_local_sand(wr, &(wr->climate.soil.lake_shores), &factors);
   if (ptrf(seed) < 0.5) {
     copy_soil_type(
@@ -772,7 +769,6 @@ void create_appropriate_soil(world_region *wr) {
   }
   seed = prng(seed);
 
-  /*
   create_local_sand(wr, &(wr->climate.soil.lake_bottoms), &factors);
   if (ptrf(seed) < 0.5) {
     copy_soil_type(
@@ -789,7 +785,6 @@ void create_appropriate_soil(world_region *wr) {
   }
   seed = prng(seed);
 
-  /*
   create_local_sand(wr, &(wr->climate.soil.beaches), &factors);
   if (ptrf(seed) < 0.5) {
     copy_soil_type(
@@ -806,7 +801,6 @@ void create_appropriate_soil(world_region *wr) {
   }
   seed = prng(seed);
 
-  /*
   create_local_mud(wr, &(wr->climate.soil.ocean_floor), &factors);
   if (ptrf(seed) < 0.5) {
     copy_soil_type(
@@ -822,7 +816,6 @@ void create_appropriate_soil(world_region *wr) {
     );
   }
   seed = prng(seed);
-  // */
 }
 
 void create_local_dirt(
@@ -851,8 +844,8 @@ void create_local_dirt(
 #pragma GCC diagnostic warning "-Wpointer-to-int-cast"
     seed = prng(seed);
     switch(soil->alt_block_types[i]) {
-      case B_DIRT:
       default:
+      case B_DIRT:
         soil->alt_species[i] = create_dirt_species();
         fill_dirt_variant(
           get_dirt_species(soil->main_species),
@@ -861,11 +854,11 @@ void create_local_dirt(
         );
         soil->alt_strengths[i] = randf(seed, 0, 1.0);
         seed = prng(seed);
-        soil->alt_hdeps[i] = 0;
-        break;
+        soil->alt_hdeps[i] = randf(seed, -0.3, 0.3);
+        seed = prng(seed);
         break;
       case B_MUD:
-        // TODO: Possibly copy an alt here?
+        // TODO: Possibly copy another alt here?
         if (ptrf(seed) < 0.7) {
           soil->alt_species[i] = soil->main_species;
         } else {
@@ -879,7 +872,7 @@ void create_local_dirt(
         seed = prng(seed);
         soil->alt_strengths[i] = randf_pnorm(seed, 0, 0.9);
         seed = prng(seed);
-        soil->alt_hdeps[i] = randf(seed, -0.4, 0);
+        soil->alt_hdeps[i] = randf(seed, -0.7, 0.2);
         seed = prng(seed);
         break;
       case B_CLAY:
@@ -890,25 +883,40 @@ void create_local_dirt(
           factors,
           seed
         );
+        // DEBUG:
+        // TODO: Enable clays!
+        soil->alt_strengths[i] = 0;
+        soil->alt_hdeps[i] = 0;
+        /*
         soil->alt_strengths[i] = expdist(randf_pnorm(seed, 0, 0.8), 2);
         seed = prng(seed);
-        soil->alt_hdeps[i] = 0;
+        soil->alt_hdeps[i] = randf(seed, -0.5, 0.5);
+        seed = prng(seed);
+        */
         break;
       case B_SAND:
         // TODO: Something more complex here.
         soil->alt_species[i] = factors->bedrock->id;
         soil->alt_strengths[i] = randf_pnorm(seed, 0, 1);
         seed = prng(seed);
-        soil->alt_hdeps[i] = 0;
+        soil->alt_hdeps[i] = randf(seed, -0.3, 0.8);
+        seed = prng(seed);
         break;
       case B_GRAVEL:
       case B_SCREE:
+        // TODO: Something more complex here.
+        soil->alt_species[i] = factors->bedrock->id;
+        soil->alt_strengths[i] = expdist(ptrf(seed), 2);
+        seed = prng(seed);
+        soil->alt_hdeps[i] = randf(seed, 0.2, 1.0);
+        seed = prng(seed);
+        break;
       case B_STONE:
         // TODO: Something more complex here.
         soil->alt_species[i] = factors->bedrock->id;
         soil->alt_strengths[i] = expdist(ptrf(seed), 2.5);
         seed = prng(seed);
-        soil->alt_hdeps[i] = randf(seed, 0.2, 0.8);
+        soil->alt_hdeps[i] = randf(seed, -1.0, -0.4);
         seed = prng(seed);
         break;
     }
@@ -920,6 +928,8 @@ void create_local_silt(
   soil_type *soil,
   soil_factors *factors
 ) {
+  // TODO: Better here!
+  create_local_dirt(wr, soil, factors);
 }
 
 void create_local_mud(
@@ -927,6 +937,8 @@ void create_local_mud(
   soil_type *soil,
   soil_factors *factors
 ) {
+  // TODO: Better here!
+  create_local_dirt(wr, soil, factors);
 }
 
 void create_local_sand(
@@ -934,6 +946,98 @@ void create_local_sand(
   soil_type *soil,
   soil_factors *factors
 ) {
+  size_t i;
+
+  rngtable *alt_table;
+  ptrdiff_t seed = prng(wr->seed + 324334);
+
+  alt_table = pick_alt_sand_table(factors, seed);
+  seed = prng(seed);
+
+  soil->main_block_type = B_SAND;
+  // TODO: create a variant species here?
+  soil->main_species = factors->bedrock->id;
+
+  for (i = 0; i < WM_MAX_SOIL_ALTS; ++i) {
+#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
+    soil->alt_block_types[i] = (block) rt_pick_result(alt_table, seed);
+#pragma GCC diagnostic warning "-Wpointer-to-int-cast"
+    seed = prng(seed);
+    switch(soil->alt_block_types[i]) {
+      default:
+      case B_DIRT:
+        soil->alt_species[i] = create_dirt_species();
+        fill_dirt_species(
+          get_dirt_species(soil->alt_species[i]),
+          factors,
+          seed
+        );
+        seed = prng(seed);
+        soil->alt_strengths[i] = randf(seed, 0, 0.8);
+        seed = prng(seed);
+        soil->alt_hdeps[i] = randf(seed, -0.5, 0.4);
+        seed = prng(seed);
+        break;
+      case B_MUD:
+        // TODO: Possibly copy another alt here?
+        soil->alt_species[i] = create_dirt_species();
+        fill_dirt_species(
+          get_dirt_species(soil->alt_species[i]),
+          factors,
+          seed
+        );
+        seed = prng(seed);
+        soil->alt_strengths[i] = randf_pnorm(seed, 0, 0.5);
+        seed = prng(seed);
+        soil->alt_hdeps[i] = randf(seed, -1.0, -0.2);
+        seed = prng(seed);
+        break;
+      case B_CLAY:
+        // TODO: Something more complex here?
+        soil->alt_species[i] = create_clay_species();
+        fill_clay_species(
+          get_clay_species(soil->alt_species[i]),
+          factors,
+          seed
+        );
+        // DEBUG:
+        // TODO: Enable clays!
+        soil->alt_strengths[i] = 0;
+        soil->alt_hdeps[i] = 0;
+        /*
+        soil->alt_strengths[i] = expdist(randf_pnorm(seed, 0, 0.8), 2);
+        seed = prng(seed);
+        soil->alt_hdeps[i] = randf(seed, -0.5, 0.5);
+        seed = prng(seed);
+        */
+        break;
+      case B_SAND:
+        // TODO: An actual variant here!
+        soil->alt_species[i] = factors->bedrock->id;
+        soil->alt_strengths[i] = randf_pnorm(seed, 0, 1);
+        seed = prng(seed);
+        soil->alt_hdeps[i] = randf(seed, -0.3, 0.3);
+        seed = prng(seed);
+        break;
+      case B_GRAVEL:
+      case B_SCREE:
+        // TODO: Something more complex here.
+        soil->alt_species[i] = factors->bedrock->id;
+        soil->alt_strengths[i] = expdist(ptrf(seed), 1.3);
+        seed = prng(seed);
+        soil->alt_hdeps[i] = randf(seed, -1.0, -0.2);
+        seed = prng(seed);
+        break;
+      case B_STONE:
+        // TODO: Something more complex here.
+        soil->alt_species[i] = factors->bedrock->id;
+        soil->alt_strengths[i] = expdist(ptrf(seed), 1.8);
+        seed = prng(seed);
+        soil->alt_hdeps[i] = randf(seed, -1.0, -0.4);
+        seed = prng(seed);
+        break;
+    }
+  }
 }
 
 void create_topsoil_variant(

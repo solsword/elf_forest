@@ -18,7 +18,7 @@
  * Example Structs *
  *******************/
 
-stone_filter_args example_stone_args = {
+mineral_filter_args example_stone_args = {
   .seed = 31,
   .scale = 0.095,
 
@@ -38,7 +38,7 @@ stone_filter_args example_stone_args = {
 };
 
 tx_grammar_literal example_stone_literal = FILTER_TX_LITERAL(
-  fltr_stone,
+  fltr_mineral,
   example_stone_args,
   BLOCK_TEXTURE_SIZE,
   BLOCK_TEXTURE_SIZE

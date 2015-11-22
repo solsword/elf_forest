@@ -58,6 +58,8 @@ DEFINE_IMPORTED_BUILDER
 DEFINE_IMPORTED_BUILDER
 #include "suites/test_map3.h"
 DEFINE_IMPORTED_BUILDER
+#include "suites/test_bitmap.h"
+DEFINE_IMPORTED_BUILDER
 #include "suites/test_blocks.h"
 DEFINE_IMPORTED_BUILDER
 #include "suites/test_tex.h"
@@ -120,6 +122,9 @@ void setup_unit_tests(void) {
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
   #include "suites/test_map3.h"
+  ts = INVOKE_IMPORTED_BUILDER;
+  l_append_element(ALL_TEST_SUITES, ts);
+  #include "suites/test_bitmap.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
 }

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h> // DEBUG
 #include <omp.h>
 
 #include "bitmap.h"
@@ -13,9 +14,9 @@
  *********/
 
 // A single row of a bitmap (only used internally)
-typedef uint64_t bitmap_row;
+typedef long unsigned int bitmap_row;
 
-#define BITMAP_ROW_WIDTH 64
+#define BITMAP_ROW_WIDTH sizeof(bitmap_row)
 
 /*************************
  * Structure Definitions *
@@ -142,7 +143,7 @@ size_t bm_popcount(bitmap *bm) {
   size_t i;
   for (i = 0; i < bm->rows; ++i) {
     // TODO: Integer-size-dependent compilation?!?
-    result += __builtin_popcount(bm->data[i]);
+    result += __builtin_popcountl(bm->data[i]);
     // No need to worry about trailing bits in the row beyond the size, because
     // they should always be zeroes.
   }
@@ -157,7 +158,7 @@ ptrdiff_t bm_select_open(bitmap *bm, size_t n) {
   i = 0;
   result = 0;
   for (i = 0; i < bm->rows; ++i) {
-    bits_here = BITMAP_ROW_WIDTH - __builtin_popcount(bm->data[i]);
+    bits_here = BITMAP_ROW_WIDTH - __builtin_popcountl(bm->data[i]);
     // Ignore zeroes on the last row past the exact size:
     if (i == bm->rows - 1) {
       bits_here -= BITMAP_ROW_WIDTH - (
@@ -165,21 +166,23 @@ ptrdiff_t bm_select_open(bitmap *bm, size_t n) {
       - (BITMAP_ROW_WIDTH * (bm->rows - 1))
       );
     }
-    row = bm->data[i];
     if (bits_here > n) {
+      row = bm->data[i];
       for (j = 0; j < BITMAP_ROW_WIDTH; ++j) {
         if (!(row & 1)) {
-          n -= 1;
+          if (n == 0) {
+            return result;
+          } else {
+            n -= 1;
+          }
         }
-        if (n == 0) {
-          return result;
-        }
-        row = row >> 1;
         result += 1;
+        row = row >> 1;
       }
+    } else {
+      n -= bits_here;
+      result += BITMAP_ROW_WIDTH;
     }
-    n -= bits_here;
-    result += BITMAP_ROW_WIDTH;
   }
   // n is too large
   return -1;
@@ -193,19 +196,20 @@ ptrdiff_t bm_select_closed(bitmap *bm, size_t n) {
   i = 0;
   result = 0;
   for (i = 0; i < bm->rows; ++i) {
-    bits_here = __builtin_popcount(bm->data[i]);
+    bits_here = __builtin_popcountl(bm->data[i]);
     // Fine even for the last row, because excess bits should be zeroes.
     row = bm->data[i];
     if (bits_here > n) {
       for (j = 0; j < BITMAP_ROW_WIDTH; ++j) {
         if (row & 1) {
-          n -= 1;
+          if (n == 0) {
+            return result;
+          } else {
+            n -= 1;
+          }
         }
-        if (n == 0) {
-          return result;
-        }
-        row = row >> 1;
         result += 1;
+        row = row >> 1;
       }
     }
     n -= bits_here;

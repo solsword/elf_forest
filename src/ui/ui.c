@@ -417,8 +417,8 @@ static inline void draw_pos_info(int *h) {
     sprintf(
       TXT,
       "cursor cell :: %s // %s",
-      block_name(c->blocks[0]),
-      block_name(c->blocks[1])
+      b_name(c->blocks[0]),
+      b_name(c->blocks[1])
     );
   } else {
     sprintf(

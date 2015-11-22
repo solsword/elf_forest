@@ -549,7 +549,7 @@ static inline block b_idspc(block b) { return b >> BS_SPC; }
 static inline block b_data(block b) { return (b & BM_DATA) >> BS_DAT; }
 static inline block b_ori(block b) { return (b & BM_ORIENTATION) >> BS_ORI; }
 static inline block_info b_info(block b) { return BLOCK_INFO[b_id(b)]; }
-static inline char* block_name(block b) { return BLOCK_NAMES[b_id(b)]; }
+static inline char* b_name(block b) { return BLOCK_NAMES[b_id(b)]; }
 
 // Per-block-type properties:
 static inline block_info bi_vis(block b) {

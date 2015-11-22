@@ -1040,17 +1040,16 @@ void pick_dirt_block(
     str = (2 + str)/4.0; // [0, 1]
     str *= alt_strengths[i];
     if (alt_hdeps[i] > 0) {
-      str *= pow(h, alt_hdeps[i]);
-    } else {
-      str *= pow((1 - h), -alt_hdeps[i]);
-    }
+      str *= 1.0 + 0.4 * pow(h * alt_hdeps[i], 1 - (alt_hdeps[i]/3.0));
+    } else if (alt_hdeps[i] < 0) {
+      str *= 1.0 + 0.4 * pow((1 - h) * -alt_hdeps[i], 1 - (-alt_hdeps[i]/3.0));
+    } // do nothing if alt_hdeps[i] == 0
     if (str > beststr) {
       beststr = str;
       soil_type = alt_blocks[i];
       soil_species = alt_species[i];
     }
   }
-  printf("DIRT CELL: %d - %d\n", soil_type, soil_species);
   result->blocks[0] = b_make_species(soil_type, soil_species);
   result->blocks[1] = b_make_block(B_VOID);
 }

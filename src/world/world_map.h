@@ -236,8 +236,8 @@ typedef struct biome_s biome;
 // Number of seasons in the year
 #define WM_N_SEASONS 4
 
-// Maximum alternate dirt/sand types:
-#define WM_MAX_SOIL_ALTS 4
+// Maximum alternate dirt/mud/clay/sand/gravel/scree/stone types:
+#define WM_MAX_SOIL_ALTS 5
 
 // Maximum rivers in a single region:
 #define WM_MAX_RIVERS 4
@@ -352,7 +352,11 @@ struct soil_type_s {
   block alt_block_types[WM_MAX_SOIL_ALTS]; // other soil types
   species alt_species[WM_MAX_SOIL_ALTS];
   float alt_strengths[WM_MAX_SOIL_ALTS];
-  float alt_hdeps[WM_MAX_SOIL_ALTS]; // height-dependence
+  float alt_hdeps[WM_MAX_SOIL_ALTS]; // height-dependence (should be in [-1, 1])
+    // if positive, heigh-within-soil will be multiplied with strength as:
+    //   str *= 1.0 + 0.4 * (h*hdep)^(1 - hdep/3)
+    // if negative, heigh-within-soil will be multiplied with strength as:
+    //   str *= 1.0 + 0.4 * ((1-h)*-hdep)^(1 + hdep/3)
 };
 
 struct soil_composition_s {
