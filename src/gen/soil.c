@@ -2283,12 +2283,12 @@ void determine_new_dirt_appearance(
 
   // Dirt is usually gritty; composition influences this.
   target->gritty = (
-    0.4
+    0.6
   + 0.25 * ptrf(seed)
   + 0.4 * species->sand_percent
   - 0.3 * species->clay_percent
   + 0.2 * species->silt_percent
-  - 0.2 * organic_influence
+  + 0.2 * organic_influence
   );
   if (target->gritty < 0.3) { target->gritty = 0.3; }
   seed = prng(seed);
@@ -2328,12 +2328,11 @@ void determine_new_dirt_appearance(
 
   // Dirt can exhibit strong layering, but this is rare.
   target->layered = (
-    0.1
-  + 0.9 * expdist(ptrf(seed), 3)
-  - 0.2 * species->sand_percent
-  + 0.2 * species->clay_percent
-  + 0.3 * species->silt_percent
-  + 0.3 * organic_influence
+    expdist(randf_pnorm(seed, 0, 1.0), 3)
+  - 0.1 * species->sand_percent
+  + 0.1 * species->clay_percent
+  + 0.2 * species->silt_percent
+  + 0.2 * organic_influence
   );
   if (target->layered > 1.0) { target->layered = 1.0; }
   seed = prng(seed);
