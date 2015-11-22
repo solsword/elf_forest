@@ -19,6 +19,8 @@
 
 // Generates mineral textures.
 void fltr_mineral(texture *tx, void const * const fargs) {
+  mineral_filter_args *mfargs = (mineral_filter_args *) fargs;
+
   int row, col; // position within texture
   float x, y; // distorted/squashed x/y coordinates
   float alx, aly; // distorted/squashed alternate x/y coordinates
@@ -40,16 +42,16 @@ void fltr_mineral(texture *tx, void const * const fargs) {
   float dontcare;
 
   // Seeds for the different noise functions:
+  ptrdiff_t seed = prng(mfargs->seed - 5);
   ptrdiff_t salt1, salt2, salt3, salt4, salt5, salt6, salt7, salt8;
 
   pixel base_hsv, alt_hsv; // base and alternate colors in hsv
   pixel hsv; // temp hsv color
   pixel rgb; // final rgb color
-  mineral_filter_args *mfargs = (mineral_filter_args *) fargs;
   base_hsv = rgb__hsv(mfargs->base_color);
   alt_hsv = rgb__hsv(mfargs->alt_color);
 
-  salt1 = prng(mfargs->seed - 5);
+  salt1 = prng(seed + 555);
   salt2 = prng(salt1);
   salt3 = prng(salt2);
   salt4 = prng(salt3);
@@ -86,10 +88,7 @@ void fltr_mineral(texture *tx, void const * const fargs) {
       );
       x = (col + ds * mfargs->distortion) * scx;
       y = (row + ds * mfargs->distortion) * scy;
-      grit = hash_2d(
-        col + fastfloor(x),
-        row + fastfloor(y)
-      ) / (float) HASH_MASK;
+      grit = ptrf(prng(col * col + fastfloor(x) + prng(row + fastfloor(y))));
       contours = (
         1 + tiled_func(&sxnoise_2d, x, y, wx, wy, salt2)
       ) / 2.0;
