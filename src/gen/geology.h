@@ -430,7 +430,7 @@ static inline float get_base_density(stone_species *ssp, ptrdiff_t seed) {
   float result = 2 * ptrf(seed);
   float denom = 2;
   element_species *element;
-  for (i = 0; i < MAX_PRIMARY_CONSTITUENTS; ++i) {
+  for (i = 0; i < MN_MAX_PRIMARY_CONSTITUENTS; ++i) {
     element = get_element_species(ssp->constituents[i]);
     if (element != NULL) {
       result += element->stone_density_tendency;
@@ -663,7 +663,7 @@ void determine_new_sedimentary_appearance(
 );
 
 // Function for computing colors using constituent element colors:
-void compute_combined_color(
+void compute_combined_stone_color(
   stone_species *species,
   float base_density,
   precise_color *color,

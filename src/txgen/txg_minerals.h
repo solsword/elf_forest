@@ -66,4 +66,10 @@ texture* gen_clay_texture(species s);
 
 texture* gen_stone_texture(species s);
 
+void mutate_mineral_appearance(
+  mineral_filter_args const * const src,
+  mineral_filter_args *dst,
+  ptrdiff_t seed
+);
+
 #endif // ifndef TXG_MINERALS_H

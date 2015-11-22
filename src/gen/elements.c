@@ -14,6 +14,12 @@
 #include <stdio.h>
 #endif
 
+/***********
+ * Globals *
+ ***********/
+
+int N_TOTAL_NUTRIENTS = 0;
+
 /**********
  * Tables *
  **********/
@@ -159,10 +165,6 @@ static rngtable GENERAL_SOLUBILITY_DISTRIBUTION = {
   },
   .weights = (float[]) { 12, 8, 5 }
 };
-
-/*********************
- * Private Functions *
- *********************/
 
 /*************
  * Functions *
@@ -651,6 +653,7 @@ void generate_elements(world_map *wm) {
   seed = prng(seed);
 
   total_plant_nutrients = n_ex_plant_critical;
+  sofar = 0;
   for (i = 0; i < total_plant_nutrients; ++i) {
     esp = (element_species*) l_get_item(possibly_nutritious, i);
     if (ptrf(seed) < 0.7) {
@@ -659,6 +662,9 @@ void generate_elements(world_map *wm) {
       esp->plant_nutrition = NT_CAT_CRITICAL_CAN_OVERDOSE;
     }
     seed = prng(seed);
+    if (!l_contains(wm->all_nutrients, (void*) esp)) {
+      l_append_element(wm->all_nutrients, (void*) esp);
+    }
   }
   total_plant_nutrients += n_plant_beneficial;
   for (; i < total_plant_nutrients; ++i) {
@@ -669,20 +675,30 @@ void generate_elements(world_map *wm) {
       esp->plant_nutrition = NT_CAT_BENEFICIAL_CAN_OVERDOSE;
     }
     seed = prng(seed);
+    if (!l_contains(wm->all_nutrients, (void*) esp)) {
+      l_append_element(wm->all_nutrients, (void*) esp);
+    }
   }
   total_plant_nutrients += n_plant_detrimental;
   for (; i < total_plant_nutrients; ++i) {
     esp = (element_species*) l_get_item(possibly_nutritious, i);
     esp->plant_nutrition = NT_CAT_DETRIMENTAL;
+    if (!l_contains(wm->all_nutrients, (void*) esp)) {
+      l_append_element(wm->all_nutrients, (void*) esp);
+    }
   }
   total_plant_nutrients += n_plant_poisons;
   for (; i < total_plant_nutrients; ++i) {
     esp = (element_species*) l_get_item(possibly_nutritious, i);
     esp->plant_nutrition = NT_CAT_POISONOUS;
+    if (!l_contains(wm->all_nutrients, (void*) esp)) {
+      l_append_element(wm->all_nutrients, (void*) esp);
+    }
   }
 
   // Re-shuffle the same list and assign animal nutrients (animal/plant
   // nutrient overlap is thus random).
+  // TODO: Avoid critical plant nutrients which are poisonous to animals!
   l_shuffle(possibly_nutritious, seed);
   seed = prng(seed);
 
@@ -695,6 +711,9 @@ void generate_elements(world_map *wm) {
       esp->animal_nutrition = NT_CAT_CRITICAL_CAN_OVERDOSE;
     }
     seed = prng(seed);
+    if (!l_contains(wm->all_nutrients, (void*) esp)) {
+      l_append_element(wm->all_nutrients, (void*) esp);
+    }
   }
   total_animal_nutrients += n_animal_beneficial;
   for (; i < total_animal_nutrients; ++i) {
@@ -705,17 +724,29 @@ void generate_elements(world_map *wm) {
       esp->animal_nutrition = NT_CAT_BENEFICIAL_CAN_OVERDOSE;
     }
     seed = prng(seed);
+    if (!l_contains(wm->all_nutrients, (void*) esp)) {
+      l_append_element(wm->all_nutrients, (void*) esp);
+    }
   }
   total_animal_nutrients += n_animal_detrimental;
   for (; i < total_animal_nutrients; ++i) {
     esp = (element_species*) l_get_item(possibly_nutritious, i);
     esp->animal_nutrition = NT_CAT_DETRIMENTAL;
+    if (!l_contains(wm->all_nutrients, (void*) esp)) {
+      l_append_element(wm->all_nutrients, (void*) esp);
+    }
   }
   total_animal_nutrients += n_animal_poisons;
   for (; i < total_animal_nutrients; ++i) {
     esp = (element_species*) l_get_item(possibly_nutritious, i);
     esp->animal_nutrition = NT_CAT_POISONOUS;
+    if (!l_contains(wm->all_nutrients, (void*) esp)) {
+      l_append_element(wm->all_nutrients, (void*) esp);
+    }
   }
+
+  // Set our global total nutrient count:
+  N_TOTAL_NUTRIENTS = l_get_length(wm->all_nutrients);
 
   cleanup_list(possibly_nutritious);
 }
@@ -813,8 +844,6 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
   esp->stone_plasticity_tendency = ptrf(seed);
   seed = prng(seed);
   esp->stone_hardness_tendency = ptrf(seed);
-  seed = prng(seed);
-  esp->stone_cohesion_tendency = ptrf(seed);
   seed = prng(seed);
 
   // TODO: Constrain these a bit.

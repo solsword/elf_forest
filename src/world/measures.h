@@ -25,6 +25,19 @@ typedef uint8_t density;
 // specific heat of air being set at 16.
 typedef uint8_t specific_heat;
 
+// Temperature is just in degrees Celsius
+typedef int16_t temperature;
+
+// Plasticity is on a 0-255 scale, where 0 is perfectly brittle, and 255 is
+// perfectly plastic. It's a simplification that captures both malleability and
+// ductility. Non-plastic substances like glass and ceramics are at 0, while
+// most metals have at least 10 plasticity, even when extremely chilled.
+// Highly malleable metals like copper have values around 120 near room
+// temperature, while the scale beyond that is used to represent materials
+// which are easily deformable even though they're not technically plastic,
+// such as clay, as well as values for partially-melted materials.
+typedef uint8_t plasticity;
+
 // Viscosity is measured in centiPoise. A few reference points:
 //   water @ 10C = 1.3
 //   water @ 20C = 1.0
@@ -49,22 +62,9 @@ typedef uint8_t specific_heat;
 //         pitch ~ 2.3e11
 typedef float viscosity;
 
-// Temperature is just in degrees Celsius
-typedef int16_t temperature;
-
 // Hardness is an arbitrary 0-255 scale, with wood around 60 and most stone in
 // the 100-220 range.
 typedef uint8_t hardness;
-
-// Plasticity is on a 0-255 scale, where 0 is perfectly brittle, and 255 is
-// perfectly plastic. It's a simplification that captures both malleability and
-// ductility. Non-plastic substances like glass and ceramics are at 0, while
-// most metals have at least 10 plasticity, even when extremely chilled.
-// Highly malleable metals like copper have values around 120 near room
-// temperature, while the scale beyond that is used to represent materials
-// which are easily deformable even though they're not technically plastic,
-// such as clay, as well as values for partially-melted materials.
-typedef uint8_t plasticity;
 
 // pH values are on the standard scale from 0 to 14.
 typedef float pH;

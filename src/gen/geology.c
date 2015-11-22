@@ -1589,7 +1589,7 @@ void determine_new_elemental_composition(
       seed = prng(seed);
     }
   }
-  for (; i < MAX_PRIMARY_CONSTITUENTS; ++i) {
+  for (; i < MN_MAX_PRIMARY_CONSTITUENTS; ++i) {
     comp_array[i] = 0;
   }
 
@@ -1678,7 +1678,7 @@ void determine_new_elemental_traces(
       seed = prng(seed);
     }
   }
-  for (; i < MAX_TRACE_CONSTITUENTS; ++i) {
+  for (; i < MN_MAX_TRACE_CONSTITUENTS; ++i) {
     trace_array[i] = 0;
   }
 
@@ -1703,7 +1703,7 @@ float determine_new_igneous_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -1724,7 +1724,7 @@ float determine_new_igneous_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -1755,7 +1755,7 @@ float determine_new_igneous_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -1788,7 +1788,7 @@ float determine_new_igneous_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -1826,7 +1826,7 @@ float determine_new_igneous_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -1860,7 +1860,7 @@ float determine_new_metamorphic_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -1880,7 +1880,7 @@ float determine_new_metamorphic_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -1908,7 +1908,7 @@ float determine_new_metamorphic_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -1943,7 +1943,7 @@ float determine_new_metamorphic_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -1977,7 +1977,7 @@ float determine_new_metamorphic_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -2011,7 +2011,7 @@ float determine_new_sedimentary_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -2031,7 +2031,7 @@ float determine_new_sedimentary_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -2059,7 +2059,7 @@ float determine_new_sedimentary_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -2095,7 +2095,7 @@ float determine_new_sedimentary_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -2129,7 +2129,7 @@ float determine_new_sedimentary_material(
   WEIGHTED_ELEMENT_PROPERTY(
     species->constituents,
     STONE_CONSTITUENT_AVERAGING_WEIGHTS,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,
@@ -2193,7 +2193,7 @@ void determine_new_igneous_appearance(
   seed = prng(seed);
 
   // The distortion scale is within 10% of the base scale.
-  target->dscale = target->scale * 1 + 0.2*(ptrf(seed) - 0.5);
+  target->dscale = target->scale * randf(seed, 0.9, 1.1);
   seed = prng(seed);
 
   // Igneous rocks can have major distortion, but largely have little to
@@ -2218,7 +2218,7 @@ void determine_new_igneous_appearance(
   // We define our color in L*c*h*, and convert to RGB later, potentially
   // clipping some values to keep them in-gamut.
   precise_color color;
-  compute_combined_color(species, base_density, &color, seed);
+  compute_combined_stone_color(species, base_density, &color, seed);
   seed = prng(seed);
 
   // Construct the base color:
@@ -2254,19 +2254,19 @@ void determine_new_metamorphic_appearance(
 
   // Metamorphic rock types are usually not very gritty, especially when
   // they're very dense.
-  target->gritty = 0.8 + 2.5*(0.7*ptrf(seed) + 0.3*(1-base_density));
+  target->gritty = 0.08 + 0.25*(0.7*ptrf(seed) + 0.3*(1-base_density));
   seed = prng(seed);
 
   // Denser rocks tend to be more contoured.
-  target->contoured = 1.5 + 7.5*(0.8*ptrf(seed) + 0.2*base_density);
+  target->contoured = 0.15 + 0.75*(0.8*ptrf(seed) + 0.2*base_density);
   seed = prng(seed);
 
   // Lighter metamorphic rocks are a bit more porous.
-  target->porous = 1.0 + 8.0*(0.7*ptrf(seed) + 0.3*(1-base_density));
+  target->porous = 0.1 + 0.8*(0.7*ptrf(seed) + 0.3*(1-base_density));
   seed = prng(seed);
 
   // Metamorphic rocks can be quite bumpy, especially when less dense.
-  target->bumpy = 1.0 + 9.0*(0.6*ptrf(seed) + 0.4*(1-base_density));
+  target->bumpy = 0.1 + 0.9*(0.6*ptrf(seed) + 0.4*(1-base_density));
   seed = prng(seed);
 
   // Metamorphic rocks may exhibit strong layering but usually don't.
@@ -2286,7 +2286,7 @@ void determine_new_metamorphic_appearance(
   seed = prng(seed);
 
   // The distortion scale is within 10% of the base scale.
-  target->dscale = target->scale * 1 + 0.2*(ptrf(seed) - 0.5);
+  target->dscale = target->scale * randf(seed, 0.9, 1.1);
   seed = prng(seed);
 
   // Metamorphic rocks can have quite a bit of distortion.
@@ -2310,7 +2310,7 @@ void determine_new_metamorphic_appearance(
   // We define our color in L*c*h*, and convert to RGB later, potentially
   // clipping some values to keep them in-gamut.
   precise_color color;
-  compute_combined_color(species, base_density, &color, seed);
+  compute_combined_stone_color(species, base_density, &color, seed);
   seed = prng(seed);
 
   // Construct the base color:
@@ -2321,7 +2321,7 @@ void determine_new_metamorphic_appearance(
 
   // Metamorphic inclusions use the same distributions as the base rock, but
   // have a wider range of saturations:
-  compute_combined_color(species, base_density, &color, seed);
+  compute_combined_stone_color(species, base_density, &color, seed);
   seed = prng(seed);
   color.y *= randf_pnorm(seed, 1.0, 1.5);
   seed = prng(seed);
@@ -2349,19 +2349,19 @@ void determine_new_sedimentary_appearance(
   seed = prng(seed);
 
   // Sedimentary rock types are usually gritty.
-  target->gritty = 3.1 + 2.5*ptrf(seed);
+  target->gritty = 0.31 + 0.25*ptrf(seed);
   seed = prng(seed);
 
   // Denser rocks tend to be more contoured.
-  target->contoured = 1.5 + 9.5*(0.7*ptrf(seed) + 0.3*base_density);
+  target->contoured = 0.15 + 0.95*(0.7*ptrf(seed) + 0.3*base_density);
   seed = prng(seed);
 
   // Lighter sedimentary rocks are a bit more porous.
-  target->porous = 3.0 + 5.0*(0.7*ptrf(seed) + 0.3*(1-base_density));
+  target->porous = 0.3 + 0.5*(0.7*ptrf(seed) + 0.3*(1-base_density));
   seed = prng(seed);
 
   // Sedimentary rocks can be quite bumpy.
-  target->bumpy = 3.0 + 6.0*ptrf(seed);
+  target->bumpy = 0.3 + 0.6*ptrf(seed);
   seed = prng(seed);
 
   // Sedimentary rocks often exhibit strong layering.
@@ -2381,7 +2381,7 @@ void determine_new_sedimentary_appearance(
   seed = prng(seed);
 
   // The distortion scale is within 20% of the base scale.
-  target->dscale = target->scale * 1 + 0.4*(ptrf(seed) - 0.5);
+  target->dscale = target->scale * randf(seed, 0.8, 1.2);
   seed = prng(seed);
 
   // Sedimentary rocks can have little to medium distortion.
@@ -2405,7 +2405,7 @@ void determine_new_sedimentary_appearance(
   // We define our color in L*c*h*, and convert to RGB later, potentially
   // clipping some values to keep them in-gamut.
   precise_color color;
-  compute_combined_color(species, base_density, &color, seed);
+  compute_combined_stone_color(species, base_density, &color, seed);
   seed = prng(seed);
 
   // Construct the base color:
@@ -2416,7 +2416,7 @@ void determine_new_sedimentary_appearance(
 
   // Sedimentary inclusions use the same distributions as the base rock, but
   // are often darker with less saturation.
-  compute_combined_color(species, base_density, &color, seed);
+  compute_combined_stone_color(species, base_density, &color, seed);
   seed = prng(seed);
   color.x *= randf_pnorm(seed, 0.4, 1.2);
   color.y *= randf_pnorm(seed, 0.6, 1.1);
@@ -2431,7 +2431,7 @@ void determine_new_sedimentary_appearance(
   target->brightness = -0.05 + 0.35*randf_pnorm(seed, 0, 1);
 }
 
-void compute_combined_color(
+void compute_combined_stone_color(
   stone_species *species,
   float base_density,
   precise_color *color,
@@ -2443,9 +2443,13 @@ void compute_combined_color(
   float avg;
   float weight;
 
+  color->x = 0;
+  color->y = 0;
+  color->z = 0;
+
   // Hue
   // TODO: Tint & oxide colors!
-  for (i = 0; i < MAX_PRIMARY_CONSTITUENTS; ++i) {
+  for (i = 0; i < MN_MAX_PRIMARY_CONSTITUENTS; ++i) {
     if (species->constituents[i] != 0) {
       element = get_element_species(species->constituents[i]);
       switch (species->source) {
@@ -2480,7 +2484,7 @@ void compute_combined_color(
   // Lightness
   AVERAGE_ELEMENT_PROPERTY(
     species->constituents,
-    MAX_PRIMARY_CONSTITUENTS,
+    MN_MAX_PRIMARY_CONSTITUENTS,
     i,
     element,
     denom,

@@ -56,6 +56,12 @@ typedef enum pH_category_e pH_category;
 #define MIN_ANIMAL_POISONS 2
 #define MAX_ANIMAL_POISONS 5
 
+/***********
+ * Globals *
+ ***********/
+
+extern int N_TOTAL_NUTRIENTS;
+
 /*************
  * Functions *
  *************/

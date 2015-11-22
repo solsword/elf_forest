@@ -156,7 +156,7 @@ void fltr_mineral(texture *tx, void const * const fargs) {
       + mfargs->porous
       + mfargs->bumpy
       );
-
+      // multiplicative blending for layers:
       value *= (mfargs->layered) * layers + (1 - mfargs->layered);
 
       // saturation variance:
@@ -260,4 +260,101 @@ texture* gen_stone_texture(species s) {
   texture *result = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
   fltr_mineral(result, &(ssp->appearance));
   return result;
+}
+
+void mutate_mineral_appearance(
+  mineral_filter_args const * const src,
+  mineral_filter_args *dst,
+  ptrdiff_t seed
+) {
+  channel tmp_ch, ch_rng;
+
+  dst->seed = src->seed;
+
+  seed = prng(seed + 188921);
+
+  dst->scale = src->scale * randf(seed, 0.95, 1.05);
+  seed = prng(seed);
+
+  dst->gritty = src->gritty + randf(seed, -0.2, 0.2);
+  seed = prng(seed);
+
+  dst->contoured = (src->contoured + randf(seed, -0.2, 0.2));
+  seed = prng(seed);
+
+  dst->porous = src->porous + randf(seed, -0.2, 0.2);
+  seed = prng(seed);
+
+  dst->bumpy = src->bumpy + randf(seed, -0.2, 0.2);
+  seed = prng(seed);
+
+  dst->layered = (src->layered + randf(seed, -0.2, 0.2));
+  seed = prng(seed);
+
+  dst->layerscale = (src->layerscale * randf(seed, 0.9, 1.1));
+  seed = prng(seed);
+
+  dst->layerwaves = (src->layerwaves * randf(seed, 0.8, 1.2));
+  seed = prng(seed);
+
+  dst->wavescale = (src->wavescale * randf(seed, 0.8, 1.2));
+  seed = prng(seed);
+
+  dst->inclusions = (src->inclusions * randf(seed, 0.9, 1.1));
+  seed = prng(seed);
+
+  dst->dscale = src->dscale * randf(seed, 0.9, 1.1);
+  seed = prng(seed);
+
+  dst->distortion = (src->distortion * randf(seed, 0.9, 1.1));
+  seed = prng(seed);
+
+  dst->squash = (src->squash * randf(seed, 0.9, 1.1));
+  seed = prng(seed);
+
+  dst->base_color = src->base_color;
+  // red
+  tmp_ch = px_red(dst->base_color);
+  ch_rng = randi(seed, 0, 12);
+  seed = prng(seed);
+  if (ch_rng < 6 && tmp_ch > (6 - ch_rng)) {
+    tmp_ch -= (6 - ch_rng);
+  } else {
+    tmp_ch += ch_rng - 6;
+  }
+  px_set_red(&(dst->base_color), tmp_ch);
+
+  // green
+  tmp_ch = px_green(dst->base_color);
+  ch_rng = randi(seed, 0, 12);
+  seed = prng(seed);
+  if (ch_rng < 6 && tmp_ch > (6 - ch_rng)) {
+    tmp_ch -= (6 - ch_rng);
+  } else {
+    tmp_ch += ch_rng - 6;
+  }
+  px_set_green(&(dst->base_color), tmp_ch);
+
+  // blue
+  tmp_ch = px_blue(dst->base_color);
+  ch_rng = randi(seed, 0, 12);
+  seed = prng(seed);
+  if (ch_rng < 6 && tmp_ch > (6 - ch_rng)) {
+    tmp_ch -= (6 - ch_rng);
+  } else {
+    tmp_ch += ch_rng - 6;
+  }
+  px_set_blue(&(dst->base_color), tmp_ch);
+
+  // alt color is unchanged
+  dst->alt_color = src->alt_color;
+
+  dst->sat_noise = (src->sat_noise * randf(seed, 0.9, 1.1));
+  seed = prng(seed);
+
+  dst->desaturate = (src->desaturate * randf(seed, 0.9, 1.1));
+  seed = prng(seed);
+
+  dst->brightness = (src->brightness + randf(seed, -0.08, 0.08));
+  seed = prng(seed);
 }

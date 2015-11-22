@@ -237,7 +237,7 @@ typedef struct biome_s biome;
 #define WM_N_SEASONS 4
 
 // Maximum alternate dirt/sand types:
-#define WM_MAX_SOIL_ALTS 3
+#define WM_MAX_SOIL_ALTS 4
 
 // Maximum rivers in a single region:
 #define WM_MAX_RIVERS 4
@@ -340,8 +340,8 @@ struct weather_s {
   float total_precipitation; // summed precipitation during simulation
   float next_total_precipitation; // next iteration precipitation
   float rainfall[WM_N_SEASONS]; // rainfall per season in mm/year
-  float temp_low[WM_N_SEASONS]; // temperature low, mean and high throughout the
-  float temp_mean[WM_N_SEASONS]; // day, in each season
+  float temp_low[WM_N_SEASONS]; // temperature daily low, mean and high in each
+  float temp_mean[WM_N_SEASONS]; // season
   float temp_high[WM_N_SEASONS];
 };
 
@@ -507,6 +507,7 @@ struct world_map_s {
   list *rare_elements;
 
   list *all_elements;
+  list *all_nutrients;
   list *all_strata;
   list *all_water;
   list *all_rivers;

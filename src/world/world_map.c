@@ -47,6 +47,7 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
   result->rare_elements = create_list();
 
   result->all_elements = create_list();
+  result->all_nutrients = create_list();
   result->all_strata = create_list();
   result->all_water = create_list();
   result->all_rivers = create_list();

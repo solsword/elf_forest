@@ -70,12 +70,44 @@ typedef struct metal_species_s metal_species;
  *************/
 
 // Maximum number of primary constituent elements of stone etc.
-#define MAX_PRIMARY_CONSTITUENTS 3
+#define MN_MAX_PRIMARY_CONSTITUENTS 3
 // Maximum trace elements
-#define MAX_TRACE_CONSTITUENTS 2
+#define MN_MAX_TRACE_CONSTITUENTS 2
 
 // Maximum number of elements present in an alloy
-#define MAX_ALLOY_CONSTITUENTS 8
+#define MN_MAX_ALLOY_CONSTITUENTS 8
+
+// Nutrient levels:
+#define       MN_NT_CRIT_LEVEL_STARVED    5
+#define      MN_NT_CRIT_LEVEL_DEPRIVED    9
+#define       MN_NT_CRIT_LEVEL_LACKING   16
+#define       MN_NT_CRIT_LEVEL_REDUCED   22
+#define    MN_NT_CRIT_LEVEL_SUFFICIENT   45
+#define     MN_NT_CRIT_LEVEL_INCREASED   96
+#define      MN_NT_CRIT_LEVEL_ABUNDANT  160
+#define  MN_NT_CRIT_LEVEL_OVERABUNDANT  192
+#define       MN_NT_CRIT_LEVEL_CHOKING  220
+
+#define       MN_NT_BFCL_LEVEL_LACKING   12
+#define       MN_NT_BFCL_LEVEL_MINIMAL   24
+#define       MN_NT_BFCL_LEVEL_PRESENT   60
+#define      MN_NT_BFCL_LEVEL_ABUNDANT  128
+#define  MN_NT_BFCL_LEVEL_OVERABUNDANT  180
+#define       MN_NT_BFCL_LEVEL_CHOKING  220
+
+#define        MN_NT_DTML_LEVEL_ABSENT   12
+#define       MN_NT_DTML_LEVEL_PRESENT   32
+#define      MN_NT_DTML_LEVEL_ABUNDANT   96
+#define        MN_NT_DTML_LEVEL_DEADLY  192
+
+#define          MN_NT_PSNS_LEVEL_SAFE    9
+#define       MN_NT_PSNS_LEVEL_HARMFUL   16
+#define     MN_NT_PSNS_LEVEL_DANGEROUS   32
+#define        MN_NT_PSNS_LEVEL_DEADLY   96
+
+#define MN_NT_TINY_ADJUST 3
+#define MN_NT_SMALL_ADJUST 8
+#define MN_NT_LARGE_ADJUST 16
 
 /*************************
  * Structure Definitions *
@@ -87,17 +119,17 @@ struct dirt_species_s {
   material material;
   mineral_filter_args appearance;
 
-  // These three primary properties should add up to 100. Along with
+  // These three primary properties should add up to 1.0. Along with
   // organic_content and acidity, they determine most of the other properties
-  // of the soil. Note that the sand_percent should not exceed 75 and the
-  // clay_percent should not exceed 50. Under these conditions, the "dirt"
+  // of the soil. Note that the sand_percent should not exceed 0.75 and the
+  // clay_percent should not exceed 0.5. Under these conditions, the "dirt"
   // would be better classified as either sand or clay, and the use of B_SAND
   // or B_CLAY along with a stone_species or clay_species is more appropriate.
   // B_DIRT and dirt_species thus represent both pure silts and all manner of
   // loams that fill the rest of a sand/clay/silt triangle composition graph.
-  uint8_t sand_percent;
-  uint8_t clay_percent;
-  uint8_t silt_percent;
+  float sand_percent;
+  float clay_percent;
+  float silt_percent;
 
   // Organic content ranges from 0 to 100, indicating the percentage of
   // non-mineral soil content. The rest of the soil is composed of sand, clay,
@@ -183,7 +215,7 @@ struct dirt_species_s {
   uint8_t nutrients[MAX_TOTAL_NUTRIENTS];
 
   // Trace minerals help determine things like soil color
-  species trace_minerals[MAX_TRACE_CONSTITUENTS];
+  species trace_minerals[MN_MAX_TRACE_CONSTITUENTS];
 };
 
 struct clay_species_s {
@@ -205,8 +237,8 @@ struct stone_species_s {
   // Note: pure metals use B_NATIVE_METAL and metal_species
   mineral_composition composition;
   mineral_trace_composition trace_composition;
-  species constituents[MAX_PRIMARY_CONSTITUENTS];
-  species traces[MAX_TRACE_CONSTITUENTS];
+  species constituents[MN_MAX_PRIMARY_CONSTITUENTS];
+  species traces[MN_MAX_TRACE_CONSTITUENTS];
 };
 
 struct metal_species_s {
@@ -216,9 +248,9 @@ struct metal_species_s {
   // metal_texture_params appearance;
 
   // The elements that make up the alloy:
-  species constituents[MAX_ALLOY_CONSTITUENTS];
+  species constituents[MN_MAX_ALLOY_CONSTITUENTS];
   // The relative abundance of the constituents:
-  uint8_t composition[MAX_ALLOY_CONSTITUENTS];
+  uint8_t composition[MN_MAX_ALLOY_CONSTITUENTS];
 };
 
 /********************
@@ -230,7 +262,7 @@ static inline int dirt_contains_trace_element(
   species el
 ) {
   size_t i;
-  for (i = 0; i < MAX_TRACE_CONSTITUENTS; ++i) {
+  for (i = 0; i < MN_MAX_TRACE_CONSTITUENTS; ++i) {
     if (sp->trace_minerals[i] == el) {
       return 1;
     }
@@ -243,7 +275,7 @@ static inline int stone_contains_element(
   species el
 ) {
   size_t i;
-  for (i = 0; i < MAX_PRIMARY_CONSTITUENTS; ++i) {
+  for (i = 0; i < MN_MAX_PRIMARY_CONSTITUENTS; ++i) {
     if (sp->constituents[i] == el) {
       return 1;
     }
@@ -256,7 +288,7 @@ static inline int stone_contains_trace_element(
   species el
 ) {
   size_t i;
-  for (i = 0; i < MAX_TRACE_CONSTITUENTS; ++i) {
+  for (i = 0; i < MN_MAX_TRACE_CONSTITUENTS; ++i) {
     if (sp->traces[i] == el) {
       return 1;
     }

@@ -934,7 +934,7 @@ void generate_climate(world_map *wm) {
 
       // TODO: Real generation past this point!
       for (i = 0; i < WM_N_SEASONS; ++i) {
-        wr->climate.atmosphere.rainfall[i] = MEAN_AVG_PRECIPITATION;
+        wr->climate.atmosphere.rainfall[i] = CL_MEAN_AVG_PRECIPITATION;
         wr->climate.atmosphere.temp_low[i] = 16;
         wr->climate.atmosphere.temp_mean[i] = 24;
         wr->climate.atmosphere.temp_high[i] = 32;

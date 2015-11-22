@@ -433,6 +433,8 @@ void geomap_topography(world_map *wm) {
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
       geomap(&(wr->topography.terrain_height), &result, &dontcare, &ignore);
       mani_copy_as(&(wr->topography.terrain_height), &result);
+      // TODO: Separate heights here?
+      wr->topography.geologic_height = wr->topography.terrain_height.z;
     }
   }
 }
@@ -1048,6 +1050,7 @@ void pick_dirt_block(
       soil_species = alt_species[i];
     }
   }
+  printf("DIRT CELL: %d - %d\n", soil_type, soil_species);
   result->blocks[0] = b_make_species(soil_type, soil_species);
   result->blocks[1] = b_make_block(B_VOID);
 }

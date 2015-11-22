@@ -233,7 +233,7 @@ static inline void norm_angle(float *angle) {
 }
 
 // Returns the positive angle between the two given headings, which should each
-// be in the range -M_PI, M_PI.
+// be within 2*M_PI of each other.
 static inline float angle_between(float first, float second) {
   float result = fabs(second - first);
   if (result > M_PI) {

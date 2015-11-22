@@ -253,6 +253,8 @@ void compute_manifold(world_map *wm) {
       wr->topography.terrain_height.dy /= ydivisor;
       wr->topography.terrain_height.dx /= (float) WORLD_REGION_BLOCKS;
       wr->topography.terrain_height.dy /= (float) WORLD_REGION_BLOCKS;
+#ifdef DEBUG
+      // TODO: Get rid of this?
       if (
         isnan(wr->topography.terrain_height.dx)
       ||
@@ -261,6 +263,7 @@ void compute_manifold(world_map *wm) {
         printf("ERROR!\n");
         exit(1);
       }
+#endif
     }
   }
 }

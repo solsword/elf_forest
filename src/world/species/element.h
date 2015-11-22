@@ -83,7 +83,6 @@ struct element_species_s {
   float stone_transition_temp_tendency;
   float stone_plasticity_tendency;
   float stone_hardness_tendency;
-  float stone_cohesion_tendency;
   float stone_light_dark_tendency;
   float stone_chroma;
   float stone_oxide_chroma;

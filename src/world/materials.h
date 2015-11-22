@@ -145,12 +145,16 @@ static inline specific_heat mat_specific_heat(float relative) {
   }
 }
 
-/******************************
- * Constructors & Destructors *
- ******************************/
-
 /*************
  * Functions *
  *************/
+
+// Copies the source material into the destination, slightly changing most
+// properties.
+void mutate_material(
+  material const * const src,
+  material *dst,
+  ptrdiff_t seed
+);
 
 #endif // ifndef MATERIALS_H
