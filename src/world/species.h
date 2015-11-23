@@ -76,41 +76,51 @@ _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
 // TODO: thread safety here!
 
 /*********
- * Enums *
+ * Types *
  *********/
 
-enum species_type_e {
-  SPT_NO_SPECIES = 0,
+// Would be an enum but we want a strict size cap here (see any_species below).
+typedef uint8_t species_type;
 
-  SPT_ELEMENT = 1,
+#define SPT_NO_SPECIES 0
 
-  SPT_GAS = 2,
+#define SPT_ELEMENT 1
 
-  SPT_DIRT = 3,
-  SPT_CLAY = 4,
-  SPT_STONE = 5,
-  SPT_METAL = 6,
+#define SPT_GAS 2
+
+#define SPT_DIRT 3
+#define SPT_CLAY 4
+#define SPT_STONE 5
+#define SPT_METAL 6
   
-  SPT_FUNGUS = 7,
-  SPT_MOSS = 8,
-  SPT_GRASS = 9,
-  SPT_VINE = 10,
-  SPT_HERB = 11,
-  SPT_BUSH = 12,
-  SPT_SHRUB = 13,
-  SPT_TREE = 14,
-  SPT_AQUATIC_GRASS = 15,
-  SPT_AQUATIC_PLANT = 16,
-  SPT_CORAL = 17,
+#define SPT_FUNGUS 7
+#define SPT_MOSS 8
+#define SPT_GRASS 9
+#define SPT_VINE 10
+#define SPT_HERB 11
+#define SPT_BUSH 12
+#define SPT_SHRUB 13
+#define SPT_TREE 14
+#define SPT_AQUATIC_GRASS 15
+#define SPT_AQUATIC_PLANT 16
+#define SPT_CORAL 17
   
-  SPT_ANIMAL = 18,
-  SPT_MYTHICAL = 19,
-  SPT_SENTIENT = 20,
+#define SPT_ANIMAL 18
+#define SPT_MYTHICAL 19
+#define SPT_SENTIENT 20
   
-  SPT_FIBER = 21,
-  SPT_PIGMENT = 22
-};
-typedef enum species_type_e species_type;
+#define SPT_FIBER 21
+#define SPT_PIGMENT 22
+
+// The any_species structure just holds a species id along with a species_type
+// identifier. Together this information can be used to look up a specific
+// species structure.
+typedef uint32_t any_species;
+
+#define     ANY_SP_TYPE_SHIFT sizeof(species)
+#define      ANY_SP_TYPE_MASK umaxof(species_type)
+#define  ANY_SP_SPECIES_SHIFT 0
+#define   ANY_SP_SPECIES_MASK umaxof(species)
 
 /***************************
  * Cross-Species Constants *
@@ -147,13 +157,6 @@ typedef enum species_type_e species_type;
 
 // Items:
 #include "world/species/material.h"
-
-// Any species type:
-// The any_species structure just holds a species id along with a species_type
-// identifier. Together this information can be used to look up a specific
-// species structure.
-struct any_species_s;
-typedef struct any_species_s any_species;
 
 /***********
  * Globals *
@@ -193,25 +196,40 @@ extern map *SENTIENT_SPECIES;
 extern map *FIBER_SPECIES; // various sources; uniform use
 extern map *PIGMENT_SPECIES; // various sources; uniform use
 
-/*************************
- * Structure Definitions *
- *************************/
-
-// The any_species structure
-
-struct any_species_s {
-  species_type type;
-  species id;
-};
-
 /********************
  * Inline Functions *
  ********************/
 
 // Fills in the given any_species struct with information from the given block.
 static inline void block__any_species(block b, any_species *sp) {
-  sp->type = bi_species_type(b);
-  sp->id = b_species(b);
+  *sp = 0;
+  *sp |= (
+    ((any_species) bi_species_type(b)) & ANY_SP_TYPE_MASK
+  ) << ANY_SP_TYPE_SHIFT;
+  *sp |= (
+    ((any_species) b_species(b)) & ANY_SP_SPECIES_MASK
+  ) << ANY_SP_SPECIES_SHIFT;
+}
+
+static inline species_type any_species_type(any_species asp) {
+  return (species_type) ((asp >> ANY_SP_TYPE_SHIFT) & ANY_SP_TYPE_MASK);
+}
+
+static inline species any_species_species(any_species asp) {
+  return (species) ((asp >> ANY_SP_SPECIES_SHIFT) & ANY_SP_SPECIES_MASK);
+}
+
+static inline species_type any_species_set_type(
+  any_species *asp,
+  species_type t
+) {
+  *asp &= ~(ANY_SP_TYPE_MASK << ANY_SP_TYPE_SHIFT);
+  *asp |= (t & ANY_SP_TYPE_MASK) << ANY_SP_TYPE_SHIFT;
+}
+
+static inline species any_species_set_species(any_species asp, species sp) {
+  *asp &= ~(ANY_SP_SPECIES_MASK << ANY_SP_SPECIES_SHIFT);
+  *asp |= (sp & ANY_SP_SPECIES_MASK) << ANY_SP_SPECIES_SHIFT;
 }
 
 /*************

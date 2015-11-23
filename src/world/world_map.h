@@ -14,6 +14,8 @@
 #include "math/manifold.h"
 #include "math/functions.h"
 
+#include "util.h"
+
 /*********
  * Enums *
  *********/
@@ -54,6 +56,130 @@ enum step_result_e {
   SRESULT_IGNORE = 3,
 };
 typedef enum step_result_e step_result;
+
+enum biome_category_e {
+  BIOME_CAT_UNKNOWN = 0,
+
+  // Ocean biomes:
+  // Generally describe mostly underwater species, although the SEA_ICE,
+  // PELAGIC, and OFFSHORE biomes include birds and other animals that aren't
+  // water-bound.
+  BIOME_CAT_SEA_ICE,
+  BIOME_CAT_OCEAN_VENTS,
+  BIOME_CAT_DEEP_AQUATIC,
+  BIOME_CAT_PELAGIC,
+  BIOME_CAT_OFFSHORE,
+  BIOME_CAT_AQUATIC_GRASSLAND,
+  BIOME_CAT_AQUATIC_FOREST,
+  BIOME_CAT_CORAL_REEF,
+
+  // Beach biomes:
+  // These biomes are found at the edges of oceans (lake beaches don't get
+  // their own biomes). They describe species endemic to these zones, and
+  // usually overlap with at least one ocean biome and at least one land biome.
+  BIOME_CAT_FROZEN_BEACH,
+  BIOME_CAT_COLD_BEACH,
+  BIOME_CAT_WARM_BEACH,
+  BIOME_CAT_TROPICAL_BEACH,
+
+  // Lake biomes:
+  // These biomes describe the animals endemic to and dependent upon lakes.
+  // Terrestrial animals may be included when depend on the lake.
+  BIOME_CAT_FROZEN_LAKE,
+  BIOME_CAT_COLD_LAKE,
+  BIOME_CAT_TEMPERATE_LAKE,
+  BIOME_CAT_WARM_LAKE,
+  BIOME_CAT_TROPICAL_LAKE,
+  BIOME_CAT_SALT_LAKE,
+
+  // River biomes:
+  // These biomes describe animals that live in or depend on rivers. Many
+  // species endemic to riparian zones are included.
+  BIOME_CAT_COLD_RIVER,
+  BIOME_CAT_TEMPERATE_RIVER,
+  BIOME_CAT_WARM_RIVER,
+  BIOME_CAT_TROPICAL_RIVER,
+
+  // Alpine biomes:
+  // These biomes are prevalent in areas of high elevation (above the
+  // treeline). They are characterized by the absence of trees, as well as a
+  // plethora of adaptations for high-altitude living. Their species are
+  // usually present below the treeline as well, but another biome will be used
+  // to describe most of a mountain's flora and fauna.
+  BIOME_CAT_FROZEN_ALPINE,
+  BIOME_CAT_COLD_ALPINE,
+  BIOME_CAT_TEMPERATE_WET_ALPINE,
+  BIOME_CAT_TEMPERATE_DRY_ALPINE,
+  BIOME_CAT_WARM_WET_ALPINE,
+  BIOME_CAT_WARM_DRY_ALPINE,
+  BIOME_CAT_TROPICAL_ALPINE,
+
+  // Desert biomes:
+  // These are characterized by extreme dryness, although they will include
+  // some oasis species.
+  BIOME_CAT_FROZEN_DESERT,
+  BIOME_CAT_COLD_DESERT,
+  BIOME_CAT_TEMPERATE_DESERT,
+  BIOME_CAT_WARM_DESERT,
+  BIOME_CAT_TROPICAL_DESERT,
+
+  // Grassland biomes:
+  // Biomes dominated by grassy herbs, usually due to some combination of poor
+  // soil fertility, regular disruptions (grazing, fire, etc.) and/or low
+  // annual rainfall.
+  BIOME_CAT_COLD_GRASSLAND,
+  BIOME_CAT_TEMPERATE_GRASSLAND,
+  BIOME_CAT_WARM_GRASSLAND,
+  BIOME_CAT_TROPICAL_GRASSLAND,
+
+  // Shrubland biomes:
+  // Biomes where shrubs, bushes, and herbs are common, with few trees.
+  BIOME_CAT_COLD_SHRUBLAND,
+  BIOME_CAT_TEMPERATE_SHRUBLAND,
+  BIOME_CAT_WARM_SHRUBLAND,
+  BIOME_CAT_TROPICAL_SHRUBLAND,
+
+  // Savanna biomes:
+  // Biomes where trees may be common, but do not form a canopy, allowing
+  // grasses and shrubs to grow beneath and between them.
+  BIOME_CAT_TEMPERATE_SAVANNA,
+  BIOME_CAT_WARM_SAVANNA,
+  BIOME_CAT_TROPICAL_SAVANNA,
+
+  // Coniferous forest biomes:
+  // Biomes dominated by coniferous trees, often extremely homogeneous.
+  // Broadleaf trees may also be present, but are distinctly outnumbered.
+  BIOME_CAT_COLD_CONIFEROUS_FOREST,
+  BIOME_CAT_TEMPERATE_CONIFEROUS_FOREST,
+  BIOME_CAT_WARM_CONIFEROUS_FOREST,
+  BIOME_CAT_TROPICAL_CONIFEROUS_FOREST,
+
+  // Broadleaf forest biomes:
+  // Biomes dominated by broadleaf trees which are usually quite diverse. Some
+  // conifers may also be present, but they are usually rare.
+  BIOME_CAT_TEMPERATE_BROADLEAF_FOREST,
+  BIOME_CAT_WARM_WET_BROADLEAF_FOREST,
+  BIOME_CAT_WARM_DRY_BROADLEAF_FOREST,
+  BIOME_CAT_TROPICAL_WET_BROADLEAF_FOREST,
+  BIOME_CAT_TROPICAL_DRY_BROADLEAF_FOREST,
+
+  // Wetland biomes:
+  // Biomes with seasonal or sustained flooding, usually found near lakes,
+  // rivers, or oceans. Wetlands adjacent to the ocean are brackish.
+  BIOME_CAT_TUNDRA,
+  BIOME_CAT_COLD_FRESHWATER_WETLAND,
+  BIOME_CAT_COLD_SALTWATER_WETLAND,
+  BIOME_CAT_TEMPERATE_FRESHWATER_WETLAND,
+  BIOME_CAT_TEMPERATE_SALTWATER_WETLAND,
+  BIOME_CAT_WARM_FRESHWATER_WETLAND,
+  BIOME_CAT_WARM_FRESHWATER_FORESTED_WETLAND,
+  BIOME_CAT_WARM_SALTWATER_WETLAND,
+  BIOME_CAT_TROPICAL_FRESHWATER_WETLAND,
+  BIOME_CAT_TROPICAL_FRESHWATER_FORESTED_WETLAND,
+  BIOME_CAT_TROPICAL_SALTWATER_WETLAND,
+  BIOME_CAT_TROPICAL_SALTWATER_FORESTED_WETLAND,
+};
+typedef enum biome_category_e biome_category;
 
 /************************
  * Types and Structures *
@@ -246,7 +372,7 @@ typedef struct biome_s biome;
 // -------
 
 // Maximum number of biomes that can overlap in the same world region
-#define WM_MAX_BIOME_OVERLAP 4
+#define WM_MAX_BIOME_OVERLAP 6
 
 // Biome plant variant caps
 #define WM_MAX_BIOME_MUSHROOMS 16
@@ -279,27 +405,35 @@ struct world_map_pos_s {
 // Biology
 // -------
 
+// A type that combines a 32-bit float with an any_species specifying both an
+// exact species and its relative frequency at once.
+typedef uint64_t frequent_species;
+
+#define      FR_SP_FREQ_MASK umaxof(uint32_t)
+#define     FR_SP_FREQ_SHIFT 0
+#define   FR_SP_SPECIES_MASK umaxof(any_species)
+#define  FR_SP_SPECIES_SHIFT 32
+
 struct biome_s {
-  // species IDs and frequencies for plant types:
-  // mushrooms, mosses, grasses, vines, herbs, bushes, shrubs, and trees
-  // (aquatic grasses, plants and corals are stored as grasses, vines, and
-  // bushes respectively)
-  species  mushroom_species[WM_MAX_BIOME_MUSHROOMS];
-  float    mushroom_frequencies[WM_MAX_BIOME_MUSHROOMS];
-  species  moss_species[WM_MAX_BIOME_MOSSES];
-  float    moss_frequencies[WM_MAX_BIOME_MOSSES];
-  species  grass_species[WM_MAX_BIOME_GRASSES];
-  float    grass_frequencies[WM_MAX_BIOME_GRASSES];
-  species  vine_species[WM_MAX_BIOME_VINES];
-  float    vine_frequencies[WM_MAX_BIOME_VINES];
-  species  herb_species[WM_MAX_BIOME_HERBS];
-  float    herb_frequencies[WM_MAX_BIOME_HERBS];
-  species  bush_species[WM_MAX_BIOME_BUSHES];
-  float    bush_frequencies[WM_MAX_BIOME_BUSHES];
-  species  shrub_species[WM_MAX_BIOME_SHRUBS];
-  float    shrub_frequencies[WM_MAX_BIOME_SHRUBS];
-  species  tree_species[WM_MAX_BIOME_TREES];
-  float    tree_frequencies[WM_MAX_BIOME_TREES];
+  biome_category category;
+  // species types, IDs, and frequencies for flora (each list entry is a
+  // frequent_species)
+  list *all_plants;
+  list *mushrooms;
+  list *giant_mushrooms;
+  list *mosses;
+  list *grasses;
+  list *vines;
+  list *herbs;
+  list *bushes;
+  list *shrubs;
+  list *trees;
+  list *aquatic_grasses;
+  list *aquatic_plants;
+  list *corals;
+
+  // fauna
+  // TODO: HERE
 };
 
 // Climate & Hydrology
@@ -522,6 +656,58 @@ struct world_map_s {
 /********************
  * Inline Functions *
  ********************/
+
+static inline any_species frequent_species_any_species(frequent_species fqsp) {
+  return (any_species) ((fqsp >> FR_SP_SPECIES_SHIFT) & FR_SP_SPECIES_MASK);
+}
+
+static inline species_type frequent_species_species_type(frequent_species fqsp){
+}
+
+static inline species frequent_species_species(frequent_species fqsp) {
+}
+
+static inline float frequent_species_frequency(frequent_species fqsp) {
+#ifdef DEBUG
+  assert(sizeof(float) == sizeof(uint32_t));
+#endif
+  uint32_t int_freq = (uint32_t) (fqsp >> FR_SP_FREQ_SHIFT) & FR_SP_FREQ_MASK;
+  return *((float*) &int_freq); // reinterpret as a float
+}
+
+static inline void frequent_species_set_any_species(
+  frequent_species *fqsp,
+  any_species asp
+) {
+  *fqsp &= ~(FR_SP_SPECIES_MASK << FR_SP_SPECIES_SHIFT);
+  *fqsp |= (asp & FR_SP_SPECIES_MASK) << FR_SP_SPECIES_SHIFT;
+}
+
+static inline void frequent_species_set_species_type(
+  frequent_species *fqsp,
+  species_type t
+) {
+  any_species asp = frequent_species_any_species(*fqsp);
+  any_species_set_species_type(&asp, t);
+  frequent_species_set_any_species(fqsp, asp);
+}
+
+static inline void frequent_species_set_species(
+  frequent_species *fqsp,
+  species sp
+) {
+  any_species asp = frequent_species_any_species(*fqsp);
+  any_species_set_species(&asp, sp);
+  frequent_species_set_any_species(fqsp, asp);
+}
+
+static inline frequent_species_set_frequency(frequent_species *fqsp, float f) {
+#ifdef DEBUG
+  assert(sizeof(float) == sizeof(uint32_t));
+#endif
+  *fqsp &= ~(FR_SP_FREQ_MASK << FR_SP_FREQ_SHIFT);
+  *fqsp |= ((*((uint32_t*) &f)) & FR_SP_FREQ_MASK) << FR_SP_FREQ_SHIFT;
+}
 
 static inline void wmpos__glpos(
   world_map_pos const * const wmpos,
