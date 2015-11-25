@@ -23,7 +23,11 @@
  * Constructors & Destructors *
  ******************************/
 
-body_of_water* create_body_of_water(float level, salinity salt) {
+body_of_water* create_body_of_water(
+  hydro_state type,
+  float level,
+  salinity salt
+) {
   body_of_water *result = (body_of_water*) malloc(sizeof(body_of_water));
   result->level = level;
   result->salt = salt;
@@ -58,7 +62,7 @@ void cleanup_river(river *r) {
 void _iter_flag_as_water_interior(void *v_region, void *v_body) {
   world_region *region = (world_region*) v_region;
   body_of_water *body = (body_of_water*) v_body;
-  region->climate.water.state = HYDRO_WATER;
+  region->climate.water.state = body->type;
   region->climate.water.body = body;
   region->climate.water.water_table = body->level;
   region->climate.water.salt = body->salt;
@@ -67,7 +71,18 @@ void _iter_flag_as_water_interior(void *v_region, void *v_body) {
 void _iter_flag_as_water_shore(void *v_region, void *v_body) {
   world_region *region = (world_region*) v_region;
   body_of_water *body = (body_of_water*) v_body;
-  region->climate.water.state = HYDRO_SHORE;
+  if (body->type == WM_HS_OCEAN) {
+    region->climate.water.state = WM_HS_OCEAN_SHORE;
+  } else if (body->type == WM_HS_LAKE) {
+    region->climate.water.state = WM_HS_LAKE_SHORE;
+#ifdef DEBUG
+  } else {
+    printf(
+      "ERROR: Body water has bad type '%x' in _iter_flag_as_water_shore.\n",
+      body->type
+    );
+#endif
+  }
   region->climate.water.body = body;
   region->climate.water.water_table = body->level;
   region->climate.water.salt = body->salt - 1;
@@ -97,13 +112,13 @@ void _iter_fill_lake_site(void *v_wr, void *v_seed) {
   *seed = prng(*seed);
   f = ptrf(*seed); // random on [0, 1]
   if (f < CL_LAKE_SALINITY_THRESHOLD_BRINY) {
-    salt = SALINITY_BRINY;
+    salt = WM_SL_BRINY;
   } else if (f < CL_LAKE_SALINITY_THRESHOLD_SALINE) {
-    salt = SALINITY_SALINE;
+    salt = WM_SL_SALINE;
   } else if (f < CL_LAKE_SALINITY_THRESHOLD_BRACKISH) {
-    salt = SALINITY_BRACKISH;
+    salt = WM_SL_BRACKISH;
   } else {
-    salt = SALINITY_FRESH;
+    salt = WM_SL_FRESH;
   }
 
   // Determine base depth:
@@ -118,7 +133,11 @@ void _iter_fill_lake_site(void *v_wr, void *v_seed) {
   );
 
   // Create a body of water and attempt to fill with it:
-  water = create_body_of_water(wr->topography.terrain_height.z + f, salt);
+  water = create_body_of_water(
+    WM_HS_LAKE,
+    wr->topography.terrain_height.z + f,
+    salt
+  );
   while (
     water->level >= wr->topography.terrain_height.z + CL_MIN_LAKE_DEPTH
   &&
@@ -265,8 +284,8 @@ void _iter_grow_rivers(void *v_river, void *v_wm) {
           break;
         } else if (nextwr->climate.water.rivers[i] == NULL) {
           nextwr->climate.water.rivers[i] = r;
-          if (nextwr->climate.water.state == HYDRO_LAND) {
-            nextwr->climate.water.state = HYDRO_RIVER;
+          if (nextwr->climate.water.state == WM_HS_LAND) {
+            nextwr->climate.water.state = WM_HS_RIVER;
           }
           if (i > 0) {
             // We've hit a region that contains at least one other river: merge
@@ -618,7 +637,11 @@ void generate_hydrology(world_map *wm) {
   size_t i;
   uint8_t changed_something;
 
-  next_water = create_body_of_water(TR_HEIGHT_SEA_LEVEL, SALINITY_SALINE);
+  next_water = create_body_of_water(
+    WM_HS_OCEAN,
+    TR_HEIGHT_SEA_LEVEL,
+    WM_SL_SALINE
+  );
 
   // First generate world oceans and take note of potential lake sites:
   printf("    ...filling oceans...\n");
@@ -639,7 +662,11 @@ void generate_hydrology(world_map *wm) {
         )
       ) {
         l_append_element(wm->all_water, next_water);
-        next_water = create_body_of_water(TR_HEIGHT_SEA_LEVEL, SALINITY_SALINE);
+        next_water = create_body_of_water(
+          WM_HS_OCEAN,
+          TR_HEIGHT_SEA_LEVEL,
+          WM_SL_SALINE
+        );
       }
       if (wr->climate.water.body == NULL && wr->topography.downhill == NULL) {
         l_append_element(lake_sites, wr);
@@ -704,7 +731,7 @@ void generate_hydrology(world_map *wm) {
       wr = get_world_region(wm, &xy); // no need to worry about NULL here
       if (
         wr->climate.soil.base_soil.main_block_type == 1
-     && wr->climate.water.state == HYDRO_LAND
+     && wr->climate.water.state == WM_HS_LAND
       ) {
         release_river(wr);
       }

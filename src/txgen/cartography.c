@@ -296,7 +296,10 @@ pixel ly_terrain_height(world_region *wr) {
     }
     h = 1 - h;
     pixel result = gradient_result(&SEA_GRADIENT, h);
-    if (wr->climate.water.state == HYDRO_SHORE) {
+    if (
+       wr->climate.water.state == WM_HS_OCEAN_SHORE
+    || wr->climate.water.state == WM_HS_LAKE_SHORE
+    ) {
       // shores are a bit greener and a bit darker
       pixel hsv;
       hsv = rgb__hsv(result);

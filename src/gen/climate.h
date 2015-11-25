@@ -324,7 +324,11 @@ static inline float evaporation(world_region *wr) {
  ******************************/
 
 // Allocates and returns a new body of water.
-body_of_water* create_body_of_water(float level, salinity salt);
+body_of_water* create_body_of_water(
+  hydro_state type,
+  float level,
+  salinity salt
+);
 
 // Frees the memory associated with the given body of water.
 void cleanup_body_of_water(body_of_water *body);

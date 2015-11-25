@@ -48,10 +48,14 @@ step_result _iter_spread_soil(
       // Altitude changes:
        ( fabs(oalt - halt) > SL_CP_ALTITUDE )
       // Transitions onto or off of fully submerged regions:
-    || ( owater->state == HYDRO_WATER
-      && hwater->state != HYDRO_WATER )
-    || ( hwater->state == HYDRO_WATER
-      && owater->state != HYDRO_WATER )
+    || ( owater->state == WM_HS_OCEAN
+      && hwater->state != WM_HS_OCEAN )
+    || ( hwater->state == WM_HS_OCEAN
+      && owater->state != WM_HS_OCEAN )
+    || ( owater->state == WM_HS_LAKE
+      && hwater->state != WM_HS_LAKE )
+    || ( hwater->state == WM_HS_LAKE
+      && owater->state != WM_HS_LAKE )
       // Salinity changes:
     || ( owater->salt != hwater->salt )
       // Temperature changes:
@@ -702,27 +706,24 @@ void create_appropriate_soil(world_region *wr) {
   //   Temperature (mean, seasonal, and min)
   //   Salinity
   //   Bedrock chemistry
-  soil_factors factors;
-  ptrdiff_t seed = prng(wr->seed + 443355818);
 
-  glean_soil_factors(wr, &factors);
+  ptrdiff_t seed = prng(wr->seed + 443355818);
 
   // TODO: Finer distinctions?
 
-  create_local_dirt(wr, &(wr->climate.soil.base_soil), &factors);
+  create_local_dirt(wr, &(wr->climate.soil.base_soil));
   if (ptrf(seed) < 0.5) {
     copy_soil_type(&(wr->climate.soil.base_soil), &(wr->climate.soil.top_soil));
   } else {
     create_topsoil_variant(
       wr,
       &(wr->climate.soil.base_soil),
-      &(wr->climate.soil.top_soil),
-      &factors
+      &(wr->climate.soil.top_soil)
     );
   }
   seed = prng(seed);
 
-  create_local_silt(wr, &(wr->climate.soil.river_banks), &factors);
+  create_local_silt(wr, &(wr->climate.soil.river_banks));
   if (ptrf(seed) < 0.5) {
     copy_soil_type(
       &(wr->climate.soil.river_banks),
@@ -732,13 +733,12 @@ void create_appropriate_soil(world_region *wr) {
     create_topsoil_variant(
       wr,
       &(wr->climate.soil.river_banks),
-      &(wr->climate.soil.river_bank_topsoil),
-      &factors
+      &(wr->climate.soil.river_bank_topsoil)
     );
   }
   seed = prng(seed);
 
-  create_local_mud(wr, &(wr->climate.soil.river_bottoms), &factors);
+  create_local_mud(wr, &(wr->climate.soil.river_bottoms));
   if (ptrf(seed) < 0.5) {
     copy_soil_type(
       &(wr->climate.soil.river_bottoms),
@@ -748,13 +748,12 @@ void create_appropriate_soil(world_region *wr) {
     create_topsoil_variant(
       wr,
       &(wr->climate.soil.river_bottoms),
-      &(wr->climate.soil.river_bottom_topsoil),
-      &factors
+      &(wr->climate.soil.river_bottom_topsoil)
     );
   }
   seed = prng(seed);
 
-  create_local_sand(wr, &(wr->climate.soil.lake_shores), &factors);
+  create_local_sand(wr, &(wr->climate.soil.lake_shores));
   if (ptrf(seed) < 0.5) {
     copy_soil_type(
       &(wr->climate.soil.lake_shores),
@@ -764,13 +763,12 @@ void create_appropriate_soil(world_region *wr) {
     create_topsoil_variant(
       wr,
       &(wr->climate.soil.lake_shores),
-      &(wr->climate.soil.lake_shore_topsoil),
-      &factors
+      &(wr->climate.soil.lake_shore_topsoil)
     );
   }
   seed = prng(seed);
 
-  create_local_sand(wr, &(wr->climate.soil.lake_bottoms), &factors);
+  create_local_sand(wr, &(wr->climate.soil.lake_bottoms));
   if (ptrf(seed) < 0.5) {
     copy_soil_type(
       &(wr->climate.soil.lake_bottoms),
@@ -780,13 +778,12 @@ void create_appropriate_soil(world_region *wr) {
     create_topsoil_variant(
       wr,
       &(wr->climate.soil.lake_bottoms),
-      &(wr->climate.soil.lake_bottom_topsoil),
-      &factors
+      &(wr->climate.soil.lake_bottom_topsoil)
     );
   }
   seed = prng(seed);
 
-  create_local_sand(wr, &(wr->climate.soil.beaches), &factors);
+  create_local_sand(wr, &(wr->climate.soil.beaches));
   if (ptrf(seed) < 0.5) {
     copy_soil_type(
       &(wr->climate.soil.beaches),
@@ -796,13 +793,12 @@ void create_appropriate_soil(world_region *wr) {
     create_topsoil_variant(
       wr,
       &(wr->climate.soil.beaches),
-      &(wr->climate.soil.beach_topsoil),
-      &factors
+      &(wr->climate.soil.beach_topsoil)
     );
   }
   seed = prng(seed);
 
-  create_local_mud(wr, &(wr->climate.soil.ocean_floor), &factors);
+  create_local_mud(wr, &(wr->climate.soil.ocean_floor));
   if (ptrf(seed) < 0.5) {
     copy_soil_type(
       &(wr->climate.soil.ocean_floor),
@@ -812,8 +808,7 @@ void create_appropriate_soil(world_region *wr) {
     create_topsoil_variant(
       wr,
       &(wr->climate.soil.ocean_floor),
-      &(wr->climate.soil.ocean_floor_topsoil),
-      &factors
+      &(wr->climate.soil.ocean_floor_topsoil)
     );
   }
   seed = prng(seed);
@@ -821,22 +816,21 @@ void create_appropriate_soil(world_region *wr) {
 
 void create_local_dirt(
   world_region *wr,
-  soil_type *soil,
-  soil_factors *factors
+  soil_type *soil
 ) {
   size_t i;
 
   rngtable *alt_table;
   ptrdiff_t seed = prng(wr->seed + 5464221);
 
-  alt_table = pick_alt_dirt_table(factors, seed);
+  alt_table = pick_alt_dirt_table(wr, seed);
   seed = prng(seed);
 
   soil->main_block_type = B_DIRT;
   soil->main_species = create_dirt_species();
 
   // Fill out the main dirt species:
-  fill_dirt_species(get_dirt_species(soil->main_species), factors, seed);
+  fill_dirt_species(get_dirt_species(soil->main_species), wr, seed);
   seed = prng(seed);
 
   for (i = 0; i < WM_MAX_SOIL_ALTS; ++i) {
@@ -851,7 +845,7 @@ void create_local_dirt(
         fill_dirt_variant(
           get_dirt_species(soil->main_species),
           get_dirt_species(soil->alt_species[i]),
-          factors
+          wr
         );
         soil->alt_strengths[i] = randf(seed, 0, 1.0);
         seed = prng(seed);
@@ -867,7 +861,7 @@ void create_local_dirt(
           fill_dirt_variant(
             get_dirt_species(soil->main_species),
             get_dirt_species(soil->alt_species[i]),
-            factors
+            wr
           );
         }
         seed = prng(seed);
@@ -881,7 +875,7 @@ void create_local_dirt(
         soil->alt_species[i] = create_clay_species();
         fill_clay_species(
           get_clay_species(soil->alt_species[i]),
-          factors,
+          wr,
           seed
         );
         // DEBUG:
@@ -897,7 +891,7 @@ void create_local_dirt(
         break;
       case B_SAND:
         // TODO: Something more complex here.
-        soil->alt_species[i] = factors->bedrock->id;
+        soil->alt_species[i] = get_bedrock(wr);
         soil->alt_strengths[i] = randf_pnorm(seed, 0, 1);
         seed = prng(seed);
         soil->alt_hdeps[i] = randf(seed, -0.3, 0.8);
@@ -906,7 +900,7 @@ void create_local_dirt(
       case B_GRAVEL:
       case B_SCREE:
         // TODO: Something more complex here.
-        soil->alt_species[i] = factors->bedrock->id;
+        soil->alt_species[i] = get_bedrock(wr);
         soil->alt_strengths[i] = expdist(ptrf(seed), 2);
         seed = prng(seed);
         soil->alt_hdeps[i] = randf(seed, 0.2, 1.0);
@@ -914,7 +908,7 @@ void create_local_dirt(
         break;
       case B_STONE:
         // TODO: Something more complex here.
-        soil->alt_species[i] = factors->bedrock->id;
+        soil->alt_species[i] = get_bedrock(wr);
         soil->alt_strengths[i] = expdist(ptrf(seed), 2.5);
         seed = prng(seed);
         soil->alt_hdeps[i] = randf(seed, -1.0, -0.4);
@@ -926,38 +920,35 @@ void create_local_dirt(
 
 void create_local_silt(
   world_region *wr,
-  soil_type *soil,
-  soil_factors *factors
+  soil_type *soil
 ) {
   // TODO: Better here!
-  create_local_dirt(wr, soil, factors);
+  create_local_dirt(wr, soil);
 }
 
 void create_local_mud(
   world_region *wr,
-  soil_type *soil,
-  soil_factors *factors
+  soil_type *soil
 ) {
   // TODO: Better here!
-  create_local_dirt(wr, soil, factors);
+  create_local_dirt(wr, soil);
 }
 
 void create_local_sand(
   world_region *wr,
-  soil_type *soil,
-  soil_factors *factors
+  soil_type *soil
 ) {
   size_t i;
 
   rngtable *alt_table;
   ptrdiff_t seed = prng(wr->seed + 324334);
 
-  alt_table = pick_alt_sand_table(factors, seed);
+  alt_table = pick_alt_sand_table(wr, seed);
   seed = prng(seed);
 
   soil->main_block_type = B_SAND;
   // TODO: create a variant species here?
-  soil->main_species = factors->bedrock->id;
+  soil->main_species = get_bedrock(wr);
 
   for (i = 0; i < WM_MAX_SOIL_ALTS; ++i) {
 #pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
@@ -970,7 +961,7 @@ void create_local_sand(
         soil->alt_species[i] = create_dirt_species();
         fill_dirt_species(
           get_dirt_species(soil->alt_species[i]),
-          factors,
+          wr,
           seed
         );
         seed = prng(seed);
@@ -984,7 +975,7 @@ void create_local_sand(
         soil->alt_species[i] = create_dirt_species();
         fill_dirt_species(
           get_dirt_species(soil->alt_species[i]),
-          factors,
+          wr,
           seed
         );
         seed = prng(seed);
@@ -998,7 +989,7 @@ void create_local_sand(
         soil->alt_species[i] = create_clay_species();
         fill_clay_species(
           get_clay_species(soil->alt_species[i]),
-          factors,
+          wr,
           seed
         );
         // DEBUG:
@@ -1014,7 +1005,7 @@ void create_local_sand(
         break;
       case B_SAND:
         // TODO: An actual variant here!
-        soil->alt_species[i] = factors->bedrock->id;
+        soil->alt_species[i] = get_bedrock(wr);
         soil->alt_strengths[i] = randf_pnorm(seed, 0, 1);
         seed = prng(seed);
         soil->alt_hdeps[i] = randf(seed, -0.3, 0.3);
@@ -1023,7 +1014,7 @@ void create_local_sand(
       case B_GRAVEL:
       case B_SCREE:
         // TODO: Something more complex here.
-        soil->alt_species[i] = factors->bedrock->id;
+        soil->alt_species[i] = get_bedrock(wr);
         soil->alt_strengths[i] = expdist(ptrf(seed), 1.3);
         seed = prng(seed);
         soil->alt_hdeps[i] = randf(seed, -1.0, -0.2);
@@ -1031,7 +1022,7 @@ void create_local_sand(
         break;
       case B_STONE:
         // TODO: Something more complex here.
-        soil->alt_species[i] = factors->bedrock->id;
+        soil->alt_species[i] = get_bedrock(wr);
         soil->alt_strengths[i] = expdist(ptrf(seed), 1.8);
         seed = prng(seed);
         soil->alt_hdeps[i] = randf(seed, -1.0, -0.4);
@@ -1044,8 +1035,7 @@ void create_local_sand(
 void create_topsoil_variant(
   world_region *wr,
   soil_type *original,
-  soil_type *result,
-  soil_factors *factors
+  soil_type *result
 ) {
   copy_soil_type(original, result);
   // TODO: More HERE!
@@ -1057,7 +1047,7 @@ void create_topsoil_variant(
       fill_dirt_variant(
         get_dirt_species(original->main_species),
         get_dirt_species(result->main_species),
-        factors
+        wr
       );
       break;
     case B_CLAY:
@@ -1075,36 +1065,36 @@ void create_topsoil_variant(
   // TODO: Variants of non-main blocks!
 }
 
-rngtable* pick_alt_dirt_table(soil_factors *factors, ptrdiff_t seed) {
-  if (factors->altitude == SL_AC_OCEAN_DEPTHS) {
+rngtable* pick_alt_dirt_table(world_region *wr, ptrdiff_t seed) {
+  if (wr->s_altitude == WM_AC_OCEAN_DEPTHS) {
     // precipitation and temperature are irrelevant
     return (rngtable*) rt_pick_result(&OCEAN_DEPTHS_ALTS_ALTS, seed);
-  } else if (factors->altitude == SL_AC_CONTINENTAL_SHELF) {
+  } else if (wr->s_altitude == WM_AC_CONTINENTAL_SHELF) {
     // precipitation and temperature are irrelevant
     return (rngtable*) rt_pick_result(&CONTINENTAL_SHELF_ALTS_ALTS, seed);
 
   // Above sea level...
-  } else if (factors->temperature == SL_TR_ARCTIC) {
+  } else if (wr->s_temperature == WM_TC_ARCTIC) {
     // altitude and precipitation are largely irrelevant
     if (
-       factors->altitude == SL_AC_MOUNTAIN_SLOPES
-    || factors->altitude == SL_AC_MOUNTAIN_PEAKS
+       wr->s_altitude == WM_AC_MOUNTAIN_SLOPES
+    || wr->s_altitude == WM_AC_MOUNTAIN_PEAKS
     ) {
       return (rngtable*) rt_pick_result(&ARCTIC_MOUNTAINS_ALTS_ALTS, seed);
     } else {
       return (rngtable*) rt_pick_result(&ARCTIC_PLAINS_ALTS_ALTS, seed);
     }
-  } else if (factors->temperature == SL_TR_TUNDRA) {
+  } else if (wr->s_temperature == WM_TC_TUNDRA) {
     // altitude and precipitation are mostly irrelevant
     if (
-       factors->altitude == SL_AC_MOUNTAIN_SLOPES
-    || factors->altitude == SL_AC_MOUNTAIN_PEAKS
+       wr->s_altitude == WM_AC_MOUNTAIN_SLOPES
+    || wr->s_altitude == WM_AC_MOUNTAIN_PEAKS
     ) {
       return (rngtable*) rt_pick_result(&ARCTIC_MOUNTAINS_ALTS_ALTS, seed);
     } else if (
-       factors->precipitation == SL_PC_DESERT
-    || factors->precipitation == SL_PC_ARID
-    || factors->precipitation == SL_PC_DRY
+       wr->s_precipitation == WM_PC_DESERT
+    || wr->s_precipitation == WM_PC_ARID
+    || wr->s_precipitation == WM_PC_DRY
     ) {
       return (rngtable*) rt_pick_result(&DRY_TUNDRA_ALTS_ALTS, seed);
     } else {
@@ -1112,21 +1102,21 @@ rngtable* pick_alt_dirt_table(soil_factors *factors, ptrdiff_t seed) {
     }
 
   // Neither arctic nor tundra...
-  } else if (factors->precipitation == SL_PC_DESERT) {
+  } else if (wr->s_precipitation == WM_PC_DESERT) {
     // altitude and temperature are largely irrelevant
     if (
-       factors->altitude == SL_AC_MOUNTAIN_SLOPES
-    || factors->altitude == SL_AC_MOUNTAIN_PEAKS
+       wr->s_altitude == WM_AC_MOUNTAIN_SLOPES
+    || wr->s_altitude == WM_AC_MOUNTAIN_PEAKS
     ) {
       return (rngtable*) rt_pick_result(&DESERT_MOUNTAINS_ALTS_ALTS, seed);
     } else {
       return (rngtable*) rt_pick_result(&DESERT_ALTS_ALTS, seed);
     }
-  } else if (factors->precipitation == SL_PC_ARID) {
+  } else if (wr->s_precipitation == WM_PC_ARID) {
     // altitude and temperature are largely irrelevant
     if (
-       factors->altitude == SL_AC_MOUNTAIN_SLOPES
-    || factors->altitude == SL_AC_MOUNTAIN_PEAKS
+       wr->s_altitude == WM_AC_MOUNTAIN_SLOPES
+    || wr->s_altitude == WM_AC_MOUNTAIN_PEAKS
     ) {
       return (rngtable*) rt_pick_result(&ARID_MOUNTAINS_ALTS_ALTS, seed);
     } else {
@@ -1134,114 +1124,114 @@ rngtable* pick_alt_dirt_table(soil_factors *factors, ptrdiff_t seed) {
     }
 
   // Neither desert nor arid...
-  } else if (factors->precipitation == SL_PC_DRY) {
+  } else if (wr->s_precipitation == WM_PC_DRY) {
     if (
-       factors->altitude == SL_AC_MOUNTAIN_SLOPES
-    || factors->altitude == SL_AC_MOUNTAIN_PEAKS
+       wr->s_altitude == WM_AC_MOUNTAIN_SLOPES
+    || wr->s_altitude == WM_AC_MOUNTAIN_PEAKS
     ) {
       // don't care about temperature
       return (rngtable*) rt_pick_result(&ARID_MOUNTAINS_ALTS_ALTS, seed);
-    } else if (factors->altitude == SL_AC_HIGHLANDS) {
+    } else if (wr->s_altitude == WM_AC_HIGHLANDS) {
       // don't care about temperature
       return (rngtable*) rt_pick_result(&DRY_HIGHLANDS_ALTS_ALTS, seed);
     } else {
       if (
-         factors->temperature == SL_TR_COLD_FROST
-      || factors->temperature == SL_TR_COLD_RARE_FROST
-      || factors->temperature == SL_TR_MILD_FROST
-      || factors->temperature == SL_TR_MILD_RARE_FROST
+         wr->s_temperature == WM_TC_COLD_FROST
+      || wr->s_temperature == WM_TC_COLD_RARE_FROST
+      || wr->s_temperature == WM_TC_MILD_FROST
+      || wr->s_temperature == WM_TC_MILD_RARE_FROST
       ) {
         return (rngtable*) rt_pick_result(&COLD_DRY_ALTS_ALTS, seed);
       } else if (
-         factors->temperature == SL_TR_WARM_FROST
-      || factors->temperature == SL_TR_WARM_NO_FROST
-      || factors->temperature == SL_TR_HOT
-      || factors->temperature == SL_TR_BAKING
+         wr->s_temperature == WM_TC_WARM_FROST
+      || wr->s_temperature == WM_TC_WARM_NO_FROST
+      || wr->s_temperature == WM_TC_HOT
+      || wr->s_temperature == WM_TC_BAKING
       ) {
         return (rngtable*) rt_pick_result(&WARM_DRY_ALTS_ALTS, seed);
       }
     }
   } else if (
-     factors->precipitation == SL_PC_NORMAL
-  || factors->precipitation == SL_PC_SEASONAL
-  || factors->precipitation == SL_PC_WET
+     wr->s_precipitation == WM_PC_NORMAL
+  || wr->s_precipitation == WM_PC_SEASONAL
+  || wr->s_precipitation == WM_PC_WET
   ) {
     if (
-       factors->altitude == SL_AC_MOUNTAIN_SLOPES
-    || factors->altitude == SL_AC_MOUNTAIN_PEAKS
+       wr->s_altitude == WM_AC_MOUNTAIN_SLOPES
+    || wr->s_altitude == WM_AC_MOUNTAIN_PEAKS
     ) {
       return (rngtable*) rt_pick_result(&MOUNTAINS_ALTS_ALTS, seed);
-    } else if (factors->altitude == SL_AC_HIGHLANDS) {
+    } else if (wr->s_altitude == WM_AC_HIGHLANDS) {
       return (rngtable*) rt_pick_result(&HIGHLANDS_ALTS_ALTS, seed);
     } else {
       if (
-         factors->temperature == SL_TR_COLD_FROST
-      || factors->temperature == SL_TR_COLD_RARE_FROST
-      || factors->temperature == SL_TR_MILD_FROST
-      || factors->temperature == SL_TR_MILD_RARE_FROST
+         wr->s_temperature == WM_TC_COLD_FROST
+      || wr->s_temperature == WM_TC_COLD_RARE_FROST
+      || wr->s_temperature == WM_TC_MILD_FROST
+      || wr->s_temperature == WM_TC_MILD_RARE_FROST
       ) {
         return (rngtable*) rt_pick_result(&COLD_ALTS_ALTS, seed);
       } else if (
-         factors->temperature == SL_TR_WARM_FROST
-      || factors->temperature == SL_TR_WARM_NO_FROST
-      || factors->temperature == SL_TR_HOT
-      || factors->temperature == SL_TR_BAKING
+         wr->s_temperature == WM_TC_WARM_FROST
+      || wr->s_temperature == WM_TC_WARM_NO_FROST
+      || wr->s_temperature == WM_TC_HOT
+      || wr->s_temperature == WM_TC_BAKING
       ) {
         return (rngtable*) rt_pick_result(&WARM_ALTS_ALTS, seed);
       }
     }
   } else if (
-     factors->precipitation == SL_PC_SOAKING
-  || factors->precipitation == SL_PC_FLOODED
+     wr->s_precipitation == WM_PC_SOAKING
+  || wr->s_precipitation == WM_PC_FLOODED
   ) {
     if (
-       factors->altitude == SL_AC_MOUNTAIN_SLOPES
-    || factors->altitude == SL_AC_MOUNTAIN_PEAKS
+       wr->s_altitude == WM_AC_MOUNTAIN_SLOPES
+    || wr->s_altitude == WM_AC_MOUNTAIN_PEAKS
     ) {
       if (
-         factors->temperature == SL_TR_COLD_FROST
-      || factors->temperature == SL_TR_COLD_RARE_FROST
+         wr->s_temperature == WM_TC_COLD_FROST
+      || wr->s_temperature == WM_TC_COLD_RARE_FROST
       ) {
         return (rngtable*) rt_pick_result(&MOUNTAINS_ALTS_ALTS, seed);
       } else if (
-         factors->temperature == SL_TR_MILD_FROST
-      || factors->temperature == SL_TR_MILD_RARE_FROST
-      || factors->temperature == SL_TR_WARM_FROST
-      || factors->temperature == SL_TR_WARM_NO_FROST
-      || factors->temperature == SL_TR_HOT
-      || factors->temperature == SL_TR_BAKING
+         wr->s_temperature == WM_TC_MILD_FROST
+      || wr->s_temperature == WM_TC_MILD_RARE_FROST
+      || wr->s_temperature == WM_TC_WARM_FROST
+      || wr->s_temperature == WM_TC_WARM_NO_FROST
+      || wr->s_temperature == WM_TC_HOT
+      || wr->s_temperature == WM_TC_BAKING
       ) {
         return (rngtable*) rt_pick_result(&WET_MOUNTAINS_ALTS_ALTS, seed);
       }
-    } else if (factors->altitude == SL_AC_HIGHLANDS) {
+    } else if (wr->s_altitude == WM_AC_HIGHLANDS) {
       if (
-         factors->temperature == SL_TR_COLD_FROST
-      || factors->temperature == SL_TR_COLD_RARE_FROST
+         wr->s_temperature == WM_TC_COLD_FROST
+      || wr->s_temperature == WM_TC_COLD_RARE_FROST
       ) {
         return (rngtable*) rt_pick_result(&HIGHLANDS_ALTS_ALTS, seed);
       } else if (
-         factors->temperature == SL_TR_MILD_FROST
-      || factors->temperature == SL_TR_MILD_RARE_FROST
-      || factors->temperature == SL_TR_WARM_FROST
-      || factors->temperature == SL_TR_WARM_NO_FROST
-      || factors->temperature == SL_TR_HOT
-      || factors->temperature == SL_TR_BAKING
+         wr->s_temperature == WM_TC_MILD_FROST
+      || wr->s_temperature == WM_TC_MILD_RARE_FROST
+      || wr->s_temperature == WM_TC_WARM_FROST
+      || wr->s_temperature == WM_TC_WARM_NO_FROST
+      || wr->s_temperature == WM_TC_HOT
+      || wr->s_temperature == WM_TC_BAKING
       ) {
         return (rngtable*) rt_pick_result(&WET_HIGHLANDS_ALTS_ALTS, seed);
       }
     } else {
       if (
-         factors->temperature == SL_TR_COLD_FROST
-      || factors->temperature == SL_TR_COLD_RARE_FROST
-      || factors->temperature == SL_TR_MILD_FROST
-      || factors->temperature == SL_TR_MILD_RARE_FROST
+         wr->s_temperature == WM_TC_COLD_FROST
+      || wr->s_temperature == WM_TC_COLD_RARE_FROST
+      || wr->s_temperature == WM_TC_MILD_FROST
+      || wr->s_temperature == WM_TC_MILD_RARE_FROST
       ) {
         return (rngtable*) rt_pick_result(&COLD_WET_ALTS_ALTS, seed);
       } else if (
-         factors->temperature == SL_TR_WARM_FROST
-      || factors->temperature == SL_TR_WARM_NO_FROST
-      || factors->temperature == SL_TR_HOT
-      || factors->temperature == SL_TR_BAKING
+         wr->s_temperature == WM_TC_WARM_FROST
+      || wr->s_temperature == WM_TC_WARM_NO_FROST
+      || wr->s_temperature == WM_TC_HOT
+      || wr->s_temperature == WM_TC_BAKING
       ) {
         return (rngtable*) rt_pick_result(&WARM_WET_ALTS_ALTS, seed);
       }
@@ -1262,220 +1252,14 @@ rngtable* pick_alt_dirt_table(soil_factors *factors, ptrdiff_t seed) {
 #endif
 }
 
-rngtable* pick_alt_sand_table(soil_factors *factors, ptrdiff_t seed) {
+rngtable* pick_alt_sand_table(world_region *wr, ptrdiff_t seed) {
   return &DRY_SAND_ALTS;
   return &WET_SAND_ALTS;
 }
 
-void glean_soil_factors(world_region *wr, soil_factors *result) {
-  result->region = wr;
-  result->altitude = classify_altitude(wr->topography.geologic_height);
-  result->precipitation = classify_precipitation(
-    wr->climate.atmosphere.rainfall
-  );
-  result->temperature = classify_temperature(
-    wr->climate.atmosphere.temp_low,
-    wr->climate.atmosphere.temp_mean
-  );
-  result->salt = wr->climate.water.salt;
-  // TODO: Consider veins/inclusions here?
-  result->bedrock = get_stone_species(
-    wr->geology.strata[wr->geology.stratum_count-1]->base_species
-  );
-}
-
-soil_altitude_category classify_altitude(float altitude) {
-  if (
-    altitude
-  < (
-      TR_HEIGHT_OCEAN_DEPTHS
-    + 0.9 * (TR_HEIGHT_CONTINENTAL_SHELF - TR_HEIGHT_OCEAN_DEPTHS)
-    )
-  ) {
-    return SL_AC_OCEAN_DEPTHS;
-  } else if (altitude < TR_HEIGHT_SEA_LEVEL) {
-    return SL_AC_CONTINENTAL_SHELF;
-  } else if (
-    altitude
-  < (
-      TR_HEIGHT_COASTAL_PLAINS
-    + 0.3 * (TR_HEIGHT_HIGHLANDS - TR_HEIGHT_COASTAL_PLAINS)
-    )
-  ) {
-    return SL_AC_COASTAL_PLAINS;
-  } else if (
-    altitude
-  < (
-      TR_HEIGHT_COASTAL_PLAINS
-    + 0.9 * (TR_HEIGHT_HIGHLANDS - TR_HEIGHT_COASTAL_PLAINS)
-    )
-  ) {
-    return SL_AC_INLAND_HILLS;
-  } else if (
-    altitude
-  < (
-      TR_HEIGHT_HIGHLANDS
-    + 0.9 * (TR_HEIGHT_MOUNTAIN_BASES - TR_HEIGHT_HIGHLANDS)
-    )
-  ) {
-    return SL_AC_HIGHLANDS;
-  } else if (
-    altitude
-  < (
-      TR_HEIGHT_MOUNTAIN_BASES
-    + 0.4 * (TR_HEIGHT_MOUNTAIN_TOPS - TR_HEIGHT_MOUNTAIN_BASES)
-    )
-  ) {
-    return SL_AC_MOUNTAIN_SLOPES;
-  } else {
-    return SL_AC_MOUNTAIN_PEAKS;
-  }
-}
-
-soil_precipitation_category classify_precipitation(float *precipitation) {
-  size_t i;
-  float p;
-  float mean, min, max;
-
-  // compute min/max and mean:
-  mean = 0;
-  min = precipitation[0];
-  max = precipitation[0];
-  for (i = 0; i < WM_N_SEASONS; ++i) {
-    p = precipitation[i];
-    if (p > max) { max = p; }
-    if (p < min) { min = p; }
-    mean += p;
-  }
-  mean /= (float) WM_N_SEASONS;
-
-  // classify:
-  if (mean < CL_PRECIPITATION_DESERT) {
-    return SL_PC_DESERT;
-  } else if (mean < CL_PRECIPITATION_ARID) {
-    return SL_PC_ARID;
-  } else if (
-    mean
-  < (
-      CL_PRECIPITATION_ARID
-    + 0.6 * (CL_PRECIPITATION_NORMAL - CL_PRECIPITATION_ARID)
-    )
-  ) {
-    return SL_PC_DRY;
-  } else if (
-    mean
-  < (
-      CL_PRECIPITATION_ARID
-    + 0.4 * (CL_PRECIPITATION_NORMAL - CL_PRECIPITATION_ARID)
-    )
-  ) {
-    if (max - min > CL_PRECIPITATION_NORMAL - CL_PRECIPITATION_ARID) {
-      return SL_PC_SEASONAL;
-    } else {
-      return SL_PC_NORMAL;
-    }
-  } else if (mean < CL_PRECIPITATION_LUSH) {
-    return SL_PC_WET;
-  } else if (mean < CL_PRECIPITATION_SOAKED) {
-    return SL_PC_SOAKING;
-  } else {
-    return SL_PC_FLOODED;
-  }
-}
-
-soil_temperature_regime classify_temperature(
-  float *lows,
-  float *means
-) {
-  size_t i;
-  float low, mean, high;
-
-  // compute min and mean:
-  mean = 0; // mean throughout the whole year
-  low = lows[0]; // winter low
-  high = means[0]; // summer mean
-  for (i = 0; i < WM_N_SEASONS; ++i) {
-    if (lows[i] < low) { low = lows[i]; }
-    if (means[i] > high) { high = means[i]; }
-    mean += means[i];
-  }
-  mean /= (float) WM_N_SEASONS;
-
-  // classify:
-  if (
-    high
-  < (
-      CL_TEMP_ANTARCTIC_YEAR_HIGH
-    + 0.6 * (CL_TEMP_TUNDRA_YEAR_HIGH - CL_TEMP_ANTARCTIC_YEAR_HIGH)
-    )
-  ) {
-    return SL_TR_ARCTIC;
-  } else if (
-    mean
-  < (
-      CL_TEMP_TUNDRA_YEAR_MEAN
-    + 0.5 * (CL_TEMP_COLD_TEMPERATE_YEAR_MEAN - CL_TEMP_TUNDRA_YEAR_MEAN)
-    )
-  ) {
-    return SL_TR_TUNDRA;
-  } else if (
-    mean
-  < (
-      CL_TEMP_COLD_TEMPERATE_YEAR_MEAN
-    + 0.5 * (
-        CL_TEMP_MODERATE_TEMPERATE_YEAR_MEAN
-      - CL_TEMP_COLD_TEMPERATE_YEAR_MEAN
-      )
-    )
-  ) {
-    if (low < CL_TEMP_SEASON_LOW_REGULAR_FROST) {
-      return SL_TR_COLD_FROST;
-    } else {
-      return SL_TR_COLD_RARE_FROST;
-    }
-  } else if (
-    mean
-  < (
-      CL_TEMP_MODERATE_TEMPERATE_YEAR_MEAN
-    + 0.5 * (
-        CL_TEMP_WARM_TEMPERATE_YEAR_MEAN
-      - CL_TEMP_MODERATE_TEMPERATE_YEAR_MEAN
-      )
-    )
-  ) {
-    if (low < CL_TEMP_SEASON_LOW_INTERMITTENT_FROST) {
-      return SL_TR_MILD_FROST;
-    } else {
-      return SL_TR_MILD_RARE_FROST;
-    }
-  } else if (
-    mean
-  < (
-      CL_TEMP_WARM_TEMPERATE_YEAR_MEAN
-    + 0.5 * (CL_TEMP_SUBTROPICAL_YEAR_MEAN - CL_TEMP_WARM_TEMPERATE_YEAR_MEAN)
-    )
-  ) {
-    if (low < CL_TEMP_SEASON_LOW_INTERMITTENT_FROST) {
-      return SL_TR_WARM_FROST;
-    } else {
-      return SL_TR_WARM_NO_FROST;
-    }
-  } else if (
-    mean
-  < (
-      CL_TEMP_SUBTROPICAL_YEAR_MEAN
-    + 0.5 * (CL_TEMP_TROPICAL_YEAR_MEAN - CL_TEMP_SUBTROPICAL_YEAR_MEAN)
-    )
-  ) {
-    return SL_TR_HOT;
-  } else {
-    return SL_TR_BAKING;
-  }
-}
-
 void fill_dirt_species(
   dirt_species *dsp,
-  soil_factors *factors,
+  world_region *wr,
   ptrdiff_t seed
 ) {
   size_t i, limit;
@@ -1484,8 +1268,8 @@ void fill_dirt_species(
   float organics;
   float tmp;
   seed = prng(seed + 881721);
-  list *all_elements = factors->region->world->all_elements;
-  list *nutrients = factors->region->world->all_nutrients;
+  list *all_elements = wr->world->all_elements;
+  list *nutrients = wr->world->all_nutrients;
   element_species *esp;
   list *trace_candidates;
 
@@ -1498,138 +1282,138 @@ void fill_dirt_species(
   seed = prng(seed);
   clay = randf(seed, 0, SL_COMP_MAX_CLAY);
 
-  // modify richness and sand/clay percentages based on our factors:
-  switch (factors->altitude) {
-    case SL_AC_OCEAN_DEPTHS:
+  // modify richness and sand/clay percentages based on region summary info:
+  switch (wr->s_altitude) {
+    case WM_AC_OCEAN_DEPTHS:
       richness = 0.5 * richness + 0.5 * randf_pnorm(seed, 0.7, 1.0);
       sand = 0.7 * sand + 0.3 * SL_COMP_MAX_SAND;
       clay = 0.8 * clay + 0.2 * SL_COMP_MAX_CLAY;
       break;
-    case SL_AC_CONTINENTAL_SHELF:
+    case WM_AC_CONTINENTAL_SHELF:
       richness = 0.5 * richness + 0.5 * randf_pnorm(seed, 0.3, 1.0);
       sand = 0.5 * sand + 0.5 * SL_COMP_MAX_SAND;
       clay = 0.8 * clay;
       break;
-    case SL_AC_COASTAL_PLAINS:
+    case WM_AC_COASTAL_PLAINS:
       richness = 0.6 * richness + 0.4 * randf_pnorm(seed, 0.5, 1.0);
       sand = 0.7 * sand;
       clay = 0.8 * clay;
       break;
     default:
-    case SL_AC_INLAND_HILLS:
+    case WM_AC_INLAND_HILLS:
       richness = 0.4 * richness + 0.6 * randf_pnorm(seed, 0.2, 1.0);
       sand = 0.9 * sand;
       clay = 0.8 * clay + 0.2 * SL_COMP_MAX_CLAY;
       break;
-    case SL_AC_HIGHLANDS:
+    case WM_AC_HIGHLANDS:
       richness = 0.5 * richness + 0.5 * randf_pnorm(seed, 0.0, 0.8);
       sand = 0.9 * sand + 0.1 * SL_COMP_MAX_SAND;
       clay = 0.9 * clay;
       break;
-    case SL_AC_MOUNTAIN_SLOPES:
+    case WM_AC_MOUNTAIN_SLOPES:
       richness = 0.4 * richness + 0.6 * randf_pnorm(seed, 0.0, 0.6);
       sand = 0.8 * sand + 0.2 * SL_COMP_MAX_SAND;
       clay = 0.7 * clay + 0.3 * SL_COMP_MAX_CLAY;
       break;
-    case SL_AC_MOUNTAIN_PEAKS:
+    case WM_AC_MOUNTAIN_PEAKS:
       richness = 0.3 * richness + 0.7 * randf_pnorm(seed, 0.0, 0.4);
       sand = 0.6 * sand + 0.4 * SL_COMP_MAX_SAND;
       clay = 0.5 * clay + 0.5 * SL_COMP_MAX_CLAY;
       break;
   }
 
-  switch (factors->precipitation) {
-    case SL_PC_DESERT:
+  switch (wr->s_precipitation) {
+    case WM_PC_DESERT:
       richness = 0.3 * richness + 0.7 * expdist(randf(seed, 0, 0.4), 3);
       sand = 0.2 * sand + 0.8 * SL_COMP_MAX_SAND;
       clay = 0.2 * clay;
       break;
-    case SL_PC_ARID:
+    case WM_PC_ARID:
       richness = 0.5 * richness + 0.5 * randf(seed, 0, 0.6);
       sand = 0.4 * sand + 0.6 * SL_COMP_MAX_SAND;
       clay = 0.6 * clay;
       break;
-    case SL_PC_DRY:
+    case WM_PC_DRY:
       richness = 0.6 * richness + 0.4 * randf(seed, 0, 0.8);
       sand = 0.7 * sand + 0.3 * SL_COMP_MAX_SAND;
       clay = 0.8 * clay;
       break;
-    case SL_PC_SEASONAL:
+    case WM_PC_SEASONAL:
       richness = 0.6 * richness + 0.4 * randf(seed, 0.2, 1.0);
       sand = 0.7 * sand;
       clay = 0.7 * clay + 0.3 * SL_COMP_MAX_CLAY;
       break;
     default:
-    case SL_PC_NORMAL:
+    case WM_PC_NORMAL:
       richness = 0.8 * richness + 0.2 * randf(seed, 0.1, 1.0);
       sand = 0.9 * sand;
       clay = 0.9 * clay + 0.1 * SL_COMP_MAX_CLAY;
       break;
-    case SL_PC_WET:
+    case WM_PC_WET:
       richness = 0.6 * richness + 0.4 * randf(seed, 0.3, 1.0);
       sand = 0.9 * sand;
       clay = 0.9 * clay;
       break;
-    case SL_PC_SOAKING:
+    case WM_PC_SOAKING:
       richness = 0.7 * richness + 0.3 * randf(seed, 0.1, 1.0);
       sand = 0.9 * sand;
       clay = 0.8 * clay;
       break;
-    case SL_PC_FLOODED:
+    case WM_PC_FLOODED:
       richness = 0.6 * richness + 0.4 * randf(seed, 0.0, 0.7);
       sand = 0.8 * sand;
       clay = 0.6 * clay;
       break;
   }
 
-  switch (factors->temperature) {
-    case SL_TR_ARCTIC:
+  switch (wr->s_temperature) {
+    case WM_TC_ARCTIC:
       richness = 0.1 * richness + 0.9 * expdist(randf(seed, 0, 0.2), 3);
       sand = 0.4 * sand + 0.6 * SL_COMP_MAX_SAND;
       clay = 0.4 * clay;
       break;
-    case SL_TR_TUNDRA:
+    case WM_TC_TUNDRA:
       richness = 0.2 * richness + 0.8 * randf(seed, 0, 0.4);
       sand = 0.8 * sand;
       clay = 0.7 * clay;
       break;
-    case SL_TR_COLD_FROST:
+    case WM_TC_COLD_FROST:
       richness = 0.6 * richness + 0.4 * randf(seed, 0, 0.8);
       sand = 0.9 * sand;
       clay = 0.9 * clay;
       break;
-    case SL_TR_COLD_RARE_FROST:
+    case WM_TC_COLD_RARE_FROST:
       richness = 0.8 * richness + 0.2 * randf(seed, 0, 0.9);
       sand = 0.9 * sand + 0.1 * SL_COMP_MAX_SAND;
       clay = 0.9 * clay + 0.1 * SL_COMP_MAX_CLAY;
       break;
-    case SL_TR_MILD_FROST:
+    case WM_TC_MILD_FROST:
       richness = 0.9 * richness + 0.1 * randf(seed, 0.2, 1.0);
       sand = 0.9 * sand;
       // no effect on clay
       break;
-    case SL_TR_MILD_RARE_FROST:
+    case WM_TC_MILD_RARE_FROST:
       richness = 0.8 * richness + 0.2 * randf(seed, 0.2, 1.0);
       sand = 0.9 * sand;
       clay = 0.9 * clay + 0.1 * SL_COMP_MAX_CLAY;
       break;
     default:
-    case SL_TR_WARM_FROST:
+    case WM_TC_WARM_FROST:
       richness = 0.7 * richness + 0.3 * randf(seed, 0.3, 1.0);
       sand = 0.9 * sand;
       clay = 0.8 * clay + 0.2 * SL_COMP_MAX_CLAY;
       break;
-    case SL_TR_WARM_NO_FROST:
+    case WM_TC_WARM_NO_FROST:
       richness = 0.5 * richness + 0.5 * randf(seed, 0.5, 1.0);
       sand = 0.8 * sand;
       clay = 0.7 * clay + 0.3 * SL_COMP_MAX_CLAY;
       break;
-    case SL_TR_HOT:
+    case WM_TC_HOT:
       richness = 0.7 * richness + 0.3 * randf(seed, 0.4, 1.0);
       sand = 0.9 * sand;
       clay = 0.6 * clay + 0.4 * SL_COMP_MAX_CLAY;
       break;
-    case SL_TR_BAKING:
+    case WM_TC_BAKING:
       richness = 0.6 * richness + 0.4 * randf(seed, 0.2, 1.0);
       sand = 0.9 * sand;
       clay = 0.7 * clay + 0.3 * SL_COMP_MAX_CLAY;
@@ -1990,7 +1774,7 @@ void fill_dirt_species(
     }
 
     // adjustments based on bedrock element content
-    if (stone_contains_element(factors->bedrock, esp->id)) {
+    if (stone_contains_element(get_stone_species(get_bedrock(wr)), esp->id)) {
       switch (esp->solubility) {
         case SOLUBILITY_SOLUBLE:
           dsp->nutrients[i] += randi(
@@ -2010,7 +1794,12 @@ void fill_dirt_species(
           seed = prng(seed);
           break;
       }
-    } else if (stone_contains_trace_element(factors->bedrock, esp->id)) {
+    } else if (
+      stone_contains_trace_element(
+        get_stone_species(get_bedrock(wr)),
+        esp->id
+      )
+    ) {
       switch (esp->solubility) {
         case SOLUBILITY_SOLUBLE:
           dsp->nutrients[i] += randi(seed, 0, MN_NT_SMALL_ADJUST);
@@ -2067,10 +1856,10 @@ void fill_dirt_species(
 void fill_dirt_variant(
   dirt_species *model,
   dirt_species *dsp,
-  soil_factors *factors
+  world_region *wr
 ) {
   size_t i, limit;
-  ptrdiff_t seed = prng(factors->region->seed + 7494844);
+  ptrdiff_t seed = prng(wr->seed + 7494844);
   float tmp;
   float sand, clay;
   element_species *esp;
@@ -2123,10 +1912,10 @@ void fill_dirt_variant(
   }
 
   // nutrients
-  limit = l_get_length(factors->region->world->all_nutrients);
+  limit = l_get_length(wr->world->all_nutrients);
   for (i = 0; i < limit; ++i) {
     esp = (element_species*) l_get_item(
-      factors->region->world->all_nutrients,
+      wr->world->all_nutrients,
       i
     );
     dsp->nutrients[i] = model->nutrients[i];
@@ -2235,7 +2024,7 @@ void fill_dirt_variant(
 
 void fill_clay_species(
   clay_species *dsp,
-  soil_factors *factors,
+  world_region *wr,
   ptrdiff_t seed
 ) {
   // TODO: HERE
@@ -2244,9 +2033,9 @@ void fill_clay_species(
 void fill_clay_variant(
   clay_species *model,
   clay_species *dsp,
-  soil_factors *factors
+  world_region* wr
 ) {
-  ptrdiff_t seed = prng(factors->region->seed + 7139933);
+  ptrdiff_t seed = prng(wr->seed + 7139933);
   // TODO: HERE
 
   // Copy and modify appearance:

@@ -82,6 +82,8 @@ void setup_worldgen(ptrdiff_t seed) {
   generate_climate(THE_WORLD);
   printf("  ...generating geology...\n");
   generate_geology(THE_WORLD);
+  printf("  ...summarizing altitude and climate information...\n");
+  summarize_all_regions(THE_WORLD);
   printf("  ...generating soil...\n");
   generate_soil(THE_WORLD);
   printf("  ...generating ecology...\n");
@@ -152,7 +154,7 @@ void cleanup_worldgen() {
 }
 
 void init_world_map(world_map *wm) {
-  size_t sofar = 0;
+  size_t i, sofar = 0;
   world_map_pos xy;
   world_region *wr;
 
@@ -174,10 +176,16 @@ void init_world_map(world_map *wm) {
       wr->topography.uphill = NULL;
 
       // Default hydrology info:
-      wr->climate.water.state = HYDRO_LAND;
+      wr->climate.water.state = WM_HS_LAND;
       wr->climate.water.body = NULL;
       wr->climate.water.water_table = 0; // TODO: get rid of water table?
-      wr->climate.water.salt = SALINITY_FRESH;
+      wr->climate.water.salt = WM_SL_FRESH;
+
+      // Default ecology info:
+      wr->ecology.biome_count = 0;
+      for (i = 0; i < WM_MAX_BIOME_OVERLAP; ++i) {
+        wr->ecology.biomes[i] = NULL;
+      }
 
       // Pick a seed for this world region:
       wr->seed = hash_3d(xy.x, xy.y, wm->seed + 8731);

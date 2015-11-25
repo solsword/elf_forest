@@ -20,24 +20,8 @@
  * Enums *
  *********/
 
-// Climate & Hydrology
-// -------------------
-
-enum hydro_state_e {
-  HYDRO_LAND = 0,
-  HYDRO_WATER = 1,
-  HYDRO_SHORE = 2,
-  HYDRO_RIVER = 3,
-};
-typedef enum hydro_state_e hydro_state;
-
-enum salinity_e {
-  SALINITY_FRESH = 0,
-  SALINITY_BRACKISH = 1,
-  SALINITY_SALINE = 2,
-  SALINITY_BRINY = 3,
-};
-typedef enum salinity_e salinity;
+// Search Management
+// -----------------
 
 // Search/fill iteration algorithm steps:
 enum search_step_e {
@@ -57,6 +41,76 @@ enum step_result_e {
 };
 typedef enum step_result_e step_result;
 
+
+// Climate & Hydrology
+// -------------------
+
+enum hydro_state_e {
+  WM_HS_LAND = 0x01,
+  WM_HS_OCEAN = 0x02,
+  WM_HS_LAKE = 0x04,
+  WM_HS_OCEAN_SHORE = 0x08,
+  WM_HS_LAKE_SHORE = 0x10,
+  WM_HS_RIVER = 0x20,
+};
+typedef enum hydro_state_e hydro_state;
+
+enum salinity_e {
+  WM_SL_FRESH = 0x01,
+  WM_SL_BRACKISH = 0x02,
+  WM_SL_SALINE = 0x04,
+  WM_SL_BRINY = 0x08,
+};
+typedef enum salinity_e salinity;
+
+
+// Summarization Categories
+// ------------------------
+
+// Discretization of altitudes:
+enum altitude_category_e {
+  WM_AC_OCEAN_DEPTHS = 0x01,
+  WM_AC_CONTINENTAL_SHELF = 0x02,
+  WM_AC_COASTAL_PLAINS = 0x04,
+  WM_AC_INLAND_HILLS = 0x08,
+  WM_AC_HIGHLANDS = 0x10,
+  WM_AC_MOUNTAIN_SLOPES = 0x20,
+  WM_AC_MOUNTAIN_PEAKS = 0x40
+};
+typedef enum altitude_category_e altitude_category;
+
+// Discretization of precipitation values:
+enum precipitation_category_e {
+  WM_PC_DESERT = 0x01,
+  WM_PC_ARID = 0x02,
+  WM_PC_DRY = 0x04,
+  WM_PC_NORMAL = 0x08,
+  WM_PC_SEASONAL = 0x10,
+  WM_PC_WET = 0x20,
+  WM_PC_SOAKING = 0x40,
+  WM_PC_FLOODED = 0x80
+};
+typedef enum precipitation_category_e precipitation_category;
+
+// Discretization of temperature information:
+enum temperature_category_e {
+  WM_TC_ARCTIC = 0x001,
+  WM_TC_TUNDRA = 0x002,
+  WM_TC_COLD_FROST = 0x004,
+  WM_TC_COLD_RARE_FROST = 0x008,
+  WM_TC_MILD_FROST = 0x00f,
+  WM_TC_MILD_RARE_FROST = 0x010,
+  WM_TC_WARM_FROST = 0x020,
+  WM_TC_WARM_NO_FROST = 0x040,
+  WM_TC_HOT = 0x080,
+  WM_TC_BAKING = 0x100
+};
+typedef enum temperature_category_e temperature_category;
+
+
+// Biomes
+// ------
+
 enum biome_category_e {
   BIOME_CAT_UNKNOWN = 0,
 
@@ -64,41 +118,43 @@ enum biome_category_e {
   // Generally describe mostly underwater species, although the SEA_ICE,
   // PELAGIC, and OFFSHORE biomes include birds and other animals that aren't
   // water-bound.
-  BIOME_CAT_SEA_ICE,
-  BIOME_CAT_OCEAN_VENTS,
-  BIOME_CAT_DEEP_AQUATIC,
-  BIOME_CAT_PELAGIC,
-  BIOME_CAT_OFFSHORE,
-  BIOME_CAT_AQUATIC_GRASSLAND,
-  BIOME_CAT_AQUATIC_FOREST,
-  BIOME_CAT_CORAL_REEF,
+  BIOME_CAT_SEA_ICE = 1,
+  BIOME_CAT_OCEAN_VENTS = 2,
+  BIOME_CAT_DEEP_AQUATIC = 3,
+  BIOME_CAT_PELAGIC = 4,
+  BIOME_CAT_OFFSHORE = 5,
+  BIOME_CAT_AQUATIC_GRASSLAND = 6,
+  BIOME_CAT_AQUATIC_FOREST = 7,
+  BIOME_CAT_COLD_REEF = 8,
+  BIOME_CAT_WARM_REEF = 9,
 
   // Beach biomes:
   // These biomes are found at the edges of oceans (lake beaches don't get
   // their own biomes). They describe species endemic to these zones, and
   // usually overlap with at least one ocean biome and at least one land biome.
-  BIOME_CAT_FROZEN_BEACH,
-  BIOME_CAT_COLD_BEACH,
-  BIOME_CAT_WARM_BEACH,
-  BIOME_CAT_TROPICAL_BEACH,
+  BIOME_CAT_FROZEN_BEACH = 10,
+  BIOME_CAT_COLD_BEACH = 11,
+  BIOME_CAT_WARM_BEACH = 12,
+  BIOME_CAT_TROPICAL_BEACH = 13,
 
   // Lake biomes:
   // These biomes describe the animals endemic to and dependent upon lakes.
   // Terrestrial animals may be included when depend on the lake.
-  BIOME_CAT_FROZEN_LAKE,
-  BIOME_CAT_COLD_LAKE,
-  BIOME_CAT_TEMPERATE_LAKE,
-  BIOME_CAT_WARM_LAKE,
-  BIOME_CAT_TROPICAL_LAKE,
-  BIOME_CAT_SALT_LAKE,
+  BIOME_CAT_FROZEN_LAKE = 14,
+  BIOME_CAT_COLD_LAKE = 15,
+  BIOME_CAT_TEMPERATE_LAKE = 16,
+  BIOME_CAT_WARM_LAKE = 17,
+  BIOME_CAT_TROPICAL_LAKE = 18,
+  BIOME_CAT_SALT_LAKE = 19,
 
   // River biomes:
   // These biomes describe animals that live in or depend on rivers. Many
   // species endemic to riparian zones are included.
-  BIOME_CAT_COLD_RIVER,
-  BIOME_CAT_TEMPERATE_RIVER,
-  BIOME_CAT_WARM_RIVER,
-  BIOME_CAT_TROPICAL_RIVER,
+  BIOME_CAT_FROZEN_RIVER = 20,
+  BIOME_CAT_COLD_RIVER = 21,
+  BIOME_CAT_TEMPERATE_RIVER = 22,
+  BIOME_CAT_WARM_RIVER = 23,
+  BIOME_CAT_TROPICAL_RIVER = 24,
 
   // Alpine biomes:
   // These biomes are prevalent in areas of high elevation (above the
@@ -106,78 +162,79 @@ enum biome_category_e {
   // plethora of adaptations for high-altitude living. Their species are
   // usually present below the treeline as well, but another biome will be used
   // to describe most of a mountain's flora and fauna.
-  BIOME_CAT_FROZEN_ALPINE,
-  BIOME_CAT_COLD_ALPINE,
-  BIOME_CAT_TEMPERATE_WET_ALPINE,
-  BIOME_CAT_TEMPERATE_DRY_ALPINE,
-  BIOME_CAT_WARM_WET_ALPINE,
-  BIOME_CAT_WARM_DRY_ALPINE,
-  BIOME_CAT_TROPICAL_ALPINE,
+  BIOME_CAT_FROZEN_ALPINE = 25,
+  BIOME_CAT_COLD_ALPINE = 26,
+  BIOME_CAT_TEMPERATE_WET_ALPINE = 27,
+  BIOME_CAT_TEMPERATE_DRY_ALPINE = 28,
+  BIOME_CAT_WARM_WET_ALPINE = 29,
+  BIOME_CAT_WARM_DRY_ALPINE = 30,
+  BIOME_CAT_TROPICAL_WET_ALPINE = 31,
+  BIOME_CAT_TROPICAL_DRY_ALPINE = 32,
 
   // Desert biomes:
   // These are characterized by extreme dryness, although they will include
   // some oasis species.
-  BIOME_CAT_FROZEN_DESERT,
-  BIOME_CAT_COLD_DESERT,
-  BIOME_CAT_TEMPERATE_DESERT,
-  BIOME_CAT_WARM_DESERT,
-  BIOME_CAT_TROPICAL_DESERT,
+  BIOME_CAT_FROZEN_DESERT = 33,
+  BIOME_CAT_COLD_DESERT = 34,
+  BIOME_CAT_TEMPERATE_DESERT = 35,
+  BIOME_CAT_WARM_DESERT = 36,
+  BIOME_CAT_HOT_DESERT = 37,
 
   // Grassland biomes:
   // Biomes dominated by grassy herbs, usually due to some combination of poor
   // soil fertility, regular disruptions (grazing, fire, etc.) and/or low
   // annual rainfall.
-  BIOME_CAT_COLD_GRASSLAND,
-  BIOME_CAT_TEMPERATE_GRASSLAND,
-  BIOME_CAT_WARM_GRASSLAND,
-  BIOME_CAT_TROPICAL_GRASSLAND,
+  BIOME_CAT_COLD_GRASSLAND = 38,
+  BIOME_CAT_TEMPERATE_GRASSLAND = 39,
+  BIOME_CAT_WARM_GRASSLAND = 40,
+  BIOME_CAT_TROPICAL_GRASSLAND = 41,
 
   // Shrubland biomes:
   // Biomes where shrubs, bushes, and herbs are common, with few trees.
-  BIOME_CAT_COLD_SHRUBLAND,
-  BIOME_CAT_TEMPERATE_SHRUBLAND,
-  BIOME_CAT_WARM_SHRUBLAND,
-  BIOME_CAT_TROPICAL_SHRUBLAND,
+  BIOME_CAT_COLD_SHRUBLAND = 42,
+  BIOME_CAT_TEMPERATE_SHRUBLAND = 43,
+  BIOME_CAT_WARM_SHRUBLAND = 44,
+  BIOME_CAT_TROPICAL_SHRUBLAND = 45,
 
   // Savanna biomes:
   // Biomes where trees may be common, but do not form a canopy, allowing
   // grasses and shrubs to grow beneath and between them.
-  BIOME_CAT_TEMPERATE_SAVANNA,
-  BIOME_CAT_WARM_SAVANNA,
-  BIOME_CAT_TROPICAL_SAVANNA,
+  BIOME_CAT_TEMPERATE_SAVANNA = 46,
+  BIOME_CAT_WARM_SAVANNA = 47,
+  BIOME_CAT_TROPICAL_SAVANNA = 48,
 
   // Coniferous forest biomes:
   // Biomes dominated by coniferous trees, often extremely homogeneous.
   // Broadleaf trees may also be present, but are distinctly outnumbered.
-  BIOME_CAT_COLD_CONIFEROUS_FOREST,
-  BIOME_CAT_TEMPERATE_CONIFEROUS_FOREST,
-  BIOME_CAT_WARM_CONIFEROUS_FOREST,
-  BIOME_CAT_TROPICAL_CONIFEROUS_FOREST,
+  BIOME_CAT_COLD_CONIFEROUS_FOREST = 49,
+  BIOME_CAT_TEMPERATE_CONIFEROUS_FOREST = 50,
+  BIOME_CAT_WARM_CONIFEROUS_FOREST = 51,
+  BIOME_CAT_TROPICAL_CONIFEROUS_FOREST = 52,
 
   // Broadleaf forest biomes:
   // Biomes dominated by broadleaf trees which are usually quite diverse. Some
   // conifers may also be present, but they are usually rare.
-  BIOME_CAT_TEMPERATE_BROADLEAF_FOREST,
-  BIOME_CAT_WARM_WET_BROADLEAF_FOREST,
-  BIOME_CAT_WARM_DRY_BROADLEAF_FOREST,
-  BIOME_CAT_TROPICAL_WET_BROADLEAF_FOREST,
-  BIOME_CAT_TROPICAL_DRY_BROADLEAF_FOREST,
+  BIOME_CAT_TEMPERATE_BROADLEAF_FOREST = 53,
+  BIOME_CAT_WARM_WET_BROADLEAF_FOREST = 54,
+  BIOME_CAT_WARM_DRY_BROADLEAF_FOREST = 55,
+  BIOME_CAT_TROPICAL_WET_BROADLEAF_FOREST = 56,
+  BIOME_CAT_TROPICAL_DRY_BROADLEAF_FOREST = 57,
 
   // Wetland biomes:
   // Biomes with seasonal or sustained flooding, usually found near lakes,
   // rivers, or oceans. Wetlands adjacent to the ocean are brackish.
-  BIOME_CAT_TUNDRA,
-  BIOME_CAT_COLD_FRESHWATER_WETLAND,
-  BIOME_CAT_COLD_SALTWATER_WETLAND,
-  BIOME_CAT_TEMPERATE_FRESHWATER_WETLAND,
-  BIOME_CAT_TEMPERATE_SALTWATER_WETLAND,
-  BIOME_CAT_WARM_FRESHWATER_WETLAND,
-  BIOME_CAT_WARM_FRESHWATER_FORESTED_WETLAND,
-  BIOME_CAT_WARM_SALTWATER_WETLAND,
-  BIOME_CAT_TROPICAL_FRESHWATER_WETLAND,
-  BIOME_CAT_TROPICAL_FRESHWATER_FORESTED_WETLAND,
-  BIOME_CAT_TROPICAL_SALTWATER_WETLAND,
-  BIOME_CAT_TROPICAL_SALTWATER_FORESTED_WETLAND,
+  BIOME_CAT_TUNDRA = 58,
+  BIOME_CAT_COLD_FRESHWATER_WETLAND = 59,
+  BIOME_CAT_COLD_SALTWATER_WETLAND = 60,
+  BIOME_CAT_TEMPERATE_FRESHWATER_WETLAND = 61,
+  BIOME_CAT_TEMPERATE_SALTWATER_WETLAND = 62,
+  BIOME_CAT_WARM_FRESHWATER_WETLAND = 63,
+  BIOME_CAT_WARM_FRESHWATER_FORESTED_WETLAND = 64,
+  BIOME_CAT_WARM_SALTWATER_WETLAND = 65,
+  BIOME_CAT_TROPICAL_FRESHWATER_WETLAND = 66,
+  BIOME_CAT_TROPICAL_FRESHWATER_FORESTED_WETLAND = 67,
+  BIOME_CAT_TROPICAL_SALTWATER_WETLAND = 68,
+  BIOME_CAT_TROPICAL_SALTWATER_FORESTED_WETLAND = 69
 };
 typedef enum biome_category_e biome_category;
 
@@ -442,6 +499,7 @@ struct biome_s {
 struct body_of_water_s {
   world_map_pos origin;
   world_map_pos shorigin; // an arbitrary point on the shore
+  hydro_state type;
   float level;
   salinity salt;
   size_t area;
@@ -601,6 +659,7 @@ struct climate_info_s {
 };
 
 struct biome_info_s {
+  size_t biome_count;
   biome* biomes[WM_MAX_BIOME_OVERLAP];
 };
 
@@ -620,6 +679,11 @@ struct world_region_s {
   world_map *world;
   world_map_pos pos;
   global_pos anchor;
+
+  // summary information:
+  altitude_category s_altitude;
+  precipitation_category s_precipitation;
+  temperature_category s_temperature;
 
   // various info modules:
   topography_info topography;
@@ -940,20 +1004,46 @@ static inline void copy_soil(world_region *from, world_region *to) {
   copy_soil_type(&(from_s->ocean_floor_topsoil), &(to_s->ocean_floor_topsoil));
 }
 
+// Convenience function for returning the uppermost rock species in a region:
+static inline species get_bedrock(world_region *wr) {
+  return wr->geology.strata[wr->geology.stratum_count-1].base_species;
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/
 
 // Allocates and returns a new world map of the given size. More work is needed
 // to fill in proper values: see init_world_map in gen/worldgen.c.
-world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height);
+world_map* create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height);
 
 // Cleans up the given world map and frees the associated memory.
 void cleanup_world_map(world_map *wm);
 
+// Allocates a new blank biome with the given category.
+biome* create_biome(biome_category category);
+
+// Frees the given biome.
+void cleanup_biome(biome* b);
+
 /*************
  * Functions *
  *************/
+
+// Classification functions for discretizing altitude, precipitation, and
+// temperature:
+altitude_category classify_altitude(float altitude);
+
+precipitation_category classify_precipitation(float *precipitation);
+
+temperature_category classify_temperature(float *lows, float *means);
+
+// Fills out discretized information for the given world region. Altitude,
+// precipitation, and temperature information should already be present.
+void summarize_region(world_region *wr);
+
+// Just applies summarize_region to each world map region.
+void summarize_all_regions(world_map *wm);
 
 // Stores the 9 (_small) or 25 world region pointers surrounding the given
 // world map position into the given neighborhood array. Some or all of the
@@ -1013,6 +1103,10 @@ int breadth_first_iter(
   void *arg,
   step_result (*process)(search_step, world_region*, void*)
 );
+
+// Adds a biome to the given world region, or does nothing if that region
+// already has the maximum number of biomes allowed.
+void add_biome(world_region *wr, biome_category category);
 
 // Picks an element present in the given world using a uniform distribution
 // over all elements subject to the given constraints: a category constraint,

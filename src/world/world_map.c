@@ -68,9 +68,257 @@ void cleanup_world_map(world_map *wm) {
   free(wm);
 }
 
+void create_biome(biome_category category) {
+  biome *result = (biome*) malloc(sizeof(biome));
+
+  result->category = category;
+
+  result->all_plants = create_list();
+  result->mushrooms = create_list();
+  result->giant_mushrooms = create_list();
+  result->mosses = create_list();
+  result->grasses = create_list();
+  result->vines = create_list();
+  result->herbs = create_list();
+  result->bushes = create_list();
+  result->shrubs = create_list();
+  result->trees = create_list();
+  result->aquatic_grasses = create_list();
+  result->aquatic_plants = create_list();
+  result->corals = create_list();
+
+  // TODO: Animals as well!
+
+  return result;
+}
+
+void cleanup_biome(biome *b) {
+  cleanup_list(b->all_plant_species);
+  cleanup_list(b->mushrooms);
+  cleanup_list(b->giant_mushrooms);
+  cleanup_list(b->mosses);
+  cleanup_list(b->grasses);
+  cleanup_list(b->vines);
+  cleanup_list(b->herbs);
+  cleanup_list(b->bushes);
+  cleanup_list(b->shrubs);
+  cleanup_list(b->trees);
+  cleanup_list(b->aquatic_grasses);
+  cleanup_list(b->aquatic_plants);
+  cleanup_list(b->corals);
+  free(b);
+}
+
 /*************
  * Functions *
  *************/
+
+altitude_category classify_altitude(float altitude) {
+  if (
+    altitude
+  < (
+      WM_TR_HEIGHT_OCEAN_DEPTHS
+    + 0.9 * (WM_TR_HEIGHT_CONTINENTAL_SHELF - WM_TR_HEIGHT_OCEAN_DEPTHS)
+    )
+  ) {
+    return WM_AC_OCEAN_DEPTHS;
+  } else if (altitude < WM_TR_HEIGHT_SEA_LEVEL) {
+    return WM_AC_CONTINENTAL_SHELF;
+  } else if (
+    altitude
+  < (
+      WM_TR_HEIGHT_COASTAL_PLAINS
+    + 0.3 * (WM_TR_HEIGHT_HIGHLANDS - WM_TR_HEIGHT_COASTAL_PLAINS)
+    )
+  ) {
+    return WM_AC_COASTAL_PLAINS;
+  } else if (
+    altitude
+  < (
+      WM_TR_HEIGHT_COASTAL_PLAINS
+    + 0.9 * (WM_TR_HEIGHT_HIGHLANDS - WM_TR_HEIGHT_COASTAL_PLAINS)
+    )
+  ) {
+    return WM_AC_INLAND_HILLS;
+  } else if (
+    altitude
+  < (
+      WM_TR_HEIGHT_HIGHLANDS
+    + 0.9 * (WM_TR_HEIGHT_MOUNTAIN_BASES - WM_TR_HEIGHT_HIGHLANDS)
+    )
+  ) {
+    return WM_AC_HIGHLANDS;
+  } else if (
+    altitude
+  < (
+      WM_TR_HEIGHT_MOUNTAIN_BASES
+    + 0.4 * (WM_TR_HEIGHT_MOUNTAIN_TOPS - WM_TR_HEIGHT_MOUNTAIN_BASES)
+    )
+  ) {
+    return WM_AC_MOUNTAIN_SLOPES;
+  } else {
+    return WM_AC_MOUNTAIN_PEAKS;
+  }
+}
+
+precipitation_category classify_precipitation(float *precipitation) {
+  size_t i;
+  float p;
+  float mean, min, max;
+
+  // compute min/max and mean:
+  mean = 0;
+  min = precipitation[0];
+  max = precipitation[0];
+  for (i = 0; i < WM_N_SEASONS; ++i) {
+    p = precipitation[i];
+    if (p > max) { max = p; }
+    if (p < min) { min = p; }
+    mean += p;
+  }
+  mean /= (float) WM_N_SEASONS;
+
+  // classify:
+  if (mean < CL_PRECIPITATION_DESERT) {
+    return WM_PC_DESERT;
+  } else if (mean < CL_PRECIPITATION_ARID) {
+    return WM_PC_ARID;
+  } else if (
+    mean
+  < (
+      CL_PRECIPITATION_ARID
+    + 0.6 * (CL_PRECIPITATION_NORMAL - CL_PRECIPITATION_ARID)
+    )
+  ) {
+    return WM_PC_DRY;
+  } else if (
+    mean
+  < (
+      CL_PRECIPITATION_ARID
+    + 0.4 * (CL_PRECIPITATION_NORMAL - CL_PRECIPITATION_ARID)
+    )
+  ) {
+    if (max - min > CL_PRECIPITATION_NORMAL - CL_PRECIPITATION_ARID) {
+      return WM_PC_SEASONAL;
+    } else {
+      return WM_PC_NORMAL;
+    }
+  } else if (mean < CL_PRECIPITATION_LUSH) {
+    return WM_PC_WET;
+  } else if (mean < CL_PRECIPITATION_SOAKED) {
+    return WM_PC_SOAKING;
+  } else {
+    return WM_PC_FLOODED;
+  }
+}
+
+temperature_category classify_temperature(
+  float *lows,
+  float *means
+) {
+  size_t i;
+  float low, mean, high;
+
+  // compute min and mean:
+  mean = 0; // mean throughout the whole year
+  low = lows[0]; // winter low
+  high = means[0]; // summer mean
+  for (i = 0; i < WM_N_SEASONS; ++i) {
+    if (lows[i] < low) { low = lows[i]; }
+    if (means[i] > high) { high = means[i]; }
+    mean += means[i];
+  }
+  mean /= (float) WM_N_SEASONS;
+
+  // classify:
+  if (
+    high
+  < (
+      CL_TEMP_ANTARCTIC_YEAR_HIGH
+    + 0.6 * (CL_TEMP_TUNDRA_YEAR_HIGH - CL_TEMP_ANTARCTIC_YEAR_HIGH)
+    )
+  ) {
+    return WM_TC_ARCTIC;
+  } else if (
+    mean
+  < (
+      CL_TEMP_TUNDRA_YEAR_MEAN
+    + 0.5 * (CL_TEMP_COLD_TEMPERATE_YEAR_MEAN - CL_TEMP_TUNDRA_YEAR_MEAN)
+    )
+  ) {
+    return WM_TC_TUNDRA;
+  } else if (
+    mean
+  < (
+      CL_TEMP_COLD_TEMPERATE_YEAR_MEAN
+    + 0.5 * (
+        CL_TEMP_MODERATE_TEMPERATE_YEAR_MEAN
+      - CL_TEMP_COLD_TEMPERATE_YEAR_MEAN
+      )
+    )
+  ) {
+    if (low < CL_TEMP_SEASON_LOW_REGULAR_FROST) {
+      return WM_TC_COLD_FROST;
+    } else {
+      return WM_TC_COLD_RARE_FROST;
+    }
+  } else if (
+    mean
+  < (
+      CL_TEMP_MODERATE_TEMPERATE_YEAR_MEAN
+    + 0.5 * (
+        CL_TEMP_WARM_TEMPERATE_YEAR_MEAN
+      - CL_TEMP_MODERATE_TEMPERATE_YEAR_MEAN
+      )
+    )
+  ) {
+    if (low < CL_TEMP_SEASON_LOW_INTERMITTENT_FROST) {
+      return WM_TC_MILD_FROST;
+    } else {
+      return WM_TC_MILD_RARE_FROST;
+    }
+  } else if (
+    mean
+  < (
+      CL_TEMP_WARM_TEMPERATE_YEAR_MEAN
+    + 0.5 * (CL_TEMP_SUBTROPICAL_YEAR_MEAN - CL_TEMP_WARM_TEMPERATE_YEAR_MEAN)
+    )
+  ) {
+    if (low < CL_TEMP_SEASON_LOW_INTERMITTENT_FROST) {
+      return WM_TC_WARM_FROST;
+    } else {
+      return WM_TC_WARM_NO_FROST;
+    }
+  } else if (
+    mean
+  < (
+      CL_TEMP_SUBTROPICAL_YEAR_MEAN
+    + 0.5 * (CL_TEMP_TROPICAL_YEAR_MEAN - CL_TEMP_SUBTROPICAL_YEAR_MEAN)
+    )
+  ) {
+    return WM_TC_HOT;
+  } else {
+    return WM_TC_BAKING;
+  }
+}
+
+void summarize_region(world_region *wr) {
+  wr->s_altitude = classify_altitude(wr->topology.geologic_height);
+  wr->precipitation = classify_precipitation(wr->climate.atmosphere.rainfall);
+  wr->temperature = classify_temperature(
+    wr->climate.atmosphere.temp_low,
+    wr->climate.atmosphere.temp_mean
+  );
+}
+
+void summarize_all_regions(world_map *wm) {
+  world_map_pos iter;
+  for (iter.x = 0; iter.x < wm->width; ++iter.x) {
+    for (iter.y = 0; iter.y < wm->height; ++iter.y) {
+      summarize_region(get_world_region(wm, &iter));
+    }
+  }
+}
 
 void get_world_neighborhood_small(
   world_map *wm,
@@ -365,6 +613,17 @@ int breadth_first_iter(
   process(SSTEP_FINISH, NULL, arg);
   process(SSTEP_CLEANUP, NULL, arg);
   return 1;
+}
+
+void add_biome(world_region *wr, biome_category category) {
+  if (wr->ecology.biome_count < WM_MAX_BIOME_OVERLAP) {
+    wr->ecology.biomes[wr->ecology.biome_count] = create_biome(category);
+    wr->ecology.biome_count += 1;
+#ifdef DEBUG
+  } else {
+    printf("Warning: Biome (%d) not added due to overlap limit.\n", category);
+#endif
+  }
 }
 
 element_species* pick_element(

@@ -7,47 +7,6 @@
 #include "world/world_map.h"
 #include "world/species.h"
 
-/*********
- * Enums *
- *********/
-
-enum soil_altitude_category_e {
-  SL_AC_OCEAN_DEPTHS,
-  SL_AC_CONTINENTAL_SHELF,
-  SL_AC_COASTAL_PLAINS,
-  SL_AC_INLAND_HILLS,
-  SL_AC_HIGHLANDS,
-  SL_AC_MOUNTAIN_SLOPES,
-  SL_AC_MOUNTAIN_PEAKS
-};
-typedef enum soil_altitude_category_e soil_altitude_category;
-
-enum soil_precipitation_category_e {
-  SL_PC_DESERT,
-  SL_PC_ARID,
-  SL_PC_DRY,
-  SL_PC_NORMAL,
-  SL_PC_SEASONAL,
-  SL_PC_WET,
-  SL_PC_SOAKING,
-  SL_PC_FLOODED
-};
-typedef enum soil_precipitation_category_e soil_precipitation_category;
-
-enum soil_temperature_regime_e {
-  SL_TR_ARCTIC,
-  SL_TR_TUNDRA,
-  SL_TR_COLD_FROST,
-  SL_TR_COLD_RARE_FROST,
-  SL_TR_MILD_FROST,
-  SL_TR_MILD_RARE_FROST,
-  SL_TR_WARM_FROST,
-  SL_TR_WARM_NO_FROST,
-  SL_TR_HOT,
-  SL_TR_BAKING
-};
-typedef enum soil_temperature_regime_e soil_temperature_regime;
-
 /**************
  * Structures *
  **************/
@@ -193,28 +152,28 @@ void create_appropriate_soil(world_region *wr);
 void create_local_dirt(
   world_region *wr,
   soil_type *soil,
-  soil_factors *factors
+  world_region *wr
 );
 
 // Creates a local silt to fill in the given soil_type.
 void create_local_silt(
   world_region *wr,
   soil_type *soil,
-  soil_factors *factors
+  world_region *wr
 );
 
 // Creates a local mud to fill in the given soil_type.
 void create_local_mud(
   world_region *wr,
   soil_type *soil,
-  soil_factors *factors
+  world_region *wr
 );
 
 // Creates a local sand to fill in the given soil_type.
 void create_local_sand(
   world_region *wr,
   soil_type *soil,
-  soil_factors *factors
+  world_region *wr
 );
 
 // Takes an original soil_type and fills in the result soil_type with a variant
@@ -223,17 +182,14 @@ void create_topsoil_variant(
   world_region *wr,
   soil_type *original,
   soil_type *result,
-  soil_factors *factors
+  world_region *wr
 );
 
 // Picks which alternate dirt table to use based on local conditions:
-rngtable* pick_alt_dirt_table(soil_factors *factors, ptrdiff_t seed);
+rngtable* pick_alt_dirt_table(world_region *wr, ptrdiff_t seed);
 
 // As above but for sand:
-rngtable* pick_alt_sand_table(soil_factors *factors, ptrdiff_t seed);
-
-// Skims information from the given world region into the given struct.
-void glean_soil_factors(world_region *wr, soil_factors *result);
+rngtable* pick_alt_sand_table(world_region *wr, ptrdiff_t seed);
 
 // Discretizes the given altitude (given in blocks).
 soil_altitude_category classify_altitude(float altitude);
@@ -247,7 +203,7 @@ soil_temperature_regime classify_temperature(float *lows, float *means);
 // Fills in details of a single dirt species.
 void fill_dirt_species(
   dirt_species *dsp,
-  soil_factors *factors,
+  world_region *wr,
   ptrdiff_t seed
 );
 
@@ -255,19 +211,19 @@ void fill_dirt_species(
 void fill_dirt_variant(
   dirt_species *model,
   dirt_species *dsp,
-  soil_factors *factors
+  world_region *wr
 );
 
 // As above but for clay.
 void fill_clay_species(
   clay_species *dsp,
-  soil_factors *factors,
+  world_region *wr,
   ptrdiff_t seed
 );
 void fill_clay_variant(
   clay_species *model,
   clay_species *dsp,
-  soil_factors *factors
+  world_region *wr
 );
 
 void determine_new_dirt_appearance(dirt_species *species, ptrdiff_t seed);
