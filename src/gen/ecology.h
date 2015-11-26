@@ -18,6 +18,13 @@ typedef struct biome_info_s biome_info;
  * Constants *
  *************/
 
+#define EC_BIOME_TINY_SIZE 5
+#define EC_BIOME_SMALL_SIZE 22
+#define EC_BIOME_MEDIUM_SIZE 60
+#define EC_BIOME_LARGE_SIZE 140
+#define EC_BIOME_HUGE_SIZE 300
+#define EC_BIOME_GIGANTIC_SIZE 410
+
 extern biome_info const BIOME_INFO[];
 
 /*************************
