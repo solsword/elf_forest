@@ -103,7 +103,7 @@ enum temperature_category_e {
   WM_TC_WARM_FROST = 0x020,
   WM_TC_WARM_NO_FROST = 0x040,
   WM_TC_HOT = 0x080,
-  WM_TC_BAKING = 0x100
+  WM_TC_TROPICAL = 0x100
 };
 typedef enum temperature_category_e temperature_category;
 

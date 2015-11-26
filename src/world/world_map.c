@@ -298,7 +298,7 @@ temperature_category classify_temperature(
   ) {
     return WM_TC_HOT;
   } else {
-    return WM_TC_BAKING;
+    return WM_TC_TROPICAL;
   }
 }
 

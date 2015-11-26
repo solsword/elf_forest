@@ -1146,7 +1146,7 @@ rngtable* pick_alt_dirt_table(world_region *wr, ptrdiff_t seed) {
          wr->s_temperature == WM_TC_WARM_FROST
       || wr->s_temperature == WM_TC_WARM_NO_FROST
       || wr->s_temperature == WM_TC_HOT
-      || wr->s_temperature == WM_TC_BAKING
+      || wr->s_temperature == WM_TC_TROPICAL
       ) {
         return (rngtable*) rt_pick_result(&WARM_DRY_ALTS_ALTS, seed);
       }
@@ -1175,7 +1175,7 @@ rngtable* pick_alt_dirt_table(world_region *wr, ptrdiff_t seed) {
          wr->s_temperature == WM_TC_WARM_FROST
       || wr->s_temperature == WM_TC_WARM_NO_FROST
       || wr->s_temperature == WM_TC_HOT
-      || wr->s_temperature == WM_TC_BAKING
+      || wr->s_temperature == WM_TC_TROPICAL
       ) {
         return (rngtable*) rt_pick_result(&WARM_ALTS_ALTS, seed);
       }
@@ -1199,7 +1199,7 @@ rngtable* pick_alt_dirt_table(world_region *wr, ptrdiff_t seed) {
       || wr->s_temperature == WM_TC_WARM_FROST
       || wr->s_temperature == WM_TC_WARM_NO_FROST
       || wr->s_temperature == WM_TC_HOT
-      || wr->s_temperature == WM_TC_BAKING
+      || wr->s_temperature == WM_TC_TROPICAL
       ) {
         return (rngtable*) rt_pick_result(&WET_MOUNTAINS_ALTS_ALTS, seed);
       }
@@ -1215,7 +1215,7 @@ rngtable* pick_alt_dirt_table(world_region *wr, ptrdiff_t seed) {
       || wr->s_temperature == WM_TC_WARM_FROST
       || wr->s_temperature == WM_TC_WARM_NO_FROST
       || wr->s_temperature == WM_TC_HOT
-      || wr->s_temperature == WM_TC_BAKING
+      || wr->s_temperature == WM_TC_TROPICAL
       ) {
         return (rngtable*) rt_pick_result(&WET_HIGHLANDS_ALTS_ALTS, seed);
       }
@@ -1231,7 +1231,7 @@ rngtable* pick_alt_dirt_table(world_region *wr, ptrdiff_t seed) {
          wr->s_temperature == WM_TC_WARM_FROST
       || wr->s_temperature == WM_TC_WARM_NO_FROST
       || wr->s_temperature == WM_TC_HOT
-      || wr->s_temperature == WM_TC_BAKING
+      || wr->s_temperature == WM_TC_TROPICAL
       ) {
         return (rngtable*) rt_pick_result(&WARM_WET_ALTS_ALTS, seed);
       }
@@ -1413,7 +1413,7 @@ void fill_dirt_species(
       sand = 0.9 * sand;
       clay = 0.6 * clay + 0.4 * SL_COMP_MAX_CLAY;
       break;
-    case WM_TC_BAKING:
+    case WM_TC_TROPICAL:
       richness = 0.6 * richness + 0.4 * randf(seed, 0.2, 1.0);
       sand = 0.9 * sand;
       clay = 0.7 * clay + 0.3 * SL_COMP_MAX_CLAY;
