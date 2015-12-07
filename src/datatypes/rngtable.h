@@ -45,4 +45,14 @@ void cleanup_rngtable(rngtable *t);
 // relation to the total weight) are used.
 void* rt_pick_result(rngtable const * const t, ptrdiff_t seed);
 
+// Works just like rt_pick_result, but only uses elements from the table that
+// pass the given filter function (given a table element as the first argument
+// and the fixed argument as the second argument).
+void* rt_pick_filtered_result(
+  rngtable const * const t,
+  void *arg,
+  int (*filter)(void*, void*),
+  ptrdiff_t seed
+);
+
 #endif // #ifndef RNGTABLE_H

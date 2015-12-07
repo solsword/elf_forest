@@ -116,45 +116,49 @@ enum biome_category_e {
 
   // Ocean biomes:
   // Generally describe mostly underwater species, although the SEA_ICE,
-  // PELAGIC, and OFFSHORE biomes include birds and other animals that aren't
-  // water-bound.
+  // *_PELAGIC, and *_OFFSHORE biomes include birds and other animals that
+  // aren't water-bound.
   BIOME_CAT_SEA_ICE = 1,
   BIOME_CAT_OCEAN_VENTS = 2,
   BIOME_CAT_DEEP_AQUATIC = 3,
-  BIOME_CAT_PELAGIC = 4,
-  BIOME_CAT_OFFSHORE = 5,
-  BIOME_CAT_AQUATIC_GRASSLAND = 6,
-  BIOME_CAT_AQUATIC_FOREST = 7,
-  BIOME_CAT_COLD_REEF = 8,
-  BIOME_CAT_WARM_REEF = 9,
+  BIOME_CAT_TEMPERATE_PELAGIC = 4,
+  BIOME_CAT_TROPICAL_PELAGIC = 5,
+  BIOME_CAT_TEMPERATE_OFFSHORE = 6,
+  BIOME_CAT_TROPICAL_OFFSHORE = 7,
+  BIOME_CAT_TEMPERATE_AQUATIC_GRASSLAND = 8,
+  BIOME_CAT_TROPICAL_AQUATIC_GRASSLAND = 9,
+  BIOME_CAT_TEMPERATE_AQUATIC_FOREST = 10,
+  BIOME_CAT_TROPICAL_AQUATIC_FOREST = 11,
+  BIOME_CAT_COLD_REEF = 12,
+  BIOME_CAT_WARM_REEF = 13,
 
   // Beach biomes:
   // These biomes are found at the edges of oceans (lake beaches don't get
   // their own biomes). They describe species endemic to these zones, and
   // usually overlap with at least one ocean biome and at least one land biome.
-  BIOME_CAT_FROZEN_BEACH = 10,
-  BIOME_CAT_COLD_BEACH = 11,
-  BIOME_CAT_WARM_BEACH = 12,
-  BIOME_CAT_TROPICAL_BEACH = 13,
+  BIOME_CAT_FROZEN_BEACH = 14,
+  BIOME_CAT_COLD_BEACH = 15,
+  BIOME_CAT_WARM_BEACH = 16,
+  BIOME_CAT_TROPICAL_BEACH = 17,
 
   // Lake biomes:
   // These biomes describe the animals endemic to and dependent upon lakes.
   // Terrestrial animals may be included when depend on the lake.
-  BIOME_CAT_FROZEN_LAKE = 14,
-  BIOME_CAT_COLD_LAKE = 15,
-  BIOME_CAT_TEMPERATE_LAKE = 16,
-  BIOME_CAT_WARM_LAKE = 17,
-  BIOME_CAT_TROPICAL_LAKE = 18,
-  BIOME_CAT_SALT_LAKE = 19,
+  BIOME_CAT_FROZEN_LAKE = 18,
+  BIOME_CAT_COLD_LAKE = 19,
+  BIOME_CAT_TEMPERATE_LAKE = 20,
+  BIOME_CAT_WARM_LAKE = 21,
+  BIOME_CAT_TROPICAL_LAKE = 22,
+  BIOME_CAT_SALT_LAKE = 23,
 
   // River biomes:
   // These biomes describe animals that live in or depend on rivers. Many
   // species endemic to riparian zones are included.
-  BIOME_CAT_FROZEN_RIVER = 20,
-  BIOME_CAT_COLD_RIVER = 21,
-  BIOME_CAT_TEMPERATE_RIVER = 22,
-  BIOME_CAT_WARM_RIVER = 23,
-  BIOME_CAT_TROPICAL_RIVER = 24,
+  BIOME_CAT_FROZEN_RIVER = 24,
+  BIOME_CAT_COLD_RIVER = 25,
+  BIOME_CAT_TEMPERATE_RIVER = 26,
+  BIOME_CAT_WARM_RIVER = 27,
+  BIOME_CAT_TROPICAL_RIVER = 28,
 
   // Alpine biomes:
   // These biomes are prevalent in areas of high elevation (above the
@@ -162,79 +166,79 @@ enum biome_category_e {
   // plethora of adaptations for high-altitude living. Their species are
   // usually present below the treeline as well, but another biome will be used
   // to describe most of a mountain's flora and fauna.
-  BIOME_CAT_FROZEN_ALPINE = 25,
-  BIOME_CAT_COLD_ALPINE = 26,
-  BIOME_CAT_TEMPERATE_WET_ALPINE = 27,
-  BIOME_CAT_TEMPERATE_DRY_ALPINE = 28,
-  BIOME_CAT_WARM_WET_ALPINE = 29,
-  BIOME_CAT_WARM_DRY_ALPINE = 30,
-  BIOME_CAT_TROPICAL_WET_ALPINE = 31,
-  BIOME_CAT_TROPICAL_DRY_ALPINE = 32,
+  BIOME_CAT_FROZEN_ALPINE = 29,
+  BIOME_CAT_COLD_ALPINE = 30,
+  BIOME_CAT_TEMPERATE_WET_ALPINE = 31,
+  BIOME_CAT_TEMPERATE_DRY_ALPINE = 32,
+  BIOME_CAT_WARM_WET_ALPINE = 33,
+  BIOME_CAT_WARM_DRY_ALPINE = 34,
+  BIOME_CAT_TROPICAL_WET_ALPINE = 35,
+  BIOME_CAT_TROPICAL_DRY_ALPINE = 36,
 
   // Desert biomes:
   // These are characterized by extreme dryness, although they will include
   // some oasis species.
-  BIOME_CAT_FROZEN_DESERT = 33,
-  BIOME_CAT_COLD_DESERT = 34,
-  BIOME_CAT_TEMPERATE_DESERT = 35,
-  BIOME_CAT_WARM_DESERT = 36,
-  BIOME_CAT_HOT_DESERT = 37,
+  BIOME_CAT_FROZEN_DESERT = 37,
+  BIOME_CAT_COLD_DESERT = 38,
+  BIOME_CAT_TEMPERATE_DESERT = 39,
+  BIOME_CAT_WARM_DESERT = 40,
+  BIOME_CAT_HOT_DESERT = 41,
 
   // Grassland biomes:
   // Biomes dominated by grassy herbs, usually due to some combination of poor
   // soil fertility, regular disruptions (grazing, fire, etc.) and/or low
   // annual rainfall.
-  BIOME_CAT_COLD_GRASSLAND = 38,
-  BIOME_CAT_TEMPERATE_GRASSLAND = 39,
-  BIOME_CAT_WARM_GRASSLAND = 40,
-  BIOME_CAT_TROPICAL_GRASSLAND = 41,
+  BIOME_CAT_COLD_GRASSLAND = 42,
+  BIOME_CAT_TEMPERATE_GRASSLAND = 43,
+  BIOME_CAT_WARM_GRASSLAND = 44,
+  BIOME_CAT_TROPICAL_GRASSLAND = 45,
 
   // Shrubland biomes:
   // Biomes where shrubs, bushes, and herbs are common, with few trees.
-  BIOME_CAT_COLD_SHRUBLAND = 42,
-  BIOME_CAT_TEMPERATE_SHRUBLAND = 43,
-  BIOME_CAT_WARM_SHRUBLAND = 44,
-  BIOME_CAT_TROPICAL_SHRUBLAND = 45,
+  BIOME_CAT_COLD_SHRUBLAND = 46,
+  BIOME_CAT_TEMPERATE_SHRUBLAND = 47,
+  BIOME_CAT_WARM_SHRUBLAND = 48,
+  BIOME_CAT_TROPICAL_SHRUBLAND = 49,
 
   // Savanna biomes:
   // Biomes where trees may be common, but do not form a canopy, allowing
   // grasses and shrubs to grow beneath and between them.
-  BIOME_CAT_TEMPERATE_SAVANNA = 46,
-  BIOME_CAT_WARM_SAVANNA = 47,
-  BIOME_CAT_TROPICAL_SAVANNA = 48,
+  BIOME_CAT_TEMPERATE_SAVANNA = 50,
+  BIOME_CAT_WARM_SAVANNA = 51,
+  BIOME_CAT_TROPICAL_SAVANNA = 52,
 
   // Coniferous forest biomes:
   // Biomes dominated by coniferous trees, often extremely homogeneous.
   // Broadleaf trees may also be present, but are distinctly outnumbered.
-  BIOME_CAT_COLD_CONIFEROUS_FOREST = 49,
-  BIOME_CAT_TEMPERATE_CONIFEROUS_FOREST = 50,
-  BIOME_CAT_WARM_CONIFEROUS_FOREST = 51,
-  BIOME_CAT_TROPICAL_CONIFEROUS_FOREST = 52,
+  BIOME_CAT_COLD_CONIFEROUS_FOREST = 53,
+  BIOME_CAT_TEMPERATE_CONIFEROUS_FOREST = 54,
+  BIOME_CAT_WARM_CONIFEROUS_FOREST = 55,
+  BIOME_CAT_TROPICAL_CONIFEROUS_FOREST = 56,
 
   // Broadleaf forest biomes:
   // Biomes dominated by broadleaf trees which are usually quite diverse. Some
   // conifers may also be present, but they are usually rare.
-  BIOME_CAT_TEMPERATE_BROADLEAF_FOREST = 53,
-  BIOME_CAT_WARM_WET_BROADLEAF_FOREST = 54,
-  BIOME_CAT_WARM_DRY_BROADLEAF_FOREST = 55,
-  BIOME_CAT_TROPICAL_WET_BROADLEAF_FOREST = 56,
-  BIOME_CAT_TROPICAL_DRY_BROADLEAF_FOREST = 57,
+  BIOME_CAT_TEMPERATE_BROADLEAF_FOREST = 57,
+  BIOME_CAT_WARM_WET_BROADLEAF_FOREST = 58,
+  BIOME_CAT_WARM_DRY_BROADLEAF_FOREST = 59,
+  BIOME_CAT_TROPICAL_WET_BROADLEAF_FOREST = 60,
+  BIOME_CAT_TROPICAL_DRY_BROADLEAF_FOREST = 61,
 
   // Wetland biomes:
   // Biomes with seasonal or sustained flooding, usually found near lakes,
   // rivers, or oceans. Wetlands adjacent to the ocean are brackish.
-  BIOME_CAT_TUNDRA = 58,
-  BIOME_CAT_COLD_FRESHWATER_WETLAND = 59,
-  BIOME_CAT_COLD_SALTWATER_WETLAND = 60,
-  BIOME_CAT_TEMPERATE_FRESHWATER_WETLAND = 61,
-  BIOME_CAT_TEMPERATE_SALTWATER_WETLAND = 62,
-  BIOME_CAT_WARM_FRESHWATER_WETLAND = 63,
-  BIOME_CAT_WARM_FRESHWATER_FORESTED_WETLAND = 64,
-  BIOME_CAT_WARM_SALTWATER_WETLAND = 65,
-  BIOME_CAT_TROPICAL_FRESHWATER_WETLAND = 66,
-  BIOME_CAT_TROPICAL_FRESHWATER_FORESTED_WETLAND = 67,
-  BIOME_CAT_TROPICAL_SALTWATER_WETLAND = 68,
-  BIOME_CAT_TROPICAL_SALTWATER_FORESTED_WETLAND = 69
+  BIOME_CAT_TUNDRA = 62,
+  BIOME_CAT_COLD_FRESHWATER_WETLAND = 63,
+  BIOME_CAT_COLD_SALTWATER_WETLAND = 64,
+  BIOME_CAT_TEMPERATE_FRESHWATER_WETLAND = 65,
+  BIOME_CAT_TEMPERATE_SALTWATER_WETLAND = 66,
+  BIOME_CAT_WARM_FRESHWATER_WETLAND = 67,
+  BIOME_CAT_WARM_FRESHWATER_FORESTED_WETLAND = 68,
+  BIOME_CAT_WARM_SALTWATER_WETLAND = 69,
+  BIOME_CAT_TROPICAL_FRESHWATER_WETLAND = 70,
+  BIOME_CAT_TROPICAL_FRESHWATER_FORESTED_WETLAND = 71,
+  BIOME_CAT_TROPICAL_SALTWATER_WETLAND = 72,
+  BIOME_CAT_TROPICAL_SALTWATER_FORESTED_WETLAND = 73
 };
 typedef enum biome_category_e biome_category;
 
@@ -1094,7 +1098,18 @@ int find_geopt_in_wr(void *v_gpt, void *v_wr_ptr);
 // local minimum. The input position is edited directly.
 void find_valley(world_map *wm, world_map_pos *pos);
 
-// Arbitrary breadth-first iteration within a world map.
+// Arbitrary breadth-first iteration within a world map. Returns 1 on success
+// and 0 on failure (as determined by either an SRESULT_ABORT returned by the
+// step function or failing to meet the min/max size criteria). The given
+// function is  called with SSTEP_INIT once, and then repeatedly with
+// SSTEP_PROCESS until there are no more spaces to expand, the max_size is
+// exceeded, or it returns SRESULT_ABORT or SRESULT_FINISHED. If either the min
+// or max size limits aren't met or SRESULT_ABORT was returned, the iteration
+// is successful and 1 is returned after calling the process function with
+// SSTEP_FINISH and then SSTEP_CLEANUP. Otherwise, SSTEP_FINISH is not called
+// (just SSTEP_CLEANUP) and 0 is returned. The given arg is passed to the
+// process function as the third argument. SSTEP_VALIDATE, SSTEP_GET_MIN_SIZE,
+// and SSTEP_GET_MAX_SIZE aren't used by this function.
 int breadth_first_iter(
   world_map *wm,
   world_map_pos *origin,
@@ -1102,6 +1117,23 @@ int breadth_first_iter(
   int max_size,
   void *arg,
   step_result (*process)(search_step, world_region*, void*)
+);
+
+// Fills valid regions of the map with multiple blob-shaped regions by first
+// running the validate function to figure out which regions count as valid
+// (1 -> valid, 0-> invalid), and then calling the fill function on a random
+// valid region. This entire process is repeated until there are no valid
+// regions left to fill or until the fill function returns 0 (so whatever the
+// fill function does should ensure that subsequent calls to the validate
+// function return 0 for filled regions), or this function won't terminate. The
+// seed is used for the random region selection step, and a fixed derivative
+// seed is passed into each call to the validate and fill functions.
+int fill_with_regions(
+  world_map *wm,
+  void *arg,
+  int (*validate)(world_region*, void*, ptrdiff_t seed),
+  int (*fill)(world_region*, void*, ptrdiff_t seed),
+  ptrdiff_t seed
 );
 
 // Adds a biome to the given world region, or does nothing if that region

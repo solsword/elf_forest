@@ -58,3 +58,40 @@ void* rt_pick_result(rngtable const * const t, ptrdiff_t seed) {
 #endif
   return NULL;
 }
+
+void* rt_pick_filtered_result(
+  rngtable const * const t,
+  void *arg,
+  int (*filter)(void*, void*),
+  ptrdiff_t seed
+) {
+  float total_weight = 0;
+  float choice = 0;
+  size_t i;
+  for (i = 0; i < t->size; ++i) {
+    if (filter(t->values[i], arg)) {
+      total_weight += t->weights[i];
+    }
+  }
+  if (total_weight == 0) {
+    return NULL;
+  }
+  choice = ptrf(prng(seed + 4680514)) * total_weight;
+  total_weight = 0;
+  for (i = 0; i < t->size; ++i) {
+    if (filter(t->values[i], arg)) {
+      choice -= t->weights[i];
+      if (choice < 0) {
+        return t->values[i];
+      }
+    }
+  }
+  // Shouldn't be possible to end up here...
+#ifdef DEBUG
+  fprintf(
+    stderr,
+    "WARNING: Ran out of table when choosing a random entry in rngtable.\n"
+  );
+#endif
+  return NULL;
+}

@@ -602,26 +602,84 @@ int breadth_first_iter(
     }
   }
   if ((max_size >= 0 && size > max_size) || size < min_size) {
-    // we hit one of the size limits: cleanup and return 0
+    // We hit one of the size limits: cleanup without finishing and fail.
     cleanup_queue(open);
     cleanup_map(visited);
     process(SSTEP_CLEANUP, NULL, arg);
     return 0;
   }
-  // Otherwise we should flag each region as belonging to this body of water
-  // and return 1.
+  // Otherwise we should finish, cleanup, and succeed.
   process(SSTEP_FINISH, NULL, arg);
   process(SSTEP_CLEANUP, NULL, arg);
   return 1;
 }
 
-void add_biome(world_region *wr, biome_category category) {
+int fill_with_regions(
+  world_map *wm,
+  void *arg,
+  int (*validate)(world_region*, void*, ptrdiff_t),
+  int (*fill)(world_region*, void*, ptrdiff_t),
+  ptrdiff_t seed
+) {
+  // TODO: Introduce noisy breadth-first search to avoid diamond-shaped regions
+  // everywhere?
+  bitmap *valid = create_bitmap(wm->width * wm->height);
+  world_map_pos wmpos;
+  world_region *wr;
+  ptrdiff_t remaining, chosen, orig_seed;
+
+  seed = prng(seed + 44655411);
+  orig_seed = seed;
+
+  while (1) { // break when no valid regions remain (see middle)
+    // Reset our valid mask and create a new one:
+    bm_clear_bits(valid, 0, wm->width * wm->height);
+    for (wmpos.x = 0; wmpos.x < wm->width; ++wmpos.x) {
+      for (wmpos.y = 0; wmpos.y < wm->height; ++wmpos.y) {
+        wr = get_world_region(wm, &wmpos); // no need to worry about NULL
+        if (validate(wr, arg, orig_seed)) {
+          bm_set_bits(valid, wmpos.x + wm->width * wmpos.y, 1);
+        }
+      }
+    }
+
+    // Check that we've still got stuff to fill:
+    remaining = bm_popcount(valid);
+    if (remaining == 0) {
+      break;
+    }
+
+    // Find a random valid spot to fill from:
+    chosen = posmod(seed, remaining);
+    seed = prng(seed);
+    chosen = bm_select_closed(valid, chosen);
+#ifdef DEBUG
+    if (chosen < 0) {
+      printf("Error: failed to properly select a valid world region!\n");
+      exit(1);
+    }
+#endif
+    wmpos.x = chosen % wm->width;
+    wmpos.y = chosen / wm->width;
+    wr = get_world_region(wm, &wmpos); // no need to worry about NULL
+
+    // Call our fill function:
+    if (!fill(wr, arg, orig_seed)) {
+      // if our fill function returns false we immediately do the same:
+      return 0;
+    }
+
+    // Now we loop back and fill from a different spot.
+  }
+}
+
+void add_biome(world_region *wr, biome *b) {
   if (wr->ecology.biome_count < WM_MAX_BIOME_OVERLAP) {
-    wr->ecology.biomes[wr->ecology.biome_count] = create_biome(category);
+    wr->ecology.biomes[wr->ecology.biome_count] = b;
     wr->ecology.biome_count += 1;
 #ifdef DEBUG
   } else {
-    printf("Warning: Biome (%d) not added due to overlap limit.\n", category);
+    printf("Warning: Biome not added due to overlap limit.\n");
 #endif
   }
 }

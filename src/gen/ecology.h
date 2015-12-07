@@ -40,6 +40,39 @@ struct biome_info_s { // Note: int better have at least 9 bits...
   int temperature_compatibility;
 };
 
+/********************
+ * Inline Functions *
+ ********************/
+
+static inline int biome_is_compatible(biome_category bc, world_region *wr) {
+  if (!(wr->climate.water.state & BIOME_INFO[bc].hydro_state_compatibility)) {
+    return 0;
+  };
+  if (!(wr->climate.water.salt & BIOME_INFO[bc].salinity_compatibility)) {
+    return 0;
+  };
+  if (!(wr->s_altitude & BIOME_INFO[bc].altitude_compatibility)) {
+    return 0;
+  };
+  if (!(wr->s_precipitation & BIOME_INFO[bc].precipitation_compatibility)) {
+    return 0;
+  };
+  if (!(wr->s_temperature & BIOME_INFO[bc].temperature_compatibility)) {
+    return 0;
+  };
+  return 1;
+}
+
+static inline int has_biome_in_category(world_region *wr, biome_category bc) {
+  size_t i;
+  for (i = 0; i < WM_MAX_BIOME_OVERLAP; ++i) {
+    if (wr->ecology.biomes[i].category == bc) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
 /*************
  * Functions *
  *************/
