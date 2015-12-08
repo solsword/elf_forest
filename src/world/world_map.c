@@ -1,6 +1,10 @@
 // world_map.c
 // World map structure definition.
 
+#ifdef DEBUG
+  #include <stdio.h>
+#endif
+
 #include "noise/noise.h"
 
 #include "datatypes/list.h"
@@ -68,27 +72,65 @@ void cleanup_world_map(world_map *wm) {
   free(wm);
 }
 
-void create_biome(biome_category category) {
+biome* create_biome(biome_category category) {
   biome *result = (biome*) malloc(sizeof(biome));
 
   result->category = category;
 
-  result->all_plants = create_list();
-  result->mushrooms = create_list();
-  result->giant_mushrooms = create_list();
-  result->mosses = create_list();
-  result->grasses = create_list();
-  result->vines = create_list();
-  result->herbs = create_list();
-  result->bushes = create_list();
-  result->shrubs = create_list();
-  result->trees = create_list();
-  result->aquatic_grasses = create_list();
-  result->aquatic_plants = create_list();
-  result->corals = create_list();
+  result->hanging_terrestrial_flora = create_list();
+  result->ephemeral_terrestrial_flora = create_list();
+  result->ubiquitous_terrestrial_flora = create_list();
+  result->close_spaced_terrestrial_flora = create_list();
+  result->medium_spaced_terrestrial_flora = create_list();
+  result->wide_spaced_terrestrial_flora = create_list();
 
-  // TODO: Animals as well!
+  result->hanging_subterranean_flora = create_list();
+  result->ephemeral_subterranean_flora = create_list();
+  result->ubiquitous_subterranean_flora = create_list();
+  result->close_spaced_subterranean_flora = create_list();
+  result->medium_spaced_subterranean_flora = create_list();
+  result->wide_spaced_subterranean_flora = create_list();
 
+  result->ephemeral_aquatic_flora = create_list();
+  result->ubiquitous_aquatic_flora = create_list();
+  result->close_spaced_aquatic_flora = create_list();
+  result->medium_spaced_aquatic_flora = create_list();
+  result->wide_spaced_aquatic_flora = create_list();
+
+
+  // TODO: Fauna
+
+  return result;
+}
+
+biome* create_merged_biome(
+  world_region *wr1,
+  world_region *wr2,
+  float str1,
+  float str2
+) {
+  frequent_species fqsp;
+
+  biome *result = create_biome(BIOME_CAT_UNKNOWN);
+  
+  if (str1 + str2 == 0) {
+#ifdef DEBUG
+    printf(
+      "Warning: Region contender strengths are both zero: using 100% wr1.\n"
+    );
+#endif
+    str1 = 1.0;
+  }
+
+  if (wr1 == NULL) {
+    return result; // return an empty biome if we're outside the world map
+    // TODO: Something else here?
+  }
+
+  merge_all_biomes_into(wr1, str1 / (str1 + str2), result);
+  if (wr2 != NULL) {
+    merge_all_biomes_into(wr2, str2 / (str1 + str2), result);
+  }
   return result;
 }
 
@@ -405,16 +447,19 @@ void compute_region_contenders(
   world_map *wm,
   world_region* neighborhood[],
   global_pos *glpos,
-  world_region **best, world_region **secondbest,
-  float *strbest, float *strsecond
+  ptrdiff_t seed,
+  world_region **r_best, world_region **r_secondbest,
+  float *r_strbest, float *r_strsecond
 ) {
   world_region *wr; // best and second-best regions
   size_t i;
   global_pos anchor;
   vector v, vbest, vsecond;
   float str, noise;
-  ptrdiff_t seed;
   world_map_pos wmpos;
+  ptrdiff_t local_seed;
+
+  seed = prng(seed + 172841);
 
   glpos__wmpos(glpos, &wmpos);
 
@@ -423,14 +468,14 @@ void compute_region_contenders(
   vbest.x = WORLD_REGION_BLOCKS;
   vbest.y = WORLD_REGION_BLOCKS;
   vbest.z = 0;
-  *strbest = 0;
+  *r_strbest = 0;
   vsecond.x = WORLD_REGION_BLOCKS;
   vsecond.y = WORLD_REGION_BLOCKS;
   vsecond.z = 0;
-  *strsecond = 0;
+  *r_strsecond = 0;
 
-  *secondbest = NULL;
-  *best = NULL;
+  *r_secondbest = NULL;
+  *r_best = NULL;
 
   // Figure out which of our neighbors are closest:
   wmpos.x -= 1;
@@ -439,10 +484,10 @@ void compute_region_contenders(
     wr = neighborhood[i];
     if (wr != NULL) {
       copy_glpos(&(wr->anchor), &anchor);
-      seed = prng(wr->seed + 172841);
+      local_seed = prng(wr->seed + seed);
     } else {
       compute_region_anchor(wm, &wmpos, &anchor);
-      seed = prng(prng(prng(wmpos.x) + wmpos.y) + 51923);
+      local_seed = prng(prng(prng(wmpos.x) + wmpos.y) + seed + 51923);
     }
     v.x = glpos->x - anchor.x;
     v.y = glpos->y - anchor.y;
@@ -454,16 +499,16 @@ void compute_region_contenders(
         v.x * WM_REGION_CONTENTION_NOISE_SCALE,
         v.y * WM_REGION_CONTENTION_NOISE_SCALE,
         v.z * WM_REGION_CONTENTION_NOISE_SCALE,
-        seed * 576 + 9123
+        local_seed * 576 + 9123
       ) + 
       0.6 * sxnoise_3d(
         v.x * WM_REGION_CONTENTION_NOISE_SCALE * 2.1,
         v.y * WM_REGION_CONTENTION_NOISE_SCALE * 2.1,
         v.z * WM_REGION_CONTENTION_NOISE_SCALE * 2.1,
-        seed * 577 + 9124
+        local_seed * 577 + 9124
       )
     ) / 1.6;
-    seed = prng(seed);
+    local_seed = prng(local_seed);
     noise = (1 + noise * WM_REGION_CONTENTION_NOISE_STRENGTH) / 2.0;
     // [
     //   0.5 - WM_REGION_CONTENTION_NOISE_STRENGTH/2,
@@ -478,7 +523,7 @@ void compute_region_contenders(
       v.z * WM_REGION_CONTENTION_POLAR_SCALE,
       2*M_PI*WM_REGION_CONTENTION_POLAR_SCALE,
       2*M_PI*WM_REGION_CONTENTION_POLAR_SCALE,
-      seed
+      local_seed
     );
     vpolar__xyz(&v, &v);
     noise = (1 + noise * WM_REGION_CONTENTION_POLAR_STRENGTH) / 2.0;
@@ -489,16 +534,16 @@ void compute_region_contenders(
     str *= noise;
     if (str > *strbest) {
       vcopy_as(&vsecond, &vbest);
-      *strsecond = *strbest;
-      *secondbest = *best;
+      *r_strsecond = *r_strbest;
+      *r_secondbest = *r_best;
 
       vcopy_as(&vbest, &v);
-      *strbest = str;
-      *best = wr;
+      *r_strbest = str;
+      *r_best = wr;
     } else if (str > *strsecond) {
       vcopy_as(&vsecond, &v);
-      *strsecond = str;
-      *secondbest = wr;
+      *r_strsecond = str;
+      *r_secondbest = wr;
     }
     // Update wmpos based on i:
     if (i == 2 || i == 5) {
@@ -681,6 +726,117 @@ void add_biome(world_region *wr, biome *b) {
   } else {
     printf("Warning: Biome not added due to overlap limit.\n");
 #endif
+  }
+}
+
+void merge_all_biomes_into(world_region *wr, float strength, biome *target) {
+  size_t i;
+  for (i = 0; i < wr->ecology.biome_count; ++i) {
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].hanging_terrestrial_flora,
+      strength,
+      target.hanging_terrestrial_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].ephemeral_terrestrial_flora,
+      strength,
+      target.ephemeral_terrestrial_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].ubiquitous_terrestrial_flora,
+      strength,
+      target.ubiquitous_terrestrial_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].close_spaced_terrestrial_flora,
+      strength,
+      target.close_spaced_terrestrial_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].medium_spaced_terrestrial_flora,
+      strength,
+      target.medium_spaced_terrestrial_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].wide_spaced_terrestrial_flora,
+      strength,
+      target.wide_spaced_terrestrial_flora
+    );
+
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].hanging_subterranean_flora,
+      strength,
+      target.hanging_subterranean_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].ephemeral_subterranean_flora,
+      strength,
+      target.ephemeral_subterranean_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].ubiquitous_subterranean_flora,
+      strength,
+      target.ubiquitous_subterranean_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].close_spaced_subterranean_flora,
+      strength,
+      target.close_spaced_subterranean_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].medium_spaced_subterranean_flora,
+      strength,
+      target.medium_spaced_subterranean_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].wide_spaced_subterranean_flora,
+      strength,
+      target.wide_spaced_subterranean_flora
+    );
+
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].ephemeral_aquatic_flora,
+      strength,
+      target.ephemeral_aquatic_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].ubiquitous_aquatic_flora,
+      strength,
+      target.ubiquitous_aquatic_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].close_spaced_aquatic_flora,
+      strength,
+      target.close_spaced_aquatic_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].medium_spaced_aquatic_flora,
+      strength,
+      target.medium_spaced_aquatic_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i].wide_spaced_aquatic_flora,
+      strength,
+      target.wide_spaced_aquatic_flora
+    );
+  }
+}
+
+
+void merge_and_scale_frequent_species(
+  list const * const from,
+  float str,
+  list *to
+) {
+  size_t i;
+  frequent_species sqsp;
+  for (i = 0; i < l_get_length(from); ++i) {
+    fqsp = (frequent_species) l_get_item(from, j);
+    frequent_species_set_frequency(
+      &fqsp,
+      frequent_species_frequency(fqsp) * str
+    );
+    l_append_element(to, fqsp);
   }
 }
 

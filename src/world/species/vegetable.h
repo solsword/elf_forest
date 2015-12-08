@@ -199,4 +199,39 @@ struct coral_species_s {
   growth_properties growth;
 };
 
+/********************
+ * Inline Functions *
+ ********************/
+
+// Returns the block type corresponding to the seeds of the given species type.
+static inline block seed_block_type(species_type spt) {
+  switch (spt) {
+    default:
+      return B_VOID;
+    case SPT_FUNGUS:
+      return B_MUSHROOM_SPORES;
+      // TODO: Giant mushrooms?
+    case SPT_MOSS:
+      return B_MOSS_SPORES;
+    case SPT_GRASS:
+      return B_GRASS_SPORES;
+    case SPT_VINE:
+      return B_VINE_SEEDS;
+    case SPT_HERB:
+      return B_HERB_SEEDS;
+    case SPT_BUSH:
+      return B_BUSH_SEEDS;
+    case SPT_SHRUB:
+      return B_SHRUB_SEEDS;
+    case SPT_TREE:
+      return B_TREE_SEEDS;
+    case SPT_AQUATIC_GRASS:
+      return B_AQUATIC_GRASS_SEEDS;
+    case SPT_AQUATIC_PLANT:
+      return B_AQUATIC_PLANT_SEEDS;
+    case SPT_CORAL:
+      return B_YOUNG_CORAL;
+  }
+}
+
 #endif // #ifndef VEGETABLE_SPECIES_H

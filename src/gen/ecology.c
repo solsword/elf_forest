@@ -23,13 +23,14 @@ biome_info const BIOME_INFO[] = {
     .precipitation_compatibility = 0,
     .temperature_compatibility = 0
   },
-  { // BIOME_CAT_SEA_ICE,
-    .max_size = EC_BIOME_GIGANTIC_SIZE,
+
+  { // BIOME_CAT_DEEP_AQUATIC,
+    .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
-    .altitude_compatibility = (WM_AC_CONTINENTAL_SHELF | WM_AC_OCEAN_DEPTHS),
+    .altitude_compatibility = WM_AC_OCEAN_DEPTHS,
     .precipitation_compatibility = -1,
-    .temperature_compatibility = (WM_TC_ARCTIC | WM_TC_TUNDRA)
+    .temperature_compatibility = -1
   },
   { // BIOME_CAT_OCEAN_VENTS,
     .max_size = EC_BIOME_TINY_SIZE,
@@ -39,13 +40,14 @@ biome_info const BIOME_INFO[] = {
     .precipitation_compatibility = -1,
     .temperature_compatibility = -1
   },
-  { // BIOME_CAT_DEEP_AQUATIC,
-    .max_size = EC_BIOME_HUGE_SIZE,
+
+  { // BIOME_CAT_SEA_ICE,
+    .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
-    .altitude_compatibility = WM_AC_OCEAN_DEPTHS,
+    .altitude_compatibility = (WM_AC_CONTINENTAL_SHELF | WM_AC_OCEAN_DEPTHS),
     .precipitation_compatibility = -1,
-    .temperature_compatibility = -1
+    .temperature_compatibility = (WM_TC_ARCTIC | WM_TC_TUNDRA)
   },
   { // BIOME_CAT_TEMPERATE_PELAGIC,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
@@ -73,6 +75,7 @@ biome_info const BIOME_INFO[] = {
     | WM_TC_TROPICAL
     )
   },
+
   { // BIOME_CAT_TEMPERATE_OFFSHORE,
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
@@ -1807,22 +1810,331 @@ step_result fill_with_biome(
   }
 }
 
+void init_any_biome(biome *b, world_region *wr) {
+  switch (b->category) {
+    default:
+    case BIOME_CAT_UNKNOWN:
+      // No initialization
+#ifdef DEBUG
+      printf(
+        "Error: Attempt to initialize a biome with an unknown category!\n"
+      );
+      exit(1);
+#endif
+      break;
+    case BIOME_CAT_DEEP_AQUATIC:
+      init_deep_aquatic_biome(b, wr);
+      break;
+    case BIOME_CAT_OCEAN_VENTS:
+      init_ocean_vents_biome(b, wr);
+      break;
 
-void init_ocean_biome(world_region *wr, biome *b, ptrdiff_t seed) {
+    case BIOME_CAT_SEA_ICE:
+      init_sea_ice_biome(b, wr);
+      break;
+    case BIOME_CAT_TEMPERATE_PELAGIC_BIOME:
+      init_temperate_pelagic_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_PELAGIC:
+      init_tropical_pelagic_biome(b, wr);
+      break;
+
+    case BIOME_CAT_TEMPERATE_OFFSHORE:
+      init_temperate_offshore_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_OFFSHORE:
+      init_tropical_offshore_biome(b, wr);
+      break;
+    case BIOME_CAT_TEMPERATE_AQUATIC_GRASSLAND:
+      init_temperate_aquatic_grassland_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_AQUATIC_GRASSLAND:
+      init_tropical_aquatic_grassland_biome(b, wr);
+      break;
+    case BIOME_CAT_TEMPERATE_AQUATIC_FOREST:
+      init_temperate_aquatic_forest_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_AQUATIC_FOREST:
+      init_tropical_aquatic_forest_biome(b, wr);
+      break;
+    case BIOME_CAT_COLD_REEF:
+      init_cold_reef_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_REEF:
+      init_warm_reef_biome(b, wr);
+      break;
+
+    case BIOME_CAT_FROZEN_BEACH:
+      init_frozen_beach_biome(b, wr);
+      break;
+    case BIOME_CAT_COLD_BEACH:
+      init_cold_beach_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_BEACH:
+      init_warm_beach_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_BEACH:
+      init_tropical_beach_biome(b, wr);
+      break;
+
+    case BIOME_CAT_FROZEN_LAKE:
+      init_frozen_lake_biome(b, wr);
+      break;
+    case BIOME_CAT_COLD_LAKE:
+      init_cold_lake_biome(b, wr);
+      break;
+    case BIOME_CAT_TEMPERATE_LAKE:
+      init_temperate_lake_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_LAKE:
+      init_warm_lake_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_LAKE:
+      init_tropical_lake_biome(b, wr);
+      break;
+    case BIOME_CAT_SALT_LAKE:
+      init_salt_lake_biome(b, wr);
+      break;
+
+    case BIOME_CAT_COLD_RIVER:
+      init_cold_river_biome(b, wr);
+      break;
+    case BIOME_CAT_TEMPERATE_RIVER:
+      init_temperate_river_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_RIVER:
+      init_warm_river_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_RIVER:
+      init_tropical_river_biome(b, wr);
+      break;
+
+    case BIOME_CAT_FROZEN_ALPINE:
+      init_frozen_alpine_biome(b, wr);
+      break;
+    case BIOME_CAT_COLD_ALPINE:
+      init_cold_alpine_biome(b, wr);
+      break;
+    case BIOME_CAT_TEMPERATE_WET_ALPINE:
+      init_temperate_wet_alpine_biome(b, wr);
+      break;
+    case BIOME_CAT_TEMPERATE_DRY_ALPINE:
+      init_temperate_dry_alpine_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_WET_ALPINE:
+      init_warm_wet_alpine_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_DRY_ALPINE:
+      init_warm_dry_alpine_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_WET_ALPINE:
+      init_tropical_wet_alpine_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_DRY_ALPINE:
+      init_tropical_dry_alpine_biome(b, wr);
+      break;
+
+    case BIOME_CAT_FROZEN_DESERT:
+      init_frozen_desert_biome(b, wr);
+      break;
+    case BIOME_CAT_COLD_DESERT:
+      init_cold_desert_biome(b, wr);
+      break;
+    case BIOME_CAT_TEMPERATE_DESERT:
+      init_temperate_desert_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_DESERT:
+      init_warm_desert_biome(b, wr);
+      break;
+    case BIOME_CAT_HOT_DESERT:
+      init_hot_desert_biome(b, wr);
+      break;
+
+    case BIOME_CAT_COLD_GRASSLAND:
+      init_cold_grassland_biome(b, wr);
+      break;
+    case BIOME_CAT_TEMPERATE_GRASSLAND:
+      init_temperate_grassland_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_GRASSLAND:
+      init_warm_grassland_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_GRASSLAND:
+      init_tropical_grassland_biome(b, wr);
+      break;
+    case BIOME_CAT_COLD_SHRUBLAND:
+      init_temperate_shrubland_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_SHRUBLAND:
+      init_warm_shrubland_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_SHRUBLAND:
+      init_tropical_shrubland_biome(b, wr);
+      break;
+
+    case BIOME_CAT_TEMPERATE_SAVANNA:
+      init_temperate_savanna_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_SAVANNA:
+      init_warm_savanna_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_SAVANNA:
+      init_tropical_savanna_biome(b, wr);
+      break;
+
+    case BIOME_CAT_COLD_CONIFEROUS_FOREST:
+      init_cold_coniferous_forest_biome(b, wr);
+      break;
+    case BIOME_CAT_TEMPERATE_CONIFEROUS_FOREST:
+      init_temperate_coniferous_forest_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_CONIFEROUS_FOREST:
+      init_warm_coniferous_forest_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_CONIFEROUS_FOREST:
+      init_tropical_coniferous_forest_biome(b, wr);
+      break;
+
+    case BIOME_CAT_TEMPERATE_BROADLEAF_FOREST:
+      init_warm_wet_broadleaf_forest_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_DRY_BROADLEAF_FOREST:
+      init_warm_dry_broadleaf_forest_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_WET_BROADLEAF_FOREST:
+      init_tropical_wet_broadleaf_forest_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_DRY_BROADLEAF_FOREST:
+      init_tropical_dry_broadleaf_forest_biome(b, wr);
+      break;
+
+    case BIOME_CAT_TUNDRA:
+      init_tundra_biome(b, wr);
+      break;
+    case BIOME_CAT_COLD_FRESHWATER_WETLAND:
+      init_cold_freshwater_wetland_biome(b, wr);
+      break;
+    case BIOME_CAT_COLD_SALTWATER_WETLAND:
+      init_cold_saltwater_wetland_biome(b, wr);
+      break;
+    case BIOME_CAT_TEMPERATE_FRESHWATER_WETLAND:
+      init_temperate_freshwater_wetland_biome(b, wr);
+      break;
+    case BIOME_CAT_TEMPERATE_SALTWATER_WETLAND:
+      init_temperate_saltwater_wetland_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_FRESHWATER_WETLAND:
+      init_warm_freshwater_wetland_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_FRESHWATER_FORESTED_WETLAND:
+      init_warm_freshwater_forested_wetland_biome(b, wr);
+      break;
+    case BIOME_CAT_WARM_SALTWATER_WETLAND:
+      init_warm_saltwater_wetland_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_FRESHWATER_WETLAND:
+      init_tropical_freshwater_wetland_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_FRESHWATER_FORESTED_WETLAND:
+      init_tropical_freshwater_forested_wetland_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_SALTWATER_WETLAND:
+      init_tropical_saltwater_wetland_biome(b, wr);
+      break;
+    case BIOME_CAT_TROPICAL_SALTWATER_FORESTED_WETLAND:
+      init_tropical_saltwater_forested_wetland_biome(b, wr);
+      break;
+  }
 }
 
-void init_beach_biome(world_region *wr, biome *b, ptrdiff_t seed) {
+void init_deep_aquatic_biome(biome *b, world_region *wr);
+void init_ocean_vents_biome(biome *b, world_region *wr);
+
+void init_sea_ice_biome(biome *b, world_region *wr);
+void init_temperate_pelagic_biome(biome *b, world_region *wr);
+void init_tropical_pelagic_biome(biome *b, world_region *wr);
+
+void init_temperate_offshore_biome(biome *b, world_region *wr);
+void init_tropical_offshore_biome(biome *b, world_region *wr);
+void init_temperate_aquatic_grassland_biome(biome *b, world_region *wr);
+void init_tropical_aquatic_grassland_biome(biome *b, world_region *wr);
+void init_temperate_aquatic_forest_biome(biome *b, world_region *wr);
+void init_tropical_aquatic_forest_biome(biome *b, world_region *wr);
+void init_cold_reef_biome(biome *b, world_region *wr);
+void init_warm_reef_biome(biome *b, world_region *wr);
+
+void init_frozen_beach_biome(biome *b, world_region *wr);
+void init_cold_beach_biome(biome *b, world_region *wr);
+void init_warm_beach_biome(biome *b, world_region *wr);
+void init_tropical_beach_biome(biome *b, world_region *wr);
+
+void init_frozen_lake_biome(biome *b, world_region *wr);
+void init_cold_lake_biome(biome *b, world_region *wr);
+void init_temperate_lake_biome(biome *b, world_region *wr);
+void init_warm_lake_biome(biome *b, world_region *wr);
+void init_tropical_lake_biome(biome *b, world_region *wr);
+void init_salt_lake_biome(biome *b, world_region *wr);
+
+void init_cold_river_biome(biome *b, world_region *wr);
+void init_temperate_river_biome(biome *b, world_region *wr);
+void init_warm_river_biome(biome *b, world_region *wr);
+void init_tropical_river_biome(biome *b, world_region *wr);
+
+void init_frozen_alpine_biome(biome *b, world_region *wr);
+void init_cold_alpine_biome(biome *b, world_region *wr);
+void init_temperate_wet_alpine_biome(biome *b, world_region *wr);
+void init_temperate_dry_alpine_biome(biome *b, world_region *wr);
+void init_warm_wet_alpine_biome(biome *b, world_region *wr);
+void init_warm_dry_alpine_biome(biome *b, world_region *wr);
+void init_tropical_wet_alpine_biome(biome *b, world_region *wr);
+void init_tropical_dry_alpine_biome(biome *b, world_region *wr);
+
+void init_frozen_desert_biome(biome *b, world_region *wr);
+void init_cold_desert_biome(biome *b, world_region *wr);
+void init_temperate_desert_biome(biome *b, world_region *wr);
+void init_warm_desert_biome(biome *b, world_region *wr);
+void init_hot_desert_biome(biome *b, world_region *wr);
+
+void init_cold_grassland_biome(biome *b, world_region *wr);
+
+void init_temperate_grassland_biome(biome *b, world_region *wr) {
+  frequent_species fsp;
+  l_append_element(b->terrestrial_flora, fsp);
+  // TODO: HERE
 }
 
-void init_lake_biome(world_region *wr, biome *b, ptrdiff_t seed) {
-}
+void init_warm_grassland_biome(biome *b, world_region *wr);
+void init_tropical_grassland_biome(biome *b, world_region *wr);
 
-void init_river_biome(world_region *wr, biome *b, ptrdiff_t seed) {
-}
+void init_cold_shrubland_biome(biome *b, world_region *wr);
+void init_temperate_shrubland_biome(biome *b, world_region *wr);
+void init_warm_shrubland_biome(biome *b, world_region *wr);
+void init_tropical_shrubland_biome(biome *b, world_region *wr);
 
-void init_alpine_biome(world_region *wr, biome *b, ptrdiff_t seed) {
-}
+void init_temperate_savanna_biome(biome *b, world_region *wr);
+void init_warm_savanna_biome(biome *b, world_region *wr);
+void init_tropical_savanna_biome(biome *b, world_region *wr);
 
-void init_terrestrial_biome(world_region *wr, biome *b, ptrdiff_t seed) {
-}
+void init_cold_coniferous_forest_biome(biome *b, world_region *wr);
+void init_temperate_coniferous_forest_biome(biome *b, world_region *wr);
+void init_warm_coniferous_forest_biome(biome *b, world_region *wr);
+void init_tropical_coniferous_forest_biome(biome *b, world_region *wr);
 
+void init_temperate_broadleaf_forest_biome(biome *b, world_region *wr);
+void init_warm_wet_broadleaf_forest_biome(biome *b, world_region *wr);
+void init_warm_dry_broadleaf_forest_biome(biome *b, world_region *wr);
+void init_tropical_wet_broadleaf_forest_biome(biome *b, world_region *wr);
+void init_tropical_dry_broadleaf_forest_biome(biome *b, world_region *wr);
+
+void init_tundra_biome(biome *b, world_region *wr);
+void init_cold_freshwater_wetland_biome(biome *b, world_region *wr);
+void init_cold_saltwater_wetland_biome(biome *b, world_region *wr);
+void init_temperate_freshwater_wetland_biome(biome *b, world_region *wr);
+void init_temperate_saltwater_wetland_biome(biome *b, world_region *wr);
+void init_warm_freshwater_wetland_biome(biome *b, world_region *wr);
+void init_warm_freshwater_forested_wetland_biome(biome *b, world_region *wr);
+void init_warm_saltwater_wetland_biome(biome *b, world_region *wr);
+void init_tropical_freshwater_wetland_biome(biome *b, world_region *wr);
+void init_tropical_freshwater_forested_wetland_biome(biome *b,world_region *wr);
+void init_tropical_saltwater_wetland_biome(biome *b, world_region *wr);
+void init_tropical_saltwater_forested_wetland_biome(biome *b, world_region *wr);

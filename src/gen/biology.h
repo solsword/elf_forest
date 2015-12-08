@@ -12,10 +12,83 @@
  * Constants *
  *************/
 
+// Cell grammars for sprouting plants:
 extern cell_grammar *BIO_CG_SPROUT_IN_SOIL;
 extern cell_grammar *BIO_CG_SPROUT_ABOVE_SOIL;
 extern cell_grammar *BIO_CG_SPROUT_IN_SOIL_UNDERWATER;
 extern cell_grammar *BIO_CG_SPROUT_ABOVE_SOIL_UNDERWATER;
+
+// Spacing for plant distributions: a single plant of the appropriate type is
+// generally found within every NxN bin:
+#define BIO_DSTR_CLOSE_SPACING 4
+#define BIO_DSTR_MEDIUM_SPACING 7
+#define BIO_DSTR_WIDE_SPACING 18
+
+// Probabilities for placing two plants instead of one in a distribution bin:
+#define BIO_DSTR_CLOSE_DOUBLE_FREQ 0.02
+#define BIO_DSTR_MEDIUM_DOUBLE_FREQ 0.05
+#define BIO_DSTR_WIDE_DOUBLE_FREQ 0.08
+
+// When a large number of species are possible, low-frequency species are
+// especially likely to just never get picked. These parameters define a bit of
+// probability smoothing that makes very-rare species a bit more common by
+// smoothing probabilities.
+#define BIO_RARE_SPECIES_SMOOTHING_EXP 5.0
+#define BIO_RARE_SPECIES_SMOOTHING_ADJUST 1.0
+
+/********************
+ * Inline Functions *
+ ********************/
+
+static inline int any_spacing_hit(
+  global_pos glpos,
+  ptrdiff_t seed,
+  ptrdiff_t spacing,
+  float double_freq
+) {
+  ptrdiff_t cell_x = glpos.x / spacing;
+  ptrdiff_t cell_y = glpos.y / spacing;
+  ptrdiff_t cell_z = glpos.z / spacing;
+  ptrdiff_t row = posmod(prng(cell_x + cell_z + prng(cell_y + 7182)), spacing);
+  ptrdiff_t col = posmod(prng(cell_x + row), spacing);
+  ptrdiff_t row2 = posmod(prng(cell_y + col), spacing);
+  ptrdiff_t col2 = posmod(prng(cell_z + row2), spacing);
+  return (
+     posmod(glpos.x, spacing) == col
+  && posmod(glpos.y, spacing) == row
+  ) || (
+    ptrf(prng(cell_x + cell_y + cell_z + seed + 12771312)) < double_freq
+  && posmod(glpos.x, spacing) == col2
+  && posmod(glpos.y, spacing) == row2
+  );
+}
+
+static inline int wide_spacing_hit(global_pos glpos, ptrdiff_t seed) {
+  return any_spacing_hit(
+    glpos,
+    seed,
+    BIO_DSTR_WIDE_SPACING,
+    BIO_DSTR_WIDE_DOUBLE_FREQ
+  );
+}
+
+static inline int medium_spacing_hit(global_pos glpos, ptrdiff_t seed) {
+  return any_spacing_hit(
+    glpos,
+    seed,
+    BIO_DSTR_MEDIUM_SPACING,
+    BIO_DSTR_MEDIUM_DOUBLE_FREQ
+  );
+}
+
+static inline int close_spacing_hit(global_pos glpos, ptrdiff_t seed) {
+  return any_spacing_hit(
+    glpos,
+    seed,
+    BIO_DSTR_CLOSE_SPACING,
+    BIO_DSTR_CLOSE_DOUBLE_FREQ
+  );
+}
 
 /*************
  * Functions *
@@ -43,6 +116,18 @@ void setup_biology_gen(void);
 // flag is already set, it will fail and return immediately. If it succeeds, it
 // will set the chunk's CF_HAS_BIOLOGY flag.
 void add_biology(chunk *c);
+
+// Picks a frequent_species from a list using the frequency of each species as
+// well as its compatibility with the given substrate block.
+frequent_species pick_appropriate_frequent_species(
+  list *sp_list,
+  block substrate,
+  ptrdiff_t seed
+);
+
+// Computes the compatibility between the given species and the given substrate
+// block. Values returned are between 0.0 and 1.0.
+float species_compatability(frequent_species fqsp, block substrate);
 
 // Generalized access functions:
 

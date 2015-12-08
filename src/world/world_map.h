@@ -114,15 +114,23 @@ typedef enum temperature_category_e temperature_category;
 enum biome_category_e {
   BIOME_CAT_UNKNOWN = 0,
 
-  // Ocean biomes:
-  // Generally describe mostly underwater species, although the SEA_ICE,
-  // *_PELAGIC, and *_OFFSHORE biomes include birds and other animals that
-  // aren't water-bound.
-  BIOME_CAT_SEA_ICE = 1,
+  // Deep ocean biomes:
+  // These biomes describe life in the deep ocean, below the thermocline in the
+  // aphotic zone.
+  BIOME_CAT_DEEP_AQUATIC = 1,
   BIOME_CAT_OCEAN_VENTS = 2,
-  BIOME_CAT_DEEP_AQUATIC = 3,
+
+  // Pelagic ocean biomes:
+  // These biomes describe species that live above the thermocline in the
+  // photic zone of the open ocean, including some non-swimming animals like
+  // migratory birds and ice-dwelling mammals.
+  BIOME_CAT_SEA_ICE = 3,
   BIOME_CAT_TEMPERATE_PELAGIC = 4,
   BIOME_CAT_TROPICAL_PELAGIC = 5,
+
+  // Offshore ocean biomes:
+  // These describe species that live above the continental shelf, from
+  // bottom-dwelling invertebrates to seabirds.
   BIOME_CAT_TEMPERATE_OFFSHORE = 6,
   BIOME_CAT_TROPICAL_OFFSHORE = 7,
   BIOME_CAT_TEMPERATE_AQUATIC_GRASSLAND = 8,
@@ -479,19 +487,25 @@ struct biome_s {
   biome_category category;
   // species types, IDs, and frequencies for flora (each list entry is a
   // frequent_species)
-  list *all_plants;
-  list *mushrooms;
-  list *giant_mushrooms;
-  list *mosses;
-  list *grasses;
-  list *vines;
-  list *herbs;
-  list *bushes;
-  list *shrubs;
-  list *trees;
-  list *aquatic_grasses;
-  list *aquatic_plants;
-  list *corals;
+  list *hanging_terrestrial_flora;
+  list *ephemeral_terrestrial_flora;
+  list *ubiquitous_terrestrial_flora;
+  list *close_spaced_terrestrial_flora;
+  list *medium_spaced_terrestrial_flora;
+  list *wide_spaced_terrestrial_flora;
+
+  list *hanging_subterranean_flora;
+  list *ephemeral_subterranean_flora;
+  list *ubiquitous_subterranean_flora;
+  list *close_spaced_subterranean_flora;
+  list *medium_spaced_subterranean_flora;
+  list *wide_spaced_subterranean_flora;
+
+  list *ephemeral_aquatic_flora;
+  list *ubiquitous_aquatic_flora;
+  list *close_spaced_aquatic_flora;
+  list *medium_spaced_aquatic_flora;
+  list *wide_spaced_aquatic_flora;
 
   // fauna
   // TODO: HERE
@@ -730,9 +744,11 @@ static inline any_species frequent_species_any_species(frequent_species fqsp) {
 }
 
 static inline species_type frequent_species_species_type(frequent_species fqsp){
+  return any_species_type(frequent_species_any_species(fqsp));
 }
 
 static inline species frequent_species_species(frequent_species fqsp) {
+  return any_species_species(frequent_species_any_species(fqsp));
 }
 
 static inline float frequent_species_frequency(frequent_species fqsp) {
@@ -1027,6 +1043,15 @@ void cleanup_world_map(world_map *wm);
 // Allocates a new blank biome with the given category.
 biome* create_biome(biome_category category);
 
+// Allocates a new biome and merges information from all of the biomes in the
+// given two world regions into it.
+biome* create_merged_biome(
+  world_region *wr1,
+  world_region *wr2,
+  float str1,
+  float str2
+);
+
 // Frees the given biome.
 void cleanup_biome(biome* b);
 
@@ -1081,13 +1106,15 @@ void compute_region_interpolation_values(
 // Computes the two closest world region anchors to the given point out of the
 // 9 anchors in the given small neighborhood, along with the strengths of each.
 // Simplex noise is used to mix up strengths giving the effect of a bubbly
-// mixture where regions have inclusions of their neighbors.
+// mixture where regions have inclusions of their neighbors. Different seeds
+// result in different bubbly mixtures.
 void compute_region_contenders(
   world_map *wm,
   world_region* neighborhood[],
   global_pos *glpos,
-  world_region **best, world_region **secondbest,
-  float *strbest, float *strsecond
+  ptrdiff_t seed,
+  world_region **r_best, world_region **r_secondbest,
+  float *r_strbest, float *r_strsecond
 );
 
 // A match function for iterating over geopoints and stopping when one is
@@ -1139,6 +1166,18 @@ int fill_with_regions(
 // Adds a biome to the given world region, or does nothing if that region
 // already has the maximum number of biomes allowed.
 void add_biome(world_region *wr, biome_category category);
+
+// Takes a world region and merges information from every biome in that region
+// into the target biome, scaling species frequencies by the given strength.
+void merge_all_biomes_into(world_region *wr, float strength, biome *target);
+
+// Merges a list of frequent_species into another such list, scaling each
+// frequency as it goes.
+void merge_and_scale_frequent_species(
+  list const * const from,
+  float str,
+  list *to
+);
 
 // Picks an element present in the given world using a uniform distribution
 // over all elements subject to the given constraints: a category constraint,

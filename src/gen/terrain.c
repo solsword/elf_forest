@@ -824,6 +824,7 @@ void terrain_cell(
     wm,
     neighborhood,
     glpos,
+    1788111,
     &best, &secondbest, 
     &strbest, &strsecond
   );

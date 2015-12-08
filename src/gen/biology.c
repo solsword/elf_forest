@@ -421,11 +421,22 @@ void setup_biology_gen(void) {
 }
 
 void add_biology(chunk *c) {
+  world_map_pos wmpos;
+  world_region *wr, *wr_second;
+  float strbest, strsecond;
+  world_region *wr_neighborhood[9];
+  biome *local_biome;
+  list *sp_list;
+  frequent_species fqsp;
   chunk_neighborhood ch_nbh;
   cell_neighborhood cl_nbh;
   cell* cl;
   block_index idx;
+  block substrate;
   global_pos glpos;
+  ptrdiff_t seed_hash = prng(chunk_hash(c) + 616485);
+  ptrdiff_t spacing_hash = prng(THE_WORLD->seed + 44544);
+
   if (c->chunk_flags & CF_HAS_BIOLOGY) {
     return; // Already has biology
   }
@@ -433,7 +444,33 @@ void add_biology(chunk *c) {
   if (ch_nbh.members[0] == NULL) {
     return; // Return without setting the CF_HAS_BIOLOGY flag.
   }
-  ptrdiff_t seed_hash = prng(chunk_hash(c) + 616485);
+  // Look up the local biomes:
+  glcpos__wmpos(&(c->glcpos), &wmpos);
+  // TODO: Avoid using THE_WORLD here?
+  wr = get_world_neighborhood_small(THE_WORLD, &wmpos, wr_neighborhood);
+  // Use the center of our chunk to compute region contenders:
+  idx.xyz.x = CHUNK_SIZE / 2;
+  idx.xyz.y = CHUNK_SIZE / 2;
+  idx.xyz.z = CHUNK_SIZE / 2;
+  idx.xyz.w = 0;
+  cidx__glpos(c, &idx, &glpos);
+  compute_region_contenders(
+    THE_WORLD,
+    neighborhood,
+    glpos,
+    1232331,
+    &wr,
+    &wr_second,
+    &strbest,
+    &strsecond
+  );
+  // Mix biomes for this chunk:
+  local_biome = create_merged_biome(
+    wr,
+    wr_second,
+    strbest,
+    strsecond
+  );
   // Add seeds:
   idx.xyz.w = 0;
   for (idx.xyz.x = 0; idx.xyz.x < CHUNK_SIZE; ++idx.xyz.x) {
@@ -448,101 +485,82 @@ void add_biology(chunk *c) {
         // Array is in xyz order so up/down is +/- 1, north/south is +/- 3, and
         // east/west is +/- 9.
 
-        // If our secondary is empty we can put a seed here...
+        // If our secondary is empty we can put a seed here: figure out what
+        // distribution to draw from.
+        sp_list = NULL;
         if (b_is_void(cl->blocks[1])) {
           if (b_id(cl->blocks[0]) == B_AIR) {
-            // Grass seeds, mushroom spores, and moss spores settle in the air
-            // directly on top of dirt/sand/mud/etc.
-            if (
-              b_is_natural_terrain(cl_nbh.members[NBH_CENTER-1]->blocks[0])
-            ) {
-              // TODO: Species distributions!
-              // TODO: Feed in ground block type.
-              cl->blocks[1] = b_make_species(
-                B_GRASS_SEEDS,
-                seed_hash % SPECIES_PER_BLOCK
-              );
-              // TODO: Real sprout timer here!
-              gri_set_sprout_timer(&(cl->blocks[1]), 1);
-              seed_hash = prng(
-                idx.xyz.x + idx.xyz.y + glpos.z +
-                prng(seed_hash + glpos.x + glpos.y + idx.xyz.z)
-              );
-            } else if (
-              b_is_natural_terrain(cl_nbh.members[NBH_CENTER+1]->blocks[0])
-            ) {
-              // Some grasses, mushrooms, and mosses grow below ceilings.
-              // TODO: Species distributions!
-              cl->blocks[1] = b_make_species(
-                B_MOSS_SPORES,
-                seed_hash % SPECIES_PER_BLOCK
-              );
-              gri_set_sprout_timer(&(cl->blocks[1]), 1);
-              seed_hash = prng(
-                idx.xyz.x + idx.xyz.y + glpos.z +
-                prng(seed_hash + glpos.x + glpos.y + idx.xyz.z)
-              );
+            // Ephemeral species seeds settle in the air directly on top of
+            // dirt/sand/mud/etc.
+            substrate = cl_nbh.members[NBH_CENTER - 1]->blocks[0];
+            if (b_is_natural_terrain(substrate)) {
+              sp_list = local_biome->ephemeral_terrestrial_flora;
             }
           } else if (b_id(cl->blocks[0]) == B_WATER) {
-            // Aquatic grass seeds and coral start in water above
-            // dirt/sand/mud/etc.
-            if (
-              b_is_natural_terrain(cl_nbh.members[NBH_CENTER-1]->blocks[0])
-            ) {
-              // TODO: Species distributions!
-              // TODO: Feed in ground block type.
-              cl->blocks[1] = b_make_species(
-                B_AQUATIC_GRASS_SEEDS,
-                seed_hash % SPECIES_PER_BLOCK
-              );
-              gri_set_sprout_timer(&(cl->blocks[1]), 1);
-              seed_hash = prng(
-                idx.xyz.x + idx.xyz.y + glpos.z +
-                prng(seed_hash + glpos.x + glpos.y + idx.xyz.z)
-              );
+            // Aquatic ephemeral species start in water above dirt/sand/mud/etc.
+            substrate = cl_nbh.members[NBH_CENTER-1]->blocks[0];
+            if (b_is_natural_terrain(substrate)) {
+              sp_list = local_biome->ephemeral_aquatic_flora;
             }
           } else if (b_is_natural_terrain(cl->blocks[0])) {
+            substrate = cl->blocks[0];
             if (b_id(cl_nbh.members[NBH_CENTER+1]->blocks[0]) == B_AIR) {
-              // Vines, herbs, bushes, shrubs, and trees sprout from seeds in
-              // the top layer of soil with air above.
-              cl->blocks[1] = b_make_species(
-                B_HERB_SEEDS,
-                seed_hash % SPECIES_PER_BLOCK
-              );
-              gri_set_sprout_timer(&(cl->blocks[1]), 1);
-              seed_hash = prng(
-                idx.xyz.x + idx.xyz.y + glpos.z +
-                prng(seed_hash + glpos.x + glpos.y + idx.xyz.z)
-              );
+              // Most terrestrial species sprout in the ground with air above.
+              // TODO: Subterranean species!
+              // Select between spacings:
+              if (wide_spacing_hit(glpos, spacing_hash)) {
+                sp_list = local_biome->wide_spaced_terrestrial_flora;
+              } else if (medium_spacing_hit(glpos, spacing_hash)) {
+                sp_list = local_biome->medium_spaced_terrestrial_flora;
+              } else if (close_spacing_hit(glpos, spacing_hash)) {
+                sp_list = local_biome->close_spaced_terrestrial_flora;
+              } else {
+                sp_list = local_biome->ubiquitous_terrestrial_flora;
+              }
             } else if (b_id(cl_nbh.members[NBH_CENTER+1]->blocks[0])==B_WATER) {
               // Aquatic plants sprout from seeds in terrain below water.
-              cl->blocks[1] = b_make_species(
-                B_AQUATIC_PLANT_SEEDS,
-                seed_hash % SPECIES_PER_BLOCK
-              );
-              gri_set_sprout_timer(&(cl->blocks[1]), 1);
-              seed_hash = prng(
-                idx.xyz.x + idx.xyz.y + glpos.z +
-                prng(seed_hash + glpos.x + glpos.y + idx.xyz.z)
-              );
+              // Select between spacings:
+              if (wide_spacing_hit(glpos, spacing_hash)) {
+                sp_list = local_biome->wide_spaced_aquatic_flora;
+              } else if (medium_spacing_hit(glpos, spacing_hash)) {
+                sp_list = local_biome->medium_spaced_aquatic_flora;
+              } else if (close_spacing_hit(glpos, spacing_hash)) {
+                sp_list = local_biome->close_spaced_aquatic_flora;
+              } else {
+                sp_list = local_biome->ubiquitous_aquatic_flora;
+              }
             } else if (b_id(cl_nbh.members[NBH_CENTER-1]->blocks[0]) == B_AIR) {
               // Some plants can also grow down into air from ceilings.
+              sp_list = local_biome->hanging_terrestrial_flora;
+            }
+            // TODO: Should things grow in underwater ceilings?
+          }
+          // Now we generate a seed from the species list we decided on:
+          if (sp_list != NULL) {
+            fqsp = pick_appropriate_frequent_species(
+              sp_list,
+              substrate,
+              seed_hash
+            )
+            if (frequent_species_species_type(fqsp) != SPT_NO_SPECIES) {
               cl->blocks[1] = b_make_species(
-                B_VINE_SEEDS,
-                seed_hash % SPECIES_PER_BLOCK
+                seed_block_type(frequent_species_species_type(fqsp)),
+                frequent_species_species(fqsp)
               );
+              // TODO: Real sprout timers...
               gri_set_sprout_timer(&(cl->blocks[1]), 1);
               seed_hash = prng(
                 idx.xyz.x + idx.xyz.y + glpos.z +
                 prng(seed_hash + glpos.x + glpos.y + idx.xyz.z)
               );
             }
-            // TODO: Should things grow in underwater ceilings?
           }
         }
       }
     }
   }
+  // Clean up the local biome info now that we're done with it:
+  cleanup_biome(local_biome);
   // Grow plants a bit:
   // TODO: How many cycles to use?
 #ifdef DEBUG
@@ -561,6 +579,63 @@ void add_biology(chunk *c) {
   c->chunk_flags |= CF_HAS_BIOLOGY;
 }
 
+frequent_species pick_appropriate_frequent_species(
+  list *sp_list,
+  block substrate,
+  ptrdiff_t seed
+) {
+  float total_weight = 0;
+  float choice;
+  float rare_smoothing;
+  size_t i;
+  frequent_species fqsp;
+
+  if (l_is_empty(sp_list)) {
+    // Return an invalid species...
+    frequent_species_set_species_type(&fqsp, SPT_NO_SPECIES);
+    frequent_species_set_species(&fqsp, 0);
+    frequent_species_set_frequency(&fqsp, 0.0);
+    return fqsp;
+  }
+
+  rare_smoothing = expdist(ptrf(seed + 31376), BIO_RARE_SPECIES_SMOOTHING_EXP);
+  rare_smoothing *= BIO_RARE_SPECIES_SMOOTHING_ADJUST;
+
+  for (i = 0; i < l_get_length(sp_list); ++i) {
+    fqsp = (frequent_species) l_get_item(sp_list, i);
+    total_weight += (
+      species_compatability(fqsp, substrate)
+    * frequent_species_frequency(fqsp)
+    ) + rare_smoothing;
+  }
+
+  choice = ptrf(prng(seed + 866859)) * total_weight;
+
+  for (i = 0; i < l_get_length(sp_list); ++i) {
+    fqsp = (frequent_species) l_get_item(sp_list, i);
+    choice -= (
+      species_compatability(fqsp, substrate)
+    * frequent_species_frequency(fqsp)
+    ) + rare_smoothing;
+    if (choice < 0) {
+      return fqsp;
+    }
+  }
+#ifdef DEBUG
+  pritnf("Error: Ran out of appropriate species to pick from!\n");
+  exit(1);
+#endif
+  // Just arbitrarily return the first item (this shouldn't be reachable):
+  return (frequent_species) l_get_item(sp_list, 0);
+}
+
+float species_compatability(frequent_species fqsp, block substrate) {
+  // TODO: This function!
+  if (b_id(substrate) == B_STONE) {
+    return 0.0;
+  }
+  return 1.0;
+}
 
 growth_properties* get_growth_properties(block b) {
   any_species a_sp;

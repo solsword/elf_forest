@@ -83,96 +83,93 @@ void generate_ecology(world_map *wm);
 // Used with breadth_first_iter to spread biomes over regions.
 step_result fill_with_biome(search_step step, world_region *wr, void* v_biome);
 
-// Functions to initialize single biomes of various types appropriate to a
-// given world region.
-void init_ocean_biome(world_region *wr, biome *b, ptrdiff_t seed);
-void init_beach_biome(world_region *wr, biome *b, ptrdiff_t seed);
-void init_lake_biome(world_region *wr, biome *b, ptrdiff_t seed);
-void init_river_biome(world_region *wr, biome *b, ptrdiff_t seed);
-void init_alpine_biome(world_region *wr, biome *b, ptrdiff_t seed);
-void init_terrestrial_biome(world_region *wr, biome *b, ptrdiff_t seed);
-
 // Fills out any kind of biome (just delegates to one of functions below).
-void fill_any_biome(biome *b, world_region *wr);
+void init_any_biome(biome *b, world_region *wr);
 
-void fill_sea_ice_biome(biome *b, world_region *wr);
-void fill_ocean_vents_biome(biome *b, world_region *wr);
-void fill_deep_aquatic_biome(biome *b, world_region *wr);
-void fill_pelagic_biome(biome *b, world_region *wr);
-void fill_offshore_biome(biome *b, world_region *wr);
-void fill_aquatic_grassland_biome(biome *b, world_region *wr);
-void fill_aquatic_forest_biome(biome *b, world_region *wr);
-void fill_cold_reef_biome(biome *b, world_region *wr);
-void fill_warm_reef_biome(biome *b, world_region *wr);
+void init_deep_aquatic_biome(biome *b, world_region *wr);
+void init_ocean_vents_biome(biome *b, world_region *wr);
 
-void fill_frozen_beach_biome(biome *b, world_region *wr);
-void fill_cold_beach_biome(biome *b, world_region *wr);
-void fill_warm_beach_biome(biome *b, world_region *wr);
-void fill_tropical_beach_biome(biome *b, world_region *wr);
+void init_sea_ice_biome(biome *b, world_region *wr);
+void init_temperate_pelagic_biome(biome *b, world_region *wr);
+void init_tropical_pelagic_biome(biome *b, world_region *wr);
 
-void fill_frozen_lake_biome(biome *b, world_region *wr);
-void fill_cold_lake_biome(biome *b, world_region *wr);
-void fill_temperate_lake_biome(biome *b, world_region *wr);
-void fill_warm_lake_biome(biome *b, world_region *wr);
-void fill_tropical_lake_biome(biome *b, world_region *wr);
-void fill_salt_lake_biome(biome *b, world_region *wr);
+void init_temperate_offshore_biome(biome *b, world_region *wr);
+void init_tropical_offshore_biome(biome *b, world_region *wr);
+void init_temperate_aquatic_grassland_biome(biome *b, world_region *wr);
+void init_tropical_aquatic_grassland_biome(biome *b, world_region *wr);
+void init_temperate_aquatic_forest_biome(biome *b, world_region *wr);
+void init_tropical_aquatic_forest_biome(biome *b, world_region *wr);
+void init_cold_reef_biome(biome *b, world_region *wr);
+void init_warm_reef_biome(biome *b, world_region *wr);
 
-void fill_cold_river_biome(biome *b, world_region *wr);
-void fill_temperate_river_biome(biome *b, world_region *wr);
-void fill_warm_river_biome(biome *b, world_region *wr);
-void fill_tropical_river_biome(biome *b, world_region *wr);
+void init_frozen_beach_biome(biome *b, world_region *wr);
+void init_cold_beach_biome(biome *b, world_region *wr);
+void init_warm_beach_biome(biome *b, world_region *wr);
+void init_tropical_beach_biome(biome *b, world_region *wr);
 
-void fill_frozen_alpine_biome(biome *b, world_region *wr);
-void fill_cold_alpine_biome(biome *b, world_region *wr);
-void fill_temperate_wet_alpine_biome(biome *b, world_region *wr);
-void fill_temperate_dry_alpine_biome(biome *b, world_region *wr);
-void fill_warm_wet_alpine_biome(biome *b, world_region *wr);
-void fill_warm_dry_alpine_biome(biome *b, world_region *wr);
-void fill_tropical_wet_alpine_biome(biome *b, world_region *wr);
-void fill_tropical_dry_alpine_biome(biome *b, world_region *wr);
+void init_frozen_lake_biome(biome *b, world_region *wr);
+void init_cold_lake_biome(biome *b, world_region *wr);
+void init_temperate_lake_biome(biome *b, world_region *wr);
+void init_warm_lake_biome(biome *b, world_region *wr);
+void init_tropical_lake_biome(biome *b, world_region *wr);
+void init_salt_lake_biome(biome *b, world_region *wr);
 
-void fill_frozen_desert_biome(biome *b, world_region *wr);
-void fill_cold_desert_biome(biome *b, world_region *wr);
-void fill_temperate_desert_biome(biome *b, world_region *wr);
-void fill_warm_desert_biome(biome *b, world_region *wr);
-void fill_hot_desert_biome(biome *b, world_region *wr);
+void init_cold_river_biome(biome *b, world_region *wr);
+void init_temperate_river_biome(biome *b, world_region *wr);
+void init_warm_river_biome(biome *b, world_region *wr);
+void init_tropical_river_biome(biome *b, world_region *wr);
 
-void fill_cold_grassland_biome(biome *b, world_region *wr);
-void fill_temperate_grassland_biome(biome *b, world_region *wr);
-void fill_warm_grassland_biome(biome *b, world_region *wr);
-void fill_tropical_grassland_biome(biome *b, world_region *wr);
+void init_frozen_alpine_biome(biome *b, world_region *wr);
+void init_cold_alpine_biome(biome *b, world_region *wr);
+void init_temperate_wet_alpine_biome(biome *b, world_region *wr);
+void init_temperate_dry_alpine_biome(biome *b, world_region *wr);
+void init_warm_wet_alpine_biome(biome *b, world_region *wr);
+void init_warm_dry_alpine_biome(biome *b, world_region *wr);
+void init_tropical_wet_alpine_biome(biome *b, world_region *wr);
+void init_tropical_dry_alpine_biome(biome *b, world_region *wr);
 
-void fill_cold_shrubland_biome(biome *b, world_region *wr);
-void fill_temperate_shrubland_biome(biome *b, world_region *wr);
-void fill_warm_shrubland_biome(biome *b, world_region *wr);
-void fill_tropical_shrubland_biome(biome *b, world_region *wr);
+void init_frozen_desert_biome(biome *b, world_region *wr);
+void init_cold_desert_biome(biome *b, world_region *wr);
+void init_temperate_desert_biome(biome *b, world_region *wr);
+void init_warm_desert_biome(biome *b, world_region *wr);
+void init_hot_desert_biome(biome *b, world_region *wr);
 
-void fill_temperate_savanna_biome(biome *b, world_region *wr);
-void fill_warm_savanna_biome(biome *b, world_region *wr);
-void fill_tropical_savanna_biome(biome *b, world_region *wr);
+void init_cold_grassland_biome(biome *b, world_region *wr);
+void init_temperate_grassland_biome(biome *b, world_region *wr);
+void init_warm_grassland_biome(biome *b, world_region *wr);
+void init_tropical_grassland_biome(biome *b, world_region *wr);
 
-void fill_cold_coniferous_forest_biome(biome *b, world_region *wr);
-void fill_temperate_coniferous_forest_biome(biome *b, world_region *wr);
-void fill_warm_coniferous_forest_biome(biome *b, world_region *wr);
-void fill_tropical_coniferous_forest_biome(biome *b, world_region *wr);
+void init_cold_shrubland_biome(biome *b, world_region *wr);
+void init_temperate_shrubland_biome(biome *b, world_region *wr);
+void init_warm_shrubland_biome(biome *b, world_region *wr);
+void init_tropical_shrubland_biome(biome *b, world_region *wr);
 
-void fill_temperate_broadleaf_forest_biome(biome *b, world_region *wr);
-void fill_warm_wet_broadleaf_forest_biome(biome *b, world_region *wr);
-void fill_warm_dry_broadleaf_forest_biome(biome *b, world_region *wr);
-void fill_tropical_wet_broadleaf_forest_biome(biome *b, world_region *wr);
-void fill_tropical_dry_broadleaf_forest_biome(biome *b, world_region *wr);
+void init_temperate_savanna_biome(biome *b, world_region *wr);
+void init_warm_savanna_biome(biome *b, world_region *wr);
+void init_tropical_savanna_biome(biome *b, world_region *wr);
 
-void fill_tundra_biome(biome *b, world_region *wr);
-void fill_cold_freshwater_wetland_biome(biome *b, world_region *wr);
-void fill_cold_saltwater_wetland_biome(biome *b, world_region *wr);
-void fill_temperate_freshwater_wetland_biome(biome *b, world_region *wr);
-void fill_temperate_saltwater_wetland_biome(biome *b, world_region *wr);
-void fill_warm_freshwater_wetland_biome(biome *b, world_region *wr);
-void fill_warm_freshwater_forested_wetland_biome(biome *b, world_region *wr);
-void fill_warm_saltwater_wetland_biome(biome *b, world_region *wr);
-void fill_tropical_freshwater_wetland_biome(biome *b, world_region *wr);
-void fill_tropical_freshwater_forested_wetland_biome(biome *b,world_region *wr);
-void fill_tropical_saltwater_wetland_biome(biome *b, world_region *wr);
-void fill_tropical_saltwater_forested_wetland_biome(biome *b, world_region *wr);
+void init_cold_coniferous_forest_biome(biome *b, world_region *wr);
+void init_temperate_coniferous_forest_biome(biome *b, world_region *wr);
+void init_warm_coniferous_forest_biome(biome *b, world_region *wr);
+void init_tropical_coniferous_forest_biome(biome *b, world_region *wr);
+
+void init_temperate_broadleaf_forest_biome(biome *b, world_region *wr);
+void init_warm_wet_broadleaf_forest_biome(biome *b, world_region *wr);
+void init_warm_dry_broadleaf_forest_biome(biome *b, world_region *wr);
+void init_tropical_wet_broadleaf_forest_biome(biome *b, world_region *wr);
+void init_tropical_dry_broadleaf_forest_biome(biome *b, world_region *wr);
+
+void init_tundra_biome(biome *b, world_region *wr);
+void init_cold_freshwater_wetland_biome(biome *b, world_region *wr);
+void init_cold_saltwater_wetland_biome(biome *b, world_region *wr);
+void init_temperate_freshwater_wetland_biome(biome *b, world_region *wr);
+void init_temperate_saltwater_wetland_biome(biome *b, world_region *wr);
+void init_warm_freshwater_wetland_biome(biome *b, world_region *wr);
+void init_warm_freshwater_forested_wetland_biome(biome *b, world_region *wr);
+void init_warm_saltwater_wetland_biome(biome *b, world_region *wr);
+void init_tropical_freshwater_wetland_biome(biome *b, world_region *wr);
+void init_tropical_freshwater_forested_wetland_biome(biome *b,world_region *wr);
+void init_tropical_saltwater_wetland_biome(biome *b, world_region *wr);
+void init_tropical_saltwater_forested_wetland_biome(biome *b, world_region *wr);
 
 #endif // ifndef ECOLOGY_H
