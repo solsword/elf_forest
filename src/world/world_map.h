@@ -508,7 +508,7 @@ struct biome_s {
   list *wide_spaced_aquatic_flora;
 
   // fauna
-  // TODO: HERE
+  // TODO: fauna
 };
 
 // Climate & Hydrology

@@ -3,6 +3,7 @@
 
 #include "datatypes/map.h"
 
+#include "ecology/adaptations.h"
 #include "txgen/txg_minerals.h"
 #include "txgen/txg_plants.h"
 

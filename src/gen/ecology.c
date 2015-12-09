@@ -2098,7 +2098,8 @@ void init_hot_desert_biome(biome *b, world_region *wr);
 void init_cold_grassland_biome(biome *b, world_region *wr);
 
 void init_temperate_grassland_biome(biome *b, world_region *wr) {
-  frequent_species fsp;
+  frequent_species fqsp;
+  frequent_species_set_frequency(&fqsp, frequency);
   l_append_element(b->terrestrial_flora, fsp);
   // TODO: HERE
 }

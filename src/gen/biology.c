@@ -927,6 +927,14 @@ void determine_new_herb_appearance(
   herbaceous_appearance *target,
   ptrdiff_t seed
 ) {
+  target->seeds
+  target->roots
+  target->shoots
+  target->stems
+  target->leaves
+  target->buds
+  target->flowers
+  target->fruit
   // TODO: HERE
 }
 

@@ -117,6 +117,7 @@ struct fungus_species_s {
   fungus_materials materials;
   // fungus_texture_params appearance;
   growth_properties growth;
+  adaptation_list adaptations;
 };
 
 struct moss_species_s {
@@ -125,6 +126,7 @@ struct moss_species_s {
   plant_materials materials;
   herbaceous_appearance appearance;
   growth_properties growth;
+  adaptation_list adaptations;
 };
 
 struct grass_species_s {
@@ -133,6 +135,7 @@ struct grass_species_s {
   plant_materials materials;
   herbaceous_appearance appearance;
   growth_properties growth;
+  adaptation_list adaptations;
 };
 
 struct vine_species_s {
@@ -141,6 +144,7 @@ struct vine_species_s {
   plant_materials materials;
   bush_appearance appearance;
   growth_properties growth;
+  adaptation_list adaptations;
 };
 
 struct herb_species_s {
@@ -149,6 +153,7 @@ struct herb_species_s {
   plant_materials materials;
   herbaceous_appearance appearance;
   growth_properties growth;
+  adaptation_list adaptations;
 };
 
 struct bush_species_s {
@@ -157,6 +162,7 @@ struct bush_species_s {
   plant_materials materials;
   bush_appearance appearance;
   growth_properties growth;
+  adaptation_list adaptations;
 };
 
 struct shrub_species_s {
@@ -165,6 +171,7 @@ struct shrub_species_s {
   plant_materials materials;
   bush_appearance appearance;
   growth_properties growth;
+  adaptation_list adaptations;
 };
 
 struct tree_species_s {
@@ -173,6 +180,7 @@ struct tree_species_s {
   plant_materials materials;
   tree_appearance appearance;
   growth_properties growth;
+  adaptation_list adaptations;
 };
 
 struct aquatic_grass_species_s {
@@ -181,6 +189,7 @@ struct aquatic_grass_species_s {
   plant_materials materials;
   herbaceous_appearance appearance;
   growth_properties growth;
+  adaptation_list adaptations;
 };
 
 struct aquatic_plant_species_s {
@@ -189,6 +198,7 @@ struct aquatic_plant_species_s {
   plant_materials materials;
   herbaceous_appearance appearance;
   growth_properties growth;
+  adaptation_list adaptations;
 };
 
 struct coral_species_s {
@@ -197,6 +207,7 @@ struct coral_species_s {
   coral_materials materials;
   coral_appearance appearance;
   growth_properties growth;
+  adaptation_list adaptations;
 };
 
 /********************

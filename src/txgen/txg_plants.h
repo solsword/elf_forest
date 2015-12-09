@@ -215,6 +215,14 @@ struct coral_appearance_s {
 // filter arguments:
 void draw_leaf(texture *tx, curve *c, leaf_filter_args *lfargs);
 
+// Fills in new leaf filter arguments for seeds, taking adaptations into
+// account where appropriate.
+void create_seeds_params(
+  list *adaptations,
+  leaf_filter_args *target,
+  ptrdiff_t seed
+);
+
 // High-level functions that switch on block types:
 texture *gen_mushroom_texture(block b);
 texture *gen_giant_mushroom_texture(block b);
