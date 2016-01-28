@@ -62,6 +62,10 @@ void _get_everything_set_up(ptrdiff_t seed, int argc, char** argv) {
   // Set up the test world:
   printf("Setting up subsystems...\n");
 
+  // The EFD data format setup goes first:
+  printf("  ...Elf Forest data...\n");
+  setup_elf_forest_data();
+
   // Initialize stateless subsystems:
   printf("  ...control...\n");
   init_control();
@@ -231,6 +235,7 @@ void cleanup(void) {
   cleanup_textures();
   cleanup_shaders();
   cleanup_render();
+  cleanup_elf_forest_data();
   //cleanup_jobs();
 }
 

@@ -34,7 +34,7 @@ void init_strings(void) {
  *************************/
 
 struct string_s {
-  size_t length; // raw number of bytes including null terminator
+  size_t length; // raw number of bytes without null terminator
   uint8_t* bytes;
 };
 
@@ -250,13 +250,13 @@ string* s_vsprintf(char const * const fmt, va_list args) {
 
 void s_print(string *s) {
   char* encoded = s_encode_nt(s);
-  printf(encoded);
+  fputs(encoded, stdout);
   free(encoded);
 }
 
 void s_println(string *s) {
   char* encoded = s_encode_nt(s);
-  printf(encoded);
-  printf("\n");
+  fputs(encoded, stdout);
+  fputc('\n', stdout);
   free(encoded);
 }

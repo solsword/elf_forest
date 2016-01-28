@@ -1,0 +1,167 @@
+[[c gen:container
+[[c geo:container
+
+[[o which_comp:rngtable
+  [[i size 3]]
+  [[ao values
+    {gen.geo.igneous_comp},
+    {gen.geo.metamorphic_comp},
+    {gen.geo.sedimentary_comp}
+  ]]
+  [[an weights
+    0.35,
+    0.25,
+    0.4
+  ]]
+]]
+
+[[o igneous_comp:rngtable
+  [[i size 7]]
+  [[ai values
+    MNRL_COMP_STONE,
+    MNRL_COMP_STONE_STONE,
+
+    MNRL_COMP_STONE_LIFE,
+
+    MNRL_COMP_STONE_METAL,
+    MNRL_COMP_STONE_METAL_METAL,
+
+    MNRL_COMP_STONE_RARE,
+    MNRL_COMP_LIFE,
+  ]]
+  [[an weights
+    0.40, 0.35, // 75% |  75%
+    0.10,       // 10% |  85%
+    0.05, 0.05, // 10% |  95%
+    0.03, 0.02, //  5% | 100%
+  ]]
+]]
+[[o metamorphic_comp:rngtable
+  [[i size 15]]
+  [[ai values
+    MNRL_COMP_STONE_WATER,
+    MNRL_COMP_STONE_STONE,
+    MNRL_COMP_STONE_METAL,
+
+    MNRL_COMP_STONE_STONE_STONE,
+    MNRL_COMP_STONE_STONE_METAL,
+    MNRL_COMP_STONE_METAL_METAL,
+
+    MNRL_COMP_STONE_STONE_LIFE,
+    MNRL_COMP_STONE_AIR,
+    MNRL_COMP_STONE_STONE,
+    MNRL_COMP_RARE_RARE,
+
+    MNRL_COMP_STONE_LIFE,
+    MNRL_COMP_STONE_METAL_RARE,
+    MNRL_COMP_STONE_RARE,
+
+    MNRL_COMP_STONE_STONE_RARE,
+    MNRL_COMP_STONE_RARE_RARE,
+  ]]
+  [[an weights
+    0.17, 0.12, 0.12,        // 41% |  41%
+    0.09, 0.09, 0.07,        // 25% |  66%
+    0.06, 0.06, 0.06, 0.05,  // 23% |  89%
+    0.04, 0.03, 0.02,        //  9% |  98%
+    0.01, 0.01,              //  2% | 100%
+  ]]
+]]
+[[o sedimentary_comp:rngtable
+  [[i size 7]]
+  [[ai values
+    MNRL_COMP_STONE_LIFE,
+    MNRL_COMP_STONE_WATER,
+    MNRL_COMP_STONE_AIR,
+
+    MNRL_COMP_LIFE,
+
+    MNRL_COMP_STONE,
+    MNRL_COMP_STONE_STONE,
+
+    MNRL_COMP_RARE_RARE,
+  ]]
+  [[an weights
+    0.26, 0.23, 0.21,    // 70% |  70%
+    0.12,                // 12% |  82%
+    0.08, 0.06,          // 14% |  96%
+    0.04,                //  4% | 100%
+  ]]
+]]
+[[o igneous_traces:rngtable
+  [[i size 9]]
+  [[ai values
+    MNRL_TRACE_NONE,
+
+    MNRL_TRACE_LIFE,
+    MNRL_TRACE_METAL,
+    MNRL_TRACE_METAL_METAL,
+
+    MNRL_TRACE_RARE,
+    MNRL_TRACE_METAL_RARE,
+
+    MNRL_TRACE_RARE_RARE,
+    MNRL_TRACE_STONE,
+    MNRL_TRACE_STONE_METAL,
+  ]]
+  [[an weights
+    0.5,               // 50% |  50%
+    0.12, 0.11, 0.11,  // 34% |  84%
+    0.06, 0.05,        // 11% |  95%
+    0.02, 0.02, 0.01,  //  5% | 100%
+  ]]
+]]
+[[o metamorphic_traces:rngtable
+  [[i size 11]]
+  [[ai values
+    MNRL_TRACE_NONE,
+
+    MNRL_TRACE_RARE,
+    MNRL_TRACE_METAL,
+
+    MNRL_TRACE_WATER,
+    MNRL_TRACE_AIR,
+
+    MNRL_TRACE_METAL_RARE,
+    MNRL_TRACE_RARE_RARE,
+    MNRL_TRACE_METAL_METAL,
+
+    MNRL_TRACE_LIFE,
+    MNRL_TRACE_STONE_METAL,
+    MNRL_TRACE_STONE
+  ]]
+  [[an weights
+    0.20,              // 20% |  20%
+    0.15, 0.13,        // 28% |  48%
+    0.10, 0.09,        // 19% |  67%
+    0.07, 0.07, 0.07,  // 21% |  88%
+    0.05, 0.04, 0.03   // 12% | 100%
+  ]]
+]]
+[[o sedimentary_traces:rngtable
+  [[i size 8]]
+  [[ai values
+    MNRL_TRACE_NONE,
+
+    MNRL_TRACE_STONE,
+
+    MNRL_TRACE_LIFE,
+
+    MNRL_TRACE_WATER,
+    MNRL_TRACE_AIR,
+
+    MNRL_TRACE_METAL,
+    MNRL_TRACE_STONE_METAL,
+    MNRL_TRACE_RARE
+  ]]
+  [[an weights
+    0.5,               // 50% |  50%
+    0.17,              // 17% |  67%
+    0.12,              // 12% |  79%
+    0.08, 0.06,        // 14% |  93%
+    0.03, 0.02, 0.02   //  7% | 100%
+  ]]
+]]
+
+]]
+]]

@@ -129,6 +129,9 @@ void l_foreach(list *l, void (*f)(void *));
 // given extra argument as its second argument.
 void l_witheach(list *l, void *arg, void (*f)(void *, void *));
 
+// Transforms each element of the given list using the given function.
+void l_apply(list *l, void* (*f)(void*));
+
 // Scans the list until the given function returns non-zero, and returns the
 // index that matched. Returns -1 if no match was found.
 ptrdiff_t l_find_index(list *l, int (*match)(void *));

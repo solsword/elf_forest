@@ -87,6 +87,8 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/ptime.o \
              $(OBJ_DIR)/pmem.o \
              $(OBJ_DIR)/jobs.o \
+             $(OBJ_DIR)/efd.o \
+             $(OBJ_DIR)/efd_setup.o \
              $(OBJ_DIR)/ui.o
 
 MAIN_OBJECTS=$(OBJ_DIR)/main.o

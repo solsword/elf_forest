@@ -344,6 +344,13 @@ void l_witheach(list *l, void *arg, void (*f)(void *, void *)) {
   }
 }
 
+void l_apply(list *l, void* (*f)(void *)) {
+  size_t i;
+  for (i = 0; i < l->count; ++i) {
+    l->elements[i] = (*f)(l->elements[i]);
+  }
+}
+
 ptrdiff_t l_find_index(list *l, int (*match)(void *)) {
   ptrdiff_t i;
   for (i = 0; i < l->count; ++i) {
