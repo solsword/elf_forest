@@ -6,6 +6,16 @@
 
 #include "efd.h"
 
+/**************
+ * Structures *
+ **************/
+
+struct efd_int_test_s;
+typedef struct efd_int_test_s efd_int_test;
+
+struct efd_num_test_s;
+typedef struct efd_num_test_s efd_num_test;
+
 /*************
  * Constants *
  *************/
@@ -15,9 +25,23 @@ extern efd_unpack_function* EFD_DATATYPE_UNPACKER_REGISTRY;
 extern efd_pack_function* EFD_DATATYPE_PACKER_REGISTRY;
 extern efd_destroy_function* EFD_DATATYPE_DESTRUCTOR_REGISTRY;
 
-/********************
- * Inline Functions *
- ********************/
+/*************************
+ * Structure Definitions *
+ *************************/
+
+struct efd_int_test_s {
+  string* input;
+  string* expect;
+  ptrdiff_t output;
+  string* remainder;
+};
+
+struct efd_num_test_s {
+  string* input;
+  string* expect;
+  float output;
+  string* remainder;
+};
 
 /*************
  * Functions *

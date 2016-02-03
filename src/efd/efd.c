@@ -108,6 +108,7 @@ void _iter_efd_cleanup_child(void *v_child) {
 }
 
 void cleanup_efd_node(efd_node *n) {
+  efd_destroy_function df;
   // Special-case cleanup:
   switch (n->h.type) {
     default:
@@ -130,7 +131,10 @@ void cleanup_efd_node(efd_node *n) {
       break;
 
     case EFD_NT_OBJECT:
-      efd_lookup_destructor(n->b.as_object.format)(n->b.as_object.value);
+      df = efd_lookup_destructor(n->b.as_object.format);
+      if (df != NULL) {
+        df(n->b.as_object.value);
+      }
       // the destructor must call free if needed
       break;
 

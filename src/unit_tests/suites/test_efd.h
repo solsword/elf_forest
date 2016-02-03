@@ -8,11 +8,12 @@
     NULL, \
   }
 
-#ifndef TEST_UTIL_H
-#define TEST_UTIL_H
+#ifndef TEST_EFD_H
+#define TEST_EFD_H
 
-#include "efd.h"
-#include "efd_parser.h"
+#include "efd/efd.h"
+#include "efd/efd_parser.h"
+#include "efd/efd_setup.h"
 
 #include "unit_tests/test_suite.h"
 
@@ -52,32 +53,32 @@ int _test_efd_case(efd_node *n) {
     efd_int_test *t = (efd_int_test*) (*efd__o(n));
     s.input = s_raw(t->input);
     s.input_length = s_get_length(t->input);
-    int_result = efd_parse_int(s);
+    int_result = efd_parse_int(&s);
     if (s_check_bytes(t->expect, "failure")) {
-      return efd_parse_failed(s);
+      return efd_parse_failed(&s);
     } else if (s_check_bytes(t->expect, "success")) {
-      return (!efd_parse_failed(s) && int_result == t->output);
+      return (!efd_parse_failed(&s) && int_result == t->output);
     } else if (s_check_bytes(t->expect, "remainder")) {
       return (
-        !efd_parse_failed(s)
+        !efd_parse_failed(&s)
      && int_result == t->output
-     && s_check_bytes(t->remainder, s->input + s->pos)
+     && s_check_bytes(t->remainder, s.input + s.pos)
       );
     }
   } else if (efd_format_is(n, "ntest")) {
     efd_num_test *t = (efd_num_test*) (*efd__o(n));
     s.input = s_raw(t->input);
     s.input_length = s_get_length(t->input);
-    float_result = efd_parse_int(s);
+    float_result = efd_parse_float(&s);
     if (s_check_bytes(t->expect, "failure")) {
-      return efd_parse_failed(s);
+      return efd_parse_failed(&s);
     } else if (s_check_bytes(t->expect, "success")) {
-      return (!efd_parse_failed(s) && float_result == t->output);
+      return (!efd_parse_failed(&s) && float_result == t->output);
     } else if (s_check_bytes(t->expect, "remainder")) {
       return (
-        !efd_parse_failed(s)
+        !efd_parse_failed(&s)
      && float_result == t->output
-     && s_check_bytes(t->remainder, s->input + s->pos)
+     && s_check_bytes(t->remainder, s.input + s.pos)
       );
     }
   }
@@ -88,7 +89,6 @@ int _test_efd_case(efd_node *n) {
 
 size_t test_efd_defined_tests(void) {
   size_t i;
-  ptrdiff_t r;
   list *l;
   efd_node *n;
   efd_node *test;
@@ -126,4 +126,4 @@ size_t test_efd_persist(void) {
   return 0;
 }
 
-#endif //ifndef TEST_UTIL_H
+#endif //ifndef TEST_EFD_H

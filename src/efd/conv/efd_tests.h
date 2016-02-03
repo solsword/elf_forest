@@ -17,27 +17,8 @@ cleanup_v_num_test
 // Conversions efd <-> test structs
 
 #include "efd/efd.h"
+#include "efd/efd_setup.h"
 #include "datatypes/string.h"
-
-/*******************
- * Test structures *
- *******************/
-
-struct efd_int_test_s {
-  string* input;
-  string* expect;
-  ptrdiff_t output;
-  string* remainder;
-};
-typedef struct efd_int_test_s efd_int_test;
-
-struct efd_num_test_s {
-  string* input;
-  string* expect;
-  float output;
-  string* remainder;
-};
-typedef struct efd_num_test_s efd_num_test;
 
 /************************
  * Conversion functions *

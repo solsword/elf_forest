@@ -593,7 +593,7 @@ frequent_species pick_appropriate_frequent_species(
   float choice;
   float rare_smoothing;
   size_t i;
-  frequent_species fqsp;
+  frequent_species fqsp = 0;
 
   if (l_is_empty(sp_list)) {
     // Return an invalid species...
