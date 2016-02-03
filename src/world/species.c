@@ -78,61 +78,62 @@ void setup_species(void) {
 }
 
 void* get_species_data(any_species sp) {
-  switch(sp.type) {
+  species id = any_species_species(sp);
+  switch(any_species_type(sp)) {
     case SPT_ELEMENT:
-      return (void*) get_element_species(sp.id);
+      return (void*) get_element_species(id);
     case SPT_GAS:
-      return (void*) get_gas_species(sp.id);
+      return (void*) get_gas_species(id);
     case SPT_DIRT:
-      return (void*) get_dirt_species(sp.id);
+      return (void*) get_dirt_species(id);
     case SPT_CLAY:
-      return (void*) get_clay_species(sp.id);
+      return (void*) get_clay_species(id);
     case SPT_STONE:
-      return (void*) get_stone_species(sp.id);
+      return (void*) get_stone_species(id);
     case SPT_METAL:
-      return (void*) get_metal_species(sp.id);
+      return (void*) get_metal_species(id);
 
     case SPT_FUNGUS:
-      return (void*) get_fungus_species(sp.id);
+      return (void*) get_fungus_species(id);
     case SPT_MOSS:
-      return (void*) get_moss_species(sp.id);
+      return (void*) get_moss_species(id);
     case SPT_GRASS:
-      return (void*) get_grass_species(sp.id);
+      return (void*) get_grass_species(id);
     case SPT_VINE:
-      return (void*) get_vine_species(sp.id);
+      return (void*) get_vine_species(id);
     case SPT_HERB:
-      return (void*) get_herb_species(sp.id);
+      return (void*) get_herb_species(id);
     case SPT_BUSH:
-      return (void*) get_bush_species(sp.id);
+      return (void*) get_bush_species(id);
     case SPT_SHRUB:
-      return (void*) get_shrub_species(sp.id);
+      return (void*) get_shrub_species(id);
     case SPT_TREE:
-      return (void*) get_tree_species(sp.id);
+      return (void*) get_tree_species(id);
     case SPT_AQUATIC_GRASS:
-      return (void*) get_aquatic_grass_species(sp.id);
+      return (void*) get_aquatic_grass_species(id);
     case SPT_AQUATIC_PLANT:
-      return (void*) get_aquatic_plant_species(sp.id);
+      return (void*) get_aquatic_plant_species(id);
     case SPT_CORAL:
-      return (void*) get_coral_species(sp.id);
+      return (void*) get_coral_species(id);
 
     case SPT_ANIMAL:
-      return (void*) get_animal_species(sp.id);
+      return (void*) get_animal_species(id);
     case SPT_MYTHICAL:
-      return (void*) get_mythical_species(sp.id);
+      return (void*) get_mythical_species(id);
     case SPT_SENTIENT:
-      return (void*) get_sentient_species(sp.id);
+      return (void*) get_sentient_species(id);
 
     case SPT_FIBER:
-      return (void*) get_fiber_species(sp.id);
+      return (void*) get_fiber_species(id);
     case SPT_PIGMENT:
-      return (void*) get_pigment_species(sp.id);
+      return (void*) get_pigment_species(id);
 
     default:
 #ifdef DEBUG
       fprintf(
         stderr,
         "ERROR: Requested species data for unknown species type %d.\n",
-        sp.type
+        any_species_type(sp)
       );
 #endif
       return NULL;

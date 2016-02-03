@@ -4,7 +4,7 @@
 // string.h
 // Wrapped unicode strings using libunistring.
 // TODO: This datatype!
-// TODO: Replace most uses of char*
+// TODO: Replace/keep? most uses of char*
 
 #include <stdarg.h>
 
@@ -54,7 +54,17 @@ void cleanup_string(string* s);
  *************/
 
 // Returns 1 if the given string contains a NUL byte, and 0 otherwise.
-size_t s_contains_nul(string* s);
+int s_contains_nul(string* s);
+
+// Returns the length of the string in characters.
+size_t s_get_length(string *s);
+
+// Checks whether the string s exactly and completely matches the given
+// characters. A number of characters less than or equal to the length of the
+// string will be inspected. Returns 1 if the string matches and 0 otherwise.
+// Note that in the matching case, the terminal NUL of c will not be checked,
+// as the length of s will not include an extra character for NUL.
+int s_check_bytes(string *s, char const * const c);
 
 // Encodes the given string into the user's locale, returning a newly malloc'd
 // char* and its length in the return parameter. Note that the result might
@@ -64,6 +74,12 @@ char* s_encode(string* s, size_t* rlen);
 // Like s_encode, but returns a NUL-terminated string. Remember that the result
 // is malloc'd and so should be freed by the caller.
 char* s_encode_nt(string* s);
+
+// Returns a pointer to the raw string data in UTF-8. The pointer isn't
+// malloc'd, so it may be broken if other string operations are used. Note that
+// the raw data may contain NULs, and should always contain a NUL at the end.
+// The total number of bytes without the final NUL is the string length.
+char const * const s_raw(string *s);
 
 // Reallocates the base string to accommodate the addition of the given
 // extension.

@@ -13,34 +13,38 @@
  * Constants *
  *************/
 
-#define EFD_REGISTER_NAME
+#define EFD_REGISTER_NAMES
 extern char * const EFD_OBJECT_NAME_REGISTRY[] = {
-  #include "conv/efd_rngtable.h"
+  #include "conv/efd_rngtable.h",
+  #include "conv/efd_tests.h"
 };
-#undef EFD_REGISTER_NAME
+#undef EFD_REGISTER_NAMES
 
 // Get the size of our registry
 size_t EFD_OBJECT_REGISTRY_SIZE = (
   sizeof(EFD_OBJECT_NAME_REGISTRY) / sizeof(char*)
 );
 
-#define EFD_REGISTER_UNPACKER
+#define EFD_REGISTER_UNPACKERS
 extern efd_unpack_function EFD_OBJECT_UNPACKER_REGISTRY[] = {
-  #include "conv/efd_rngtable.h"
+  #include "conv/efd_rngtable.h",
+  #include "conv/efd_tests.h"
 };
-#undef EFD_REGISTER_UNPACKER
+#undef EFD_REGISTER_UNPACKERS
 
-#define EFD_REGISTER_PACKER
+#define EFD_REGISTER_PACKERS
 extern efd_pack_function EFD_OBJECT_PACKER_REGISTRY[] = {
-  #include "conv/efd_rngtable.h"
+  #include "conv/efd_rngtable.h",
+  #include "conv/efd_tests.h"
 };
-#undef EFD_REGISTER_PACKER
+#undef EFD_REGISTER_PACKERS
 
-#define EFD_REGISTER_DESTRUCTOR
+#define EFD_REGISTER_DESTRUCTORS
 extern efd_destroy_function EFD_OBJECT_DESTRUCTOR_REGISTRY[] = {
-  #include "conv/efd_rngtable.h"
+  #include "conv/efd_rngtable.h",
+  #include "conv/efd_tests.h"
 };
-#undef EFD_REGISTER_DESTRUCTOR
+#undef EFD_REGISTER_DESTRUCTORS
 
 /*************
  * Functions *

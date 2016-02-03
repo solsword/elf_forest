@@ -225,7 +225,7 @@ static inline block seed_block_type(species_type spt) {
     case SPT_MOSS:
       return B_MOSS_SPORES;
     case SPT_GRASS:
-      return B_GRASS_SPORES;
+      return B_GRASS_SEEDS;
     case SPT_VINE:
       return B_VINE_SEEDS;
     case SPT_HERB:

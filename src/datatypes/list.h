@@ -57,17 +57,17 @@ void l_unlock(list *l);
 void destroy_list(list *l);
 
 // Tests whether the given list is empty.
-int l_is_empty(list *l);
+int l_is_empty(list const * const l);
 
 // Returns the length of the given list.
-size_t l_get_length(list *l);
+size_t l_get_length(list const * const l);
 
 // Test whether the given list contains the given element (uses address
 // comparison).
-int l_contains(list *l, void *element);
+int l_contains(list const * const l, void *element);
 
 // Returns the ith element of the given list, or NULL if i is out of range.
-void * l_get_item(list *l, size_t i);
+void * l_get_item(list const * const l, size_t i);
 
 // Returns a pointer to the ith element of the given list. This function should
 // normally be avoided and the pointers it returns aren't safe to use if the
@@ -116,41 +116,49 @@ void l_reverse(list *l);
 
 // Picks a random element from the list using a uniform distribution. Returns
 // NULL if called on an empty list.
-void* l_pick_random(list *l, ptrdiff_t seed);
+void* l_pick_random(list const * const l, ptrdiff_t seed);
 
 // Shuffles the given list using the given seed. The shuffle is notably not
 // cryptographically sound.
 void l_shuffle(list *l, ptrdiff_t seed);
 
 // Runs the given function sequentially on each element in the list.
-void l_foreach(list *l, void (*f)(void *));
+void l_foreach(list const * const l, void (*f)(void *));
 
 // Runs the given function sequentially on each element in the list with the
 // given extra argument as its second argument.
-void l_witheach(list *l, void *arg, void (*f)(void *, void *));
+void l_witheach(list const * const l, void *arg, void (*f)(void *, void *));
 
 // Transforms each element of the given list using the given function.
 void l_apply(list *l, void* (*f)(void*));
 
 // Scans the list until the given function returns non-zero, and returns the
 // index that matched. Returns -1 if no match was found.
-ptrdiff_t l_find_index(list *l, int (*match)(void *));
+ptrdiff_t l_find_index(list const * const l, int (*match)(void *));
 
 // Scans the list until the given function returns non-zero given the list
 // element as its first argument and the reference as its second argument.
 // Returns the index that matched. Returns -1 if no match was found.
-ptrdiff_t l_scan_indices(list *l, void *ref, int (*match)(void *, void *));
+ptrdiff_t l_scan_indices(
+  list const * const l,
+  void *ref,
+  int (*match)(void *, void *)
+);
 
 // Works like l_find_index but returns the matching element instead of its
 // index.
-void * l_find_element(list *l, int (*match)(void *));
+void * l_find_element(list const * const l, int (*match)(void *));
 
 // Works like l_scan_indices but returns the matching element instead of its
 // index.
-void * l_scan_elements(list *l, void *ref, int (*match)(void *, void *));
+void * l_scan_elements(
+  list const * const l,
+  void *ref,
+  int (*match)(void *, void *)
+);
 
 // Counts the number of bytes of data/overhead used by the given list.
-size_t l_data_size(list *l);
-size_t l_overhead_size(list *l);
+size_t l_data_size(list const * const l);
+size_t l_overhead_size(list const * const l);
 
 #endif //ifndef LIST_H

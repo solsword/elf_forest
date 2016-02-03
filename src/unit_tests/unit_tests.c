@@ -48,6 +48,8 @@
 
 #include "suites/test_util.h"
 DEFINE_IMPORTED_BUILDER
+#include "suites/test_efd.h"
+DEFINE_IMPORTED_BUILDER
 #include "suites/test_color.h"
 DEFINE_IMPORTED_BUILDER
 #include "suites/test_list.h"
@@ -88,6 +90,9 @@ void setup_unit_tests(void) {
   ALL_TEST_SUITES = create_list();
   // Note that these #includes must be reimports or their syntax will be wrong.
   #include "suites/test_util.h"
+  ts = INVOKE_IMPORTED_BUILDER;
+  l_append_element(ALL_TEST_SUITES, ts);
+  #include "suites/test_efd.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
   #include "suites/test_color.h"

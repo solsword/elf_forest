@@ -13,8 +13,9 @@
  * Globals *
  ***********/
 
-// We're more worried about mallocs than about saving space:
-size_t const LIST_CHUNK_SIZE = 64;
+// We want to strike a balance between reducing mallocs and saving space:
+size_t const LIST_CHUNK_SIZE = 32;
+// If a list grows though we'll let it eat plenty of space:
 size_t const LIST_KEEP_CHUNKS = 4;
 
 /*************************
@@ -138,15 +139,15 @@ void l_unlock(list *l) { omp_unset_lock(&(l->lock)); }
  * Functions *
  *************/
 
-inline int l_is_empty(list *l) {
+inline int l_is_empty(list const * const l) {
   return (l->count == 0);
 }
 
-inline size_t l_get_length(list *l) {
+inline size_t l_get_length(list const * const l) {
   return l->count;
 }
 
-int l_contains(list *l, void *element) {
+int l_contains(list const * const l, void *element) {
   size_t i;
   int result = 0;
   for (i = 0; i < l->count; ++i) {
@@ -158,7 +159,7 @@ int l_contains(list *l, void *element) {
   return result;
 }
 
-void * l_get_item(list *l, size_t i) {
+void * l_get_item(list const * const l, size_t i) {
   if (i >= l->count) {
 #ifdef DEBUG
     fprintf(stderr, "Warning: l_get_item on item beyond end of list.\n");
@@ -308,7 +309,7 @@ void l_reverse(list *l) {
   }
 }
 
-void* l_pick_random(list *l, ptrdiff_t seed) {
+void* l_pick_random(list const * const l, ptrdiff_t seed) {
   if (l_get_length(l) == 0) {
     return NULL;
   }
@@ -330,14 +331,14 @@ void l_shuffle(list *l, ptrdiff_t seed) {
   }
 }
 
-void l_foreach(list *l, void (*f)(void *)) {
+void l_foreach(list const * const l, void (*f)(void *)) {
   size_t i;
   for (i = 0; i < l->count; ++i) {
     (*f)(l->elements[i]);
   }
 }
 
-void l_witheach(list *l, void *arg, void (*f)(void *, void *)) {
+void l_witheach(list const * const l, void *arg, void (*f)(void *, void *)) {
   size_t i;
   for (i = 0; i < l->count; ++i) {
     (*f)(l->elements[i], arg);
@@ -351,7 +352,7 @@ void l_apply(list *l, void* (*f)(void *)) {
   }
 }
 
-ptrdiff_t l_find_index(list *l, int (*match)(void *)) {
+ptrdiff_t l_find_index(list const * const l, int (*match)(void *)) {
   ptrdiff_t i;
   for (i = 0; i < l->count; ++i) {
     if ((*match)(l->elements[i])) {
@@ -361,7 +362,11 @@ ptrdiff_t l_find_index(list *l, int (*match)(void *)) {
   return -1;
 }
 
-ptrdiff_t l_scan_indices(list *l, void *ref, int (*match)(void *, void *)) {
+ptrdiff_t l_scan_indices(
+  list const * const l,
+  void *ref,
+  int (*match)(void *, void *)
+) {
   ptrdiff_t i;
   for (i = 0; i < l->count; ++i) {
     if ((*match)(l->elements[i], ref)) {
@@ -371,7 +376,7 @@ ptrdiff_t l_scan_indices(list *l, void *ref, int (*match)(void *, void *)) {
   return -1;
 }
 
-void * l_find_element(list *l, int (*match)(void *)) {
+void * l_find_element(list const * const l, int (*match)(void *)) {
   ptrdiff_t idx = l_find_index(l, match);
   if (idx == -1) {
     return NULL;
@@ -380,7 +385,10 @@ void * l_find_element(list *l, int (*match)(void *)) {
   }
 }
 
-void * l_scan_elements(list *l, void *ref, int (*match)(void *, void *)) {
+void * l_scan_elements(
+  list const * const l,
+  void *ref, int (*match)(void *, void *)
+) {
   ptrdiff_t idx = l_scan_indices(l, ref, match);
   if (idx == -1) {
     return NULL;
@@ -389,10 +397,10 @@ void * l_scan_elements(list *l, void *ref, int (*match)(void *, void *)) {
   }
 }
 
-size_t l_data_size(list *l) {
+size_t l_data_size(list const * const l) {
   return l->count * sizeof(void *);
 }
 
-size_t l_overhead_size(list *l) {
+size_t l_overhead_size(list const * const l) {
   return sizeof(list) + (l->size * LIST_CHUNK_SIZE - l->count) * sizeof(void *);
 }

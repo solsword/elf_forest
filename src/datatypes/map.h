@@ -39,6 +39,10 @@ map *create_map(size_t key_arity, size_t table_size);
 // Frees the memory associated with a map.
 void cleanup_map(map *m);
 
+// Frees the memory associated with a map, and also calls free on each value in
+// the map (but not on each key, as keys are commonly not real pointers).
+void destroy_map(map *m);
+
 /***********
  * Locking *
  ***********/
@@ -49,10 +53,6 @@ void m_unlock(map *m);
 /*************
  * Functions *
  *************/
-
-// Frees the memory associated with a map, and also calls free on each value in
-// the map (but not on each key, as keys are commonly not real pointers).
-void destroy_map(map *m);
 
 // Returns the key arity of the given map. All of the varargs functions must
 // always be passed exactly as many arguments as the key arity of the map they

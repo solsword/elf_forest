@@ -57,27 +57,27 @@ typedef struct coral_adaptation_s coral_adaptation;
 
 struct adaptation_list_s {
   adpt_lentry entries[ADAPTATION_LIST_SIZE];
-}
+};
 
 struct fungus_adaptation_s {
   adaptation_id id;
   // TODO: stuff here
-}
+};
 
 struct plant_adaptation_s {
   adaptation_id id;
   // TODO: stuff here
-}
+};
 
 struct aquatic_plant_adaptation_s {
   adaptation_id id;
   // TODO: stuff here
-}
+};
 
 struct coral_adaptation_s {
   adaptation_id id;
   // TODO: stuff here
-}
+};
 
 /********************
  * Inline Functions *

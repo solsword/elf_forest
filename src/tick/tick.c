@@ -10,6 +10,7 @@
 
 #include "tick.h"
 
+#include "efd/efd_setup.h"
 #include "world/world.h"
 #include "world/entities.h"
 #include "world/species.h"

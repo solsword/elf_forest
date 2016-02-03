@@ -119,9 +119,9 @@ typedef uint8_t species_type;
 typedef uint32_t any_species;
 
 #define     ANY_SP_TYPE_SHIFT sizeof(species)
-#define      ANY_SP_TYPE_MASK umaxof(species_type)
+#define      ANY_SP_TYPE_MASK ((any_species) umaxof(species_type))
 #define  ANY_SP_SPECIES_SHIFT 0
-#define   ANY_SP_SPECIES_MASK umaxof(species)
+#define   ANY_SP_SPECIES_MASK ((any_species) umaxof(species))
 
 /***************************
  * Cross-Species Constants *
@@ -220,7 +220,7 @@ static inline species any_species_species(any_species asp) {
   return (species) ((asp >> ANY_SP_SPECIES_SHIFT) & ANY_SP_SPECIES_MASK);
 }
 
-static inline species_type any_species_set_type(
+static inline void any_species_set_type(
   any_species *asp,
   species_type t
 ) {
@@ -228,7 +228,7 @@ static inline species_type any_species_set_type(
   *asp |= (t & ANY_SP_TYPE_MASK) << ANY_SP_TYPE_SHIFT;
 }
 
-static inline species any_species_set_species(any_species asp, species sp) {
+static inline void any_species_set_species(any_species *asp, species sp) {
   *asp &= ~(ANY_SP_SPECIES_MASK << ANY_SP_SPECIES_SHIFT);
   *asp |= (sp & ANY_SP_SPECIES_MASK) << ANY_SP_SPECIES_SHIFT;
 }

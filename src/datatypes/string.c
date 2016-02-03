@@ -121,7 +121,7 @@ void cleanup_string(string* s) {
  * Functions *
  *************/
 
-size_t s_contains_nul(string* s) {
+int s_contains_nul(string* s) {
   size_t i;
   for (i = 0; i < s->length; ++i) {
     if (s->bytes[i] == 0) {
@@ -129,6 +129,20 @@ size_t s_contains_nul(string* s) {
     }
   }
   return 0;
+}
+
+size_t s_get_length(string *s) {
+  return s->length;
+}
+
+int s_check_bytes(string *s, char const * const c) {
+  size_t i;
+  for (i = 0; i < s->length; ++i) {
+    if ((char) s->bytes[i] != c[i]) {
+      return 0;
+    }
+  }
+  return 1;
 }
 
 char* s_encode(string* s, size_t* rlen) {
@@ -173,6 +187,10 @@ char* s_encode_nt(string* s) {
   result = tmp;
   result[len] = '\0';
   return result;
+}
+
+char const * const s_raw(string *s) {
+  return (char*) s->bytes;
 }
 
 void s_append(string* base, string const * const extension) {

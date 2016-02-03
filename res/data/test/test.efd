@@ -1,0 +1,191 @@
+// integers
+[[i t 0]]
+[[i t 12]]
+[[i t 99947845612301310]]
+[[i t -15]]
+[[i t 0xabcdef]]
+[[i t 0xa0b0c0d0e0f0]]
+[[i t 0x80ff90ffa0ffb0ff]]
+[[i t 0x80ff90ffa0ffb0ff00ff10ff20ff30ff]]
+[[i t 0x80ff90ffa0ffb0ff00ff10ff20ff30ff34567890]]
+[[i t -0xff]]
+[[i t 0x0001]]
+[[o t:itest
+  [[s input "0x0001"]]
+  [[s expect "success"]]
+  [[i output 1]]
+]]
+[[o t:itest
+  [[s input "0xff"]]
+  [[s expect "success"]]
+  [[i output 255]]
+]]
+[[o t:itest
+  [[s input "0xf9"]]
+  [[s expect "success"]]
+  [[i output 249]]
+]]
+[[o t:itest
+  [[s input "249"]]
+  [[s expect "success"]]
+  [[i output 0xf9]]
+]]
+[[o t:itest
+  [[s input "-3"]]
+  [[s expect "success"]]
+  [[i output -0x03]]
+]]
+[[o t:itest
+  [[s input "-0x10"]]
+  [[s expect "success"]]
+  [[i output -16]]
+]]
+[[o t:itest
+  [[s input "00"]]
+  [[s expect "failure"]]
+]]
+[[o t:itest
+  [[s input "ff"]]
+  [[s expect "failure"]]
+]]
+[[o t:itest
+  [[s input "c9"]]
+  [[s expect "failure"]]
+]]
+[[o t:itest
+  [[s input "--3"]]
+  [[s expect "failure"]]
+]]
+[[o t:itest
+  [[s input "03"]]
+  [[s expect "failure"]]
+]]
+[[o t:itest
+  [[s input "0x-5"]]
+  [[s expect "failure"]]
+]]
+[[o t:itest
+  [[s input "-x35"]]
+  [[s expect "failure"]]
+]]
+[[o t:itest
+  [[s input "0x"]]
+  [[s expect "remainder"]]
+  [[i output 0]]
+  [[s remainder "x"]]
+]]
+[[o t:itest
+  [[s input "19ab"]]
+  [[s expect "remainder"]]
+  [[i output 19]]
+  [[s remainder "ab"]]
+]]
+[[o t:itest
+  [[s input "0-2"]]
+  [[s expect "remainder"]]
+  [[i output 0]]
+  [[s remainder "-2"]]
+]]
+[[o t:itest
+  [[s input "0xff-"]]
+  [[s expect "remainder"]]
+  [[i output 0xff]]
+  [[s remainder "-"]]
+]]
+[[o t:itest
+  [[s input "123-"]]
+  [[s expect "remainder"]]
+  [[i output 123]]
+  [[s remainder "-"]]
+]]
+[[o t:itest
+  [[s input "120x456"]]
+  [[s expect "remainder"]]
+  [[i output 120]]
+  [[s remainder "x456"]]
+]]
+// numbers
+[[n t 0.5]]
+[[n t 182.1922]]
+[[n t 1e7]]
+[[n t 1.4e3]]
+[[n t .4e3]]
+[[n t 4.e3]]
+[[o t:ntest
+  [[s input "0.0"]]
+  [[s expect "success"]]
+  [[n output 0]]
+]]
+[[o t:ntest
+  [[s input "1."]]
+  [[s expect "success"]]
+  [[n output 1.0]]
+]]
+[[o t:ntest
+  [[s input "0003.5"]]
+  [[s expect "failure"]]
+]]
+[[o t:ntest
+  [[s input "0.."]]
+  [[s expect "remainder"]]
+  [[n output 0]]
+  [[s remainder "."]]
+]]
+[[o t:ntest
+  [[s input "1e+-2"]]
+  [[s expect "remainder"]]
+  [[n output 1]]
+  [[s remainder "e+-2"]]
+]]
+[[o t:ntest
+  [[s input "1e-+2"]]
+  [[s expect "remainder"]]
+  [[n output 1]]
+  [[s remainder "e-+2"]]
+]]
+[[o t:ntest
+  [[s input "1e++2"]]
+  [[s expect "remainder"]]
+  [[n output 1]]
+  [[s remainder "e++2"]]
+]]
+[[o t:ntest
+  [[s input "-2e--2"]]
+  [[s expect "remainder"]]
+  [[n output -2]]
+  [[s remainder "e--2"]]
+]]
+[[o t:ntest
+  [[s input "1+2"]]
+  [[s expect "remainder"]]
+  [[n output 1]]
+  [[s remainder "+2"]]
+]]
+[[o t:ntest
+  [[s input "1-2"]]
+  [[s expect "remainder"]]
+  [[n output 1]]
+  [[s remainder "-2"]]
+]]
+[[o t:ntest
+  [[s input "1.-2"]]
+  [[s expect "remainder"]]
+  [[n output 1]]
+  [[s remainder "-2"]]
+]]
+// object (rngtable):
+[[o test_object:rngtbl
+  [[i size 7]]
+  [[ai values
+    1, 2,
+    3,
+    4, 5,
+    6, 7,
+  ]]
+  [[an weights
+    0.40, 0.35, // 75% |  75%
+    0.10,       // 10% |  85%
+    0.05, 0.05, // 10% |  95%
+    0.03, 0.02, //  5% | 100%
+  ]]
+]]

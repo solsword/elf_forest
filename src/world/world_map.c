@@ -109,14 +109,12 @@ biome* create_merged_biome(
   float str1,
   float str2
 ) {
-  frequent_species fqsp;
-
   biome *result = create_biome(BIOME_CAT_UNKNOWN);
   
   if (str1 + str2 == 0) {
 #ifdef DEBUG
     printf(
-      "Warning: Region contender strengths are both zero: using 100% wr1.\n"
+      "Warning: Region contender strengths are both zero: using 100%% wr1.\n"
     );
 #endif
     str1 = 1.0;
@@ -135,19 +133,28 @@ biome* create_merged_biome(
 }
 
 void cleanup_biome(biome *b) {
-  cleanup_list(b->all_plant_species);
-  cleanup_list(b->mushrooms);
-  cleanup_list(b->giant_mushrooms);
-  cleanup_list(b->mosses);
-  cleanup_list(b->grasses);
-  cleanup_list(b->vines);
-  cleanup_list(b->herbs);
-  cleanup_list(b->bushes);
-  cleanup_list(b->shrubs);
-  cleanup_list(b->trees);
-  cleanup_list(b->aquatic_grasses);
-  cleanup_list(b->aquatic_plants);
-  cleanup_list(b->corals);
+  cleanup_list(b->hanging_terrestrial_flora);
+  cleanup_list(b->ephemeral_terrestrial_flora);
+  cleanup_list(b->ubiquitous_terrestrial_flora);
+  cleanup_list(b->close_spaced_terrestrial_flora);
+  cleanup_list(b->medium_spaced_terrestrial_flora);
+  cleanup_list(b->wide_spaced_terrestrial_flora);
+
+  cleanup_list(b->hanging_subterranean_flora);
+  cleanup_list(b->ephemeral_subterranean_flora);
+  cleanup_list(b->ubiquitous_subterranean_flora);
+  cleanup_list(b->close_spaced_subterranean_flora);
+  cleanup_list(b->medium_spaced_subterranean_flora);
+  cleanup_list(b->wide_spaced_subterranean_flora);
+
+  cleanup_list(b->ephemeral_aquatic_flora);
+  cleanup_list(b->ubiquitous_aquatic_flora);
+  cleanup_list(b->close_spaced_aquatic_flora);
+  cleanup_list(b->medium_spaced_aquatic_flora);
+  cleanup_list(b->wide_spaced_aquatic_flora);
+
+  // TODO: Fauna
+
   free(b);
 }
 
@@ -159,42 +166,42 @@ altitude_category classify_altitude(float altitude) {
   if (
     altitude
   < (
-      WM_TR_HEIGHT_OCEAN_DEPTHS
-    + 0.9 * (WM_TR_HEIGHT_CONTINENTAL_SHELF - WM_TR_HEIGHT_OCEAN_DEPTHS)
+      TR_HEIGHT_OCEAN_DEPTHS
+    + 0.9 * (TR_HEIGHT_CONTINENTAL_SHELF - TR_HEIGHT_OCEAN_DEPTHS)
     )
   ) {
     return WM_AC_OCEAN_DEPTHS;
-  } else if (altitude < WM_TR_HEIGHT_SEA_LEVEL) {
+  } else if (altitude < TR_HEIGHT_SEA_LEVEL) {
     return WM_AC_CONTINENTAL_SHELF;
   } else if (
     altitude
   < (
-      WM_TR_HEIGHT_COASTAL_PLAINS
-    + 0.3 * (WM_TR_HEIGHT_HIGHLANDS - WM_TR_HEIGHT_COASTAL_PLAINS)
+      TR_HEIGHT_COASTAL_PLAINS
+    + 0.3 * (TR_HEIGHT_HIGHLANDS - TR_HEIGHT_COASTAL_PLAINS)
     )
   ) {
     return WM_AC_COASTAL_PLAINS;
   } else if (
     altitude
   < (
-      WM_TR_HEIGHT_COASTAL_PLAINS
-    + 0.9 * (WM_TR_HEIGHT_HIGHLANDS - WM_TR_HEIGHT_COASTAL_PLAINS)
+      TR_HEIGHT_COASTAL_PLAINS
+    + 0.9 * (TR_HEIGHT_HIGHLANDS - TR_HEIGHT_COASTAL_PLAINS)
     )
   ) {
     return WM_AC_INLAND_HILLS;
   } else if (
     altitude
   < (
-      WM_TR_HEIGHT_HIGHLANDS
-    + 0.9 * (WM_TR_HEIGHT_MOUNTAIN_BASES - WM_TR_HEIGHT_HIGHLANDS)
+      TR_HEIGHT_HIGHLANDS
+    + 0.9 * (TR_HEIGHT_MOUNTAIN_BASES - TR_HEIGHT_HIGHLANDS)
     )
   ) {
     return WM_AC_HIGHLANDS;
   } else if (
     altitude
   < (
-      WM_TR_HEIGHT_MOUNTAIN_BASES
-    + 0.4 * (WM_TR_HEIGHT_MOUNTAIN_TOPS - WM_TR_HEIGHT_MOUNTAIN_BASES)
+      TR_HEIGHT_MOUNTAIN_BASES
+    + 0.4 * (TR_HEIGHT_MOUNTAIN_TOPS - TR_HEIGHT_MOUNTAIN_BASES)
     )
   ) {
     return WM_AC_MOUNTAIN_SLOPES;
@@ -345,9 +352,9 @@ temperature_category classify_temperature(
 }
 
 void summarize_region(world_region *wr) {
-  wr->s_altitude = classify_altitude(wr->topology.geologic_height);
-  wr->precipitation = classify_precipitation(wr->climate.atmosphere.rainfall);
-  wr->temperature = classify_temperature(
+  wr->s_altitude = classify_altitude(wr->topography.geologic_height);
+  wr->s_precipitation = classify_precipitation(wr->climate.atmosphere.rainfall);
+  wr->s_temperature = classify_temperature(
     wr->climate.atmosphere.temp_low,
     wr->climate.atmosphere.temp_mean
   );
@@ -532,7 +539,7 @@ void compute_region_contenders(
     //   0.5 + WM_REGION_CONTENTION_POLAR_STRENGTH/2
     // ]
     str *= noise;
-    if (str > *strbest) {
+    if (str > *r_strbest) {
       vcopy_as(&vsecond, &vbest);
       *r_strsecond = *r_strbest;
       *r_secondbest = *r_best;
@@ -540,7 +547,7 @@ void compute_region_contenders(
       vcopy_as(&vbest, &v);
       *r_strbest = str;
       *r_best = wr;
-    } else if (str > *strsecond) {
+    } else if (str > *r_strsecond) {
       vcopy_as(&vsecond, &v);
       *r_strsecond = str;
       *r_secondbest = wr;
@@ -659,7 +666,7 @@ int breadth_first_iter(
   return 1;
 }
 
-int fill_with_regions(
+void fill_with_regions(
   world_map *wm,
   void *arg,
   int (*validate)(world_region*, void*, ptrdiff_t),
@@ -711,7 +718,7 @@ int fill_with_regions(
     // Call our fill function:
     if (!fill(wr, arg, orig_seed)) {
       // if our fill function returns false we immediately do the same:
-      return 0;
+      return;
     }
 
     // Now we loop back and fill from a different spot.
@@ -733,91 +740,91 @@ void merge_all_biomes_into(world_region *wr, float strength, biome *target) {
   size_t i;
   for (i = 0; i < wr->ecology.biome_count; ++i) {
     merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].hanging_terrestrial_flora,
+      wr->ecology.biomes[i]->hanging_terrestrial_flora,
       strength,
-      target.hanging_terrestrial_flora
+      target->hanging_terrestrial_flora
     );
     merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].ephemeral_terrestrial_flora,
+      wr->ecology.biomes[i]->ephemeral_terrestrial_flora,
       strength,
-      target.ephemeral_terrestrial_flora
+      target->ephemeral_terrestrial_flora
     );
     merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].ubiquitous_terrestrial_flora,
+      wr->ecology.biomes[i]->ubiquitous_terrestrial_flora,
       strength,
-      target.ubiquitous_terrestrial_flora
+      target->ubiquitous_terrestrial_flora
     );
     merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].close_spaced_terrestrial_flora,
+      wr->ecology.biomes[i]->close_spaced_terrestrial_flora,
       strength,
-      target.close_spaced_terrestrial_flora
+      target->close_spaced_terrestrial_flora
     );
     merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].medium_spaced_terrestrial_flora,
+      wr->ecology.biomes[i]->medium_spaced_terrestrial_flora,
       strength,
-      target.medium_spaced_terrestrial_flora
+      target->medium_spaced_terrestrial_flora
     );
     merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].wide_spaced_terrestrial_flora,
+      wr->ecology.biomes[i]->wide_spaced_terrestrial_flora,
       strength,
-      target.wide_spaced_terrestrial_flora
-    );
-
-    merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].hanging_subterranean_flora,
-      strength,
-      target.hanging_subterranean_flora
-    );
-    merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].ephemeral_subterranean_flora,
-      strength,
-      target.ephemeral_subterranean_flora
-    );
-    merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].ubiquitous_subterranean_flora,
-      strength,
-      target.ubiquitous_subterranean_flora
-    );
-    merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].close_spaced_subterranean_flora,
-      strength,
-      target.close_spaced_subterranean_flora
-    );
-    merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].medium_spaced_subterranean_flora,
-      strength,
-      target.medium_spaced_subterranean_flora
-    );
-    merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].wide_spaced_subterranean_flora,
-      strength,
-      target.wide_spaced_subterranean_flora
+      target->wide_spaced_terrestrial_flora
     );
 
     merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].ephemeral_aquatic_flora,
+      wr->ecology.biomes[i]->hanging_subterranean_flora,
       strength,
-      target.ephemeral_aquatic_flora
+      target->hanging_subterranean_flora
     );
     merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].ubiquitous_aquatic_flora,
+      wr->ecology.biomes[i]->ephemeral_subterranean_flora,
       strength,
-      target.ubiquitous_aquatic_flora
+      target->ephemeral_subterranean_flora
     );
     merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].close_spaced_aquatic_flora,
+      wr->ecology.biomes[i]->ubiquitous_subterranean_flora,
       strength,
-      target.close_spaced_aquatic_flora
+      target->ubiquitous_subterranean_flora
     );
     merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].medium_spaced_aquatic_flora,
+      wr->ecology.biomes[i]->close_spaced_subterranean_flora,
       strength,
-      target.medium_spaced_aquatic_flora
+      target->close_spaced_subterranean_flora
     );
     merge_and_scale_frequent_species(
-      wr->ecology.biomes[i].wide_spaced_aquatic_flora,
+      wr->ecology.biomes[i]->medium_spaced_subterranean_flora,
       strength,
-      target.wide_spaced_aquatic_flora
+      target->medium_spaced_subterranean_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i]->wide_spaced_subterranean_flora,
+      strength,
+      target->wide_spaced_subterranean_flora
+    );
+
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i]->ephemeral_aquatic_flora,
+      strength,
+      target->ephemeral_aquatic_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i]->ubiquitous_aquatic_flora,
+      strength,
+      target->ubiquitous_aquatic_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i]->close_spaced_aquatic_flora,
+      strength,
+      target->close_spaced_aquatic_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i]->medium_spaced_aquatic_flora,
+      strength,
+      target->medium_spaced_aquatic_flora
+    );
+    merge_and_scale_frequent_species(
+      wr->ecology.biomes[i]->wide_spaced_aquatic_flora,
+      strength,
+      target->wide_spaced_aquatic_flora
     );
   }
 }
@@ -829,14 +836,14 @@ void merge_and_scale_frequent_species(
   list *to
 ) {
   size_t i;
-  frequent_species sqsp;
+  frequent_species fqsp;
   for (i = 0; i < l_get_length(from); ++i) {
-    fqsp = (frequent_species) l_get_item(from, j);
+    fqsp = (frequent_species) l_get_item(from, i);
     frequent_species_set_frequency(
       &fqsp,
       frequent_species_frequency(fqsp) * str
     );
-    l_append_element(to, fqsp);
+    l_append_element(to, (void*) fqsp);
   }
 }
 

@@ -12,6 +12,7 @@
 
 char const * const * const EFD_NT_NAMES = {
   "container",
+  "prototype",
   "object",
   "integer",
   "number",
@@ -19,11 +20,13 @@ char const * const * const EFD_NT_NAMES = {
   "array_obj",
   "array_int",
   "array_num",
-  "array_str"
+  "array_str",
+  "<invalid>"
 };
 
 char const * const * const EFD_NT_ABBRS = {
   "c",
+  "p",
   "o",
   "i",
   "n",
@@ -31,20 +34,68 @@ char const * const * const EFD_NT_ABBRS = {
   "ao",
   "ai",
   "an",
-  "as"
+  "as",
+  "!"
 };
 
+char const * const EFD_PROTO_NAME = "-";
 efd_node *EFD_ROOT = NULL;
 
 /******************************
  * Constructors & Destructors *
  ******************************/
 
-// Allocate and return a new EFD node of the given type:
 efd_node* create_efd_node(efd_node_type t, char* name) {
   efd_node *result = (efd_node*) malloc(sizeof(efd_node));
   result->h.type = t;
+  switch (t == EFD_NT_CONTAINER) {
+    default:
+    case EFD_NT_INTEGER:
+    case EFD_NT_NUMBER:
+      // do nothing
+      break;
+
+    case EFD_NT_CONTAINER:
+      result->b.as_container.children = create_list();
+      result->b.as_container.schema = NULL;
+      break;
+
+    case EFD_NT_PROTO:
+      result->b.as_proto.format[0] = '\0';
+      result->b.as_proto.input = NULL;
+      break;
+
+    case EFD_NT_OBJECT:
+      result->b.as_object.format[0] = '\0';
+      result->b.as_object.value = NULL;
+      break;
+
+    case EFD_NT_STRING:
+      result->b.as_string.value = NULL;
+      break;
+
+    case EFD_NT_ARRAY_OBJ:
+      n->b.as_obj_array.count = 0;
+      n->b.as_obj_array.values = NULL;
+      break;
+
+    case EFD_NT_ARRAY_INT:
+      n->b.as_int_array.count = 0;
+      n->b.as_int_array.values = NULL;
+      break;
+
+    case EFD_NT_ARRAY_NUM:
+      n->b.as_num_array.count = 0;
+      n->b.as_num_array.values = NULL;
+      break;
+
+    case EFD_NT_ARRAY_STR:
+      n->b.as_str_array.count = 0;
+      n->b.as_str_array.values = NULL;
+      break;
+  }
   strncpy(result->h.name, name, EFD_NODE_NAME_SIZE - 1);
+  result->h.name[EFD_NODE_NAME_SIZE-1] = '\0';
   result->h.parent = NULL;
   return result;
 }
@@ -55,10 +106,15 @@ void _iter_efd_cleanup_child(void *v_child) {
   cleanup_efd_node(child);
 }
 
-// Clean up memory from the given EFD node.
 void cleanup_efd_node(efd_node *n) {
   // Special-case cleanup:
   switch (n->h.type) {
+    default:
+    case EFD_NT_INTEGER:
+    case EFD_NT_NUMBER:
+      // do nothing
+      break;
+
     case EFD_NT_CONTAINER:
       // Clean up all of our children:
       l_foreach(n->b.as_container.children, &_iter_efd_cleanup_child);
@@ -67,7 +123,9 @@ void cleanup_efd_node(efd_node *n) {
       break;
 
     case EFD_NT_PROTO:
-      cleanup_efd_node(n->b.as_proto.input);
+      if (n->b.as_proto.input != NULL) {
+        cleanup_efd_node(n->b.as_proto.input);
+      }
       break;
 
     case EFD_NT_OBJECT:
@@ -76,29 +134,34 @@ void cleanup_efd_node(efd_node *n) {
       break;
 
     case EFD_NT_STRING:
-      cleanup_string(n->b.as_string.value);
+      if (n->b.as_string.value != NULL) {
+        cleanup_string(n->b.as_string.value);
+      }
       break;
 
     case EFD_NT_ARRAY_OBJ:
-      free(n->b.as_obj_array.values);
+      if (n->b.as_obj_array.values != NULL) {
+        free(n->b.as_obj_array.values);
+      }
       break;
 
     case EFD_NT_ARRAY_INT:
-      free(n->b.as_int_array.values);
+      if (n->b.as_int_array.values != NULL) {
+        free(n->b.as_int_array.values);
+      }
       break;
 
     case EFD_NT_ARRAY_NUM:
-      free(n->b.as_num_array.values);
+      if (n->b.as_num_array.values != NULL) {
+        free(n->b.as_num_array.values);
+      }
       break;
 
     case EFD_NT_ARRAY_STR:
-      free(n->b.as_str_array.values);
+      if (n->b.as_str_array.values != NULL) {
+        free(n->b.as_str_array.values);
+      }
       break;
-
-    default:
-    case EFD_NT_INTEGER:
-    case EFD_NT_NUMBER:
-      // do nothing
   }
   // If this node is a child, remove it from its parent's list of children:
   if (n->h.parent != NULL) {
@@ -108,11 +171,11 @@ void cleanup_efd_node(efd_node *n) {
   free(n);
 }
 
-// Allocate and return a new EFD schema of the given type:
 efd_schema* create_efd_schema(efd_node_type t, char* name) {
   efd_schema *result = (efd_schema*) malloc(sizeof(efd_schema));
   result.type = t;
   strncpy(result.name, name, EFD_NODE_NAME_SIZE - 1);
+  result.name[EFD_NODE_NAME_SIZE-1] = '\0';
   result.parent = NULL;
   result.children = create_list();
   return result;
@@ -124,7 +187,6 @@ void _iter_efd_cleanup_schema_child(void *v_child) {
   cleanup_efd_schema(child);
 }
 
-// Clean up memory from the given EFD schema.
 void cleanup_efd_schema(efd_schema *schema) {
   // Free our children:
   l_foreach(schema->children, &_iter_efd_cleanup_schema_child);
@@ -142,7 +204,11 @@ void cleanup_efd_schema(efd_schema *schema) {
  *************/
 
 void efd_assert_type(efd_node *n, efd_node_type t) {
-#ifndef EDF_NO_TYPECHECKS
+  if (n == NULL) {
+    fprintf(stderr, "Error: Missing EFD node in efd_assert_type!\n");
+    exit(1);
+  }
+#ifndef EFD_NO_TYPECHECKS
   if (n->h.type != t) {
     char *fqn = efd_build_fqn(n);
     if (n->h.type >= 0
@@ -171,7 +237,26 @@ void efd_assert_type(efd_node *n, efd_node_type t) {
     free(fqn);
     exit(1);
   }
-#endif // EDF_NO_TYPECHECKS
+#endif // EFD_NO_TYPECHECKS
+}
+
+int efd_is_type(efd_node *n, efd_node_type t) {
+  if (n == NULL) {
+    return 0;
+  }
+#ifndef EFD_NO_TYPECHECKS
+  return (n->h.type == t);
+#else // EFD_NO_TYPECHECKS
+  return 1;
+#endif // EFD_NO_TYPECHECKS
+}
+
+int efd_format_is(efd_node *n, char const * const fmt) {
+  if (efd_is_type(n, EFD_NT_PROTO)) {
+    return strncmp(*efd_fmt__p(n), fmt, EFD_OBJECT_FORMAT_SIZE) == 0;
+  } else if (efd_is_type(n, EFD_NT_OBJECT)) {
+    return strncmp(*efd_fmt__o(n), fmt, EFD_OBJECT_FORMAT_SIZE) == 0;
+  }
 }
 
 char* efd_build_fqn(efd_node *n) {
@@ -195,6 +280,11 @@ char* efd_build_fqn(efd_node *n) {
     strcat(result, "..") // separator is already there
   }
   return result;
+}
+
+void efd_add_child(efd_node *n, efd_node *child) {
+  efd_assert_type(n, EFD_NT_CONTAINER);
+  l_append_element(n->b.as_container.children, child);
 }
 
 void efd_remove_child(efd_node *n, efd_node *child) {
@@ -234,7 +324,7 @@ efd_node* efdx(efd_node* root, char const * const keypath) {
     ++c
   ) {
     key[i] = *c;
-    if (*c == '.') {
+    if (*c == EFD_NODE_SEP) {
       key[i] = '\0'; // cut it off here
       root = efd(root, key); // update root
       if (root == NULL) {
@@ -262,7 +352,7 @@ void _iter_efd_unpack_children(void *v_child) {
   return efd_pack_unnode((efd_node*) v_child);
 }
 
-efd_node* efd_unpack_node(efd_node *root) {
+void efd_unpack_node(efd_node *root) {
   void *obj;
   efd_node *input;
   efd_proto *p;
@@ -278,9 +368,7 @@ efd_node* efd_unpack_node(efd_node *root) {
     o = &(root->b.as_object);
     // format field should overlap perfectly and thus need no change
     o->value = obj; // o->value is in the same place as p->input
-  } else { // no change
-    return root;
-  }
+  } // else nothing to do
 }
 
 // Private iterator:
@@ -305,4 +393,13 @@ efd_node* efd_pack_node(efd_node *root) {
   } else { // no change
     return root;
   }
+}
+
+efd_schema* efd_fetch_schema(char const * const name) {
+  // TODO: HERE!
+  return NULL;
+}
+
+void efd_merge_node(efd_node *base, efd_node *victim) {
+  // TODO: HERE!
 }

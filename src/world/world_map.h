@@ -5,6 +5,9 @@
 // World map structure definition.
 
 #include <stdint.h>
+#ifdef DEBUG
+  #include <assert.h>
+#endif
 
 #include "noise/noise.h"
 #include "world/blocks.h"
@@ -478,9 +481,9 @@ struct world_map_pos_s {
 // exact species and its relative frequency at once.
 typedef uint64_t frequent_species;
 
-#define      FR_SP_FREQ_MASK umaxof(uint32_t)
+#define      FR_SP_FREQ_MASK ((frequent_species) umaxof(uint32_t))
 #define     FR_SP_FREQ_SHIFT 0
-#define   FR_SP_SPECIES_MASK umaxof(any_species)
+#define   FR_SP_SPECIES_MASK ((frequent_species) umaxof(any_species))
 #define  FR_SP_SPECIES_SHIFT 32
 
 struct biome_s {
@@ -772,7 +775,7 @@ static inline void frequent_species_set_species_type(
   species_type t
 ) {
   any_species asp = frequent_species_any_species(*fqsp);
-  any_species_set_species_type(&asp, t);
+  any_species_set_type(&asp, t);
   frequent_species_set_any_species(fqsp, asp);
 }
 
@@ -785,7 +788,10 @@ static inline void frequent_species_set_species(
   frequent_species_set_any_species(fqsp, asp);
 }
 
-static inline frequent_species_set_frequency(frequent_species *fqsp, float f) {
+static inline void frequent_species_set_frequency(
+  frequent_species *fqsp,
+  float f
+) {
 #ifdef DEBUG
   assert(sizeof(float) == sizeof(uint32_t));
 #endif
@@ -1026,7 +1032,7 @@ static inline void copy_soil(world_region *from, world_region *to) {
 
 // Convenience function for returning the uppermost rock species in a region:
 static inline species get_bedrock(world_region *wr) {
-  return wr->geology.strata[wr->geology.stratum_count-1].base_species;
+  return wr->geology.strata[wr->geology.stratum_count-1]->base_species;
 }
 
 /******************************
@@ -1155,7 +1161,7 @@ int breadth_first_iter(
 // function return 0 for filled regions), or this function won't terminate. The
 // seed is used for the random region selection step, and a fixed derivative
 // seed is passed into each call to the validate and fill functions.
-int fill_with_regions(
+void fill_with_regions(
   world_map *wm,
   void *arg,
   int (*validate)(world_region*, void*, ptrdiff_t seed),
@@ -1163,9 +1169,9 @@ int fill_with_regions(
   ptrdiff_t seed
 );
 
-// Adds a biome to the given world region, or does nothing if that region
-// already has the maximum number of biomes allowed.
-void add_biome(world_region *wr, biome_category category);
+// Adds the given biome to the given world region, or does nothing if that
+// region already has the maximum number of biomes allowed.
+void add_biome(world_region *wr, biome* b);
 
 // Takes a world region and merges information from every biome in that region
 // into the target biome, scaling species frequencies by the given strength.
