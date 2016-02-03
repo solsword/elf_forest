@@ -44,8 +44,6 @@ typedef struct efd_num_test_s efd_num_test;
  ************************/
 
 void* efd__int_test(efd_node *n) {
-  ptrdiff_t i;
-  string* s;
   efd_int_test *result = (efd_int_test*) calloc(1, sizeof(efd_int_test));
   result->input = NULL;
   result->expect = NULL;
@@ -102,12 +100,12 @@ void* efd__int_test(efd_node *n) {
   return (void*) result;
 }
 
-efd_node *int_test__efd(efd_int_test *t) {
-  size_t i;
+efd_node *int_test__efd(void *v_t) {
+  efd_int_test *t = (efd_int_test*) v_t;
   efd_node *n;
   efd_node *result;
   
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_PROTO_NAME)
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_PROTO_NAME);
 
   n = create_efd_node(EFD_NT_STRING, "input");
   *efd__s(n) = copy_string(t->input);
@@ -152,8 +150,6 @@ void cleanup_v_int_test(void *v_itest) {
 }
 
 void* efd__num_test(efd_node *n) {
-  ptrdiff_t i;
-  string* s;
   efd_num_test *result = (efd_num_test*) calloc(1, sizeof(efd_num_test));
   result->input = NULL;
   result->expect = NULL;
@@ -210,12 +206,12 @@ void* efd__num_test(efd_node *n) {
   return (void*) result;
 }
 
-efd_node *num_test__efd(efd_num_test *t) {
-  size_t i;
+efd_node *num_test__efd(void *v_t) {
+  efd_num_test *t = (efd_num_test*) v_t;
   efd_node *n;
   efd_node *result;
   
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_PROTO_NAME)
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_PROTO_NAME);
 
   n = create_efd_node(EFD_NT_STRING, "input");
   *efd__s(n) = copy_string(t->input);

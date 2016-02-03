@@ -24,8 +24,12 @@ extern efd_destroy_function* EFD_DATATYPE_DESTRUCTOR_REGISTRY;
  *************/
 
 // Gets the data system set up.
-void init_elf_forest_data(void);
+void setup_elf_forest_data(void);
 
-// Note that the lookup functions are declared earlier, in efd.h
+// Cleans up the data system.
+void cleanup_elf_forest_data(void);
+
+// Note that the lookup functions declared earlier in efd.h are defined in
+// efd_setup.c
 
 #endif // INCLUDE_EFD_SETUP_H

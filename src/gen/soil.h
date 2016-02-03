@@ -82,9 +82,9 @@ typedef struct soil_factors_s soil_factors;
 
 struct soil_factors_s {
   world_region *region;
-  soil_altitude_category altitude;
-  soil_precipitation_category precipitation;
-  soil_temperature_regime temperature;
+  altitude_category altitude;
+  precipitation_category precipitation;
+  temperature_category temperature;
   salinity salt;
   stone_species *bedrock;
 };
@@ -151,29 +151,25 @@ void create_appropriate_soil(world_region *wr);
 // Creates a local dirt to fill in the given soil_type.
 void create_local_dirt(
   world_region *wr,
-  soil_type *soil,
-  world_region *wr
+  soil_type *soil
 );
 
 // Creates a local silt to fill in the given soil_type.
 void create_local_silt(
   world_region *wr,
-  soil_type *soil,
-  world_region *wr
+  soil_type *soil
 );
 
 // Creates a local mud to fill in the given soil_type.
 void create_local_mud(
   world_region *wr,
-  soil_type *soil,
-  world_region *wr
+  soil_type *soil
 );
 
 // Creates a local sand to fill in the given soil_type.
 void create_local_sand(
   world_region *wr,
-  soil_type *soil,
-  world_region *wr
+  soil_type *soil
 );
 
 // Takes an original soil_type and fills in the result soil_type with a variant
@@ -181,8 +177,7 @@ void create_local_sand(
 void create_topsoil_variant(
   world_region *wr,
   soil_type *original,
-  soil_type *result,
-  world_region *wr
+  soil_type *result
 );
 
 // Picks which alternate dirt table to use based on local conditions:
@@ -190,15 +185,6 @@ rngtable* pick_alt_dirt_table(world_region *wr, ptrdiff_t seed);
 
 // As above but for sand:
 rngtable* pick_alt_sand_table(world_region *wr, ptrdiff_t seed);
-
-// Discretizes the given altitude (given in blocks).
-soil_altitude_category classify_altitude(float altitude);
-
-// Discretizes precipitation (takes a per-season array).
-soil_precipitation_category classify_precipitation(float *precipitation);
-
-// Discretizes temperature (takes two per-season arrays).
-soil_temperature_regime classify_temperature(float *lows, float *means);
 
 // Fills in details of a single dirt species.
 void fill_dirt_species(

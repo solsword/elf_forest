@@ -5,6 +5,10 @@
   #include <stdio.h>
 #endif
 
+#include <string.h>
+
+#include "util.h"
+
 #include "efd_parser.h"
 #include "efd.h"
 
@@ -21,12 +25,6 @@
     return; \
   }
 
-#define PARSE_OR_FAIL(P, S) \
-  efd_parse_ ## P (S); \
-  if (efd_parse_failed(S)) { \
-    return; \
-  }
-
 /*************
  * Functions *
  *************/
@@ -36,11 +34,12 @@ void efd_parse_copy_state(efd_parse_state *from, efd_parse_state *to) {
   to->lineno = from->lineno;
   to->filename = from->filename;
   to->context = from->context;
-  t->error = from->error;
+  to->error = from->error;
 }
 
 int efd_parse_file(efd_node *parent, char const * const filename) {
   static efd_parse_state s;
+  char *contents;
 
 #ifdef DEBUG
   if (s.input != NULL || s.context != NULL) {
@@ -56,13 +55,14 @@ int efd_parse_file(efd_node *parent, char const * const filename) {
   s.context = NULL;
   s.error = EFD_PE_NO_ERROR;
 
-  s.input = load_file(filename, (size_t*) &(s.input_length));
+  contents = load_file(filename, (size_t*) &(s.input_length));
+  s.input = contents;
 
   efd_assert_type(parent, EFD_NT_CONTAINER);
   efd_parse_children(parent, &s);
-  free(s.input);
   s.input = NULL;
   s.input_length = 0;
+  free(contents);
 
   if (efd_parse_failed(&s)) {
     // TODO: Print an error message here?
@@ -77,13 +77,14 @@ efd_node* efd_parse_any(efd_parse_state *s) {
   efd_node_type type;
   static char name[EFD_NODE_NAME_SIZE];
 
-  PARSE_OR_FAIL(open, s) //;
+  efd_parse_open(s);
+  if (efd_parse_failed(s)) { return NULL; }
 
   type = efd_parse_type(s);
-  if (efd_parse_failed(s)) { return; }
+  if (efd_parse_failed(s)) { return NULL; }
 
   efd_parse_name(s, name);
-  if (efd_parse_failed(s)) { return; }
+  if (efd_parse_failed(s)) { return NULL; }
 
   efd_node *result = create_efd_node(type, name);
 
@@ -163,7 +164,7 @@ void efd_parse_children(efd_node *result, efd_parse_state *s) {
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
         // we've probably hit the end of this object: return w/out error
-        efd_copy_state(&back, s);
+        efd_parse_copy_state(&back, s);
       } // otherwise return w/ error
       break;
     } else {
@@ -234,7 +235,7 @@ void efd_parse_obj_array(efd_node *result, efd_parse_state *s) {
     val = efd_parse_ref(s); // TODO: THIS
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
-        e->error = EFD_PE_NO_ERROR;
+        s->error = EFD_PE_NO_ERROR;
         break;
       } else {
         cleanup_list(l);
@@ -246,7 +247,7 @@ void efd_parse_obj_array(efd_node *result, efd_parse_state *s) {
     efd_parse_sep(s);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
-        e->error = EFD_PE_NO_ERROR;
+        s->error = EFD_PE_NO_ERROR;
         break;
       } else {
         cleanup_list(l);
@@ -280,7 +281,7 @@ void efd_parse_int_array(efd_node *result, efd_parse_state *s) {
     val = efd_parse_int(s);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
-        e->error = EFD_PE_NO_ERROR;
+        s->error = EFD_PE_NO_ERROR;
         break;
       } else {
         cleanup_list(l);
@@ -292,7 +293,7 @@ void efd_parse_int_array(efd_node *result, efd_parse_state *s) {
     efd_parse_sep(s);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
-        e->error = EFD_PE_NO_ERROR;
+        s->error = EFD_PE_NO_ERROR;
         break;
       } else {
         cleanup_list(l);
@@ -320,25 +321,26 @@ void efd_parse_int_array(efd_node *result, efd_parse_state *s) {
 void efd_parse_num_array(efd_node *result, efd_parse_state *s) {
   size_t i;
   float val;
+  void *v;
   list *l = create_list();
 
   while (1) {
     val = efd_parse_float(s);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
-        e->error = EFD_PE_NO_ERROR;
+        s->error = EFD_PE_NO_ERROR;
         break;
       } else {
         cleanup_list(l);
         return;
       }
     } else {
-      l_append_element(l, (void*) val);
+      l_append_element(l, *((void**) &val));
     }
     efd_parse_sep(s);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
-        e->error = EFD_PE_NO_ERROR;
+        s->error = EFD_PE_NO_ERROR;
         break;
       } else {
         cleanup_list(l);
@@ -358,7 +360,8 @@ void efd_parse_num_array(efd_node *result, efd_parse_state *s) {
     result->b.as_num_array.count * sizeof(float)
   );
   for (i = 0; i < result->b.as_num_array.count; ++i) {
-    result->b.as_num_array.values[i] = (float) l_get_item(l, i);
+    v = l_get_item(l, i);
+    result->b.as_num_array.values[i] = *((float*) &v);
   }
   cleanup_list(l);
 }
@@ -375,10 +378,10 @@ void efd_parse_str_array(efd_node *result, efd_parse_state *s) {
   list *l = create_list();
 
   while (1) {
-    efd_grab_string_limits(s &start, &end);
+    efd_grab_string_limits(s, &start, &end);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
-        e->error = EFD_PE_NO_ERROR;
+        s->error = EFD_PE_NO_ERROR;
         break;
       } else {
         l_foreach(l, &_cleanup_string_in_list);
@@ -395,7 +398,7 @@ void efd_parse_str_array(efd_node *result, efd_parse_state *s) {
     efd_parse_sep(s);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
-        e->error = EFD_PE_NO_ERROR;
+        s->error = EFD_PE_NO_ERROR;
         break;
       } else {
         l_foreach(l, &_cleanup_string_in_list);
@@ -405,18 +408,18 @@ void efd_parse_str_array(efd_node *result, efd_parse_state *s) {
     }
   }
 
-  result->b.as_string_array.count = l_get_length(l);
+  result->b.as_str_array.count = l_get_length(l);
 #ifdef DEBUG
-  if (result->b.as_string_array.values != NULL) {
+  if (result->b.as_str_array.values != NULL) {
     fprintf(stderr, "EFD string array already had values while parsing!\n");
     exit(-1);
   }
 #endif
-  result->b.as_string_array.values = (string**) malloc(
-    result->b.as_string_array.count * sizeof(string*)
+  result->b.as_str_array.values = (string**) malloc(
+    result->b.as_str_array.count * sizeof(string*)
   );
-  for (i = 0; i < result->b.as_string_array.count; ++i) {
-    result->b.as_string_array.values[i] = (string*) l_get_item(l, i);
+  for (i = 0; i < result->b.as_str_array.count; ++i) {
+    result->b.as_str_array.values[i] = (string*) l_get_item(l, i);
   }
   cleanup_list(l);
   // Don't clean up the strings, of course, as they're now in the array.
@@ -535,16 +538,16 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
           return EFD_NT_INVALID;
 
         case 'o':
-          e->pos += 1;
+          s->pos += 1;
           return EFD_NT_ARRAY_OBJ;
         case 'i':
-          e->pos += 1;
+          s->pos += 1;
           return EFD_NT_ARRAY_INT;
         case 'n':
-          e->pos += 1;
+          s->pos += 1;
           return EFD_NT_ARRAY_NUM;
         case 's':
-          e->pos += 1;
+          s->pos += 1;
           return EFD_NT_ARRAY_STR;
       }
       break;
@@ -563,13 +566,15 @@ void efd_parse_name(efd_parse_state *s, char *r_name) {
 
   SKIP_OR_ELSE(s, "node name") //;
 
+  c = '\0';
+
   for (i = 0; i < EFD_NODE_NAME_SIZE - 1; ++i) {
     if (efd_parse_atend(s)) {
       break;
     }
     c = s->input[s->pos];
     if (
-      is_whitespace(c)
+      is_whitespace(&c)
    || c == EFD_NODE_SEP
    || (
        c >= '0'
@@ -629,6 +634,8 @@ ptrdiff_t efd_parse_int(efd_parse_state *s) {
   ptrdiff_t result;
   ptrdiff_t sign;
   ptrdiff_t base;
+  ptrdiff_t digit;
+  ptrdiff_t count;
   efd_int_state state;
   char c;
 
@@ -656,7 +663,7 @@ ptrdiff_t efd_parse_int(efd_parse_state *s) {
           s->pos -= 1; // about to be incremented before leaving while
         } else {
           s->error = EFD_PE_MALFORMED;
-          s->context = "integer"
+          s->context = "integer";
           return EFD_PARSER_INT_ERROR;
         }
         break;
@@ -798,9 +805,11 @@ float efd_parse_float(efd_parse_state *s) {
   float sign;
   float characteristic;
   float mantissa;
+  float mant_div;
   float expsign;
   float exponent;
-  float digit = 0;
+  float digit;
+  ptrdiff_t count;
   efd_float_state state;
   char c;
 
@@ -810,6 +819,7 @@ float efd_parse_float(efd_parse_state *s) {
     return EFD_PARSER_INT_ERROR;
   }
 
+  state = EFD_FLOAT_STATE_PRE;
   sign = 1;
   characteristic = 0;
   mantissa = 0;
@@ -818,6 +828,7 @@ float efd_parse_float(efd_parse_state *s) {
   exponent = 0;
   digit = 0;
   count = 0;
+
   while (!efd_parse_atend(s) && state != EFD_FLOAT_STATE_DONE) {
     c = s->input[s->pos];
     if (c == '\n') {
@@ -826,17 +837,17 @@ float efd_parse_float(efd_parse_state *s) {
     switch (c) {
       default:
         if (state == EFD_FLOAT_STATE_EXP_SIGN) {
-          s->state = EFD_FLOAT_STATE_DONE;
+          state = EFD_FLOAT_STATE_DONE;
           s->pos -= 2; // skip back to the 'e' or 'E' before us
         } else if (state == EFD_FLOAT_STATE_EXP) {
-          s->state = EFD_FLOAT_STATE_DONE;
+          state = EFD_FLOAT_STATE_DONE;
           s->pos -= 3; // skip back over the '+'/'-' to the 'e' or 'E' before
         } else if (state != EFD_FLOAT_STATE_PRE) {
           state = EFD_FLOAT_STATE_DONE;
           s->pos -= 1; // about to be incremented before leaving while
         } else {
           s->error = EFD_PE_MALFORMED;
-          s->context = "number"
+          s->context = "number";
           return EFD_PARSER_FLOAT_ERROR;
         }
         break;
@@ -995,7 +1006,7 @@ float efd_parse_float(efd_parse_state *s) {
         sign * characteristic
       + (mantissa / mant_div)
       )
-    * pow(10, expsign * exponent);
+    * pow(10, expsign * exponent)
     );
   } else {
     s->error = EFD_PE_MALFORMED;
@@ -1012,7 +1023,7 @@ void* efd_parse_ref(efd_parse_state *s) {
 }
 
 void efd_grab_string_limits(
-  efd_parse_state *s
+  efd_parse_state *s,
   ptrdiff_t *start,
   ptrdiff_t *end
 ) {
@@ -1086,7 +1097,7 @@ void efd_parse_skip(efd_parse_state *s) {
       case EFD_SKIP_STATE_NORMAL:
         if (c == '/') {
           state = EFD_SKIP_STATE_MAYBE_COMMENT;
-        } else if (!is_whitespace(c)) {
+        } else if (!is_whitespace(&c)) {
           state = EFD_SKIP_STATE_DONE;
         }
         break;
@@ -1110,31 +1121,31 @@ void efd_parse_skip(efd_parse_state *s) {
         break;
       case EFD_SKIP_STATE_BLOCK_COMMENT: // comment until */
         if (c == '*') {
-          s->state = EFD_SKIP_STATE_MAYBE_BLOCK_END;
+          state = EFD_SKIP_STATE_MAYBE_BLOCK_END;
         }
         break;
       case EFD_SKIP_STATE_MAYBE_BLOCK_END:
         if (c == '/') {
-          s->state = EFD_SKIP_STATE_NORMAL; // done with this block comment
+          state = EFD_SKIP_STATE_NORMAL; // done with this block comment
         } else {
-          s->state = EFD_SKIP_STATE_BLOCK_COMMENT; // still in a block comment
+          state = EFD_SKIP_STATE_BLOCK_COMMENT; // still in a block comment
         }
         break;
     }
-    if (s->state == EFD_SKIP_STATE_DONE) { // don't increment position
+    if (state == EFD_SKIP_STATE_DONE) { // don't increment position
       break;
     } else { // increment our position and keep going
       s->pos += 1;
     }
   }
   if  (
-    !(s->state == EFD_SKIP_STATE_DONE
-   || s->state == EFD_SKIP_STATE_NORMAL
-   || s->state == EFD_SKIP_STATE_LINE_COMMENT)
+    !(state == EFD_SKIP_STATE_DONE
+   || state == EFD_SKIP_STATE_NORMAL
+   || state == EFD_SKIP_STATE_LINE_COMMENT)
   ) {
     if (
-      s->state == EFD_SKIP_STATE_BLOCK_COMMENT
-   || s->state == EFD_SKIP_STATE_MAYBE_BLOCK_END
+      state == EFD_SKIP_STATE_BLOCK_COMMENT
+   || state == EFD_SKIP_STATE_MAYBE_BLOCK_END
     ) {
       s->context = "block comment";
     } // otherwise leave whatever context was already there
@@ -1165,7 +1176,7 @@ void efd_throw_parse_error(efd_parse_state *s) {
   if (s->error != EFD_PE_NO_ERROR) {
     fprintf(
       stderr,
-      "[%.*s:%d] ",
+      "[%.*s:%ld] ",
       EFD_PARSER_MAX_FILENAME_DISPLAY,
       s->filename,
       s->lineno
@@ -1176,7 +1187,7 @@ void efd_throw_parse_error(efd_parse_state *s) {
         s->error = EFD_PE_UNKNOWN;
         fprintf(
           stderr,
-          "Unknown parsing error while parsing %.*s.\n"
+          "Unknown parsing error while parsing %.*s.\n",
           EFD_PARSER_MAX_CONTEXT_DISPLAY,
           s->context
         );

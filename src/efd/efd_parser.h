@@ -4,31 +4,35 @@
 // efd_parser.h
 // Parsing for the Elf Forest Data format.
 
+#include <stddef.h>
+
+#include "efd.h"
+
 /*********
  * Enums *
  *********/
 
 // Different kinds of parsing errors:
-enum {
+enum efd_parse_error_e {
   EFD_PE_NO_ERROR = 0,
   EFD_PE_UNKNOWN,
   EFD_PE_MALFORMED,
   EFD_PE_INCOMPLETE
-} efd_parse_error_e;
+};
 typedef enum efd_parse_error_e efd_parse_error;
 
 // States for parsing integers:
-enum {
+enum efd_int_state_e {
   EFD_INT_STATE_PRE,
   EFD_INT_STATE_BASE,
   EFD_INT_STATE_PRE_DIGITS,
   EFD_INT_STATE_DIGITS,
   EFD_INT_STATE_DONE,
-} efd_int_state_e;
+};
 typedef enum efd_int_state_e efd_int_state;
 
 // States for parsing floats:
-enum {
+enum efd_float_state_e {
   EFD_FLOAT_STATE_PRE,
   EFD_FLOAT_STATE_ZERO,
   EFD_FLOAT_STATE_CHAR,
@@ -37,26 +41,26 @@ enum {
   EFD_FLOAT_STATE_EXP_SIGN,
   EFD_FLOAT_STATE_EXP_DIGITS,
   EFD_FLOAT_STATE_DONE,
-} efd_float_state_e;
+};
 typedef enum efd_float_state_e efd_float_state;
 
 // States for grabbing quoted strings:
-enum {
+enum efd_quote_state_e {
   EFD_QUOTE_STATE_NORMAL,
   EFD_QUOTE_STATE_MAYBE_DONE,
   EFD_QUOTE_STATE_DONE
-} efd_quote_state_e;
+};
 typedef enum efd_quote_state_e efd_quote_state;
 
 // States for skipping whitespace and comments:
-enum {
+enum efd_skip_state_e {
   EFD_SKIP_STATE_NORMAL,
   EFD_SKIP_STATE_MAYBE_COMMENT,
   EFD_SKIP_STATE_LINE_COMMENT,
   EFD_SKIP_STATE_BLOCK_COMMENT,
   EFD_SKIP_STATE_MAYBE_BLOCK_END,
   EFD_SKIP_STATE_DONE
-} efd_skip_state_e;
+};
 typedef enum efd_skip_state_e efd_skip_state;
 
 /**************
@@ -94,14 +98,14 @@ struct efd_parse_state_s {
   ptrdiff_t lineno;
   char const * context;
   efd_parse_error error;
-}
+};
 
 /********************
  * Inline Functions *
  ********************/
 
 static inline int is_whitespace(char *c) {
-  return c == ' ' || c == '\n' || c == '\t' || c == '\r';
+  return *c == ' ' || *c == '\n' || *c == '\t' || *c == '\r';
 }
 
 // Checks whether the current character is NUL or beyond the end of the input

@@ -1158,7 +1158,7 @@ int breadth_first_iter(
 // valid region. This entire process is repeated until there are no valid
 // regions left to fill or until the fill function returns 0 (so whatever the
 // fill function does should ensure that subsequent calls to the validate
-// function return 0 for filled regions), or this function won't terminate. The
+// function return 0 for filled regions, or this function won't terminate). The
 // seed is used for the random region selection step, and a fixed derivative
 // seed is passed into each call to the validate and fill functions.
 void fill_with_regions(

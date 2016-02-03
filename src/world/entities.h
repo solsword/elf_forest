@@ -110,6 +110,7 @@ struct active_entity_area_s {
  ********************/
 
 static inline void copy_entity_data(entity *from, entity *to) {
+  // TODO: Use strncpy here instead!!
   strcpy(to->type, from->type);
   to->size.x = from->size.x;
   to->size.y = from->size.y;

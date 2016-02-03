@@ -12,6 +12,8 @@ cleanup_v_rngtable
 // efd_rngtable.h
 // Conversions efd <-> rngtable
 
+#include <stdio.h>
+
 #include "efd/efd.h"
 #include "datatypes/rngtable.h"
 
@@ -23,8 +25,8 @@ void* efd__rngtable(efd_node *n) {
   efd_assert_type(n, EFD_NT_CONTAINER);
   s = (size_t) *efd__i(efd(n, "size"));
   field = efd(n, "values");
-  values = efd__ai(field);
-  vcount = efd_count__ai(field);
+  values = *efd__ai(field);
+  vcount = *efd_count__ai(field);
   if (vcount != s) {
     fprintf(
       stderr,
@@ -33,9 +35,9 @@ void* efd__rngtable(efd_node *n) {
       vcount
     );
   }
-  field = efd(n, "weights")
-  weights = efd__an(field);
-  wcount = efd_count__an(field);
+  field = efd(n, "weights");
+  weights = *efd__an(field);
+  wcount = *efd_count__an(field);
   if (wcount != s) {
     fprintf(
       stderr,
@@ -52,28 +54,29 @@ void* efd__rngtable(efd_node *n) {
   return (void*) result;
 }
 
-efd_node *rngtable__efd(rngtable *t) {
+efd_node *rngtable__efd(void *v_t) {
+  rngtable *t = (rngtable*) v_t;
   size_t i;
   efd_node *n;
   efd_node *result;
   
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_PROTO_NAME)
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_PROTO_NAME);
 
   n = create_efd_node(EFD_NT_INTEGER, "size");
   *efd__i(n) = t->size;
   efd_add_child(result, n);
 
   n = create_efd_node(EFD_NT_ARRAY_INT, "values");
-  efd__ai(n) = (ptrdiff_t*) malloc(t->size * sizeof(ptrdiff_t));
+  *efd__ai(n) = (ptrdiff_t*) malloc(t->size * sizeof(ptrdiff_t));
   for (i = 0; i < t->size; ++i) {
-    efd__ai(n)[i] = t->values[i];
+    (*efd__ai(n))[i] = (ptrdiff_t) t->values[i];
   }
   efd_add_child(result, n);
 
   n = create_efd_node(EFD_NT_ARRAY_NUM, "weights");
-  efd__an(n) = (float*) malloc(t->size * sizeof(float));
+  *efd__an(n) = (float*) malloc(t->size * sizeof(float));
   for (i = 0; i < t->size; ++i) {
-    efd__an(n)[i] = t->weights[i];
+    (*efd__an(n))[i] = t->weights[i];
   }
   efd_add_child(result, n);
 

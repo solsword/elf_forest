@@ -102,8 +102,8 @@ typedef void (*efd_destroy_function)(void *);
 
 #define EFD_OBJECT_FORMAT_SIZE 8
 
-extern char const * const * const EFD_NT_NAMES;
-extern char const * const * const EFD_NT_ABBRS;
+extern char const * const EFD_NT_NAMES[];
+extern char const * const EFD_NT_ABBRS[];
 
 extern char const * const EFD_PROTO_NAME;
 extern efd_node *EFD_ROOT;
@@ -147,7 +147,7 @@ struct efd_string_s {
 
 struct efd_array_obj_s {
   size_t count;
-  void *values;
+  void **values;
 };
 
 struct efd_array_int_s {
@@ -198,7 +198,7 @@ struct efd_schema_s {
 // Asserts that a type matches and throws an error if it does not (or if it's
 // NULL). Can be turned off by defining EFD_NO_TYPECHECKS, although the NULL
 // check will still take place.
-int efd_assert_type(efd_node *n, efd_node_type t);
+void efd_assert_type(efd_node *n, efd_node_type t);
 
 /********************
  * Inline Functions *
@@ -216,15 +216,14 @@ static inline size_t efd_node_depth(efd_node *n) {
   } while (1);
 }
 
-static inline char** efd_fmt__p(efd_node *n) {
+static inline char* efd_fmt__p(efd_node *n) {
   efd_assert_type(n, EFD_NT_PROTO);
-  typeof(&(n->b.as_proto.format));
-  return &(n->b.as_proto.format);
+  return n->b.as_proto.format;
 }
 
-static inline char** efd_fmt__o(efd_node *n) {
+static inline char* efd_fmt__o(efd_node *n) {
   efd_assert_type(n, EFD_NT_OBJECT);
-  return &(n->b.as_object.format);
+  return n->b.as_object.format;
 }
 
 static inline void** efd__o(efd_node *n) {
@@ -247,9 +246,9 @@ static inline string** efd__s(efd_node *n) {
   return &(n->b.as_string.value);
 }
 
-static inline void* efd__ao(efd_node *n) {
+static inline void*** efd__ao(efd_node *n) {
   efd_assert_type(n, EFD_NT_ARRAY_OBJ);
-  return n->b.as_obj_array.values;
+  return &(n->b.as_obj_array.values);
 }
 
 static inline size_t* efd_count__ao(efd_node *n) {
@@ -257,9 +256,9 @@ static inline size_t* efd_count__ao(efd_node *n) {
   return &(n->b.as_obj_array.count);
 }
 
-static inline ptrdiff_t* efd__ai(efd_node *n) {
+static inline ptrdiff_t** efd__ai(efd_node *n) {
   efd_assert_type(n, EFD_NT_ARRAY_INT);
-  return n->b.as_int_array.values;
+  return &(n->b.as_int_array.values);
 }
 
 static inline size_t* efd_count__ai(efd_node *n) {
@@ -267,9 +266,9 @@ static inline size_t* efd_count__ai(efd_node *n) {
   return &(n->b.as_int_array.count);
 }
 
-static inline float* efd__an(efd_node *n) {
+static inline float** efd__an(efd_node *n) {
   efd_assert_type(n, EFD_NT_ARRAY_NUM);
-  return n->b.as_num_array.value;
+  return &(n->b.as_num_array.values);
 }
 
 static inline size_t* efd_count__an(efd_node *n) {
@@ -277,9 +276,9 @@ static inline size_t* efd_count__an(efd_node *n) {
   return &(n->b.as_num_array.count);
 }
 
-static inline string** efd__as(efd_node *n) {
+static inline string*** efd__as(efd_node *n) {
   efd_assert_type(n, EFD_NT_ARRAY_STR);
-  return n->b.as_str_array.value;
+  return &(n->b.as_str_array.values);
 }
 
 static inline size_t* efd_count__as(efd_node *n) {
@@ -294,7 +293,7 @@ static inline size_t* efd_count__as(efd_node *n) {
 // Allocate and return a new EFD node of the given type. Up to
 // EFD_NODE_NAME_SIZE characters are copied from the given string, but a
 // reference to it is not maintained.
-efd_node* create_efd_node(efd_node_type t, char* name);
+efd_node* create_efd_node(efd_node_type t, char const * const name);
 
 // Clean up memory from the given EFD node.
 void cleanup_efd_node(efd_node *node);
@@ -367,8 +366,9 @@ efd_node* efdr(char const * const keypath);
 //   2. reference resolution
 void efd_unpack_node(efd_node *root);
 
-// Packs this node and all of its children recursively, turning OBJECT nodes containing unpacked structs into PROTO nodes containing EFD COLLECTIONs.
-efd_node* efd_pack_node(efd_node *root);
+// Packs this node and all of its children recursively, turning OBJECT nodes
+// containing unpacked structs into PROTO nodes containing EFD COLLECTIONs.
+void efd_pack_node(efd_node *root);
 
 // Lookups for packers, unpackers, and destructors. Note that these are not
 // actually defined in efd.c but rather in  efd_setup.c.
@@ -385,4 +385,5 @@ efd_schema* efd_fetch_schema(char const * const name);
 // the process, while the base node is modified.
 // TODO: How to handle non-unique names?!?
 void efd_merge_node(efd_node *base, efd_node *victim);
+
 #endif // INCLUDE_EFD_H

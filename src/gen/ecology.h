@@ -11,8 +11,8 @@
  * Structures *
  **************/
 
-struct biome_info_s;
-typedef struct biome_info_s biome_info;
+struct eco_info_s;
+typedef struct eco_info_s eco_info;
 
 /*************
  * Constants *
@@ -25,13 +25,11 @@ typedef struct biome_info_s biome_info;
 #define EC_BIOME_HUGE_SIZE 300
 #define EC_BIOME_GIGANTIC_SIZE 410
 
-extern biome_info const BIOME_INFO[];
-
 /*************************
  * Structure Definitions *
  *************************/
 
-struct biome_info_s { // Note: int better have at least 9 bits...
+struct eco_info_s { // Note: int better have at least 9 bits...
   size_t max_size;
   int hydro_state_compatibility;
   int salinity_compatibility;
@@ -40,24 +38,27 @@ struct biome_info_s { // Note: int better have at least 9 bits...
   int temperature_compatibility;
 };
 
+// must be declared after the structure is concrete...
+extern eco_info const ECO_INFO[];
+
 /********************
  * Inline Functions *
  ********************/
 
 static inline int biome_is_compatible(biome_category bc, world_region *wr) {
-  if (!(wr->climate.water.state & BIOME_INFO[bc].hydro_state_compatibility)) {
+  if (!(wr->climate.water.state & ECO_INFO[bc].hydro_state_compatibility)) {
     return 0;
   };
-  if (!(wr->climate.water.salt & BIOME_INFO[bc].salinity_compatibility)) {
+  if (!(wr->climate.water.salt & ECO_INFO[bc].salinity_compatibility)) {
     return 0;
   };
-  if (!(wr->s_altitude & BIOME_INFO[bc].altitude_compatibility)) {
+  if (!(wr->s_altitude & ECO_INFO[bc].altitude_compatibility)) {
     return 0;
   };
-  if (!(wr->s_precipitation & BIOME_INFO[bc].precipitation_compatibility)) {
+  if (!(wr->s_precipitation & ECO_INFO[bc].precipitation_compatibility)) {
     return 0;
   };
-  if (!(wr->s_temperature & BIOME_INFO[bc].temperature_compatibility)) {
+  if (!(wr->s_temperature & ECO_INFO[bc].temperature_compatibility)) {
     return 0;
   };
   return 1;
@@ -66,7 +67,7 @@ static inline int biome_is_compatible(biome_category bc, world_region *wr) {
 static inline int has_biome_in_category(world_region *wr, biome_category bc) {
   size_t i;
   for (i = 0; i < WM_MAX_BIOME_OVERLAP; ++i) {
-    if (wr->ecology.biomes[i].category == bc) {
+    if (wr->ecology.biomes[i]->category == bc) {
       return 1;
     }
   }

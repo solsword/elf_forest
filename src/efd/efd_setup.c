@@ -1,6 +1,8 @@
 // efd_setup.c
 // Gathers Elf Forest Data conversion registrations and defines EFD setup.
 
+#include <string.h>
+
 #include "efd_setup.h"
 
 /**************************
@@ -8,14 +10,16 @@
  **************************/
 
 #include "conv/efd_rngtable.h"
+#include "conv/efd_tests.h"
 
 /*************
  * Constants *
  *************/
 
 #define EFD_REGISTER_NAMES
-extern char * const EFD_OBJECT_NAME_REGISTRY[] = {
-  #include "conv/efd_rngtable.h",
+char * const EFD_OBJECT_NAME_REGISTRY[] = {
+  #include "conv/efd_rngtable.h"
+  ,
   #include "conv/efd_tests.h"
 };
 #undef EFD_REGISTER_NAMES
@@ -26,22 +30,25 @@ size_t EFD_OBJECT_REGISTRY_SIZE = (
 );
 
 #define EFD_REGISTER_UNPACKERS
-extern efd_unpack_function EFD_OBJECT_UNPACKER_REGISTRY[] = {
-  #include "conv/efd_rngtable.h",
+efd_unpack_function EFD_OBJECT_UNPACKER_REGISTRY[] = {
+  #include "conv/efd_rngtable.h"
+  ,
   #include "conv/efd_tests.h"
 };
 #undef EFD_REGISTER_UNPACKERS
 
 #define EFD_REGISTER_PACKERS
-extern efd_pack_function EFD_OBJECT_PACKER_REGISTRY[] = {
-  #include "conv/efd_rngtable.h",
+efd_pack_function EFD_OBJECT_PACKER_REGISTRY[] = {
+  #include "conv/efd_rngtable.h"
+  ,
   #include "conv/efd_tests.h"
 };
 #undef EFD_REGISTER_PACKERS
 
 #define EFD_REGISTER_DESTRUCTORS
-extern efd_destroy_function EFD_OBJECT_DESTRUCTOR_REGISTRY[] = {
-  #include "conv/efd_rngtable.h",
+efd_destroy_function EFD_OBJECT_DESTRUCTOR_REGISTRY[] = {
+  #include "conv/efd_rngtable.h"
+  ,
   #include "conv/efd_tests.h"
 };
 #undef EFD_REGISTER_DESTRUCTORS

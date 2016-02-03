@@ -447,7 +447,12 @@ void add_biology(chunk *c) {
   // Look up the local biomes:
   glcpos__wmpos(&(c->glcpos), &wmpos);
   // TODO: Avoid using THE_WORLD here?
-  wr = get_world_neighborhood_small(THE_WORLD, &wmpos, wr_neighborhood);
+  wr = get_world_region(THE_WORLD, &wmpos);
+  if (wr == NULL) {
+    // TODO: Go farther here?
+    return; // outside the world map: no biology
+  }
+  get_world_neighborhood_small(THE_WORLD, &wmpos, wr_neighborhood);
   // Use the center of our chunk to compute region contenders:
   idx.xyz.x = CHUNK_SIZE / 2;
   idx.xyz.y = CHUNK_SIZE / 2;
@@ -456,8 +461,8 @@ void add_biology(chunk *c) {
   cidx__glpos(c, &idx, &glpos);
   compute_region_contenders(
     THE_WORLD,
-    neighborhood,
-    glpos,
+    wr_neighborhood,
+    &glpos,
     1232331,
     &wr,
     &wr_second,
@@ -541,7 +546,7 @@ void add_biology(chunk *c) {
               sp_list,
               substrate,
               seed_hash
-            )
+            );
             if (frequent_species_species_type(fqsp) != SPT_NO_SPECIES) {
               cl->blocks[1] = b_make_species(
                 seed_block_type(frequent_species_species_type(fqsp)),
@@ -622,7 +627,7 @@ frequent_species pick_appropriate_frequent_species(
     }
   }
 #ifdef DEBUG
-  pritnf("Error: Ran out of appropriate species to pick from!\n");
+  printf("Error: Ran out of appropriate species to pick from!\n");
   exit(1);
 #endif
   // Just arbitrarily return the first item (this shouldn't be reachable):
@@ -640,28 +645,30 @@ float species_compatability(frequent_species fqsp, block substrate) {
 growth_properties* get_growth_properties(block b) {
   any_species a_sp;
   block__any_species(b, &a_sp);
-  if (a_sp.type == SPT_FUNGUS) {
-    return &(get_fungus_species(a_sp.id)->growth);
-  } else if (a_sp.type == SPT_MOSS) {
-    return &(get_moss_species(a_sp.id)->growth);
-  } else if (a_sp.type == SPT_GRASS) {
-    return &(get_grass_species(a_sp.id)->growth);
-  } else if (a_sp.type == SPT_VINE) {
-    return &(get_vine_species(a_sp.id)->growth);
-  } else if (a_sp.type == SPT_HERB) {
-    return &(get_herb_species(a_sp.id)->growth);
-  } else if (a_sp.type == SPT_BUSH) {
-    return &(get_bush_species(a_sp.id)->growth);
-  } else if (a_sp.type == SPT_SHRUB) {
-    return &(get_shrub_species(a_sp.id)->growth);
-  } else if (a_sp.type == SPT_TREE) {
-    return &(get_tree_species(a_sp.id)->growth);
-  } else if (a_sp.type == SPT_AQUATIC_GRASS) {
-    return &(get_aquatic_grass_species(a_sp.id)->growth);
-  } else if (a_sp.type == SPT_AQUATIC_PLANT) {
-    return &(get_aquatic_plant_species(a_sp.id)->growth);
-  } else if (a_sp.type == SPT_CORAL) {
-    return &(get_coral_species(a_sp.id)->growth);
+  species sp = any_species_species(a_sp);
+  species_type st = any_species_type(a_sp);
+  if (st == SPT_FUNGUS) {
+    return &(get_fungus_species(sp)->growth);
+  } else if (st == SPT_MOSS) {
+    return &(get_moss_species(sp)->growth);
+  } else if (st == SPT_GRASS) {
+    return &(get_grass_species(sp)->growth);
+  } else if (st == SPT_VINE) {
+    return &(get_vine_species(sp)->growth);
+  } else if (st == SPT_HERB) {
+    return &(get_herb_species(sp)->growth);
+  } else if (st == SPT_BUSH) {
+    return &(get_bush_species(sp)->growth);
+  } else if (st == SPT_SHRUB) {
+    return &(get_shrub_species(sp)->growth);
+  } else if (st == SPT_TREE) {
+    return &(get_tree_species(sp)->growth);
+  } else if (st == SPT_AQUATIC_GRASS) {
+    return &(get_aquatic_grass_species(sp)->growth);
+  } else if (st == SPT_AQUATIC_PLANT) {
+    return &(get_aquatic_plant_species(sp)->growth);
+  } else if (st == SPT_CORAL) {
+    return &(get_coral_species(sp)->growth);
   } else { // Not a growing species.
     return NULL;
   }
@@ -927,6 +934,7 @@ void determine_new_herb_appearance(
   herbaceous_appearance *target,
   ptrdiff_t seed
 ) {
+  /*
   target->seeds
   target->roots
   target->shoots
@@ -935,6 +943,7 @@ void determine_new_herb_appearance(
   target->buds
   target->flowers
   target->fruit
+  */
   // TODO: HERE
 }
 
