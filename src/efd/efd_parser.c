@@ -103,15 +103,15 @@ efd_node* efd_parse_any(efd_parse_state *s) {
     default:
     case EFD_NT_INVALID:
     case EFD_NT_PROTO:
-      s->error = EFD_PE_MALFORMED;
-      s->context = "node (invalid type)";
-      return NULL;
+      efd_parse_proto(result, s);
+      break;
     case EFD_NT_CONTAINER:
       efd_parse_children(result, s);
       break;
     case EFD_NT_OBJECT:
-      efd_parse_proto(result, s);
-      break;
+      s->error = EFD_PE_MALFORMED;
+      s->context = "node (invalid type)";
+      return NULL;
     case EFD_NT_INTEGER:
       efd_parse_integer(result, s);
       break;
@@ -193,7 +193,6 @@ void efd_parse_children(efd_node *result, efd_parse_state *s) {
 void efd_parse_proto(efd_node *result, efd_parse_state *s) {
   static char format[EFD_NODE_NAME_SIZE];
 
-  printf("Parse proto!\n");
   efd_parse_schema(s, format);
   if (efd_parse_failed(s)) {
     return;
@@ -239,8 +238,8 @@ void efd_parse_string(efd_node *result, efd_parse_state *s) {
   }
 
   result->b.as_string.value = create_string_from_chars(
-    s->input + start,
-    end - start
+    s->input + start + 1,
+    end - start - 1
   );
 }
 
@@ -408,8 +407,8 @@ void efd_parse_str_array(efd_node *result, efd_parse_state *s) {
       }
     } else {
       val = create_string_from_chars(
-        s->input + start,
-        end - start
+        s->input + start + 1,
+        end - start - 1
       );
       l_append_element(l, (void*) val);
     }
@@ -531,7 +530,7 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
       return EFD_NT_CONTAINER;
     case 'o':
       s->pos += 1;
-      return EFD_NT_OBJECT;
+      return EFD_NT_PROTO;
     case 'i':
       s->pos += 1;
       return EFD_NT_INTEGER;
@@ -594,6 +593,7 @@ void efd_parse_name(efd_parse_state *s, char *r_name) {
     if (
       is_whitespace(&c)
    || c == EFD_NODE_SEP
+   || c == EFD_SCHEMA_INDICATOR
    || (
        c >= '0'
     && c <= '9'
@@ -698,9 +698,16 @@ ptrdiff_t efd_parse_int(efd_parse_state *s) {
         } else if (state == EFD_INT_STATE_DIGITS) {
           state = EFD_INT_STATE_DONE;
           s->pos -= 1; // about to be incremented before leaving while
+        } else if (state == EFD_INT_STATE_BASE) {
+          state = EFD_INT_STATE_DONE;
+          s->pos -= 1; // about to be incremented before leaving while
+        } else if (state == EFD_INT_STATE_PRE_DIGITS) {
+          state = EFD_INT_STATE_DONE;
+          s->pos -= 2; // about to be incremented before leaving while
         } else {
           s->error = EFD_PE_MALFORMED;
           s->context = "integer (minus)";
+          return EFD_PARSER_INT_ERROR;
         }
         break;
       case 'x':
@@ -786,9 +793,15 @@ ptrdiff_t efd_parse_int(efd_parse_state *s) {
       case '\0': // impossible
       lbl_int_hex_digit:
         if (base != 16) {
-          state = EFD_INT_STATE_DONE;
-          s->pos -= 1; // about to be incremented before leaving while
-          break;
+          if (state == EFD_INT_STATE_DIGITS) {
+            state = EFD_INT_STATE_DONE;
+            s->pos -= 1; // about to be incremented before leaving while
+            break;
+          } else {
+            s->error = EFD_PE_MALFORMED;
+            s->context = "integer (unexpected hex digit)";
+            return EFD_PARSER_INT_ERROR;
+          }
         }
         // flow through...
       lbl_int_digit:
@@ -810,8 +823,15 @@ ptrdiff_t efd_parse_int(efd_parse_state *s) {
       return EFD_PARSER_INT_ERROR;
     }
   }
-  if (state == EFD_INT_STATE_DONE) {
+  if (
+    state == EFD_INT_STATE_DONE
+ || state == EFD_INT_STATE_BASE
+ || state == EFD_INT_STATE_DIGITS
+  ) {
     return sign * result;
+  } else if (state == EFD_INT_STATE_PRE_DIGITS) {
+    s->pos -= 1;
+    return 0;
   } else {
     s->error = EFD_PE_MALFORMED;
     s->context = "integer";
@@ -887,6 +907,9 @@ float efd_parse_float(efd_parse_state *s) {
             state = EFD_FLOAT_STATE_DONE;
             s->pos -= 3; // skip back to the 'e' or 'E'
           }
+        } else if (state == EFD_FLOAT_STATE_EXP && count == 0) {
+          state = EFD_FLOAT_STATE_DONE;
+          s->pos -= 3; // skip back to the 'e' or 'E'
         } else {
           state = EFD_FLOAT_STATE_DONE;
           s->pos -= 1; // about to be incremented before leaving while
@@ -902,6 +925,9 @@ float efd_parse_float(efd_parse_state *s) {
             state = EFD_FLOAT_STATE_DONE;
             s->pos -= 3; // skip back to the 'e' or 'E'
           }
+        } else if (state == EFD_FLOAT_STATE_EXP && count == 0) {
+          state = EFD_FLOAT_STATE_DONE;
+          s->pos -= 3; // skip back to the 'e' or 'E'
         } else if (state == EFD_FLOAT_STATE_PRE) {
           s->error = EFD_PE_MALFORMED;
           s->context = "number (initial '+')";
@@ -936,6 +962,7 @@ float efd_parse_float(efd_parse_state *s) {
       case 'E':
         if (state == EFD_FLOAT_STATE_CHAR || state == EFD_FLOAT_STATE_MANT) {
           state = EFD_FLOAT_STATE_EXP_SIGN;
+          count = 0;
         } else {
           state = EFD_FLOAT_STATE_DONE;
           s->pos -= 1; // about to be incremented before leaving while
@@ -1018,7 +1045,13 @@ float efd_parse_float(efd_parse_state *s) {
       return EFD_PARSER_FLOAT_ERROR;
     }
   }
-  if (state == EFD_FLOAT_STATE_DONE) {
+  if (
+    state == EFD_FLOAT_STATE_DONE
+ || state == EFD_FLOAT_STATE_ZERO
+ || (state == EFD_FLOAT_STATE_CHAR && count > 0)
+ || state == EFD_FLOAT_STATE_MANT
+ || (state == EFD_FLOAT_STATE_EXP_DIGITS && count > 0)
+  ) {
     return (
       (
         sign * characteristic
@@ -1061,8 +1094,8 @@ void efd_grab_string_limits(
     s->context = "quoted string (open)";
     return;
   }
-  s->pos += 1;
   *start = s->pos;
+  s->pos += 1;
   while (!efd_parse_atend(s)) {
     c = s->input[s->pos];
     if (c == '\n') {
@@ -1097,7 +1130,7 @@ void efd_grab_string_limits(
       break;
     case EFD_QUOTE_STATE_MAYBE_DONE:
     case EFD_QUOTE_STATE_DONE:
-      *end = s->pos - 2;
+      *end = s->pos - 1;
       break;
   }
 }
@@ -1191,7 +1224,86 @@ int efd_parse_failed(efd_parse_state *s) {
 }
 
 void efd_throw_parse_error(efd_parse_state *s) {
+  char const *context;
+  static char before[EFD_PARSER_ERROR_LINE+1];
+  static char after[EFD_PARSER_ERROR_LINE+1];
+  static char above[EFD_PARSER_ERROR_LINE+1];
+  static char below[EFD_PARSER_ERROR_LINE+1];
+  ptrdiff_t offset;
+  ptrdiff_t sursize;
   if (s->error != EFD_PE_NO_ERROR) {
+    // figure out our surroundings:
+    memset(before, ' ', EFD_PARSER_ERROR_LINE / 2);
+    memset(after, '~', EFD_PARSER_ERROR_LINE / 2);
+    memset(before + (EFD_PARSER_ERROR_LINE /2), '~', EFD_PARSER_ERROR_LINE / 2);
+    memset(after + (EFD_PARSER_ERROR_LINE / 2), ' ', EFD_PARSER_ERROR_LINE / 2);
+    memset(above, '-', EFD_PARSER_ERROR_LINE);
+    memset(below, '-', EFD_PARSER_ERROR_LINE);
+    before[EFD_PARSER_ERROR_LINE] = '\0';
+    after[EFD_PARSER_ERROR_LINE] = '\0';
+    above[EFD_PARSER_ERROR_LINE / 2] = 'v';
+    strncpy(above + (EFD_PARSER_ERROR_LINE / 2) + 2, "here", 4);
+    below[EFD_PARSER_ERROR_LINE / 2] = '^';
+    strncpy(below + (EFD_PARSER_ERROR_LINE / 2) - 5, "here", 4);
+    above[EFD_PARSER_ERROR_LINE] = '\0';
+    below[EFD_PARSER_ERROR_LINE] = '\0';
+
+    // before:
+    offset = EFD_PARSER_ERROR_LINE / 2;
+    offset -= s->pos;
+    if (offset < (EFD_PARSER_ERROR_LINE / 2) - EFD_PARSER_ERROR_BEFORE) {
+      offset = (EFD_PARSER_ERROR_LINE / 2) - EFD_PARSER_ERROR_BEFORE;
+      before[offset-3] = '.';
+      before[offset-2] = '.';
+      before[offset-1] = '.';
+    }
+    sursize = (EFD_PARSER_ERROR_LINE / 2) - offset;
+    strncpy(before + offset, s->input + (s->pos - sursize), sursize);
+
+    // after
+    for (sursize = 0; sursize < EFD_PARSER_ERROR_AFTER; ++sursize) {
+      if (
+        s->pos + sursize >= s->input_length
+     || s->input[s->pos + sursize] == '\0'
+      ) {
+        break;
+      }
+    }
+    if (
+      s->pos + sursize < s->input_length
+   && s->input[s->pos + sursize] != '\0'
+    ) {
+      after[(EFD_PARSER_ERROR_LINE / 2) + sursize] = '.';
+      after[(EFD_PARSER_ERROR_LINE / 2) + sursize + 1] = '.';
+      after[(EFD_PARSER_ERROR_LINE / 2) + sursize + 2] = '.';
+    }
+    strncpy(after + (EFD_PARSER_ERROR_LINE / 2), s->input + s->pos, sursize);
+
+    // replace newlines, tabs, and carriage returns:
+    for (offset = 0; offset < EFD_PARSER_ERROR_LINE / 2; ++offset) {
+      if (
+        before[offset] == '\n'
+     || before[offset] == '\r'
+     || before[offset] == '\t'
+      ) {
+        before[offset] = '';
+      }
+      if (
+        after[(EFD_PARSER_ERROR_LINE / 2) + offset] == '\n'
+     || after[(EFD_PARSER_ERROR_LINE / 2) + offset] == '\r'
+     || after[(EFD_PARSER_ERROR_LINE / 2) + offset] == '\t'
+      ) {
+        after[(EFD_PARSER_ERROR_LINE / 2) + offset] = '';
+      }
+    }
+
+    // figure out our context:
+    context = s->context;
+    if (context == NULL) {
+      context = "<unknown>";
+    }
+
+    // print the file and line number:
     fprintf(
       stderr,
       "[%.*s:%ld] ",
@@ -1199,90 +1311,50 @@ void efd_throw_parse_error(efd_parse_state *s) {
       s->filename,
       s->lineno
     );
+
+    // print the error:
     switch (s->error) {
       default:
       case EFD_PE_UNKNOWN:
         s->error = EFD_PE_UNKNOWN;
-        if (s->context == NULL) {
-          fprintf(
-            stderr,
-            "Unknown parsing error while parsing <?>.\n"
-          );
-        } else {
-          fprintf(
-            stderr,
-            "Unknown parsing error while parsing %.*s.\n",
-            EFD_PARSER_MAX_CONTEXT_DISPLAY,
-            s->context
-          );
-        }
+        fprintf(
+          stderr,
+          "Unknown parsing error while parsing %.*s.\n",
+          EFD_PARSER_MAX_CONTEXT_DISPLAY,
+          context
+        );
         break;
       case EFD_PE_MALFORMED:
-        if (s->context == NULL) {
-          if (s->input == NULL) {
-            fprintf(
-              stderr,
-              "Malformed input while parsing <?> at <?>.\n"
-            );
-          } else {
-            fprintf(
-              stderr,
-              "Malformed input while parsing <?> at '%.*s'.\n",
-              EFD_PARSER_ERROR_CONTEXT, // TODO: pre-context as well?
-              (s->input + s->pos)
-            );
-          }
-        } else {
-          if (s->input == NULL) {
-            fprintf(
-              stderr,
-              "Malformed input while parsing %.*s at <?>.\n",
-              EFD_PARSER_MAX_CONTEXT_DISPLAY,
-              s->context
-            );
-          } else {
-            fprintf(
-              stderr,
-              "Malformed input while parsing %.*s at '%.*s'.\n",
-              EFD_PARSER_MAX_CONTEXT_DISPLAY,
-              s->context,
-              EFD_PARSER_ERROR_CONTEXT, // TODO: pre-context as well?
-              (s->input + s->pos)
-            );
-          }
-        }
+        fprintf(
+          stderr,
+          "Malformed input while parsing %.*s.\n",
+          EFD_PARSER_MAX_CONTEXT_DISPLAY,
+          context
+        );
         break;
       case EFD_PE_MISSING:
-        if (s->context == NULL) {
-          fprintf(
-            stderr,
-            "Missing element while parsing <?>.\n"
-          );
-        } else {
-          fprintf(
-            stderr,
-            "Missing element while parsing %.*s.\n",
-            EFD_PARSER_MAX_CONTEXT_DISPLAY,
-            s->context
-          );
-        }
+        fprintf(
+          stderr,
+          "Missing element while parsing %.*s.\n",
+          EFD_PARSER_MAX_CONTEXT_DISPLAY,
+          context
+        );
         break;
       case EFD_PE_INCOMPLETE:
-        if (s->context == NULL) {
-          fprintf(
-            stderr,
-            "Input ended while parsing <?>.\n"
-          );
-        } else {
-          fprintf(
-            stderr,
-            "Input ended while parsing %.*s.\n",
-            EFD_PARSER_MAX_CONTEXT_DISPLAY,
-            s->context
-          );
-        }
+        fprintf(
+          stderr,
+          "Input ended while parsing %.*s.\n",
+          EFD_PARSER_MAX_CONTEXT_DISPLAY,
+          context
+        );
         break;
     }
+
+    // print the surroundings:
+    fprintf(stderr, "%.*s\n", EFD_PARSER_ERROR_LINE, above);
+    fprintf(stderr, "%.*s\n", EFD_PARSER_ERROR_LINE, before);
+    fprintf(stderr, "%.*s\n", EFD_PARSER_ERROR_LINE, after);
+    fprintf(stderr, "%.*s\n", EFD_PARSER_ERROR_LINE, below);
     exit(-s->error);
   }
 }

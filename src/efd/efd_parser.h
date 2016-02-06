@@ -76,8 +76,11 @@ typedef struct efd_parse_state_s efd_parse_state;
  *************/
 
 #define EFD_PARSER_MAX_FILENAME_DISPLAY 4096
-#define EFD_PARSER_ERROR_CONTEXT 20
 #define EFD_PARSER_MAX_CONTEXT_DISPLAY 32
+#define EFD_PARSER_ERROR_BEFORE 35
+#define EFD_PARSER_ERROR_AFTER 35
+#define EFD_PARSER_ERROR_LINE 80
+// note: (LINE / 2) - BEFORE must be >= 3 and (LINE / 2) - AFTER must be >= 4
 
 #define EFD_PARSER_MAX_DIGITS 1024
 #define EFD_PARSER_INT_ERROR 1717
@@ -185,10 +188,9 @@ float efd_parse_float(efd_parse_state *s);
 void* efd_parse_ref(efd_parse_state *s);
 
 // Starts at the initial position and finds an opening quote, setting the
-// starting point to point to the byte after that quote. Then it scans until it
-// finds an (unescaped) closing quote that matches the type (single or double)
-// of the first and sets the end to point to the character before that
-// position.
+// starting point to point to that quote. Then it scans until it finds an
+// (unescaped) closing quote that matches the type (single or double) of the
+// first and sets the end to point to that closing quote.
 void efd_grab_string_limits(
   efd_parse_state *s,
   ptrdiff_t *start,

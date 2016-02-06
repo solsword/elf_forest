@@ -11,6 +11,45 @@
 [[i t -0xff]]
 [[i t 0x0001]]
 [[o t:itest
+  [[s input ""]]
+  [[s expect "failure"]]
+]]
+[[o t:itest
+  [[s input "1"]]
+  [[s expect "success"]]
+  [[i output 1]]
+]]
+[[o t:itest
+  [[s input "0"]]
+  [[s expect "success"]]
+  [[i output 0]]
+]]
+[[o t:itest
+  [[s input "10"]]
+  [[s expect "success"]]
+  [[i output 10]]
+]]
+[[o t:itest
+  [[s input "23"]]
+  [[s expect "success"]]
+  [[i output 23]]
+]]
+[[o t:itest
+  [[s input "0x1"]]
+  [[s expect "success"]]
+  [[i output 1]]
+]]
+[[o t:itest
+  [[s input "0xa"]]
+  [[s expect "success"]]
+  [[i output 10]]
+]]
+[[o t:itest
+  [[s input "0x1a"]]
+  [[s expect "success"]]
+  [[i output 26]]
+]]
+[[o t:itest
   [[s input "0x0001"]]
   [[s expect "success"]]
   [[i output 1]]
@@ -62,7 +101,9 @@
 ]]
 [[o t:itest
   [[s input "0x-5"]]
-  [[s expect "failure"]]
+  [[s expect "remainder"]]
+  [[i output 0]]
+  [[s remainder "x-5"]]
 ]]
 [[o t:itest
   [[s input "-x35"]]
@@ -111,6 +152,27 @@
 [[n t 1.4e3]]
 [[n t .4e3]]
 [[n t 4.e3]]
+[[n t 0]]
+[[n t 1]]
+[[o t:ntest
+  [[s input ""]]
+  [[s expect "failure"]]
+]]
+[[o t:ntest
+  [[s input "0"]]
+  [[s expect "success"]]
+  [[n output 0]]
+]]
+[[o t:ntest
+  [[s input "1"]]
+  [[s expect "success"]]
+  [[n output 1]]
+]]
+[[o t:ntest
+  [[s input "1"]]
+  [[s expect "success"]]
+  [[n output 1.0]]
+]]
 [[o t:ntest
   [[s input "0.0"]]
   [[s expect "success"]]

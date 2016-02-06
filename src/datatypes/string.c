@@ -59,13 +59,13 @@ string* copy_string(string *base) {
     perror("Failed to create string for copy.");
     exit(errno);
   }
-  s->bytes = (uint8_t*) malloc(sizeof(uint8_t) * base->length);
+  s->bytes = (uint8_t*) malloc(sizeof(uint8_t) * (base->length + 1));
   if (s->bytes == NULL) {
     perror("Failed to create bytes for string copy.");
     exit(errno);
   }
   s->length = base->length;
-  memcpy(s->bytes, base->bytes, base->length);
+  memcpy(s->bytes, base->bytes, base->length + 1);
   return s;
 }
 
@@ -84,7 +84,9 @@ string* create_string_from_ntchars(char const * const chars) {
     perror("Failed to get string from local encoding.");
     exit(errno);
   }
-  s->length = strlen((char*) s->bytes); // orphan the NUL byte
+  s->length = strlen((char*) (s->bytes)); // orphan the NUL byte
+  s->bytes = realloc(s->bytes, sizeof(uint8_t) * (s->length + 1));
+  s->bytes[s->length] = '\0';
   return s;
 }
 
@@ -107,6 +109,8 @@ string* create_string_from_chars(char const * const nchars, size_t len) {
     perror("Failed to get string from local encoding.");
     exit(errno);
   }
+  s->bytes = realloc(s->bytes, sizeof(uint8_t) * (s->length + 1));
+  s->bytes[s->length] = '\0';
   return s;
 }
 
@@ -124,7 +128,7 @@ void cleanup_string(string* s) {
 int s_contains_nul(string* s) {
   size_t i;
   for (i = 0; i < s->length; ++i) {
-    if (s->bytes[i] == 0) {
+    if (s->bytes[i] == '\0') {
       return 1;
     }
   }
@@ -197,12 +201,12 @@ void s_append(string* base, string const * const extension) {
   uint8_t* newbytes;
   if (base->bytes == NULL) {
     newbytes = (uint8_t*) malloc(
-      sizeof(uint8_t) * (base->length + extension->length)
+      sizeof(uint8_t) * (base->length + extension->length + 1)
     );
   } else {
     newbytes = (uint8_t*) realloc(
       base->bytes,
-      sizeof(uint8_t) * (base->length + extension->length)
+      sizeof(uint8_t) * (base->length + extension->length + 1)
     );
   }
   if (newbytes == NULL) {
@@ -212,14 +216,16 @@ void s_append(string* base, string const * const extension) {
   u8_cpy(newbytes + base->length, extension->bytes, extension->length);
   base->bytes = newbytes; // realloc means we don't need to free
   base->length += extension->length;
+  base->bytes[base->length] = '\0';
 }
 
 string* s_concat(string* first, string* second) {
   string* result = create_string();
   result->length = first->length + second->length;
-  result->bytes = (uint8_t*) malloc(sizeof(uint8_t)*result->length);
+  result->bytes = (uint8_t*) malloc(sizeof(uint8_t)*(result->length + 1));
   u8_cpy(result->bytes, first->bytes, first->length);
   u8_cpy(result->bytes + first->length, second->bytes, second->length);
+  result->bytes[result->length] = '\0';
   return result;
 }
 

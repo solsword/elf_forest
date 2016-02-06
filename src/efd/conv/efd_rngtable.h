@@ -85,7 +85,6 @@ efd_node *rngtable__efd(void *v_t) {
 
 void cleanup_v_rngtable(void *v_rngtable) {
   cleanup_rngtable((rngtable*) v_rngtable);
-  free(v_rngtable);
 }
 
 #endif // INCLUDE_EFD_RNGTABLE_H
