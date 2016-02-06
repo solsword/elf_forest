@@ -60,17 +60,21 @@ int efd_parse_file(efd_node *parent, char const * const filename) {
 
   efd_assert_type(parent, EFD_NT_CONTAINER);
   efd_parse_children(parent, &s);
-  s.input = NULL;
-  s.input_length = 0;
-  free(contents);
 
   if (efd_parse_failed(&s)) {
-    // TODO: Print an error message here?
+    efd_throw_parse_error(&s);
+    s.input = NULL;
+    s.input_length = 0;
+    free(contents);
     s.context = NULL;
     return 0;
+  } else {
+    s.input = NULL;
+    s.input_length = 0;
+    free(contents);
+    s.context = NULL;
+    return 1;
   }
-  s.context = NULL;
-  return 1;
 }
 
 efd_node* efd_parse_any(efd_parse_state *s) {
@@ -78,7 +82,14 @@ efd_node* efd_parse_any(efd_parse_state *s) {
   static char name[EFD_NODE_NAME_SIZE];
 
   efd_parse_open(s);
-  if (efd_parse_failed(s)) { return NULL; }
+  if (efd_parse_failed(s)) {
+    if (efd_parse_atend(s)) {
+      s->error = EFD_PE_NO_ERROR;
+      // if there's nothing here (as opposed to something malformed) then we'll
+      // just return NULL without an error.
+    }
+    return NULL;
+  }
 
   type = efd_parse_type(s);
   if (efd_parse_failed(s)) { return NULL; }
@@ -151,8 +162,12 @@ void efd_parse_children(efd_node *result, efd_parse_state *s) {
   efd_parse_copy_state(s, &back);
   efd_parse_schema(s, schema);
   if (efd_parse_failed(s)) {
-    efd_parse_copy_state(&back, s);
-    result->b.as_container.schema = NULL;
+    if (s->error == EFD_PE_MISSING) {
+      efd_parse_copy_state(&back, s);
+      result->b.as_container.schema = NULL;
+    } else {
+      return; // propagate the error upwards
+    }
   } else {
     result->b.as_container.schema = efd_fetch_schema(schema);
   }
@@ -167,6 +182,8 @@ void efd_parse_children(efd_node *result, efd_parse_state *s) {
         efd_parse_copy_state(&back, s);
       } // otherwise return w/ error
       break;
+    } else if (child == NULL) {
+      break;
     } else {
       l_append_element(children, (void*) child);
     }
@@ -176,6 +193,7 @@ void efd_parse_children(efd_node *result, efd_parse_state *s) {
 void efd_parse_proto(efd_node *result, efd_parse_state *s) {
   static char format[EFD_NODE_NAME_SIZE];
 
+  printf("Parse proto!\n");
   efd_parse_schema(s, format);
   if (efd_parse_failed(s)) {
     return;
@@ -616,7 +634,7 @@ void efd_parse_schema(efd_parse_state *s, char *r_name) {
   c = s->input[s->pos];
 
   if (c != EFD_SCHEMA_INDICATOR) {
-    s->error = EFD_PE_MALFORMED;
+    s->error = EFD_PE_MISSING;
     s->context = "schema annotation (no indicator)";
     return;
   }
@@ -1039,8 +1057,8 @@ void efd_grab_string_limits(
   if (!(q == '"' || q == '\'')) {
     *start = -1;
     *end = -1;
-    s->context = "quoted string (open)";
     s->error = EFD_PE_MALFORMED;
+    s->context = "quoted string (open)";
     return;
   }
   s->pos += 1;
@@ -1185,30 +1203,84 @@ void efd_throw_parse_error(efd_parse_state *s) {
       default:
       case EFD_PE_UNKNOWN:
         s->error = EFD_PE_UNKNOWN;
-        fprintf(
-          stderr,
-          "Unknown parsing error while parsing %.*s.\n",
-          EFD_PARSER_MAX_CONTEXT_DISPLAY,
-          s->context
-        );
+        if (s->context == NULL) {
+          fprintf(
+            stderr,
+            "Unknown parsing error while parsing <?>.\n"
+          );
+        } else {
+          fprintf(
+            stderr,
+            "Unknown parsing error while parsing %.*s.\n",
+            EFD_PARSER_MAX_CONTEXT_DISPLAY,
+            s->context
+          );
+        }
         break;
       case EFD_PE_MALFORMED:
-        fprintf(
-          stderr,
-          "Malformed input while parsing %.*s at '%.*s'.\n",
-          EFD_PARSER_MAX_CONTEXT_DISPLAY,
-          s->context,
-          EFD_PARSER_ERROR_CONTEXT, // TODO: pre-context as well?
-          (s->input + s->pos)
-        );
+        if (s->context == NULL) {
+          if (s->input == NULL) {
+            fprintf(
+              stderr,
+              "Malformed input while parsing <?> at <?>.\n"
+            );
+          } else {
+            fprintf(
+              stderr,
+              "Malformed input while parsing <?> at '%.*s'.\n",
+              EFD_PARSER_ERROR_CONTEXT, // TODO: pre-context as well?
+              (s->input + s->pos)
+            );
+          }
+        } else {
+          if (s->input == NULL) {
+            fprintf(
+              stderr,
+              "Malformed input while parsing %.*s at <?>.\n",
+              EFD_PARSER_MAX_CONTEXT_DISPLAY,
+              s->context
+            );
+          } else {
+            fprintf(
+              stderr,
+              "Malformed input while parsing %.*s at '%.*s'.\n",
+              EFD_PARSER_MAX_CONTEXT_DISPLAY,
+              s->context,
+              EFD_PARSER_ERROR_CONTEXT, // TODO: pre-context as well?
+              (s->input + s->pos)
+            );
+          }
+        }
+        break;
+      case EFD_PE_MISSING:
+        if (s->context == NULL) {
+          fprintf(
+            stderr,
+            "Missing element while parsing <?>.\n"
+          );
+        } else {
+          fprintf(
+            stderr,
+            "Missing element while parsing %.*s.\n",
+            EFD_PARSER_MAX_CONTEXT_DISPLAY,
+            s->context
+          );
+        }
         break;
       case EFD_PE_INCOMPLETE:
-        fprintf(
-          stderr,
-          "Input ended while parsing %.*s.\n",
-          EFD_PARSER_MAX_CONTEXT_DISPLAY,
-          s->context
-        );
+        if (s->context == NULL) {
+          fprintf(
+            stderr,
+            "Input ended while parsing <?>.\n"
+          );
+        } else {
+          fprintf(
+            stderr,
+            "Input ended while parsing %.*s.\n",
+            EFD_PARSER_MAX_CONTEXT_DISPLAY,
+            s->context
+          );
+        }
         break;
     }
     exit(-s->error);

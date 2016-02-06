@@ -1,0 +1,11 @@
+// comment
+[[i test 1]]
+[[n test 5.0]]
+[[s test "string"]]
+[[c container
+  [[c nested
+    [[i data 1]]
+  ]]
+  [[i data 2]]
+  [[i data 3]]
+]]

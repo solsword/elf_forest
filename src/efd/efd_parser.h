@@ -15,6 +15,7 @@
 // Different kinds of parsing errors:
 enum efd_parse_error_e {
   EFD_PE_NO_ERROR = 0,
+  EFD_PE_MISSING,
   EFD_PE_UNKNOWN,
   EFD_PE_MALFORMED,
   EFD_PE_INCOMPLETE

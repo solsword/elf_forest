@@ -2,6 +2,8 @@
 #undef TEST_SUITE_TESTS
 #define TEST_SUITE_NAME efd
 #define TEST_SUITE_TESTS { \
+    &setup_efd_tests, \
+    &test_efd_simple_parse, \
     &test_efd_basic_parse, \
     &test_efd_defined_tests, \
     &test_efd_persist, \
@@ -15,7 +17,27 @@
 #include "efd/efd_parser.h"
 #include "efd/efd_setup.h"
 
+// DEBUG:
+#include "datatypes/string.h"
+#include <unistr.h>
+#include <uniconv.h>
+
 #include "unit_tests/test_suite.h"
+
+size_t setup_efd_tests(void) {
+  init_strings();
+  return 0;
+}
+
+size_t test_efd_simple_parse(void) {
+  efd_node *n = create_efd_node(EFD_NT_CONTAINER, "test");
+  if (!efd_parse_file(n, "res/data/test/test-simple.efd")) {
+    cleanup_efd_node(n);
+    return 1;
+  }
+  cleanup_efd_node(n);
+  return 0;
+}
 
 size_t test_efd_basic_parse(void) {
   efd_node *n = create_efd_node(EFD_NT_CONTAINER, "test");
@@ -24,6 +46,7 @@ size_t test_efd_basic_parse(void) {
     return 1;
   }
   cleanup_efd_node(n);
+  printf("Done with basic\n.");
   return 0;
 }
 
