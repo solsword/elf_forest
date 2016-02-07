@@ -197,6 +197,11 @@ float efd_parse_float(efd_parse_state *s);
 // Parses an object reference off of the front of the input:
 void* efd_parse_ref(efd_parse_state *s);
 
+// Parses a quoted string off of the front of the input. Returns a newly
+// malloc'd string if it succeeds or NULL if it fails (so if it fails, freeing
+// the result is unnecessary).
+string* efd_parse_str(efd_parse_state *s);
+
 // Starts at the initial position and finds an opening quote, setting the
 // starting point to point to that quote. Then it scans until it finds an
 // (unescaped) closing quote that matches the type (single or double) of the
@@ -205,6 +210,16 @@ void efd_grab_string_limits(
   efd_parse_state *s,
   ptrdiff_t *start,
   ptrdiff_t *end
+);
+
+// Takes an underlying input string and start/end markers and transfers the
+// characters between those markers (exclusive) to a newly-malloc'd string.
+// Along the way, replaces double-instances of the opening limiter with single
+// instances. The caller should free the return value.
+char * efd_purify_string(
+  char const * const input,
+  ptrdiff_t start,
+  ptrdiff_t end
 );
 
 // Skips whitespace and comments (// to end of line and /* to */):
@@ -219,6 +234,10 @@ void efd_parse_sep(efd_parse_state *s);
 // Checks that the most recent parsing function succeeded and returns 0 if it
 // did, or 1 if it indicated an error.
 int efd_parse_failed(efd_parse_state *s);
+
+// Prints the error for the given parse state (if there is one; otherwise does
+// nothing).
+void efd_print_parse_error(efd_parse_state *s);
 
 // Checks if the given parse state reports an error and if it does prints that
 // error and exits.

@@ -95,6 +95,7 @@ void setup_unit_tests(void) {
   #include "suites/test_efd.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
+  /*
   #include "suites/test_color.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
@@ -132,6 +133,7 @@ void setup_unit_tests(void) {
   #include "suites/test_bitmap.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
+  */
 }
 
 void cleanup_unit_tests(void) {

@@ -250,17 +250,10 @@ void efd_parse_number(efd_node *result, efd_parse_state *s) {
 }
 
 void efd_parse_string(efd_node *result, efd_parse_state *s) {
-  ptrdiff_t start, end;
-
-  efd_grab_string_limits(s, &start, &end);
+  result->b.as_string.value = efd_parse_str(s);
   if (efd_parse_failed(s)) {
     return;
   }
-
-  result->b.as_string.value = create_string_from_chars(
-    s->input + start + 1,
-    end - start - 1
-  );
 }
 
 void efd_parse_obj_array(efd_node *result, efd_parse_state *s) {
@@ -410,12 +403,11 @@ void _cleanup_string_in_list(void *v_string) {
 
 void efd_parse_str_array(efd_node *result, efd_parse_state *s) {
   size_t i;
-  ptrdiff_t start, end;
   string *val;
   list *l = create_list();
 
   while (1) {
-    efd_grab_string_limits(s, &start, &end);
+    val = efd_parse_str(s);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
         s->error = EFD_PE_NO_ERROR;
@@ -426,10 +418,6 @@ void efd_parse_str_array(efd_node *result, efd_parse_state *s) {
         return;
       }
     } else {
-      val = create_string_from_chars(
-        s->input + start + 1,
-        end - start - 1
-      );
       l_append_element(l, (void*) val);
     }
     efd_parse_sep(s);
@@ -509,7 +497,6 @@ void efd_parse_num_global(efd_node *result, efd_parse_state *s) {
 void efd_parse_str_global(efd_node *result, efd_parse_state *s) {
   static char *e = "global string";
   char c;
-  ptrdiff_t start, end;
 
   SKIP_OR_ELSE(s, e);
 
@@ -525,15 +512,10 @@ void efd_parse_str_global(efd_node *result, efd_parse_state *s) {
     SKIP_OR_ELSE(s, e);
   }
 
-  efd_grab_string_limits(s, &start, &end);
+  result->b.as_string.value = efd_parse_str(s);
   if (efd_parse_failed(s)) {
     result->b.as_string.value = NULL;
     return;
-  } else {
-    result->b.as_string.value = create_string_from_chars(
-      s->input + start + 1,
-      end - start - 1
-    );
   }
 }
 
@@ -734,6 +716,14 @@ void efd_parse_name(efd_parse_state *s, char *r_name) {
       s->context = "identifier (missing)";
     }
     return;
+  }
+  if (i == EFD_NODE_NAME_SIZE && !efd_parse_atend(s)) {
+    c = s->input[s->pos];
+    if (!is_whitespace(&c) && c != EFD_NODE_SEP && c != EFD_SCHEMA_INDICATOR) {
+      s->error = EFD_PE_MALFORMED;
+      s->context = "identifier (identifier too long)";
+      return;
+    }
   }
   r_name[i] = '\0';
 }
@@ -1193,6 +1183,24 @@ void* efd_parse_ref(efd_parse_state *s) {
   return NULL;
 }
 
+string* efd_parse_str(efd_parse_state *s) {
+  ptrdiff_t start, end;
+  char *pure;
+  string *result;
+
+  efd_grab_string_limits(s, &start, &end);
+  if (efd_parse_failed(s)) {
+    return NULL;
+  }
+
+  pure = efd_purify_string(s->input, start, end);
+
+  result = create_string_from_ntchars(pure);
+
+  free(pure);
+
+  return result;
+}
 void efd_grab_string_limits(
   efd_parse_state *s,
   ptrdiff_t *start,
@@ -1253,6 +1261,44 @@ void efd_grab_string_limits(
       *end = s->pos - 1;
       break;
   }
+}
+
+char * efd_purify_string(
+  char const * const input,
+  ptrdiff_t start,
+  ptrdiff_t end
+) {
+  ptrdiff_t len = end - start - 1;
+  char *result = (char*) malloc(sizeof(char) * (len + 1));
+  ptrdiff_t i, offset;
+  char q, c;
+  int skip = 0;
+  q = input[start];
+  i = 0;
+  for (offset = start + 1; offset < end; ++offset) {
+    c = input[offset];
+    if (c == q) {
+      if (skip) {
+        skip = 0;
+        i -= 1; // counteract the increment
+      } else {
+        skip = 1;
+        result[i] = c;
+      }
+#ifdef DEBUG
+    } else if (skip) {
+      fprintf(stderr, "Warning: bad quote found in string while purifying.\n");
+      fprintf(stderr, "  String: %.*s\n", (int) len, input + start + 1);
+      skip = 0;
+      result[i] = c;
+#endif
+    } else {
+      result[i] = c;
+    }
+    i += 1;
+  }
+  result[i] = '\0';
+  return result;
 }
 
 void efd_parse_skip(efd_parse_state *s) {
@@ -1343,7 +1389,7 @@ int efd_parse_failed(efd_parse_state *s) {
   return s->error != EFD_PE_NO_ERROR;
 }
 
-void efd_throw_parse_error(efd_parse_state *s) {
+void efd_print_parse_error(efd_parse_state *s) {
   char const *context;
   static char before[EFD_PARSER_ERROR_LINE+1];
   static char after[EFD_PARSER_ERROR_LINE+1];
@@ -1475,6 +1521,12 @@ void efd_throw_parse_error(efd_parse_state *s) {
     fprintf(stderr, "%.*s\n", EFD_PARSER_ERROR_LINE, before);
     fprintf(stderr, "%.*s\n", EFD_PARSER_ERROR_LINE, after);
     fprintf(stderr, "%.*s\n", EFD_PARSER_ERROR_LINE, below);
+  }
+}
+
+void efd_throw_parse_error(efd_parse_state *s) {
+  if (s->error != EFD_PE_NO_ERROR) {
+    efd_print_parse_error(s);
     exit(-s->error);
   }
 }

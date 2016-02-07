@@ -1,15 +1,19 @@
 #if defined(EFD_REGISTER_NAMES)
 "itest",
-"ntest"
+"ntest",
+"ptest"
 #elif defined(EFD_REGISTER_UNPACKERS)
 efd__int_test,
-efd__num_test
+efd__num_test,
+efd__parse_test
 #elif defined(EFD_REGISTER_PACKERS)
 int_test__efd,
-num_test__efd
+num_test__efd,
+parse_test__efd
 #elif defined(EFD_REGISTER_DESTRUCTORS)
 cleanup_v_int_test,
-cleanup_v_num_test
+cleanup_v_num_test,
+cleanup_v_parse_test
 #else
 #ifndef INCLUDE_EFD_TESTS_H
 #define INCLUDE_EFD_TESTS_H
@@ -221,6 +225,88 @@ efd_node *num_test__efd(void *v_t) {
 
 void cleanup_v_num_test(void *v_ntest) {
   efd_num_test *t = (efd_num_test*) v_ntest;
+  if (t->input != NULL) {
+    cleanup_string(t->input);
+    t->input = NULL;
+  }
+  if (t->expect != NULL) {
+    cleanup_string(t->expect);
+    t->expect = NULL;
+  }
+  if (t->remainder != NULL) {
+    cleanup_string(t->remainder);
+    t->remainder = NULL;
+  }
+  free(t);
+}
+
+void* efd__parse_test(efd_node *n) {
+  efd_parse_test *result = (efd_parse_test*) calloc(1, sizeof(efd_parse_test));
+  result->input = NULL;
+  result->expect = NULL;
+  result->remainder = NULL;
+
+  efd_node *field;
+  efd_assert_type(n, EFD_NT_CONTAINER);
+
+  field = efd(n, "input");
+  if (field == NULL) {
+    fprintf(stderr, "ERROR: ptest node missing 'input' field\n");
+    free(result);
+    return NULL;
+  }
+  result->input = copy_string(*efd__s(field));
+
+  field = efd(n, "expect");
+  if (field == NULL) {
+    fprintf(stderr, "ERROR: ptest node missing 'expect' field\n");
+    free(result);
+    return NULL;
+  }
+  result->expect = copy_string(*efd__s(field));
+
+  if (s_check_bytes(result->expect, "remainder")) {
+    field = efd(n, "remainder");
+    if (field == NULL) {
+      fprintf(
+        stderr,
+        "ERROR: ptest 'remainder' node missing 'remainder' field\n"
+      );
+      free(result);
+      return NULL;
+    }
+    result->remainder = copy_string(*efd__s(field));
+  } // "failure" -> nothing to do
+
+  return (void*) result;
+}
+
+efd_node *parse_test__efd(void *v_t) {
+  efd_parse_test *t = (efd_parse_test*) v_t;
+  efd_node *n;
+  efd_node *result;
+  
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_PROTO_NAME);
+
+  n = create_efd_node(EFD_NT_STRING, "input");
+  *efd__s(n) = copy_string(t->input);
+  efd_add_child(result, n);
+
+  n = create_efd_node(EFD_NT_STRING, "expect");
+  *efd__s(n) = copy_string(t->expect);
+  efd_add_child(result, n);
+
+  if (s_check_bytes(t->expect, "remainder")) {
+    n = create_efd_node(EFD_NT_STRING, "remainder");
+    *efd__s(n) = copy_string(t->remainder);
+    efd_add_child(result, n);
+  }
+
+  return result;
+}
+
+void cleanup_v_parse_test(void *v_ptest) {
+  efd_parse_test *t = (efd_parse_test*) v_ptest;
   if (t->input != NULL) {
     cleanup_string(t->input);
     t->input = NULL;

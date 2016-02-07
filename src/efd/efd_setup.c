@@ -112,18 +112,42 @@ ptrdiff_t _efd_lookup_key(char const * const key) {
 
 efd_unpack_function efd_lookup_unpacker(char const * const key) {
   ptrdiff_t idx = _efd_lookup_key(key);
-  if (idx < 0) { return NULL; }
+  if (idx < 0) {
+    fprintf(
+      stderr,
+      "Error: no unpack function found for format '%.*s'.\n",
+      (int) EFD_OBJECT_FORMAT_SIZE,
+      key
+    );
+    return NULL;
+  }
   return EFD_OBJECT_UNPACKER_REGISTRY[idx];
 }
 
 efd_pack_function efd_lookup_packer(char const * const key) {
   ptrdiff_t idx = _efd_lookup_key(key);
-  if (idx < 0) { return NULL; }
+  if (idx < 0) {
+    fprintf(
+      stderr,
+      "Error: no pack function found for format '%.*s'.\n",
+      (int) EFD_OBJECT_FORMAT_SIZE,
+      key
+    );
+    return NULL;
+  }
   return EFD_OBJECT_PACKER_REGISTRY[idx];
 }
 
 efd_destroy_function efd_lookup_destructor(char const * const key) {
   ptrdiff_t idx = _efd_lookup_key(key);
-  if (idx < 0) { return NULL; }
+  if (idx < 0) {
+    fprintf(
+      stderr,
+      "Error: no destroy function found for format '%.*s'.\n",
+      (int) EFD_OBJECT_FORMAT_SIZE,
+      key
+    );
+    return NULL;
+  }
   return EFD_OBJECT_DESTRUCTOR_REGISTRY[idx];
 }

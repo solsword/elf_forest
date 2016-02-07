@@ -16,6 +16,9 @@ typedef struct efd_int_test_s efd_int_test;
 struct efd_num_test_s;
 typedef struct efd_num_test_s efd_num_test;
 
+struct efd_parse_test_s;
+typedef struct efd_parse_test_s efd_parse_test;
+
 /*************
  * Constants *
  *************/
@@ -40,6 +43,12 @@ struct efd_num_test_s {
   string* input;
   string* expect;
   float output;
+  string* remainder;
+};
+
+struct efd_parse_test_s {
+  string* input;
+  string* expect;
   string* remainder;
 };
 

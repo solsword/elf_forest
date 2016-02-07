@@ -235,8 +235,25 @@
   [[n output 1]]
   [[s remainder "-2"]]
 ]]
+// misc:
+[[o t:ptest
+  [[s input "[[s name_a_bit_too_long______ 'this won''t work']]"]]
+  [[s expect "remainder"]]
+  [[s remainder "_ 'this won''t work']]"]]
+]]
+[[o t:ptest
+  [[s input "[[s name_that's_fine 'this will work']]"]]
+  [[s expect "success"]]
+]]
 // strings:
-// TODO: HERE
+[[s t "test"]]
+[[s t 'test']]
+[[s t "string ' with embedded ' quotes"]]
+[[s t 'string " with embedded " quotes']]
+[[s t "string "" with embedded "" quotes"]]
+[[s t 'string '' with embedded '' quotes']]
+[[s name-with~some$chrs&*)( "this name should be just fine"]]
+[[s name_just_short_enough__ "this name should be just short enough to work"]]
 // object (rngtable):
 [[o test_object:rngtbl
   [[i size 7]]

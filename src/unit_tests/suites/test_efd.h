@@ -52,6 +52,7 @@ int _test_efd_case(efd_node *n) {
   static efd_parse_state s;
   ptrdiff_t int_result;
   float float_result;
+  efd_node *node_result;
   int result = 0;
 
   s.input = NULL;
@@ -147,6 +148,45 @@ int _test_efd_case(efd_node *n) {
         fprintf(stderr, "  Remainder: %s\n", s.input + s.pos);
       }
     }
+  } else if (efd_format_is(n, "ptest")) {
+    efd_parse_test *t = (efd_parse_test*) (*efd__o(n));
+    s.input = s_raw(t->input);
+    s.input_length = s_get_length(t->input);
+    node_result = efd_parse_any(&s);
+    if (node_result != NULL) { cleanup_efd_node(node_result); }
+    if (s_check_bytes(t->expect, "failure")) {
+      result = efd_parse_failed(&s);
+    } else if (s_check_bytes(t->expect, "success")) {
+      result = !efd_parse_failed(&s);
+    } else if (s_check_bytes(t->expect, "remainder")) {
+      result = (
+        efd_parse_failed(&s)
+     && s_check_bytes(t->remainder, s.input + s.pos)
+      );
+    }
+    if (!result) {
+      fprintf(stderr, "Test EFD case [parse]: Failed.\n");
+      fprintf(stderr, "  Input: %s\n", s_raw(t->input));
+      if (s_check_bytes(t->expect, "remainder")) {
+        fprintf(
+          stderr,
+          "  Expected: %s (\"%s\")\n",
+          s_raw(t->expect),
+          s_raw(t->remainder)
+        );
+      } else {
+        fprintf(stderr, "  Expected: %s\n", s_raw(t->expect));
+      }
+      if (efd_parse_failed(&s)) {
+        fprintf(stderr, "  Result: <parse failed>\n");
+        efd_print_parse_error(&s);
+      } else {
+        fprintf(stderr, "  Result: <parse succeeded>\n");
+      }
+      if (!efd_parse_atend(&s)) {
+        fprintf(stderr, "  Remainder: %s\n", s.input + s.pos);
+      }
+    }
   }
   return result;
 }
@@ -173,6 +213,7 @@ size_t test_efd_defined_tests(void) {
    && (
         efd_format_is(test, "itest")
      || efd_format_is(test, "ntest")
+     || efd_format_is(test, "ptest")
      )
    && !_test_efd_case(test)
     ) {
