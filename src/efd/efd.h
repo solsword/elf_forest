@@ -14,13 +14,9 @@
  * Meta *
  ********/
 
-#define EFD_GL_INT(x) x
-#define EFD_GL_NUM(x) x
-#define EFD_GL_STR(x) x
+#define EFD_GL(x, y) y
 
-#define EFD_GL_INT_I(x)
-#define EFD_GL_NUM_I(x)
-#define EFD_GL_STR_I(x)
+#define EFD_GL_I(x, y)
 
 /*********
  * Enums *

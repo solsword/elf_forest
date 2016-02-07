@@ -172,7 +172,7 @@ altitude_category classify_altitude(float altitude) {
   ) {
     return WM_AC_OCEAN_DEPTHS;
   } else if (altitude < TR_HEIGHT_SEA_LEVEL) {
-    return WM_AC_CONTINENTAL_SHELF;
+    return WM_AC_CONT_SHELF;
   } else if (
     altitude
   < (

@@ -3,6 +3,8 @@ OBJ_DIR=obj
 BIN_DIR=bin
 OUT_DIR=out
 SRC_DIR=src
+RES_DIR=res
+DATA_DIR=$(RES_DIR)/data
 TEST_DIR=$(OUT_DIR)/test
 
 # Don't worry about modification times on output directories:
@@ -113,22 +115,39 @@ CHECKGL_OBJECTS=$(OBJ_DIR)/check_gl_version.o
 # The default goal:
 .DEFAULT_GOAL := game
 
-.PHONY: all clean game test viewer unit_tests test_noise checkgl
+.PHONY: all clean game test viewer unit_tests test_noise checkgl efd_globals
 
-all: game test viewer unit_tests test_noise
+all: game test viewer unit_tests test_noise efd_globals
+
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(BIN_DIR)
 	rm -rf $(OUT_DIR)
-game: $(BIN_DIR)/elf_forest
-test: $(BIN_DIR)/test
-viewer: $(BIN_DIR)/viewer
-unit_tests: $(BIN_DIR)/unit_tests
+	rm $(DATA_DIR)/auto_globals.efd
+
+game: $(BIN_DIR)/elf_forest efd_globals
+
+test: $(BIN_DIR)/test efd_globals
+
+viewer: $(BIN_DIR)/viewer efd_globals
+
+unit_tests: $(BIN_DIR)/unit_tests efd_globals
+
 noise_perf: $(BIN_DIR)/noise_perf
+
 test_noise: $(BIN_DIR)/test_noise $(TEST_DIR)
 	cd $(TEST_DIR) && ../../$(BIN_DIR)/test_noise
+
 checkgl: $(BIN_DIR)/checkgl
 	./$(BIN_DIR)/checkgl
+
+efd_globals: $(DATA_DIR)/auto_globals.efd
+
+$(DATA_DIR)/auto_globals.efd: $(DATA_DIR) $(OBJ_DIR)/*
+	grep -rh EFD_GL[\(_] $(SRC_DIR) \
+		| grep -v "#define" \
+		| sed "s/^.*EFD_GL.*(\([^,]*\),\([^,]*\)).*$$/[[G\1 \2]]/" \
+		> $(DATA_DIR)/auto_globals.efd
 
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
@@ -141,6 +160,9 @@ $(OUT_DIR):
 
 $(TEST_DIR):
 	mkdir -p $(TEST_DIR)
+
+$(DATA_DIR):
+	mkdir -p $(DATA_DIR)
 
 $(SRC_DIR)/*.c: ;
 $(SRC_DIR)/*/*.c: ;

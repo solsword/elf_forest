@@ -46,7 +46,7 @@ eco_info const ECO_INFO[] = {
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
-    .altitude_compatibility = (WM_AC_CONTINENTAL_SHELF | WM_AC_OCEAN_DEPTHS),
+    .altitude_compatibility = (WM_AC_CONT_SHELF | WM_AC_OCEAN_DEPTHS),
     .precipitation_compatibility = -1,
     .temperature_compatibility = (WM_TC_ARCTIC | WM_TC_TUNDRA)
   },
@@ -81,7 +81,7 @@ eco_info const ECO_INFO[] = {
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
-    .altitude_compatibility = WM_AC_CONTINENTAL_SHELF,
+    .altitude_compatibility = WM_AC_CONT_SHELF,
     .precipitation_compatibility = -1,
     .temperature_compatibility = -1
   },
@@ -89,7 +89,7 @@ eco_info const ECO_INFO[] = {
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
-    .altitude_compatibility = WM_AC_CONTINENTAL_SHELF,
+    .altitude_compatibility = WM_AC_CONT_SHELF,
     .precipitation_compatibility = -1,
     .temperature_compatibility = -1
   },
@@ -97,7 +97,7 @@ eco_info const ECO_INFO[] = {
     .max_size = EC_BIOME_SMALL_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN | WM_HS_OCEAN_SHORE,
     .salinity_compatibility = WM_SL_SALINE,
-    .altitude_compatibility = WM_AC_CONTINENTAL_SHELF | WM_AC_COASTAL_PLAINS,
+    .altitude_compatibility = WM_AC_CONT_SHELF | WM_AC_COASTAL_PLAINS,
     .precipitation_compatibility = -1,
     .temperature_compatibility = ~(
       WM_TC_ARCTIC
@@ -109,7 +109,7 @@ eco_info const ECO_INFO[] = {
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
-    .altitude_compatibility = WM_AC_CONTINENTAL_SHELF,
+    .altitude_compatibility = WM_AC_CONT_SHELF,
     .precipitation_compatibility = -1,
     .temperature_compatibility = (
       WM_TC_MILD_FROST
@@ -124,7 +124,7 @@ eco_info const ECO_INFO[] = {
     .max_size = EC_BIOME_SMALL_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN | WM_HS_OCEAN_SHORE,
     .salinity_compatibility = WM_SL_SALINE,
-    .altitude_compatibility = WM_AC_CONTINENTAL_SHELF | WM_AC_COASTAL_PLAINS,
+    .altitude_compatibility = WM_AC_CONT_SHELF | WM_AC_COASTAL_PLAINS,
     .precipitation_compatibility = -1,
     .temperature_compatibility = (
       WM_TC_TUNDRA
@@ -138,7 +138,7 @@ eco_info const ECO_INFO[] = {
     .max_size = EC_BIOME_SMALL_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN | WM_HS_OCEAN_SHORE,
     .salinity_compatibility = WM_SL_SALINE,
-    .altitude_compatibility = WM_AC_CONTINENTAL_SHELF | WM_AC_COASTAL_PLAINS,
+    .altitude_compatibility = WM_AC_CONT_SHELF | WM_AC_COASTAL_PLAINS,
     .precipitation_compatibility = -1,
     .temperature_compatibility = (
       WM_TC_WARM_FROST
@@ -492,7 +492,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -510,7 +510,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -532,7 +532,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -554,7 +554,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -576,7 +576,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -599,7 +599,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -627,7 +627,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -655,7 +655,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -684,7 +684,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -710,7 +710,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -738,7 +738,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -765,7 +765,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
       | WM_AC_COASTAL_PLAINS
       | WM_AC_INLAND_HILLS
       | WM_AC_HIGHLANDS
@@ -793,7 +793,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -817,7 +817,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -845,7 +845,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -873,7 +873,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -902,7 +902,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -931,7 +931,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -960,7 +960,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -989,7 +989,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1019,7 +1019,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1047,7 +1047,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1074,7 +1074,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1100,7 +1100,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1126,7 +1126,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1151,7 +1151,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = -1,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1169,7 +1169,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = WM_SL_FRESH,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1198,7 +1198,7 @@ eco_info const ECO_INFO[] = {
     | WM_SL_SALINE
     ),
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1224,7 +1224,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = WM_SL_FRESH,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1253,7 +1253,7 @@ eco_info const ECO_INFO[] = {
     | WM_SL_SALINE
     ),
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1279,7 +1279,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = WM_SL_FRESH,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1305,7 +1305,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = WM_SL_FRESH,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1334,7 +1334,7 @@ eco_info const ECO_INFO[] = {
     | WM_SL_SALINE
     ),
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1360,7 +1360,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = WM_SL_FRESH,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1386,7 +1386,7 @@ eco_info const ECO_INFO[] = {
     ),
     .salinity_compatibility = WM_SL_FRESH,
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1415,7 +1415,7 @@ eco_info const ECO_INFO[] = {
     | WM_SL_SALINE
     ),
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     | WM_AC_INLAND_HILLS
     | WM_AC_HIGHLANDS
@@ -1444,7 +1444,7 @@ eco_info const ECO_INFO[] = {
     | WM_SL_SALINE
     ),
     .altitude_compatibility = (
-      WM_AC_CONTINENTAL_SHELF
+      WM_AC_CONT_SHELF
     | WM_AC_COASTAL_PLAINS
     ),
     .precipitation_compatibility = -1,

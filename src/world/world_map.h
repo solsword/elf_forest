@@ -50,20 +50,20 @@ typedef enum step_result_e step_result;
 // -------------------
 
 enum hydro_state_e {
-  EFD_GL_INT(WM_HS_LAND = 0x01),
-  EFD_GL_INT(WM_HS_OCEAN = 0x02),
-  EFD_GL_INT(WM_HS_LAKE = 0x04),
-  EFD_GL_INT(WM_HS_OCEAN_SHORE = 0x08),
-  EFD_GL_INT(WM_HS_LAKE_SHORE = 0x10),
-  EFD_GL_INT(WM_HS_RIVER = 0x20)
+  EFD_GL(i, WM_HS_LAND = 0x01),
+  EFD_GL(i, WM_HS_OCEAN = 0x02),
+  EFD_GL(i, WM_HS_LAKE = 0x04),
+  EFD_GL(i, WM_HS_OCEAN_SHORE = 0x08),
+  EFD_GL(i, WM_HS_LAKE_SHORE = 0x10),
+  EFD_GL(i, WM_HS_RIVER = 0x20)
 };
 typedef enum hydro_state_e hydro_state;
 
 enum salinity_e {
-  EFD_GL_INT(WM_SL_FRESH = 0x01),
-  EFD_GL_INT(WM_SL_BRACKISH = 0x02),
-  EFD_GL_INT(WM_SL_SALINE = 0x04),
-  EFD_GL_INT(WM_SL_BRINY = 0x08)
+  EFD_GL(i, WM_SL_FRESH = 0x01),
+  EFD_GL(i, WM_SL_BRACKISH = 0x02),
+  EFD_GL(i, WM_SL_SALINE = 0x04),
+  EFD_GL(i, WM_SL_BRINY = 0x08)
 };
 typedef enum salinity_e salinity;
 
@@ -73,41 +73,41 @@ typedef enum salinity_e salinity;
 
 // Discretization of altitudes:
 enum altitude_category_e {
-  EFD_GL_INT(WM_AC_OCEAN_DEPTHS = 0x01),
-  EFD_GL_INT(WM_AC_CONTINENTAL_SHELF = 0x02),
-  EFD_GL_INT(WM_AC_COASTAL_PLAINS = 0x04),
-  EFD_GL_INT(WM_AC_INLAND_HILLS = 0x08),
-  EFD_GL_INT(WM_AC_HIGHLANDS = 0x10),
-  EFD_GL_INT(WM_AC_MOUNTAIN_SLOPES = 0x20),
-  EFD_GL_INT(WM_AC_MOUNTAIN_PEAKS = 0x40)
+  EFD_GL(i, WM_AC_OCEAN_DEPTHS = 0x01),
+  EFD_GL(i, WM_AC_CONT_SHELF = 0x02),
+  EFD_GL(i, WM_AC_COASTAL_PLAINS = 0x04),
+  EFD_GL(i, WM_AC_INLAND_HILLS = 0x08),
+  EFD_GL(i, WM_AC_HIGHLANDS = 0x10),
+  EFD_GL(i, WM_AC_MOUNTAIN_SLOPES = 0x20),
+  EFD_GL(i, WM_AC_MOUNTAIN_PEAKS = 0x40)
 };
 typedef enum altitude_category_e altitude_category;
 
 // Discretization of precipitation values:
 enum precipitation_category_e {
-  EFD_GL_INT(WM_PC_DESERT = 0x01),
-  EFD_GL_INT(WM_PC_ARID = 0x02),
-  EFD_GL_INT(WM_PC_DRY = 0x04),
-  EFD_GL_INT(WM_PC_NORMAL = 0x08),
-  EFD_GL_INT(WM_PC_SEASONAL = 0x10),
-  EFD_GL_INT(WM_PC_WET = 0x20),
-  EFD_GL_INT(WM_PC_SOAKING = 0x40),
-  EFD_GL_INT(WM_PC_FLOODED = 0x80)
+  EFD_GL(i, WM_PC_DESERT = 0x01),
+  EFD_GL(i, WM_PC_ARID = 0x02),
+  EFD_GL(i, WM_PC_DRY = 0x04),
+  EFD_GL(i, WM_PC_NORMAL = 0x08),
+  EFD_GL(i, WM_PC_SEASONAL = 0x10),
+  EFD_GL(i, WM_PC_WET = 0x20),
+  EFD_GL(i, WM_PC_SOAKING = 0x40),
+  EFD_GL(i, WM_PC_FLOODED = 0x80)
 };
 typedef enum precipitation_category_e precipitation_category;
 
 // Discretization of temperature information:
 enum temperature_category_e {
-  EFD_GL_INT(WM_TC_ARCTIC = 0x001),
-  EFD_GL_INT(WM_TC_TUNDRA = 0x002),
-  EFD_GL_INT(WM_TC_COLD_FROST = 0x004),
-  EFD_GL_INT(WM_TC_COLD_RARE_FROST = 0x008),
-  EFD_GL_INT(WM_TC_MILD_FROST = 0x00f),
-  EFD_GL_INT(WM_TC_MILD_RARE_FROST = 0x010),
-  EFD_GL_INT(WM_TC_WARM_FROST = 0x020),
-  EFD_GL_INT(WM_TC_WARM_NO_FROST = 0x040),
-  EFD_GL_INT(WM_TC_HOT = 0x080),
-  EFD_GL_INT(WM_TC_TROPICAL = 0x100)
+  EFD_GL(i, WM_TC_ARCTIC = 0x001),
+  EFD_GL(i, WM_TC_TUNDRA = 0x002),
+  EFD_GL(i, WM_TC_COLD_FROST = 0x004),
+  EFD_GL(i, WM_TC_COLD_RARE_FROST = 0x008),
+  EFD_GL(i, WM_TC_MILD_FROST = 0x00f),
+  EFD_GL(i, WM_TC_MILD_RARE_FROST = 0x010),
+  EFD_GL(i, WM_TC_WARM_FROST = 0x020),
+  EFD_GL(i, WM_TC_WARM_NO_FROST = 0x040),
+  EFD_GL(i, WM_TC_HOT = 0x080),
+  EFD_GL(i, WM_TC_TROPICAL = 0x100)
 };
 typedef enum temperature_category_e temperature_category;
 
@@ -116,61 +116,61 @@ typedef enum temperature_category_e temperature_category;
 // ------
 
 enum biome_category_e {
-  EFD_GL_INT(WM_BC_UNK = 0),
+  EFD_GL(i, WM_BC_UNK = 0),
 
   // Deep ocean biomes:
   // These biomes describe life in the deep ocean, below the thermocline in the
   // aphotic zone.
-  EFD_GL_INT(WM_BC_DEEP_AQ = 1),
-  EFD_GL_INT(WM_BC_OCN_VNTS = 2),
+  EFD_GL(i, WM_BC_DEEP_AQ = 1),
+  EFD_GL(i, WM_BC_OCN_VNTS = 2),
 
   // Pelagic ocean biomes:
   // These biomes describe species that live above the thermocline in the
   // photic zone of the open ocean, including some non-swimming animals like
   // migratory birds and ice-dwelling mammals.
-  EFD_GL_INT(WM_BC_SEA_ICE = 3),
-  EFD_GL_INT(WM_BC_TMP_PEL = 4),
-  EFD_GL_INT(WM_BC_TRP_PEL = 5),
+  EFD_GL(i, WM_BC_SEA_ICE = 3),
+  EFD_GL(i, WM_BC_TMP_PEL = 4),
+  EFD_GL(i, WM_BC_TRP_PEL = 5),
 
   // Offshore ocean biomes:
   // These describe species that live above the continental shelf, from
   // bottom-dwelling invertebrates to seabirds.
-  EFD_GL_INT(WM_BC_TMP_OFSH = 6),
-  EFD_GL_INT(WM_BC_TRP_OFSH = 7),
-  EFD_GL_INT(WM_BC_TMP_AQ_GSLD = 8),
-  EFD_GL_INT(WM_BC_TRP_AQ_GSLD = 9),
-  EFD_GL_INT(WM_BC_TMP_AQ_FRST = 10),
-  EFD_GL_INT(WM_BC_TRP_AQ_FRST = 11),
-  EFD_GL_INT(WM_BC_CLD_REEF = 12),
-  EFD_GL_INT(WM_BC_WRM_REEF = 13),
+  EFD_GL(i, WM_BC_TMP_OFSH = 6),
+  EFD_GL(i, WM_BC_TRP_OFSH = 7),
+  EFD_GL(i, WM_BC_TMP_AQ_GSLD = 8),
+  EFD_GL(i, WM_BC_TRP_AQ_GSLD = 9),
+  EFD_GL(i, WM_BC_TMP_AQ_FRST = 10),
+  EFD_GL(i, WM_BC_TRP_AQ_FRST = 11),
+  EFD_GL(i, WM_BC_CLD_REEF = 12),
+  EFD_GL(i, WM_BC_WRM_REEF = 13),
 
   // Beach biomes:
   // These biomes are found at the edges of oceans (lake beaches don't get
   // their own biomes). They describe species endemic to these zones, and
   // usually overlap with at least one ocean biome and at least one land biome.
-  EFD_GL_INT(WM_BC_FRZ_SHOR = 14),
-  EFD_GL_INT(WM_BC_CLD_SHOR = 15),
-  EFD_GL_INT(WM_BC_WRM_SHOR = 16),
-  EFD_GL_INT(WM_BC_TRP_SHOR = 17),
+  EFD_GL(i, WM_BC_FRZ_SHOR = 14),
+  EFD_GL(i, WM_BC_CLD_SHOR = 15),
+  EFD_GL(i, WM_BC_WRM_SHOR = 16),
+  EFD_GL(i, WM_BC_TRP_SHOR = 17),
 
   // Lake biomes:
   // These biomes describe the animals endemic to and dependent upon lakes.
   // Terrestrial animals may be included when depend on the lake.
-  EFD_GL_INT(WM_BC_FRZ_LAKE = 18),
-  EFD_GL_INT(WM_BC_CLD_LAKE = 19),
-  EFD_GL_INT(WM_BC_TMP_LAKE = 20),
-  EFD_GL_INT(WM_BC_WRM_LAKE = 21),
-  EFD_GL_INT(WM_BC_TRP_LAKE = 22),
-  EFD_GL_INT(WM_BC_SALT_LAKE = 23),
+  EFD_GL(i, WM_BC_FRZ_LAKE = 18),
+  EFD_GL(i, WM_BC_CLD_LAKE = 19),
+  EFD_GL(i, WM_BC_TMP_LAKE = 20),
+  EFD_GL(i, WM_BC_WRM_LAKE = 21),
+  EFD_GL(i, WM_BC_TRP_LAKE = 22),
+  EFD_GL(i, WM_BC_SALT_LAKE = 23),
 
   // River biomes:
   // These biomes describe animals that live in or depend on rivers. Many
   // species endemic to riparian zones are included.
-  EFD_GL_INT(WM_BC_FRZ_RIVR = 24),
-  EFD_GL_INT(WM_BC_CLD_RIVR = 25),
-  EFD_GL_INT(WM_BC_TMP_RIVR = 26),
-  EFD_GL_INT(WM_BC_WRM_RIVR = 27),
-  EFD_GL_INT(WM_BC_TRP_RIVR = 28),
+  EFD_GL(i, WM_BC_FRZ_RIVR = 24),
+  EFD_GL(i, WM_BC_CLD_RIVR = 25),
+  EFD_GL(i, WM_BC_TMP_RIVR = 26),
+  EFD_GL(i, WM_BC_WRM_RIVR = 27),
+  EFD_GL(i, WM_BC_TRP_RIVR = 28),
 
   // Alpine biomes:
   // These biomes are prevalent in areas of high elevation (above the
@@ -178,79 +178,79 @@ enum biome_category_e {
   // plethora of adaptations for high-altitude living. Their species are
   // usually present below the treeline as well, but another biome will be used
   // to describe most of a mountain's flora and fauna.
-  EFD_GL_INT(WM_BC_FRZ_ALPN = 29),
-  EFD_GL_INT(WM_BC_CLD_ALPN = 30),
-  EFD_GL_INT(WM_BC_TMP_WET_ALPN = 31),
-  EFD_GL_INT(WM_BC_TMP_DRY_ALPN = 32),
-  EFD_GL_INT(WM_BC_WRM_WET_ALPN = 33),
-  EFD_GL_INT(WM_BC_WRM_DRY_ALPN = 34),
-  EFD_GL_INT(WM_BC_TRP_WET_ALPN = 35),
-  EFD_GL_INT(WM_BC_TRP_DRY_ALPN = 36),
+  EFD_GL(i, WM_BC_FRZ_ALPN = 29),
+  EFD_GL(i, WM_BC_CLD_ALPN = 30),
+  EFD_GL(i, WM_BC_TMP_WET_ALPN = 31),
+  EFD_GL(i, WM_BC_TMP_DRY_ALPN = 32),
+  EFD_GL(i, WM_BC_WRM_WET_ALPN = 33),
+  EFD_GL(i, WM_BC_WRM_DRY_ALPN = 34),
+  EFD_GL(i, WM_BC_TRP_WET_ALPN = 35),
+  EFD_GL(i, WM_BC_TRP_DRY_ALPN = 36),
 
   // Desert biomes:
   // These are characterized by extreme dryness, although they will include
   // some oasis species.
-  EFD_GL_INT(WM_BC_FRZ_DSRT = 37),
-  EFD_GL_INT(WM_BC_CLD_DSRT = 38),
-  EFD_GL_INT(WM_BC_TMP_DSRT = 39),
-  EFD_GL_INT(WM_BC_WRM_DSRT = 40),
-  EFD_GL_INT(WM_BC_HOT_DSRT = 41),
+  EFD_GL(i, WM_BC_FRZ_DSRT = 37),
+  EFD_GL(i, WM_BC_CLD_DSRT = 38),
+  EFD_GL(i, WM_BC_TMP_DSRT = 39),
+  EFD_GL(i, WM_BC_WRM_DSRT = 40),
+  EFD_GL(i, WM_BC_HOT_DSRT = 41),
 
   // Grassland biomes:
   // Biomes dominated by grassy herbs, usually due to some combination of poor
   // soil fertility, regular disruptions (grazing, fire, etc.) and/or low
   // annual rainfall.
-  EFD_GL_INT(WM_BC_CLD_GSLD = 42),
-  EFD_GL_INT(WM_BC_TMP_GSLD = 43),
-  EFD_GL_INT(WM_BC_WRM_GSLD = 44),
-  EFD_GL_INT(WM_BC_TRP_GSLD = 45),
+  EFD_GL(i, WM_BC_CLD_GSLD = 42),
+  EFD_GL(i, WM_BC_TMP_GSLD = 43),
+  EFD_GL(i, WM_BC_WRM_GSLD = 44),
+  EFD_GL(i, WM_BC_TRP_GSLD = 45),
 
   // Shrubland biomes:
   // Biomes where shrubs, bushes, and herbs are common, with few trees.
-  EFD_GL_INT(WM_BC_CLD_SBLD = 46),
-  EFD_GL_INT(WM_BC_TMP_SBLD = 47),
-  EFD_GL_INT(WM_BC_WRM_SBLD = 48),
-  EFD_GL_INT(WM_BC_TRP_SBLD = 49),
+  EFD_GL(i, WM_BC_CLD_SBLD = 46),
+  EFD_GL(i, WM_BC_TMP_SBLD = 47),
+  EFD_GL(i, WM_BC_WRM_SBLD = 48),
+  EFD_GL(i, WM_BC_TRP_SBLD = 49),
 
   // Savanna biomes:
   // Biomes where trees may be common, but do not form a canopy, allowing
   // grasses and shrubs to grow beneath and between them.
-  EFD_GL_INT(WM_BC_TMP_SVNA = 50),
-  EFD_GL_INT(WM_BC_WRM_SVNA = 51),
-  EFD_GL_INT(WM_BC_TRP_SVNA = 52),
+  EFD_GL(i, WM_BC_TMP_SVNA = 50),
+  EFD_GL(i, WM_BC_WRM_SVNA = 51),
+  EFD_GL(i, WM_BC_TRP_SVNA = 52),
 
   // Coniferous forest biomes:
   // Biomes dominated by coniferous trees, often extremely homogeneous.
   // Broadleaf trees may also be present, but are distinctly outnumbered.
-  EFD_GL_INT(WM_BC_CLD_CNF_FRST = 53),
-  EFD_GL_INT(WM_BC_TMP_CNF_FRST = 54),
-  EFD_GL_INT(WM_BC_WRM_CNF_FRST = 55),
-  EFD_GL_INT(WM_BC_TRP_CNF_FRST = 56),
+  EFD_GL(i, WM_BC_CLD_CNF_FRST = 53),
+  EFD_GL(i, WM_BC_TMP_CNF_FRST = 54),
+  EFD_GL(i, WM_BC_WRM_CNF_FRST = 55),
+  EFD_GL(i, WM_BC_TRP_CNF_FRST = 56),
 
   // Broadleaf forest biomes:
   // Biomes dominated by broadleaf trees which are usually quite diverse. Some
   // conifers may also be present, but they are usually rare.
-  EFD_GL_INT(WM_BC_TMP_BDL_FRST = 57),
-  EFD_GL_INT(WM_BC_WRM_WET_BDL_FRST = 58),
-  EFD_GL_INT(WM_BC_WRM_DRY_BDL_FRST = 59),
-  EFD_GL_INT(WM_BC_TRP_WET_BDL_FRST = 60),
-  EFD_GL_INT(WM_BC_TRP_DRY_BDL_FRST = 61),
+  EFD_GL(i, WM_BC_TMP_BDL_FRST = 57),
+  EFD_GL(i, WM_BC_WRM_WET_BDL_FRST = 58),
+  EFD_GL(i, WM_BC_WRM_DRY_BDL_FRST = 59),
+  EFD_GL(i, WM_BC_TRP_WET_BDL_FRST = 60),
+  EFD_GL(i, WM_BC_TRP_DRY_BDL_FRST = 61),
 
   // Wetland biomes:
   // Biomes with seasonal or sustained flooding, usually found near lakes,
   // rivers, or oceans. Wetlands adjacent to the ocean are brackish.
-  EFD_GL_INT(WM_BC_TND = 62),
-  EFD_GL_INT(WM_BC_CLD_FW_WTLD = 63),
-  EFD_GL_INT(WM_BC_CLD_SW_WTLD = 64),
-  EFD_GL_INT(WM_BC_TMP_FW_WTLD = 65),
-  EFD_GL_INT(WM_BC_TMP_SW_WTLD = 66),
-  EFD_GL_INT(WM_BC_WRM_FW_WTLD = 67),
-  EFD_GL_INT(WM_BC_WRM_FW_FRST_WTLD = 68),
-  EFD_GL_INT(WM_BC_WRM_SW_WTLD = 69),
-  EFD_GL_INT(WM_BC_TRP_FW_WTLD = 70),
-  EFD_GL_INT(WM_BC_TRP_FW_FRST_WTLD = 71),
-  EFD_GL_INT(WM_BC_TRP_SW_WTLD = 72),
-  EFD_GL_INT(WM_BC_TRP_SW_FRST_WTLD = 73)
+  EFD_GL(i, WM_BC_TND = 62),
+  EFD_GL(i, WM_BC_CLD_FW_WTLD = 63),
+  EFD_GL(i, WM_BC_CLD_SW_WTLD = 64),
+  EFD_GL(i, WM_BC_TMP_FW_WTLD = 65),
+  EFD_GL(i, WM_BC_TMP_SW_WTLD = 66),
+  EFD_GL(i, WM_BC_WRM_FW_WTLD = 67),
+  EFD_GL(i, WM_BC_WRM_FW_FRST_WTLD = 68),
+  EFD_GL(i, WM_BC_WRM_SW_WTLD = 69),
+  EFD_GL(i, WM_BC_TRP_FW_WTLD = 70),
+  EFD_GL(i, WM_BC_TRP_FW_FRST_WTLD = 71),
+  EFD_GL(i, WM_BC_TRP_SW_WTLD = 72),
+  EFD_GL(i, WM_BC_TRP_SW_FRST_WTLD = 73)
 };
 typedef enum biome_category_e biome_category;
 

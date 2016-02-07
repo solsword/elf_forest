@@ -1069,7 +1069,7 @@ rngtable* pick_alt_dirt_table(world_region *wr, ptrdiff_t seed) {
   if (wr->s_altitude == WM_AC_OCEAN_DEPTHS) {
     // precipitation and temperature are irrelevant
     return (rngtable*) rt_pick_result(&OCEAN_DEPTHS_ALTS_ALTS, seed);
-  } else if (wr->s_altitude == WM_AC_CONTINENTAL_SHELF) {
+  } else if (wr->s_altitude == WM_AC_CONT_SHELF) {
     // precipitation and temperature are irrelevant
     return (rngtable*) rt_pick_result(&CONTINENTAL_SHELF_ALTS_ALTS, seed);
 
@@ -1289,7 +1289,7 @@ void fill_dirt_species(
       sand = 0.7 * sand + 0.3 * SL_COMP_MAX_SAND;
       clay = 0.8 * clay + 0.2 * SL_COMP_MAX_CLAY;
       break;
-    case WM_AC_CONTINENTAL_SHELF:
+    case WM_AC_CONT_SHELF:
       richness = 0.5 * richness + 0.5 * randf_pnorm(seed, 0.3, 1.0);
       sand = 0.5 * sand + 0.5 * SL_COMP_MAX_SAND;
       clay = 0.8 * clay;
