@@ -22,6 +22,9 @@ char const * const EFD_NT_NAMES[] = {
   "array_int",
   "array_num",
   "array_str",
+  "global_int",
+  "global_num",
+  "global_str",
   "<invalid>"
 };
 
@@ -36,11 +39,21 @@ char const * const EFD_NT_ABBRS[] = {
   "ai",
   "an",
   "as",
+  "Gi",
+  "Gn",
+  "Gs",
   "!"
 };
 
 char const * const EFD_PROTO_NAME = "-";
+
+char const * const EFD_ROOT_NAME = "_";
+
 efd_node *EFD_ROOT = NULL;
+
+map *EFD_INT_GLOBALS = NULL;
+map *EFD_NUM_GLOBALS = NULL;
+map *EFD_STR_GLOBALS = NULL;
 
 /******************************
  * Constructors & Destructors *
@@ -112,8 +125,12 @@ void cleanup_efd_node(efd_node *n) {
   // Special-case cleanup:
   switch (n->h.type) {
     default:
+    case EFD_NT_INVALID:
     case EFD_NT_INTEGER:
     case EFD_NT_NUMBER:
+    case EFD_NT_GLOBAL_INT:
+    case EFD_NT_GLOBAL_NUM:
+    case EFD_NT_GLOBAL_STR: // string should be in globals
       // do nothing
       break;
 
@@ -224,7 +241,7 @@ void efd_assert_type(efd_node *n, efd_node_type t) {
       fprintf(
         stderr,
         "Error: EFD node '%.*s' has type '%s' rather than '%s' as required.\n",
-        EFD_NODE_NAME_SIZE * EFD_MAX_NAME_DEPTH + 3,
+        (int) (EFD_NODE_NAME_SIZE * EFD_MAX_NAME_DEPTH + 3),
         fqn,
         EFD_NT_NAMES[n->h.type],
         EFD_NT_NAMES[t]
@@ -233,7 +250,7 @@ void efd_assert_type(efd_node *n, efd_node_type t) {
       fprintf(
         stderr,
         "Error: EFD node '%.*s' has type '%d' rather than '%d' as required.\n",
-        EFD_NODE_NAME_SIZE * EFD_MAX_NAME_DEPTH + 3,
+        (int) (EFD_NODE_NAME_SIZE * EFD_MAX_NAME_DEPTH + 3),
         fqn,
         n->h.type,
         t
@@ -406,4 +423,155 @@ efd_schema* efd_fetch_schema(char const * const name) {
 
 void efd_merge_node(efd_node *base, efd_node *victim) {
   // TODO: HERE!
+}
+
+// Helper for transforming character keys into map x/y/z keys. r_key should be
+// a ptrdiff_t[EFD_GLOBALS_KEY_ARITY].
+void _get_global_key(
+  char const * const key,
+  uintptr_t *r_key
+) {
+  memset(
+    (char*) r_key,
+    0,
+    EFD_GLOBALS_KEY_ARITY * sizeof(uintptr_t) / sizeof(char)
+  );
+  strncpy(
+    (char*) r_key,
+    key,
+    EFD_GLOBALS_KEY_ARITY * sizeof(uintptr_t) / sizeof(char)
+  );
+}
+
+void * _efd_get_global(map *m, char const * const key) {
+  uintptr_t mkey[EFD_GLOBALS_KEY_ARITY];
+  _get_global_key(key, mkey);
+  switch (EFD_GLOBALS_KEY_ARITY) {
+    case 1:
+      return m1_get_value(
+        m,
+        (void*) mkey[0]
+      );
+    case 2:
+      return m2_get_value(
+        m,
+        (void*) mkey[0],
+        (void*) mkey[1]
+      );
+    case 3:
+      return m3_get_value(
+        m,
+        (void*) mkey[0],
+        (void*) mkey[1],
+        (void*) mkey[2]
+      );
+    case 4:
+      return m_get_value(
+        m,
+        (void*) mkey[0],
+        (void*) mkey[1],
+        (void*) mkey[2],
+        (void*) mkey[3]
+      );
+    case 5:
+      return m_get_value(
+        m,
+        (void*) mkey[0],
+        (void*) mkey[1],
+        (void*) mkey[2],
+        (void*) mkey[3],
+        (void*) mkey[4]
+      );
+    default:
+      fprintf(
+        stderr,
+        "ERROR: Invalid EFD global key arity %d!\n",
+        EFD_GLOBALS_KEY_ARITY
+      );
+      exit(1);
+  }
+}
+
+void * _efd_set_global(map *m, char const * const key, void *value) {
+  uintptr_t mkey[EFD_GLOBALS_KEY_ARITY];
+  _get_global_key(key, mkey);
+  switch (EFD_GLOBALS_KEY_ARITY) {
+    case 1:
+      return m1_put_value(
+        m,
+        (void*) value,
+        (void*) mkey[0]
+      );
+    case 2:
+      return m2_put_value(
+        m,
+        (void*) value,
+        (void*) mkey[0],
+        (void*) mkey[1]
+      );
+    case 3:
+      return m3_put_value(
+        m,
+        (void*) value,
+        (void*) mkey[0],
+        (void*) mkey[1],
+        (void*) mkey[2]
+      );
+    case 4:
+      return m_put_value(
+        m,
+        (void*) value,
+        (void*) mkey[0],
+        (void*) mkey[1],
+        (void*) mkey[2],
+        (void*) mkey[3]
+      );
+    case 5:
+      return m_put_value(
+        m,
+        (void*) value,
+        (void*) mkey[0],
+        (void*) mkey[1],
+        (void*) mkey[2],
+        (void*) mkey[3],
+        (void*) mkey[4]
+      );
+    default:
+      fprintf(
+        stderr,
+        "ERROR: Invalid EFD global key arity %d!\n",
+        EFD_GLOBALS_KEY_ARITY
+      );
+      exit(1);
+  }
+}
+
+ptrdiff_t efd_get_global_i(char const * const key) {
+  return (ptrdiff_t) _efd_get_global(EFD_INT_GLOBALS, key);
+}
+
+float efd_get_global_n(char const * const key) {
+  void *r = _efd_get_global(EFD_NUM_GLOBALS, key);
+  return *((float*) &r);
+}
+
+string* efd_get_global_s(char const * const key) {
+  return (string*) _efd_get_global(EFD_STR_GLOBALS, key);
+}
+
+void efd_set_global_i(char const * const key, ptrdiff_t value) {
+  _efd_set_global(EFD_INT_GLOBALS, key, (void*) value);
+}
+
+void efd_set_global_n(char const * const key, float value) {
+  uintptr_t v = 0;
+  v = *((uintptr_t*) &value); // TODO: Safer float <-> void* conversion?
+  _efd_set_global(EFD_NUM_GLOBALS, key, (void*) v);
+}
+
+void efd_set_global_s(char const * const key, string* value) {
+  string *tmp = (string*) _efd_set_global(EFD_STR_GLOBALS, key, (void*) value);
+  if (tmp != NULL) {
+    cleanup_string(tmp);
+  }
 }

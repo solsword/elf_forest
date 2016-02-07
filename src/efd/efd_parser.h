@@ -158,6 +158,16 @@ void efd_parse_num_array(efd_node *result, efd_parse_state *s);
 void efd_parse_str_array(efd_node *result, efd_parse_state *s);
 
 
+// Parsing functions for EFD globals:
+//-----------------------------------
+
+void efd_parse_int_global(efd_node *result, efd_parse_state *s);
+
+void efd_parse_num_global(efd_node *result, efd_parse_state *s);
+
+void efd_parse_str_global(efd_node *result, efd_parse_state *s);
+
+
 // Functions for parsing bits & pieces:
 //-------------------------------------
 
@@ -169,13 +179,13 @@ void efd_parse_close(efd_parse_state *s);
 efd_node_type efd_parse_type(efd_parse_state *s);
 
 // Parses a node name off of the front of the input. Puts up to
-// EFD_NODE_NAME_SIZE characters into r_name (including a NUL terminator),
+// EFD_NODE_NAME_SIZE characters into r_name (plus one for a NUL terminator),
 // overwriting whatever may have been there.
 void efd_parse_name(efd_parse_state *s, char *r_name);
 
 // Parses the schema name part of a 'c' or 'o' declaration, including the
-// leading ':'. Puts up to EFD_NODE_NAME_SIZE characters (including a trailing
-// NUL) into r_name, overwriting any previous contents.
+// leading ':'. Puts up to EFD_NODE_NAME_SIZE characters (plus one for a
+// trailing NUL) into r_name, overwriting any previous contents.
 void efd_parse_schema(efd_parse_state *s, char *r_name);
 
 // Parses an integer off of the front of the input:

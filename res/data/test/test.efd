@@ -235,6 +235,8 @@
   [[n output 1]]
   [[s remainder "-2"]]
 ]]
+// strings:
+// TODO: HERE
 // object (rngtable):
 [[o test_object:rngtbl
   [[i size 7]]
@@ -251,3 +253,7 @@
     0.03, 0.02, //  5% | 100%
   ]]
 ]]
+// globals:
+[[Gi GLOBAL_INT 5]]
+[[Gn GLOBAL_NUM 3.1415926]]
+[[Gs GLOBAL_STR "This string goes directly into the globals..."]]

@@ -16,7 +16,7 @@
  *************/
 
 eco_info const ECO_INFO[] = {
-  { // BIOME_CAT_UNKNOWN,
+  { // WM_BC_UNK,
     .max_size = EC_BIOME_TINY_SIZE,
     .hydro_state_compatibility = 0,
     .salinity_compatibility = 0,
@@ -25,7 +25,7 @@ eco_info const ECO_INFO[] = {
     .temperature_compatibility = 0
   },
 
-  { // BIOME_CAT_DEEP_AQUATIC,
+  { // WM_BC_DEEP_AQ,
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
@@ -33,7 +33,7 @@ eco_info const ECO_INFO[] = {
     .precipitation_compatibility = -1,
     .temperature_compatibility = -1
   },
-  { // BIOME_CAT_OCEAN_VENTS,
+  { // WM_BC_OCN_VNTS,
     .max_size = EC_BIOME_TINY_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
@@ -42,7 +42,7 @@ eco_info const ECO_INFO[] = {
     .temperature_compatibility = -1
   },
 
-  { // BIOME_CAT_SEA_ICE,
+  { // WM_BC_SEA_ICE,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
@@ -50,7 +50,7 @@ eco_info const ECO_INFO[] = {
     .precipitation_compatibility = -1,
     .temperature_compatibility = (WM_TC_ARCTIC | WM_TC_TUNDRA)
   },
-  { // BIOME_CAT_TEMPERATE_PELAGIC,
+  { // WM_BC_TMP_PEL,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
@@ -64,7 +64,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_FROST
     )
   },
-  { // BIOME_CAT_TROPICAL_PELAGIC,
+  { // WM_BC_TRP_PEL,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
@@ -77,7 +77,7 @@ eco_info const ECO_INFO[] = {
     )
   },
 
-  { // BIOME_CAT_TEMPERATE_OFFSHORE,
+  { // WM_BC_TMP_OFSH,
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
@@ -85,7 +85,7 @@ eco_info const ECO_INFO[] = {
     .precipitation_compatibility = -1,
     .temperature_compatibility = -1
   },
-  { // BIOME_CAT_TROPICAL_OFFSHORE,
+  { // WM_BC_TRP_OFSH,
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
@@ -93,7 +93,7 @@ eco_info const ECO_INFO[] = {
     .precipitation_compatibility = -1,
     .temperature_compatibility = -1
   },
-  { // BIOME_CAT_AQUATIC_GRASSLAND,
+  { // WM_BC_AQ_GSLD,
     .max_size = EC_BIOME_SMALL_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN | WM_HS_OCEAN_SHORE,
     .salinity_compatibility = WM_SL_SALINE,
@@ -105,7 +105,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_COLD_FROST
     )
   },
-  { // BIOME_CAT_AQUATIC_FOREST,
+  { // WM_BC_AQ_FRST,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
@@ -120,7 +120,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_TROPICAL
     )
   },
-  { // BIOME_CAT_COLD_REEF,
+  { // WM_BC_CLD_REEF,
     .max_size = EC_BIOME_SMALL_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN | WM_HS_OCEAN_SHORE,
     .salinity_compatibility = WM_SL_SALINE,
@@ -134,7 +134,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_RARE_FROST
     )
   },
-  { // BIOME_CAT_WARM_REEF,
+  { // WM_BC_WRM_REEF,
     .max_size = EC_BIOME_SMALL_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN | WM_HS_OCEAN_SHORE,
     .salinity_compatibility = WM_SL_SALINE,
@@ -148,7 +148,7 @@ eco_info const ECO_INFO[] = {
     )
   },
 
-  { // BIOME_CAT_FROZEN_BEACH,
+  { // WM_BC_FRZ_SHOR,
     .max_size = EC_BIOME_LARGE_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN_SHORE,
     .salinity_compatibility = -1,
@@ -156,7 +156,7 @@ eco_info const ECO_INFO[] = {
     .precipitation_compatibility = -1,
     .temperature_compatibility = WM_TC_ARCTIC | WM_TC_TUNDRA
   },
-  { // BIOME_CAT_COLD_BEACH,
+  { // WM_BC_CLD_SHOR,
     .max_size = EC_BIOME_LARGE_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN_SHORE,
     .salinity_compatibility = -1,
@@ -168,7 +168,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_FROST
     )
   },
-  { // BIOME_CAT_WARM_BEACH,
+  { // WM_BC_WRM_SHOR,
     .max_size = EC_BIOME_LARGE_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN_SHORE,
     .salinity_compatibility = -1,
@@ -181,7 +181,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_NO_FROST
     )
   },
-  { // BIOME_CAT_TROPICAL_BEACH,
+  { // WM_BC_TRP_SHOR,
     .max_size = EC_BIOME_LARGE_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN_SHORE,
     .salinity_compatibility = -1,
@@ -194,7 +194,7 @@ eco_info const ECO_INFO[] = {
     )
   },
 
-  { // BIOME_CAT_FROZEN_LAKE,
+  { // WM_BC_FRZ_LAKE,
     .max_size = EC_BIOME_GIGANTIC_SIZE, // limited by lake size
     .hydro_state_compatibility = WM_HS_LAKE | WM_HS_LAKE_SHORE,
     .salinity_compatibility = WM_SL_FRESH,
@@ -202,7 +202,7 @@ eco_info const ECO_INFO[] = {
     .precipitation_compatibility = -1,
     .temperature_compatibility = WM_TC_ARCTIC | WM_TC_TUNDRA
   },
-  { // BIOME_CAT_COLD_LAKE,
+  { // WM_BC_CLD_LAKE,
     .max_size = EC_BIOME_GIGANTIC_SIZE, // limited by lake size
     .hydro_state_compatibility = WM_HS_LAKE | WM_HS_LAKE_SHORE,
     .salinity_compatibility = WM_SL_FRESH,
@@ -214,7 +214,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_FROST
     )
   },
-  { // BIOME_CAT_TEMPERATE_LAKE,
+  { // WM_BC_TMP_LAKE,
     .max_size = EC_BIOME_GIGANTIC_SIZE, // limited by lake size
     .hydro_state_compatibility = WM_HS_LAKE | WM_HS_LAKE_SHORE,
     .salinity_compatibility = WM_SL_FRESH,
@@ -227,7 +227,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_FROST
     )
   },
-  { // BIOME_CAT_WARM_LAKE,
+  { // WM_BC_WRM_LAKE,
     .max_size = EC_BIOME_GIGANTIC_SIZE, // limited by lake size
     .hydro_state_compatibility = WM_HS_LAKE | WM_HS_LAKE_SHORE,
     .salinity_compatibility = WM_SL_FRESH,
@@ -240,7 +240,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_HOT
     )
   },
-  { // BIOME_CAT_TROPICAL_LAKE,
+  { // WM_BC_TRP_LAKE,
     .max_size = EC_BIOME_GIGANTIC_SIZE, // limited by lake size
     .hydro_state_compatibility = WM_HS_LAKE | WM_HS_LAKE_SHORE,
     .salinity_compatibility = WM_SL_FRESH,
@@ -252,7 +252,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_TROPICAL
     )
   },
-  { // BIOME_CAT_SALT_LAKE,
+  { // WM_BC_SALT_LAKE,
     .max_size = EC_BIOME_GIGANTIC_SIZE, // limited by lake size
     .hydro_state_compatibility = WM_HS_LAKE | WM_HS_LAKE_SHORE,
     .salinity_compatibility = WM_SL_BRACKISH | WM_SL_SALINE | WM_SL_BRINY,
@@ -261,7 +261,7 @@ eco_info const ECO_INFO[] = {
     .temperature_compatibility = -1
   },
 
-  { // BIOME_CAT_FROZEN_RIVER,
+  { // WM_BC_FRZ_RIVR,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = WM_HS_LAKE_SHORE | WM_HS_RIVER,
     .salinity_compatibility = WM_SL_FRESH,
@@ -269,7 +269,7 @@ eco_info const ECO_INFO[] = {
     .precipitation_compatibility = -1,
     .temperature_compatibility = WM_TC_TUNDRA
   },
-  { // BIOME_CAT_COLD_RIVER,
+  { // WM_BC_CLD_RIVR,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = WM_HS_LAKE_SHORE | WM_HS_RIVER,
     .salinity_compatibility = WM_SL_FRESH,
@@ -281,7 +281,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_FROST
     )
   },
-  { // BIOME_CAT_TEMPERATE_RIVER,
+  { // WM_BC_TMP_RIVR,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = WM_HS_LAKE_SHORE | WM_HS_RIVER,
     .salinity_compatibility = WM_SL_FRESH,
@@ -294,7 +294,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_FROST
     )
   },
-  { // BIOME_CAT_WARM_RIVER,
+  { // WM_BC_WRM_RIVR,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = WM_HS_LAKE_SHORE | WM_HS_RIVER,
     .salinity_compatibility = WM_SL_FRESH,
@@ -306,7 +306,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_NO_FROST
     )
   },
-  { // BIOME_CAT_TROPICAL_RIVER,
+  { // WM_BC_TRP_RIVR,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = WM_HS_LAKE_SHORE | WM_HS_RIVER,
     .salinity_compatibility = WM_SL_FRESH,
@@ -319,7 +319,7 @@ eco_info const ECO_INFO[] = {
     )
   },
 
-  { // BIOME_CAT_FROZEN_ALPINE,
+  { // WM_BC_FRZ_ALPN,
     .max_size = EC_BIOME_LARGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -334,7 +334,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_TUNDRA
     )
   },
-  { // BIOME_CAT_COLD_ALPINE,
+  { // WM_BC_CLD_ALPN,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -350,7 +350,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_FROST
     )
   },
-  { // BIOME_CAT_TEMPERATE_WET_ALPINE,
+  { // WM_BC_TMP_WET_ALPN,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -373,7 +373,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_FROST
     )
   },
-  { // BIOME_CAT_TEMPERATE_DRY_ALPINE,
+  { // WM_BC_TMP_DRY_ALPN,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -395,7 +395,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_FROST
     )
   },
-  { // BIOME_CAT_WARM_WET_ALPINE,
+  { // WM_BC_WRM_WET_ALPN,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -418,7 +418,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_HOT
     )
   },
-  { // BIOME_CAT_WARM_DRY_ALPINE,
+  { // WM_BC_WRM_DRY_ALPN,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -440,7 +440,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_HOT
     )
   },
-  { // BIOME_CAT_TROPICAL_WET_ALPINE,
+  { // WM_BC_TRP_WET_ALPN,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -462,7 +462,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_TROPICAL
     )
   },
-  { // BIOME_CAT_TROPICAL_DRY_ALPINE,
+  { // WM_BC_TRP_DRY_ALPN,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -483,7 +483,7 @@ eco_info const ECO_INFO[] = {
     )
   },
 
-  { // BIOME_CAT_FROZEN_DESERT,
+  { // WM_BC_FRZ_DSRT,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -501,7 +501,7 @@ eco_info const ECO_INFO[] = {
     .precipitation_compatibility = WM_PC_DESERT | WM_PC_ARID,
     .temperature_compatibility = WM_TC_ARCTIC | WM_TC_TUNDRA
   },
-  { // BIOME_CAT_COLD_DESERT,
+  { // WM_BC_CLD_DSRT,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -523,7 +523,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_FROST
     )
   },
-  { // BIOME_CAT_TEMPERATE_DESERT,
+  { // WM_BC_TMP_DSRT,
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -545,7 +545,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_FROST
     )
   },
-  { // BIOME_CAT_WARM_DESERT,
+  { // WM_BC_WRM_DSRT,
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -567,7 +567,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_NO_FROST
     )
   },
-  { // BIOME_CAT_HOT_DESERT,
+  { // WM_BC_HOT_DSRT,
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -590,7 +590,7 @@ eco_info const ECO_INFO[] = {
     )
   },
 
-  { // BIOME_CAT_COLD_GRASSLAND,
+  { // WM_BC_CLD_GSLD,
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -618,7 +618,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_FROST
     )
   },
-  { // BIOME_CAT_TEMPERATE_GRASSLAND,
+  { // WM_BC_TMP_GSLD,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -646,7 +646,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_RARE_FROST
     )
   },
-  { // BIOME_CAT_WARM_GRASSLAND,
+  { // WM_BC_WRM_GSLD,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -675,7 +675,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_HOT
     )
   },
-  { // BIOME_CAT_TROPICAL_GRASSLAND,
+  { // WM_BC_TRP_GSLD,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -701,7 +701,7 @@ eco_info const ECO_INFO[] = {
     .temperature_compatibility = WM_TC_HOT | WM_TC_TROPICAL
   },
 
-  { // BIOME_CAT_COLD_SHRUBLAND,
+  { // WM_BC_CLD_SBLD,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -729,7 +729,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_FROST
     )
   },
-  { // BIOME_CAT_TEMPERATE_SHRUBLAND,
+  { // WM_BC_TMP_SBLD,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -756,7 +756,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_RARE_FROST
     )
   },
-  { // BIOME_CAT_WARM_SHRUBLAND,
+  { // WM_BC_WRM_SBLD,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -784,7 +784,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_HOT
     )
   },
-  { // BIOME_CAT_TROPICAL_SHRUBLAND,
+  { // WM_BC_TRP_SBLD,
     .max_size = EC_BIOME_SMALL_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -808,7 +808,7 @@ eco_info const ECO_INFO[] = {
     .temperature_compatibility = WM_TC_HOT | WM_TC_TROPICAL
   },
 
-  { // BIOME_CAT_TEMPERATE_SAVANNA,
+  { // WM_BC_TMP_SVNA,
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -836,7 +836,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_FROST
     )
   },
-  { // BIOME_CAT_WARM_SAVANNA,
+  { // WM_BC_WRM_SVNA,
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -864,7 +864,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_HOT
     )
   },
-  { // BIOME_CAT_TROPICAL_SAVANNA,
+  { // WM_BC_TRP_SVNA,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -893,7 +893,7 @@ eco_info const ECO_INFO[] = {
     )
   },
 
-  { // BIOME_CAT_COLD_CONIFEROUS_FOREST,
+  { // WM_BC_CLD_CNF_FRST,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -922,7 +922,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_FROST
     )
   },
-  { // BIOME_CAT_TEMPERATE_CONIFEROUS_FOREST,
+  { // WM_BC_TMP_CNF_FRST,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -951,7 +951,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_RARE_FROST
     )
   },
-  { // BIOME_CAT_WARM_CONIFEROUS_FOREST,
+  { // WM_BC_WRM_CNF_FRST,
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -980,7 +980,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_NO_FROST
     )
   },
-  { // BIOME_CAT_TROPICAL_CONIFEROUS_FOREST,
+  { // WM_BC_TRP_CNF_FRST,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1010,7 +1010,7 @@ eco_info const ECO_INFO[] = {
     )
   },
 
-  { // BIOME_CAT_TEMPERATE_BROADLEAF_FOREST,
+  { // WM_BC_TMP_BDL_FRST,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1038,7 +1038,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_FROST
     )
   },
-  { // BIOME_CAT_WARM_WET_BROADLEAF_FOREST,
+  { // WM_BC_WRM_WET_BDL_FRST,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1065,7 +1065,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_NO_FROST
     )
   },
-  { // BIOME_CAT_WARM_DRY_BROADLEAF_FOREST,
+  { // WM_BC_WRM_DRY_BDL_FRST,
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1091,7 +1091,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_HOT
     )
   },
-  { // BIOME_CAT_TROPICAL_WET_BROADLEAF_FOREST,
+  { // WM_BC_TRP_WET_BDL_FRST,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1117,7 +1117,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_TROPICAL
     )
   },
-  { // BIOME_CAT_TROPICAL_DRY_BROADLEAF_FOREST,
+  { // WM_BC_TRP_DRY_BDL_FRST,
     .max_size = EC_BIOME_HUGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1142,7 +1142,7 @@ eco_info const ECO_INFO[] = {
     )
   },
 
-  { // BIOME_CAT_TUNDRA,
+  { // WM_BC_TND,
     .max_size = EC_BIOME_GIGANTIC_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1160,7 +1160,7 @@ eco_info const ECO_INFO[] = {
     .precipitation_compatibility = -1,
     .temperature_compatibility = WM_TC_TUNDRA
   },
-  { // BIOME_CAT_COLD_FRESHWATER_WETLAND,
+  { // WM_BC_CLD_FW_WTLD,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1186,7 +1186,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_FROST
     )
   },
-  { // BIOME_CAT_COLD_SALTWATER_WETLAND,
+  { // WM_BC_CLD_SW_WTLD,
     .max_size = EC_BIOME_SMALL_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1215,7 +1215,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_MILD_FROST
     )
   },
-  { // BIOME_CAT_TEMPERATE_FRESHWATER_WETLAND,
+  { // WM_BC_TMP_FW_WTLD,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1241,7 +1241,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_FROST
     )
   },
-  { // BIOME_CAT_TEMPERATE_SALTWATER_WETLAND,
+  { // WM_BC_TMP_SW_WTLD,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1270,7 +1270,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_FROST
     )
   },
-  { // BIOME_CAT_WARM_FRESHWATER_WETLAND,
+  { // WM_BC_WRM_FW_WTLD,
     .max_size = EC_BIOME_LARGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1296,7 +1296,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_NO_FROST
     )
   },
-  { // BIOME_CAT_WARM_FRESHWATER_FORESTED_WETLAND,
+  { // WM_BC_WRM_FW_FRST_WTLD,
     .max_size = EC_BIOME_LARGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1322,7 +1322,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_NO_FROST
     )
   },
-  { // BIOME_CAT_WARM_SALTWATER_WETLAND,
+  { // WM_BC_WRM_SW_WTLD,
     .max_size = EC_BIOME_LARGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1351,7 +1351,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_WARM_NO_FROST
     )
   },
-  { // BIOME_CAT_TROPICAL_FRESHWATER_WETLAND,
+  { // WM_BC_TRP_FW_WTLD,
     .max_size = EC_BIOME_LARGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1377,7 +1377,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_TROPICAL
     )
   },
-  { // BIOME_CAT_TROPICAL_FRESHWATER_FORESTED_WETLAND,
+  { // WM_BC_TRP_FW_FRST_WTLD,
     .max_size = EC_BIOME_LARGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1403,7 +1403,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_TROPICAL
     )
   },
-  { // BIOME_CAT_TROPICAL_SALTWATER_WETLAND,
+  { // WM_BC_TRP_SW_WTLD,
     .max_size = EC_BIOME_LARGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1432,7 +1432,7 @@ eco_info const ECO_INFO[] = {
     | WM_TC_TROPICAL
     )
   },
-  { // BIOME_CAT_TROPICAL_SALTWATER_FORESTED_WETLAND
+  { // WM_BC_TRP_SW_FRST_WTLD
     .max_size = EC_BIOME_LARGE_SIZE,
     .hydro_state_compatibility = (
       WM_HS_LAND
@@ -1456,182 +1456,182 @@ eco_info const ECO_INFO[] = {
   },
 };
 
-static rngtable DEEP_OCEAN_BIOME_CATEGORIES = {
+static rngtable DEEP_OCN_WM_BCEGORIES = {
   .size = 2,
   .values = (void*[]) {
-    (void*) BIOME_CAT_DEEP_AQUATIC,
-    (void*) BIOME_CAT_OCEAN_VENTS
+    (void*) WM_BC_DEEP_AQ,
+    (void*) WM_BC_OCN_VNTS
   },
   .weights = (float[]) { 0.9, 0.1 }
 };
 
-static rngtable PELAGIC_BIOME_CATEGORIES = {
+static rngtable PEL_WM_BCEGORIES = {
   .size = 3,
   .values = (void*[]) {
-    (void*) BIOME_CAT_SEA_ICE,
-    (void*) BIOME_CAT_TEMPERATE_PELAGIC,
-    (void*) BIOME_CAT_TROPICAL_PELAGIC
+    (void*) WM_BC_SEA_ICE,
+    (void*) WM_BC_TMP_PEL,
+    (void*) WM_BC_TRP_PEL
   },
   .weights = (float[]) { 1, 1, 1 }
 };
 
-static rngtable OFFSHORE_BIOME_CATEGORIES = {
+static rngtable OFS_WM_BCEGORIES = {
   .size = 8,
   .values = (void*[]) {
-    (void*) BIOME_CAT_TEMPERATE_OFFSHORE,
-    (void*) BIOME_CAT_TROPICAL_OFFSHORE,
-    (void*) BIOME_CAT_TEMPERATE_AQUATIC_GRASSLAND,
-    (void*) BIOME_CAT_TROPICAL_AQUATIC_GRASSLAND,
-    (void*) BIOME_CAT_TEMPERATE_AQUATIC_FOREST,
-    (void*) BIOME_CAT_TROPICAL_AQUATIC_FOREST,
-    (void*) BIOME_CAT_COLD_REEF,
-    (void*) BIOME_CAT_WARM_REEF
+    (void*) WM_BC_TMP_OFSH,
+    (void*) WM_BC_TRP_OFSH,
+    (void*) WM_BC_TMP_AQ_GSLD,
+    (void*) WM_BC_TRP_AQ_GSLD,
+    (void*) WM_BC_TMP_AQ_FRST,
+    (void*) WM_BC_TRP_AQ_FRST,
+    (void*) WM_BC_CLD_REEF,
+    (void*) WM_BC_WRM_REEF
   },
   .weights = (float[]) { 1, 0.8, 0.3, 0.3, 0.4, 0.3, 0.4, 0.2 }
 };
 
-static rngtable BEACH_BIOME_CATEGORIES = {
+static rngtable SHOR_WM_BCEGORIES = {
   .size = 4,
   .values = (void*[]) {
-    (void*) BIOME_CAT_FROZEN_BEACH,
-    (void*) BIOME_CAT_COLD_BEACH,
-    (void*) BIOME_CAT_WARM_BEACH,
-    (void*) BIOME_CAT_TROPICAL_BEACH
+    (void*) WM_BC_FRZ_SHOR,
+    (void*) WM_BC_CLD_SHOR,
+    (void*) WM_BC_WRM_SHOR,
+    (void*) WM_BC_TRP_SHOR
   },
   .weights = (float[]) { 1, 1.2, 1.2, 1 }
 };
 
-static rngtable LAKE_BIOME_CATEGORIES = {
+static rngtable LAKE_WM_BCEGORIES = {
   .size = 6,
   .values = (void*[]) {
-    (void*) BIOME_CAT_FROZEN_LAKE,
-    (void*) BIOME_CAT_COLD_LAKE,
-    (void*) BIOME_CAT_TEMPERATE_LAKE,
-    (void*) BIOME_CAT_WARM_LAKE,
-    (void*) BIOME_CAT_TROPICAL_LAKE,
-    (void*) BIOME_CAT_SALT_LAKE
+    (void*) WM_BC_FRZ_LAKE,
+    (void*) WM_BC_CLD_LAKE,
+    (void*) WM_BC_TMP_LAKE,
+    (void*) WM_BC_WRM_LAKE,
+    (void*) WM_BC_TRP_LAKE,
+    (void*) WM_BC_SALT_LAKE
   },
   .weights = (float[]) { 0.8, 1, 1, 1, 1, 0.05 }
 };
 
-static rngtable RIVER_BIOME_CATEGORIES = {
+static rngtable RIVR_WM_BCEGORIES = {
   .size = 5,
   .values = (void*[]) {
-    (void*) BIOME_CAT_FROZEN_RIVER,
-    (void*) BIOME_CAT_COLD_RIVER,
-    (void*) BIOME_CAT_TEMPERATE_RIVER,
-    (void*) BIOME_CAT_WARM_RIVER,
-    (void*) BIOME_CAT_TROPICAL_RIVER
+    (void*) WM_BC_FRZ_RIVR,
+    (void*) WM_BC_CLD_RIVR,
+    (void*) WM_BC_TMP_RIVR,
+    (void*) WM_BC_WRM_RIVR,
+    (void*) WM_BC_TRP_RIVR
   },
   .weights = (float[]) { 0.8, 1, 1, 1, 1 }
 };
 
-static rngtable ALPINE_BIOME_CATEGORIES = {
+static rngtable ALPN_WM_BCEGORIES = {
   .size = 8,
   .values = (void*[]) {
-    (void*) BIOME_CAT_FROZEN_ALPINE,
-    (void*) BIOME_CAT_COLD_ALPINE,
-    (void*) BIOME_CAT_TEMPERATE_WET_ALPINE,
-    (void*) BIOME_CAT_TEMPERATE_DRY_ALPINE,
-    (void*) BIOME_CAT_WARM_WET_ALPINE,
-    (void*) BIOME_CAT_WARM_DRY_ALPINE,
-    (void*) BIOME_CAT_TROPICAL_WET_ALPINE,
-    (void*) BIOME_CAT_TROPICAL_DRY_ALPINE
+    (void*) WM_BC_FRZ_ALPN,
+    (void*) WM_BC_CLD_ALPN,
+    (void*) WM_BC_TMP_WET_ALPN,
+    (void*) WM_BC_TMP_DRY_ALPN,
+    (void*) WM_BC_WRM_WET_ALPN,
+    (void*) WM_BC_WRM_DRY_ALPN,
+    (void*) WM_BC_TRP_WET_ALPN,
+    (void*) WM_BC_TRP_DRY_ALPN
   },
   .weights = (float[]) { 0.8, 1, 1, 0.9, 1, 0.9, 1, 0.9 }
 };
 
-static rngtable TERRESTRIAL_BIOME_CATEGORIES = {
+static rngtable TERRESTRIAL_WM_BCEGORIES = {
   .size = 37,
   .values = (void*[]) {
-    (void*) BIOME_CAT_FROZEN_DESERT,
-    (void*) BIOME_CAT_COLD_DESERT,
-    (void*) BIOME_CAT_TEMPERATE_DESERT,
-    (void*) BIOME_CAT_WARM_DESERT,
-    (void*) BIOME_CAT_HOT_DESERT,
+    (void*) WM_BC_FRZ_DSRT,
+    (void*) WM_BC_CLD_DSRT,
+    (void*) WM_BC_TMP_DSRT,
+    (void*) WM_BC_WRM_DSRT,
+    (void*) WM_BC_HOT_DSRT,
 
-    (void*) BIOME_CAT_COLD_GRASSLAND,
-    (void*) BIOME_CAT_TEMPERATE_GRASSLAND,
-    (void*) BIOME_CAT_WARM_GRASSLAND,
-    (void*) BIOME_CAT_TROPICAL_GRASSLAND,
+    (void*) WM_BC_CLD_GSLD,
+    (void*) WM_BC_TMP_GSLD,
+    (void*) WM_BC_WRM_GSLD,
+    (void*) WM_BC_TRP_GSLD,
 
-    (void*) BIOME_CAT_COLD_SHRUBLAND,
-    (void*) BIOME_CAT_TEMPERATE_SHRUBLAND,
-    (void*) BIOME_CAT_WARM_SHRUBLAND,
-    (void*) BIOME_CAT_TROPICAL_SHRUBLAND,
+    (void*) WM_BC_CLD_SBLD,
+    (void*) WM_BC_TMP_SBLD,
+    (void*) WM_BC_WRM_SBLD,
+    (void*) WM_BC_TRP_SBLD,
 
-    (void*) BIOME_CAT_TEMPERATE_SAVANNA,
-    (void*) BIOME_CAT_WARM_SAVANNA,
-    (void*) BIOME_CAT_TROPICAL_SAVANNA,
+    (void*) WM_BC_TMP_SVNA,
+    (void*) WM_BC_WRM_SVNA,
+    (void*) WM_BC_TRP_SVNA,
 
-    (void*) BIOME_CAT_COLD_CONIFEROUS_FOREST,
-    (void*) BIOME_CAT_TEMPERATE_CONIFEROUS_FOREST,
-    (void*) BIOME_CAT_WARM_CONIFEROUS_FOREST,
-    (void*) BIOME_CAT_TROPICAL_CONIFEROUS_FOREST,
+    (void*) WM_BC_CLD_CNF_FRST,
+    (void*) WM_BC_TMP_CNF_FRST,
+    (void*) WM_BC_WRM_CNF_FRST,
+    (void*) WM_BC_TRP_CNF_FRST,
 
-    (void*) BIOME_CAT_TEMPERATE_BROADLEAF_FOREST,
-    (void*) BIOME_CAT_WARM_WET_BROADLEAF_FOREST,
-    (void*) BIOME_CAT_WARM_DRY_BROADLEAF_FOREST,
-    (void*) BIOME_CAT_TROPICAL_WET_BROADLEAF_FOREST,
-    (void*) BIOME_CAT_TROPICAL_DRY_BROADLEAF_FOREST,
+    (void*) WM_BC_TMP_BDL_FRST,
+    (void*) WM_BC_WRM_WET_BDL_FRST,
+    (void*) WM_BC_WRM_DRY_BDL_FRST,
+    (void*) WM_BC_TRP_WET_BDL_FRST,
+    (void*) WM_BC_TRP_DRY_BDL_FRST,
 
-    (void*) BIOME_CAT_TUNDRA,
-    (void*) BIOME_CAT_COLD_FRESHWATER_WETLAND,
-    (void*) BIOME_CAT_COLD_SALTWATER_WETLAND,
-    (void*) BIOME_CAT_TEMPERATE_FRESHWATER_WETLAND,
-    (void*) BIOME_CAT_TEMPERATE_SALTWATER_WETLAND,
-    (void*) BIOME_CAT_WARM_FRESHWATER_WETLAND,
-    (void*) BIOME_CAT_WARM_FRESHWATER_FORESTED_WETLAND,
-    (void*) BIOME_CAT_WARM_SALTWATER_WETLAND,
-    (void*) BIOME_CAT_TROPICAL_FRESHWATER_WETLAND,
-    (void*) BIOME_CAT_TROPICAL_FRESHWATER_FORESTED_WETLAND,
-    (void*) BIOME_CAT_TROPICAL_SALTWATER_WETLAND,
-    (void*) BIOME_CAT_TROPICAL_SALTWATER_FORESTED_WETLAND
+    (void*) WM_BC_TND,
+    (void*) WM_BC_CLD_FW_WTLD,
+    (void*) WM_BC_CLD_SW_WTLD,
+    (void*) WM_BC_TMP_FW_WTLD,
+    (void*) WM_BC_TMP_SW_WTLD,
+    (void*) WM_BC_WRM_FW_WTLD,
+    (void*) WM_BC_WRM_FW_FRST_WTLD,
+    (void*) WM_BC_WRM_SW_WTLD,
+    (void*) WM_BC_TRP_FW_WTLD,
+    (void*) WM_BC_TRP_FW_FRST_WTLD,
+    (void*) WM_BC_TRP_SW_WTLD,
+    (void*) WM_BC_TRP_SW_FRST_WTLD
   },
   .weights = (float[]) {
-    0.2, // BIOME_CAT_FROZEN_DESERT,
-    0.2, // BIOME_CAT_COLD_DESERT,
-    0.2, // BIOME_CAT_TEMPERATE_DESERT,
-    0.25, // BIOME_CAT_WARM_DESERT,
-    0.25, // BIOME_CAT_HOT_DESERT,
+    0.2, // WM_BC_FRZ_DSRT,
+    0.2, // WM_BC_CLD_DSRT,
+    0.2, // WM_BC_TMP_DSRT,
+    0.25, // WM_BC_WRM_DSRT,
+    0.25, // WM_BC_HOT_DSRT,
 
-    0.8, // BIOME_CAT_COLD_GRASSLAND,
-    0.9, // BIOME_CAT_TEMPERATE_GRASSLAND,
-    0.9, // BIOME_CAT_WARM_GRASSLAND,
-    0.7, // BIOME_CAT_TROPICAL_GRASSLAND,
+    0.8, // WM_BC_CLD_GSLD,
+    0.9, // WM_BC_TMP_GSLD,
+    0.9, // WM_BC_WRM_GSLD,
+    0.7, // WM_BC_TRP_GSLD,
 
-    0.4, // BIOME_CAT_COLD_SHRUBLAND,
-    0.5, // BIOME_CAT_TEMPERATE_SHRUBLAND,
-    0.5, // BIOME_CAT_WARM_SHRUBLAND,
-    0.4, // BIOME_CAT_TROPICAL_SHRUBLAND,
+    0.4, // WM_BC_CLD_SBLD,
+    0.5, // WM_BC_TMP_SBLD,
+    0.5, // WM_BC_WRM_SBLD,
+    0.4, // WM_BC_TRP_SBLD,
 
-    0.4, // BIOME_CAT_TEMPERATE_SAVANNA,
-    0.3, // BIOME_CAT_WARM_SAVANNA,
-    0.3, // BIOME_CAT_TROPICAL_SAVANNA,
+    0.4, // WM_BC_TMP_SVNA,
+    0.3, // WM_BC_WRM_SVNA,
+    0.3, // WM_BC_TRP_SVNA,
 
-    0.8, // BIOME_CAT_COLD_CONIFEROUS_FOREST,
-    0.8, // BIOME_CAT_TEMPERATE_CONIFEROUS_FOREST,
-    0.4, // BIOME_CAT_WARM_CONIFEROUS_FOREST,
-    0.4, // BIOME_CAT_TROPICAL_CONIFEROUS_FOREST,
+    0.8, // WM_BC_CLD_CNF_FRST,
+    0.8, // WM_BC_TMP_CNF_FRST,
+    0.4, // WM_BC_WRM_CNF_FRST,
+    0.4, // WM_BC_TRP_CNF_FRST,
 
-    1.0, // BIOME_CAT_TEMPERATE_BROADLEAF_FOREST,
-    0.9, // BIOME_CAT_WARM_WET_BROADLEAF_FOREST,
-    0.8, // BIOME_CAT_WARM_DRY_BROADLEAF_FOREST,
-    1.0, // BIOME_CAT_TROPICAL_WET_BROADLEAF_FOREST,
-    0.8, // BIOME_CAT_TROPICAL_DRY_BROADLEAF_FOREST,
+    1.0, // WM_BC_TMP_BDL_FRST,
+    0.9, // WM_BC_WRM_WET_BDL_FRST,
+    0.8, // WM_BC_WRM_DRY_BDL_FRST,
+    1.0, // WM_BC_TRP_WET_BDL_FRST,
+    0.8, // WM_BC_TRP_DRY_BDL_FRST,
 
-    0.3,  // BIOME_CAT_TUNDRA, (often forced)
-    0.15,  // BIOME_CAT_COLD_FRESHWATER_WETLAND,
-    0.05, // BIOME_CAT_COLD_SALTWATER_WETLAND,
-    0.15,  // BIOME_CAT_TEMPERATE_FRESHWATER_WETLAND,
-    0.05, // BIOME_CAT_TEMPERATE_SALTWATER_WETLAND,
-    0.15,  // BIOME_CAT_WARM_FRESHWATER_WETLAND,
-    0.05, // BIOME_CAT_WARM_FRESHWATER_FORESTED_WETLAND,
-    0.15,  // BIOME_CAT_WARM_SALTWATER_WETLAND,
-    0.15,  // BIOME_CAT_TROPICAL_FRESHWATER_WETLAND,
-    0.15,  // BIOME_CAT_TROPICAL_FRESHWATER_FORESTED_WETLAND,
-    0.05, // BIOME_CAT_TROPICAL_SALTWATER_WETLAND,
-    0.05  // BIOME_CAT_TROPICAL_SALTWATER_FORESTED_WETLAND
+    0.3,  // WM_BC_TND, (often forced)
+    0.15,  // WM_BC_CLD_FW_WTLD,
+    0.05, // WM_BC_CLD_SW_WTLD,
+    0.15,  // WM_BC_TMP_FW_WTLD,
+    0.05, // WM_BC_TMP_SW_WTLD,
+    0.15,  // WM_BC_WRM_FW_WTLD,
+    0.05, // WM_BC_WRM_FW_FRST_WTLD,
+    0.15,  // WM_BC_WRM_SW_WTLD,
+    0.15,  // WM_BC_TRP_FW_WTLD,
+    0.15,  // WM_BC_TRP_FW_FRST_WTLD,
+    0.05, // WM_BC_TRP_SW_WTLD,
+    0.05  // WM_BC_TRP_SW_FRST_WTLD
   }
 };
 
@@ -1713,7 +1713,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &DEEP_OCEAN_BIOME_CATEGORIES,
+    &DEEP_OCN_WM_BCEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1722,7 +1722,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions( // pelagic
     wm,
-    &PELAGIC_BIOME_CATEGORIES,
+    &PEL_WM_BCEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1731,7 +1731,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &OFFSHORE_BIOME_CATEGORIES,
+    &OFS_WM_BCEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1740,7 +1740,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &BEACH_BIOME_CATEGORIES,
+    &SHOR_WM_BCEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1749,7 +1749,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &LAKE_BIOME_CATEGORIES,
+    &LAKE_WM_BCEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1758,7 +1758,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &RIVER_BIOME_CATEGORIES,
+    &RIVR_WM_BCEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1767,7 +1767,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &ALPINE_BIOME_CATEGORIES,
+    &ALPN_WM_BCEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1776,7 +1776,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &TERRESTRIAL_BIOME_CATEGORIES,
+    &TERRESTRIAL_WM_BCEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1820,7 +1820,7 @@ step_result fill_with_biome(
 void init_any_biome(biome *b, world_region *wr) {
   switch (b->category) {
     default:
-    case BIOME_CAT_UNKNOWN:
+    case WM_BC_UNK:
       // No initialization
 #ifdef DEBUG
       printf(
@@ -1829,226 +1829,226 @@ void init_any_biome(biome *b, world_region *wr) {
       exit(1);
 #endif
       break;
-    case BIOME_CAT_DEEP_AQUATIC:
+    case WM_BC_DEEP_AQ:
       init_deep_aquatic_biome(b, wr);
       break;
-    case BIOME_CAT_OCEAN_VENTS:
+    case WM_BC_OCN_VNTS:
       init_ocean_vents_biome(b, wr);
       break;
 
-    case BIOME_CAT_SEA_ICE:
+    case WM_BC_SEA_ICE:
       init_sea_ice_biome(b, wr);
       break;
-    case BIOME_CAT_TEMPERATE_PELAGIC:
+    case WM_BC_TMP_PEL:
       init_temperate_pelagic_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_PELAGIC:
+    case WM_BC_TRP_PEL:
       init_tropical_pelagic_biome(b, wr);
       break;
 
-    case BIOME_CAT_TEMPERATE_OFFSHORE:
+    case WM_BC_TMP_OFSH:
       init_temperate_offshore_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_OFFSHORE:
+    case WM_BC_TRP_OFSH:
       init_tropical_offshore_biome(b, wr);
       break;
-    case BIOME_CAT_TEMPERATE_AQUATIC_GRASSLAND:
+    case WM_BC_TMP_AQ_GSLD:
       init_temperate_aquatic_grassland_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_AQUATIC_GRASSLAND:
+    case WM_BC_TRP_AQ_GSLD:
       init_tropical_aquatic_grassland_biome(b, wr);
       break;
-    case BIOME_CAT_TEMPERATE_AQUATIC_FOREST:
+    case WM_BC_TMP_AQ_FRST:
       init_temperate_aquatic_forest_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_AQUATIC_FOREST:
+    case WM_BC_TRP_AQ_FRST:
       init_tropical_aquatic_forest_biome(b, wr);
       break;
-    case BIOME_CAT_COLD_REEF:
+    case WM_BC_CLD_REEF:
       init_cold_reef_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_REEF:
+    case WM_BC_WRM_REEF:
       init_warm_reef_biome(b, wr);
       break;
 
-    case BIOME_CAT_FROZEN_BEACH:
+    case WM_BC_FRZ_SHOR:
       init_frozen_beach_biome(b, wr);
       break;
-    case BIOME_CAT_COLD_BEACH:
+    case WM_BC_CLD_SHOR:
       init_cold_beach_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_BEACH:
+    case WM_BC_WRM_SHOR:
       init_warm_beach_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_BEACH:
+    case WM_BC_TRP_SHOR:
       init_tropical_beach_biome(b, wr);
       break;
 
-    case BIOME_CAT_FROZEN_LAKE:
+    case WM_BC_FRZ_LAKE:
       init_frozen_lake_biome(b, wr);
       break;
-    case BIOME_CAT_COLD_LAKE:
+    case WM_BC_CLD_LAKE:
       init_cold_lake_biome(b, wr);
       break;
-    case BIOME_CAT_TEMPERATE_LAKE:
+    case WM_BC_TMP_LAKE:
       init_temperate_lake_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_LAKE:
+    case WM_BC_WRM_LAKE:
       init_warm_lake_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_LAKE:
+    case WM_BC_TRP_LAKE:
       init_tropical_lake_biome(b, wr);
       break;
-    case BIOME_CAT_SALT_LAKE:
+    case WM_BC_SALT_LAKE:
       init_salt_lake_biome(b, wr);
       break;
 
-    case BIOME_CAT_COLD_RIVER:
+    case WM_BC_CLD_RIVR:
       init_cold_river_biome(b, wr);
       break;
-    case BIOME_CAT_TEMPERATE_RIVER:
+    case WM_BC_TMP_RIVR:
       init_temperate_river_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_RIVER:
+    case WM_BC_WRM_RIVR:
       init_warm_river_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_RIVER:
+    case WM_BC_TRP_RIVR:
       init_tropical_river_biome(b, wr);
       break;
 
-    case BIOME_CAT_FROZEN_ALPINE:
+    case WM_BC_FRZ_ALPN:
       init_frozen_alpine_biome(b, wr);
       break;
-    case BIOME_CAT_COLD_ALPINE:
+    case WM_BC_CLD_ALPN:
       init_cold_alpine_biome(b, wr);
       break;
-    case BIOME_CAT_TEMPERATE_WET_ALPINE:
+    case WM_BC_TMP_WET_ALPN:
       init_temperate_wet_alpine_biome(b, wr);
       break;
-    case BIOME_CAT_TEMPERATE_DRY_ALPINE:
+    case WM_BC_TMP_DRY_ALPN:
       init_temperate_dry_alpine_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_WET_ALPINE:
+    case WM_BC_WRM_WET_ALPN:
       init_warm_wet_alpine_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_DRY_ALPINE:
+    case WM_BC_WRM_DRY_ALPN:
       init_warm_dry_alpine_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_WET_ALPINE:
+    case WM_BC_TRP_WET_ALPN:
       init_tropical_wet_alpine_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_DRY_ALPINE:
+    case WM_BC_TRP_DRY_ALPN:
       init_tropical_dry_alpine_biome(b, wr);
       break;
 
-    case BIOME_CAT_FROZEN_DESERT:
+    case WM_BC_FRZ_DSRT:
       init_frozen_desert_biome(b, wr);
       break;
-    case BIOME_CAT_COLD_DESERT:
+    case WM_BC_CLD_DSRT:
       init_cold_desert_biome(b, wr);
       break;
-    case BIOME_CAT_TEMPERATE_DESERT:
+    case WM_BC_TMP_DSRT:
       init_temperate_desert_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_DESERT:
+    case WM_BC_WRM_DSRT:
       init_warm_desert_biome(b, wr);
       break;
-    case BIOME_CAT_HOT_DESERT:
+    case WM_BC_HOT_DSRT:
       init_hot_desert_biome(b, wr);
       break;
 
-    case BIOME_CAT_COLD_GRASSLAND:
+    case WM_BC_CLD_GSLD:
       init_cold_grassland_biome(b, wr);
       break;
-    case BIOME_CAT_TEMPERATE_GRASSLAND:
+    case WM_BC_TMP_GSLD:
       init_temperate_grassland_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_GRASSLAND:
+    case WM_BC_WRM_GSLD:
       init_warm_grassland_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_GRASSLAND:
+    case WM_BC_TRP_GSLD:
       init_tropical_grassland_biome(b, wr);
       break;
-    case BIOME_CAT_COLD_SHRUBLAND:
+    case WM_BC_CLD_SBLD:
       init_temperate_shrubland_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_SHRUBLAND:
+    case WM_BC_WRM_SBLD:
       init_warm_shrubland_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_SHRUBLAND:
+    case WM_BC_TRP_SBLD:
       init_tropical_shrubland_biome(b, wr);
       break;
 
-    case BIOME_CAT_TEMPERATE_SAVANNA:
+    case WM_BC_TMP_SVNA:
       init_temperate_savanna_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_SAVANNA:
+    case WM_BC_WRM_SVNA:
       init_warm_savanna_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_SAVANNA:
+    case WM_BC_TRP_SVNA:
       init_tropical_savanna_biome(b, wr);
       break;
 
-    case BIOME_CAT_COLD_CONIFEROUS_FOREST:
+    case WM_BC_CLD_CNF_FRST:
       init_cold_coniferous_forest_biome(b, wr);
       break;
-    case BIOME_CAT_TEMPERATE_CONIFEROUS_FOREST:
+    case WM_BC_TMP_CNF_FRST:
       init_temperate_coniferous_forest_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_CONIFEROUS_FOREST:
+    case WM_BC_WRM_CNF_FRST:
       init_warm_coniferous_forest_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_CONIFEROUS_FOREST:
+    case WM_BC_TRP_CNF_FRST:
       init_tropical_coniferous_forest_biome(b, wr);
       break;
 
-    case BIOME_CAT_TEMPERATE_BROADLEAF_FOREST:
+    case WM_BC_TMP_BDL_FRST:
       init_warm_wet_broadleaf_forest_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_DRY_BROADLEAF_FOREST:
+    case WM_BC_WRM_DRY_BDL_FRST:
       init_warm_dry_broadleaf_forest_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_WET_BROADLEAF_FOREST:
+    case WM_BC_TRP_WET_BDL_FRST:
       init_tropical_wet_broadleaf_forest_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_DRY_BROADLEAF_FOREST:
+    case WM_BC_TRP_DRY_BDL_FRST:
       init_tropical_dry_broadleaf_forest_biome(b, wr);
       break;
 
-    case BIOME_CAT_TUNDRA:
+    case WM_BC_TND:
       init_tundra_biome(b, wr);
       break;
-    case BIOME_CAT_COLD_FRESHWATER_WETLAND:
+    case WM_BC_CLD_FW_WTLD:
       init_cold_freshwater_wetland_biome(b, wr);
       break;
-    case BIOME_CAT_COLD_SALTWATER_WETLAND:
+    case WM_BC_CLD_SW_WTLD:
       init_cold_saltwater_wetland_biome(b, wr);
       break;
-    case BIOME_CAT_TEMPERATE_FRESHWATER_WETLAND:
+    case WM_BC_TMP_FW_WTLD:
       init_temperate_freshwater_wetland_biome(b, wr);
       break;
-    case BIOME_CAT_TEMPERATE_SALTWATER_WETLAND:
+    case WM_BC_TMP_SW_WTLD:
       init_temperate_saltwater_wetland_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_FRESHWATER_WETLAND:
+    case WM_BC_WRM_FW_WTLD:
       init_warm_freshwater_wetland_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_FRESHWATER_FORESTED_WETLAND:
+    case WM_BC_WRM_FW_FRST_WTLD:
       init_warm_freshwater_forested_wetland_biome(b, wr);
       break;
-    case BIOME_CAT_WARM_SALTWATER_WETLAND:
+    case WM_BC_WRM_SW_WTLD:
       init_warm_saltwater_wetland_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_FRESHWATER_WETLAND:
+    case WM_BC_TRP_FW_WTLD:
       init_tropical_freshwater_wetland_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_FRESHWATER_FORESTED_WETLAND:
+    case WM_BC_TRP_FW_FRST_WTLD:
       init_tropical_freshwater_forested_wetland_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_SALTWATER_WETLAND:
+    case WM_BC_TRP_SW_WTLD:
       init_tropical_saltwater_wetland_biome(b, wr);
       break;
-    case BIOME_CAT_TROPICAL_SALTWATER_FORESTED_WETLAND:
+    case WM_BC_TRP_SW_FRST_WTLD:
       init_tropical_saltwater_forested_wetland_biome(b, wr);
       break;
   }

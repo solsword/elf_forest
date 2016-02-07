@@ -1,6 +1,7 @@
 // efd_setup.c
 // Gathers Elf Forest Data conversion registrations and defines EFD setup.
 
+#include <stdio.h>
 #include <string.h>
 
 #include "efd_setup.h"
@@ -58,11 +59,41 @@ efd_destroy_function EFD_OBJECT_DESTRUCTOR_REGISTRY[] = {
  *************/
 
 void setup_elf_forest_data(void) {
-  EFD_ROOT = create_efd_node(EFD_NT_CONTAINER, "_");
+  EFD_ROOT = create_efd_node(EFD_NT_CONTAINER, EFD_ROOT_NAME);
+  EFD_INT_GLOBALS = create_map(EFD_GLOBALS_KEY_ARITY, EFD_GLOBALS_TABLE_SIZE);
+  EFD_NUM_GLOBALS = create_map(EFD_GLOBALS_KEY_ARITY, EFD_GLOBALS_TABLE_SIZE);
+  EFD_STR_GLOBALS = create_map(EFD_GLOBALS_KEY_ARITY, EFD_GLOBALS_TABLE_SIZE);
+  if (sizeof(char) != sizeof(uint8_t)) {
+    fprintf(stderr, "Warning: sizeof(char) != sizeof(uint8_t)\n");
+  }
+  if (EFD_NODE_NAME_SIZE != 24) {
+    fprintf(
+      stderr,
+      "Warning: unexpected EFD node name size: %ld\n",
+      EFD_NODE_NAME_SIZE
+    );
+  }
+  if (EFD_OBJECT_FORMAT_SIZE != 8) {
+    fprintf(
+      stderr,
+      "Warning: unexpected EFD object format size: %ld\n",
+      EFD_OBJECT_FORMAT_SIZE
+    );
+  }
+}
+
+// cleanup helper:
+// TODO: Aggregate these!!
+void _cleanup_string_in_map(void* v_string) {
+  cleanup_string((string*) v_string);
 }
 
 void cleanup_elf_forest_data(void) {
   cleanup_efd_node(EFD_ROOT);
+  cleanup_map(EFD_INT_GLOBALS);
+  cleanup_map(EFD_NUM_GLOBALS);
+  m_foreach(EFD_STR_GLOBALS, _cleanup_string_in_map);
+  cleanup_map(EFD_STR_GLOBALS);
 }
 
 // Private helper for looking up string keys:

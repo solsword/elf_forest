@@ -8,6 +8,19 @@
 
 #include "datatypes/list.h"
 #include "datatypes/string.h"
+#include "datatypes/map.h"
+
+/********
+ * Meta *
+ ********/
+
+#define EFD_GL_INT(x) x
+#define EFD_GL_NUM(x) x
+#define EFD_GL_STR(x) x
+
+#define EFD_GL_INT_I(x)
+#define EFD_GL_NUM_I(x)
+#define EFD_GL_STR_I(x)
 
 /*********
  * Enums *
@@ -15,7 +28,7 @@
 
 // Raw types that a single EFD node can take on (different from schemas, which
 // involve the structure of multiple nodes).
-#define EFD_NUM_TYPES 11
+#define EFD_NUM_TYPES 14
 enum efd_node_type_e {
   EFD_NT_CONTAINER  = 0,   // 'c'   no data, just children
   EFD_NT_PROTO      = 1,   //  -    raw object data pre-assembly
@@ -27,7 +40,10 @@ enum efd_node_type_e {
   EFD_NT_ARRAY_INT  = 7,   // 'ai'  array of ptrdiff_t
   EFD_NT_ARRAY_NUM  = 8,   // 'an'  array of float
   EFD_NT_ARRAY_STR  = 9,   // 'as'  array of quoted strings
-  EFD_NT_INVALID    = 10   //  -    marks an invalid node internally
+  EFD_NT_GLOBAL_INT = 10,  // 'Gi'  global integer
+  EFD_NT_GLOBAL_NUM = 11,  // 'Gn'  global numeric
+  EFD_NT_GLOBAL_STR = 12,  // 'Gs'  global string
+  EFD_NT_INVALID    = 13   //  -    marks an invalid node internally
 };
 typedef enum efd_node_type_e efd_node_type;
 
@@ -94,19 +110,34 @@ typedef void (*efd_destroy_function)(void *);
  * Constants *
  *************/
 
-#define EFD_NODE_NAME_SIZE 32
+#define EFD_GLOBALS_KEY_ARITY 3
+#define EFD_GLOBALS_TABLE_SIZE 2048
+#define EFD_NODE_NAME_SIZE ( \
+    EFD_GLOBALS_KEY_ARITY*(sizeof(void*) / sizeof(char)) \
+  ) // should be 24
+#define EFD_GLOBAL_NAME_SIZE ( \
+    EFD_GLOBALS_KEY_ARITY*(sizeof(void*) / sizeof(char)) \
+  ) // should be 24
 #define EFD_MAX_NAME_DEPTH 32
 
 #define EFD_NODE_SEP '.'
 #define EFD_SCHEMA_INDICATOR ':'
+#define EFD_GLOBAL_EQUALS '='
 
-#define EFD_OBJECT_FORMAT_SIZE 8
+#define EFD_OBJECT_FORMAT_SIZE (sizeof(uint64_t) / sizeof(char)) // should be 8
 
 extern char const * const EFD_NT_NAMES[];
 extern char const * const EFD_NT_ABBRS[];
 
 extern char const * const EFD_PROTO_NAME;
+
+extern char const * const EFD_ROOT_NAME;
+
 extern efd_node *EFD_ROOT;
+
+extern map *EFD_INT_GLOBALS;
+extern map *EFD_NUM_GLOBALS;
+extern map *EFD_STR_GLOBALS;
 
 /*************************
  * Structure Definitions *
@@ -385,5 +416,13 @@ efd_schema* efd_fetch_schema(char const * const name);
 // the process, while the base node is modified.
 // TODO: How to handle non-unique names?!?
 void efd_merge_node(efd_node *base, efd_node *victim);
+
+// Functions for getting and setting global integers, numbers, and strings:
+ptrdiff_t efd_get_global_i(char const * const key);
+float efd_get_global_n(char const * const key);
+string* efd_get_global_s(char const * const key);
+void efd_set_global_i(char const * const key, ptrdiff_t value);
+void efd_set_global_n(char const * const key, float value);
+void efd_set_global_s(char const * const key, string* value);
 
 #endif // INCLUDE_EFD_H

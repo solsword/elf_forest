@@ -109,7 +109,7 @@ biome* create_merged_biome(
   float str1,
   float str2
 ) {
-  biome *result = create_biome(BIOME_CAT_UNKNOWN);
+  biome *result = create_biome(WM_BC_UNK);
   
   if (str1 + str2 == 0) {
 #ifdef DEBUG

@@ -79,11 +79,11 @@ int efd_parse_file(efd_node *parent, char const * const filename) {
 
 efd_node* efd_parse_any(efd_parse_state *s) {
   efd_node_type type;
-  static char name[EFD_NODE_NAME_SIZE];
+  static char name[EFD_NODE_NAME_SIZE + 1];
 
   efd_parse_open(s);
   if (efd_parse_failed(s)) {
-    if (efd_parse_atend(s)) {
+    if (s->error == EFD_PE_MISSING) {
       s->error = EFD_PE_NO_ERROR;
       // if there's nothing here (as opposed to something malformed) then we'll
       // just return NULL without an error.
@@ -133,6 +133,15 @@ efd_node* efd_parse_any(efd_parse_state *s) {
     case EFD_NT_ARRAY_STR:
       efd_parse_str_array(result, s);
       break;
+    case EFD_NT_GLOBAL_INT:
+      efd_parse_int_global(result, s);
+      break;
+    case EFD_NT_GLOBAL_NUM:
+      efd_parse_num_global(result, s);
+      break;
+    case EFD_NT_GLOBAL_STR:
+      efd_parse_str_global(result, s);
+      break;
   }
   if (efd_parse_failed(s)) {
     cleanup_efd_node(result);
@@ -152,7 +161,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
 //-----------------------------------------------
 
 void efd_parse_children(efd_node *result, efd_parse_state *s) {
-  static char schema[EFD_NODE_NAME_SIZE];
+  static char schema[EFD_NODE_NAME_SIZE + 1];
   efd_parse_state back;
   list *children;
   efd_node *child;
@@ -185,13 +194,24 @@ void efd_parse_children(efd_node *result, efd_parse_state *s) {
     } else if (child == NULL) {
       break;
     } else {
-      l_append_element(children, (void*) child);
+      if (child->h.type == EFD_NT_GLOBAL_INT) {
+        efd_set_global_i(child->h.name, child->b.as_integer.value);
+        cleanup_efd_node(child);
+      } else if (child->h.type == EFD_NT_GLOBAL_NUM) {
+        efd_set_global_n(child->h.name, child->b.as_number.value);
+        cleanup_efd_node(child);
+      } else if (child->h.type == EFD_NT_GLOBAL_STR) {
+        efd_set_global_s(child->h.name, child->b.as_string.value);
+        cleanup_efd_node(child);
+      } else {
+        l_append_element(children, (void*) child);
+      }
     }
   }
 }
 
 void efd_parse_proto(efd_node *result, efd_parse_state *s) {
-  static char format[EFD_NODE_NAME_SIZE];
+  static char format[EFD_NODE_NAME_SIZE + 1];
 
   efd_parse_schema(s, format);
   if (efd_parse_failed(s)) {
@@ -442,6 +462,81 @@ void efd_parse_str_array(efd_node *result, efd_parse_state *s) {
   // Don't clean up the strings, of course, as they're now in the array.
 }
 
+void efd_parse_int_global(efd_node *result, efd_parse_state *s) {
+  static char *e = "global integer";
+  char c;
+
+  SKIP_OR_ELSE(s, e);
+
+  if (efd_parse_atend(s)) {
+    s->error = EFD_PE_INCOMPLETE;
+    s->context = e;
+    return;
+  }
+
+  c = s->input[s->pos];
+  if (c == EFD_GLOBAL_EQUALS) {
+    s->pos += 1;
+    SKIP_OR_ELSE(s, e);
+  }
+
+  result->b.as_integer.value = efd_parse_int(s);
+  // return whether or not there's an error...
+}
+
+void efd_parse_num_global(efd_node *result, efd_parse_state *s) {
+  static char *e = "global number";
+  char c;
+
+  SKIP_OR_ELSE(s, e);
+
+  if (efd_parse_atend(s)) {
+    s->error = EFD_PE_INCOMPLETE;
+    s->context = e;
+    return;
+  }
+
+  c = s->input[s->pos];
+  if (c == EFD_GLOBAL_EQUALS) {
+    s->pos += 1;
+    SKIP_OR_ELSE(s, e);
+  }
+
+  result->b.as_number.value = efd_parse_float(s);
+  // return whether or not there's an error...
+}
+
+void efd_parse_str_global(efd_node *result, efd_parse_state *s) {
+  static char *e = "global string";
+  char c;
+  ptrdiff_t start, end;
+
+  SKIP_OR_ELSE(s, e);
+
+  if (efd_parse_atend(s)) {
+    s->error = EFD_PE_INCOMPLETE;
+    s->context = e;
+    return;
+  }
+
+  c = s->input[s->pos];
+  if (c == EFD_GLOBAL_EQUALS) {
+    s->pos += 1;
+    SKIP_OR_ELSE(s, e);
+  }
+
+  efd_grab_string_limits(s, &start, &end);
+  if (efd_parse_failed(s)) {
+    result->b.as_string.value = NULL;
+    return;
+  } else {
+    result->b.as_string.value = create_string_from_chars(
+      s->input + start + 1,
+      end - start - 1
+    );
+  }
+}
+
 // Functions for parsing bits & pieces:
 //-------------------------------------
 
@@ -450,7 +545,7 @@ void efd_parse_open(efd_parse_state *s) {
   SKIP_OR_ELSE(s, e) //;
 
   if (efd_parse_atend(s)) {
-    s->error = EFD_PE_INCOMPLETE;
+    s->error = EFD_PE_MISSING;
     s->context = e;
     return;
   }
@@ -479,7 +574,7 @@ void efd_parse_close(efd_parse_state *s) {
   SKIP_OR_ELSE(s, e) //;
 
   if (efd_parse_atend(s)) {
-    s->error = EFD_PE_INCOMPLETE;
+    s->error = EFD_PE_MISSING;
     s->context = e;
     return;
   }
@@ -568,6 +663,31 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
           return EFD_NT_ARRAY_STR;
       }
       break;
+    case 'G':
+      s->pos += 1;
+      if (efd_parse_atend(s)) {
+        s->error = EFD_PE_INCOMPLETE;
+        s->context = e;
+        return EFD_NT_INVALID;
+      }
+      c = s->input[s->pos];
+      switch (c) {
+        default:
+          s->error = EFD_PE_MALFORMED;
+          s->context = e;
+          return EFD_NT_INVALID;
+
+        case 'i':
+          s->pos += 1;
+          return EFD_NT_GLOBAL_INT;
+        case 'n':
+          s->pos += 1;
+          return EFD_NT_GLOBAL_NUM;
+        case 's':
+          s->pos += 1;
+          return EFD_NT_GLOBAL_STR;
+      }
+      break;
   }
   // This shouldn't be reachable...
   s->error = EFD_PE_MALFORMED;
@@ -581,11 +701,11 @@ void efd_parse_name(efd_parse_state *s, char *r_name) {
 
   r_name[0] = '\0';
 
-  SKIP_OR_ELSE(s, "node name") //;
+  SKIP_OR_ELSE(s, "identifier") //;
 
   c = '\0';
 
-  for (i = 0; i < EFD_NODE_NAME_SIZE - 1; ++i) {
+  for (i = 0; i < EFD_NODE_NAME_SIZE; ++i) {
     if (efd_parse_atend(s)) {
       break;
     }
@@ -608,10 +728,10 @@ void efd_parse_name(efd_parse_state *s, char *r_name) {
   if (i == 0) {
     if (!efd_parse_atend(s) && c >= '0' && c <= '9') {
       s->error = EFD_PE_MALFORMED;
-      s->context = "node name (initial numeral not allowed)";
+      s->context = "identifier (initial numeral not allowed)";
     } else {
       s->error = EFD_PE_INCOMPLETE;
-      s->context = "node name (missing)";
+      s->context = "identifier (missing)";
     }
     return;
   }
@@ -623,7 +743,7 @@ void efd_parse_schema(efd_parse_state *s, char *r_name) {
 
   r_name[0] = '\0';
 
-  SKIP_OR_ELSE(s, "node name") //;
+  SKIP_OR_ELSE(s, "schema annotation") //;
 
   if (efd_parse_atend(s)) {
     s->error = EFD_PE_INCOMPLETE;
