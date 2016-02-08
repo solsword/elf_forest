@@ -10,6 +10,8 @@
 #include "datatypes/string.h"
 #include "datatypes/map.h"
 
+#include "boilerplate.h"
+
 /********
  * Meta *
  ********/
@@ -42,6 +44,24 @@ enum efd_node_type_e {
   EFD_NT_INVALID    = 13   //  -    marks an invalid node internally
 };
 typedef enum efd_node_type_e efd_node_type;
+
+// Types of reference endpoint.
+enum efd_ref_type_e {
+  EFD_RT_INVALID = 0,
+  EFD_RT_GLOBAL_INT, // (ptrdiff_t) global integer
+  EFD_RT_GLOBAL_NUM, // (float) global number
+  EFD_RT_GLOBAL_STR, // (string*) global string
+  EFD_RT_NODE, // (void*) a void* pointer to an entire EFD node
+  EFD_RT_OBJ, // (void*) contents an object node
+  EFD_RT_INT, // (ptrdiff_t) contents of an integer node
+  EFD_RT_NUM, // (float) contents of a number node
+  EFD_RT_STR, // (string*) contents of a string node
+  EFD_RT_OBJ_ARR_ENTRY, // (void*) entry in an object array
+  EFD_RT_INT_ARR_ENTRY, // (ptrdiff_t) entry in an integer array
+  EFD_RT_NUM_ARR_ENTRY, // (float) entry in a number array
+  EFD_RT_STR_ARR_ENTRY // (string*) entry in a string array
+};
+typedef enum efd_ref_type_e efd_ref_type;
 
 /**************
  * Structures *
@@ -94,6 +114,23 @@ typedef struct efd_node_s efd_node;
 struct efd_schema_s;
 typedef struct efd_schema_s efd_schema;
 
+// A global efd node address:
+struct efd_address_s;
+typedef struct efd_address_s efd_address;
+
+// A reference specifies the location of a particular value:
+struct efd_reference_s;
+typedef struct efd_reference_s efd_reference;
+
+// A bridge contains two compatible references:
+struct efd_bridge_s;
+typedef struct efd_bridge_s efd_bridge;
+
+// A comprehensive set of cross-references that consists of a list of bridges
+// each of which is either processed or unprocessed.
+struct efd_index_s;
+typedef struct efd_index_s efd_index;
+
 /******************
  * Function types *
  ******************/
@@ -117,8 +154,6 @@ typedef void (*efd_destroy_function)(void *);
 #define EFD_MAX_NAME_DEPTH 32
 
 #define EFD_NODE_SEP '.'
-#define EFD_SCHEMA_INDICATOR ':'
-#define EFD_GLOBAL_EQUALS '='
 
 #define EFD_OBJECT_FORMAT_SIZE (sizeof(uint64_t) / sizeof(char)) // should be 8
 
@@ -141,7 +176,7 @@ extern map *EFD_STR_GLOBALS;
 
 struct efd_node_header_s {
   efd_node_type type;
-  char name[EFD_NODE_NAME_SIZE];
+  char name[EFD_NODE_NAME_SIZE + 1];
   efd_node *parent;
 };
 
@@ -212,9 +247,30 @@ struct efd_node_s {
 
 struct efd_schema_s {
   efd_node_type type;
-  char name[EFD_NODE_NAME_SIZE];
+  char name[EFD_NODE_NAME_SIZE + 1];
   efd_schema *parent;
   list *children;
+};
+
+struct efd_address_s {
+  char name[EFD_NODE_NAME_SIZE + 1];
+  efd_address *next;
+};
+
+struct efd_reference_s {
+  efd_ref_type type;
+  efd_address *addr;
+  ptrdiff_t idx;
+};
+
+struct efd_bridge_s {
+  efd_reference *from;
+  efd_reference *to;
+};
+
+struct efd_index_s {
+  list *unprocessed;
+  list *processed;
 };
 
 
@@ -323,7 +379,7 @@ static inline size_t* efd_count__as(efd_node *n) {
 efd_node* create_efd_node(efd_node_type t, char const * const name);
 
 // Clean up memory from the given EFD node.
-void cleanup_efd_node(efd_node *node);
+CLEANUP_DECL(efd_node);
 
 // Allocate and return a new EFD schema of the given type. Up to
 // EFD_NODE_NAME_SIZE characters are copied from the given string, but a
@@ -331,11 +387,52 @@ void cleanup_efd_node(efd_node *node);
 efd_schema* create_efd_schema(efd_node_type t, char* name);
 
 // Clean up memory from the given EFD schema.
-void cleanup_efd_schema(efd_schema *schema);
+CLEANUP_DECL(efd_schema);
+
+// Allocate and creates a new EFD address. Up to EFD_NODE_NAME_SIZE characters
+// are copied from the given string, but a reference to it is not maintained.
+efd_address* create_efd_address(char const * const name);
+
+// Allocate an new efd_address and copy in information from the given address.
+efd_address* copy_efd_address(efd_address *src);
+
+// Clean up memory from the given EFD address (and recursively, all of its
+// children).
+CLEANUP_DECL(efd_address);
+
+// Allocate and return a new EFD reference. The given address is copied, so it
+// should be freed by the caller if it doesn't need it.
+efd_reference* create_efd_reference(
+  efd_ref_type type,
+  efd_address *addr,
+  ptrdiff_t idx
+);
+
+// Clean up memory from the given reference, including its address.
+CLEANUP_DECL(efd_reference);
+
+// Allocate and return a new bridge between the two given references. They will
+// be cleaned up when the bridge is so the caller doesn't need to track them.
+// If the types of the given references aren't compatible, it doesn't allocate
+// anything and returns NULL. In that case, the caller should clean up the from
+// and to references.
+efd_bridge* create_efd_bridge(efd_reference *from, efd_reference *to);
+
+// Clean up memory from the given bridge, including its references.
+CLEANUP_DECL(efd_bridge);
+
+// Allocate and return a new empty EFD index.
+efd_index* create_efd_index(void);
+
+// Clean up memory for the given index, including any bridges it contains.
+CLEANUP_DECL(efd_index);
 
 /*************
  * Functions *
  *************/
+
+// Returns 1 if the given reference types are compatible and 0 otherwise.
+int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to);
 
 // Checks that a type matches and returns 1 if it does or 0 if it does not (or
 // if the given node is NULL). Setting EFD_NO_TYPECHECKS will turn off the type
@@ -358,6 +455,16 @@ void efd_add_child(efd_node *n, efd_node *child);
 // Removes the given child from this node's list of children (this node must be
 // a container node).
 void efd_remove_child(efd_node *n, efd_node *child);
+
+// Appends the given name to the given address:
+void efd_append_address(efd_address *a, char const * const name);
+
+// Extends the given address using the given extension:
+void efd_extend_address(efd_address *a, efd_address *e);
+
+// Removes the deepest level of the given address, returning a pointer to the
+// address that was popped (which should eventually be cleaned up).
+efd_address* efd_pop_address(efd_address *a);
 
 // The most ubiquitous EFD function 'efd' just gets a child node out of its
 // parent by name. It iterates over children until it hits one with a matching

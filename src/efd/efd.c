@@ -114,16 +114,10 @@ efd_node* create_efd_node(efd_node_type t, char const * const name) {
   return result;
 }
 
-// Private helper for looping over children and cleaning them up:
-void _iter_efd_cleanup_child(void *v_child) {
-  efd_node* child = (efd_node*) v_child;
-  cleanup_efd_node(child);
-}
-
-void cleanup_efd_node(efd_node *n) {
+CLEANUP_IMPL(efd_node) {
   efd_destroy_function df;
   // Special-case cleanup:
-  switch (n->h.type) {
+  switch (doomed->h.type) {
     default:
     case EFD_NT_INVALID:
     case EFD_NT_INTEGER:
@@ -136,61 +130,61 @@ void cleanup_efd_node(efd_node *n) {
 
     case EFD_NT_CONTAINER:
       // Clean up all of our children:
-      l_foreach(n->b.as_container.children, &_iter_efd_cleanup_child);
-      cleanup_list(n->b.as_container.children);
+      l_foreach(doomed->b.as_container.children, &cleanup_v_efd_node);
+      cleanup_list(doomed->b.as_container.children);
       // Note that the schema is not cleaned up.
       break;
 
     case EFD_NT_PROTO:
-      if (n->b.as_proto.input != NULL) {
-        cleanup_efd_node(n->b.as_proto.input);
+      if (doomed->b.as_proto.input != NULL) {
+        cleanup_efd_node(doomed->b.as_proto.input);
       }
       break;
 
     case EFD_NT_OBJECT:
-      df = efd_lookup_destructor(n->b.as_object.format);
+      df = efd_lookup_destructor(doomed->b.as_object.format);
       if (df != NULL) {
-        df(n->b.as_object.value);
+        df(doomed->b.as_object.value);
       }
       // the destructor must call free if needed
       break;
 
     case EFD_NT_STRING:
-      if (n->b.as_string.value != NULL) {
-        cleanup_string(n->b.as_string.value);
+      if (doomed->b.as_string.value != NULL) {
+        cleanup_string(doomed->b.as_string.value);
       }
       break;
 
     case EFD_NT_ARRAY_OBJ:
-      if (n->b.as_obj_array.values != NULL) {
-        free(n->b.as_obj_array.values);
+      if (doomed->b.as_obj_array.values != NULL) {
+        free(doomed->b.as_obj_array.values);
       }
       break;
 
     case EFD_NT_ARRAY_INT:
-      if (n->b.as_int_array.values != NULL) {
-        free(n->b.as_int_array.values);
+      if (doomed->b.as_int_array.values != NULL) {
+        free(doomed->b.as_int_array.values);
       }
       break;
 
     case EFD_NT_ARRAY_NUM:
-      if (n->b.as_num_array.values != NULL) {
-        free(n->b.as_num_array.values);
+      if (doomed->b.as_num_array.values != NULL) {
+        free(doomed->b.as_num_array.values);
       }
       break;
 
     case EFD_NT_ARRAY_STR:
-      if (n->b.as_str_array.values != NULL) {
-        free(n->b.as_str_array.values);
+      if (doomed->b.as_str_array.values != NULL) {
+        free(doomed->b.as_str_array.values);
       }
       break;
   }
   // If this node is a child, remove it from its parent's list of children:
-  if (n->h.parent != NULL) {
-    efd_remove_child(n->h.parent, n);
+  if (doomed->h.parent != NULL) {
+    efd_remove_child(doomed->h.parent, doomed);
   }
   // Finally free the memory for this node:
-  free(n);
+  free(doomed);
 }
 
 efd_schema* create_efd_schema(efd_node_type t, char* name) {
@@ -203,27 +197,155 @@ efd_schema* create_efd_schema(efd_node_type t, char* name) {
   return result;
 }
 
-// Private helper for looping over children and cleaning them up:
-void _iter_efd_cleanup_schema_child(void *v_child) {
-  efd_schema* child = (efd_schema*) v_child;
-  cleanup_efd_schema(child);
+CLEANUP_IMPL(efd_schema) {
+  // Free our children:
+  l_foreach(doomed->children, &cleanup_v_efd_schema);
+  cleanup_list(doomed->children);
+  // Remove ourselves from our parent's list of children:
+  if (doomed->parent != NULL) {
+    l_remove_element(doomed->parent->children, (void*) doomed);
+  }
+  // Finally free the doomed itself:
+  free(doomed);
 }
 
-void cleanup_efd_schema(efd_schema *schema) {
-  // Free our children:
-  l_foreach(schema->children, &_iter_efd_cleanup_schema_child);
-  cleanup_list(schema->children);
-  // Remove ourselves from our parent's list of children:
-  if (schema->parent != NULL) {
-    l_remove_element(schema->parent->children, (void*) schema);
+efd_address* create_efd_address(char const * const name) {
+  efd_address *result = (efd_address*) malloc(sizeof(efd_address));
+  strncpy(result->name, name, EFD_NODE_NAME_SIZE);
+  result->name[EFD_NODE_NAME_SIZE] = '\0';
+  return result;
+}
+
+efd_address* copy_efd_address(efd_address *src) {
+  efd_address *n, *rn;
+  efd_address *result;
+  n = src;
+  result = create_efd_address(n->name);
+  rn = result;
+  while (n->next != NULL) {
+    rn->next = create_efd_address(n->next->name);
+    rn = rn->next;
+    n = n->next;
   }
-  // Finally free the schema itself:
-  free(schema);
+  return result;
+}
+
+CLEANUP_IMPL(efd_address) {
+  efd_address *n;
+  efd_address *nn;
+  while (doomed->next != NULL) {
+    n = doomed,
+    nn = doomed->next;
+    while (nn->next != NULL) {
+      n = nn;
+      nn = nn->next;
+    }
+    n->next = NULL;
+    free(nn);
+  }
+  free(doomed);
+}
+
+efd_reference* create_efd_reference(
+  efd_ref_type type,
+  efd_address *addr,
+  ptrdiff_t idx
+) {
+  efd_reference *result = (efd_reference*) malloc(sizeof(efd_reference));
+  result->type = type;
+  result->addr = copy_efd_address(addr);
+  result->idx = idx;
+  return result;
+}
+
+CLEANUP_IMPL(efd_reference) {
+  cleanup_efd_address(doomed->addr);
+  free(doomed);
+}
+
+efd_bridge* create_efd_bridge(efd_reference *from, efd_reference *to) {
+  if (!efd_ref_types_are_compatible(from->type, to->type)) {
+#ifdef DEBUG
+    fprintf(
+      stderr,
+      "ERROR: Incompatible EFD reference types %d and %d cannot be a bridge.\n",
+      from->type,
+      to->type
+    );
+#endif
+    return NULL;
+  }
+  efd_bridge *result = (efd_bridge*) malloc(sizeof(efd_bridge));
+  result->from = from;
+  result->to = to;
+  return result;
+}
+
+CLEANUP_IMPL(efd_bridge) {
+  cleanup_efd_reference(doomed->from);
+  cleanup_efd_reference(doomed->to);
+  free(doomed);
+}
+
+efd_index* create_efd_index(void) {
+  efd_index *result = (efd_index*) malloc(sizeof(efd_index));
+  result->unprocessed = create_list();
+  result->processed = create_list();
+  return result;
+}
+
+CLEANUP_IMPL(efd_index) {
+  l_foreach(doomed->unprocessed, &cleanup_v_efd_bridge);
+  l_foreach(doomed->processed, &cleanup_v_efd_bridge);
+  cleanup_list(doomed->unprocessed);
+  cleanup_list(doomed->processed);
 }
 
 /*************
  * Functions *
  *************/
+
+int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to) {
+  switch (from) {
+    default:
+    case EFD_RT_INVALID:
+    case EFD_RT_NODE:
+      return 0;
+    case EFD_RT_GLOBAL_INT:
+    case EFD_RT_INT:
+    case EFD_RT_INT_ARR_ENTRY:
+      return (
+        to == EFD_RT_GLOBAL_INT
+     || to == EFD_RT_INT
+     || to == EFD_RT_INT_ARR_ENTRY
+      );
+    case EFD_RT_GLOBAL_NUM:
+    case EFD_RT_NUM:
+    case EFD_RT_NUM_ARR_ENTRY:
+      return (
+        to == EFD_RT_GLOBAL_NUM
+     || to == EFD_RT_NUM
+     || to == EFD_RT_NUM_ARR_ENTRY
+      );
+    case EFD_RT_GLOBAL_STR:
+    case EFD_RT_STR:
+    case EFD_RT_STR_ARR_ENTRY:
+      return (
+        to == EFD_RT_GLOBAL_STR
+     || to == EFD_RT_STR
+     || to == EFD_RT_STR_ARR_ENTRY
+      );
+    case EFD_RT_OBJ:
+    case EFD_RT_OBJ_ARR_ENTRY:
+      return (
+        to == EFD_RT_NODE
+     || to == EFD_RT_OBJ
+     || to == EFD_RT_OBJ_ARR_ENTRY
+      );
+  }
+  // failsafe
+  return 0;
+}
 
 void efd_assert_type(efd_node *n, efd_node_type t) {
   if (n == NULL) {
@@ -314,6 +436,41 @@ void efd_add_child(efd_node *n, efd_node *child) {
 void efd_remove_child(efd_node *n, efd_node *child) {
   efd_assert_type(n, EFD_NT_CONTAINER);
   l_remove_element(n->b.as_container.children, (void*) child);
+}
+
+void efd_append_address(efd_address *a, char const * const name) {
+  efd_address *new = create_efd_address(name);
+  efd_extend_address(a, new);
+}
+
+void efd_extend_address(efd_address *a, efd_address *e) {
+  efd_address *n = a;
+  while (n->next != NULL) {
+    n = n->next;
+  }
+  n->next = e;
+}
+
+efd_address* efd_pop_address(efd_address *a) {
+  efd_address *n, *result;
+  if (a->next == NULL) {
+#ifdef DEBUG
+    fprintf(
+      stderr,
+      "Warning: Tried to pop topmost address '%.*s'!\n",
+      (int) EFD_NODE_NAME_SIZE, 
+      a->name
+    );
+#endif
+    return a;
+  }
+  n = a;
+  while (n->next->next != NULL) {
+    n = n->next;
+  }
+  result = n->next;
+  n->next = NULL;
+  return result;
 }
 
 // Private helper:

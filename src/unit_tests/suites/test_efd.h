@@ -62,9 +62,11 @@ int _test_efd_case(efd_node *n) {
   s.lineno = 0;
   s.context = NULL;
   s.error = EFD_PE_NO_ERROR;
+  s.address = create_efd_address("?");
 
   if (!efd_is_type(n, EFD_NT_OBJECT)) {
     fprintf(stderr, "Test EFD case: Bad object type!\n");
+    cleanup_list(s.crossrefs);
     return 0;
   }
 

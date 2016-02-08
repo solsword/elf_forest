@@ -37,8 +37,12 @@ void efd_parse_copy_state(efd_parse_state *from, efd_parse_state *to) {
   to->error = from->error;
 }
 
-int efd_parse_file(efd_node *parent, char const * const filename) {
-  static efd_parse_state s;
+int efd_parse_file(
+  efd_node *parent,
+  efd_index *cr,
+  char const * const filename
+) {
+  efd_parse_state s;
   char *contents;
 
 #ifdef DEBUG
@@ -59,7 +63,7 @@ int efd_parse_file(efd_node *parent, char const * const filename) {
   s.input = contents;
 
   efd_assert_type(parent, EFD_NT_CONTAINER);
-  efd_parse_children(parent, &s);
+  efd_parse_children(parent, &s, cr);
 
   if (efd_parse_failed(&s)) {
     efd_throw_parse_error(&s);
@@ -77,9 +81,9 @@ int efd_parse_file(efd_node *parent, char const * const filename) {
   }
 }
 
-efd_node* efd_parse_any(efd_parse_state *s) {
+efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
   efd_node_type type;
-  static char name[EFD_NODE_NAME_SIZE + 1];
+  char name[EFD_NODE_NAME_SIZE + 1];
 
   efd_parse_open(s);
   if (efd_parse_failed(s)) {
@@ -103,44 +107,44 @@ efd_node* efd_parse_any(efd_parse_state *s) {
     default:
     case EFD_NT_INVALID:
     case EFD_NT_PROTO:
-      efd_parse_proto(result, s);
+      efd_parse_proto(result, s, cr);
       break;
     case EFD_NT_CONTAINER:
-      efd_parse_children(result, s);
+      efd_parse_children(result, s, cr);
       break;
     case EFD_NT_OBJECT:
       s->error = EFD_PE_MALFORMED;
       s->context = "node (invalid type)";
       return NULL;
     case EFD_NT_INTEGER:
-      efd_parse_integer(result, s);
+      efd_parse_integer(result, s, cr);
       break;
     case EFD_NT_NUMBER:
-      efd_parse_number(result, s);
+      efd_parse_number(result, s, cr);
       break;
     case EFD_NT_STRING:
-      efd_parse_string(result, s);
+      efd_parse_string(result, s, cr);
       break;
     case EFD_NT_ARRAY_OBJ:
-      efd_parse_obj_array(result, s);
+      efd_parse_obj_array(result, s, cr);
       break;
     case EFD_NT_ARRAY_INT:
-      efd_parse_int_array(result, s);
+      efd_parse_int_array(result, s, cr);
       break;
     case EFD_NT_ARRAY_NUM:
-      efd_parse_num_array(result, s);
+      efd_parse_num_array(result, s, cr);
       break;
     case EFD_NT_ARRAY_STR:
-      efd_parse_str_array(result, s);
+      efd_parse_str_array(result, s, cr);
       break;
     case EFD_NT_GLOBAL_INT:
-      efd_parse_int_global(result, s);
+      efd_parse_int_global(result, s, cr);
       break;
     case EFD_NT_GLOBAL_NUM:
-      efd_parse_num_global(result, s);
+      efd_parse_num_global(result, s, cr);
       break;
     case EFD_NT_GLOBAL_STR:
-      efd_parse_str_global(result, s);
+      efd_parse_str_global(result, s, cr);
       break;
   }
   if (efd_parse_failed(s)) {
@@ -160,8 +164,8 @@ efd_node* efd_parse_any(efd_parse_state *s) {
 // Parsing functions for the EFD primitive types:
 //-----------------------------------------------
 
-void efd_parse_children(efd_node *result, efd_parse_state *s) {
-  static char schema[EFD_NODE_NAME_SIZE + 1];
+void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
+  char schema[EFD_NODE_NAME_SIZE + 1];
   efd_parse_state back;
   list *children;
   efd_node *child;
@@ -184,7 +188,7 @@ void efd_parse_children(efd_node *result, efd_parse_state *s) {
   // parse any number of children and add them:
   while (1) {
     efd_parse_copy_state(s, &back);
-    child = efd_parse_any(s);
+    child = efd_parse_any(s, cr);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
         // we've probably hit the end of this object: return w/out error
@@ -210,8 +214,8 @@ void efd_parse_children(efd_node *result, efd_parse_state *s) {
   }
 }
 
-void efd_parse_proto(efd_node *result, efd_parse_state *s) {
-  static char format[EFD_NODE_NAME_SIZE + 1];
+void efd_parse_proto(efd_node *result, efd_parse_state *s, efd_index *cr) {
+  char format[EFD_NODE_NAME_SIZE + 1];
 
   efd_parse_schema(s, format);
   if (efd_parse_failed(s)) {
@@ -222,7 +226,7 @@ void efd_parse_proto(efd_node *result, efd_parse_state *s) {
   result->b.as_proto.format[EFD_OBJECT_FORMAT_SIZE-1] = '\0';
 
   efd_node *proto = create_efd_node(EFD_NT_CONTAINER, EFD_PROTO_NAME);
-  efd_parse_children(proto, s);
+  efd_parse_children(proto, s, cr);
   if (efd_parse_failed(s)) {
     cleanup_efd_node(proto);
     return;
@@ -231,7 +235,7 @@ void efd_parse_proto(efd_node *result, efd_parse_state *s) {
   result->b.as_proto.input = proto;
 }
 
-void efd_parse_integer(efd_node *result, efd_parse_state *s) {
+void efd_parse_integer(efd_node *result, efd_parse_state *s, efd_index *cr) {
   ptrdiff_t i = efd_parse_int(s);
   if (efd_parse_failed(s)) {
     return;
@@ -240,7 +244,7 @@ void efd_parse_integer(efd_node *result, efd_parse_state *s) {
   }
 }
 
-void efd_parse_number(efd_node *result, efd_parse_state *s) {
+void efd_parse_number(efd_node *result, efd_parse_state *s, efd_index *cr) {
   float n = efd_parse_float(s);
   if (efd_parse_failed(s)) {
     return;
@@ -249,44 +253,70 @@ void efd_parse_number(efd_node *result, efd_parse_state *s) {
   }
 }
 
-void efd_parse_string(efd_node *result, efd_parse_state *s) {
+void efd_parse_string(efd_node *result, efd_parse_state *s, efd_index *cr) {
   result->b.as_string.value = efd_parse_str(s);
   if (efd_parse_failed(s)) {
     return;
   }
 }
 
-void efd_parse_obj_array(efd_node *result, efd_parse_state *s) {
+void efd_parse_obj_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   size_t i;
   void *val;
-  list *l = create_list();
+  efd_reference *from;
+  efd_reference *to;
+  efd_bridge *bridge;
+  ptrdiff_t index;
+  list *values = create_list();
+  list *bridges = create_list();
 
+  index = 0;
   while (1) {
-    val = efd_parse_ref(s); // TODO: THIS
+    to = efd_parse_any_ref(s);
+    val = NULL;
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
         s->error = EFD_PE_NO_ERROR;
         break;
       } else {
-        cleanup_list(l);
+        cleanup_list(values);
+        cleanup_list(bridges);
         return;
       }
-    } else {
-      l_append_element(l, val);
     }
+    from = create_efd_reference(
+      EFD_RT_OBJ_ARR_ENTRY,
+      s->current_address,
+      index
+    );
+    bridge = create_efd_bridge(from, to);
+    if (bridge == NULL) {
+      cleanup_efd_reference(from);
+      cleanup_efd_reference(to);
+      cleanup_list(values);
+      cleanup_list(bridges);
+      s->error = EFD_PE_MALFORMED;
+      s->context = "object array (incompatible entry ref)";
+      return;
+    }
+    l_append_element(elements, val);
+    l_append_element(bridges, bridge);
+
     efd_parse_sep(s);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
         s->error = EFD_PE_NO_ERROR;
         break;
       } else {
-        cleanup_list(l);
+        cleanup_list(values);
+        cleanup_list(bridges);
         return;
       }
     }
+    index += 1;
   }
 
-  result->b.as_obj_array.count = l_get_length(l);
+  result->b.as_obj_array.count = l_get_length(values);
 #ifdef DEBUG
   if (result->b.as_obj_array.values != NULL) {
     fprintf(stderr, "EFD object array already had values while parsing!\n");
@@ -297,12 +327,17 @@ void efd_parse_obj_array(efd_node *result, efd_parse_state *s) {
     result->b.as_obj_array.count * sizeof(void*)
   );
   for (i = 0; i < result->b.as_obj_array.count; ++i) {
-    result->b.as_obj_array.values[i] = (void*) l_get_item(l, i);
+    result->b.as_obj_array.values[i] = l_get_item(values, i);
   }
-  cleanup_list(l);
+  index = l_get_length(bridges);
+  for (i = 0; i < index; ++i) {
+    efd_add_crossref(cr, (bridge*) l_get_item(bridges, i));
+  }
+  cleanup_list(values);
+  cleanup_list(bridges);
 }
 
-void efd_parse_int_array(efd_node *result, efd_parse_state *s) {
+void efd_parse_int_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   size_t i;
   ptrdiff_t val;
   list *l = create_list();
@@ -348,7 +383,7 @@ void efd_parse_int_array(efd_node *result, efd_parse_state *s) {
   cleanup_list(l);
 }
 
-void efd_parse_num_array(efd_node *result, efd_parse_state *s) {
+void efd_parse_num_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   size_t i;
   float val;
   void *v;
@@ -401,7 +436,7 @@ void _cleanup_string_in_list(void *v_string) {
   cleanup_string((string*) v_string);
 }
 
-void efd_parse_str_array(efd_node *result, efd_parse_state *s) {
+void efd_parse_str_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   size_t i;
   string *val;
   list *l = create_list();
@@ -450,8 +485,8 @@ void efd_parse_str_array(efd_node *result, efd_parse_state *s) {
   // Don't clean up the strings, of course, as they're now in the array.
 }
 
-void efd_parse_int_global(efd_node *result, efd_parse_state *s) {
-  static char *e = "global integer";
+void efd_parse_int_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
+  static char const * const e = "global integer";
   char c;
 
   SKIP_OR_ELSE(s, e);
@@ -463,7 +498,7 @@ void efd_parse_int_global(efd_node *result, efd_parse_state *s) {
   }
 
   c = s->input[s->pos];
-  if (c == EFD_GLOBAL_EQUALS) {
+  if (c == EFD_PARSER_EQUALS) {
     s->pos += 1;
     SKIP_OR_ELSE(s, e);
   }
@@ -472,8 +507,8 @@ void efd_parse_int_global(efd_node *result, efd_parse_state *s) {
   // return whether or not there's an error...
 }
 
-void efd_parse_num_global(efd_node *result, efd_parse_state *s) {
-  static char *e = "global number";
+void efd_parse_num_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
+  static char const * const e = "global number";
   char c;
 
   SKIP_OR_ELSE(s, e);
@@ -485,7 +520,7 @@ void efd_parse_num_global(efd_node *result, efd_parse_state *s) {
   }
 
   c = s->input[s->pos];
-  if (c == EFD_GLOBAL_EQUALS) {
+  if (c == EFD_PARSER_EQUALS) {
     s->pos += 1;
     SKIP_OR_ELSE(s, e);
   }
@@ -494,8 +529,8 @@ void efd_parse_num_global(efd_node *result, efd_parse_state *s) {
   // return whether or not there's an error...
 }
 
-void efd_parse_str_global(efd_node *result, efd_parse_state *s) {
-  static char *e = "global string";
+void efd_parse_str_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
+  static char const * const e = "global string";
   char c;
 
   SKIP_OR_ELSE(s, e);
@@ -507,7 +542,7 @@ void efd_parse_str_global(efd_node *result, efd_parse_state *s) {
   }
 
   c = s->input[s->pos];
-  if (c == EFD_GLOBAL_EQUALS) {
+  if (c == EFD_PARSER_EQUALS) {
     s->pos += 1;
     SKIP_OR_ELSE(s, e);
   }
@@ -694,8 +729,7 @@ void efd_parse_name(efd_parse_state *s, char *r_name) {
     c = s->input[s->pos];
     if (
       is_whitespace(&c)
-   || c == EFD_NODE_SEP
-   || c == EFD_SCHEMA_INDICATOR
+   || is_special(&c)
    || (
        c >= '0'
     && c <= '9'
@@ -719,7 +753,7 @@ void efd_parse_name(efd_parse_state *s, char *r_name) {
   }
   if (i == EFD_NODE_NAME_SIZE && !efd_parse_atend(s)) {
     c = s->input[s->pos];
-    if (!is_whitespace(&c) && c != EFD_NODE_SEP && c != EFD_SCHEMA_INDICATOR) {
+    if (!is_whitespace(&c) && !is_special(&c)) {
       s->error = EFD_PE_MALFORMED;
       s->context = "identifier (identifier too long)";
       return;
@@ -743,7 +777,7 @@ void efd_parse_schema(efd_parse_state *s, char *r_name) {
 
   c = s->input[s->pos];
 
-  if (c != EFD_SCHEMA_INDICATOR) {
+  if (c != EFD_PARSER_COLON) {
     s->error = EFD_PE_MISSING;
     s->context = "schema annotation (no indicator)";
     return;
@@ -1176,11 +1210,269 @@ float efd_parse_float(efd_parse_state *s) {
   }
 }
 
-void* efd_parse_ref(efd_parse_state *s) {
-  // TODO: HERE
-  s->error = EFD_PE_UNKNOWN;
-  s->context = "object arrays don't work yet";
-  return NULL;
+efd_reference* efd_parse_any_ref(efd_parse_state *s) {
+  static char const * const e = "reference";
+  char c;
+
+  efd_parse_skip(s);
+  if (efd_parse_failed(s)) {
+    s->error = EFD_PE_MISSING;
+    s->context = e;
+    return NULL;
+  }
+
+  c = s->input[s->pos];
+
+  if (c == EFD_PARSER_REF_OPEN) {
+    return efd_parse_path_ref(s);
+  } else if (c == EFD_PARSER_HASH) {
+    return efd_parse_global_ref(s);
+  } else {
+    s->error = EFD_PE_MALFORMED;
+    s->context = e;
+    return NULL;
+  }
+}
+
+efd_reference* efd_parse_path_ref(efd_parse_state *s) {
+  char name[EFD_NODE_NAME_SIZE + 1];
+  efd_node_type n_type;
+  efd_ref_type type;
+  efd_address *addr;
+  efd_address *tail;
+  ptrdiff_t index = -1;
+  efd_reference *result;
+  char c;
+
+  efd_parse_skip(s);
+  if (efd_parse_failed(s)) {
+    s->error = EFD_PE_MISSING;
+    s->context = "path reference (missing)";
+    return NULL;
+  }
+
+  // Parse opening brace:
+  c = s->input[s->pos];
+  if (c != EFD_PARSER_REF_OPEN) {
+    s->error = EFD_PE_MALFORMED;
+    s->context = "path reference (opening brace)";
+    return NULL;
+  }
+  s->pos += 1;
+
+  // Parse reference type:
+  n_type = efd_parse_type(s);
+  if (efd_parse_failed(s)) {
+    return NULL;
+  }
+  switch (n_type) {
+    default:
+    case EFD_NT_INVALID:
+    case EFD_NT_PROTO:
+    case EFD_NT_GLOBAL_INT:
+    case EFD_NT_GLOBAL_NUM:
+    case EFD_NT_GLOBAL_STR:
+      s->error = EFD_PE_MALFORMED;
+      s->context = "path reference (invalid type);
+      return NULL;
+    case EFD_NT_CONTAINER:
+      type = EFD_RT_NODE;
+      break;
+    case EFD_NT_OBJECT:
+      type = EFD_RT_OBJ;
+      break;
+    case EFD_NT_INTEGER
+      type = EFD_RT_INT;
+      break;
+    case EFD_NT_NUMBER:
+      type = EFD_RT_NUM;
+      break;
+    case EFD_NT_STRING:
+      type = EFD_RT_STR;
+      break;
+    case EFD_NT_ARRAY_OBJ:
+      type = EFD_RT_OBJ_ARR_ENTRY;
+      break;
+    case EFD_NT_ARRAY_INT:
+      type = EFD_RT_INT_ARR_ENTRY;
+      break;
+    case EFD_NT_ARRAY_NUM:
+      type = EFD_RT_NUM_ARR_ENTRY;
+      break;
+    case EFD_NT_ARRAY_STR:
+      type = EFD_RT_STR_ARR_ENTRY;
+      break;
+  }
+
+  efd_parse_skip(s);
+  if (efd_parse_failed(s)) {
+    s->error = EFD_PE_MALFORMED;
+    s->context = "path reference (type delimiter)";
+    return NULL;
+  }
+
+  // Parse type delimiter
+  c = s->input[s->pos];
+  if (c != EFD_PARSER_COLON) {
+    s->error = EFD_PE_MALFORMED;
+    s->context = "path reference (type delimiter)";
+    return NULL;
+  }
+  // pos will be incremented at start of while loop
+
+  addr = NULL;
+  tail = NULL;
+  c = EFD_NODE_SEP;
+  while (c == EFD_NODE_SEP) {
+    // TODO: respect max depth here?
+    s->pos += 1;
+    efd_parse_name(s, name);
+    if (efd_parse_failed(s)) {
+      if (addr != NULL) {
+        if (
+          !efd_parse_atend(s)
+       && s->input[s->pos] >= '0'
+       && s->input[s->pos] <= '9'
+       && (
+            type == EFD_RT_OBJ_ARR_ENTRY
+         || type == EFD_RT_INT_ARR_ENTRY
+         || type == EFD_RT_NUM_ARR_ENTRY
+         || type == EFD_RT_STR_ARR_ENTRY
+          )
+        ) {
+          index = efd_parse_int(s);
+          if (!efd_parse_failed(s)) {
+            s->error = EFD_PE_NO_ERROR; // not actually an error any more
+            break;
+          } // otherwise fall out and return our error after cleaning up
+        }
+        cleanup_efd_address(addr);
+      }
+      return;
+    }
+    if (addr == NULL) {
+      addr = create_efd_address(name);
+      tail = addr;
+    } else {
+      tail->next = create_efd_address(name);
+      tail = tail->next;
+    }
+    efd_parse_skip(s);
+    if (efd_parse_failed(s)) {
+      cleanup_efd_address(addr);
+      s->error = EFD_PE_MALFORMED;
+      s->context = "path reference (path list)";
+      return NULL;
+    }
+    c = s->input[s->pos];
+  }
+
+  // Parse closing brace:
+  if (c != EFD_PARSER_REF_CLOSE) {
+    cleanup_efd_address(addr);
+    s->error = EFD_PE_MALFORMED;
+    s->context = "path reference (closing brace)";
+    return NULL;
+  }
+  if (
+    index < 0
+ && (
+      type == EFD_RT_OBJ_ARR_ENTRY
+   || type == EFD_RT_INT_ARR_ENTRY
+   || type == EFD_RT_NUM_ARR_ENTRY
+   || type == EFD_RT_STR_ARR_ENTRY
+    )
+  ) {
+    cleanup_efd_address(addr);
+    s->error = EFD_PE_MALFORMED;
+    s->context = "path reference (missing/invalid index)"
+  }
+  s->pos += 1;
+
+  // Create result:
+  result = create_efd_reference(
+    type,
+    addr,
+    index
+  );
+  cleanup_efd_address(addr);
+  return result;
+}
+
+efd_reference* efd_parse_global_ref(efd_parse_state *s) {
+  char name[EFD_NODE_NAME_SIZE + 1];
+  efd_node_type n_type;
+  efd_ref_type type;
+  efd_address *addr;
+  efd_reference *resullt;
+  char c;
+
+  efd_parse_skip(s);
+  if (efd_parse_failed(s)) {
+    s->error = EFD_PE_MISSING;
+    s->context = "global reference (missing)";
+    return NULL;
+  }
+
+  c = s->input[s->pos];
+  if (c != EFD_PARSER_HASH) {
+    s->error = EFD_PE_MALFORMED;
+    s->context = "global reference (indicator);
+    return NULL;
+  }
+
+  n_type = efd_parse_type(s);
+  if (efd_parse_failed(s)) {
+    return NULL;
+  }
+  switch (n_type) {
+    default:
+    case EFD_NT_INVALID:
+    case EFD_NT_PROTO:
+    case EFD_NT_GLOBAL_INT:
+    case EFD_NT_GLOBAL_NUM:
+    case EFD_NT_GLOBAL_STR:
+    case EFD_NT_CONTAINER:
+    case EFD_NT_OBJECT:
+    case EFD_NT_ARRAY_OBJ:
+    case EFD_NT_ARRAY_INT:
+    case EFD_NT_ARRAY_NUM:
+    case EFD_NT_ARRAY_STR:
+      s->error = EFD_PE_MALFORMED;
+      s->context = "global reference (invalid type);
+      return NULL;
+    case EFD_NT_INTEGER
+      type = EFD_RT_GLOBAL_INT;
+      break;
+    case EFD_NT_NUMBER:
+      type = EFD_RT_GLOBAL_NUM;
+      break;
+    case EFD_NT_STRING:
+      type = EFD_RT_GLOBAL_STR;
+  }
+
+  c = s->input[s->pos];
+  if (c != EFD_PARSER_COLON) {
+    s->error = EFD_PE_MALFORMED;
+    s->context = "global reference (type delimiter)";
+    return NULL;
+  }
+  s->pos += 1;
+
+  efd_parse_name(s, name);
+  if (efd_parse_failed(s)) {
+    return NULL;
+  }
+
+  addr = create_efd_address(name);
+
+  result = create_efd_reference(
+    type,
+    addr,
+    -1
+  );
+
+  return result;
 }
 
 string* efd_parse_str(efd_parse_state *s) {
@@ -1391,10 +1683,10 @@ int efd_parse_failed(efd_parse_state *s) {
 
 void efd_print_parse_error(efd_parse_state *s) {
   char const *context;
-  static char before[EFD_PARSER_ERROR_LINE+1];
-  static char after[EFD_PARSER_ERROR_LINE+1];
-  static char above[EFD_PARSER_ERROR_LINE+1];
-  static char below[EFD_PARSER_ERROR_LINE+1];
+  char before[EFD_PARSER_ERROR_LINE+1];
+  char after[EFD_PARSER_ERROR_LINE+1];
+  char above[EFD_PARSER_ERROR_LINE+1];
+  char below[EFD_PARSER_ERROR_LINE+1];
   ptrdiff_t offset;
   ptrdiff_t sursize;
   if (s->error != EFD_PE_NO_ERROR) {

@@ -86,9 +86,14 @@ typedef struct efd_parse_state_s efd_parse_state;
 #define EFD_PARSER_INT_ERROR 1717
 #define EFD_PARSER_FLOAT_ERROR 9995.5
 
+#define EFD_PARSER_COLON ':'
 #define EFD_PARSER_OPEN_BRACE '['
 #define EFD_PARSER_CLOSE_BRACE ']'
+#define EFD_PARSER_EQUALS '='
 #define EFD_PARSER_ARRAY_SEP ','
+#define EFD_PARSER_HASH '#'
+#define EFD_PARSER_REF_OPEN '{'
+#define EFD_PARSER_REF_CLOSE '}'
 
 /*************************
  * Structure Definitions *
@@ -102,6 +107,7 @@ struct efd_parse_state_s {
   ptrdiff_t lineno;
   char const * context;
   efd_parse_error error;
+  efd_address *current_address;
 };
 
 /********************
@@ -110,6 +116,23 @@ struct efd_parse_state_s {
 
 static inline int is_whitespace(char *c) {
   return *c == ' ' || *c == '\n' || *c == '\t' || *c == '\r';
+}
+
+static inline int is_special(char *c) {
+  switch (*c) {
+    default:
+      return 0;
+    case EFD_NODE_SEP:
+    case EFD_PARSER_COLON:
+    case EFD_PARSER_OPEN_BRACE:
+    case EFD_PARSER_CLOSE_BRACE:
+    case EFD_PARSER_EQUALS:
+    case EFD_PARSER_ARRAY_SEP:
+    case EFD_PARSER_HASH:
+    case EFD_PARSER_REF_OPEN:
+    case EFD_PARSER_REF_CLOSE:
+      return 1;
+  }
 }
 
 // Checks whether the current character is NUL or beyond the end of the input
@@ -130,42 +153,46 @@ void efd_parse_copy_state(efd_parse_state *from, efd_parse_state *to);
 
 // Parses an entire file, adding node(s) encountered as children of the given
 // parent node (must be a container). Returns 1 if it succeeds or 0 otherwise.
-int efd_parse_file(efd_node *parent, char const * const filename);
+int efd_parse_file(
+  efd_node *parent,
+  efd_index *cr,
+  char const * const filename
+);
 
 // Top level parsing function that delegates to the more specific functions:
-efd_node* efd_parse_any(efd_parse_state *s);
+efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr);
 
 
 // Parsing functions for the EFD primitive types:
 //-----------------------------------------------
 
-void efd_parse_children(efd_node *result, efd_parse_state *s);
+void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr);
 
-void efd_parse_proto(efd_node *result, efd_parse_state *s);
+void efd_parse_proto(efd_node *result, efd_parse_state *s, efd_index *cr);
 
-void efd_parse_integer(efd_node *result, efd_parse_state *s);
+void efd_parse_integer(efd_node *result, efd_parse_state *s, efd_index *cr);
 
-void efd_parse_number(efd_node *result, efd_parse_state *s);
+void efd_parse_number(efd_node *result, efd_parse_state *s, efd_index *cr);
 
-void efd_parse_string(efd_node *result, efd_parse_state *s);
+void efd_parse_string(efd_node *result, efd_parse_state *s, efd_index *cr);
 
-void efd_parse_obj_array(efd_node *result, efd_parse_state *s);
+void efd_parse_obj_array(efd_node *result, efd_parse_state *s, efd_index *cr);
 
-void efd_parse_int_array(efd_node *result, efd_parse_state *s);
+void efd_parse_int_array(efd_node *result, efd_parse_state *s, efd_index *cr);
 
-void efd_parse_num_array(efd_node *result, efd_parse_state *s);
+void efd_parse_num_array(efd_node *result, efd_parse_state *s, efd_index *cr);
 
-void efd_parse_str_array(efd_node *result, efd_parse_state *s);
+void efd_parse_str_array(efd_node *result, efd_parse_state *s, efd_index *cr);
 
 
 // Parsing functions for EFD globals:
 //-----------------------------------
 
-void efd_parse_int_global(efd_node *result, efd_parse_state *s);
+void efd_parse_int_global(efd_node *result, efd_parse_state *s, efd_index *cr);
 
-void efd_parse_num_global(efd_node *result, efd_parse_state *s);
+void efd_parse_num_global(efd_node *result, efd_parse_state *s, efd_index *cr);
 
-void efd_parse_str_global(efd_node *result, efd_parse_state *s);
+void efd_parse_str_global(efd_node *result, efd_parse_state *s, efd_index *cr);
 
 
 // Functions for parsing bits & pieces:
@@ -194,8 +221,13 @@ ptrdiff_t efd_parse_int(efd_parse_state *s);
 // Parses a floating-point number off of the front of the input:
 float efd_parse_float(efd_parse_state *s);
 
-// Parses an object reference off of the front of the input:
-void* efd_parse_ref(efd_parse_state *s);
+// Parses a reference off of the front of the input, allocating and returning a
+// new efd_reference.
+efd_reference* efd_parse_any_ref(efd_parse_state *s);
+
+// Helpers for parse_any_ref that work with pathrefs/globalrefs:
+efd_reference* efd_parse_path_ref(efd_parse_state *s);
+efd_reference* efd_parse_global_ref(efd_parse_state *s);
 
 // Parses a quoted string off of the front of the input. Returns a newly
 // malloc'd string if it succeeds or NULL if it fails (so if it fails, freeing
