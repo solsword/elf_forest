@@ -84,7 +84,9 @@ typedef struct efd_parse_state_s efd_parse_state;
 
 #define EFD_PARSER_MAX_DIGITS 1024
 #define EFD_PARSER_INT_ERROR 1717
+#define EFD_PARSER_INT_REFVAL 1718
 #define EFD_PARSER_FLOAT_ERROR 9995.5
+#define EFD_PARSER_FLOAT_REFVAL 9995.6
 
 #define EFD_PARSER_COLON ':'
 #define EFD_PARSER_OPEN_BRACE '['
@@ -195,6 +197,18 @@ void efd_parse_num_global(efd_node *result, efd_parse_state *s, efd_index *cr);
 void efd_parse_str_global(efd_node *result, efd_parse_state *s, efd_index *cr);
 
 
+// Functions for parsing pieces that might be references:
+//-------------------------------------------------------
+
+ptrdiff_t efd_parse_int_or_ref(efd_parse_state *s, efd_index *cr);
+
+float efd_parse_float_or_ref(efd_parse_state *s, efd_index *cr);
+
+string* efd_parse_str_or_ref(efd_parse_state *s, efd_index *cr);
+
+void* efd_parse_obj_ref(efd_parse_state *s, efd_index *cr);
+
+
 // Functions for parsing bits & pieces:
 //-------------------------------------
 
@@ -221,14 +235,6 @@ ptrdiff_t efd_parse_int(efd_parse_state *s);
 // Parses a floating-point number off of the front of the input:
 float efd_parse_float(efd_parse_state *s);
 
-// Parses a reference off of the front of the input, allocating and returning a
-// new efd_reference.
-efd_reference* efd_parse_any_ref(efd_parse_state *s);
-
-// Helpers for parse_any_ref that work with pathrefs/globalrefs:
-efd_reference* efd_parse_path_ref(efd_parse_state *s);
-efd_reference* efd_parse_global_ref(efd_parse_state *s);
-
 // Parses a quoted string off of the front of the input. Returns a newly
 // malloc'd string if it succeeds or NULL if it fails (so if it fails, freeing
 // the result is unnecessary).
@@ -253,6 +259,14 @@ char * efd_purify_string(
   ptrdiff_t start,
   ptrdiff_t end
 );
+
+// Parses a reference off of the front of the input, allocating and returning a
+// new efd_reference.
+efd_reference* efd_parse_any_ref(efd_parse_state *s);
+
+// Helpers for parse_any_ref that work with pathrefs/globalrefs:
+efd_reference* efd_parse_path_ref(efd_parse_state *s);
+efd_reference* efd_parse_global_ref(efd_parse_state *s);
 
 // Skips whitespace and comments (// to end of line and /* to */):
 void efd_parse_skip(efd_parse_state *s);

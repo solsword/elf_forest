@@ -341,6 +341,12 @@ int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to) {
         to == EFD_RT_NODE
      || to == EFD_RT_OBJ
      || to == EFD_RT_OBJ_ARR_ENTRY
+     || to == EFD_RT_INT
+     || to == EFD_RT_INT_ARR_ENTRY
+     || to == EFD_RT_NUM
+     || to == EFD_RT_NUM_ARR_ENTRY
+     || to == EFD_RT_STR
+     || to == EFD_RT_STR_ARR_ENTRY
       );
   }
   // failsafe

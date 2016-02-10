@@ -236,7 +236,7 @@ void efd_parse_proto(efd_node *result, efd_parse_state *s, efd_index *cr) {
 }
 
 void efd_parse_integer(efd_node *result, efd_parse_state *s, efd_index *cr) {
-  ptrdiff_t i = efd_parse_int(s);
+  ptrdiff_t i = efd_parse_int_or_ref(s, cr);
   if (efd_parse_failed(s)) {
     return;
   } else {
@@ -245,7 +245,7 @@ void efd_parse_integer(efd_node *result, efd_parse_state *s, efd_index *cr) {
 }
 
 void efd_parse_number(efd_node *result, efd_parse_state *s, efd_index *cr) {
-  float n = efd_parse_float(s);
+  float n = efd_parse_float_or_ref(s, cr);
   if (efd_parse_failed(s)) {
     return;
   } else {
@@ -254,7 +254,7 @@ void efd_parse_number(efd_node *result, efd_parse_state *s, efd_index *cr) {
 }
 
 void efd_parse_string(efd_node *result, efd_parse_state *s, efd_index *cr) {
-  result->b.as_string.value = efd_parse_str(s);
+  result->b.as_string.value = efd_parse_str_or_ref(s, cr);
   if (efd_parse_failed(s)) {
     return;
   }
@@ -263,44 +263,21 @@ void efd_parse_string(efd_node *result, efd_parse_state *s, efd_index *cr) {
 void efd_parse_obj_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   size_t i;
   void *val;
-  efd_reference *from;
-  efd_reference *to;
-  efd_bridge *bridge;
-  ptrdiff_t index;
+  ptrdiff_t index; // TODO: Use this for context...
   list *values = create_list();
-  list *bridges = create_list();
-
   index = 0;
   while (1) {
-    to = efd_parse_any_ref(s);
-    val = NULL;
+    val = efd_parse_obj_ref(s, cr);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
         s->error = EFD_PE_NO_ERROR;
         break;
       } else {
         cleanup_list(values);
-        cleanup_list(bridges);
         return;
       }
     }
-    from = create_efd_reference(
-      EFD_RT_OBJ_ARR_ENTRY,
-      s->current_address,
-      index
-    );
-    bridge = create_efd_bridge(from, to);
-    if (bridge == NULL) {
-      cleanup_efd_reference(from);
-      cleanup_efd_reference(to);
-      cleanup_list(values);
-      cleanup_list(bridges);
-      s->error = EFD_PE_MALFORMED;
-      s->context = "object array (incompatible entry ref)";
-      return;
-    }
     l_append_element(elements, val);
-    l_append_element(bridges, bridge);
 
     efd_parse_sep(s);
     if (efd_parse_failed(s)) {
@@ -309,7 +286,6 @@ void efd_parse_obj_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
         break;
       } else {
         cleanup_list(values);
-        cleanup_list(bridges);
         return;
       }
     }
@@ -329,12 +305,7 @@ void efd_parse_obj_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   for (i = 0; i < result->b.as_obj_array.count; ++i) {
     result->b.as_obj_array.values[i] = l_get_item(values, i);
   }
-  index = l_get_length(bridges);
-  for (i = 0; i < index; ++i) {
-    efd_add_crossref(cr, (bridge*) l_get_item(bridges, i));
-  }
   cleanup_list(values);
-  cleanup_list(bridges);
 }
 
 void efd_parse_int_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
@@ -343,7 +314,7 @@ void efd_parse_int_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   list *l = create_list();
 
   while (1) {
-    val = efd_parse_int(s);
+    val = efd_parse_int_or_ref(s, cr);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
         s->error = EFD_PE_NO_ERROR;
@@ -390,7 +361,7 @@ void efd_parse_num_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   list *l = create_list();
 
   while (1) {
-    val = efd_parse_float(s);
+    val = efd_parse_float_or_ref(s, cr);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
         s->error = EFD_PE_NO_ERROR;
@@ -431,24 +402,19 @@ void efd_parse_num_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   cleanup_list(l);
 }
 
-// Helper if strings in a list need to be cleaned up:
-void _cleanup_string_in_list(void *v_string) {
-  cleanup_string((string*) v_string);
-}
-
 void efd_parse_str_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   size_t i;
   string *val;
   list *l = create_list();
 
   while (1) {
-    val = efd_parse_str(s);
+    val = efd_parse_str_or_ref(s, cr);
     if (efd_parse_failed(s)) {
       if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
         s->error = EFD_PE_NO_ERROR;
         break;
       } else {
-        l_foreach(l, &_cleanup_string_in_list);
+        l_foreach(l, &cleanup_v_string);
         cleanup_list(l);
         return;
       }
@@ -461,7 +427,7 @@ void efd_parse_str_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
         s->error = EFD_PE_NO_ERROR;
         break;
       } else {
-        l_foreach(l, &_cleanup_string_in_list);
+        l_foreach(l, &cleanup_v_string);
         cleanup_list(l);
         return;
       }
@@ -503,7 +469,7 @@ void efd_parse_int_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
     SKIP_OR_ELSE(s, e);
   }
 
-  result->b.as_integer.value = efd_parse_int(s);
+  result->b.as_integer.value = efd_parse_int_or_ref(s, cr);
   // return whether or not there's an error...
 }
 
@@ -525,7 +491,7 @@ void efd_parse_num_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
     SKIP_OR_ELSE(s, e);
   }
 
-  result->b.as_number.value = efd_parse_float(s);
+  result->b.as_number.value = efd_parse_float_or_ref(s, cr);
   // return whether or not there's an error...
 }
 
@@ -547,10 +513,117 @@ void efd_parse_str_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
     SKIP_OR_ELSE(s, e);
   }
 
-  result->b.as_string.value = efd_parse_str(s);
+  result->b.as_string.value = efd_parse_str_or_ref(s, cr);
   if (efd_parse_failed(s)) {
     result->b.as_string.value = NULL;
     return;
+  }
+}
+
+// Functions for parsing pieces that might be references:
+//-------------------------------------------------------
+
+ptrdiff_t efd_parse_int_or_ref(efd_parse_state *s, efd_index *cr) {
+  efd_reference *from, *to;
+  efd_bridge *bridge;
+  efd_parse_state back;
+
+  efd_parse_copy_state(s, &back);
+  to = efd_parse_any_ref(s);
+  if (efd_parse_failed(s)) {
+    s->error = EFD_PE_NO_ERROR;
+    efd_parse_copy_state(&back, s);
+    return efd_parse_int(s);
+  } else {
+    from = efd_parser_get_reference_to_here();
+    bridge = create_efd_bridge(from, to);
+    if (bridge != NULL) {
+      efd_add_crossref(cr, bridge);
+      return EFD_PARSER_INT_REFVAL;
+    } else {
+      s->error = EFD_PE_MALFORMED;
+      s->context = "int ref (incompatible destination type)";
+      cleanup_efd_reference(from);
+      cleanup_efd_reference(to);
+      return EFD_PARSER_INT_ERROR;
+    }
+  }
+}
+
+float efd_parse_float_or_ref(efd_parse_state *s, efd_index *cr) {
+  efd_reference *from, *to;
+  efd_bridge *bridge;
+  efd_parse_state back;
+
+  efd_parse_copy_state(s, &back);
+  to = efd_parse_any_ref(s);
+  if (efd_parse_failed(s)) {
+    s->error = EFD_PE_NO_ERROR;
+    efd_parse_copy_state(&back, s);
+    return efd_parse_float(s);
+  } else {
+    from = efd_parser_get_reference_to_here();
+    bridge = create_efd_bridge(from, to);
+    if (bridge != NULL) {
+      efd_add_crossref(cr, bridge);
+      return EFD_PARSER_FLOAT_REFVAL;
+    } else {
+      s->error = EFD_PE_MALFORMED;
+      s->context = "num ref (incompatible destination type)";
+      cleanup_efd_reference(from);
+      cleanup_efd_reference(to);
+      return EFD_PARSER_FLOAT_ERROR;
+    }
+  }
+}
+
+string* efd_parse_str_or_ref(efd_parse_state *s, efd_index *cr) {
+  efd_reference *from, *to;
+  efd_bridge *bridge;
+  efd_parse_state back;
+
+  efd_parse_copy_state(s, &back);
+  to = efd_parse_any_ref(s);
+  if (efd_parse_failed(s)) {
+    s->error = EFD_PE_NO_ERROR;
+    efd_parse_copy_state(&back, s);
+    return efd_parse_str(s);
+  } else {
+    from = efd_parser_get_reference_to_here();
+    bridge = create_efd_bridge(from, to);
+    if (bridge != NULL) {
+      efd_add_crossref(cr, bridge);
+      return NULL;
+    } else {
+      s->error = EFD_PE_MALFORMED;
+      s->context = "str ref (incompatible destination type)";
+      cleanup_efd_reference(from);
+      cleanup_efd_reference(to);
+      return NULL;
+    }
+  }
+}
+
+void* efd_parse_obj_ref(efd_parse_state *s, efd_index *cr) {
+  efd_reference *from, *to;
+  efd_bridge *bridge;
+
+  to = efd_parse_any_ref(s);
+  if (efd_parse_failed(s)) {
+    return NULL;
+  } else {
+    from = efd_parser_get_reference_to_here();
+    bridge = create_efd_bridge(from, to);
+    if (bridge != NULL) {
+      efd_add_crossref(cr, bridge);
+      return NULL;
+    } else {
+      s->error = EFD_PE_MALFORMED;
+      s->context = "obj ref (incompatible destination type)";
+      cleanup_efd_reference(from);
+      cleanup_efd_reference(to);
+      return NULL;
+    }
   }
 }
 
@@ -791,6 +864,7 @@ void efd_parse_schema(efd_parse_state *s, char *r_name) {
     return;
   }
 }
+
 
 ptrdiff_t efd_parse_int(efd_parse_state *s) {
   ptrdiff_t result;
@@ -1210,6 +1284,124 @@ float efd_parse_float(efd_parse_state *s) {
   }
 }
 
+string* efd_parse_str(efd_parse_state *s) {
+  ptrdiff_t start, end;
+  char *pure;
+  string *result;
+
+  efd_grab_string_limits(s, &start, &end);
+  if (efd_parse_failed(s)) {
+    return NULL;
+  }
+
+  pure = efd_purify_string(s->input, start, end);
+
+  result = create_string_from_ntchars(pure);
+
+  free(pure);
+
+  return result;
+}
+void efd_grab_string_limits(
+  efd_parse_state *s,
+  ptrdiff_t *start,
+  ptrdiff_t *end
+) {
+  efd_quote_state state = EFD_QUOTE_STATE_NORMAL;
+  char c;
+  char q;
+
+  // skip to the starting quote:
+  SKIP_OR_ELSE(s, "quoted string (pre)") //;
+
+  c = s->input[s->pos];
+  q = c;
+  if (!(q == '"' || q == '\'')) {
+    *start = -1;
+    *end = -1;
+    s->error = EFD_PE_MALFORMED;
+    s->context = "quoted string (open)";
+    return;
+  }
+  *start = s->pos;
+  s->pos += 1;
+  while (!efd_parse_atend(s)) {
+    c = s->input[s->pos];
+    if (c == '\n') {
+      s->lineno += 1;
+    }
+    switch (state) {
+      default:
+      case EFD_QUOTE_STATE_NORMAL:
+        if (c == q) {
+          state = EFD_QUOTE_STATE_MAYBE_DONE;
+        }
+        break;
+      case EFD_QUOTE_STATE_MAYBE_DONE:
+        if (c == q) {
+          state = EFD_QUOTE_STATE_NORMAL;
+        } else {
+          state = EFD_QUOTE_STATE_DONE;
+        }
+        break;
+    }
+    if (state == EFD_QUOTE_STATE_DONE) {
+      break;
+    } else {
+      s->pos += 1;
+    }
+  }
+  switch (state) {
+    default:
+    case EFD_QUOTE_STATE_NORMAL:
+      s->context = "quoted string (main)";
+      s->error = EFD_PE_INCOMPLETE;
+      break;
+    case EFD_QUOTE_STATE_MAYBE_DONE:
+    case EFD_QUOTE_STATE_DONE:
+      *end = s->pos - 1;
+      break;
+  }
+}
+
+char * efd_purify_string(
+  char const * const input,
+  ptrdiff_t start,
+  ptrdiff_t end
+) {
+  ptrdiff_t len = end - start - 1;
+  char *result = (char*) malloc(sizeof(char) * (len + 1));
+  ptrdiff_t i, offset;
+  char q, c;
+  int skip = 0;
+  q = input[start];
+  i = 0;
+  for (offset = start + 1; offset < end; ++offset) {
+    c = input[offset];
+    if (c == q) {
+      if (skip) {
+        skip = 0;
+        i -= 1; // counteract the increment
+      } else {
+        skip = 1;
+        result[i] = c;
+      }
+#ifdef DEBUG
+    } else if (skip) {
+      fprintf(stderr, "Warning: bad quote found in string while purifying.\n");
+      fprintf(stderr, "  String: %.*s\n", (int) len, input + start + 1);
+      skip = 0;
+      result[i] = c;
+#endif
+    } else {
+      result[i] = c;
+    }
+    i += 1;
+  }
+  result[i] = '\0';
+  return result;
+}
+
 efd_reference* efd_parse_any_ref(efd_parse_state *s) {
   static char const * const e = "reference";
   char c;
@@ -1472,124 +1664,6 @@ efd_reference* efd_parse_global_ref(efd_parse_state *s) {
     -1
   );
 
-  return result;
-}
-
-string* efd_parse_str(efd_parse_state *s) {
-  ptrdiff_t start, end;
-  char *pure;
-  string *result;
-
-  efd_grab_string_limits(s, &start, &end);
-  if (efd_parse_failed(s)) {
-    return NULL;
-  }
-
-  pure = efd_purify_string(s->input, start, end);
-
-  result = create_string_from_ntchars(pure);
-
-  free(pure);
-
-  return result;
-}
-void efd_grab_string_limits(
-  efd_parse_state *s,
-  ptrdiff_t *start,
-  ptrdiff_t *end
-) {
-  efd_quote_state state = EFD_QUOTE_STATE_NORMAL;
-  char c;
-  char q;
-
-  // skip to the starting quote:
-  SKIP_OR_ELSE(s, "quoted string (pre)") //;
-
-  c = s->input[s->pos];
-  q = c;
-  if (!(q == '"' || q == '\'')) {
-    *start = -1;
-    *end = -1;
-    s->error = EFD_PE_MALFORMED;
-    s->context = "quoted string (open)";
-    return;
-  }
-  *start = s->pos;
-  s->pos += 1;
-  while (!efd_parse_atend(s)) {
-    c = s->input[s->pos];
-    if (c == '\n') {
-      s->lineno += 1;
-    }
-    switch (state) {
-      default:
-      case EFD_QUOTE_STATE_NORMAL:
-        if (c == q) {
-          state = EFD_QUOTE_STATE_MAYBE_DONE;
-        }
-        break;
-      case EFD_QUOTE_STATE_MAYBE_DONE:
-        if (c == q) {
-          state = EFD_QUOTE_STATE_NORMAL;
-        } else {
-          state = EFD_QUOTE_STATE_DONE;
-        }
-        break;
-    }
-    if (state == EFD_QUOTE_STATE_DONE) {
-      break;
-    } else {
-      s->pos += 1;
-    }
-  }
-  switch (state) {
-    default:
-    case EFD_QUOTE_STATE_NORMAL:
-      s->context = "quoted string (main)";
-      s->error = EFD_PE_INCOMPLETE;
-      break;
-    case EFD_QUOTE_STATE_MAYBE_DONE:
-    case EFD_QUOTE_STATE_DONE:
-      *end = s->pos - 1;
-      break;
-  }
-}
-
-char * efd_purify_string(
-  char const * const input,
-  ptrdiff_t start,
-  ptrdiff_t end
-) {
-  ptrdiff_t len = end - start - 1;
-  char *result = (char*) malloc(sizeof(char) * (len + 1));
-  ptrdiff_t i, offset;
-  char q, c;
-  int skip = 0;
-  q = input[start];
-  i = 0;
-  for (offset = start + 1; offset < end; ++offset) {
-    c = input[offset];
-    if (c == q) {
-      if (skip) {
-        skip = 0;
-        i -= 1; // counteract the increment
-      } else {
-        skip = 1;
-        result[i] = c;
-      }
-#ifdef DEBUG
-    } else if (skip) {
-      fprintf(stderr, "Warning: bad quote found in string while purifying.\n");
-      fprintf(stderr, "  String: %.*s\n", (int) len, input + start + 1);
-      skip = 0;
-      result[i] = c;
-#endif
-    } else {
-      result[i] = c;
-    }
-    i += 1;
-  }
-  result[i] = '\0';
   return result;
 }
 
