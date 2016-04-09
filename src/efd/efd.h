@@ -24,24 +24,25 @@
  * Enums *
  *********/
 
-// Raw types that a single EFD node can take on (different from schemas, which
-// involve the structure of multiple nodes).
+// Raw types that a single EFD node can take on:
 #define EFD_NUM_TYPES 14
 enum efd_node_type_e {
   EFD_NT_CONTAINER  = 0,   // 'c'   no data, just children
-  EFD_NT_PROTO      = 1,   //  -    raw object data pre-assembly
-  EFD_NT_OBJECT     = 2,   // 'o'   automatic parse-to-struct
-  EFD_NT_INTEGER    = 3,   // 'i'   ptrdiff_t
-  EFD_NT_NUMBER     = 4,   // 'n'   float
-  EFD_NT_STRING     = 5,   // 's'   quoted string
-  EFD_NT_ARRAY_OBJ  = 6,   // 'ao'  array of void*
-  EFD_NT_ARRAY_INT  = 7,   // 'ai'  array of ptrdiff_t
-  EFD_NT_ARRAY_NUM  = 8,   // 'an'  array of float
-  EFD_NT_ARRAY_STR  = 9,   // 'as'  array of quoted strings
-  EFD_NT_GLOBAL_INT = 10,  // 'Gi'  global integer
-  EFD_NT_GLOBAL_NUM = 11,  // 'Gn'  global numeric
-  EFD_NT_GLOBAL_STR = 12,  // 'Gs'  global string
-  EFD_NT_INVALID    = 13   //  -    marks an invalid node internally
+  EFD_NT_LINK       = 1,  // 'l'   global link
+  EFD_NT_LOCAL_LINK = 2,  // 'L'   local link
+  EFD_NT_PROTO      = 3,   //  -    raw object data pre-assembly
+  EFD_NT_OBJECT     = 4,   // 'o'   automatic parse-to-struct
+  EFD_NT_INTEGER    = 5,   // 'i'   ptrdiff_t
+  EFD_NT_NUMBER     = 6,   // 'n'   float
+  EFD_NT_STRING     = 7,   // 's'   quoted string
+  EFD_NT_ARRAY_OBJ  = 8,   // 'ao'  array of void*
+  EFD_NT_ARRAY_INT  = 9,   // 'ai'  array of ptrdiff_t
+  EFD_NT_ARRAY_NUM  = 10,   // 'an'  array of float
+  EFD_NT_ARRAY_STR  = 11,   // 'as'  array of quoted strings
+  EFD_NT_GLOBAL_INT = 12,  // 'Gi'  global integer
+  EFD_NT_GLOBAL_NUM = 13,  // 'Gn'  global numeric
+  EFD_NT_GLOBAL_STR = 14,  // 'Gs'  global string
+  EFD_NT_INVALID    = 15   //  -    marks an invalid node internally
 };
 typedef enum efd_node_type_e efd_node_type;
 
@@ -74,6 +75,9 @@ typedef struct efd_node_header_s efd_node_header;
 // Various specific node bodies:
 struct efd_container_s;
 typedef struct efd_container_s efd_container;
+
+struct efd_link_s;
+typedef struct efd_link_s efd_link;
 
 struct efd_proto_s;
 typedef struct efd_proto_s efd_proto;
@@ -109,10 +113,6 @@ typedef union efd_node_body_u efd_node_body;
 // A generic node struct w/ header and labeled body type:
 struct efd_node_s;
 typedef struct efd_node_s efd_node;
-
-// A schema for an efd node.
-struct efd_schema_s;
-typedef struct efd_schema_s efd_schema;
 
 // A global efd node address:
 struct efd_address_s;
@@ -182,7 +182,11 @@ struct efd_node_header_s {
 
 struct efd_container_s {
   list *children;
-  efd_schema *schema; // optional, NULL if not present
+};
+
+struct efd_link_s {
+  efd_address *target;
+  list *children;
 };
 
 struct efd_proto_s {
@@ -229,6 +233,7 @@ struct efd_array_str_s {
 
 union efd_node_body_u {
   efd_container as_container;
+  efd_link as_link;
   efd_proto as_proto;
   efd_object as_object;
   efd_integer as_integer;
@@ -245,15 +250,9 @@ struct efd_node_s {
   efd_node_body b;
 };
 
-struct efd_schema_s {
-  efd_node_type type;
-  char name[EFD_NODE_NAME_SIZE + 1];
-  efd_schema *parent;
-  list *children;
-};
-
 struct efd_address_s {
   char name[EFD_NODE_NAME_SIZE + 1];
+  efd_address *parent;
   efd_address *next;
 };
 
@@ -299,12 +298,12 @@ static inline size_t efd_node_depth(efd_node *n) {
   } while (1);
 }
 
-static inline char* efd_fmt__p(efd_node *n) {
+static inline char* efd__p_fmt(efd_node *n) {
   efd_assert_type(n, EFD_NT_PROTO);
   return n->b.as_proto.format;
 }
 
-static inline char* efd_fmt__o(efd_node *n) {
+static inline char* efd__o_fmt(efd_node *n) {
   efd_assert_type(n, EFD_NT_OBJECT);
   return n->b.as_object.format;
 }
@@ -334,7 +333,7 @@ static inline void*** efd__ao(efd_node *n) {
   return &(n->b.as_obj_array.values);
 }
 
-static inline size_t* efd_count__ao(efd_node *n) {
+static inline size_t* efd__ao_count(efd_node *n) {
   efd_assert_type(n, EFD_NT_ARRAY_OBJ);
   return &(n->b.as_obj_array.count);
 }
@@ -344,7 +343,7 @@ static inline ptrdiff_t** efd__ai(efd_node *n) {
   return &(n->b.as_int_array.values);
 }
 
-static inline size_t* efd_count__ai(efd_node *n) {
+static inline size_t* efd__ai_count(efd_node *n) {
   efd_assert_type(n, EFD_NT_ARRAY_INT);
   return &(n->b.as_int_array.count);
 }
@@ -354,7 +353,7 @@ static inline float** efd__an(efd_node *n) {
   return &(n->b.as_num_array.values);
 }
 
-static inline size_t* efd_count__an(efd_node *n) {
+static inline size_t* efd__an_count(efd_node *n) {
   efd_assert_type(n, EFD_NT_ARRAY_NUM);
   return &(n->b.as_num_array.count);
 }
@@ -364,7 +363,7 @@ static inline string*** efd__as(efd_node *n) {
   return &(n->b.as_str_array.values);
 }
 
-static inline size_t* efd_count__as(efd_node *n) {
+static inline size_t* efd__as_count(efd_node *n) {
   efd_assert_type(n, EFD_NT_ARRAY_STR);
   return &(n->b.as_str_array.count);
 }
@@ -381,17 +380,9 @@ efd_node* create_efd_node(efd_node_type t, char const * const name);
 // Clean up memory from the given EFD node.
 CLEANUP_DECL(efd_node);
 
-// Allocate and return a new EFD schema of the given type. Up to
-// EFD_NODE_NAME_SIZE characters are copied from the given string, but a
-// reference to it is not maintained.
-efd_schema* create_efd_schema(efd_node_type t, char* name);
-
-// Clean up memory from the given EFD schema.
-CLEANUP_DECL(efd_schema);
-
 // Allocate and creates a new EFD address. Up to EFD_NODE_NAME_SIZE characters
 // are copied from the given string, but a reference to it is not maintained.
-efd_address* create_efd_address(char const * const name);
+efd_address* create_efd_address(efd_address* parent, char const * const name);
 
 // Allocate an new efd_address and copy in information from the given address.
 efd_address* copy_efd_address(efd_address *src);
@@ -459,45 +450,47 @@ void efd_remove_child(efd_node *n, efd_node *child);
 // Appends the given name to the given address:
 void efd_append_address(efd_address *a, char const * const name);
 
-// Extends the given address using the given extension:
+// Extends the given address using the given extension. The extension can be
+// safely forgotten, as future cleanup of the base address will deal with the
+// extension as well.
 void efd_extend_address(efd_address *a, efd_address *e);
 
 // Removes the deepest level of the given address, returning a pointer to the
 // address that was popped (which should eventually be cleaned up).
 efd_address* efd_pop_address(efd_address *a);
 
-// The most ubiquitous EFD function 'efd' just gets a child node out of its
-// parent by name. It iterates over children until it hits one with a matching
+// This function simply looks up the first child with the given key within the
+// given node. It iterates over children until it hits one with a matching
 // name, so only the first is returned if multiple children share a name. The
 // key argument is treated as a single key within the given parent node. If no
 // match is found it returns NULL.
-efd_node* efd(efd_node* root, char const * const key);
+efd_node* efd_lookup(efd_node* root, char const * const key);
 
-// Works like 'efd,' except that the keypath argument may contain multiple keys
-// separated by EFD_NODE_SEP, representing multiple lookups within a nested
-// structure. So
+// The most ubiquitous EFD function 'efd' does a recursive address lookup to
+// find an EFD node given some root node to start from. Internally it uses
+// efd_lookup, so when multiple children of a node share a name, the first one
+// is used. If no match is found it returns NULL.
+efd_node* efd(efd_node* root, efd_address* addr);
+
+// Works like efd, but instead of taking an address it takes a key which is
+// parsed into an address. So
 //
 //   efdx(r, "foo.bar.baz");
 //
 // is equivalent to
 //
-//   efd(edf(efd(r, "foo"), "bar"), "baz");
+//   efd_lookup(efd_lookup(efd_lookup(r, "foo"), "bar"), "baz");
 //
-// but obviously much nicer-looking. The use of sprintf and passing a dynamic
-// key to efdx is probably better solved by a mix of calls to efd and efdx to
-// avoid buffer-length problems. Note that efdx is limited by
-// EFD_MAX_NAME_DEPTH, although multiple calls to efd/efdx can overcome this.
-efd_node* efdx(efd_node* root, char const * const keypath);
-
-// Like the 'efdx' function, except that it uses EFD_ROOT as the root instead
-// of taking a node as an argument.
-efd_node* efdr(char const * const keypath);
+// The use of sprintf and passing a dynamic key to efdx is probably better
+// solved by a mix of calls to efd and efdx to avoid buffer-length problems.
+// Note that efdx is limited by EFD_MAX_NAME_DEPTH, although multiple calls to
+// efd/efdx can overcome this.
+efd_node* efdx(efd_node* root, char const * const saddr);
 
 // Unpacks this node and all of its children recursively, turning PROTO nodes
 // containing raw EFD into OBJECT nodes containing unpacked structs.
 // TODO: Other adjustment steps:
-//   1. schema lookup
-//   2. reference resolution
+//   1. reference resolution
 void efd_unpack_node(efd_node *root);
 
 // Packs this node and all of its children recursively, turning OBJECT nodes
@@ -509,9 +502,6 @@ void efd_pack_node(efd_node *root);
 efd_unpack_function efd_lookup_unpacker(char const * const key);
 efd_pack_function efd_lookup_packer(char const * const key);
 efd_destroy_function efd_lookup_destructor(char const * const key);
-
-// Lookup function for schemas:
-efd_schema* efd_fetch_schema(char const * const name);
 
 // Function for merging information from one node into another with the same
 // name. Children with matching names are merged recursively, while children

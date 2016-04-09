@@ -23,10 +23,10 @@ typedef struct efd_parse_test_s efd_parse_test;
  * Constants *
  *************/
 
-extern char * const * const EFD_DATATYPE_NAME_REGISTRY;
-extern efd_unpack_function* EFD_DATATYPE_UNPACKER_REGISTRY;
-extern efd_pack_function* EFD_DATATYPE_PACKER_REGISTRY;
-extern efd_destroy_function* EFD_DATATYPE_DESTRUCTOR_REGISTRY;
+extern char * const * const EFD_OBJECT_NAME_REGISTRY;
+extern efd_unpack_function* EFD_OBJECT_UNPACKER_REGISTRY;
+extern efd_pack_function* EFD_OBJECT_PACKER_REGISTRY;
+extern efd_destroy_function* EFD_OBJECT_DESTRUCTOR_REGISTRY;
 
 /*************************
  * Structure Definitions *

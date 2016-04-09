@@ -165,25 +165,11 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
 //-----------------------------------------------
 
 void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
-  char schema[EFD_NODE_NAME_SIZE + 1];
   efd_parse_state back;
   list *children;
   efd_node *child;
 
   children = result->b.as_container.children;
-
-  efd_parse_copy_state(s, &back);
-  efd_parse_schema(s, schema);
-  if (efd_parse_failed(s)) {
-    if (s->error == EFD_PE_MISSING) {
-      efd_parse_copy_state(&back, s);
-      result->b.as_container.schema = NULL;
-    } else {
-      return; // propagate the error upwards
-    }
-  } else {
-    result->b.as_container.schema = efd_fetch_schema(schema);
-  }
 
   // parse any number of children and add them:
   while (1) {
@@ -217,7 +203,7 @@ void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
 void efd_parse_proto(efd_node *result, efd_parse_state *s, efd_index *cr) {
   char format[EFD_NODE_NAME_SIZE + 1];
 
-  efd_parse_schema(s, format);
+  efd_parse_annotation(s, format);
   if (efd_parse_failed(s)) {
     return;
   }
@@ -529,7 +515,7 @@ ptrdiff_t efd_parse_int_or_ref(efd_parse_state *s, efd_index *cr) {
   efd_parse_state back;
 
   efd_parse_copy_state(s, &back);
-  to = efd_parse_any_ref(s);
+  to = efd_parse_global_ref(s);
   if (efd_parse_failed(s)) {
     s->error = EFD_PE_NO_ERROR;
     efd_parse_copy_state(&back, s);
@@ -556,7 +542,7 @@ float efd_parse_float_or_ref(efd_parse_state *s, efd_index *cr) {
   efd_parse_state back;
 
   efd_parse_copy_state(s, &back);
-  to = efd_parse_any_ref(s);
+  to = efd_parse_global_ref(s);
   if (efd_parse_failed(s)) {
     s->error = EFD_PE_NO_ERROR;
     efd_parse_copy_state(&back, s);
@@ -583,7 +569,7 @@ string* efd_parse_str_or_ref(efd_parse_state *s, efd_index *cr) {
   efd_parse_state back;
 
   efd_parse_copy_state(s, &back);
-  to = efd_parse_any_ref(s);
+  to = efd_parse_global_ref(s);
   if (efd_parse_failed(s)) {
     s->error = EFD_PE_NO_ERROR;
     efd_parse_copy_state(&back, s);
@@ -608,7 +594,7 @@ void* efd_parse_obj_ref(efd_parse_state *s, efd_index *cr) {
   efd_reference *from, *to;
   efd_bridge *bridge;
 
-  to = efd_parse_any_ref(s);
+  to = efd_parse_global_ref(s);
   if (efd_parse_failed(s)) {
     return NULL;
   } else {
@@ -835,16 +821,16 @@ void efd_parse_name(efd_parse_state *s, char *r_name) {
   r_name[i] = '\0';
 }
 
-void efd_parse_schema(efd_parse_state *s, char *r_name) {
+void efd_parse_annotation(efd_parse_state *s, char *r_name) {
   char c;
 
   r_name[0] = '\0';
 
-  SKIP_OR_ELSE(s, "schema annotation") //;
+  SKIP_OR_ELSE(s, "annotation") //;
 
   if (efd_parse_atend(s)) {
     s->error = EFD_PE_INCOMPLETE;
-    s->context = "schema annotation (missing)";
+    s->context = "annotation (missing)";
     return;
   }
 
@@ -852,7 +838,7 @@ void efd_parse_schema(efd_parse_state *s, char *r_name) {
 
   if (c != EFD_PARSER_COLON) {
     s->error = EFD_PE_MISSING;
-    s->context = "schema annotation (no indicator)";
+    s->context = "annotation (no indicator)";
     return;
   }
   s->pos += 1;
@@ -860,7 +846,7 @@ void efd_parse_schema(efd_parse_state *s, char *r_name) {
   efd_parse_name(s, r_name);
   if (efd_parse_failed(s)) {
     // (error from parse_name)
-    s->context = "schema (invalid name)";
+    s->context = "annotation (invalid name)";
     return;
   }
 }
@@ -1402,156 +1388,68 @@ char * efd_purify_string(
   return result;
 }
 
-efd_reference* efd_parse_any_ref(efd_parse_state *s) {
-  static char const * const e = "reference";
-  char c;
-
-  efd_parse_skip(s);
-  if (efd_parse_failed(s)) {
-    s->error = EFD_PE_MISSING;
-    s->context = e;
-    return NULL;
-  }
-
-  c = s->input[s->pos];
-
-  if (c == EFD_PARSER_REF_OPEN) {
-    return efd_parse_path_ref(s);
-  } else if (c == EFD_PARSER_HASH) {
-    return efd_parse_global_ref(s);
-  } else {
-    s->error = EFD_PE_MALFORMED;
-    s->context = e;
-    return NULL;
-  }
-}
-
-efd_reference* efd_parse_path_ref(efd_parse_state *s) {
+// TODO: Get rid of this; add parsing for links!
+efd_reference* efd_parse_address(efd_parse_state *s) {
   char name[EFD_NODE_NAME_SIZE + 1];
-  efd_node_type n_type;
-  efd_ref_type type;
-  efd_address *addr;
+  efd_address *result;
   efd_address *tail;
-  ptrdiff_t index = -1;
-  efd_reference *result;
+  ptrdiff_t index;
   char c;
 
   efd_parse_skip(s);
   if (efd_parse_failed(s)) {
     s->error = EFD_PE_MISSING;
-    s->context = "path reference (missing)";
+    s->context = "address (missing)";
     return NULL;
   }
 
-  // Parse opening brace:
-  c = s->input[s->pos];
-  if (c != EFD_PARSER_REF_OPEN) {
-    s->error = EFD_PE_MALFORMED;
-    s->context = "path reference (opening brace)";
-    return NULL;
-  }
-  s->pos += 1;
+  // pos will be incremented at start of while loop, so pre-decrement it here
+  s->pos -= 1;
 
-  // Parse reference type:
-  n_type = efd_parse_type(s);
-  if (efd_parse_failed(s)) {
-    return NULL;
-  }
-  switch (n_type) {
-    default:
-    case EFD_NT_INVALID:
-    case EFD_NT_PROTO:
-    case EFD_NT_GLOBAL_INT:
-    case EFD_NT_GLOBAL_NUM:
-    case EFD_NT_GLOBAL_STR:
-      s->error = EFD_PE_MALFORMED;
-      s->context = "path reference (invalid type);
-      return NULL;
-    case EFD_NT_CONTAINER:
-      type = EFD_RT_NODE;
-      break;
-    case EFD_NT_OBJECT:
-      type = EFD_RT_OBJ;
-      break;
-    case EFD_NT_INTEGER
-      type = EFD_RT_INT;
-      break;
-    case EFD_NT_NUMBER:
-      type = EFD_RT_NUM;
-      break;
-    case EFD_NT_STRING:
-      type = EFD_RT_STR;
-      break;
-    case EFD_NT_ARRAY_OBJ:
-      type = EFD_RT_OBJ_ARR_ENTRY;
-      break;
-    case EFD_NT_ARRAY_INT:
-      type = EFD_RT_INT_ARR_ENTRY;
-      break;
-    case EFD_NT_ARRAY_NUM:
-      type = EFD_RT_NUM_ARR_ENTRY;
-      break;
-    case EFD_NT_ARRAY_STR:
-      type = EFD_RT_STR_ARR_ENTRY;
-      break;
-  }
-
-  efd_parse_skip(s);
-  if (efd_parse_failed(s)) {
-    s->error = EFD_PE_MALFORMED;
-    s->context = "path reference (type delimiter)";
-    return NULL;
-  }
-
-  // Parse type delimiter
-  c = s->input[s->pos];
-  if (c != EFD_PARSER_COLON) {
-    s->error = EFD_PE_MALFORMED;
-    s->context = "path reference (type delimiter)";
-    return NULL;
-  }
-  // pos will be incremented at start of while loop
-
-  addr = NULL;
+  result = NULL;
   tail = NULL;
+  index = -1;
   c = EFD_NODE_SEP;
   while (c == EFD_NODE_SEP) {
     // TODO: respect max depth here?
     s->pos += 1;
     efd_parse_name(s, name);
     if (efd_parse_failed(s)) {
-      if (addr != NULL) {
-        if (
-          !efd_parse_atend(s)
-       && s->input[s->pos] >= '0'
-       && s->input[s->pos] <= '9'
-       && (
-            type == EFD_RT_OBJ_ARR_ENTRY
-         || type == EFD_RT_INT_ARR_ENTRY
-         || type == EFD_RT_NUM_ARR_ENTRY
-         || type == EFD_RT_STR_ARR_ENTRY
-          )
-        ) {
-          index = efd_parse_int(s);
-          if (!efd_parse_failed(s)) {
-            s->error = EFD_PE_NO_ERROR; // not actually an error any more
-            break;
-          } // otherwise fall out and return our error after cleaning up
+      if (
+        !efd_parse_atend(s)
+     && s->input[s->pos] >= '0'
+     && s->input[s->pos] <= '9'
+      ) {
+        index = efd_parse_int(s);
+        if (!efd_parse_failed(s)) {
+          s->error = EFD_PE_NO_ERROR; // not actually an error any more
+          // use the index number as a "name":
+          snprintf(name, EFD_NODE_NAME_SIZE, "%ld", index);
+        } else {
+          if (result != NULL) {
+            cleanup_efd_address(result);
+          }
+          return;
         }
-        cleanup_efd_address(addr);
+      } else {
+        if (result != NULL) {
+          cleanup_efd_address(result);
+        }
+        return;
       }
-      return;
     }
-    if (addr == NULL) {
-      addr = create_efd_address(name);
-      tail = addr;
+    if (result == NULL) {
+      result = create_efd_address(NULL, name);
+      tail = result;
     } else {
-      tail->next = create_efd_address(name);
+      tail->next = create_efd_address(tail, name);
       tail = tail->next;
     }
     efd_parse_skip(s);
     if (efd_parse_failed(s)) {
-      cleanup_efd_address(addr);
+      if (result != NULL) {
+        cleanup_efd_address(result);
+      }
       s->error = EFD_PE_MALFORMED;
       s->context = "path reference (path list)";
       return NULL;
@@ -1559,35 +1457,6 @@ efd_reference* efd_parse_path_ref(efd_parse_state *s) {
     c = s->input[s->pos];
   }
 
-  // Parse closing brace:
-  if (c != EFD_PARSER_REF_CLOSE) {
-    cleanup_efd_address(addr);
-    s->error = EFD_PE_MALFORMED;
-    s->context = "path reference (closing brace)";
-    return NULL;
-  }
-  if (
-    index < 0
- && (
-      type == EFD_RT_OBJ_ARR_ENTRY
-   || type == EFD_RT_INT_ARR_ENTRY
-   || type == EFD_RT_NUM_ARR_ENTRY
-   || type == EFD_RT_STR_ARR_ENTRY
-    )
-  ) {
-    cleanup_efd_address(addr);
-    s->error = EFD_PE_MALFORMED;
-    s->context = "path reference (missing/invalid index)"
-  }
-  s->pos += 1;
-
-  // Create result:
-  result = create_efd_reference(
-    type,
-    addr,
-    index
-  );
-  cleanup_efd_address(addr);
   return result;
 }
 
@@ -1656,7 +1525,7 @@ efd_reference* efd_parse_global_ref(efd_parse_state *s) {
     return NULL;
   }
 
-  addr = create_efd_address(name);
+  addr = create_efd_address(NULL, name);
 
   result = create_efd_reference(
     type,

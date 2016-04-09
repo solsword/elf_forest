@@ -13,6 +13,8 @@
 
 char const * const EFD_NT_NAMES[] = {
   "container",
+  "link",
+  "local_link",
   "prototype",
   "object",
   "integer",
@@ -30,6 +32,8 @@ char const * const EFD_NT_NAMES[] = {
 
 char const * const EFD_NT_ABBRS[] = {
   "c",
+  "l",
+  "L",
   "p",
   "o",
   "i",
@@ -71,7 +75,12 @@ efd_node* create_efd_node(efd_node_type t, char const * const name) {
 
     case EFD_NT_CONTAINER:
       result->b.as_container.children = create_list();
-      result->b.as_container.schema = NULL;
+      break;
+
+    case EFD_NT_LINK:
+    case EFD_NT_LOCAL_LINK:
+      result->b.as_link.target = NULL;
+      result->b.as_link.children = create_list();
       break;
 
     case EFD_NT_PROTO:
@@ -132,7 +141,15 @@ CLEANUP_IMPL(efd_node) {
       // Clean up all of our children:
       l_foreach(doomed->b.as_container.children, &cleanup_v_efd_node);
       cleanup_list(doomed->b.as_container.children);
-      // Note that the schema is not cleaned up.
+      break;
+
+    case EFD_NT_LINK:
+    case EFD_NT_LOCAL_LINK:
+      // Clean up all of our children:
+      l_foreach(doomed->b.as_link.children, &cleanup_v_efd_node);
+      cleanup_list(doomed->b.as_link.children);
+      // Clean up our target address:
+      cleanup_efd_address(doomed->b.as_link.target);
       break;
 
     case EFD_NT_PROTO:
@@ -187,32 +204,12 @@ CLEANUP_IMPL(efd_node) {
   free(doomed);
 }
 
-efd_schema* create_efd_schema(efd_node_type t, char* name) {
-  efd_schema *result = (efd_schema*) malloc(sizeof(efd_schema));
-  result->type = t;
-  strncpy(result->name, name, EFD_NODE_NAME_SIZE - 1);
-  result->name[EFD_NODE_NAME_SIZE-1] = '\0';
-  result->parent = NULL;
-  result->children = create_list();
-  return result;
-}
-
-CLEANUP_IMPL(efd_schema) {
-  // Free our children:
-  l_foreach(doomed->children, &cleanup_v_efd_schema);
-  cleanup_list(doomed->children);
-  // Remove ourselves from our parent's list of children:
-  if (doomed->parent != NULL) {
-    l_remove_element(doomed->parent->children, (void*) doomed);
-  }
-  // Finally free the doomed itself:
-  free(doomed);
-}
-
-efd_address* create_efd_address(char const * const name) {
+efd_address* create_efd_address(efd_address* parent, char const * const name) {
   efd_address *result = (efd_address*) malloc(sizeof(efd_address));
   strncpy(result->name, name, EFD_NODE_NAME_SIZE);
   result->name[EFD_NODE_NAME_SIZE] = '\0';
+  result->parent = parent;
+  result->next = NULL;
   return result;
 }
 
@@ -220,10 +217,10 @@ efd_address* copy_efd_address(efd_address *src) {
   efd_address *n, *rn;
   efd_address *result;
   n = src;
-  result = create_efd_address(n->name);
+  result = create_efd_address(n->parent, n->name);
   rn = result;
   while (n->next != NULL) {
-    rn->next = create_efd_address(n->next->name);
+    rn->next = create_efd_address(rn, n->next->name);
     rn = rn->next;
     n = n->next;
   }
@@ -403,9 +400,9 @@ int efd_is_type(efd_node *n, efd_node_type t) {
 
 int efd_format_is(efd_node *n, char const * const fmt) {
   if (efd_is_type(n, EFD_NT_PROTO)) {
-    return strncmp(efd_fmt__p(n), fmt, EFD_OBJECT_FORMAT_SIZE) == 0;
+    return strncmp(efd__p_fmt(n), fmt, EFD_OBJECT_FORMAT_SIZE) == 0;
   } else if (efd_is_type(n, EFD_NT_OBJECT)) {
-    return strncmp(efd_fmt__o(n), fmt, EFD_OBJECT_FORMAT_SIZE) == 0;
+    return strncmp(efd__o_fmt(n), fmt, EFD_OBJECT_FORMAT_SIZE) == 0;
   }
   // failsafe
   return 0;
@@ -445,7 +442,7 @@ void efd_remove_child(efd_node *n, efd_node *child) {
 }
 
 void efd_append_address(efd_address *a, char const * const name) {
-  efd_address *new = create_efd_address(name);
+  efd_address *new = create_efd_address(NULL, name);
   efd_extend_address(a, new);
 }
 
@@ -454,6 +451,16 @@ void efd_extend_address(efd_address *a, efd_address *e) {
   while (n->next != NULL) {
     n = n->next;
   }
+#ifdef DEBUG
+  if (e->parent != NULL) {
+    fprintf(
+      stderr,
+      "ERROR: Tried to extend using an address that already had a parent!"
+    );
+    exit(1);
+  }
+#endif
+  e->parent = n;
   n->next = e;
 }
 
@@ -486,15 +493,62 @@ int _match_efd_name(void* v_child, void* v_key) {
   return strncmp(child->h.name, key, EFD_NODE_NAME_SIZE) == 0;
 }
 
-efd_node* efd(efd_node* root, char const * const key) {
-  efd_assert_type(root, EFD_NT_CONTAINER);
-  ptrdiff_t match = l_scan_indices(
-    root->b.as_container.children,
-    (void*) key,
-    &_match_efd_name
-  );
-  if (match < 0) { return NULL; }
-  return (efd_node*) l_get_item(root->b.as_container.children, match);
+efd_node* efd_lookup(efd_node* root, char const * const key) {
+  switch (root->h.type) {
+    case EFD_NT_CONTAINER:
+      ptrdiff_t match = l_scan_indices(
+        root->b.as_container.children,
+        (void*) key,
+        &_match_efd_name
+      );
+      if (match < 0) {
+#ifdef DEBUG
+        fprintf(
+          stderr,
+          "Warning: Node '%.*s' has no child named '%.*s'.\n",
+          (int) EFD_NODE_NAME_SIZE,
+          root->h.name,
+          (int) EFD_NODE_NAME_SIZE,
+          key
+        )
+#endif
+        return NULL;
+      }
+      return (efd_node*) l_get_item(root->b.as_container.children, match);
+    case EFD_NT_LINK:
+    case EFD_NT_LOCAL_LINK:
+      ptrdiff_t match = l_scan_indices(
+        root->b.as_link.children,
+        (void*) key,
+        &_match_efd_name
+      );
+      if (match < 0) {
+#ifdef DEBUG
+        fprintf(
+          stderr,
+          "Warning: Node '%.*s' has no child named '%.*s'.\n",
+          (int) EFD_NODE_NAME_SIZE,
+          root->h.name,
+          (int) EFD_NODE_NAME_SIZE,
+          key
+        )
+#endif
+        return NULL;
+      }
+      return (efd_node*) l_get_item(root->b.as_link.children, match);
+    default:
+#ifdef DEBUG
+      fprintf(
+        stderr,
+        "ERROR: Attempt to find '%.*s' in node '%.*s' which isn't a container.",
+        (int) EFD_NODE_NAME_SIZE,
+        key,
+        (int) EFD_NODE_NAME_SIZE,
+        root->h.name
+      )
+#endif
+      return NULL
+  }
 }
 
 efd_node* efdx(efd_node* root, char const * const keypath) {
@@ -528,10 +582,6 @@ efd_node* efdx(efd_node* root, char const * const keypath) {
   key[i] = '\0'; // match the terminator of keypath
   root = efd(root, key); // final lookup
   return root;
-}
-
-efd_node* efdr(char const * const keypath) {
-  return efdx(EFD_ROOT, keypath);
 }
 
 // Private iterator:
@@ -577,11 +627,6 @@ void efd_pack_node(efd_node *root) {
     // format field should overlap perfectly and thus need no change
     p->input = n; // p->input is in the same place as o->value
   } // else do nothing
-}
-
-efd_schema* efd_fetch_schema(char const * const name) {
-  // TODO: HERE!
-  return NULL;
 }
 
 void efd_merge_node(efd_node *base, efd_node *victim) {

@@ -274,3 +274,49 @@
 [[Gi GLOBAL_INT 5]]
 [[Gn GLOBAL_NUM 3.1415926]]
 [[Gs GLOBAL_STR "This string goes directly into the globals..."]]
+// references:
+// TODO: Sort these out!
+[[i refint 3]]
+<<l refint>>
+<<l refint@linkint>>
+[[n refnum 3.5]]
+<<l refnum@linknum>>
+<<l refnum@linknum>>
+[[s refstr "reference string"]]
+<<l refstr@linkstr>>
+[[c testref
+  <<l refint>>
+  <<l refnum>>
+  <<l refstr@rntest>>
+  [[i test 7]]
+]]
+[[c tr2
+  <<l testref>>
+  <<l testref.refint>>
+  <<l testref.refnum>>
+  <<l testref.rntest>>
+  <<l testref.test>>
+]]
+<<l testref@overwrite
+  [[i refint 8]]
+  <<l tr2.refint>>
+  [[i test 8]]
+>>
+<<l overwrite.test@overtest>>
+[[c scope
+  [[i i 3]]
+  <<L i@j>>
+  [[c nest1
+    [[i i 5]]
+    <<L ^.nest2.i@j>>
+  ]]
+  [[c nest2
+    [[i i 7]]
+    <<L ^.nest1.i@j>>
+  ]]
+]]
+[[c tr3
+  [[ai array
+    1, 2, 3, #i:GLOBAL_INT
+  ]]
+]]

@@ -91,11 +91,12 @@ typedef struct efd_parse_state_s efd_parse_state;
 #define EFD_PARSER_COLON ':'
 #define EFD_PARSER_OPEN_BRACE '['
 #define EFD_PARSER_CLOSE_BRACE ']'
+#define EFD_PARSER_REF_OPEN '<'
+#define EFD_PARSER_REF_CLOSE '>'
 #define EFD_PARSER_EQUALS '='
 #define EFD_PARSER_ARRAY_SEP ','
 #define EFD_PARSER_HASH '#'
-#define EFD_PARSER_REF_OPEN '{'
-#define EFD_PARSER_REF_CLOSE '}'
+#define EFD_PARSER_RENAME '@'
 
 /*************************
  * Structure Definitions *
@@ -128,11 +129,12 @@ static inline int is_special(char *c) {
     case EFD_PARSER_COLON:
     case EFD_PARSER_OPEN_BRACE:
     case EFD_PARSER_CLOSE_BRACE:
+    case EFD_PARSER_REF_OPEN:
+    case EFD_PARSER_REF_CLOSE:
     case EFD_PARSER_EQUALS:
     case EFD_PARSER_ARRAY_SEP:
     case EFD_PARSER_HASH:
-    case EFD_PARSER_REF_OPEN:
-    case EFD_PARSER_REF_CLOSE:
+    case EFD_PARSER_RENAME:
       return 1;
   }
 }
@@ -163,6 +165,10 @@ int efd_parse_file(
 
 // Top level parsing function that delegates to the more specific functions:
 efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr);
+
+// Top level parsing function for parsing just addresses:
+// TODO: HERE
+efd_address* efd_parse_string_address(efd
 
 
 // Parsing functions for the EFD primitive types:
@@ -224,10 +230,10 @@ efd_node_type efd_parse_type(efd_parse_state *s);
 // overwriting whatever may have been there.
 void efd_parse_name(efd_parse_state *s, char *r_name);
 
-// Parses the schema name part of a 'c' or 'o' declaration, including the
+// Parses the annotation part of a 'c' or 'o' declaration, including the
 // leading ':'. Puts up to EFD_NODE_NAME_SIZE characters (plus one for a
 // trailing NUL) into r_name, overwriting any previous contents.
-void efd_parse_schema(efd_parse_state *s, char *r_name);
+void efd_parse_annotation(efd_parse_state *s, char *r_name);
 
 // Parses an integer off of the front of the input:
 ptrdiff_t efd_parse_int(efd_parse_state *s);
@@ -262,11 +268,11 @@ char * efd_purify_string(
 
 // Parses a reference off of the front of the input, allocating and returning a
 // new efd_reference.
-efd_reference* efd_parse_any_ref(efd_parse_state *s);
-
-// Helpers for parse_any_ref that work with pathrefs/globalrefs:
-efd_reference* efd_parse_path_ref(efd_parse_state *s);
 efd_reference* efd_parse_global_ref(efd_parse_state *s);
+
+// Parses an address off of the front of the input, allocating and returning a
+// new efd_address.
+efd_address* efd_parse_address(efd_parse_state *s);
 
 // Skips whitespace and comments (// to end of line and /* to */):
 void efd_parse_skip(efd_parse_state *s);
