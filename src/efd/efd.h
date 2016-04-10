@@ -18,8 +18,6 @@
 
 #define EFD_GL(x, y) y
 
-#define EFD_GL_I(x, y)
-
 /*********
  * Enums *
  *********/
@@ -151,9 +149,10 @@ typedef void (*efd_destroy_function)(void *);
 #define EFD_GLOBAL_NAME_SIZE ( \
     EFD_GLOBALS_KEY_ARITY*(sizeof(void*) / sizeof(char)) \
   ) // should be 24
-#define EFD_MAX_NAME_DEPTH 32
+#define EFD_MAX_NAME_DEPTH 1024
 
 #define EFD_NODE_SEP '.'
+#define EFD_ADDR_PARENT '^'
 
 #define EFD_OBJECT_FORMAT_SIZE (sizeof(uint64_t) / sizeof(char)) // should be 8
 
@@ -479,12 +478,16 @@ efd_node* efd(efd_node* root, efd_address* addr);
 //
 // is equivalent to
 //
+//  efd(r, efd_parse_address("foo.bar.baz"))
+//
+// which is further equivalent to
+//
 //   efd_lookup(efd_lookup(efd_lookup(r, "foo"), "bar"), "baz");
 //
 // The use of sprintf and passing a dynamic key to efdx is probably better
 // solved by a mix of calls to efd and efdx to avoid buffer-length problems.
-// Note that efdx is limited by EFD_MAX_NAME_DEPTH, although multiple calls to
-// efd/efdx can overcome this.
+// Note that efdx's use of efd_parse_address means that it is limited by
+// EFD_MAX_NAME_DEPTH, although multiple calls to efd/efdx can overcome this.
 efd_node* efdx(efd_node* root, char const * const saddr);
 
 // Unpacks this node and all of its children recursively, turning PROTO nodes

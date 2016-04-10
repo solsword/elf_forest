@@ -2,6 +2,7 @@
 // Definition of the Elf Forest Data format.
 
 #include "efd.h"
+#include "efd_parser.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -494,94 +495,80 @@ int _match_efd_name(void* v_child, void* v_key) {
 }
 
 efd_node* efd_lookup(efd_node* root, char const * const key) {
-  switch (root->h.type) {
-    case EFD_NT_CONTAINER:
-      ptrdiff_t match = l_scan_indices(
-        root->b.as_container.children,
-        (void*) key,
-        &_match_efd_name
-      );
-      if (match < 0) {
+  efd_node *linked_node;
+  if (key[0] == EFD_ADDR_PARENT && key[1] == '\0') {
+    // Special handling for 'parent' path entries:
+    return root->h.parent;
+  } else {
+    // Normal lookups:
+    switch (root->h.type) {
+      case EFD_NT_CONTAINER:
+        ptrdiff_t match = l_scan_indices(
+          root->b.as_container.children,
+          (void*) key,
+          &_match_efd_name
+        );
+        if (match < 0) {
+#ifdef DEBUG
+          fprintf(
+            stderr,
+            "Warning: Node '%.*s' has no child named '%.*s'.\n",
+            (int) EFD_NODE_NAME_SIZE,
+            root->h.name,
+            (int) EFD_NODE_NAME_SIZE,
+            key
+          );
+#endif
+          return NULL;
+        }
+        return (efd_node*) l_get_item(root->b.as_container.children, match);
+      case EFD_NT_LINK:
+      case EFD_NT_LOCAL_LINK:
+        // First search within the linking node, so keys there overwrite keys
+        // at the link destination.
+        ptrdiff_t match = l_scan_indices(
+          root->b.as_link.children,
+          (void*) key,
+          &_match_efd_name
+        );
+        if (match < 0) {
+          // Look up in the linked node if a key wasn't overwritten.
+          if (root->h.type == EFD_NT_LOCAL_LINK) { // local link
+            linked_node = efd(root, root->b.as_link.target);
+          } else { // global link
+            linked_node = efd(EFD_ROOT, root->b.as_link.target);
+          }
+          return efd_lookup(linked_node, key);
+        } else {
+          return (efd_node*) l_get_item(root->b.as_link.children, match);
+        }
+      default:
 #ifdef DEBUG
         fprintf(
           stderr,
-          "Warning: Node '%.*s' has no child named '%.*s'.\n",
+          "ERROR: Attempt to find '%.*s' in node '%.*s' which isn't a container.",
           (int) EFD_NODE_NAME_SIZE,
-          root->h.name,
+          key,
           (int) EFD_NODE_NAME_SIZE,
-          key
-        )
+          root->h.name
+        );
 #endif
         return NULL;
-      }
-      return (efd_node*) l_get_item(root->b.as_container.children, match);
-    case EFD_NT_LINK:
-    case EFD_NT_LOCAL_LINK:
-      ptrdiff_t match = l_scan_indices(
-        root->b.as_link.children,
-        (void*) key,
-        &_match_efd_name
-      );
-      if (match < 0) {
-#ifdef DEBUG
-        fprintf(
-          stderr,
-          "Warning: Node '%.*s' has no child named '%.*s'.\n",
-          (int) EFD_NODE_NAME_SIZE,
-          root->h.name,
-          (int) EFD_NODE_NAME_SIZE,
-          key
-        )
-#endif
-        return NULL;
-      }
-      return (efd_node*) l_get_item(root->b.as_link.children, match);
-    default:
-#ifdef DEBUG
-      fprintf(
-        stderr,
-        "ERROR: Attempt to find '%.*s' in node '%.*s' which isn't a container.",
-        (int) EFD_NODE_NAME_SIZE,
-        key,
-        (int) EFD_NODE_NAME_SIZE,
-        root->h.name
-      )
-#endif
-      return NULL
+    }
   }
 }
 
-efd_node* efdx(efd_node* root, char const * const keypath) {
-  efd_assert_type(root, EFD_NT_CONTAINER);
-  static char key[EFD_NODE_NAME_SIZE];
-  char const *c;
-  ptrdiff_t i = 0;
-  for (
-    c = keypath;
-    (
-      *c != '\0'
-   && (c - keypath) / sizeof(char) < EFD_NODE_NAME_SIZE * EFD_MAX_NAME_DEPTH
-    );
-    ++c
-  ) {
-    key[i] = *c;
-    if (*c == EFD_NODE_SEP) {
-      key[i] = '\0'; // cut it off here
-      root = efd(root, key); // update root
-      if (root == NULL) {
-        // TODO: Throw error here since we have good context?
-        return NULL;
-      }
-      i = -1; // reset iterator (it's about to be incremented back to 0)
-    } else if (i > EFD_NODE_NAME_SIZE - 2) { // leave room for the '\0'
-      // TODO: Throw error here as well! (make sure to change cond to -1)
-      i -= 1; // effectively just truncate the key...
-    }
-    i += 1;
+efd_node* efd(efd_node* root, efd_address* addr) {
+  efd_node *here = root;
+  while (addr != NULL) {
+    here = efd_lookup(here, addr->name)
+    addr = addr->next;
   }
-  key[i] = '\0'; // match the terminator of keypath
-  root = efd(root, key); // final lookup
-  return root;
+  return here;
+}
+
+efd_node* efdx(efd_node* root, char const * const saddr) {
+  return efd(root, efd_parse_address(saddr));
 }
 
 // Private iterator:

@@ -126,6 +126,7 @@ static inline int is_special(char *c) {
     default:
       return 0;
     case EFD_NODE_SEP:
+    case EFD_ADDR_PARENT:
     case EFD_PARSER_COLON:
     case EFD_PARSER_OPEN_BRACE:
     case EFD_PARSER_CLOSE_BRACE:
@@ -163,12 +164,13 @@ int efd_parse_file(
   char const * const filename
 );
 
+// Parses a string as an EFD address. The string should be at most
+// EFD_MAX_NAME_DEPTH * (EFD_NODE_NAME_SIZE + 1) characters long; further
+// characters will be ignored.
+efd_address* efd_parse_string_address(char const * const astr);
+
 // Top level parsing function that delegates to the more specific functions:
 efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr);
-
-// Top level parsing function for parsing just addresses:
-// TODO: HERE
-efd_address* efd_parse_string_address(efd
 
 
 // Parsing functions for the EFD primitive types:
@@ -294,10 +296,5 @@ void efd_print_parse_error(efd_parse_state *s);
 // Checks if the given parse state reports an error and if it does prints that
 // error and exits.
 void efd_throw_parse_error(efd_parse_state *s);
-
-// Checks whether the most recent parsing function succeeded and if it did,
-// returns 1. If it failed, returns 0 and resets the parsing position to the
-// given reset point.
-int efd_test_parse_progress(efd_parse_state *s, ptrdiff_t reset_to);
 
 #endif // INCLUDE_EFD_PARSER_H

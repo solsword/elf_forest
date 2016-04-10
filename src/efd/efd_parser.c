@@ -81,6 +81,32 @@ int efd_parse_file(
   }
 }
 
+efd_address* efd_parse_string_address(char const * const astr) {
+  size_t len;
+  efd_address *result;
+  efd_parse_state s;
+  s.input = astr;
+  for (len = 0; len < EFD_MAX_NAME_DEPTH * (EFD_NODE_NAME_SIZE + 1); ++len) {
+    if (astr[len] == '\0') {
+      break;
+    }
+  }
+  s.input_length = len;
+  s.pos = 0;
+  s.filename = "<address string>";
+  s.lineno = -1;
+  s.context = "string address";
+  s.error = EFD_PE_NO_ERROR;
+  s.current_address = NULL;
+
+  result = efd_parse_address(&s);
+  if (efd_parse_failed(&s)) {
+    efd_throw_parse_error(&s);
+    return NULL;
+  }
+  return result;
+}
+
 efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
   efd_node_type type;
   char name[EFD_NODE_NAME_SIZE + 1];
@@ -110,6 +136,11 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
       efd_parse_proto(result, s, cr);
       break;
     case EFD_NT_CONTAINER:
+      efd_parse_children(result, s, cr);
+      break;
+    case EFD_NT_LINK:
+    case EFD_NT_LOCAL_LINK:
+      // TODO: HERE!
       efd_parse_children(result, s, cr);
       break;
     case EFD_NT_OBJECT:
@@ -169,7 +200,17 @@ void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
   list *children;
   efd_node *child;
 
-  children = result->b.as_container.children;
+  switch (result->h.type) {
+    default:
+      // TODO: HERE...
+    case EFD_NT_CONTAINER:
+      children = result->b.as_container.children;
+      break;
+    case EFD_NT_LINK:
+    case EFD_NT_LOCAL_LINK:
+      children = result->b.as_link.children;
+      break;
+  }
 
   // parse any number of children and add them:
   while (1) {
@@ -1388,12 +1429,10 @@ char * efd_purify_string(
   return result;
 }
 
-// TODO: Get rid of this; add parsing for links!
 efd_reference* efd_parse_address(efd_parse_state *s) {
   char name[EFD_NODE_NAME_SIZE + 1];
   efd_address *result;
   efd_address *tail;
-  ptrdiff_t index;
   char c;
 
   efd_parse_skip(s);
@@ -1408,34 +1447,40 @@ efd_reference* efd_parse_address(efd_parse_state *s) {
 
   result = NULL;
   tail = NULL;
-  index = -1;
   c = EFD_NODE_SEP;
   while (c == EFD_NODE_SEP) {
     // TODO: respect max depth here?
     s->pos += 1;
+    efd_parse_skip(s);
+    if (efd_parse_failed(s)) {
+      if (result != NULL) {
+        cleanup_efd_address(result);
+      }
+      s->error = EFD_PE_MALFORMED;
+      s->context = "address (path list)";
+      return NULL;
+    }
     efd_parse_name(s, name);
     if (efd_parse_failed(s)) {
-      if (
-        !efd_parse_atend(s)
-     && s->input[s->pos] >= '0'
-     && s->input[s->pos] <= '9'
-      ) {
-        index = efd_parse_int(s);
-        if (!efd_parse_failed(s)) {
-          s->error = EFD_PE_NO_ERROR; // not actually an error any more
-          // use the index number as a "name":
-          snprintf(name, EFD_NODE_NAME_SIZE, "%ld", index);
+      if (!efd_parse_atend(s)) {
+        // A special exception for the EFD_ADDR_PARENT character, which is not
+        // normally a valid name but may appear in addresses.
+        c = s->input[s->pos];
+        if (c == EFD_ADDR_PARENT) {
+          name[0] = EFD_ADDR_PARENT;
+          name[1] = '\0';
+          s->pos += 1;
         } else {
           if (result != NULL) {
             cleanup_efd_address(result);
           }
-          return;
+          return NULL; // error message from efd_parse_name
         }
       } else {
         if (result != NULL) {
           cleanup_efd_address(result);
         }
-        return;
+        return NULL; // error message from efd_parse_name
       }
     }
     if (result == NULL) {
@@ -1446,15 +1491,29 @@ efd_reference* efd_parse_address(efd_parse_state *s) {
       tail = tail->next;
     }
     efd_parse_skip(s);
-    if (efd_parse_failed(s)) {
-      if (result != NULL) {
-        cleanup_efd_address(result);
-      }
-      s->error = EFD_PE_MALFORMED;
-      s->context = "path reference (path list)";
-      return NULL;
+    if (!efd_parse_atend(s)) {
+      if (efd_parse_failed(s)) {
+        // we failed to find empty space
+        if (result != NULL) {
+          cleanup_efd_address(result);
+        }
+        s->error = EFD_PE_MALFORMED;
+        s->context = "address (path list)";
+        return NULL;
+      } // else
+
+      c = s->input[s->pos];
+
+    } else {
+      if (result == NULL) { // shouldn't be possible
+        s->error = EFD_PE_MALFORMED;
+        s->context = "address (ended prematurely)"
+        return NULL;
+      } // else
+
+      break;
+
     }
-    c = s->input[s->pos];
   }
 
   return result;
@@ -1763,14 +1822,5 @@ void efd_throw_parse_error(efd_parse_state *s) {
   if (s->error != EFD_PE_NO_ERROR) {
     efd_print_parse_error(s);
     exit(-s->error);
-  }
-}
-
-int efd_test_parse_progress(efd_parse_state *s, ptrdiff_t reset_to) {
-  if (s->error == EFD_PE_NO_ERROR) {
-    return 1;
-  } else {
-    s->pos = reset_to;
-    return 0;
   }
 }
