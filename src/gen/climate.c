@@ -78,7 +78,7 @@ void _iter_flag_as_water_shore(void *v_region, void *v_body) {
 #ifdef DEBUG
   } else {
     printf(
-      "ERROR: Body water has bad type '%x' in _iter_flag_as_water_shore.\n",
+      "ERROR: Body of water has bad type '%x' in _iter_flag_as_water_shore.\n",
       body->type
     );
 #endif

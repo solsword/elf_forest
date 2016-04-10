@@ -150,7 +150,9 @@ CLEANUP_IMPL(efd_node) {
       l_foreach(doomed->b.as_link.children, &cleanup_v_efd_node);
       cleanup_list(doomed->b.as_link.children);
       // Clean up our target address:
-      cleanup_efd_address(doomed->b.as_link.target);
+      if (doomed->b.as_link.target != NULL) {
+        cleanup_efd_address(doomed->b.as_link.target);
+      }
       break;
 
     case EFD_NT_PROTO:

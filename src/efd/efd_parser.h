@@ -118,12 +118,12 @@ struct efd_parse_state_s {
  * Inline Functions *
  ********************/
 
-static inline int is_whitespace(char *c) {
-  return *c == ' ' || *c == '\n' || *c == '\t' || *c == '\r';
+static inline int is_whitespace(char c) {
+  return c == ' ' || c == '\n' || c == '\t' || c == '\r';
 }
 
-static inline int is_special(char *c) {
-  switch (*c) {
+static inline int is_special(char c) {
+  switch (c) {
     default:
       return 0;
     case EFD_NODE_SEP:
@@ -137,6 +137,16 @@ static inline int is_special(char *c) {
     case EFD_PARSER_ARRAY_SEP:
     case EFD_PARSER_HASH:
     case EFD_PARSER_RENAME:
+      return 1;
+  }
+}
+
+static inline int is_closing_brace(char c) {
+  switch (c) {
+    default:
+      return 0;
+    case EFD_PARSER_CLOSE_BRACE:
+    case EFD_PARSER_CLOSE_ANGLE:
       return 1;
   }
 }

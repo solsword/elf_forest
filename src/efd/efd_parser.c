@@ -239,7 +239,7 @@ void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
     efd_parse_copy_state(s, &back);
     child = efd_parse_any(s, cr);
     if (efd_parse_failed(s)) {
-      if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
+      if (is_closing_brace(s->input[s->pos])) {
         // we've probably hit the end of this object: return w/out error
         efd_parse_copy_state(&back, s);
       } // otherwise return w/ error
@@ -350,7 +350,7 @@ void efd_parse_obj_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   while (1) {
     val = efd_parse_obj_ref(s, cr);
     if (efd_parse_failed(s)) {
-      if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
+      if (is_closing_brace(s->input[s->pos])) {
         s->error = EFD_PE_NO_ERROR;
         break;
       } else {
@@ -362,7 +362,7 @@ void efd_parse_obj_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
 
     efd_parse_sep(s);
     if (efd_parse_failed(s)) {
-      if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
+      if (is_closing_brace(s->input[s->pos])) {
         s->error = EFD_PE_NO_ERROR;
         break;
       } else {
@@ -401,7 +401,7 @@ void efd_parse_int_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   while (1) {
     val = efd_parse_int_or_ref(s, cr);
     if (efd_parse_failed(s)) {
-      if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
+      if (is_closing_brace(s->input[s->pos])) {
         s->error = EFD_PE_NO_ERROR;
         break;
       } else {
@@ -413,7 +413,7 @@ void efd_parse_int_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
     }
     efd_parse_sep(s);
     if (efd_parse_failed(s)) {
-      if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
+      if (is_closing_brace(s->input[s->pos])) {
         s->error = EFD_PE_NO_ERROR;
         break;
       } else {
@@ -453,7 +453,7 @@ void efd_parse_num_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   while (1) {
     val = efd_parse_float_or_ref(s, cr);
     if (efd_parse_failed(s)) {
-      if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
+      if (is_closing_brace(s->input[s->pos])) {
         s->error = EFD_PE_NO_ERROR;
         break;
       } else {
@@ -465,7 +465,7 @@ void efd_parse_num_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
     }
     efd_parse_sep(s);
     if (efd_parse_failed(s)) {
-      if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
+      if (is_closing_brace(s->input[s->pos])) {
         s->error = EFD_PE_NO_ERROR;
         break;
       } else {
@@ -505,7 +505,7 @@ void efd_parse_str_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   while (1) {
     val = efd_parse_str_or_ref(s, cr);
     if (efd_parse_failed(s)) {
-      if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
+      if (is_closing_brace(s->input[s->pos])) {
         s->error = EFD_PE_NO_ERROR;
         break;
       } else {
@@ -518,7 +518,7 @@ void efd_parse_str_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
     }
     efd_parse_sep(s);
     if (efd_parse_failed(s)) {
-      if (s->input[s->pos] == EFD_PARSER_CLOSE_BRACE) {
+      if (is_closing_brace(s->input[s->pos])) {
         s->error = EFD_PE_NO_ERROR;
         break;
       } else {
@@ -826,6 +826,12 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
     case 'c':
       s->pos += 1;
       return EFD_NT_CONTAINER;
+    case 'l':
+      s->pos += 1;
+      return EFD_NT_LINK;
+    case 'L':
+      s->pos += 1;
+      return EFD_NT_LOCAL_LINK;
     case 'o':
       s->pos += 1;
       return EFD_NT_PROTO;
@@ -914,8 +920,8 @@ void efd_parse_name(efd_parse_state *s, char *r_name) {
     }
     c = s->input[s->pos];
     if (
-      is_whitespace(&c)
-   || is_special(&c)
+      is_whitespace(c)
+   || is_special(c)
    || (
        c >= '0'
     && c <= '9'
@@ -939,7 +945,7 @@ void efd_parse_name(efd_parse_state *s, char *r_name) {
   }
   if (i == EFD_NODE_NAME_SIZE && !efd_parse_atend(s)) {
     c = s->input[s->pos];
-    if (!is_whitespace(&c) && !is_special(&c)) {
+    if (!is_whitespace(c) && !is_special(c)) {
       s->error = EFD_PE_MALFORMED;
       s->context = "identifier (identifier too long)";
       return;
@@ -1543,6 +1549,7 @@ efd_reference* efd_parse_global_ref(efd_parse_state *s) {
     s->context = "global reference (indicator)";
     return NULL;
   }
+  s->pos += 1;
 
   n_type = efd_parse_type(s);
   if (efd_parse_failed(s)) {
@@ -1617,7 +1624,7 @@ efd_address* efd_parse_address(efd_parse_state *s) {
         cleanup_efd_address(result);
       }
       s->error = EFD_PE_MALFORMED;
-      s->context = "address (path list)";
+      s->context = "address (pre separator)";
       return NULL;
     }
     efd_parse_name(s, name);
@@ -1629,6 +1636,7 @@ efd_address* efd_parse_address(efd_parse_state *s) {
         if (c == EFD_ADDR_PARENT) {
           name[0] = EFD_ADDR_PARENT;
           name[1] = '\0';
+          s->error = EFD_PE_NO_ERROR;
           s->pos += 1;
         } else {
           if (result != NULL) {
@@ -1658,7 +1666,7 @@ efd_address* efd_parse_address(efd_parse_state *s) {
           cleanup_efd_address(result);
         }
         s->error = EFD_PE_MALFORMED;
-        s->context = "address (path list)";
+        s->context = "address (post separator)";
         return NULL;
       } // else
 
@@ -1692,7 +1700,7 @@ void efd_parse_skip(efd_parse_state *s) {
       case EFD_SKIP_STATE_NORMAL:
         if (c == '/') {
           state = EFD_SKIP_STATE_MAYBE_COMMENT;
-        } else if (!is_whitespace(&c)) {
+        } else if (!is_whitespace(c)) {
           state = EFD_SKIP_STATE_DONE;
         }
         break;
