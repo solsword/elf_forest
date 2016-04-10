@@ -6,6 +6,8 @@
 
 #include <stddef.h>
 
+#include "boilerplate.h"
+
 /**************
  * Structures *
  **************/
@@ -22,7 +24,7 @@ typedef struct bitmap_s bitmap;
 bitmap *create_bitmap(size_t bits);
 
 // Frees the data allocated for the given bitmap.
-void cleanup_bitmap(bitmap *bm);
+CLEANUP_DECL(bitmap);
 
 /***********
  * Locking *

@@ -21,10 +21,10 @@ rngtable *create_rngtable(size_t size) {
   return result;
 }
 
-void cleanup_rngtable(rngtable *t) {
-  free(t->values);
-  free(t->weights);
-  free(t);
+CLEANUP_IMPL(rngtable) {
+  free(doomed->values);
+  free(doomed->weights);
+  free(doomed);
 }
 
 /*************

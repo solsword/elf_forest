@@ -23,10 +23,10 @@ void* efd__rngtable(efd_node *n) {
   float *weights;
   efd_node *field;
   efd_assert_type(n, EFD_NT_CONTAINER);
-  s = (size_t) *efd__i(efd(n, "size"));
-  field = efd(n, "values");
+  s = (size_t) *efd__i(efd_lookup(n, "size"));
+  field = efd_lookup(n, "values");
   values = *efd__ai(field);
-  vcount = *efd_count__ai(field);
+  vcount = *efd__ai_count(field);
   if (vcount != s) {
     fprintf(
       stderr,
@@ -35,9 +35,9 @@ void* efd__rngtable(efd_node *n) {
       vcount
     );
   }
-  field = efd(n, "weights");
+  field = efd_lookup(n, "weights");
   weights = *efd__an(field);
-  wcount = *efd_count__an(field);
+  wcount = *efd__an_count(field);
   if (wcount != s) {
     fprintf(
       stderr,
@@ -81,10 +81,6 @@ efd_node *rngtable__efd(void *v_t) {
   efd_add_child(result, n);
 
   return result;
-}
-
-void cleanup_v_rngtable(void *v_rngtable) {
-  cleanup_rngtable((rngtable*) v_rngtable);
 }
 
 #endif // INCLUDE_EFD_RNGTABLE_H

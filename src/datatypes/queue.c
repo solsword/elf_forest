@@ -143,13 +143,13 @@ queue *create_queue(void) {
   return q;
 }
 
-void cleanup_queue(queue *q) {
-  omp_set_lock(&(q->lock));
-  q->count = 0;
-  q->size = 0;
-  omp_destroy_lock(&(q->lock));
-  free(q->elements);
-  free(q);
+CLEANUP_IMPL(queue) {
+  omp_set_lock(&(doomed->lock));
+  doomed->count = 0;
+  doomed->size = 0;
+  omp_destroy_lock(&(doomed->lock));
+  free(doomed->elements);
+  free(doomed);
 }
 
 void destroy_queue(queue *q) {

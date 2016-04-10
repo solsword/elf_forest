@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include "boilerplate.h"
+
 /***********
  * Globals *
  ***********/
@@ -51,7 +53,7 @@ typedef struct queue_s queue;
 queue *create_queue(void);
 
 // Frees the memory associated with a queue.
-void cleanup_queue(queue *q);
+CLEANUP_DECL(queue);
 
 // Frees the memory associated with a queue, and also calls free on each
 // element in the queue.

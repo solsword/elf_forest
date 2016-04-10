@@ -6,6 +6,8 @@
 
 #include <stddef.h>
 
+#include "boilerplate.h"
+
 /**************
  * Structures *
  **************/
@@ -33,7 +35,7 @@ struct rngtable_s {
 rngtable *create_rngtable(size_t size);
 
 // Frees the memory associated with an rngtable.
-void cleanup_rngtable(rngtable *t);
+CLEANUP_DECL(rngtable);
 
 /*************
  * Functions *

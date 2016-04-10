@@ -114,11 +114,11 @@ string* create_string_from_chars(char const * const nchars, size_t len) {
   return s;
 }
 
-void cleanup_string(string* s) {
-  if (s->bytes != NULL) {
-    free(s->bytes);
+CLEANUP_IMPL(string) {
+  if (doomed->bytes != NULL) {
+    free(doomed->bytes);
   }
-  free(s);
+  free(doomed);
 }
 
 /*************

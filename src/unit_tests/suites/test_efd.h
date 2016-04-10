@@ -29,27 +29,34 @@ size_t setup_efd_tests(void) {
 
 size_t test_efd_simple_parse(void) {
   efd_node *n = create_efd_node(EFD_NT_CONTAINER, "test");
-  if (!efd_parse_file(n, "res/data/test/test-simple.efd")) {
+  efd_index *cr = create_efd_index();
+  if (!efd_parse_file(n, cr, "res/data/test/test-simple.efd")) {
     cleanup_efd_node(n);
+    cleanup_efd_index(cr);
     return 1;
   }
   cleanup_efd_node(n);
+  cleanup_efd_index(cr);
   return 0;
 }
 
 size_t test_efd_basic_parse(void) {
   efd_node *n = create_efd_node(EFD_NT_CONTAINER, "test");
-  if (!efd_parse_file(n, "res/data/test/test.efd")) {
+  efd_index *cr = create_efd_index();
+  if (!efd_parse_file(n, cr, "res/data/test/test.efd")) {
     cleanup_efd_node(n);
+    cleanup_efd_index(cr);
     return 1;
   }
   cleanup_efd_node(n);
+  cleanup_efd_index(cr);
   return 0;
 }
 
 // Returns 1 for success, 0 for failure.
 int _test_efd_case(efd_node *n) {
   static efd_parse_state s;
+  efd_index *cr = create_efd_index();
   ptrdiff_t int_result;
   float float_result;
   efd_node *node_result;
@@ -62,11 +69,12 @@ int _test_efd_case(efd_node *n) {
   s.lineno = 0;
   s.context = NULL;
   s.error = EFD_PE_NO_ERROR;
-  s.address = create_efd_address("?");
+  s.current_node = NULL;
+  s.current_index = -1;
 
   if (!efd_is_type(n, EFD_NT_OBJECT)) {
     fprintf(stderr, "Test EFD case: Bad object type!\n");
-    cleanup_list(s.crossrefs);
+    cleanup_efd_index(cr);
     return 0;
   }
 
@@ -154,7 +162,7 @@ int _test_efd_case(efd_node *n) {
     efd_parse_test *t = (efd_parse_test*) (*efd__o(n));
     s.input = s_raw(t->input);
     s.input_length = s_get_length(t->input);
-    node_result = efd_parse_any(&s);
+    node_result = efd_parse_any(&s, cr);
     if (node_result != NULL) { cleanup_efd_node(node_result); }
     if (s_check_bytes(t->expect, "failure")) {
       result = efd_parse_failed(&s);
@@ -190,6 +198,7 @@ int _test_efd_case(efd_node *n) {
       }
     }
   }
+  cleanup_efd_index(cr);
   return result;
 }
 
@@ -198,14 +207,16 @@ size_t test_efd_defined_tests(void) {
   list *l;
   efd_node *n;
   efd_node *test;
+  efd_index *cr = create_efd_index();
 
   n = create_efd_node(EFD_NT_CONTAINER, "test");
-  if (!efd_parse_file(n, "res/data/test/test.efd")) {
+  if (!efd_parse_file(n, cr, "res/data/test/test.efd")) {
     cleanup_efd_node(n);
+    cleanup_efd_index(cr);
     return 1;
   }
 
-  efd_unpack_node(n);
+  efd_unpack_node(n, cr);
 
   l = n->b.as_container.children;
   for (i = 0; i < l_get_length(l); ++i) {
@@ -224,6 +235,7 @@ size_t test_efd_defined_tests(void) {
   }
 
   cleanup_efd_node(n);
+  cleanup_efd_index(cr);
 
   return 0;
 }

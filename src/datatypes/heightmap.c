@@ -17,9 +17,9 @@ heightmap *create_heightmap(size_t width, size_t height) {
 }
 
 // Frees the memory associated with a heightmap.
-void cleanup_heightmap(heightmap *hm) {
-  free(hm->data);
-  free(hm);
+CLEANUP_IMPL(heightmap) {
+  free(doomed->data);
+  free(doomed);
 }
 
 /*************

@@ -6,6 +6,8 @@
 
 #include <omp.h>
 
+#include "boilerplate.h"
+
 #include "vector.h"
 #include "list.h"
 #include "bbox.h"
@@ -80,7 +82,7 @@ octree * create_octree(size_t span);
 // Frees the memory associated with an octree. Note that this also frees the
 // contents list of each octant in the tree (but not, of course, the elements
 // of that contents list, since elements are duplicated throughout the tree).
-void cleanup_octree(octree *ot);
+CLEANUP_DECL(octree);
 
 /***********
  * Locking *

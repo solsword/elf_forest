@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "boilerplate.h"
+
 /***********
  * Globals *
  ***********/
@@ -39,7 +41,7 @@ typedef struct list_s list;
 list *create_list(void);
 
 // Frees the memory associated with a list.
-void cleanup_list(list *l);
+CLEANUP_DECL(list);
 
 /***********
  * Locking *

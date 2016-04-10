@@ -80,11 +80,11 @@ bitmap *create_bitmap(size_t bits) {
   return bm;
 }
 
-void cleanup_bitmap(bitmap *bm) {
-  omp_set_lock(&(bm->lock));
-  omp_destroy_lock(&(bm->lock));
-  free(bm->data);
-  free(bm);
+CLEANUP_IMPL(bitmap) {
+  omp_set_lock(&(doomed->lock));
+  omp_destroy_lock(&(doomed->lock));
+  free(doomed->data);
+  free(doomed);
 }
 
 /***********

@@ -10,6 +10,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#include "boilerplate.h"
+
 /*********
  * Types *
  *********/
@@ -37,7 +39,7 @@ typedef struct map_s map;
 map *create_map(size_t key_arity, size_t table_size);
 
 // Frees the memory associated with a map.
-void cleanup_map(map *m);
+CLEANUP_DECL(map);
 
 // Frees the memory associated with a map, and also calls free on each value in
 // the map (but not on each key, as keys are commonly not real pointers).

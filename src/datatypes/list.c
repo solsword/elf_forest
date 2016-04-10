@@ -106,13 +106,13 @@ list *create_list(void) {
   return l;
 }
 
-void cleanup_list(list *l) {
-  omp_set_lock(&(l->lock));
-  l->count = 0;
-  l->size = 0;
-  omp_destroy_lock(&(l->lock));
-  free(l->elements);
-  free(l);
+CLEANUP_IMPL(list) {
+  omp_set_lock(&(doomed->lock));
+  doomed->count = 0;
+  doomed->size = 0;
+  omp_destroy_lock(&(doomed->lock));
+  free(doomed->elements);
+  free(doomed);
 }
 
 void destroy_list(list *l) {

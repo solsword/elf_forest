@@ -8,6 +8,8 @@
 
 #include <stdarg.h>
 
+#include "boilerplate.h"
+
 /**********************
  * Types & Structures *
  **********************/
@@ -47,7 +49,7 @@ string* create_string_from_ntchars(char const * const chars);
 string* create_string_from_chars(char const * const nchars, size_t len);
   // nchars should be in local encoding but can have NULs in it.
 
-void cleanup_string(string* s);
+CLEANUP_DECL(string);
 
 /*************
  * Functions *

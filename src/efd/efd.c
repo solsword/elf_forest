@@ -214,6 +214,28 @@ efd_address* create_efd_address(efd_address* parent, char const * const name) {
   return result;
 }
 
+// Private helper which returns an address tail:
+efd_address* _construct_efd_node_direct_address(efd_node *node) {
+  efd_address *result = (efd_address*) malloc(sizeof(efd_address));
+  strncmp(result->name, node->h.name, EFD_NODE_NAME_SIZE);
+  result->name[EFD_NODE_NAME_SIZE] = '\0';
+  result->parent = NULL;
+  result->next = NULL;
+  if (node->h.parent != NULL) {
+    result->parent = _construct_efd_node_direct_address(node->h.parent);
+    result->parent->next = result;
+  }
+  return result;
+}
+
+efd_address* construct_efd_address_of_node(efd_node *node) {
+  efd_address *result = _construct_efd_node_direct_address(node);
+  while (result->parent != NULL) {
+    result = result->parent;
+  }
+  return result;
+}
+
 efd_address* copy_efd_address(efd_address *src) {
   efd_address *n, *rn;
   efd_address *result;
@@ -465,6 +487,15 @@ void efd_extend_address(efd_address *a, efd_address *e) {
   n->next = e;
 }
 
+void efd_push_address(efd_address *a, char const * const name) {
+  efd_address *tail;
+  tail = a;
+  while (tail->next != NULL) {
+    tail = tail->next;
+  }
+  tail->next = create_efd_address(tail, name);
+}
+
 efd_address* efd_pop_address(efd_address *a) {
   efd_address *n, *result;
   if (a->next == NULL) {
@@ -496,6 +527,7 @@ int _match_efd_name(void* v_child, void* v_key) {
 
 efd_node* efd_lookup(efd_node* root, char const * const key) {
   efd_node *linked_node;
+  ptrdiff_t match = -1;
   if (key[0] == EFD_ADDR_PARENT && key[1] == '\0') {
     // Special handling for 'parent' path entries:
     return root->h.parent;
@@ -503,7 +535,7 @@ efd_node* efd_lookup(efd_node* root, char const * const key) {
     // Normal lookups:
     switch (root->h.type) {
       case EFD_NT_CONTAINER:
-        ptrdiff_t match = l_scan_indices(
+        match = l_scan_indices(
           root->b.as_container.children,
           (void*) key,
           &_match_efd_name
@@ -526,7 +558,7 @@ efd_node* efd_lookup(efd_node* root, char const * const key) {
       case EFD_NT_LOCAL_LINK:
         // First search within the linking node, so keys there overwrite keys
         // at the link destination.
-        ptrdiff_t match = l_scan_indices(
+        match = l_scan_indices(
           root->b.as_link.children,
           (void*) key,
           &_match_efd_name
@@ -561,63 +593,73 @@ efd_node* efd_lookup(efd_node* root, char const * const key) {
 efd_node* efd(efd_node* root, efd_address* addr) {
   efd_node *here = root;
   while (addr != NULL) {
-    here = efd_lookup(here, addr->name)
+    here = efd_lookup(here, addr->name);
     addr = addr->next;
   }
   return here;
 }
 
 efd_node* efdx(efd_node* root, char const * const saddr) {
-  return efd(root, efd_parse_address(saddr));
+  return efd(root, efd_parse_string_address(saddr));
+}
+
+void efd_add_crossref(efd_index *cr, efd_bridge* bridge) {
+  l_append_element(cr->unprocessed, bridge);
 }
 
 // Private iterator:
-void _iter_efd_unpack_children(void *v_child) {
-  efd_unpack_node((efd_node*) v_child);
+void _iter_efd_unpack_children(void *v_child, void *v_cr) {
+  efd_unpack_node((efd_node*) v_child, (efd_index*) v_cr);
 }
 
-void efd_unpack_node(efd_node *root) {
+void efd_unpack_node(efd_node *root, efd_index *cr) {
   void *obj;
   efd_proto *p;
   efd_object *o;
   if (root->h.type == EFD_NT_CONTAINER) {
-    l_foreach(root->b.as_container.children, &_iter_efd_unpack_children);
+    l_witheach(
+      root->b.as_container.children,
+      (void*) cr,
+      &_iter_efd_unpack_children
+    );
   } else if (root->h.type == EFD_NT_PROTO) { // transform into an object
     root->h.type = EFD_NT_OBJECT; // change the node type
     p = &(root->b.as_proto);
-    efd_unpack_node(p->input); // First recursively unpack the input
+    efd_unpack_node(p->input, cr); // First recursively unpack the input
     obj = efd_lookup_unpacker(p->format)(p->input); // unpack
     cleanup_efd_node(p->input); // free now-unnecessary EFD data
     o = &(root->b.as_object);
     // format field should overlap perfectly and thus need no change
     o->value = obj; // o->value is in the same place as p->input
-  } // else nothing to do
+  } // else just need to process globals
+  // TODO: Process global links!
 }
 
 // Private iterator:
-void _iter_efd_pack_children(void *v_child) {
-  efd_pack_node((efd_node*) v_child);
+void _iter_efd_pack_children(void *v_child, void *v_cr) {
+  efd_pack_node((efd_node*) v_child, (efd_index*) v_cr);
 }
 
-void efd_pack_node(efd_node *root) {
+void efd_pack_node(efd_node *root, efd_index *cr) {
   efd_node *n;
   efd_proto *p;
   efd_object *o;
   if (root->h.type == EFD_NT_CONTAINER) { // pack children:
-    l_foreach(root->b.as_container.children, &_iter_efd_pack_children);
+    l_witheach(
+      root->b.as_container.children,
+      (void*) cr,
+      &_iter_efd_pack_children
+    );
   } else if (root->h.type == EFD_NT_OBJECT) { // transform this into a proto
     root->h.type = EFD_NT_PROTO; // change the node type
     o = &(root->b.as_object);
     n = efd_lookup_packer(o->format)(o->value); // pack
     efd_lookup_destructor(o->format)(o->value); // free unpacked data
+    efd_pack_node(n, cr); // recursively pack the results
     p = &(root->b.as_proto);
     // format field should overlap perfectly and thus need no change
     p->input = n; // p->input is in the same place as o->value
   } // else do nothing
-}
-
-void efd_merge_node(efd_node *base, efd_node *victim) {
-  // TODO: HERE!
 }
 
 // Helper for transforming character keys into map x/y/z keys. r_key should be

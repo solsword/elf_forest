@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stddef.h>
 
+#include "boilerplate.h"
+
 /**************
  * Structures *
  **************/
@@ -48,7 +50,7 @@ static inline size_t hm_idx(heightmap *hm, size_t x, size_t y) {
 heightmap *create_heightmap(size_t width, size_t height);
 
 // Frees the memory associated with a heightmap.
-void cleanup_heightmap(heightmap *hm);
+CLEANUP_DECL(heightmap);
 
 /*************
  * Functions *

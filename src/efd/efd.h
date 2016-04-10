@@ -367,6 +367,39 @@ static inline size_t* efd__as_count(efd_node *n) {
   return &(n->b.as_str_array.count);
 }
 
+static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
+  switch (nt) {
+    default:
+    case EFD_NT_INVALID:
+      return EFD_RT_INVALID;
+    case EFD_NT_PROTO:
+    case EFD_NT_GLOBAL_INT:
+      return EFD_RT_GLOBAL_INT;
+    case EFD_NT_GLOBAL_NUM:
+      return EFD_RT_GLOBAL_NUM;
+    case EFD_NT_GLOBAL_STR:
+      return EFD_RT_GLOBAL_STR;
+    case EFD_NT_CONTAINER:
+      return EFD_RT_NODE;
+    case EFD_NT_OBJECT:
+      return EFD_RT_OBJ;
+    case EFD_NT_INTEGER:
+      return EFD_RT_INT;
+    case EFD_NT_NUMBER:
+      return EFD_RT_NUM;
+    case EFD_NT_STRING:
+      return EFD_RT_STR;
+    case EFD_NT_ARRAY_OBJ:
+      return EFD_RT_OBJ_ARR_ENTRY;
+    case EFD_NT_ARRAY_INT:
+      return EFD_RT_INT_ARR_ENTRY;
+    case EFD_NT_ARRAY_NUM:
+      return EFD_RT_NUM_ARR_ENTRY;
+    case EFD_NT_ARRAY_STR:
+      return EFD_RT_STR_ARR_ENTRY;
+  }
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -383,11 +416,16 @@ CLEANUP_DECL(efd_node);
 // are copied from the given string, but a reference to it is not maintained.
 efd_address* create_efd_address(efd_address* parent, char const * const name);
 
+// Allocates and fills in a new EFD address for the given node.
+efd_address* construct_efd_address_of_node(efd_node *node);
+
 // Allocate an new efd_address and copy in information from the given address.
 efd_address* copy_efd_address(efd_address *src);
 
 // Clean up memory from the given EFD address (and recursively, all of its
-// children).
+// children). Parents of the given address are not affected (so for example if
+// the address has a parent it's next pointer should be set to NULL before
+// cleanup up its child.
 CLEANUP_DECL(efd_address);
 
 // Allocate and return a new EFD reference. The given address is copied, so it
@@ -454,6 +492,9 @@ void efd_append_address(efd_address *a, char const * const name);
 // extension as well.
 void efd_extend_address(efd_address *a, efd_address *e);
 
+// Adds the given name as the deepest level of the given address.
+void efd_push_address(efd_address *a, char const * const name);
+
 // Removes the deepest level of the given address, returning a pointer to the
 // address that was popped (which should eventually be cleaned up).
 efd_address* efd_pop_address(efd_address *a);
@@ -490,28 +531,28 @@ efd_node* efd(efd_node* root, efd_address* addr);
 // EFD_MAX_NAME_DEPTH, although multiple calls to efd/efdx can overcome this.
 efd_node* efdx(efd_node* root, char const * const saddr);
 
+// Adds the given bridge to the given index.
+void efd_add_crossref(efd_index *cr, efd_bridge* bridge);
+
 // Unpacks this node and all of its children recursively, turning PROTO nodes
-// containing raw EFD into OBJECT nodes containing unpacked structs.
-// TODO: Other adjustment steps:
-//   1. reference resolution
-void efd_unpack_node(efd_node *root);
+// containing raw EFD into OBJECT nodes containing unpacked structs. At this
+// point global references are replaced by the corresponding global values
+// wherever possible.
+void efd_unpack_node(efd_node *root, efd_index *cr);
 
 // Packs this node and all of its children recursively, turning OBJECT nodes
 // containing unpacked structs into PROTO nodes containing EFD COLLECTIONs.
-void efd_pack_node(efd_node *root);
+// Unlike efd_unpack_node, it does not deal with global references; those must
+// be handled at serialization time.
+void efd_pack_node(efd_node *root, efd_index *cr);
+
+// TODO: Serialization (separate files)...
 
 // Lookups for packers, unpackers, and destructors. Note that these are not
 // actually defined in efd.c but rather in  efd_setup.c.
 efd_unpack_function efd_lookup_unpacker(char const * const key);
 efd_pack_function efd_lookup_packer(char const * const key);
 efd_destroy_function efd_lookup_destructor(char const * const key);
-
-// Function for merging information from one node into another with the same
-// name. Children with matching names are merged recursively, while children
-// with unique names are transplanted. The victim is destroyed at the end of
-// the process, while the base node is modified.
-// TODO: How to handle non-unique names?!?
-void efd_merge_node(efd_node *base, efd_node *victim);
 
 // Functions for getting and setting global integers, numbers, and strings:
 ptrdiff_t efd_get_global_i(char const * const key);

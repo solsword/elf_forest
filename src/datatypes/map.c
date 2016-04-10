@@ -104,17 +104,17 @@ map *create_map(size_t key_arity, size_t table_size) {
   return m;
 }
 
-void cleanup_map(map *m) {
+CLEANUP_IMPL(map) {
   size_t i = 0;
-  omp_set_lock(&(m->lock));
-  for (i = 0; i < m->table_size; ++i) {
-    if (m->table[i] != NULL) {
-      cleanup_list(m->table[i]);
+  omp_set_lock(&(doomed->lock));
+  for (i = 0; i < doomed->table_size; ++i) {
+    if (doomed->table[i] != NULL) {
+      cleanup_list(doomed->table[i]);
     }
   }
-  omp_destroy_lock(&(m->lock));
-  free(m->table);
-  free(m);
+  omp_destroy_lock(&(doomed->lock));
+  free(doomed->table);
+  free(doomed);
 }
 
 void destroy_map(map *m) {
