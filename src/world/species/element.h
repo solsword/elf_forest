@@ -43,6 +43,7 @@ typedef enum nutrient_category_e nutrient_category;
 // Each element is a member of one or more categories:
 typedef uint8_t element_categorization;
 
+#define EL_CATEGORY_NONE   0x00
 #define EL_CATEGORY_AIR    0x01
 #define EL_CATEGORY_WATER  0x02
 #define EL_CATEGORY_LIFE   0x04

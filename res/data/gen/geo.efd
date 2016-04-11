@@ -1,165 +1,742 @@
 [[c gen
 [[c geo
 
-[[o which_comp:rngtbl
-  [[i size 3]]
-  [[ao values
-    {gen.geo.igneous_comp},
-    {gen.geo.metamorphic_comp},
-    {gen.geo.sedimentary_comp}
+[[V locals
+  [[o ~SOURCE_DISTRIBUTION:rngtbl
+    [[i size 3]]
+    [[ai values
+      #i:GEO_IGNEOUS,
+      #i:GEO_METAMORPHIC,
+      #i:GEO_SEDIMENTARY
+    ]]
+    [[an weights
+      0.35,
+      0.25,
+      0.4
+    ]]
   ]]
-  [[an weights
-    0.35,
-    0.25,
-    0.4
+  [[o ~IGNEOUS_COMP:rngtbl
+    [[i size 7]]
+    [[ai values
+      #i:MNRL_COMP_STONE,
+      #i:MNRL_COMP_STONE_STONE,
+
+      #i:MNRL_COMP_STONE_LIFE,
+
+      #i:MNRL_COMP_STONE_METAL,
+      #i:MNRL_COMP_STONE_METAL_METAL,
+
+      #i:MNRL_COMP_STONE_RARE,
+      #i:MNRL_COMP_LIFE,
+    ]]
+    [[an weights
+      0.40, 0.35, // 75% |  75%
+      0.10,       // 10% |  85%
+      0.05, 0.05, // 10% |  95%
+      0.03, 0.02, //  5% | 100%
+    ]]
+  ]]
+  [[o ~METAMORPHIC_COMP:rngtbl
+    [[i size 15]]
+    [[ai values
+      #i:MNRL_COMP_STONE_WATER,
+      #i:MNRL_COMP_STONE_STONE,
+      #i:MNRL_COMP_STONE_METAL,
+
+      #i:MNRL_COMP_STONE_STONE_STONE,
+      #i:MNRL_COMP_STONE_STONE_METAL,
+      #i:MNRL_COMP_STONE_METAL_METAL,
+
+      #i:MNRL_COMP_STONE_STONE_LIFE,
+      #i:MNRL_COMP_STONE_AIR,
+      #i:MNRL_COMP_STONE_STONE,
+      #i:MNRL_COMP_RARE_RARE,
+
+      #i:MNRL_COMP_STONE_LIFE,
+      #i:MNRL_COMP_STONE_METAL_RARE,
+      #i:MNRL_COMP_STONE_RARE,
+
+      #i:MNRL_COMP_STONE_STONE_RARE,
+      #i:MNRL_COMP_STONE_RARE_RARE,
+    ]]
+    [[an weights
+      0.17, 0.12, 0.12,        // 41% |  41%
+      0.09, 0.09, 0.07,        // 25% |  66%
+      0.06, 0.06, 0.06, 0.05,  // 23% |  89%
+      0.04, 0.03, 0.02,        //  9% |  98%
+      0.01, 0.01,              //  2% | 100%
+    ]]
+  ]]
+  [[o ~SEDIMENTARY_COMP:rngtbl
+    [[i size 7]]
+    [[ai values
+      #i:MNRL_COMP_STONE_LIFE,
+      #i:MNRL_COMP_STONE_WATER,
+      #i:MNRL_COMP_STONE_AIR,
+
+      #i:MNRL_COMP_LIFE,
+
+      #i:MNRL_COMP_STONE,
+      #i:MNRL_COMP_STONE_STONE,
+
+      #i:MNRL_COMP_RARE_RARE,
+    ]]
+    [[an weights
+      0.26, 0.23, 0.21,    // 70% |  70%
+      0.12,                // 12% |  82%
+      0.08, 0.06,          // 14% |  96%
+      0.04,                //  4% | 100%
+    ]]
+  ]]
+  [[o ~IGNEOUS_TRACES:rngtbl
+    [[i size 9]]
+    [[ai values
+      #i:MNRL_TRACE_NONE,
+
+      #i:MNRL_TRACE_LIFE,
+      #i:MNRL_TRACE_METAL,
+      #i:MNRL_TRACE_METAL_METAL,
+
+      #i:MNRL_TRACE_RARE,
+      #i:MNRL_TRACE_METAL_RARE,
+
+      #i:MNRL_TRACE_RARE_RARE,
+      #i:MNRL_TRACE_STONE,
+      #i:MNRL_TRACE_STONE_METAL,
+    ]]
+    [[an weights
+      0.5,               // 50% |  50%
+      0.12, 0.11, 0.11,  // 34% |  84%
+      0.06, 0.05,        // 11% |  95%
+      0.02, 0.02, 0.01,  //  5% | 100%
+    ]]
+  ]]
+  [[o ~METAMORPHIC_TRACES:rngtbl
+    [[i size 11]]
+    [[ai values
+      #i:MNRL_TRACE_NONE,
+
+      #i:MNRL_TRACE_RARE,
+      #i:MNRL_TRACE_METAL,
+
+      #i:MNRL_TRACE_WATER,
+      #i:MNRL_TRACE_AIR,
+
+      #i:MNRL_TRACE_METAL_RARE,
+      #i:MNRL_TRACE_RARE_RARE,
+      #i:MNRL_TRACE_METAL_METAL,
+
+      #i:MNRL_TRACE_LIFE,
+      #i:MNRL_TRACE_STONE_METAL,
+      #i:MNRL_TRACE_STONE
+    ]]
+    [[an weights
+      0.20,              // 20% |  20%
+      0.15, 0.13,        // 28% |  48%
+      0.10, 0.09,        // 19% |  67%
+      0.07, 0.07, 0.07,  // 21% |  88%
+      0.05, 0.04, 0.03   // 12% | 100%
+    ]]
+  ]]
+  [[o ~SEDIMENTARY_TRACES:rngtbl
+    [[i size 8]]
+    [[ai values
+      #i:MNRL_TRACE_NONE,
+
+      #i:MNRL_TRACE_STONE,
+
+      #i:MNRL_TRACE_LIFE,
+
+      #i:MNRL_TRACE_WATER,
+      #i:MNRL_TRACE_AIR,
+
+      #i:MNRL_TRACE_METAL,
+      #i:MNRL_TRACE_STONE_METAL,
+      #i:MNRL_TRACE_RARE
+    ]]
+    /* test */
+    [[an weights
+      0.5,               // 50% |  50%
+      0.17,              // 17% |  67%
+      0.12,              // 12% |  79%
+      0.08, 0.06,        // 14% |  93%
+      0.03, 0.02, 0.02   //  7% | 100%
+    ]]
+  ]]
+  [[fai ~EXPAND_COMPOSITION:SF_MAP
+    [[V args
+      [[i ~composition #i:MNRL_COMP_STONE]]
+    ]]
+    <<v ~composition@input>>
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_NONE,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_LIFE]]
+      [[ai values
+        #i:EL_CATEGORY_LIFE,
+        #i:EL_CATEGORY_NONE,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE_AIR]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_AIR,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE_WATER]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_WATER,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE_LIFE]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_LIFE,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE_STONE]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE_STONE_LIFE]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_LIFE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE_STONE_STONE]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_STONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE_METAL]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_METAL,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE_STONE_METAL]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_METAL
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE_METAL_METAL]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_METAL,
+        #i:EL_CATEGORY_METAL
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE_METAL_RARE]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_METAL,
+        #i:EL_CATEGORY_RARE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE_RARE]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_RARE,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE_STONE_RARE]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_RARE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_STONE_RARE_RARE]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_RARE,
+        #i:EL_CATEGORY_RARE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_COMP_RARE_RARE]]
+      [[ai values
+        #i:EL_CATEGORY_RARE,
+        #i:EL_CATEGORY_RARE,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
   ]]
 ]]
 
-[[o igneous_comp:rngtbl
-  [[i size 7]]
-  [[ai values
-    MNRL_COMP_STONE,
-    MNRL_COMP_STONE_STONE,
-
-    MNRL_COMP_STONE_LIFE,
-
-    MNRL_COMP_STONE_METAL,
-    MNRL_COMP_STONE_METAL_METAL,
-
-    MNRL_COMP_STONE_RARE,
-    MNRL_COMP_LIFE,
+// TODO: HERE
+[[c gen_stone_species
+  [[V args
+    [[o ~world_map NULL]] // TODO: How this?!?
+    [[i ~source 0]]
+    [[i ~seed 0]]
+    [[fo ~comp_table:SF_CHOOSE
+      [[fi index:SF_INDEX_BY
+        <<v ~source@input>>
+        [[i entry #i:GEO_IGNEOUS]]
+        [[i entry #i:GEO_METAMORPHIC]]
+        [[i entry #i:GEO_SEDIMENTARY]]
+      ]]
+      <<v ~IGNEOUS_COMP>>
+      <<v ~METAMORPHIC_COMP>>
+      <<v ~SEDIMENTARY_COMP>>
+    ]]
+    [[fo ~trace_table:SF_CHOOSE
+      [[fi index:SF_INDEX_BY
+        <<v ~source@input>>
+        [[i entry #i:GEO_IGNEOUS]]
+        [[i entry #i:GEO_METAMORPHIC]]
+        [[i entry #i:GEO_SEDIMENTARY]]
+      ]]
+      <<v ~IGNEOUS_TRACES>>
+      <<v ~METAMORPHIC_TRACES>>
+      <<v ~SEDIMENTARY_TRACES>>
+    ]]
   ]]
-  [[an weights
-    0.40, 0.35, // 75% |  75%
-    0.10,       // 10% |  85%
-    0.05, 0.05, // 10% |  95%
-    0.03, 0.02, //  5% | 100%
+  [[fi sethash:SF_SET_HASH
+    [[fi br:SF_BRANCH_HASH <<v ~seed>> [[i offset 467541]] ]]
   ]]
-]]
-[[o metamorphic_comp:rngtbl
-  [[i size 15]]
-  [[ai values
-    MNRL_COMP_STONE_WATER,
-    MNRL_COMP_STONE_STONE,
-    MNRL_COMP_STONE_METAL,
-
-    MNRL_COMP_STONE_STONE_STONE,
-    MNRL_COMP_STONE_STONE_METAL,
-    MNRL_COMP_STONE_METAL_METAL,
-
-    MNRL_COMP_STONE_STONE_LIFE,
-    MNRL_COMP_STONE_AIR,
-    MNRL_COMP_STONE_STONE,
-    MNRL_COMP_RARE_RARE,
-
-    MNRL_COMP_STONE_LIFE,
-    MNRL_COMP_STONE_METAL_RARE,
-    MNRL_COMP_STONE_RARE,
-
-    MNRL_COMP_STONE_STONE_RARE,
-    MNRL_COMP_STONE_RARE_RARE,
+  [[c composition
+    [[V vars
+      [[fi ~composition:SF_SAMPLE_RNGTABLE
+        [[fi rng:SF_NEXT_HASH]]
+        <<v ~comp_table>>
+      ]]
+      [[fi ~trace_composition:SF_SAMPLE_RNGTABLE
+        [[fi rng:SF_NEXT_HASH]]
+        <<v ~trace_table>>
+      ]]
+      <<v ~EXPAND_COMPOSITION@~categories
+        [[V args <<v ~composition@~composition>> ]]
+      >>
+      <<v ~EXPAND_TRACES@~trace_categories
+        [[V args <<v ~trace_composition@~traces>> ]]
+      >>
+    ]]
+    [[o used:list]]
+    [[fo first_element:SF_PICK_ELEMENT
+      <<v ~world_map>>
+      [[fi cat:SF_INDEX <<v ~categories>> [[i idx 0]] ]]
+      <<L ^.used>>
+      [[fi rng:SF_NEXT_HASH]]
+    ]]
+    [[fv check:SF_IF_NON_NULL
+      <<L ^.first_element>>
+      [[fv append:SF_L_APPEND
+        <<L ^.used>>
+        <<L ^.first_element>>
+      ]]
+    ]]
+    [[fo second_element:SF_PICK_ELEMENT
+      <<v ~world_map>>
+      [[fi cat:SF_INDEX <<v ~categories>> [[i idx 1]] ]]
+      <<L ^.used>>
+      [[fi rng:SF_NEXT_HASH]]
+    ]]
+    [[fv check:SF_IF_NON_NULL
+      <<L ^.second_element>>
+      [[fv append:SF_L_APPEND
+        <<L ^.used>>
+        <<L ^.second_element>>
+      ]]
+    ]]
+    [[fo third_element:SF_PICK_ELEMENT
+      <<v ~world_map>>
+      [[fi cat:SF_INDEX <<v ~categories>> [[i idx 2]] ]]
+      <<L ^.used>>
+      [[fi rng:SF_NEXT_HASH]]
+    ]]
+    [[fv check:SF_IF_NON_NULL
+      <<L ^.third_element>>
+      [[fv append:SF_L_APPEND
+        <<L ^.used>>
+        <<L ^.third_element>>
+      ]]
+    ]]
+    // TODO: Do we need this?
+    [[o element_list:list
+      <<L ^.first_element>>
+      <<L ^.second_element>>
+      <<L ^.third_element>>
+    ]]
   ]]
-  [[an weights
-    0.17, 0.12, 0.12,        // 41% |  41%
-    0.09, 0.09, 0.07,        // 25% |  66%
-    0.06, 0.06, 0.06, 0.05,  // 23% |  89%
-    0.04, 0.03, 0.02,        //  9% |  98%
-    0.01, 0.01,              //  2% | 100%
+  [[c material
+    // TODO: HERE
   ]]
-]]
-[[o sedimentary_comp:rngtbl
-  [[i size 7]]
-  [[ai values
-    MNRL_COMP_STONE_LIFE,
-    MNRL_COMP_STONE_WATER,
-    MNRL_COMP_STONE_AIR,
-
-    MNRL_COMP_LIFE,
-
-    MNRL_COMP_STONE,
-    MNRL_COMP_STONE_STONE,
-
-    MNRL_COMP_RARE_RARE,
-  ]]
-  [[an weights
-    0.26, 0.23, 0.21,    // 70% |  70%
-    0.12,                // 12% |  82%
-    0.08, 0.06,          // 14% |  96%
-    0.04,                //  4% | 100%
-  ]]
-]]
-[[o igneous_traces:rngtbl
-  [[i size 9]]
-  [[ai values
-    MNRL_TRACE_NONE,
-
-    MNRL_TRACE_LIFE,
-    MNRL_TRACE_METAL,
-    MNRL_TRACE_METAL_METAL,
-
-    MNRL_TRACE_RARE,
-    MNRL_TRACE_METAL_RARE,
-
-    MNRL_TRACE_RARE_RARE,
-    MNRL_TRACE_STONE,
-    MNRL_TRACE_STONE_METAL,
-  ]]
-  [[an weights
-    0.5,               // 50% |  50%
-    0.12, 0.11, 0.11,  // 34% |  84%
-    0.06, 0.05,        // 11% |  95%
-    0.02, 0.02, 0.01,  //  5% | 100%
-  ]]
-]]
-[[o metamorphic_traces:rngtbl
-  [[i size 11]]
-  [[ai values
-    MNRL_TRACE_NONE,
-
-    MNRL_TRACE_RARE,
-    MNRL_TRACE_METAL,
-
-    MNRL_TRACE_WATER,
-    MNRL_TRACE_AIR,
-
-    MNRL_TRACE_METAL_RARE,
-    MNRL_TRACE_RARE_RARE,
-    MNRL_TRACE_METAL_METAL,
-
-    MNRL_TRACE_LIFE,
-    MNRL_TRACE_STONE_METAL,
-    MNRL_TRACE_STONE
-  ]]
-  [[an weights
-    0.20,              // 20% |  20%
-    0.15, 0.13,        // 28% |  48%
-    0.10, 0.09,        // 19% |  67%
-    0.07, 0.07, 0.07,  // 21% |  88%
-    0.05, 0.04, 0.03   // 12% | 100%
+  [[c appearance
+    // TODO: HERE
   ]]
 ]]
-[[o sedimentary_traces:rngtbl
-  [[i size 8]]
-  [[ai values
-    MNRL_TRACE_NONE,
 
-    MNRL_TRACE_STONE,
-
-    MNRL_TRACE_LIFE,
-
-    MNRL_TRACE_WATER,
-    MNRL_TRACE_AIR,
-
-    MNRL_TRACE_METAL,
-    MNRL_TRACE_STONE_METAL,
-    MNRL_TRACE_RARE
+[[c strata_params
+  [[V args
+    [[i ~i 0]]
+    [[i ~wm_seed 0]]
+    [[i ~wm_width 0]]
+    [[i ~wm_height 0]]
+    [[fi ~seed:SF_BRANCH_HASH
+      <<v ~wm_seed>>
+      [[fi mult:SF_MULT
+        <<v ~i>>
+        [[i offset 567]]
+      ]]
+    ]]
   ]]
-  [[an weights
-    0.5,               // 50% |  50%
-    0.17,              // 17% |  67%
-    0.12,              // 12% |  79%
-    0.08, 0.06,        // 14% |  93%
-    0.03, 0.02, 0.02   //  7% | 100%
+  [[fi sethash:SF_SET_HASH <<v ~seed>> ]]
+  <<v ~seed@seed>>
+  [[fi source:SF_SAMPLE_RNGTABLE
+    [[fi rng:SF_NEXT_HASH]]
+    <<v ~SOURCE_DISTRIBUTION>>
+  ]]
+  [[fi profile:SF_CHOOSE
+    [[fi index:SF_NEXT_HASH]]
+    [[i option #i:MFN_SPREAD_UP]]
+    [[i option #i:MFN_TERRACE]]
+    [[i option #i:MFN_HILL]]
+  ]]
+  [[fn thickness:SF_MULT
+    [[i base #i:BASE_STRATUM_THICKNESS]]
+    [[fn exp:SF_EXP
+      [[fn exponent:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min -0.5]]
+        [[n max 3]]
+      ]]
+    ]]
+  ]]
+  [[fn size:SF_MULT
+    [[fn wsgavg:SF_SQRT
+      [[fn world_size:SF_MULT
+        <<v ~wm_width>>
+        <<v ~wm_height>>
+      ]]
+    ]]
+    [[i bias #i:STRATA_AVG_SIZE]]
+    [[i unit #i:WORLD_REGION_BLOCKS]]
+    [[fn offset:SF_UNIFORM
+      [[fi rng:SF_NEXT_HASH]]
+      [[n min 0.6]]
+      [[n max 1.4]]
+    ]]
+  ]]
+  [[fn cx:SF_UNIFORM
+    [[fi rng:SF_NEXT_HASH]]
+    [[n min 0]]
+    <<v ~wm_width@max>>
+  ]]
+  [[fn cy:SF_UNIFORM
+    [[fi rng:SF_NEXT_HASH]]
+    [[n min 0]]
+    <<v ~wm_height@max>>
+  ]]
+]]
+
+[[c stratum
+  [[V args
+    [[i ~seed 0]]
+    [[i ~source 0]]
+    [[i ~profile 0]]
+    [[n ~thickness 0]]
+    [[n ~size 0]]
+    [[n ~cx 0]]
+    [[n ~cy 0]]
+  ]]
+  [[fi sethash:SF_SET_HASH <<v ~seed>> ]]
+  <<v ~seed@seed>>
+  [[ff typechoice:SF_CHOOSE
+    [[fi index:SF_INDEX_BY
+      <<v ~source@input>>
+      [[i entry #i:GEO_IGNEOUS]]
+      [[i entry #i:GEO_METAMORPHIC]]
+      [[i entry #i:GEO_SEDIMENTARY]]
+    ]]
+    [[c igneous_stratum
+      [[fn persistence:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 1.2]]
+        [[n max 1.6]]
+      ]]
+      [[fn scale_bias:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 0.7]]
+        [[n max 1.1]]
+      ]]
+      [[fn radial_frequency:SF_DIV
+        [[n pi #n:PI]]
+        [[fn uniform:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 2.4]]
+          [[n max 4.0]]
+        ]]
+      ]]
+      [[fn radial_variance:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 0.1]]
+        [[n max 0.4]]
+      ]]
+      [[fn gross_distortion:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 900]]
+        [[n max 1400]]
+      ]]
+      [[fn fine_distortion:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 110]]
+        [[n max 150]]
+      ]]
+      [[fn large_var:SF_MULT
+        <<v ~thickness>>
+        [[fn rng:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 0.6]]
+          [[n max 0.9]]
+        ]]
+      ]]
+      [[fn med_var:SF_MULT
+        <<v ~thickness>>
+        [[fn rng:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 0.4]]
+          [[n max 0.65]]
+        ]]
+      ]]
+      [[fn med_var:SF_MULT
+        <<v ~thickness>>
+        [[fn rng:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 0.17]]
+          [[n max 0.22]]
+        ]]
+      ]]
+      [[fn tiny_var:SF_MULT
+        <<v ~thickness>>
+        [[fn rng:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 0.04]]
+          [[n max 0.10]]
+        ]]
+      ]]
+      [[fn detail_var:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 1]]
+        [[n max 3]]
+      ]]
+      [[fn ridges:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 2]]
+        [[n max 5]]
+      ]]
+      [[fn smoothing:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 0.15]]
+        [[n max 0.35]]
+      ]]
+      // TODO: Vein scale/strength/species
+      // TODO: inclusion frequency/species
+    ]]
+    [[c metamorphic_stratum
+      [[fn persistence:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 0.8]]
+        [[n max 1.3]]
+      ]]
+      [[fn scale_bias:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 0.8]]
+        [[n max 1.2]]
+      ]]
+      [[fn radial_frequency:SF_DIV
+        [[n pi #n:PI]]
+        [[fn uniform:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 2.8]]
+          [[n max 4.8]]
+        ]]
+      ]]
+      [[fn radial_variance:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 0.4]]
+        [[n max 0.8]]
+      ]]
+      [[fn gross_distortion:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 1200]]
+        [[n max 2100]]
+      ]]
+      [[fn fine_distortion:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 180]]
+        [[n max 290]]
+      ]]
+      [[fn large_var:SF_MULT
+        <<v ~thickness>>
+        [[fn rng:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 0.5]]
+          [[n max 0.8]]
+        ]]
+      ]]
+      [[fn med_var:SF_MULT
+        <<v ~thickness>>
+        [[fn rng:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 0.3]]
+          [[n max 0.55]]
+        ]]
+      ]]
+      [[fn med_var:SF_MULT
+        <<v ~thickness>>
+        [[fn rng:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 0.16]]
+          [[n max 0.22]]
+        ]]
+      ]]
+      [[fn tiny_var:SF_MULT
+        <<v ~thickness>>
+        [[fn rng:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 0.02]]
+          [[n max 0.05]]
+        ]]
+      ]]
+      [[fn detail_var:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 0.3]]
+        [[n max 2.1]]
+      ]]
+      [[fn ridges:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 0.4]]
+        [[n max 3.8]]
+      ]]
+      [[fn smoothing:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 0.15]]
+        [[n max 0.60]]
+      ]]
+      // TODO: Vein scale/strength/species
+      // TODO: inclusion frequency/species
+    ]]
+    [[c sedimentary_stratum
+      [[fn persistence:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 1.3]]
+        [[n max 1.8]]
+      ]]
+      [[fn scale_bias:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 1.1]]
+        [[n max 1.4]]
+      ]]
+      [[fn radial_frequency:SF_DIV
+        [[n pi #n:PI]]
+        [[fn uniform:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 2.1]]
+          [[n max 3.3]]
+        ]]
+      ]]
+      [[fn radial_variance:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 0.05]]
+        [[n max 0.25]]
+      ]]
+      [[fn gross_distortion:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 700]]
+        [[n max 1100]]
+      ]]
+      [[fn fine_distortion:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 30]]
+        [[n max 60]]
+      ]]
+      [[fn large_var:SF_MULT
+        <<v ~thickness>>
+        [[fn rng:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 0.4]]
+          [[n max 0.65]]
+        ]]
+      ]]
+      [[fn med_var:SF_MULT
+        <<v ~thickness>>
+        [[fn rng:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 0.2]]
+          [[n max 0.35]]
+        ]]
+      ]]
+      [[fn med_var:SF_MULT
+        <<v ~thickness>>
+        [[fn rng:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 0.11]]
+          [[n max 0.16]]
+        ]]
+      ]]
+      [[fn tiny_var:SF_MULT
+        <<v ~thickness>>
+        [[fn rng:SF_UNIFORM
+          [[fi rng:SF_NEXT_HASH]]
+          [[n min 0.03]]
+          [[n max 0.10]]
+        ]]
+      ]]
+      [[fn detail_var:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 0.7]]
+        [[n max 3.9]]
+      ]]
+      [[fn ridges:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 0.8]]
+        [[n max 5.3]]
+      ]]
+      [[fn smoothing:SF_UNIFORM
+        [[fi rng:SF_NEXT_HASH]]
+        [[n min 0.12]]
+        [[n max 0.52]]
+      ]]
+      // TODO: Vein scale/strength/species
+      // TODO: inclusion frequency/species
+    ]]
   ]]
 ]]
 
