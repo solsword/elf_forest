@@ -2,6 +2,7 @@
 [[c geo
 
 [[V locals
+  [[ai ~CNST_AVG_WEIGHTS 1.5, 1.0, 0.7]]
   [[o ~SOURCE_DISTRIBUTION:rngtbl
     [[i size 3]]
     [[ai values
@@ -297,12 +298,87 @@
       ]]
     ]]
   ]]
+  [[fai ~EXPAND_TRACES:SF_MAP
+    [[V args
+      [[i ~traces #i:MNRL_TRACE_AIR]]
+    ]]
+    <<v ~traces@input>>
+    [[c entry
+      [[i key #i:MNRL_TRACE_AIR]]
+      [[ai values
+        #i:EL_CATEGORY_AIR,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_TRACE_WATER]]
+      [[ai values
+        #i:EL_CATEGORY_WATER,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_TRACE_LIFE]]
+      [[ai values
+        #i:EL_CATEGORY_LIFE,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_TRACE_STONE]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_TRACE_STONE_METAL]]
+      [[ai values
+        #i:EL_CATEGORY_STONE,
+        #i:EL_CATEGORY_METAL
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_TRACE_METAL]]
+      [[ai values
+        #i:EL_CATEGORY_METAL,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_TRACE_METAL_METAL]]
+      [[ai values
+        #i:EL_CATEGORY_METAL,
+        #i:EL_CATEGORY_METAL
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_TRACE_METAL_RARE]]
+      [[ai values
+        #i:EL_CATEGORY_METAL,
+        #i:EL_CATEGORY_RARE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_TRACE_RARE]]
+      [[ai values
+        #i:EL_CATEGORY_RARE,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
+      [[i key #i:MNRL_TRACE_RARE_RARE]]
+      [[ai values
+        #i:EL_CATEGORY_RARE,
+        #i:EL_CATEGORY_RARE
+      ]]
+    ]]
+  ]]
 ]]
 
-// TODO: HERE
 [[c gen_stone_species
   [[V args
-    [[o ~world_map NULL]] // TODO: How this?!?
+    [[o ~world_map:NULL]]
     [[i ~source 0]]
     [[i ~seed 0]]
     [[fo ~comp_table:SF_CHOOSE
@@ -347,19 +423,19 @@
       <<v ~EXPAND_TRACES@~trace_categories
         [[V args <<v ~trace_composition@~traces>> ]]
       >>
+      [[o ~used:list]]
     ]]
-    [[o used:list]]
     [[fo first_element:SF_PICK_ELEMENT
       <<v ~world_map>>
       [[fi cat:SF_INDEX <<v ~categories>> [[i idx 0]] ]]
-      <<L ^.used>>
+      <<v ~used>>
       [[fi rng:SF_NEXT_HASH]]
     ]]
     [[fv check:SF_IF_NON_NULL
       <<L ^.first_element>>
       [[fv append:SF_L_APPEND
-        <<L ^.used>>
-        <<L ^.first_element>>
+        <<v ~used>>
+        <<L ^.^.first_element>>
       ]]
     ]]
     [[fo second_element:SF_PICK_ELEMENT
@@ -371,39 +447,306 @@
     [[fv check:SF_IF_NON_NULL
       <<L ^.second_element>>
       [[fv append:SF_L_APPEND
-        <<L ^.used>>
-        <<L ^.second_element>>
+        <<v ~used>>
+        <<L ^.^.second_element>>
       ]]
     ]]
     [[fo third_element:SF_PICK_ELEMENT
       <<v ~world_map>>
       [[fi cat:SF_INDEX <<v ~categories>> [[i idx 2]] ]]
-      <<L ^.used>>
+      <<v ~used>>
       [[fi rng:SF_NEXT_HASH]]
     ]]
+    /* Don't need used after this.
     [[fv check:SF_IF_NON_NULL
       <<L ^.third_element>>
       [[fv append:SF_L_APPEND
-        <<L ^.used>>
-        <<L ^.third_element>>
+        <<v ~used>>
+        <<L ^.^.third_element>>
+      ]]
+    ]] */
+    [[fv clear_used:SF_CLEAR_LIST <<v ~used>>]]
+    [[fo first_trace:SF_PICK_ELEMENT
+      <<v ~world_map>>
+      [[fi cat:SF_INDEX <<v ~trace_categories>> [[i idx 0]] ]]
+      <<v ~used>>
+      [[fi rng:SF_NEXT_HASH]]
+    ]]
+    [[fv check:SF_IF_NON_NULL
+      <<L ^.first_trace>>
+      [[fv append:SF_L_APPEND
+        <<v ~used>>
+        <<L ^.^.first_trace>>
       ]]
     ]]
-    // TODO: Do we need this?
-    [[o element_list:list
-      <<L ^.first_element>>
-      <<L ^.second_element>>
-      <<L ^.third_element>>
+    [[fo second_trace:SF_PICK_ELEMENT
+      <<v ~world_map>>
+      [[fi cat:SF_INDEX <<v ~trace_categories>> [[i idx 1]] ]]
+      <<v ~used>>
+      [[fi rng:SF_NEXT_HASH]]
+    ]]
+    /* Don't need used after this.
+    [[fv check:SF_IF_NON_NULL
+      <<L ^.second_trace>>
+      [[fv append:SF_L_APPEND
+        <<v ~used>>
+        <<L ^.^.second_trace>>
+      ]]
+    ]] */
+    // Summary arrays:
+    [[fai constituents:SF_COLLATE
+      [[fi get_species:SF_GET_EL_SPECIES <<L ^.first_element>> ]]
+      [[fi get_species:SF_GET_EL_SPECIES <<L ^.second_element>> ]]
+      [[fi get_species:SF_GET_EL_SPECIES <<L ^.third_element>> ]]
+    ]]
+    [[fai traces:SF_COLLATE
+      [[fi get_species:SF_GET_EL_SPECIES <<L ^.first_trace>> ]]
+      [[fi get_species:SF_GET_EL_SPECIES <<L ^.second_trace>> ]]
     ]]
   ]]
   [[c material
-    // TODO: HERE
+    [[V args
+      <<L ^.^.composition.constituents@~constituents>>
+      <<L ^.^.composition.traces@~traces>>
+    ]]
+    [[fc typechoice:SF_CHOOSE
+      [[fi index:SF_INDEX_BY
+        <<v ~source@input>>
+        [[i entry #i:GEO_IGNEOUS]]
+        [[i entry #i:GEO_METAMORPHIC]]
+        [[i entry #i:GEO_SEDIMENTARY]]
+      ]]
+      [[c igneous_material
+        [[V locals
+          [[fn ~base_density:SF_ADD
+            [[fn rng:SF_UNIFORM
+              [[fi rng:SF_NEXT_HASH]]
+              [[n min 0]]
+              [[n max 0.4]]
+            ]]
+            [[fn rest:SF_MULT
+              [[n rest 0.6]]
+              [[fn cnst_tend:SF_WEIGHTED_EL_PROP
+                <<v ~constituents>>
+                <<v ~CNST_AVG_WEIGHTS>>
+                [[i attribute #i:EL_P_ST_TND_DENSITY]]
+              ]]
+            ]]
+          ]]
+          [[fn ~base_sp_heat:SF_ADD
+            [[fn rng:SF_MULT
+              [[n rng_share 0.42]]
+              [[fn tighter:SF_AVG
+                [[fn rng:SF_NORMAL
+                  [[fi rng:SF_NEXT_HASH]]
+                  [[n min 0]]
+                  [[n max 1]]
+                ]]
+                [[fn rng:SF_NORMAL
+                  [[fi rng:SF_NEXT_HASH]]
+                  [[n min 0]]
+                  [[n max 1]]
+                ]]
+              ]]
+            ]]
+            [[fn density:SF_MULT
+              [[n density_share 0.18]]
+              [[fn bd:SF_RESCALE
+                <<v ~base_density@input>>
+                [[n min 1]]
+                [[n max 0]]
+              ]]
+            ]]
+            [[fn elemental:SF_MULT
+              [[n cnst_share 0.4]]
+              [[fn cnst_tend:SF_WEIGHTED_EL_PROP
+                <<v ~constituents>>
+                <<v ~CNST_AVG_WEIGHTS>>
+                [[i attribute #i:EL_P_ST_TND_SP_HEAT]]
+              ]]
+            ]]
+          ]]
+          [[fn ~base_tr_temp:SF_ADD
+            [[fn rng:SF_UNIFORM
+              [[fi rng:SF_NEXT_HASH]]
+              [[n min 0]]
+              [[n max 0.48]]
+            ]]
+            [[fn density:SF_MULT
+              [[n density_share 0.12]]
+              <<v ~base_density@input>>
+            ]]
+            [[fn elemental:SF_MULT
+              [[n cnst_share 0.4]]
+              [[fn cnst_tend:SF_WEIGHTED_EL_PROP
+                <<v ~constituents>>
+                <<v ~CNST_AVG_WEIGHTS>>
+                [[i attribute #i:EL_P_ST_TND_TR_TEMP]]
+              ]]
+            ]]
+          ]]
+          [[fn ~base_plastic_temp:SF_POW
+            [[fn base:SF_NORMAL
+              [[fi rng:SF_NEXT_HASH]]
+              [[n min 0]]
+              [[n max 1]]
+            ]]
+            [[n exp 1.2]]
+          ]]
+          [[fn ~cnst_plasticity:SF_WEIGHTED_EL_PROP
+            <<v ~constituents>>
+            <<v ~CNST_AVG_WEIGHTS>>
+            [[i attribute #i:EL_P_ST_TND_PLASTICITY]]
+          ]]
+          // More than 75% of values fall into [0, 0.33]:
+          [[fn ~base_cold_plasticity:SF_ADD
+            [[fn rng:SF_MULT
+              [[n rng_share 0.7]]
+              [[fn rng:SF_EXPDIST
+                [[fn base:SF_UNIFORM
+                  [[fi rng:SF_NEXT_HASH]] [[n min 0]] [[n max 1]] ]]
+                [[n spread 5]]
+              ]]
+            ]]
+            [[fn elemental:SF_MULT
+              [[n cnst_share 0.3]]
+              <<v ~cnst_plasticity>>
+            ]]
+          ]]
+          [[fn ~base_warm_plasticity:SF_ADD
+            [[fn rng:SF_MULT
+              [[n rng_share 0.6]]
+              [[fn rng:SF_EXPDIST
+                [[fn base:SF_UNIFORM
+                  [[fi rng:SF_NEXT_HASH]] [[n min 0]] [[n max 1]] ]]
+                [[n spread 3]]
+              ]]
+            ]]
+            [[fn elemental:SF_MULT
+              [[n cnst_share 0.4]]
+              <<v ~cnst_plasticity>>
+            ]]
+          ]]
+          [[fn ~base_hardness:SF_ADD
+            [[fn rng:SF_NORMAL
+              [[fi rng:SF_NEXT_HASH]]
+              [[n min 0]]
+              [[n max 0.36]]
+            ]]
+            [[fn density:SF_MULT
+              [[n density_share 0.12]]
+              <<v ~base_density@input>>
+            ]]
+            [[fn plasticity:SF_MULT
+              [[n density_share 0.12]]
+              <<v ~base_warm_plasticity@input>>
+            ]]
+            [[fn elemental:SF_MULT
+              [[n cnst_share 0.4]]
+              [[fn cnst_tend:SF_WEIGHTED_EL_PROP
+                <<v ~constituents>>
+                <<v ~CNST_AVG_WEIGHTS>>
+                [[i attribute #i:EL_P_ST_TND_HARDNESS]]
+              ]]
+            ]]
+          ]]
+        ]]
+        [[i origin #i:MO_IGNEOUS_MINERAL]]
+        <<v ~base_density@base_density>>
+        <<v ~base_sp_heat@base_sp_heat>>
+        <<v ~base_tr_temp@base_tr_temp>>
+        <<v ~base_plastic_temp@base_plastic_temp>>
+        <<v ~base_cold_plasticity@base_cold_plasticity>>
+        <<v ~base_warm_plasticity@base_warm_plasticity>>
+        <<v ~base_hardness@base_hardness>>
+
+        [[fn solid_density:SF_RESCALE
+          <<v ~base_density@input>> [[n min 0.25]] [[n max 5.0]] ]]
+        [[fn liquid_density:SF_RESCALE
+          <<v ~base_density@input>> [[n min 2.5]] [[n max 3.2]] ]]
+        [[fn gas_density:SF_RESCALE
+          <<v ~base_density@input>> [[n min 1.8]] [[n max 2.8]] ]]
+
+        [[fn solid_sp_heat:SF_RESCALE
+          <<v ~base_sp_heat@input>> [[n min 0.3]] [[n max 1.4]] ]]
+        [[fn liquid_sp_heat:SF_RESCALE
+          <<v ~base_sp_heat@input>> [[n min 0.8]] [[n max 2.2]] ]]
+        [[fn gas_sp_heat:SF_RESCALE
+          <<v ~base_sp_heat@input>> [[n min 0.65]] [[n max 1.1]] ]]
+
+        [[n cold_dmg_temp 0]]
+        [[fi solidus:SF_RESCALE
+          <<v ~base_tr_temp@input>> [[n min 550]] [[n max 1250]] ]]
+        [[fi liquidus:SF_ADD
+          <<L ^.solidus>>
+          [[fn rng:SF_NORMAL
+            [[fi rng:SF_NEXT_HASH]]
+            [[n min 50]]
+            [[n max 250]]
+          ]]
+        ]]
+        [[fi boiling_point:SF_RESCALE
+          <<v ~base_tr_temp@input>> [[n min 1800]] [[n max 2400]] ]]
+        [[i ignition_point #i:MAT_MAX_TEMP]]
+        [[i flash_point #i:MAT_MAX_TEMP]]
+
+        [[fi cold_plastic_temp:SF_MULT
+          <<L ^.solidus>>
+          [[fn base:SF_RESCALE
+            <<v ~base_plastic_temp@input>> [[n min 0.2]] [[n max 0.7]]
+          ]]
+        ]]
+        [[fi warm_plastic_temp:SF_MULT
+          <<L ^.solidus>>
+          [[fn base:SF_RESCALE
+            <<v ~base_plastic_temp@input>> [[n min 0.6]] [[n max 1.0]]
+          ]]
+        ]]
+
+        [[fi cold_plasticity:SF_CONSTRAIN
+          // Roughly 75% of igneous stones will have 0 plasticity (see above)
+          [[fn dist:SF_RESCALE
+            <<v ~base_cold_plasticity@input>> [[n min -5]] [[n max 10]] ]]
+          [[n min 0]]
+        ]]
+        [[fi warm_plasticity:SF_RESCALE
+          <<v ~base_warm_plasticity@input>> [[n min 5]] [[n max 80]] ]]
+
+        [[fn viscosity:SF_POW
+          [[n base 10]]
+          [[fn exp:SF_ADD
+            [[n const 4]]
+            [[fn rng:SF_UNIFORM
+              [[fi rng:SF_NEXT_HASH]] [[n min 0]] [[n max 2]] ]]
+            [[n density:SF_MULT
+              [[n density_share 3]]
+              <<v ~base_density>>
+            ]]
+            [[fn elemental:SF_REMAP
+              <<v ~cnst_plasticity>> [[n min 3]] [[n max 0]] ]]
+          ]]
+        ]]
+
+        [[fi hardness:SF_RESCALE
+          <<v ~base_hardness>> [[n min 100]] [[n max 220]] ]]
+      ]]
+      [[c metamorphic_material
+        [[i origin #i:MO_METAMORPHIC_MINERAL]]
+        // TODO: HERE
+      ]]
+      [[c sedimentary_material
+        [[i origin #i:MO_SEDIMENTARY_MINERAL]]
+        // TODO: HERE
+        // TODO: HERE
+      ]]
+    ]]
   ]]
   [[c appearance
     // TODO: HERE
   ]]
 ]]
 
-[[c strata_params
+[[c gen_strata_params
   [[V args
     [[i ~i 0]]
     [[i ~wm_seed 0]]
@@ -466,7 +809,7 @@
   ]]
 ]]
 
-[[c stratum
+[[c gen_stratum
   [[V args
     [[i ~seed 0]]
     [[i ~source 0]]
@@ -478,7 +821,7 @@
   ]]
   [[fi sethash:SF_SET_HASH <<v ~seed>> ]]
   <<v ~seed@seed>>
-  [[ff typechoice:SF_CHOOSE
+  [[fc typechoice:SF_CHOOSE
     [[fi index:SF_INDEX_BY
       <<v ~source@input>>
       [[i entry #i:GEO_IGNEOUS]]

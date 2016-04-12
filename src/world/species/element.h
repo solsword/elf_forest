@@ -10,6 +10,38 @@
  * Enums *
  *********/
 
+enum element_property_e {
+  EL_P_CATEGORIES,
+  EL_P_FREQUENCY,
+  EL_P_PH_TENDENCY,
+  EL_P_SOLUBILITY,
+  EL_P_CORR_RES,
+
+  EL_P_ST_TND_DENSITY,
+  EL_P_ST_TND_SP_HEAT,
+  EL_P_ST_TND_TR_TEMP,
+  EL_P_ST_TND_PLASTICITY,
+  EL_P_ST_TND_HARDNESS,
+  EL_P_ST_TND_BRIGHTNESS,
+  EL_P_ST_TND_CHROMA,
+  EL_P_ST_TND_OX_CHROMA,
+  EL_P_ST_TND_TN_CHROMA,
+
+  EL_P_ML_TND_LUSTER,
+  EL_P_ML_TND_HARDNESS,
+  EL_P_ML_TND_PLASTICITY,
+  EL_P_ML_TND_BRIGHTNESS,
+  EL_P_ML_TND_CHROMA,
+  EL_P_ML_TND_OX_CHROMA,
+  EL_P_ML_TND_TN_CHROMA,
+
+  EL_P_ALLOY_PERFORMANCE,
+
+  EL_P_PlANT_NUTRITION,
+  EL_P_ANIMAL_NUTRITION,
+};
+typedef enum element_property_e element_property;
+
 enum element_frequency_e {
   EL_FREQ_UBIQUITOUS,
   EL_FREQ_COMMON,
@@ -50,6 +82,7 @@ typedef uint8_t element_categorization;
 #define EL_CATEGORY_STONE  0x08
 #define EL_CATEGORY_METAL  0x10
 #define EL_CATEGORY_RARE   0x20
+#define EL_CATEGORY_ANY    0x3f
 
 /**************
  * Structures *
@@ -84,7 +117,7 @@ struct element_species_s {
   float stone_transition_temp_tendency;
   float stone_plasticity_tendency;
   float stone_hardness_tendency;
-  float stone_light_dark_tendency;
+  float stone_brightness_tendency;
   float stone_chroma;
   float stone_oxide_chroma;
   float stone_tint_chroma;
@@ -93,7 +126,7 @@ struct element_species_s {
   float metal_luster_tendency;
   float metal_hardness_tendency;
   float metal_plasticity_tendency;
-  float metal_light_dark_tendency;
+  float metal_brightness_tendency;
   float metal_chroma;
   float metal_tint_chroma;
   float alloy_performance; // -1 to 1: tendency to synergize in alloys

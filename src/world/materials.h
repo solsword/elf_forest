@@ -40,7 +40,6 @@ typedef enum material_origin_e material_origin;
 struct material_s;
 typedef struct material_s material;
 
-
 /*************************
  * Structure Definitions *
  *************************/

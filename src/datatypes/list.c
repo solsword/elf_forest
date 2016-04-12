@@ -190,6 +190,20 @@ void * l_remove_item(list *l, size_t i) {
   return result;
 }
 
+void * l_clear(list *l) {
+  l->count = 0;
+  void ** new_elements = (void **) realloc(
+    l->elements,
+    sizeof(void *) * LIST_CHUNK_SIZE
+  );
+  if (new_elements == NULL) {
+    perror("Failed to clear empty list chunks.");
+    exit(errno);
+  }
+  l->elements = new_elements;
+  l->size = 1;
+}
+
 void l_remove_range(list *l, size_t i, size_t n) {
   size_t j;
   if (i + n > l->count) {

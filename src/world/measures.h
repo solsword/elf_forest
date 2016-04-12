@@ -6,6 +6,8 @@
 
 #include <stdint.h>
 
+#include "util.h"
+
 /*********
  * Types *
  *********/
@@ -82,7 +84,14 @@ static density const BASE_DENSITY = 12;
 static specific_heat const BASE_SPECIFIC_HEAT = 16;
 
 // Viscosity of water in centiPoise at ~20C:
+static viscosity const NO_VISCOSITY = 0.0001;
+static viscosity const GAS_VISCOSITY = 0.01;
 static viscosity const WATER_VISCOSITY = 1.0;
+static viscosity const SMOOTH_OIL_VISCOSITY = 100.0;
+static viscosity const THICK_OIL_VISCOSITY = 1000.0;
+static viscosity const HONEY_VISCOSITY = 5000.0;
+static viscosity const LARD_VISCOSITY = 100000.0;
+static viscosity const PITCH_VISCOSITY = 2e11;
 
 // Hardness is an arbitrary scale, but the following constants pin it down:
 static hardness const GENERIC_WOOD_HARDNESS = 60;
@@ -98,5 +107,21 @@ static plasticity const HIGH_PLASTICITY = 200; // clay
 static pH const PH_PURE_ACID = 0.0;
 static pH const PH_NEUTRAL = 7.0;
 static pH const PH_PURE_BASE = 14.0;
+
+/**********
+ * Limits *
+ **********/
+
+#define MAT_MIN_DENSITY uminof(density)
+#define MAT_MAX_DENSITY umaxof(density)
+
+#define MAT_MIN_SP_HEAT uminof(specific_heat)
+#define MAT_MAX_SP_HEAT umaxof(specific_heat)
+
+#define MAT_MIN_TEMP sminof(temperature)
+#define MAT_MAX_TEMP smaxof(temperature)
+
+#define MAT_MIN_PLASTICITY uminof(plasticity)
+#define MAT_MAX_PLASTICITY umaxof(plasticity)
 
 #endif // #ifndef MEASURES_H

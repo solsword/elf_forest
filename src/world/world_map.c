@@ -854,13 +854,17 @@ element_species* pick_element(
   ptrdiff_t seed
 ) {
   size_t i;
-  list *valid = create_list();
+  list *valid;
   element_species* result = NULL;
+  if (constraints == EL_CATEGORY_NONE) {
+    return NULL;
+  }
+  valid = create_list();
   for (i = 0; i < l_get_length(wm->all_elements); ++i) {
     element_species *el = (element_species*) l_get_item(wm->all_elements, i);
     if (
         (
-          constraints == 0
+          constraints == EL_CATEGORY_ANY
        || el_is_member_of_any(el, constraints)
         )
      && (

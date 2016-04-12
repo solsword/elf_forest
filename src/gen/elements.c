@@ -847,7 +847,7 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
   seed = prng(seed);
 
   // TODO: Constrain these a bit.
-  esp->stone_light_dark_tendency = ptrf(seed);
+  esp->stone_brightness_tendency = ptrf(seed);
   seed = prng(seed);
   esp->stone_chroma = randf(seed, 0, 2*M_PI);
   seed = prng(seed);
@@ -866,7 +866,7 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
   seed = prng(seed);
 
   // TODO: Constrain these a bit.
-  esp->metal_light_dark_tendency = ptrf(seed);
+  esp->metal_brightness_tendency = ptrf(seed);
   seed = prng(seed);
   esp->metal_chroma = randf(seed, 0, 2*M_PI);
   seed = prng(seed);
