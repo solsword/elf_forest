@@ -376,12 +376,16 @@
   ]]
   [[c %COMPUTE_STONE_COLOR
     [[V args
-      [[o ~constituents:NULL]]
-      [[o ~traces:NULL]]
+      [[c ~constituents:NULL]]
+      [[c ~traces:NULL]]
       [[i ~source 0]]
       [[n ~density 0]]
       [[n ~plasticity 0]]
       [[n ~hardness 0]]
+      [[i ~seed 0]]
+    ]]
+    [[V locals
+      [[fn ~hash:F_BRNG <<v ~seed>> (i 7182731) ]]
     ]]
     [[ff color:F_CHOOSE
       [[fi index:F_INDEX_BY
@@ -392,13 +396,87 @@
       ]]
       [[c igneous_color
         [[i fmt #i:CFMT_LCH]]
-        [[fn L:F_
+        [[fn L:F_WEIGHT
+          [[ai weights 0.3 0.7 ]]
+          [[fn rng:F_MULT
+            (n 100)
+            [[fn pnorm:F_AVG
+              [[fn rng:F_PTRF
+                [[fi rng:F_BRNG <<v ~hash>> (i 1) ]]
+              ]]
+              [[fn rng:F_PTRF
+                [[fi rng:F_BRNG <<v ~hash>> (i 2) ]]
+              ]]
+            ]]
+          [[fn cnst_tend:F_WEIGHTED_EL_PROP
+            <<v ~constituents>>
+            <<v ~CNST_AVG_WEIGHTS>>
+            [[i attribute #i:EL_P_ST_TND_BRIGHTNESS]]
+          ]]
         ]]
-        [[fn c:F_
+        [[fn c:F_MULT
+          (n 60)
+          [[fn saturation:F_EXPDIST
+            [[fn rng:F_PTRF
+              [[fi rng:F_BRNG <<v ~hash>> (i 3) ]]
+            ]]
+            (n 5)
+          ]]
         ]]
         [[fn h:F_
-          [[fn comp:F_REDUCE
-            j
+          [[fn el_contribution:F_ITERATE
+            [[V iterate
+              <<v ~constitutents@*constituent>>
+              [[gi *iter:G_RANGE (i 1) ]]
+            ]]
+            [[fo element:F_GET_ELEMENT_SPECIES <<v *constituent>> ]]
+            [[fn weight:F_WEIGHT
+              [[ai weights 0.5, 0.5 ]]
+              [[fn exp:F_EXPDIST
+                [[fn rng:F_PTRF
+                  [[fn rng:F_BRNG
+                    <<v ~hash>>
+                    [[fi it:F_MULT (i 12131) <<v *iter>> ]]
+                  ]]
+                ]]
+                (n 4)
+              ]]
+              [[fn norm:F_NORMAL
+                [[fn rng:F_BRNG
+                  <<v ~hash>>
+                  [[fi it:F_MULT (i 13151) <<v *iter>> ]]
+                ]]
+                (n 0.4)
+                (n 1)
+              ]]
+            ]]
+            [[fn x:F_MULT
+              <<L ^.weight>>
+              [[fn cosine:F_COSINE
+                [[fn chroma:F_GET_EL_ATTR
+                  <<L ^.^.element>>
+                  [[i attr #i:EL_P_ST_TND_CHROMA]]
+                ]]
+              ]]
+            ]]
+            [[fn y:F_MULT
+              <<L ^.weight>>
+              [[fn sine:F_SINE
+                [[fn chroma:F_GET_EL_ATTR
+                  <<L ^.^.element>>
+                  [[i attr #i:EL_P_ST_TND_CHROMA]]
+                ]]
+              ]]
+            ]]
+          ]]
+          // TODO: Better color-mixing algorithm?
+          [[fn chroma:F_ATAN2
+            [[fn avg_y:F_AVG
+              <<L ^.^.el_contribution.y>>
+            ]]
+            [[fn avg_x:F_AVG
+              <<L ^.^.el_contribution.x>>
+            ]]
           ]]
         ]]
       ]]
