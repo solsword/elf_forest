@@ -9,6 +9,19 @@
 #include "util.h"
 
 /*********
+ * Enums *
+ *********/
+
+enum {
+  CFMT_INVALID = 0,
+  CFMT_RGB,
+  CFMT_XYZ,
+  CFMT_LAB,
+  CFMT_LCH
+} color_format_e;
+typedef enum color_format_e color_format;
+
+/*********
  * Types *
  *********/
 

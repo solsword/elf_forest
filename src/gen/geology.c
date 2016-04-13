@@ -2488,7 +2488,7 @@ void compute_combined_stone_color(
     i,
     element,
     denom,
-    stone_brightness_tendency,
+    stone_light_dark_tendency,
     avg
   );
   color->x = 100.0 * (ptrf(seed) + ptrf(prng(seed + 18291))) / 2.0;

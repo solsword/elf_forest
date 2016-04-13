@@ -164,7 +164,7 @@
       0.03, 0.02, 0.02   //  7% | 100%
     ]]
   ]]
-  [[fai ~EXPAND_COMPOSITION:SF_MAP
+  [[fai %EXPAND_COMPOSITION:F_MAP
     [[V args
       [[i ~composition #i:MNRL_COMP_STONE]]
     ]]
@@ -298,7 +298,7 @@
       ]]
     ]]
   ]]
-  [[fai ~EXPAND_TRACES:SF_MAP
+  [[fai %EXPAND_TRACES:F_MAP
     [[V args
       [[i ~traces #i:MNRL_TRACE_AIR]]
     ]]
@@ -374,6 +374,42 @@
       ]]
     ]]
   ]]
+  [[c %COMPUTE_STONE_COLOR
+    [[V args
+      [[o ~constituents:NULL]]
+      [[o ~traces:NULL]]
+      [[i ~source 0]]
+      [[n ~density 0]]
+      [[n ~plasticity 0]]
+      [[n ~hardness 0]]
+    ]]
+    [[ff color:F_CHOOSE
+      [[fi index:F_INDEX_BY
+        <<v ~source@input>>
+        [[i entry #i:GEO_IGNEOUS]]
+        [[i entry #i:GEO_METAMORPHIC]]
+        [[i entry #i:GEO_SEDIMENTARY]]
+      ]]
+      [[c igneous_color
+        [[i fmt #i:CFMT_LCH]]
+        [[fn L:F_
+        ]]
+        [[fn c:F_
+        ]]
+        [[fn h:F_
+          [[fn comp:F_REDUCE
+            j
+          ]]
+        ]]
+      ]]
+      [[c metamorphic_color
+        // TODO: HERE
+      ]]
+      [[c sedimentary_color
+        // TODO: HERE
+      ]]
+    ]]
+  ]]
 ]]
 
 [[c gen_stone_species
@@ -381,8 +417,11 @@
     [[o ~world_map:NULL]]
     [[i ~source 0]]
     [[i ~seed 0]]
-    [[fo ~comp_table:SF_CHOOSE
-      [[fi index:SF_INDEX_BY
+  ]]
+  [[V locals
+    [[fi ~hash:F_BRNG <<v ~seed>> (i 467541) ]]
+    [[fo ~comp_table:F_CHOOSE
+      [[fi index:F_INDEX_BY
         <<v ~source@input>>
         [[i entry #i:GEO_IGNEOUS]]
         [[i entry #i:GEO_METAMORPHIC]]
@@ -392,8 +431,8 @@
       <<v ~METAMORPHIC_COMP>>
       <<v ~SEDIMENTARY_COMP>>
     ]]
-    [[fo ~trace_table:SF_CHOOSE
-      [[fi index:SF_INDEX_BY
+    [[fo ~trace_table:F_CHOOSE
+      [[fi index:F_INDEX_BY
         <<v ~source@input>>
         [[i entry #i:GEO_IGNEOUS]]
         [[i entry #i:GEO_METAMORPHIC]]
@@ -404,104 +443,101 @@
       <<v ~SEDIMENTARY_TRACES>>
     ]]
   ]]
-  [[fi sethash:SF_SET_HASH
-    [[fi br:SF_BRANCH_HASH <<v ~seed>> [[i offset 467541]] ]]
-  ]]
   [[c composition
-    [[V vars
-      [[fi ~composition:SF_SAMPLE_RNGTABLE
-        [[fi rng:SF_NEXT_HASH]]
+    [[V locals
+      [[fi ~composition:F_SAMPLE_RNGTABLE
+        [[fi rng:F_BRNG <<v ~hash>> (i 0) ]]
         <<v ~comp_table>>
       ]]
-      [[fi ~trace_composition:SF_SAMPLE_RNGTABLE
-        [[fi rng:SF_NEXT_HASH]]
+      [[fi ~trace_composition:F_SAMPLE_RNGTABLE
+        [[fi rng:F_BRNG <<v ~hash>> (i 1) ]]
         <<v ~trace_table>>
       ]]
-      <<v ~EXPAND_COMPOSITION@~categories
+      <<v %EXPAND_COMPOSITION@~categories
         [[V args <<v ~composition@~composition>> ]]
       >>
-      <<v ~EXPAND_TRACES@~trace_categories
+      <<v %EXPAND_TRACES@~trace_categories
         [[V args <<v ~trace_composition@~traces>> ]]
       >>
       [[o ~used:list]]
     ]]
-    [[fo first_element:SF_PICK_ELEMENT
+    [[fo first_element:F_PICK_ELEMENT
       <<v ~world_map>>
-      [[fi cat:SF_INDEX <<v ~categories>> [[i idx 0]] ]]
+      [[fi cat:F_INDEX <<v ~categories>> (i 0) ]]
       <<v ~used>>
-      [[fi rng:SF_NEXT_HASH]]
+      [[fi rng:F_BRNG <<v ~hash>> (i 2) ]]
     ]]
-    [[fv check:SF_IF_NON_NULL
+    [[fv check:F_IF_NON_NULL
       <<L ^.first_element>>
-      [[fv append:SF_L_APPEND
+      [[fv append:F_L_APPEND
         <<v ~used>>
         <<L ^.^.first_element>>
       ]]
     ]]
-    [[fo second_element:SF_PICK_ELEMENT
+    [[fo second_element:F_PICK_ELEMENT
       <<v ~world_map>>
-      [[fi cat:SF_INDEX <<v ~categories>> [[i idx 1]] ]]
+      [[fi cat:F_INDEX <<v ~categories>> (i 1) ]]
       <<L ^.used>>
-      [[fi rng:SF_NEXT_HASH]]
+      [[fi rng:F_BRNG <<v ~hash>> (i 3) ]]
     ]]
-    [[fv check:SF_IF_NON_NULL
+    [[fv check:F_IF_NON_NULL
       <<L ^.second_element>>
-      [[fv append:SF_L_APPEND
+      [[fv append:F_L_APPEND
         <<v ~used>>
         <<L ^.^.second_element>>
       ]]
     ]]
-    [[fo third_element:SF_PICK_ELEMENT
+    [[fo third_element:F_PICK_ELEMENT
       <<v ~world_map>>
-      [[fi cat:SF_INDEX <<v ~categories>> [[i idx 2]] ]]
+      [[fi cat:F_INDEX <<v ~categories>> (i 2) ]]
       <<v ~used>>
-      [[fi rng:SF_NEXT_HASH]]
+      [[fi rng:F_BRNG <<v ~hash>> (i 4) ]]
     ]]
     /* Don't need used after this.
-    [[fv check:SF_IF_NON_NULL
+    [[fv check:F_IF_NON_NULL
       <<L ^.third_element>>
-      [[fv append:SF_L_APPEND
+      [[fv append:F_L_APPEND
         <<v ~used>>
         <<L ^.^.third_element>>
       ]]
     ]] */
-    [[fv clear_used:SF_CLEAR_LIST <<v ~used>>]]
-    [[fo first_trace:SF_PICK_ELEMENT
+    [[fv clear_used:F_CLEAR_LIST <<v ~used>>]]
+    [[fo first_trace:F_PICK_ELEMENT
       <<v ~world_map>>
-      [[fi cat:SF_INDEX <<v ~trace_categories>> [[i idx 0]] ]]
+      [[fi cat:F_INDEX <<v ~trace_categories>> (i 0) ]]
       <<v ~used>>
-      [[fi rng:SF_NEXT_HASH]]
+      [[fi rng:F_BRNG <<v ~hash>> (i 5) ]]
     ]]
-    [[fv check:SF_IF_NON_NULL
+    [[fv check:F_IF_NON_NULL
       <<L ^.first_trace>>
-      [[fv append:SF_L_APPEND
+      [[fv append:F_L_APPEND
         <<v ~used>>
         <<L ^.^.first_trace>>
       ]]
     ]]
-    [[fo second_trace:SF_PICK_ELEMENT
+    [[fo second_trace:F_PICK_ELEMENT
       <<v ~world_map>>
-      [[fi cat:SF_INDEX <<v ~trace_categories>> [[i idx 1]] ]]
+      [[fi cat:F_INDEX <<v ~trace_categories>> [[i idx 1]] ]]
       <<v ~used>>
-      [[fi rng:SF_NEXT_HASH]]
+      [[fi rng:F_BRNG <<v ~hash>> (i 6) ]]
     ]]
     /* Don't need used after this.
-    [[fv check:SF_IF_NON_NULL
+    [[fv check:F_IF_NON_NULL
       <<L ^.second_trace>>
-      [[fv append:SF_L_APPEND
+      [[fv append:F_L_APPEND
         <<v ~used>>
         <<L ^.^.second_trace>>
       ]]
     ]] */
     // Summary arrays:
-    [[fai constituents:SF_COLLATE
-      [[fi get_species:SF_GET_EL_SPECIES <<L ^.first_element>> ]]
-      [[fi get_species:SF_GET_EL_SPECIES <<L ^.second_element>> ]]
-      [[fi get_species:SF_GET_EL_SPECIES <<L ^.third_element>> ]]
+    [[c constituents
+      [[fi get_species:F_GET_EL_SPECIES <<L ^.first_element>> ]]
+      [[fi get_species:F_GET_EL_SPECIES <<L ^.second_element>> ]]
+      [[fi get_species:F_GET_EL_SPECIES <<L ^.third_element>> ]]
     ]]
-    [[fai traces:SF_COLLATE
-      [[fi get_species:SF_GET_EL_SPECIES <<L ^.first_trace>> ]]
-      [[fi get_species:SF_GET_EL_SPECIES <<L ^.second_trace>> ]]
+    [[c traces
+      [[fi get_species:F_GET_EL_SPECIES <<L ^.first_trace>> ]]
+      [[fi get_species:F_GET_EL_SPECIES <<L ^.second_trace>> ]]
     ]]
   ]]
   [[c material
@@ -509,8 +545,8 @@
       <<L ^.^.composition.constituents@~constituents>>
       <<L ^.^.composition.traces@~traces>>
     ]]
-    [[fc typechoice:SF_CHOOSE
-      [[fi index:SF_INDEX_BY
+    [[fc typechoice:F_CHOOSE
+      [[fi index:F_INDEX_BY
         <<v ~source@input>>
         [[i entry #i:GEO_IGNEOUS]]
         [[i entry #i:GEO_METAMORPHIC]]
@@ -518,136 +554,81 @@
       ]]
       [[c igneous_material
         [[V locals
-          [[fn ~base_density:SF_ADD
-            [[fn rng:SF_UNIFORM
-              [[fi rng:SF_NEXT_HASH]]
-              [[n min 0]]
-              [[n max 0.4]]
-            ]]
-            [[fn rest:SF_MULT
-              [[n rest 0.6]]
-              [[fn cnst_tend:SF_WEIGHTED_EL_PROP
-                <<v ~constituents>>
-                <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_DENSITY]]
-              ]]
+          [[fn ~base_density:F_WEIGHT
+            [[ai weights 0.4, 0.6 ]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 7) ]] (n 0) (n 1) ]]
+            [[fn cnst_tend:F_WEIGHTED_EL_PROP
+              <<v ~constituents>>
+              <<v ~CNST_AVG_WEIGHTS>>
+              [[i attribute #i:EL_P_ST_TND_DENSITY]]
             ]]
           ]]
-          [[fn ~base_sp_heat:SF_ADD
-            [[fn rng:SF_MULT
-              [[n rng_share 0.42]]
-              [[fn tighter:SF_AVG
-                [[fn rng:SF_NORMAL
-                  [[fi rng:SF_NEXT_HASH]]
-                  [[n min 0]]
-                  [[n max 1]]
-                ]]
-                [[fn rng:SF_NORMAL
-                  [[fi rng:SF_NEXT_HASH]]
-                  [[n min 0]]
-                  [[n max 1]]
-                ]]
-              ]]
+          [[fn ~base_sp_heat:F_WEIGHT
+            [[ai weights 0.42, 0.18, 0.4 ]]
+            [[fn tighter:F_AVG
+              [[fn rng:F_NORMAL
+                [[fi rng:F_BRNG <<v ~hash>> (i 8) ]] (n 0) (n 1) ]]
+              [[fn rng:F_NORMAL
+                [[fi rng:F_BRNG <<v ~hash>> (i 9) ]] (n 0) (n 1) ]]
             ]]
-            [[fn density:SF_MULT
-              [[n density_share 0.18]]
-              [[fn bd:SF_RESCALE
-                <<v ~base_density@input>>
-                [[n min 1]]
-                [[n max 0]]
-              ]]
-            ]]
-            [[fn elemental:SF_MULT
-              [[n cnst_share 0.4]]
-              [[fn cnst_tend:SF_WEIGHTED_EL_PROP
-                <<v ~constituents>>
-                <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_SP_HEAT]]
-              ]]
+            [[fn bd:F_SCALE <<v ~base_density>> (n 1) (n 0) ]]
+            [[fn cnst_tend:F_WEIGHTED_EL_PROP
+              <<v ~constituents>>
+              <<v ~CNST_AVG_WEIGHTS>>
+              [[i attribute #i:EL_P_ST_TND_SP_HEAT]]
             ]]
           ]]
-          [[fn ~base_tr_temp:SF_ADD
-            [[fn rng:SF_UNIFORM
-              [[fi rng:SF_NEXT_HASH]]
-              [[n min 0]]
-              [[n max 0.48]]
-            ]]
-            [[fn density:SF_MULT
-              [[n density_share 0.12]]
-              <<v ~base_density@input>>
-            ]]
-            [[fn elemental:SF_MULT
-              [[n cnst_share 0.4]]
-              [[fn cnst_tend:SF_WEIGHTED_EL_PROP
-                <<v ~constituents>>
-                <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_TR_TEMP]]
-              ]]
+          [[fn ~base_tr_temp:F_WEIGHT
+            [[ai weights 0.48, 0.12, 0.4 ]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 10) ]] (n 0) (n 1) ]]
+            <<v ~base_density>>
+            [[fn cnst_tend:F_WEIGHTED_EL_PROP
+              <<v ~constituents>>
+              <<v ~CNST_AVG_WEIGHTS>>
+              [[i attribute #i:EL_P_ST_TND_TR_TEMP]]
             ]]
           ]]
-          [[fn ~base_plastic_temp:SF_POW
-            [[fn base:SF_NORMAL
-              [[fi rng:SF_NEXT_HASH]]
-              [[n min 0]]
-              [[n max 1]]
-            ]]
-            [[n exp 1.2]]
+          [[fn ~base_plastic_temp:F_POW
+            [[fn base:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 11) ]] (n 0) (n 1) ]]
+            (n 1.2)
           ]]
-          [[fn ~cnst_plasticity:SF_WEIGHTED_EL_PROP
+          [[fn ~cnst_plasticity:F_WEIGHTED_EL_PROP
             <<v ~constituents>>
             <<v ~CNST_AVG_WEIGHTS>>
             [[i attribute #i:EL_P_ST_TND_PLASTICITY]]
           ]]
           // More than 75% of values fall into [0, 0.33]:
-          [[fn ~base_cold_plasticity:SF_ADD
-            [[fn rng:SF_MULT
-              [[n rng_share 0.7]]
-              [[fn rng:SF_EXPDIST
-                [[fn base:SF_UNIFORM
-                  [[fi rng:SF_NEXT_HASH]] [[n min 0]] [[n max 1]] ]]
-                [[n spread 5]]
-              ]]
+          [[fn ~base_cold_plasticity:F_WEIGHT
+            [[ai weights 0.7, 0.3 ]]
+            [[fn rng:F_EXPDIST
+              [[fn base:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 12) ]] (n 0) (n 1) ]]
+              (n 5)
             ]]
-            [[fn elemental:SF_MULT
-              [[n cnst_share 0.3]]
-              <<v ~cnst_plasticity>>
-            ]]
+            <<v ~cnst_plasticity>>
           ]]
-          [[fn ~base_warm_plasticity:SF_ADD
-            [[fn rng:SF_MULT
-              [[n rng_share 0.6]]
-              [[fn rng:SF_EXPDIST
-                [[fn base:SF_UNIFORM
-                  [[fi rng:SF_NEXT_HASH]] [[n min 0]] [[n max 1]] ]]
-                [[n spread 3]]
-              ]]
+          [[fn ~base_warm_plasticity:F_WEIGHT
+            [[ai weights 0.6, 0.4 ]]
+            [[fn rng:F_EXPDIST
+              [[fn base:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 13) ]] (n 0) (n 1) ]]
+              (n 3)
             ]]
-            [[fn elemental:SF_MULT
-              [[n cnst_share 0.4]]
-              <<v ~cnst_plasticity>>
-            ]]
+            <<v ~cnst_plasticity>>
           ]]
-          [[fn ~base_hardness:SF_ADD
-            [[fn rng:SF_NORMAL
-              [[fi rng:SF_NEXT_HASH]]
-              [[n min 0]]
-              [[n max 0.36]]
-            ]]
-            [[fn density:SF_MULT
-              [[n density_share 0.12]]
-              <<v ~base_density@input>>
-            ]]
-            [[fn plasticity:SF_MULT
-              [[n density_share 0.12]]
-              <<v ~base_warm_plasticity@input>>
-            ]]
-            [[fn elemental:SF_MULT
-              [[n cnst_share 0.4]]
-              [[fn cnst_tend:SF_WEIGHTED_EL_PROP
-                <<v ~constituents>>
-                <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_HARDNESS]]
-              ]]
+          [[fn ~base_hardness:F_WEIGHT
+            [[ai weights 0.36, 0.12, 0.12, 0.4 ]]
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 14) ]] (n 0) (n 1) ]]
+            <<v ~base_density>>
+            <<v ~base_warm_plasticity>>
+            [[fn cnst_tend:F_WEIGHTED_EL_PROP
+              <<v ~constituents>>
+              <<v ~CNST_AVG_WEIGHTS>>
+              [[i attribute #i:EL_P_ST_TND_HARDNESS]]
             ]]
           ]]
         ]]
@@ -660,89 +641,1045 @@
         <<v ~base_warm_plasticity@base_warm_plasticity>>
         <<v ~base_hardness@base_hardness>>
 
-        [[fn solid_density:SF_RESCALE
-          <<v ~base_density@input>> [[n min 0.25]] [[n max 5.0]] ]]
-        [[fn liquid_density:SF_RESCALE
-          <<v ~base_density@input>> [[n min 2.5]] [[n max 3.2]] ]]
-        [[fn gas_density:SF_RESCALE
-          <<v ~base_density@input>> [[n min 1.8]] [[n max 2.8]] ]]
+        [[fn solid_density:F_SCALE <<v ~base_density>> (n 0.25) (n 5.0) ]]
+        [[fn liquid_density:F_SCALE <<v ~base_density>> (n 2.5) (n 3.2) ]]
+        [[fn gas_density:F_SCALE <<v ~base_density>> (n 1.8) (n 2.8) ]]
 
-        [[fn solid_sp_heat:SF_RESCALE
-          <<v ~base_sp_heat@input>> [[n min 0.3]] [[n max 1.4]] ]]
-        [[fn liquid_sp_heat:SF_RESCALE
-          <<v ~base_sp_heat@input>> [[n min 0.8]] [[n max 2.2]] ]]
-        [[fn gas_sp_heat:SF_RESCALE
-          <<v ~base_sp_heat@input>> [[n min 0.65]] [[n max 1.1]] ]]
+        [[fn solid_sp_heat:F_SCALE <<v ~base_sp_heat>> (n 0.3) (n 1.4) ]]
+        [[fn liquid_sp_heat:F_SCALE <<v ~base_sp_heat>> (n 0.8) (n 2.2) ]]
+        [[fn gas_sp_heat:F_SCALE <<v ~base_sp_heat>> (n 0.65) (n 1.1) ]]
 
         [[n cold_dmg_temp 0]]
-        [[fi solidus:SF_RESCALE
-          <<v ~base_tr_temp@input>> [[n min 550]] [[n max 1250]] ]]
-        [[fi liquidus:SF_ADD
+        [[fi solidus:F_SCALE <<v ~base_tr_temp>> (n 550) (n 1250) ]]
+        [[fi liquidus:F_ADD
           <<L ^.solidus>>
-          [[fn rng:SF_NORMAL
-            [[fi rng:SF_NEXT_HASH]]
-            [[n min 50]]
-            [[n max 250]]
-          ]]
+          [[fn rng:F_NORMAL
+            [[fi rng:F_BRNG <<v ~hash>> (i 15) ]] (n 50) (n 250) ]]
         ]]
-        [[fi boiling_point:SF_RESCALE
-          <<v ~base_tr_temp@input>> [[n min 1800]] [[n max 2400]] ]]
+        [[fi boiling_point:F_SCALE <<v ~base_tr_temp>> (n 1800)(n 2400) ]]
         [[i ignition_point #i:MAT_MAX_TEMP]]
         [[i flash_point #i:MAT_MAX_TEMP]]
 
-        [[fi cold_plastic_temp:SF_MULT
+        [[fi cold_plastic_temp:F_MULT
           <<L ^.solidus>>
-          [[fn base:SF_RESCALE
-            <<v ~base_plastic_temp@input>> [[n min 0.2]] [[n max 0.7]]
-          ]]
+          [[fn base:F_SCALE <<v ~base_plastic_temp>> (n 0.2) (n 0.7) ]]
         ]]
-        [[fi warm_plastic_temp:SF_MULT
+        [[fi warm_plastic_temp:F_MULT
           <<L ^.solidus>>
-          [[fn base:SF_RESCALE
-            <<v ~base_plastic_temp@input>> [[n min 0.6]] [[n max 1.0]]
-          ]]
+          [[fn base:F_SCALE <<v ~base_plastic_temp>> (n 0.6) (n 1.0) ]]
         ]]
 
-        [[fi cold_plasticity:SF_CONSTRAIN
+        [[fi cold_plasticity:F_CONSTRAIN
           // Roughly 75% of igneous stones will have 0 plasticity (see above)
-          [[fn dist:SF_RESCALE
-            <<v ~base_cold_plasticity@input>> [[n min -5]] [[n max 10]] ]]
+          [[fn dist:F_SCALE <<v ~base_cold_plasticity>> (n -5) (n 10) ]]
           [[n min 0]]
         ]]
-        [[fi warm_plasticity:SF_RESCALE
-          <<v ~base_warm_plasticity@input>> [[n min 5]] [[n max 80]] ]]
+        [[fi warm_plasticity:F_SCALE <<v ~base_warm_plasticity>> (n 5) (n 80)]]
 
-        [[fn viscosity:SF_POW
-          [[n base 10]]
-          [[fn exp:SF_ADD
-            [[n const 4]]
-            [[fn rng:SF_UNIFORM
-              [[fi rng:SF_NEXT_HASH]] [[n min 0]] [[n max 2]] ]]
-            [[n density:SF_MULT
-              [[n density_share 3]]
-              <<v ~base_density>>
-            ]]
-            [[fn elemental:SF_REMAP
-              <<v ~cnst_plasticity>> [[n min 3]] [[n max 0]] ]]
+        [[fn viscosity:F_POW
+          (n 10)
+          [[fn exp:F_ADD
+            (n 4)
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 16) ]] (n 0) (n 2) ]]
+            [[n density:F_MULT (n 3) <<v ~base_density>> ]]
+            [[fn elemental:F_SCALE <<v ~cnst_plasticity>> (n 3) (n 0) ]]
           ]]
         ]]
 
-        [[fi hardness:SF_RESCALE
-          <<v ~base_hardness>> [[n min 100]] [[n max 220]] ]]
+        [[fi hardness:F_SCALE <<v ~base_hardness>> (n 100) (n 220) ]]
       ]]
       [[c metamorphic_material
+        [[V locals
+          [[fn ~base_density:F_WEIGHT
+            [[ai weights 0.4, 0.6 ]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 17) ]] (n 0) (n 1) ]]
+            [[fn cnst_tend:F_WEIGHTED_EL_PROP
+              <<v ~constituents>>
+              <<v ~CNST_AVG_WEIGHTS>>
+              [[i attribute #i:EL_P_ST_TND_DENSITY]]
+            ]]
+          ]]
+          [[fn ~base_sp_heat:F_WEIGHT
+            [[ai weights 0.42, 0.18, 0.4 ]]
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 18) ]] (n 0) (n 1) ]]
+            [[fn bd:F_SCALE <<v ~base_density>> (n 1) (n 0) ]]
+            [[fn cnst_tend:F_WEIGHTED_EL_PROP
+              <<v ~constituents>>
+              <<v ~CNST_AVG_WEIGHTS>>
+              [[i attribute #i:EL_P_ST_TND_SP_HEAT]]
+            ]]
+          ]]
+          [[fn ~base_tr_temp:F_WEIGHT
+            [[ai weights 0.48, 0.12, 0.4 ]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 19) ]] (n 0) (n 1) ]]
+            <<v ~base_density>>
+            [[fn cnst_tend:F_WEIGHTED_EL_PROP
+              <<v ~constituents>>
+              <<v ~CNST_AVG_WEIGHTS>>
+              [[i attribute #i:EL_P_ST_TND_TR_TEMP]]
+            ]]
+          ]]
+          [[fn ~base_plastic_temp:F_POW
+            [[fn base:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 20) ]] (n 0) (n 1) ]]
+            (n 1.2)
+          ]]
+          [[fn ~cnst_plasticity:F_WEIGHTED_EL_PROP
+            <<v ~constituents>>
+            <<v ~CNST_AVG_WEIGHTS>>
+            [[i attribute #i:EL_P_ST_TND_PLASTICITY]]
+          ]]
+          [[fn ~base_cold_plasticity:F_WEIGHT
+            [[ai weights 0.5, 0.5 ]]
+            [[fn rng:F_EXPDIST
+              [[fn base:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 21) ]] (n 0) (n 1) ]]
+              (n 3)
+            ]]
+            <<v ~cnst_plasticity>>
+          ]]
+          [[fn ~base_warm_plasticity:F_WEIGHT
+            [[ai weights 0.5, 0.5 ]]
+            [[fn rng:F_EXPDIST
+              [[fn base:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 22) ]] (n 0) (n 1) ]]
+              (n 2)
+            ]]
+            <<v ~cnst_plasticity>>
+          ]]
+          [[fn ~base_hardness:F_WEIGHT
+            [[ai weights 0.36, 0.12, 0.12, 0.4 ]]
+            [[fn rng:F_SQRT
+              [[fn rng:F_NORMAL
+                [[fi rng:F_BRNG <<v ~hash>> (i 23) ]] (n 0) (n 1) ]]
+            ]]
+            <<v ~base_density>>
+            <<v ~base_warm_plasticity>>
+            [[fn cnst_tend:F_WEIGHTED_EL_PROP
+              <<v ~constituents>>
+              <<v ~CNST_AVG_WEIGHTS>>
+              [[i attribute #i:EL_P_ST_TND_HARDNESS]]
+            ]]
+          ]]
+        ]]
         [[i origin #i:MO_METAMORPHIC_MINERAL]]
-        // TODO: HERE
+        <<v ~base_density@base_density>>
+        <<v ~base_sp_heat@base_sp_heat>>
+        <<v ~base_tr_temp@base_tr_temp>>
+        <<v ~base_plastic_temp@base_plastic_temp>>
+        <<v ~base_cold_plasticity@base_cold_plasticity>>
+        <<v ~base_warm_plasticity@base_warm_plasticity>>
+        <<v ~base_hardness@base_hardness>>
+
+        [[fn solid_density:F_SCALE <<v ~base_density>> (n 0.9) (n 5.7) ]]
+        [[fn liquid_density:F_SCALE <<v ~base_density>> (n 2.6) (n 3.2) ]]
+        [[fn gas_density:F_SCALE <<v ~base_density>> (n 1.9) (n 2.8) ]]
+
+        [[fn solid_sp_heat:F_SCALE <<v ~base_sp_heat>> (n 0.2) (n 1.5) ]]
+        [[fn liquid_sp_heat:F_SCALE <<v ~base_sp_heat>> (n 0.7) (n 2.4) ]]
+        [[fn gas_sp_heat:F_SCALE <<v ~base_sp_heat>> (n 0.6) (n 1.15) ]]
+
+        [[n cold_dmg_temp 0]]
+        [[fi solidus:F_SCALE <<v ~base_tr_temp>> (n 520) (n 1280) ]]
+        [[fi liquidus:F_ADD
+          <<L ^.solidus>>
+          [[fn rng:F_NORMAL
+            [[fi rng:F_BRNG <<v ~hash>> (i 24) ]] (n 20) (n 320) ]]
+        ]]
+        [[fi boiling_point:F_SCALE <<v ~base_tr_temp>> (n 1700)(n 2500) ]]
+        // TODO: Flammable metamorphic stone?
+        [[i ignition_point #i:MAT_MAX_TEMP]]
+        [[i flash_point #i:MAT_MAX_TEMP]]
+
+        [[fi cold_plastic_temp:F_MULT
+          <<L ^.solidus>>
+          [[fn base:F_SCALE <<v ~base_plastic_temp>> (n 0.3) (n 0.7) ]]
+        ]]
+        [[fi warm_plastic_temp:F_MULT
+          <<L ^.solidus>>
+          [[fn base:F_SCALE <<v ~base_plastic_temp>> (n 0.5) (n 1.0) ]]
+        ]]
+
+        [[fi cold_plasticity:F_CONSTRAIN
+          [[fn dist:F_SCALE <<v ~base_cold_plasticity>> (n -3) (n 18) ]]
+          [[n min 0]]
+        ]]
+        [[fi warm_plasticity:F_SCALE <<v ~base_warm_plasticity>>(n 10)(n 100)]]
+
+        [[fn viscosity:F_POW
+          (n 10)
+          [[fn exp:F_ADD
+            (n 6)
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 25) ]] (n 0) (n 4) ]]
+            [[n density:F_MULT (n 3) <<v ~base_density>> ]]
+            [[fn elemental:F_SCALE <<v ~cnst_plasticity>> (n 3) (n 0) ]]
+          ]]
+        ]]
+
+        [[fi hardness:F_SCALE <<v ~base_hardness>> (n 40) (n 230) ]]
       ]]
       [[c sedimentary_material
+        [[V locals
+          [[fn ~base_density:F_WEIGHT
+            [[ai weights 0.4, 0.6 ]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 26) ]] (n 0) (n 1) ]]
+            [[fn cnst_tend:F_WEIGHTED_EL_PROP
+              <<v ~constituents>>
+              <<v ~CNST_AVG_WEIGHTS>>
+              [[i attribute #i:EL_P_ST_TND_DENSITY]]
+            ]]
+          ]]
+          [[fn ~base_sp_heat:F_WEIGHT
+            [[ai weights 0.42, 0.18, 0.4 ]]
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 27) ]] (n 0) (n 1) ]]
+            [[fn bd:F_SCALE <<v ~base_density>> (n 1) (n 0) ]]
+            [[fn cnst_tend:F_WEIGHTED_EL_PROP
+              <<v ~constituents>>
+              <<v ~CNST_AVG_WEIGHTS>>
+              [[i attribute #i:EL_P_ST_TND_SP_HEAT]]
+            ]]
+          ]]
+          [[fn ~base_tr_temp:F_WEIGHT
+            [[ai weights 0.48, 0.12, 0.4 ]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 28) ]] (n 0) (n 1) ]]
+            <<v ~base_density>>
+            [[fn cnst_tend:F_WEIGHTED_EL_PROP
+              <<v ~constituents>>
+              <<v ~CNST_AVG_WEIGHTS>>
+              [[i attribute #i:EL_P_ST_TND_TR_TEMP]]
+            ]]
+          ]]
+          [[fn ~base_plastic_temp:F_POW
+            [[fn base:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 29) ]] (n 0) (n 1) ]]
+            (n 1.3)
+          ]]
+          [[fn ~cnst_plasticity:F_WEIGHTED_EL_PROP
+            <<v ~constituents>>
+            <<v ~CNST_AVG_WEIGHTS>>
+            [[i attribute #i:EL_P_ST_TND_PLASTICITY]]
+          ]]
+          // Sedimentary rock is generally quite brittle
+          [[fn ~base_cold_plasticity:F_WEIGHT
+            [[ai weights 0.8, 0.2 ]]
+            [[fn rng:F_EXPDIST
+              [[fn base:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 30) ]] (n 0) (n 1) ]]
+              (n 5.3)
+            ]]
+            <<v ~cnst_plasticity>>
+          ]]
+          [[fn ~base_warm_plasticity:F_WEIGHT
+            [[ai weights 0.6, 0.4 ]]
+            [[fn rng:F_EXPDIST
+              [[fn base:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 31) ]] (n 0) (n 1) ]]
+              (n 4)
+            ]]
+            <<v ~cnst_plasticity>>
+          ]]
+          [[fn ~base_hardness:F_WEIGHT
+            [[ai weights 0.36, 0.12, 0.12, 0.4 ]]
+            [[fn rng:F_POW
+              [[fn rng:F_NORMAL
+                [[fi rng:F_BRNG <<v ~hash>> (i 32) ]] (n 0) (n 1) ]]
+              (n 0.8)
+            ]]
+            <<v ~base_density>>
+            <<v ~base_warm_plasticity>>
+            [[fn cnst_tend:F_WEIGHTED_EL_PROP
+              <<v ~constituents>>
+              <<v ~CNST_AVG_WEIGHTS>>
+              [[i attribute #i:EL_P_ST_TND_HARDNESS]]
+            ]]
+          ]]
+        ]]
         [[i origin #i:MO_SEDIMENTARY_MINERAL]]
-        // TODO: HERE
-        // TODO: HERE
+        <<v ~base_density@base_density>>
+        <<v ~base_sp_heat@base_sp_heat>>
+        <<v ~base_tr_temp@base_tr_temp>>
+        <<v ~base_plastic_temp@base_plastic_temp>>
+        <<v ~base_cold_plasticity@base_cold_plasticity>>
+        <<v ~base_warm_plasticity@base_warm_plasticity>>
+        <<v ~base_hardness@base_hardness>>
+
+        [[fn solid_density:F_SCALE <<v ~base_density>> (n 1.2) (n 4.9) ]]
+        [[fn liquid_density:F_SCALE <<v ~base_density>> (n 2.6) (n 3.1) ]]
+        [[fn gas_density:F_SCALE <<v ~base_density>> (n 1.6) (n 2.9) ]]
+
+        [[fn solid_sp_heat:F_SCALE <<v ~base_sp_heat>> (n 0.4) (n 1.8) ]]
+        [[fn liquid_sp_heat:F_SCALE <<v ~base_sp_heat>> (n 0.9) (n 2.3) ]]
+        [[fn gas_sp_heat:F_SCALE <<v ~base_sp_heat>> (n 0.7) (n 1.2) ]]
+
+        [[n cold_dmg_temp 0]]
+        [[fi solidus:F_SCALE <<v ~base_tr_temp>> (n 440) (n 1220) ]]
+        [[fi liquidus:F_ADD
+          <<L ^.solidus>>
+          [[fn rng:F_NORMAL
+            [[fi rng:F_BRNG <<v ~hash>> (i 33) ]] (n 10) (n 190) ]]
+        ]]
+        [[fi boiling_point:F_SCALE <<v ~base_tr_temp>> (n 1550)(n 2150) ]]
+        // TODO: Fuel stones!
+        [[i ignition_point #i:MAT_MAX_TEMP]]
+        [[i flash_point #i:MAT_MAX_TEMP]]
+
+        [[fi cold_plastic_temp:F_MULT
+          <<L ^.solidus>>
+          [[fn base:F_SCALE <<v ~base_plastic_temp>> (n 0.2) (n 0.7) ]]
+        ]]
+        [[fi warm_plastic_temp:F_MULT
+          <<L ^.solidus>>
+          [[fn base:F_SCALE <<v ~base_plastic_temp>> (n 0.5) (n 1.0) ]]
+        ]]
+
+        // Mostly 0 plasticity when cold
+        [[fi cold_plasticity:F_CONSTRAIN
+          [[fn dist:F_SCALE <<v ~base_cold_plasticity>> (n -7) (n 12) ]]
+          [[n min 0]]
+        ]]
+        [[fi warm_plasticity:F_SCALE <<v ~base_warm_plasticity>> (n 0) (n 60)]]
+
+        [[fn viscosity:F_POW
+          (n 10)
+          [[fn exp:F_ADD
+            (n 5)
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 34) ]] (n 0) (n 2) ]]
+            [[n density:F_MULT (n 3) <<v ~base_density>> ]]
+            [[fn elemental:F_SCALE <<v ~cnst_plasticity>> (n 3) (n 0) ]]
+          ]]
+        ]]
+
+        [[fi hardness:F_SCALE <<v ~base_hardness>> (n 30) (n 180) ]]
       ]]
     ]]
   ]]
   [[c appearance
-    // TODO: HERE
+    [[V args
+      <<L ^.^.composition.constituents@~constituents>>
+      <<L ^.^.composition.traces@~traces>>
+      <<L ^.^.material.base_density@~mat_density>>
+      <<L ^.^.material.base_cold_plasticity@~mat_plasticity>>
+      <<L ^.^.material.base_hardness@~mat_hardness>>
+      [[fn ~softness:F_WEIGHT
+        [[ai weights 0.15, 0.15, 0.35, 0.35]]
+        [[fn rng:F_NORMAL
+          [[fi rng:F_BRNG <<v ~hash>> (i 35) ]] (n 0) (n 1) ]]
+        [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+        <<v ~mat_plasticity>>
+        [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+      ]]
+    ]]
+    [[fc typechoice:F_CHOOSE
+      [[fi index:F_INDEX_BY
+        <<v ~source@input>>
+        [[i entry #i:GEO_IGNEOUS]]
+        [[i entry #i:GEO_METAMORPHIC]]
+        [[i entry #i:GEO_SEDIMENTARY]]
+      ]]
+      [[c igneous_appearance
+        [[V locals
+          [[fi ~hash:F_BRNG <<v ~seed>> (i 1021820) ]]
+          [[fn ~soft:F_SCALE <<v ~softness>> (n 0.15) (n 0.35) ]]
+        ]]
+        <<v ~hash@seed>>
+        [[fn scale:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.8, 0.2 ]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 0) ]] (n 0) (n 1) ]]
+            <<v ~mat_density>>
+          ]]
+          (n 0.1)
+          (n 0.18)
+        ]]
+        [[fn gritty:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.2, 0.2, 0.3, 0.3]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 1) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+            [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+            <<v ~mat_hardness>>
+          ]]
+          (n 0.14)
+          (n 0.37)
+        ]]
+        [[fn contoured:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.2, 0.25, 0.35, 0.2]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 2) ]] (n 0) (n 1) ]]
+            <<v ~mat_density>>
+            <<v ~mat_plasticity>>
+            [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+          ]]
+          (n 0.35)
+          (n 0.7)
+        ]]
+        [[fn porous:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.2, 0.4, 0.3, 0.1]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 3) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+            [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+            <<v ~mat_hardness>>
+          ]]
+          (n 0.2)
+          (n 1.0)
+        ]]
+        [[fn bumpy:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.4, 0.4, 0.2]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 4) ]] (n 0) (n 1) ]]
+            <<v ~mat_plasticity>>
+            [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+          ]]
+          (n 0.1)
+          (n 0.5)
+        ]]
+        [[fn layered:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.2, 0.3, 0.3, 0.2]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 5) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+            [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+            <<v ~mat_hardness>>
+          ]]
+          (n 0)
+          (n 0.5)
+        ]]
+        [[fn layerscale:F_DIV
+          (n 1)
+          [[fn divisor:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.3, 0.2, 0.2, 0.3]]
+              [[fn rng:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 6) ]] (n 0) (n 1) ]]
+              // Note higher divisors -> more compact layers
+              <<v ~mat_density>>
+              [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+              <<v ~mat_hardness>>
+            ]]
+            (n 3)
+            (n 7)
+          ]]
+        ]]
+        [[fn layerwaves:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.2, 0.2, 0.4, 0.2]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 7) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+            <<v ~mat_plasticity>>
+            [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+          ]]
+          (n 0.5)
+          (n 3.5)
+        ]]
+        [[fn wavescale:F_DIV
+          (n 1)
+          [[fn divisor:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.3, 0.2, 0.2, 0.3]]
+              [[fn rng:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 8) ]] (n 0) (n 1) ]]
+              // Note higher divisors -> more compact waves
+              <<v ~mat_density>>
+              [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+              <<v ~mat_hardness>>
+            ]]
+            (n 3)
+            (n 6)
+          ]]
+        ]]
+        [[fn inclusions:F_POW
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.6, 0.1, 0.2, 0.1]]
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 9) ]] (n 0) (n 1) ]]
+            <<v ~mat_density>>
+            <<v ~mat_plasticity>>
+            [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+          ]]
+          (n 2.5)
+        ]]
+        [[fn dscale:F_MULT
+          <<L ^.scale>>
+          [[fn rng:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.4, 0.2, 0.3, 0.1]]
+              [[fn rng:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 10) ]] (n 0) (n 1) ]]
+              <<v ~mat_density>>
+              [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+              <<v ~mat_hardness>>
+            ]]
+            (n 0.86)
+            (n 1.14)
+          ]]
+        ]]
+        [[fn distortion:F_MULT
+          (n 7)
+          [[fn rng:F_POW
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.4, 0.2, 0.3, 0.1]]
+              [[fn rng:F_NORMAL
+                [[fi rng:F_BRNG <<v ~hash>> (i 11) ]] (n 0) (n 1) ]]
+              [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+              <<v ~mat_plasticity>>
+              [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+            ]]
+            (n 1.5)
+          ]]
+        ]]
+        [[fn squash:F_DIV
+          [[fn numerator:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.6, 0.2, 0.2 ]]
+              [[fn rng:F_NORMAL
+                [[fi rng:F_BRNG <<v ~hash>> (i 12) ]] (n 0) (n 1) ]]
+              <<v ~mat_density>>
+              <<v ~mat_plasticity>>
+            ]]
+            [[fn min:F_SUB (n 1) <<v ~soft>> ]]
+            [[fn max:F_ADD (n 1) <<v ~soft>> ]]
+          ]]
+          [[fn denominator:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.6, 0.2, 0.2 ]]
+              [[fn rng:F_NORMAL
+                [[fi rng:F_BRNG <<v ~hash>> (i 13) ]] (n 0) (n 1) ]]
+              [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+              [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+            ]]
+            [[fn min:F_SUB (n 1) <<v ~soft>> ]]
+            [[fn max:F_ADD (n 1) <<v ~soft>> ]]
+          ]]
+        ]]
+        [[fn desaturate:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 14) ]] (n 0.4) (n 0.8) ]]
+        [[fn sat_noise:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 15) ]] (n 0) (n 0.6) ]]
+        [[fn brightness:F_SCALE
+          [[fn brightness:F_WEIGHT
+            [[ai weights 0.8, 0.2 ]]
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 16) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+          ]]
+          (n -0.2)
+          (n 0.2)
+        ]]
+        <<v %COMPUTE_STONE_COLOR@color
+          [[V args
+            <<v ~constituents@~constituents>>
+            <<v ~traces@~traces>>
+            <<v ~source@~source>>
+            <<v ~mat_density@~density>>
+            <<v ~mat_plasticity@~plasticity>>
+            <<v ~mat_hardness@~hardness>>
+            [[fi ~seed:F_BRNG <<v ~hash>> (i 17) ]]
+          ]]
+        >>
+        [[c alt_color
+          <<v %COMPUTE_STONE_COLOR@alt_base
+            [[V args
+              <<v ~constituents@~constituents>>
+              <<v ~traces@~traces>>
+              <<v ~source@~source>>
+              <<v ~mat_density@~density>>
+              <<v ~mat_plasticity@~plasticity>>
+              <<v ~mat_hardness@~hardness>>
+              [[fi ~seed:F_BRNG <<v ~hash>> (i 18) ]]
+            ]]
+          >>
+          [[i fmt #i:CFMT_LCH]]
+          // Inclusions are usually darker and less saturated
+          [[fn L:F_MULT
+            <<L ^.alt_base.L>>
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 19) ]] (n 0.4) (n 1.2) ]]
+          ]]
+          [[fn c:F_MULT
+            <<L ^.alt_base.c>>
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 20) (n 0.6) (n 1.1) ]]
+          ]]
+          <<L alt_base.h@h>>
+        ]]
+      ]]
+      [[c metamorphic_appearance
+        [[V locals
+          [[fi ~hash:F_BRNG <<v ~seed>> (i 1021820) ]]
+          [[fn ~soft:F_SCALE <<v ~softness>> (n 0.25) (n 0.45) ]]
+        ]]
+        <<v ~hash@seed>>
+        [[fn scale:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 0) ]] (n 0.08) (n 0.2) ]]
+        [[fn gritty:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.2, 0.3, 0.3, 0.2]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 1) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+            [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+            <<v ~mat_hardness>>
+          ]]
+          (n 0.08)
+          (n 0.33)
+        ]]
+        [[fn contoured:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.4, 0.2, 0.3, 0.1]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 2) ]] (n 0) (n 1) ]]
+            <<v ~mat_density>>
+            <<v ~mat_plasticity>>
+            [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+          ]]
+          (n 0.15)
+          (n 0.9)
+        ]]
+        [[fn porous:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.4, 0.3, 0.2, 0.1]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 3) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+            [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+            <<v ~mat_hardness>>
+          ]]
+          (n 0.1)
+          (n 0.9)
+        ]]
+        [[fn bumpy:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.4, 0.15, 0.25, 0.2]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 4) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+            <<v ~mat_plasticity>>
+            [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+          ]]
+          (n 0.1)
+          (n 1.0)
+        ]]
+        [[fn layered:F_SCALE
+          [[fn rng:F_EXPDIST
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.4, 0.2, 0.3, 0.1]]
+              [[fn rng:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 5) ]] (n 0) (n 1) ]]
+              <<v ~mat_density>>
+              <<v ~mat_plasticity>>
+              [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+            ]]
+            (n 3)
+          ]]
+          (n 0.1)
+          (n 0.8)
+        ]]
+        [[fn layerscale:F_DIV
+          (n 1)
+          [[fn divisor:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.4, 0.1, 0.3, 0.2]]
+              [[fn rng:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 6) ]] (n 0) (n 1) ]]
+              // Note higher divisors -> more compact layers
+              <<v ~mat_density>>
+              <<v ~mat_plasticity>>
+              [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+            ]]
+            (n 2.5)
+            (n 10)
+          ]]
+        ]]
+        [[fn layerwaves:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.4, 0.2, 0.2, 0.2]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 7) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+            <<v ~mat_plasticity>>
+            [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+          ]]
+          (n 0.8)
+          (n 5)
+        ]]
+        [[fn wavescale:F_DIV
+          (n 1)
+          [[fn divisor:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.4, 0.2, 0.2, 0.2]]
+              [[fn rng:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 8) ]] (n 0) (n 1) ]]
+              // Note higher divisors -> more compact waves
+              <<v ~mat_density>>
+              [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+              <<v ~mat_hardness>>
+            ]]
+            (n 3)
+            (n 7)
+          ]]
+        ]]
+        [[fn inclusions:F_POW
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.5, 0.2, 0.2, 0.1]]
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 9) ]] (n 0) (n 1) ]]
+            <<v ~mat_density>>
+            <<v ~mat_plasticity>>
+            [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+          ]]
+          (n 1.3)
+        ]]
+        [[fn dscale:F_MULT
+          <<L ^.scale>>
+          [[fn rng:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.6, 0.1, 0.2, 0.1]]
+              [[fn rng:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 10) ]] (n 0) (n 1) ]]
+              <<v ~mat_density>>
+              [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+              <<v ~mat_hardness>>
+            ]]
+            (n 0.9)
+            (n 1.1)
+          ]]
+        ]]
+        [[fn distortion:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.4, 0.1, 0.3, 0.2]]
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 11) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+            <<v ~mat_plasticity>>
+            [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+          ]]
+          (n 0)
+          (n 6.5)
+        ]]
+        [[fn squash:F_DIV
+          [[fn numerator:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.8, 0.1, 0.1 ]]
+              [[fn rng:F_NORMAL
+                [[fi rng:F_BRNG <<v ~hash>> (i 12) ]] (n 0) (n 1) ]]
+              <<v ~mat_density>>
+              <<v ~mat_plasticity>>
+            ]]
+            [[fn min:F_SUB (n 1) <<v ~soft>> ]]
+            [[fn max:F_ADD (n 1) <<v ~soft>> ]]
+          ]]
+          [[fn denominator:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.8, 0.1, 0.1 ]]
+              [[fn rng:F_NORMAL
+                [[fi rng:F_BRNG <<v ~hash>> (i 13) ]] (n 0) (n 1) ]]
+              [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+              [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+            ]]
+            [[fn min:F_SUB (n 1) <<v ~soft>> ]]
+            [[fn max:F_ADD (n 1) <<v ~soft>> ]]
+          ]]
+        ]]
+        [[fn desaturate:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 14) ]] (n 0.0) (n 0.6) ]]
+        [[fn sat_noise:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 15) ]] (n 0.1) (n 0.9) ]]
+        [[fn brightness:F_SCALE
+          [[fn brightness:F_WEIGHT
+            [[ai weights 0.9, 0.1 ]]
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 16) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+          ]]
+          (n -0.25)
+          (n 0.35)
+        ]]
+        <<v %COMPUTE_STONE_COLOR@color
+          [[V args
+            <<v ~constituents@~constituents>>
+            <<v ~traces@~traces>>
+            <<v ~source@~source>>
+            <<v ~mat_density@~density>>
+            <<v ~mat_plasticity@~plasticity>>
+            <<v ~mat_hardness@~hardness>>
+            [[fi ~seed:F_BRNG <<v ~hash>> (i 17) ]]
+          ]]
+        >>
+        [[c alt_color
+          <<v %COMPUTE_STONE_COLOR@alt_base
+            [[V args
+              <<v ~constituents@~constituents>>
+              <<v ~traces@~traces>>
+              <<v ~source@~source>>
+              <<v ~mat_density@~density>>
+              <<v ~mat_plasticity@~plasticity>>
+              <<v ~mat_hardness@~hardness>>
+              [[fi ~seed:F_BRNG <<v ~hash>> (i 18) ]]
+            ]]
+          >>
+          [[i fmt #i:CFMT_LCH]]
+          // Inclusions tend to be more saturated:
+          <<L alt_base.L@L>>
+          [[fn c:F_MULT
+            <<L ^.alt_base.c>>
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 19) ]]
+              (n 1.0)
+              (n 1.5)
+            ]]
+          ]]
+          <<L alt_base.h@h>>
+        ]]
+      ]]
+      [[c sedimentary_appearance
+        [[V locals
+          [[fi ~hash:F_BRNG <<v ~seed>> (i 1021820) ]]
+          [[fn ~soft:F_SCALE <<v ~softness>> (n 0.2) (n 0.4) ]]
+        ]]
+        <<v ~hash@seed>>
+        [[fn scale:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 0) ]] (n 0.07) (n 0.14) ]]
+        [[fn gritty:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.3, 0.3, 0.2, 0.2]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 1) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+            [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+            <<v ~mat_hardness>>
+          ]]
+          (n 0.31)
+          (n 0.56)
+        ]]
+        [[fn contoured:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.4, 0.2, 0.3, 0.1]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 2) ]] (n 0) (n 1) ]]
+            <<v ~mat_density>>
+            <<v ~mat_plasticity>>
+            [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+          ]]
+          (n 0.15)
+          (n 1.1)
+        ]]
+        [[fn porous:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.4, 0.3, 0.2, 0.1]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 3) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+            [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+            <<v ~mat_hardness>>
+          ]]
+          (n 0.3)
+          (n 0.8)
+        ]]
+        [[fn bumpy:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.4, 0.2, 0.2, 0.2]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 4) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+            <<v ~mat_plasticity>>
+            [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+          ]]
+          (n 0.3)
+          (n 0.9)
+        ]]
+        [[fn layered:F_SCALE
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.4, 0.2, 0.3, 0.1]]
+            [[fn rng:F_UNIFORM
+              [[fi rng:F_BRNG <<v ~hash>> (i 5) ]] (n 0) (n 1) ]]
+            <<v ~mat_density>>
+            <<v ~mat_plasticity>>
+            [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+          ]]
+          (n 0.1)
+          (n 1.0)
+        ]]
+        [[fn layerscale:F_DIV
+          (n 1)
+          [[fn divisor:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.4, 0.1, 0.3, 0.2]]
+              [[fn rng:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 6) ]] (n 0) (n 1) ]]
+              // Note higher divisors -> more compact layers
+              <<v ~mat_density>>
+              <<v ~mat_plasticity>>
+              [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+            ]]
+            (n 2)
+            (n 10)
+          ]]
+        ]]
+        [[fn layerwaves:F_SCALE
+          [[fn exp:F_EXPDIST
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.4, 0.2, 0.2, 0.2]]
+              [[fn rng:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 7) ]] (n 0) (n 1) ]]
+              [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+              <<v ~mat_plasticity>>
+              [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+            ]]
+            (n 2)
+          ]]
+          (n 0.5)
+          (n 4.5)
+        ]]
+        [[fn wavescale:F_DIV
+          (n 1)
+          [[fn divisor:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.4, 0.2, 0.2, 0.2]]
+              [[fn rng:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 8) ]] (n 0) (n 1) ]]
+              // Note higher divisors -> more compact waves
+              <<v ~mat_density>>
+              [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+              <<v ~mat_hardness>>
+            ]]
+            (n 2.5)
+            (n 5)
+          ]]
+        ]]
+        [[fn inclusions:F_POW
+          [[fn rng:F_WEIGHT
+            [[ai weights 0.5, 0.2, 0.1, 0.2]]
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 9) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+            [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+            [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+          ]]
+          (n 1.9)
+        ]]
+        [[fn dscale:F_MULT
+          <<L ^.scale>>
+          [[fn rng:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.6, 0.1, 0.2, 0.1]]
+              [[fn rng:F_UNIFORM
+                [[fi rng:F_BRNG <<v ~hash>> (i 10) ]] (n 0) (n 1) ]]
+              <<v ~mat_density>>
+              [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+              <<v ~mat_hardness>>
+            ]]
+            (n 0.8)
+            (n 1.2)
+          ]]
+        ]]
+        [[fn distortion:F_MULT
+          (n 4.5)
+          [[fn pow:F_POW
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.4, 0.1, 0.3, 0.2]]
+              [[fn rng:F_NORMAL
+                [[fi rng:F_BRNG <<v ~hash>> (i 11) ]] (n 0) (n 1) ]]
+              [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+              <<v ~mat_plasticity>>
+              [[fn invert:F_SCALE <<v ~mat_hardness>> (n 1) (n 0) ]]
+            ]]
+            (n 1.4)
+          ]]
+        ]]
+        [[fn squash:F_DIV
+          [[fn numerator:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.8, 0.1, 0.1 ]]
+              [[fn rng:F_NORMAL
+                [[fi rng:F_BRNG <<v ~hash>> (i 12) ]] (n 0) (n 1) ]]
+              <<v ~mat_density>>
+              <<v ~mat_plasticity>>
+            ]]
+            [[fn min:F_SUB (n 0.9) <<v ~soft>> ]]
+            [[fn max:F_ADD (n 0.9) <<v ~soft>> ]]
+          ]]
+          [[fn denominator:F_SCALE
+            [[fn rng:F_WEIGHT
+              [[ai weights 0.8, 0.1, 0.1 ]]
+              [[fn rng:F_NORMAL
+                [[fi rng:F_BRNG <<v ~hash>> (i 13) ]] (n 0) (n 1) ]]
+              [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+              [[fn invert:F_SCALE <<v ~mat_plasticity>> (n 1) (n 0) ]]
+            ]]
+            [[fn min:F_SUB (n 1.1) <<v ~soft>> ]]
+            [[fn max:F_ADD (n 1.1) <<v ~soft>> ]]
+          ]]
+        ]]
+        [[fn desaturate:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 14) ]] (n 0.3) (n 0.8) ]]
+        [[fn sat_noise:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 15) ]] (n 0.1) (n 0.7) ]]
+        [[fn brightness:F_SCALE
+          [[fn brightness:F_WEIGHT
+            [[ai weights 0.9, 0.1 ]]
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 16) ]] (n 0) (n 1) ]]
+            [[fn invert:F_SCALE <<v ~mat_density>> (n 1) (n 0) ]]
+          ]]
+          (n -0.05)
+          (n 0.35)
+        ]]
+        <<v %COMPUTE_STONE_COLOR@color
+          [[V args
+            <<v ~constituents@~constituents>>
+            <<v ~traces@~traces>>
+            <<v ~source@~source>>
+            <<v ~mat_density@~density>>
+            <<v ~mat_plasticity@~plasticity>>
+            <<v ~mat_hardness@~hardness>>
+            [[fi ~seed:F_BRNG <<v ~hash>> (i 17) ]]
+          ]]
+        >>
+        [[c alt_color
+          <<v %COMPUTE_STONE_COLOR@alt_base
+            [[V args
+              <<v ~constituents@~constituents>>
+              <<v ~traces@~traces>>
+              <<v ~source@~source>>
+              <<v ~mat_density@~density>>
+              <<v ~mat_plasticity@~plasticity>>
+              <<v ~mat_hardness@~hardness>>
+              [[fi ~seed:F_BRNG <<v ~hash>> (i 18) ]]
+            ]]
+          >>
+          [[i fmt #i:CFMT_LCH]]
+          // Inclusions are generally darker and less saturated:
+          [[fn L:F_MULT
+            <<L ^.alt_base.L>>
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 19) ]] (n 0.3) (n 1.3) ]]
+          ]]
+          [[fn c:F_MULT
+            <<L ^.alt_base.c>>
+            [[fn rng:F_NORMAL
+              [[fi rng:F_BRNG <<v ~hash>> (i 20) ]] (n 0.6) (n 1.2) ]]
+          ]]
+          <<L alt_base.h@h>>
+        ]]
+      ]]
+    ]]
   ]]
 ]]
 
@@ -752,59 +1689,54 @@
     [[i ~wm_seed 0]]
     [[i ~wm_width 0]]
     [[i ~wm_height 0]]
-    [[fi ~seed:SF_BRANCH_HASH
-      <<v ~wm_seed>>
-      [[fi mult:SF_MULT
-        <<v ~i>>
-        [[i offset 567]]
-      ]]
-    ]]
   ]]
-  [[fi sethash:SF_SET_HASH <<v ~seed>> ]]
-  <<v ~seed@seed>>
-  [[fi source:SF_SAMPLE_RNGTABLE
-    [[fi rng:SF_NEXT_HASH]]
+  [[V locals
+    [[fi ~hash:F_BRNG <<v ~wm_seed>> [[fi mult:F_MULT <<v ~i>> (i 567) ]] ]]
+  ]]
+  <<v ~hash@seed>>
+  [[fi source:F_SAMPLE_RNGTABLE
+    [[fi rng:F_BRNG <<v ~hash>> (i 0) ]]
     <<v ~SOURCE_DISTRIBUTION>>
   ]]
-  [[fi profile:SF_CHOOSE
-    [[fi index:SF_NEXT_HASH]]
+  [[fi profile:F_CHOOSE
+    [[fi rng:F_BRNG <<v ~hash>> (i 1) ]]
     [[i option #i:MFN_SPREAD_UP]]
     [[i option #i:MFN_TERRACE]]
     [[i option #i:MFN_HILL]]
   ]]
-  [[fn thickness:SF_MULT
+  [[fn thickness:F_MULT
     [[i base #i:BASE_STRATUM_THICKNESS]]
-    [[fn exp:SF_EXP
-      [[fn exponent:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min -0.5]]
-        [[n max 3]]
+    [[fn exp:F_EXP
+      [[fn exponent:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 2) ]]
+        (n -0.5)
+        (n 3)
       ]]
     ]]
   ]]
-  [[fn size:SF_MULT
-    [[fn wsgavg:SF_SQRT
-      [[fn world_size:SF_MULT
+  [[fn size:F_MULT
+    [[fn wsgavg:F_SQRT
+      [[fn world_size:F_MULT
         <<v ~wm_width>>
         <<v ~wm_height>>
       ]]
     ]]
     [[i bias #i:STRATA_AVG_SIZE]]
     [[i unit #i:WORLD_REGION_BLOCKS]]
-    [[fn offset:SF_UNIFORM
-      [[fi rng:SF_NEXT_HASH]]
-      [[n min 0.6]]
-      [[n max 1.4]]
+    [[fn offset:F_UNIFORM
+      [[fi rng:F_BRNG <<v ~hash>> (i 3) ]]
+      (n 0.6)
+      (n 1.4)
     ]]
   ]]
-  [[fn cx:SF_UNIFORM
-    [[fi rng:SF_NEXT_HASH]]
-    [[n min 0]]
+  [[fn cx:F_UNIFORM
+    [[fi rng:F_BRNG <<v ~hash>> (i 4) ]]
+    (n 0)
     <<v ~wm_width@max>>
   ]]
-  [[fn cy:SF_UNIFORM
-    [[fi rng:SF_NEXT_HASH]]
-    [[n min 0]]
+  [[fn cy:F_UNIFORM
+    [[fi rng:F_BRNG <<v ~hash>> (i 5) ]]
+    (n 0)
     <<v ~wm_height@max>>
   ]]
 ]]
@@ -819,264 +1751,149 @@
     [[n ~cx 0]]
     [[n ~cy 0]]
   ]]
-  [[fi sethash:SF_SET_HASH <<v ~seed>> ]]
-  <<v ~seed@seed>>
-  [[fc typechoice:SF_CHOOSE
-    [[fi index:SF_INDEX_BY
+  [[V locals
+    [[fi ~hash:F_BRNG <<v ~seed>> (i 12098491) ]]
+  ]]
+  <<v ~hash@seed>>
+  [[fc typechoice:F_CHOOSE
+    [[fi index:F_INDEX_BY
       <<v ~source@input>>
       [[i entry #i:GEO_IGNEOUS]]
       [[i entry #i:GEO_METAMORPHIC]]
       [[i entry #i:GEO_SEDIMENTARY]]
     ]]
     [[c igneous_stratum
-      [[fn persistence:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 1.2]]
-        [[n max 1.6]]
-      ]]
-      [[fn scale_bias:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 0.7]]
-        [[n max 1.1]]
-      ]]
-      [[fn radial_frequency:SF_DIV
+      [[fn persistence:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 0) ]] (n 1.2) (n 1.6) ]]
+      [[fn scale_bias:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 1) ]] (n 0.7) (n 1.1) ]]
+      [[fn radial_frequency:F_DIV
         [[n pi #n:PI]]
-        [[fn uniform:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 2.4]]
-          [[n max 4.0]]
-        ]]
+        [[fn uniform:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 2) ]] (n 2.4) (n 4.0) ]]
       ]]
-      [[fn radial_variance:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 0.1]]
-        [[n max 0.4]]
-      ]]
-      [[fn gross_distortion:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 900]]
-        [[n max 1400]]
-      ]]
-      [[fn fine_distortion:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 110]]
-        [[n max 150]]
-      ]]
-      [[fn large_var:SF_MULT
+      [[fn radial_variance:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 3) ]] (n 0.1) (n 0.4) ]]
+      [[fn gross_distortion:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 4) ]] (n 900) (n 1400) ]]
+      [[fn fine_distortion:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 5) ]] (n 110) (n 150) ]]
+      [[fn large_var:F_MULT
         <<v ~thickness>>
-        [[fn rng:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 0.6]]
-          [[n max 0.9]]
-        ]]
+        [[fn rng:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 6) ]] (n 0.6) (n 0.9) ]]
       ]]
-      [[fn med_var:SF_MULT
+      [[fn med_var:F_MULT
         <<v ~thickness>>
-        [[fn rng:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 0.4]]
-          [[n max 0.65]]
-        ]]
+        [[fn rng:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 7) ]] (n 0.4) (n 0.65) ]]
       ]]
-      [[fn med_var:SF_MULT
+      [[fn med_var:F_MULT
         <<v ~thickness>>
-        [[fn rng:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 0.17]]
-          [[n max 0.22]]
-        ]]
+        [[fn rng:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 8) ]] (n 0.17) (n 0.22) ]]
       ]]
-      [[fn tiny_var:SF_MULT
+      [[fn tiny_var:F_MULT
         <<v ~thickness>>
-        [[fn rng:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 0.04]]
-          [[n max 0.10]]
-        ]]
+        [[fn rng:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 9) ]] (n 0.04) (n 0.10) ]]
       ]]
-      [[fn detail_var:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 1]]
-        [[n max 3]]
-      ]]
-      [[fn ridges:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 2]]
-        [[n max 5]]
-      ]]
-      [[fn smoothing:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 0.15]]
-        [[n max 0.35]]
-      ]]
+      [[fn detail_var:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 10) ]] (n 1) (n 3) ]]
+      [[fn ridges:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 11) ]] (n 2) (n 5) ]]
+      [[fn smoothing:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 12) ]] (n 0.15) (n 0.35) ]]
       // TODO: Vein scale/strength/species
       // TODO: inclusion frequency/species
     ]]
     [[c metamorphic_stratum
-      [[fn persistence:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 0.8]]
-        [[n max 1.3]]
-      ]]
-      [[fn scale_bias:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 0.8]]
-        [[n max 1.2]]
-      ]]
-      [[fn radial_frequency:SF_DIV
+      [[fn persistence:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 13) ]] (n 0.8) (n 1.3) ]]
+      [[fn scale_bias:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 14) ]] (n 0.8) (n 1.2) ]]
+      [[fn radial_frequency:F_DIV
         [[n pi #n:PI]]
-        [[fn uniform:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 2.8]]
-          [[n max 4.8]]
-        ]]
+        [[fn uniform:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 15) ]] (n 2.8) (n 4.8) ]]
       ]]
-      [[fn radial_variance:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 0.4]]
-        [[n max 0.8]]
-      ]]
-      [[fn gross_distortion:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 1200]]
-        [[n max 2100]]
-      ]]
-      [[fn fine_distortion:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 180]]
-        [[n max 290]]
-      ]]
-      [[fn large_var:SF_MULT
+      [[fn radial_variance:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 16) ]] (n 0.4) (n 0.8) ]]
+      [[fn gross_distortion:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 17) ]] (n 1200) (n 2100) ]]
+      [[fn fine_distortion:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 18) ]] (n 180) (n 290) ]]
+      [[fn large_var:F_MULT
         <<v ~thickness>>
-        [[fn rng:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 0.5]]
-          [[n max 0.8]]
-        ]]
+        [[fn rng:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 19) ]] (n 0.5) (n 0.8) ]]
       ]]
-      [[fn med_var:SF_MULT
+      [[fn med_var:F_MULT
         <<v ~thickness>>
-        [[fn rng:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 0.3]]
-          [[n max 0.55]]
-        ]]
+        [[fn rng:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 20) ]] (n 0.3) (n 0.55) ]]
       ]]
-      [[fn med_var:SF_MULT
+      [[fn med_var:F_MULT
         <<v ~thickness>>
-        [[fn rng:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 0.16]]
-          [[n max 0.22]]
-        ]]
+        [[fn rng:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 21) ]] (n 0.16) (n 0.22) ]]
       ]]
-      [[fn tiny_var:SF_MULT
+      [[fn tiny_var:F_MULT
         <<v ~thickness>>
-        [[fn rng:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 0.02]]
-          [[n max 0.05]]
-        ]]
+        [[fn rng:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 22) ]] (n 0.02) (n 0.05) ]]
       ]]
-      [[fn detail_var:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 0.3]]
-        [[n max 2.1]]
-      ]]
-      [[fn ridges:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 0.4]]
-        [[n max 3.8]]
-      ]]
-      [[fn smoothing:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 0.15]]
-        [[n max 0.60]]
-      ]]
+      [[fn detail_var:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 23) ]] (n 0.3) (n 2.1) ]]
+      [[fn ridges:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 24) ]] (n 0.4) (n 3.8) ]]
+      [[fn smoothing:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 25) ]] (n 0.15) (n 0.60) ]]
       // TODO: Vein scale/strength/species
       // TODO: inclusion frequency/species
     ]]
     [[c sedimentary_stratum
-      [[fn persistence:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 1.3]]
-        [[n max 1.8]]
-      ]]
-      [[fn scale_bias:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 1.1]]
-        [[n max 1.4]]
-      ]]
-      [[fn radial_frequency:SF_DIV
+      [[fn persistence:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 26) ]] (n 1.3) (n 1.8) ]]
+      [[fn scale_bias:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 27) ]] (n 1.1) (n 1.4) ]]
+      [[fn radial_frequency:F_DIV
         [[n pi #n:PI]]
-        [[fn uniform:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 2.1]]
-          [[n max 3.3]]
-        ]]
+        [[fn uniform:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 28) ]] (n 2.1) (n 3.3) ]]
       ]]
-      [[fn radial_variance:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 0.05]]
-        [[n max 0.25]]
-      ]]
-      [[fn gross_distortion:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 700]]
-        [[n max 1100]]
-      ]]
-      [[fn fine_distortion:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 30]]
-        [[n max 60]]
-      ]]
-      [[fn large_var:SF_MULT
+      [[fn radial_variance:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 29) ]] (n 0.05) (n 0.25) ]]
+      [[fn gross_distortion:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 30) ]] (n 700) (n 1100) ]]
+      [[fn fine_distortion:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 31) ]] (n 30) (n 60) ]]
+      [[fn large_var:F_MULT
         <<v ~thickness>>
-        [[fn rng:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 0.4]]
-          [[n max 0.65]]
-        ]]
+        [[fn rng:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 32) ]] (n 0.4) (n 0.65) ]]
       ]]
-      [[fn med_var:SF_MULT
+      [[fn med_var:F_MULT
         <<v ~thickness>>
-        [[fn rng:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 0.2]]
-          [[n max 0.35]]
-        ]]
+        [[fn rng:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 33) ]] (n 0.2) (n 0.35) ]]
       ]]
-      [[fn med_var:SF_MULT
+      [[fn med_var:F_MULT
         <<v ~thickness>>
-        [[fn rng:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 0.11]]
-          [[n max 0.16]]
-        ]]
+        [[fn rng:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 34) ]] (n 0.11) (n 0.16) ]]
       ]]
-      [[fn tiny_var:SF_MULT
+      [[fn tiny_var:F_MULT
         <<v ~thickness>>
-        [[fn rng:SF_UNIFORM
-          [[fi rng:SF_NEXT_HASH]]
-          [[n min 0.03]]
-          [[n max 0.10]]
-        ]]
+        [[fn rng:F_UNIFORM
+          [[fi rng:F_BRNG <<v ~hash>> (i 35) ]] (n 0.03) (n 0.10) ]]
       ]]
-      [[fn detail_var:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 0.7]]
-        [[n max 3.9]]
-      ]]
-      [[fn ridges:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 0.8]]
-        [[n max 5.3]]
-      ]]
-      [[fn smoothing:SF_UNIFORM
-        [[fi rng:SF_NEXT_HASH]]
-        [[n min 0.12]]
-        [[n max 0.52]]
-      ]]
+      [[fn detail_var:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 36) ]] (n 0.7) (n 3.9) ]]
+      [[fn ridges:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 37) ]] (n 0.8) (n 5.3) ]]
+      [[fn smoothing:F_UNIFORM
+        [[fi rng:F_BRNG <<v ~hash>> (i 38) ]] (n 1.12) (n 0.52) ]]
       // TODO: Vein scale/strength/species
       // TODO: inclusion frequency/species
     ]]
