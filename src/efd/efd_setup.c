@@ -66,18 +66,18 @@ void setup_elf_forest_data(void) {
   if (sizeof(char) != sizeof(uint8_t)) {
     fprintf(stderr, "Warning: sizeof(char) != sizeof(uint8_t)\n");
   }
-  if (EFD_NODE_NAME_SIZE != 24) {
+  if (EFD_NODE_NAME_SIZE != 32) {
     fprintf(
       stderr,
       "Warning: unexpected EFD node name size: %ld\n",
       EFD_NODE_NAME_SIZE
     );
   }
-  if (EFD_OBJECT_FORMAT_SIZE != 8) {
+  if (EFD_ANNOTATION_SIZE != 8) {
     fprintf(
       stderr,
       "Warning: unexpected EFD object format size: %ld\n",
-      EFD_OBJECT_FORMAT_SIZE
+      EFD_ANNOTATION_SIZE
     );
   }
 }
@@ -101,7 +101,7 @@ ptrdiff_t _efd_lookup_key(char const * const key) {
   size_t result = 0;
   for (result = 0; result < EFD_OBJECT_REGISTRY_SIZE; ++result) {
     char *n = EFD_OBJECT_NAME_REGISTRY[result];
-    if (strncmp(key, n, EFD_OBJECT_FORMAT_SIZE) == 0) {
+    if (strncmp(key, n, EFD_ANNOTATION_SIZE) == 0) {
       return result;
     }
   }
@@ -116,7 +116,7 @@ efd_unpack_function efd_lookup_unpacker(char const * const key) {
     fprintf(
       stderr,
       "Error: no unpack function found for format '%.*s'.\n",
-      (int) EFD_OBJECT_FORMAT_SIZE,
+      (int) EFD_ANNOTATION_SIZE,
       key
     );
     return NULL;
@@ -130,7 +130,7 @@ efd_pack_function efd_lookup_packer(char const * const key) {
     fprintf(
       stderr,
       "Error: no pack function found for format '%.*s'.\n",
-      (int) EFD_OBJECT_FORMAT_SIZE,
+      (int) EFD_ANNOTATION_SIZE,
       key
     );
     return NULL;
@@ -144,7 +144,7 @@ efd_destroy_function efd_lookup_destructor(char const * const key) {
     fprintf(
       stderr,
       "Error: no destroy function found for format '%.*s'.\n",
-      (int) EFD_OBJECT_FORMAT_SIZE,
+      (int) EFD_ANNOTATION_SIZE,
       key
     );
     return NULL;

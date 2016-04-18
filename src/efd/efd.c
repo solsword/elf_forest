@@ -14,8 +14,10 @@
 
 char const * const EFD_NT_NAMES[] = {
   "container",
-  "link",
+  "global_link",
   "local_link",
+  "scope",
+  "variable",
   "prototype",
   "object",
   "integer",
@@ -28,13 +30,33 @@ char const * const EFD_NT_NAMES[] = {
   "global_int",
   "global_num",
   "global_str",
+  "function",
+  "function_object",
+  "function_integer",
+  "function_number",
+  "function_string",
+  "function_array_object",
+  "function_array_integer",
+  "function_array_number",
+  "function_array_string",
+  "generator",
+  "generator_object",
+  "generator_integer",
+  "generator_number",
+  "generator_string",
+  "generator_array_object",
+  "generator_array_integer",
+  "generator_array_number",
+  "generator_array_string",
   "<invalid>"
 };
 
 char const * const EFD_NT_ABBRS[] = {
   "c",
-  "l",
   "L",
+  "l",
+  "V",
+  "v",
   "p",
   "o",
   "i",
@@ -47,10 +69,28 @@ char const * const EFD_NT_ABBRS[] = {
   "Gi",
   "Gn",
   "Gs",
+  "ff",
+  "fo",
+  "fi",
+  "fn",
+  "fs",
+  "fao",
+  "fai",
+  "fan",
+  "fas",
+  "gg",
+  "go",
+  "gi",
+  "gn",
+  "gs",
+  "gao",
+  "gai",
+  "gan",
+  "gas",
   "!"
 };
 
-char const * const EFD_PROTO_NAME = "-";
+char const * const EFD_ANON_NAME = "-";
 
 char const * const EFD_ROOT_NAME = "_";
 
@@ -75,11 +115,35 @@ efd_node* create_efd_node(efd_node_type t, char const * const name) {
       break;
 
     case EFD_NT_CONTAINER:
+    case EFD_NT_SCOPE:
       result->b.as_container.children = create_list();
+      break;
+    case EFD_NT_FUNCTION:
+    case EFD_NT_FN_VOID:
+    case EFD_NT_FN_OBJ:
+    case EFD_NT_FN_INT:
+    case EFD_NT_FN_NUM:
+    case EFD_NT_FN_STR:
+    case EFD_NT_FN_AR_OBJ:
+    case EFD_NT_FN_AR_INT:
+    case EFD_NT_FN_AR_NUM:
+    case EFD_NT_FN_AR_STR:
+    case EFD_NT_GENERATOR:
+    case EFD_NT_GN_VOID:
+    case EFD_NT_GN_OBJ:
+    case EFD_NT_GN_INT:
+    case EFD_NT_GN_NUM:
+    case EFD_NT_GN_STR:
+    case EFD_NT_GN_AR_OBJ:
+    case EFD_NT_GN_AR_INT:
+    case EFD_NT_GN_AR_NUM:
+    case EFD_NT_GN_AR_STR:
+      result->b.as_function.children = create_list();
       break;
 
     case EFD_NT_LINK:
     case EFD_NT_LOCAL_LINK:
+    case EFD_NT_VARIABLE:
       result->b.as_link.target = NULL;
       result->b.as_link.children = create_list();
       break;
@@ -425,9 +489,9 @@ int efd_is_type(efd_node *n, efd_node_type t) {
 
 int efd_format_is(efd_node *n, char const * const fmt) {
   if (efd_is_type(n, EFD_NT_PROTO)) {
-    return strncmp(efd__p_fmt(n), fmt, EFD_OBJECT_FORMAT_SIZE) == 0;
+    return strncmp(efd__p_fmt(n), fmt, EFD_ANNOTATION_SIZE) == 0;
   } else if (efd_is_type(n, EFD_NT_OBJECT)) {
-    return strncmp(efd__o_fmt(n), fmt, EFD_OBJECT_FORMAT_SIZE) == 0;
+    return strncmp(efd__o_fmt(n), fmt, EFD_ANNOTATION_SIZE) == 0;
   }
   // failsafe
   return 0;
@@ -603,6 +667,11 @@ efd_node* efd(efd_node* root, efd_address* addr) {
 
 efd_node* efdx(efd_node* root, char const * const saddr) {
   return efd(root, efd_parse_string_address(saddr));
+}
+
+efd_node* efd_eval(efd_node* target, efd_node* args) {
+  return NULL;
+  // TODO: HERE
 }
 
 void efd_add_crossref(efd_index *cr, efd_bridge* bridge) {
@@ -813,4 +882,8 @@ void efd_set_global_s(char const * const key, string* value) {
   if (tmp != NULL) {
     cleanup_string(tmp);
   }
+}
+
+void dont_cleanup(void* v) {
+  return;
 }

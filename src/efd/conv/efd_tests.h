@@ -90,7 +90,7 @@ efd_node *int_test__efd(void *v_t) {
   efd_node *n;
   efd_node *result;
   
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_PROTO_NAME);
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
 
   n = create_efd_node(EFD_NT_STRING, "input");
   *efd__s(n) = copy_string(t->input);
@@ -196,7 +196,7 @@ efd_node *num_test__efd(void *v_t) {
   efd_node *n;
   efd_node *result;
   
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_PROTO_NAME);
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
 
   n = create_efd_node(EFD_NT_STRING, "input");
   *efd__s(n) = copy_string(t->input);
@@ -286,7 +286,7 @@ efd_node *parse_test__efd(void *v_t) {
   efd_node *n;
   efd_node *result;
   
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_PROTO_NAME);
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
 
   n = create_efd_node(EFD_NT_STRING, "input");
   *efd__s(n) = copy_string(t->input);

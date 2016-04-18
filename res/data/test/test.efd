@@ -237,7 +237,7 @@
 ]]
 // misc:
 [[o t:ptest
-  [[s input "[[s name_a_bit_too_long______ 'this won''t work']]"]]
+  [[s input "[[s name_a_bit_too_long______________ 'this won''t work']]"]]
   [[s expect "remainder"]]
   [[s remainder "_ 'this won''t work']]"]]
 ]]
@@ -270,10 +270,12 @@
     0.03, 0.02, //  5% | 100%
   ]]
 ]]
+
 // globals:
 [[Gi GLOBAL_INT 5]]
 [[Gn GLOBAL_NUM 3.1415926]]
 [[Gs GLOBAL_STR "This string goes directly into the globals..."]]
+
 // references:
 // TODO: Sort these out!
 [[i refint 3]]
@@ -319,4 +321,60 @@
   [[ai array
     1, 2, 3, #i:GLOBAL_INT
   ]]
+]]
+
+//functions and variable references
+[[c testfun
+  [[V locals
+    <<l testref@~link>>
+    [[i ~int 3]]
+    [[n ~num 5.7]]
+    [[s ~string "hello world"]]
+    <<L ~int@~integer>>
+    [[c ~tuple (n 1.1) (n 2.2) ]]
+    [[c ~slist (s "one") (s "two") (s "three") (s "four")]]
+    [[as ~sarray "wun", "tuo", "threigh", "foor"]]
+    [[fi ~ichoice:F_CHOOSE
+      <<v ~int>>
+      (i 0)
+      (i 1)
+      (i 2)
+      (i 3)
+    ]]
+    [[ff ~fchoice:F_CHOOSE
+      <<v ~int>>
+      [[c (s "hi")]]
+      [[c (s "ho")]]
+      [[c (s "he")]]
+      [[c (s "ha")]]
+    ]]
+  ]]
+  [[c test
+    [[V nested
+      [[i ~int 1]]
+    ]]
+    <<v ~int@*testint>>
+    <<v ~ichoice@*testscope>>
+  ]]
+  [[ff testiter:F_ITERATE
+    [[V iterate
+      <<v ~slist@*lstring>>
+      <<v ~sarray@*astring>>
+      [[gi *iter1:G_RANGE (i 1) ]]
+      [[gi *iter2:G_RANGE (i 3) (i 8) (i 2) ]]
+      [[c values <<v *lstring>> <<v *asring>> <<v *testint>> <<v *testscope>> ]]
+    ]]
+  ]]
+  [[fi plus:F_ADD
+    [[fn rng:F_PTRF [[fi hash:F_BRNG [[fi rng:F_PRNG (i 17) ]] (i 1) ]] ]]
+    <<v ~integer>>
+  ]]
+  [[fi plus:F_ADD
+    (i 3)
+    <<v ~integer>>
+    (i 5)
+  ]]
+  [[fs index_1:F_INDEX <<v ~fchoice>> (i 0) ]]
+  [[fs index_2:F_INDEX <<v ~slist>> (i 1) ]]
+  [[fs index_3:F_INDEX <<v ~sarray>> (i 1) ]]
 ]]

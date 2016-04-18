@@ -120,23 +120,37 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
   if (efd_parse_failed(s)) { return NULL; }
 
   if (btype == EFD_PARSER_OPEN_ANGLE) {
-    if (type != EFD_NT_LINK && type != EFD_NT_LOCAL_LINK) {
+    if (
+      type != EFD_NT_LINK
+   && type != EFD_NT_LOCAL_LINK
+   && type != EFD_NT_VARIABLE
+    ) {
       s->error = EFD_PE_MALFORMED;
       s->context = "node (angle braces are for links)";
       return NULL;
     }
     // name will be decided by efd_parse_link:
-    name[0] = EFD_PROTO_NAME[0];
+    name[0] = EFD_ANON_NAME[0];
     name[1] = '\0';
   } else {
-    if (type == EFD_NT_LINK || type == EFD_NT_LOCAL_LINK) {
+    if (
+      type == EFD_NT_LINK
+   || type == EFD_NT_LOCAL_LINK
+   || type == EFD_NT_VARIABLE
+    ) {
       s->error = EFD_PE_MALFORMED;
       s->context = "node (links require angle braces)";
       return NULL;
     }
-    // parse the name immediately:
-    efd_parse_name(s, name);
-    if (efd_parse_failed(s)) { return NULL; }
+    if (btype == EFD_PARSER_OPEN_PAREN) {
+      // an anonymous node:
+      name[0] = EFD_ANON_NAME[0];
+      name[1] = '\0';
+    } else {
+      // parse the name immediately:
+      efd_parse_name(s, name);
+      if (efd_parse_failed(s)) { return NULL; }
+    }
   }
 
   efd_node *result = create_efd_node(type, name);
@@ -153,11 +167,35 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
       s->current_node = parent_node;
       return NULL;
     case EFD_NT_CONTAINER:
+    case EFD_NT_SCOPE:
       efd_parse_children(result, s, cr);
       break;
     case EFD_NT_LINK:
     case EFD_NT_LOCAL_LINK:
+    case EFD_NT_VARIABLE:
       efd_parse_link(result, s, cr);
+      break;
+    case EFD_NT_FUNCTION:
+    case EFD_NT_FN_VOID:
+    case EFD_NT_FN_OBJ:
+    case EFD_NT_FN_INT:
+    case EFD_NT_FN_NUM:
+    case EFD_NT_FN_STR:
+    case EFD_NT_FN_AR_OBJ:
+    case EFD_NT_FN_AR_INT:
+    case EFD_NT_FN_AR_NUM:
+    case EFD_NT_FN_AR_STR:
+    case EFD_NT_GENERATOR:
+    case EFD_NT_GN_VOID:
+    case EFD_NT_GN_OBJ:
+    case EFD_NT_GN_INT:
+    case EFD_NT_GN_NUM:
+    case EFD_NT_GN_STR:
+    case EFD_NT_GN_AR_OBJ:
+    case EFD_NT_GN_AR_INT:
+    case EFD_NT_GN_AR_NUM:
+    case EFD_NT_GN_AR_STR:
+      efd_parse_function(result, s, cr);
       break;
     case EFD_NT_PROTO:
       efd_parse_proto(result, s, cr);
@@ -219,6 +257,7 @@ void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
 
   switch (result->h.type) {
     default:
+      // TODO: Context here!
       fprintf(
         stderr,
         "ERROR: Attempt to parse children for non-container node.\n"
@@ -226,10 +265,34 @@ void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
       exit(-1);
       return;
     case EFD_NT_CONTAINER:
+    case EFD_NT_SCOPE:
       children = result->b.as_container.children;
+      break;
+    case EFD_NT_FUNCTION:
+    case EFD_NT_FN_VOID:
+    case EFD_NT_FN_OBJ:
+    case EFD_NT_FN_INT:
+    case EFD_NT_FN_NUM:
+    case EFD_NT_FN_STR:
+    case EFD_NT_FN_AR_OBJ:
+    case EFD_NT_FN_AR_INT:
+    case EFD_NT_FN_AR_NUM:
+    case EFD_NT_FN_AR_STR:
+    case EFD_NT_GENERATOR:
+    case EFD_NT_GN_VOID:
+    case EFD_NT_GN_OBJ:
+    case EFD_NT_GN_INT:
+    case EFD_NT_GN_NUM:
+    case EFD_NT_GN_STR:
+    case EFD_NT_GN_AR_OBJ:
+    case EFD_NT_GN_AR_INT:
+    case EFD_NT_GN_AR_NUM:
+    case EFD_NT_GN_AR_STR:
+      children = result->b.as_function.children;
       break;
     case EFD_NT_LINK:
     case EFD_NT_LOCAL_LINK:
+    case EFD_NT_VARIABLE:
       children = result->b.as_link.children;
       break;
   }
@@ -297,16 +360,28 @@ void efd_parse_link(efd_node *result, efd_parse_state *s, efd_index *cr) {
   efd_parse_children(result, s, cr);
 }
 
+void efd_parse_function(efd_node *result, efd_parse_state *s, efd_index *cr) {
+  char name[EFD_NODE_NAME_SIZE + 1];
+
+  efd_parse_annotation(s, EFD_PARSER_COLON, name);
+  if (efd_parse_failed(s)) { return; }
+
+  strncpy(result->b.as_function.function, name, EFD_ANNOTATION_SIZE - 1);
+  result->b.as_function.function[EFD_ANNOTATION_SIZE-1] = '\0';
+
+  efd_parse_children(result, s, cr);
+}
+
 void efd_parse_proto(efd_node *result, efd_parse_state *s, efd_index *cr) {
   char format[EFD_NODE_NAME_SIZE + 1];
 
   efd_parse_annotation(s, EFD_PARSER_COLON, format);
   if (efd_parse_failed(s)) { return; }
 
-  strncpy(result->b.as_proto.format, format, EFD_OBJECT_FORMAT_SIZE - 1);
-  result->b.as_proto.format[EFD_OBJECT_FORMAT_SIZE-1] = '\0';
+  strncpy(result->b.as_proto.format, format, EFD_ANNOTATION_SIZE - 1);
+  result->b.as_proto.format[EFD_ANNOTATION_SIZE-1] = '\0';
 
-  efd_node *proto = create_efd_node(EFD_NT_CONTAINER, EFD_PROTO_NAME);
+  efd_node *proto = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
   efd_parse_children(proto, s, cr);
   if (efd_parse_failed(s)) {
     cleanup_efd_node(proto);
@@ -554,7 +629,7 @@ void efd_parse_int_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
   static char const * const e = "global integer";
   char c;
 
-  SKIP_OR_ELSE(s, e);
+  SKIP_OR_ELSE(s, e) //;
 
   if (efd_parse_atend(s)) {
     s->error = EFD_PE_INCOMPLETE;
@@ -565,7 +640,7 @@ void efd_parse_int_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
   c = s->input[s->pos];
   if (c == EFD_PARSER_EQUALS) {
     s->pos += 1;
-    SKIP_OR_ELSE(s, e);
+    SKIP_OR_ELSE(s, e) //;
   }
 
   result->b.as_integer.value = efd_parse_int_or_ref(s, cr);
@@ -576,7 +651,7 @@ void efd_parse_num_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
   static char const * const e = "global number";
   char c;
 
-  SKIP_OR_ELSE(s, e);
+  SKIP_OR_ELSE(s, e) //;
 
   if (efd_parse_atend(s)) {
     s->error = EFD_PE_INCOMPLETE;
@@ -587,7 +662,7 @@ void efd_parse_num_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
   c = s->input[s->pos];
   if (c == EFD_PARSER_EQUALS) {
     s->pos += 1;
-    SKIP_OR_ELSE(s, e);
+    SKIP_OR_ELSE(s, e) //;
   }
 
   result->b.as_number.value = efd_parse_float_or_ref(s, cr);
@@ -598,7 +673,7 @@ void efd_parse_str_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
   static char const * const e = "global string";
   char c;
 
-  SKIP_OR_ELSE(s, e);
+  SKIP_OR_ELSE(s, e) //;
 
   if (efd_parse_atend(s)) {
     s->error = EFD_PE_INCOMPLETE;
@@ -609,7 +684,7 @@ void efd_parse_str_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
   c = s->input[s->pos];
   if (c == EFD_PARSER_EQUALS) {
     s->pos += 1;
-    SKIP_OR_ELSE(s, e);
+    SKIP_OR_ELSE(s, e) //;
   }
 
   result->b.as_string.value = efd_parse_str_or_ref(s, cr);
@@ -745,19 +820,22 @@ char efd_parse_open(efd_parse_state *s) {
     return '\0';
   }
   c = s->input[s->pos];
-  if (c != EFD_PARSER_OPEN_BRACE && c != EFD_PARSER_OPEN_ANGLE) {
+  if (!is_opening_brace(c)) {
     s->error = EFD_PE_MALFORMED;
     s->context = e;
     return '\0';
   }
   s->pos += 1;
+  if (c == EFD_PARSER_OPEN_PAREN) {
+    return c;
+  } // Other brace types must be doubled
+
   if (efd_parse_atend(s)) {
     s->error = EFD_PE_INCOMPLETE;
     s->context = e;
     return '\0';
   }
-  c = s->input[s->pos];
-  if (c != EFD_PARSER_OPEN_BRACE && c != EFD_PARSER_OPEN_ANGLE) {
+  if (s->input[s->pos] != c) {
     s->error = EFD_PE_MALFORMED;
     s->context = e;
     return '\0';
@@ -778,6 +856,8 @@ void efd_parse_close(efd_parse_state *s, char otype) {
   }
   if (otype == EFD_PARSER_OPEN_ANGLE) {
     ctype = EFD_PARSER_CLOSE_ANGLE;
+  } else if (otype == EFD_PARSER_OPEN_PAREN) {
+    ctype = EFD_PARSER_CLOSE_PAREN;
   } else {
     ctype = EFD_PARSER_CLOSE_BRACE;
   }
@@ -787,6 +867,10 @@ void efd_parse_close(efd_parse_state *s, char otype) {
     return;
   }
   s->pos += 1;
+  if (ctype == EFD_PARSER_CLOSE_PAREN) {
+    return;
+  } // other types must be doubled
+
   if (efd_parse_atend(s)) {
     s->error = EFD_PE_INCOMPLETE;
     s->context = e;
@@ -826,12 +910,18 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
     case 'c':
       s->pos += 1;
       return EFD_NT_CONTAINER;
-    case 'l':
-      s->pos += 1;
-      return EFD_NT_LINK;
     case 'L':
       s->pos += 1;
+      return EFD_NT_LINK;
+    case 'l':
+      s->pos += 1;
       return EFD_NT_LOCAL_LINK;
+    case 'V':
+      s->pos += 1;
+      return EFD_NT_SCOPE;
+    case 'v':
+      s->pos += 1;
+      return EFD_NT_VARIABLE;
     case 'o':
       s->pos += 1;
       return EFD_NT_PROTO;
@@ -895,6 +985,130 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
         case 's':
           s->pos += 1;
           return EFD_NT_GLOBAL_STR;
+      }
+      break;
+    case 'f':
+      s->pos += 1;
+      if (efd_parse_atend(s)) {
+        s->error = EFD_PE_INCOMPLETE;
+        s->context = e;
+        return EFD_NT_INVALID;
+      }
+      c = s->input[s->pos];
+      switch (c) {
+        default:
+          s->error = EFD_PE_MALFORMED;
+          s->context = e;
+          return EFD_NT_INVALID;
+
+        case 'f':
+          s->pos += 1;
+          return EFD_NT_FUNCTION;
+        case 'v':
+          s->pos += 1;
+          return EFD_NT_FN_VOID;
+        case 'o':
+          s->pos += 1;
+          return EFD_NT_FN_OBJ;
+        case 'i':
+          s->pos += 1;
+          return EFD_NT_FN_INT;
+        case 'n':
+          s->pos += 1;
+          return EFD_NT_FN_NUM;
+        case 's':
+          s->pos += 1;
+          return EFD_NT_FN_STR;
+        case 'a':
+          s->pos += 1;
+          if (efd_parse_atend(s)) {
+            s->error = EFD_PE_INCOMPLETE;
+            s->context = e;
+            return EFD_NT_INVALID;
+          }
+          c = s->input[s->pos];
+          switch (c) {
+            default:
+              s->error = EFD_PE_MALFORMED;
+              s->context = e;
+              return EFD_NT_INVALID;
+
+            case 'o':
+              s->pos += 1;
+              return EFD_NT_FN_AR_OBJ;
+            case 'i':
+              s->pos += 1;
+              return EFD_NT_FN_AR_INT;
+            case 'n':
+              s->pos += 1;
+              return EFD_NT_FN_AR_NUM;
+            case 's':
+              s->pos += 1;
+              return EFD_NT_FN_AR_STR;
+          }
+          break;
+      }
+      break;
+    case 'g':
+      s->pos += 1;
+      if (efd_parse_atend(s)) {
+        s->error = EFD_PE_INCOMPLETE;
+        s->context = e;
+        return EFD_NT_INVALID;
+      }
+      c = s->input[s->pos];
+      switch (c) {
+        default:
+          s->error = EFD_PE_MALFORMED;
+          s->context = e;
+          return EFD_NT_INVALID;
+
+        case 'g':
+          s->pos += 1;
+          return EFD_NT_GENERATOR;
+        case 'v':
+          s->pos += 1;
+          return EFD_NT_GN_VOID;
+        case 'o':
+          s->pos += 1;
+          return EFD_NT_GN_OBJ;
+        case 'i':
+          s->pos += 1;
+          return EFD_NT_GN_INT;
+        case 'n':
+          s->pos += 1;
+          return EFD_NT_GN_NUM;
+        case 's':
+          s->pos += 1;
+          return EFD_NT_GN_STR;
+        case 'a':
+          s->pos += 1;
+          if (efd_parse_atend(s)) {
+            s->error = EFD_PE_INCOMPLETE;
+            s->context = e;
+            return EFD_NT_INVALID;
+          }
+          c = s->input[s->pos];
+          switch (c) {
+            default:
+              s->error = EFD_PE_MALFORMED;
+              s->context = e;
+              return EFD_NT_INVALID;
+
+            case 'o':
+              s->pos += 1;
+              return EFD_NT_GN_AR_OBJ;
+            case 'i':
+              s->pos += 1;
+              return EFD_NT_GN_AR_INT;
+            case 'n':
+              s->pos += 1;
+              return EFD_NT_GN_AR_NUM;
+            case 's':
+              s->pos += 1;
+              return EFD_NT_GN_AR_STR;
+          }
+          break;
       }
       break;
   }

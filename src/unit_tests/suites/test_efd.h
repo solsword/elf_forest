@@ -5,6 +5,7 @@
     &setup_efd_tests, \
     &test_efd_simple_parse, \
     &test_efd_basic_parse, \
+    &test_efd_real_parse, \
     &test_efd_defined_tests, \
     &test_efd_persist, \
     NULL, \
@@ -44,6 +45,19 @@ size_t test_efd_basic_parse(void) {
   efd_node *n = create_efd_node(EFD_NT_CONTAINER, "test");
   efd_index *cr = create_efd_index();
   if (!efd_parse_file(n, cr, "res/data/test/test.efd")) {
+    cleanup_efd_node(n);
+    cleanup_efd_index(cr);
+    return 1;
+  }
+  cleanup_efd_node(n);
+  cleanup_efd_index(cr);
+  return 0;
+}
+
+size_t test_efd_real_parse(void) {
+  efd_node *n = create_efd_node(EFD_NT_CONTAINER, "test");
+  efd_index *cr = create_efd_index();
+  if (!efd_parse_file(n, cr, "res/data/gen/geo.efd")) {
     cleanup_efd_node(n);
     cleanup_efd_index(cr);
     return 1;

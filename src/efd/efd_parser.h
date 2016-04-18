@@ -93,6 +93,8 @@ typedef struct efd_parse_state_s efd_parse_state;
 #define EFD_PARSER_CLOSE_BRACE ']'
 #define EFD_PARSER_OPEN_ANGLE '<'
 #define EFD_PARSER_CLOSE_ANGLE '>'
+#define EFD_PARSER_OPEN_PAREN '('
+#define EFD_PARSER_CLOSE_PAREN ')'
 #define EFD_PARSER_EQUALS '='
 #define EFD_PARSER_ARRAY_SEP ','
 #define EFD_PARSER_HASH '#'
@@ -133,10 +135,23 @@ static inline int is_special(char c) {
     case EFD_PARSER_CLOSE_BRACE:
     case EFD_PARSER_OPEN_ANGLE:
     case EFD_PARSER_CLOSE_ANGLE:
+    case EFD_PARSER_OPEN_PAREN:
+    case EFD_PARSER_CLOSE_PAREN:
     case EFD_PARSER_EQUALS:
     case EFD_PARSER_ARRAY_SEP:
     case EFD_PARSER_HASH:
     case EFD_PARSER_RENAME:
+      return 1;
+  }
+}
+
+static inline int is_opening_brace(char c) {
+  switch (c) {
+    default:
+      return 0;
+    case EFD_PARSER_OPEN_BRACE:
+    case EFD_PARSER_OPEN_ANGLE:
+    case EFD_PARSER_OPEN_PAREN:
       return 1;
   }
 }
@@ -147,6 +162,7 @@ static inline int is_closing_brace(char c) {
       return 0;
     case EFD_PARSER_CLOSE_BRACE:
     case EFD_PARSER_CLOSE_ANGLE:
+    case EFD_PARSER_CLOSE_PAREN:
       return 1;
   }
 }
@@ -190,6 +206,8 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr);
 void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr);
 
 void efd_parse_link(efd_node *result, efd_parse_state *s, efd_index *cr);
+
+void efd_parse_function(efd_node *result, efd_parse_state *s, efd_index *cr);
 
 void efd_parse_proto(efd_node *result, efd_parse_state *s, efd_index *cr);
 
