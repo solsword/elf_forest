@@ -85,6 +85,16 @@ enum efd_ref_type_e {
 };
 typedef enum efd_ref_type_e efd_ref_type;
 
+// Types of path elements: should a path element be treated as a normal node, a
+// reference, or skipped entirely during variable resolution?
+enum efd_path_element_type_e {
+  EFD_PET_UNKNOWN = 0,
+  EFD_PET_NORMAL, // a normal path element
+  EFD_PET_LINK, // a link path element; affects variable resolution
+  EFD_PET_PARENT // a parent path element, skipped during variable resolution
+};
+typedef enum efd_path_element_type_e efd_path_element_type;
+
 /**************
  * Structures *
  **************/
@@ -138,9 +148,13 @@ typedef union efd_node_body_u efd_node_body;
 struct efd_node_s;
 typedef struct efd_node_s efd_node;
 
-// A global efd node address:
+// A global EFD node address:
 struct efd_address_s;
 typedef struct efd_address_s efd_address;
+
+// An EFD path for keeping track of lookup paths and variable resolution:
+struct efd_path_s;
+typedef struct efd_path_s efd_path;
 
 // A reference specifies the location of a particular value:
 struct efd_reference_s;
@@ -190,6 +204,7 @@ extern char const * const EFD_ANON_NAME;
 extern char const * const EFD_ROOT_NAME;
 
 extern efd_node *EFD_ROOT;
+extern efd_path *EFD_ROOT_SCOPE;
 
 extern map *EFD_INT_GLOBALS;
 extern map *EFD_NUM_GLOBALS;
@@ -287,6 +302,12 @@ struct efd_address_s {
   efd_address *next;
 };
 
+struct efd_path_s {
+  efd_path_element_type type;
+  efd_node *node;
+  efd_path *parent;
+};
+
 struct efd_reference_s {
   efd_ref_type type;
   efd_address *addr;
@@ -327,6 +348,14 @@ static inline size_t efd_node_depth(efd_node *n) {
       n = n->h.parent;
     }
   } while (1);
+}
+
+static inline int efd_is_link_node(efd_node *n) {
+  return (
+    n->h.type == EFD_NT_LINK
+ || n->h.type == EFD_NT_LOCAL_LINK
+ || n->h.type == EFD_NT_VARIABLE
+  );
 }
 
 static inline char* efd__p_fmt(efd_node *n) {
@@ -471,7 +500,7 @@ CLEANUP_DECL(efd_node);
 
 // Allocate and creates a new EFD address. Up to EFD_NODE_NAME_SIZE characters
 // are copied from the given string, but a reference to it is not maintained.
-efd_address* create_efd_address(efd_address* parent, char const * const name);
+efd_address* create_efd_address(efd_address *parent, char const * const name);
 
 // Allocates and fills in a new EFD address for the given node.
 efd_address* construct_efd_address_of_node(efd_node *node);
@@ -484,6 +513,27 @@ efd_address* copy_efd_address(efd_address *src);
 // the address has a parent it's next pointer should be set to NULL before
 // cleanup up its child.
 CLEANUP_DECL(efd_address);
+
+// Allocate and create a new EFD path, with the given parent and target. If
+// type_override has a value other than EFD_PET_UNKNOWN, it will be used as the
+// resulting path's type. The newly created path contains a reference to the
+// given parent path, which will be freed if cleanup is called on the result.
+efd_path* create_efd_path(
+  efd_path *parent,
+  efd_node *here,
+  efd_path_element_type type_override
+);
+
+// Allocates and creates a new EFD path for the given node, using its canonical
+// ancestors as the path.
+efd_path* construct_efd_path_for(efd_node *node);
+
+// Allocates and returns a new path that's a copy of the given one.
+efd_path* copy_efd_path(efd_path const * const src);
+
+// Cleans up memory from the given EFD path, along with all of its ancestors
+// recursively. Doesn't touch the node that it points to.
+CLEANUP_DECL(efd_path);
 
 // Allocate and return a new EFD reference. The given address is copied, so it
 // should be freed by the caller if it doesn't need it.
@@ -556,18 +606,52 @@ void efd_push_address(efd_address *a, char const * const name);
 // address that was popped (which should eventually be cleaned up).
 efd_address* efd_pop_address(efd_address *a);
 
+// Looks up a child node within a parent, returning NULL if no node with the
+// given name exists as a child of the given node (or when the given node
+// doesn't have children). Prints a warning if the given node is of a
+// non-container type. Note that this function does not handle link nodes (see
+// efd_lookup).
+efd_node* efd_find_child(efd_node* parent, char const * const name);
+
+// Look for any scope node(s) within the given node and searches for the target
+// variable within them in order, returning the first match or NULL.
+efd_path* efd_find_variable_in(
+  efd_path const * const p_base,
+  efd_address const * const target
+);
+
+// Looks up the target of the given variable reference, returning NULL if no
+// such variable can be found. This function searches progressively upwards
+// through nested scopes, returning the first match found. However, when scopes
+// are links to each other, it returns the earliest (most distant from the
+// original scope) match from a chain of links instead of the latest. This
+// allows variable overrides within linking nodes to affect variable values
+// within their target nodes. Note that this path -> path function and those
+// that follow copy their input paths, so their callers are responsible for
+// memory management of both input and output paths.
+efd_path* efd_resolve_variable(efd_path const * const p_var);
+
+// Takes any path and returns the path with its tail node fully resolved (which
+// in most cases is just the same path). For paths that end in link nodes, this
+// traverses links until it finds a non-link node. Note that this function
+// doesn't remember where it's been, so infinite loops can occur. TODO: Change
+// that?
+efd_path* efd_concrete(efd_path const * const p_base);
+
 // This function simply looks up the first child with the given key within the
 // given node. It iterates over children until it hits one with a matching
 // name, so only the first is returned if multiple children share a name. The
 // key argument is treated as a single key within the given parent node. If no
-// match is found it returns NULL.
-efd_node* efd_lookup(efd_node* root, char const * const key);
+// match is found it returns NULL. Unlike efd_find_child, this function
+// properly handles link nodes. This function always calls efd_concrete on its
+// results, so the result is never a link node.
+efd_path* efd_lookup(efd_path const * const p_base, char const * const key);
 
 // The most ubiquitous EFD function 'efd' does a recursive address lookup to
-// find an EFD node given some root node to start from. Internally it uses
+// find an EFD path given some root path to start from. Internally it uses
 // efd_lookup, so when multiple children of a node share a name, the first one
 // is used. If no match is found it returns NULL.
-efd_node* efd(efd_node* root, efd_address* addr);
+efd_path* efd(efd_path const * const p_base, efd_address const * const addr);
 
 // Works like efd, but instead of taking an address it takes a key which is
 // parsed into an address. So
@@ -586,14 +670,14 @@ efd_node* efd(efd_node* root, efd_address* addr);
 // solved by a mix of calls to efd and efdx to avoid buffer-length problems.
 // Note that efdx's use of efd_parse_address means that it is limited by
 // EFD_MAX_NAME_DEPTH, although multiple calls to efd/efdx can overcome this.
-efd_node* efdx(efd_node* root, char const * const saddr);
+efd_path* efdx(efd_path const * const p_base, char const * const saddr);
 
 // Evaluates a function or generator node, returning a newly-allocated node
 // (which may have newly-allocated children) representing the result. For any
-// other type of node, an identical node is returned except that efd_eval is
-// called on each of its children. The caller should dispose of the returned
-// node and its children using cleanup_efd_node.
-efd_node* efd_eval(efd_node* target, efd_node* args);
+// other type of node, a copy is returned except that efd_eval is called on
+// each of its children. The caller should dispose of the returned node and its
+// children using cleanup_efd_node.
+efd_node* efd_eval(efd_path const * const target, efd_node const * const args);
 
 // Adds the given bridge to the given index.
 void efd_add_crossref(efd_index *cr, efd_bridge* bridge);

@@ -252,8 +252,10 @@
 [[s t 'string " with embedded " quotes']]
 [[s t "string "" with embedded "" quotes"]]
 [[s t 'string '' with embedded '' quotes']]
-[[s name-with~some$chrs&*)( "this name should be just fine"]]
+[[s name-with~some$chrs&*%)( "this name should be just fine"]]
 [[s name_just_short_enough__ "this name should be just short enough to work"]]
+// TODO: Allow this!
+// [[s really_long_name_that_is_very_long_and_gets_used_just_fine_anyways_because_the_language_allows_that_so_shut_up "test" ]]
 // object (rngtable):
 [[o test_object:rngtbl
   [[i size 7]]
@@ -378,3 +380,71 @@
   [[fs index_2:F_INDEX <<v ~slist>> (i 1) ]]
   [[fs index_3:F_INDEX <<v ~sarray>> (i 1) ]]
 ]]
+[[c varscope
+  [[V vars
+    [[i ~int 1]]
+    [[i ~other 17]]
+    [[i ~over 8]]
+    [[c ~struct
+      [[n num 3.5]]
+      [[n pi 3.1415926]]
+      <<v ~over@over>>
+    ]]
+  ]]
+  [[c nested
+    [[V vars
+      [[i ~over 1000]]
+      <<v ~other@~vv>>
+    ]]
+    <<v ~int@t_int>>
+    <<v ~other@t_other>>
+    <<v ~over@t_over>>
+    <<v ~vv@t_v>>
+    <<v ~struct.num@t_num>>
+    <<v ~struct.over@t_sover>>
+  ]]
+  <<l nested@nlink
+    [[V vars
+      [[i ~over 890]]
+    ]]
+  >>
+]]
+<<l varscope@ref1>>
+<<l varscope@ref2 [[V vars [[i ~other 350]]]]>>
+<<l varscope@ref3 [[V vars [[i ~over 35]]]]>>
+
+[[o t:eqtest <<l varscope.nested.t_int>> (i 1) ]]
+[[o t:eqtest <<l varscope.nested.t_other>> (i 17) ]]
+[[o t:eqtest <<l varscope.nested.t_over>> (i 1000) ]]
+[[o t:eqtest <<l varscope.nested.t_v>> (i 17) ]]
+[[o t:eqtest <<l varscope.nested.t_num>> (n 3.5) ]]
+[[o t:eqtest <<l varscope.nested.t_sover>> (i 8) ]]
+[[o t:eqtest <<l varscope.nlink.t_over>> (i 890) ]]
+[[o t:eqtest <<l varscope.nlink.t_sover>> (i 8) ]]
+
+[[o t:eqtest <<l ref1.nested.t_int>> (i 1) ]]
+[[o t:eqtest <<l ref1.nested.t_other>> (i 17) ]]
+[[o t:eqtest <<l ref1.nested.t_over>> (i 1000) ]]
+[[o t:eqtest <<l ref1.nested.t_v>> (i 17) ]]
+[[o t:eqtest <<l ref1.nested.t_num>> (n 3.5) ]]
+[[o t:eqtest <<l ref1.nested.t_sover>> (i 8) ]]
+[[o t:eqtest <<l ref1.nlink.t_over>> (i 890) ]]
+[[o t:eqtest <<l ref1.nlink.t_sover>> (i 8) ]]
+
+[[o t:eqtest <<l ref2.nested.t_int>> (i 1) ]]
+[[o t:eqtest <<l ref2.nested.t_other>> (i 350) ]]
+[[o t:eqtest <<l ref2.nested.t_over>> (i 1000) ]]
+[[o t:eqtest <<l ref2.nested.t_v>> (i 350) ]]
+[[o t:eqtest <<l ref2.nested.t_num>> (n 3.5) ]]
+[[o t:eqtest <<l ref2.nested.t_sover>> (i 8) ]]
+[[o t:eqtest <<l ref2.nlink.t_over>> (i 890) ]]
+[[o t:eqtest <<l ref2.nlink.t_sover>> (i 8) ]]
+
+[[o t:eqtest <<l ref3.nested.t_int>> (i 1) ]]
+[[o t:eqtest <<l ref3.nested.t_other>> (i 17) ]]
+[[o t:eqtest <<l ref3.nested.t_over>> (i 35) ]]
+[[o t:eqtest <<l ref3.nested.t_v>> (i 17) ]]
+[[o t:eqtest <<l ref3.nested.t_num>> (n 3.5) ]]
+[[o t:eqtest <<l ref3.nested.t_sover>> (i 35) ]]
+[[o t:eqtest <<l ref3.nlink.t_over>> (i 890) ]]
+[[o t:eqtest <<l ref3.nlink.t_sover>> (i 35) ]]
