@@ -190,7 +190,7 @@ void * l_remove_item(list *l, size_t i) {
   return result;
 }
 
-void * l_clear(list *l) {
+void l_clear(list *l) {
   l->count = 0;
   void ** new_elements = (void **) realloc(
     l->elements,

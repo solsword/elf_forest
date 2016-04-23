@@ -3,7 +3,7 @@
 
 [[V locals
   [[an ~CNST_AVG_WEIGHTS 1.5, 1.0, 0.7]]
-  [[o ~SOURCE_DISTRIBUTION:rngtbl
+  [[o ~SOURCE_DISTRIBUTION:rngtable
     [[i size 3]]
     [[ai values
       #i:GEO_IGNEOUS,
@@ -16,7 +16,7 @@
       0.4
     ]]
   ]]
-  [[o ~IGNEOUS_COMP:rngtbl
+  [[o ~IGNEOUS_COMP:rngtable
     [[i size 7]]
     [[ai values
       #i:MNRL_COMP_STONE,
@@ -37,7 +37,7 @@
       0.03, 0.02, //  5% | 100%
     ]]
   ]]
-  [[o ~METAMORPHIC_COMP:rngtbl
+  [[o ~METAMORPHIC_COMP:rngtable
     [[i size 15]]
     [[ai values
       #i:MNRL_COMP_STONE_WATER,
@@ -68,7 +68,7 @@
       0.01, 0.01,              //  2% | 100%
     ]]
   ]]
-  [[o ~SEDIMENTARY_COMP:rngtbl
+  [[o ~SEDIMENTARY_COMP:rngtable
     [[i size 7]]
     [[ai values
       #i:MNRL_COMP_STONE_LIFE,
@@ -89,7 +89,7 @@
       0.04,                //  4% | 100%
     ]]
   ]]
-  [[o ~IGNEOUS_TRACES:rngtbl
+  [[o ~IGNEOUS_TRACES:rngtable
     [[i size 9]]
     [[ai values
       #i:MNRL_TRACE_NONE,
@@ -112,7 +112,7 @@
       0.02, 0.02, 0.01,  //  5% | 100%
     ]]
   ]]
-  [[o ~METAMORPHIC_TRACES:rngtbl
+  [[o ~METAMORPHIC_TRACES:rngtable
     [[i size 11]]
     [[ai values
       #i:MNRL_TRACE_NONE,
@@ -139,7 +139,7 @@
       0.05, 0.04, 0.03   // 12% | 100%
     ]]
   ]]
-  [[o ~SEDIMENTARY_TRACES:rngtbl
+  [[o ~SEDIMENTARY_TRACES:rngtable
     [[i size 8]]
     [[ai values
       #i:MNRL_TRACE_NONE,
@@ -374,7 +374,7 @@
       ]]
     ]]
   ]]
-  [[c %COMPUTE_STONE_COLOR
+  [[ff %COMPUTE_STONE_COLOR:F_CHOOSE
     [[V args
       [[o ~constituents:NULL]]
       [[o ~traces:NULL]]
@@ -500,109 +500,107 @@
         ]]
       ]]
     ]]
-    [[ff color:F_CHOOSE
-      [[fi index:F_INDEX_BY
-        <<v ~source@input>>
-        [[i entry #i:GEO_IGNEOUS]]
-        [[i entry #i:GEO_METAMORPHIC]]
-        [[i entry #i:GEO_SEDIMENTARY]]
-      ]]
-      [[c igneous_color
-        [[i fmt #i:CFMT_LCH]]
-        [[fn L:F_POW
-          [[fn w:F_WEIGHT
-            [[an weights 0.6, 0.4 ]]
-            <<v ~el_brightness>>
-            [[fn mult:F_MULT
-              (n 100)
-              [[fn mat_influence:F_WEIGHT
-                [[an weights 0.6, 0.4]]
-                [[fn invert:F_SCALE <<v ~density>> (n 1) (n 0) ]]
-                <<v ~plasticity>>
-              ]]
-            ]]
-            (n 0.8)
-          ]]
-        ]]
-        [[fn c:F_MULT
-          <<v ~el_saturation>>
-          [[fn factor:F_IF_LT // A bimodal distribution
-            [[fn rng:F_PTRF [[fi rng:F_BRNG <<v ~hash>> (i 4) ]] ]]
-            (n 0.7)
-            // then:
-            [[fn norm:F_NORMAL
-              [[fi rng:F_BRNG <<v ~hash>> (i 5) ]] (n 0.05) (n 0.3) ]]
-            // else:
-            [[fn norm:F_NORMAL
-              [[fi rng:F_BRNG <<v ~hash>> (i 5) ]] (n 0.6) (n 0.8) ]]
-          ]]
-        ]]
-        [[fn h:F_ADD
-          <<v ~el_hue>>
-          [[fn rng:F_NORMAL
-            [[fi rng:F_BRNG <<v ~hash>> (i 6) ]]
-            [[fn min:F_DIV (n #n:PI) (n -16.0) ]]
-            [[fn max:F_DIV (n #n:PI) (n 16.0) ]]
-          ]]
-        ]]
-      ]]
-      [[c metamorphic_color
-        [[i fmt #i:CFMT_LCH]]
-        <<v ~el_brightness@L>> // unmodified
-        [[fn c:F_WEIGHT
-          [[V locals
-            [[fn ~boost:F_NORMAL
-              [[fi rng:F_BRNG <<v ~hash>> (i 7) ]] (n 0.0) (n 0.4) ]]
-          ]]
-          [[c weights
-            [[fn inv:F_SCALE <<v ~boost>> (n 1) (n 0) ]]
-            <<v ~boost>>
-          ]]
-          <<v ~el_saturation>>
-          [[fn s:F_SCALE
-            [[fn rng:F_PTRF [[fi rng:F_BRNG <<v ~hash>> (i 8) ]] ]]
-            (n 30)
-            (n 100)
-          ]]
-        ]]
-        [[fn h:F_ADD
-          <<v ~el_hue>>
-          [[fn rng:F_NORMAL
-            [[fi rng:F_BRNG <<v ~hash>> (i 9) ]]
-            [[fn min:F_DIV (n #n:PI) (n -6.0) ]]
-            [[fn max:F_DIV (n #n:PI) (n 6.0) ]]
-          ]]
-        ]]
-      ]]
-      [[c sedimentary_color
-        [[i fmt #i:CFMT_LCH]]
-        [[fn L:F_MULT
+    [[fi index:F_INDEX_BY
+      <<v ~source@input>>
+      [[i entry #i:GEO_IGNEOUS]]
+      [[i entry #i:GEO_METAMORPHIC]]
+      [[i entry #i:GEO_SEDIMENTARY]]
+    ]]
+    [[c igneous_color
+      [[i fmt #i:CFMT_LCH]]
+      [[fn L:F_POW
+        [[fn w:F_WEIGHT
+          [[an weights 0.6, 0.4 ]]
           <<v ~el_brightness>>
-          [[fn brighten:F_NORMAL
-            [[fn rng:F_BRNG <<v ~hash>> (i 10) ]] (n 1) (n 1.4) ]]
-        ]]
-        [[fn c:F_MULT
-          <<v ~el_saturation>>
-          [[fn factor:F_EXPDIST
-            [[fn rng:F_NORMAL
-              [[fi rng:F_BRNG <<v ~hash>> (i 11) ]] (n 0.3) (n 1) ]]
-            (n 2)
+          [[fn mult:F_MULT
+            (n 100)
+            [[fn mat_influence:F_WEIGHT
+              [[an weights 0.6, 0.4]]
+              [[fn invert:F_SCALE <<v ~density>> (n 1) (n 0) ]]
+              <<v ~plasticity>>
+            ]]
           ]]
+          (n 0.8)
         ]]
-        [[fn h:F_ADD
-          <<v ~el_hue>>
+      ]]
+      [[fn c:F_MULT
+        <<v ~el_saturation>>
+        [[fn factor:F_IF_LT // A bimodal distribution
+          [[fn rng:F_PTRF [[fi rng:F_BRNG <<v ~hash>> (i 4) ]] ]]
+          (n 0.7)
+          // then:
+          [[fn norm:F_NORMAL
+            [[fi rng:F_BRNG <<v ~hash>> (i 5) ]] (n 0.05) (n 0.3) ]]
+          // else:
+          [[fn norm:F_NORMAL
+            [[fi rng:F_BRNG <<v ~hash>> (i 5) ]] (n 0.6) (n 0.8) ]]
+        ]]
+      ]]
+      [[fn h:F_ADD
+        <<v ~el_hue>>
+        [[fn rng:F_NORMAL
+          [[fi rng:F_BRNG <<v ~hash>> (i 6) ]]
+          [[fn min:F_DIV (n #n:PI) (n -16.0) ]]
+          [[fn max:F_DIV (n #n:PI) (n 16.0) ]]
+        ]]
+      ]]
+    ]]
+    [[c metamorphic_color
+      [[i fmt #i:CFMT_LCH]]
+      <<v ~el_brightness@L>> // unmodified
+      [[fn c:F_WEIGHT
+        [[V locals
+          [[fn ~boost:F_NORMAL
+            [[fi rng:F_BRNG <<v ~hash>> (i 7) ]] (n 0.0) (n 0.4) ]]
+        ]]
+        [[c weights
+          [[fn inv:F_SCALE <<v ~boost>> (n 1) (n 0) ]]
+          <<v ~boost>>
+        ]]
+        <<v ~el_saturation>>
+        [[fn s:F_SCALE
+          [[fn rng:F_PTRF [[fi rng:F_BRNG <<v ~hash>> (i 8) ]] ]]
+          (n 30)
+          (n 100)
+        ]]
+      ]]
+      [[fn h:F_ADD
+        <<v ~el_hue>>
+        [[fn rng:F_NORMAL
+          [[fi rng:F_BRNG <<v ~hash>> (i 9) ]]
+          [[fn min:F_DIV (n #n:PI) (n -6.0) ]]
+          [[fn max:F_DIV (n #n:PI) (n 6.0) ]]
+        ]]
+      ]]
+    ]]
+    [[c sedimentary_color
+      [[i fmt #i:CFMT_LCH]]
+      [[fn L:F_MULT
+        <<v ~el_brightness>>
+        [[fn brighten:F_NORMAL
+          [[fn rng:F_BRNG <<v ~hash>> (i 10) ]] (n 1) (n 1.4) ]]
+      ]]
+      [[fn c:F_MULT
+        <<v ~el_saturation>>
+        [[fn factor:F_EXPDIST
           [[fn rng:F_NORMAL
-            [[fi rng:F_BRNG <<v ~hash>> (i 12) ]]
-            [[fn min:F_DIV (n #n:PI) (n -12.0) ]]
-            [[fn max:F_DIV (n #n:PI) (n 12.0) ]]
-          ]]
+            [[fi rng:F_BRNG <<v ~hash>> (i 11) ]] (n 0.3) (n 1) ]]
+          (n 2)
+        ]]
+      ]]
+      [[fn h:F_ADD
+        <<v ~el_hue>>
+        [[fn rng:F_NORMAL
+          [[fi rng:F_BRNG <<v ~hash>> (i 12) ]]
+          [[fn min:F_DIV (n #n:PI) (n -12.0) ]]
+          [[fn max:F_DIV (n #n:PI) (n 12.0) ]]
         ]]
       ]]
     ]]
   ]]
 ]]
 
-[[c gen_stone_species
+[[c %gen_stone_species
   [[V args
     [[o ~world_map:NULL]]
     [[i ~source 0]]
@@ -644,12 +642,14 @@
           [[fi rng:F_BRNG <<v ~hash>> (i 1) ]]
           <<v ~trace_table>>
         ]]
-        <<v %EXPAND_COMPOSITION@~categories
+        [[fai ~categories:F_CALL
+          <<v %EXPAND_COMPOSITION>>
           [[V args <<v ~composition@~composition>> ]]
-        >>
-        <<v %EXPAND_TRACES@~trace_categories
+        ]]
+        [[fai ~trace_categories:F_CALL
+          <<v %EXPAND_TRACES>>
           [[V args <<v ~trace_composition@~traces>> ]]
-        >>
+        ]]
         [[o ~used:list]]
       ]]
       [[fo first_element:F_PICK_ELEMENT
@@ -732,7 +732,7 @@
       ]]
     ]]
     [[c ~material
-      [[V args
+      [[V locals
         <<v ~composition.constituents@~constituents>>
         <<v ~composition.traces@~traces>>
       ]]
@@ -1154,7 +1154,7 @@
       ]]
     ]]
     [[c ~appearance
-      [[V args
+      [[V locals
         <<v ~composition.constituents@~constituents>>
         <<v ~composition.traces@~traces>>
         <<v ~material.base_density@~mat_density>>
@@ -1373,7 +1373,8 @@
             (n -0.2)
             (n 0.2)
           ]]
-          <<v %COMPUTE_STONE_COLOR@color
+          [[ff color:F_CALL
+            <<v %COMPUTE_STONE_COLOR>>
             [[V args
               <<v ~constituents@~constituents>>
               <<v ~traces@~traces>>
@@ -1383,10 +1384,11 @@
               <<v ~mat_hardness@~hardness>>
               [[fi ~seed:F_BRNG <<v ~hash>> (i 17) ]]
             ]]
-          >>
+          ]]
           [[c alt_color
             [[V locals
-              <<v %COMPUTE_STONE_COLOR@~alt_base
+              [[ff ~alt_base:F_CALL
+                <<v %COMPUTE_STONE_COLOR>>
                 [[V args
                   <<v ~constituents@~constituents>>
                   <<v ~traces@~traces>>
@@ -1396,12 +1398,12 @@
                   <<v ~mat_hardness@~hardness>>
                   [[fi ~seed:F_BRNG <<v ~hash>> (i 18) ]]
                 ]]
-              >>
+              ]]
             ]]
             [[i fmt #i:CFMT_LCH]]
             // Inclusions are usually darker and less saturated
-            [[fn l:F_MULT
-              <<v ~alt_base.l>>
+            [[fn L:F_MULT
+              <<v ~alt_base.L>>
               [[fn rng:F_NORMAL
                 [[fi rng:F_BRNG <<v ~hash>> (i 19) ]] (n 0.4) (n 1.2) ]]
             ]]
@@ -1604,7 +1606,8 @@
             (n -0.25)
             (n 0.35)
           ]]
-          <<v %COMPUTE_STONE_COLOR@color
+          [[ff color:F_CALL
+            <<v %COMPUTE_STONE_COLOR>>
             [[V args
               <<v ~constituents@~constituents>>
               <<v ~traces@~traces>>
@@ -1614,10 +1617,11 @@
               <<v ~mat_hardness@~hardness>>
               [[fi ~seed:F_BRNG <<v ~hash>> (i 17) ]]
             ]]
-          >>
+          ]]
           [[c alt_color
             [[V locals
-              <<v %COMPUTE_STONE_COLOR@~alt_base
+              [[ff ~alt_base:F_CALL
+                <<v %COMPUTE_STONE_COLOR>>
                 [[V args
                   <<v ~constituents@~constituents>>
                   <<v ~traces@~traces>>
@@ -1627,20 +1631,20 @@
                   <<v ~mat_hardness@~hardness>>
                   [[fi ~seed:F_BRNG <<v ~hash>> (i 18) ]]
                 ]]
-              >>
+              ]]
             ]]
             [[i fmt #i:CFMT_LCH]]
             // Inclusions tend to be more saturated:
-            <<v ~alt_base.L@L>>
+            <<v ~alt_base.color.L@L>>
             [[fn c:F_MULT
-              <<v ~alt_base.c>>
+              <<v ~alt_base.color.c>>
               [[fn rng:F_NORMAL
                 [[fi rng:F_BRNG <<v ~hash>> (i 19) ]]
                 (n 1.0)
                 (n 1.5)
               ]]
             ]]
-            <<v ~alt_base.h@h>>
+            <<v ~alt_base.color.h@h>>
           ]]
         ]]
         [[c sedimentary_appearance
@@ -1836,7 +1840,8 @@
             (n -0.05)
             (n 0.35)
           ]]
-          <<v %COMPUTE_STONE_COLOR@color
+          [[ff color:F_CALL
+            <<v %COMPUTE_STONE_COLOR>>
             [[V args
               <<v ~constituents@~constituents>>
               <<v ~traces@~traces>>
@@ -1846,10 +1851,11 @@
               <<v ~mat_hardness@~hardness>>
               [[fi ~seed:F_BRNG <<v ~hash>> (i 17) ]]
             ]]
-          >>
+          ]]
           [[c alt_color
             [[V locals
-              <<v %COMPUTE_STONE_COLOR@~alt_base
+              [[ff ~alt_base:F_CALL
+                <<v %COMPUTE_STONE_COLOR>>
                 [[V args
                   <<v ~constituents@~constituents>>
                   <<v ~traces@~traces>>
@@ -1859,21 +1865,21 @@
                   <<v ~mat_hardness@~hardness>>
                   [[fi ~seed:F_BRNG <<v ~hash>> (i 18) ]]
                 ]]
-              >>
+              ]]
             ]]
             [[i fmt #i:CFMT_LCH]]
             // Inclusions are generally darker and less saturated:
             [[fn L:F_MULT
-              <<v ~alt_base.L>>
+              <<v ~alt_base.color.L>>
               [[fn rng:F_NORMAL
                 [[fi rng:F_BRNG <<v ~hash>> (i 19) ]] (n 0.3) (n 1.3) ]]
             ]]
             [[fn c:F_MULT
-              <<v ~alt_base.c>>
+              <<v ~alt_base.color.c>>
               [[fn rng:F_NORMAL
                 [[fi rng:F_BRNG <<v ~hash>> (i 20) ]] (n 0.6) (n 1.2) ]]
             ]]
-            <<v ~alt_base.h@h>>
+            <<v ~alt_base.color.h@h>>
           ]]
         ]]
       ]]
@@ -1884,7 +1890,7 @@
   <<v ~appearance>>
 ]]
 
-[[c gen_strata_params
+[[c %gen_strata_params
   [[V args
     [[i ~i 0]]
     [[i ~wm_seed 0]]
@@ -1942,7 +1948,7 @@
   ]]
 ]]
 
-[[c gen_stratum
+[[c %gen_stratum
   [[V args
     [[i ~seed 0]]
     [[i ~source 0]]
@@ -2101,5 +2107,5 @@
   ]]
 ]]
 
-]]
-]]
+]] // c geo
+]] // c gen

@@ -32,7 +32,10 @@ struct rngtable_s {
 // Allocates and sets up a new empty rngtable of the given size. Note that
 // constant rngtables should just be declared statically rather than using this
 // function and then setting them up.
-rngtable *create_rngtable(size_t size);
+rngtable* create_rngtable(size_t size);
+
+// Allocates a new rngtable and copies over the contents of the given table.
+rngtable* copy_rngtable(rngtable *src);
 
 // Frees the memory associated with an rngtable.
 CLEANUP_DECL(rngtable);

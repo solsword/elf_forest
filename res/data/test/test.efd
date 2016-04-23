@@ -1,4 +1,6 @@
 // integers
+[[c test
+
 [[i t 0]]
 [[i t 12]]
 [[i t 99947845612301310]]
@@ -252,12 +254,12 @@
 [[s t 'string " with embedded " quotes']]
 [[s t "string "" with embedded "" quotes"]]
 [[s t 'string '' with embedded '' quotes']]
-[[s name-with~some$chrs&*%)( "this name should be just fine"]]
+[[s name-with~some$chrs&*% "this name should be just fine"]]
 [[s name_just_short_enough__ "this name should be just short enough to work"]]
 // TODO: Allow this!
 // [[s really_long_name_that_is_very_long_and_gets_used_just_fine_anyways_because_the_language_allows_that_so_shut_up "test" ]]
 // object (rngtable):
-[[o test_object:rngtbl
+[[o test_object:rngtable
   [[i size 7]]
   [[ai values
     1, 2,
@@ -281,42 +283,38 @@
 // references:
 // TODO: Sort these out!
 [[i refint 3]]
-<<l refint>>
-<<l refint@linkint>>
+<<L test.refint>>
+<<L test.refint@linkint>>
 [[n refnum 3.5]]
-<<l refnum@linknum>>
-<<l refnum@linknum>>
+<<L test.refnum@linknum>>
+<<L test.refnum@linknum>>
 [[s refstr "reference string"]]
-<<l refstr@linkstr>>
+<<L test.refstr@linkstr>>
 [[c testref
-  <<l refint>>
-  <<l refnum>>
-  <<l refstr@rntest>>
+  <<L test.refint>>
+  <<L test.refnum>>
+  <<L test.refstr@rntest>>
   [[i test 7]]
 ]]
 [[c tr2
-  <<l testref>>
-  <<l testref.refint>>
-  <<l testref.refnum>>
-  <<l testref.rntest>>
-  <<l testref.test>>
+  <<L test.testref>>
+  <<L test.testref.refint>>
+  <<L test.testref.refnum>>
+  <<L test.testref.rntest>>
+  <<L test.testref.test>>
 ]]
-<<l testref@overwrite
-  [[i refint 8]]
-  <<l tr2.refint>>
-  [[i test 8]]
->>
-<<l overwrite.test@overtest>>
+<<L test.testref@copy>>
+<<L test.copy.test@overtest>>
 [[c scope
   [[i i 3]]
-  <<L i@j>>
+  <<l i@j>>
   [[c nest1
     [[i i 5]]
-    <<L ^.nest2.i@j>>
+    <<l ^.nest2.i@j>>
   ]]
   [[c nest2
     [[i i 7]]
-    <<L ^.nest1.i@j>>
+    <<l ^.nest1.i@j>>
   ]]
 ]]
 [[c tr3
@@ -328,11 +326,12 @@
 //functions and variable references
 [[c testfun
   [[V locals
-    <<l testref@~link>>
+    <<L test.testref@~link>>
     [[i ~int 3]]
     [[n ~num 5.7]]
     [[s ~string "hello world"]]
-    <<L ~int@~integer>>
+    <<l ~int@~integer>>
+    <<v ~int@~varint>>
     [[c ~tuple (n 1.1) (n 2.2) ]]
     [[c ~slist (s "one") (s "two") (s "three") (s "four")]]
     [[as ~sarray "wun", "tuo", "threigh", "foor"]]
@@ -345,18 +344,18 @@
     ]]
     [[ff ~fchoice:F_CHOOSE
       <<v ~int>>
-      [[c (s "hi")]]
-      [[c (s "ho")]]
-      [[c (s "he")]]
-      [[c (s "ha")]]
+      [[c _ (s "hi")]]
+      [[c _ (s "ho")]]
+      [[c _ (s "he")]]
+      [[c _ (s "ha")]]
     ]]
   ]]
   [[c test
     [[V nested
       [[i ~int 1]]
     ]]
-    <<v ~int@*testint>>
-    <<v ~ichoice@*testscope>>
+    <<v ~int@testint>>
+    <<v ~ichoice@testscope>>
   ]]
   [[ff testiter:F_ITERATE
     [[V iterate
@@ -364,8 +363,25 @@
       <<v ~sarray@*astring>>
       [[gi *iter1:G_RANGE (i 1) ]]
       [[gi *iter2:G_RANGE (i 3) (i 8) (i 2) ]]
-      [[c values <<v *lstring>> <<v *asring>> <<v *testint>> <<v *testscope>> ]]
+      [[gi *iter3:G_EXTEND
+        [[gi iter:G_RANGE (i 1) (i 2) ]]
+        (i #i:EFD_GEN_EXTENSION_MODE_REPEAT)
+      ]]
+      [[gi *iter4:G_EXTEND
+        [[gi iter:G_RANGE (i 1) (i 2) ]]
+        (i #i:EFD_GEN_EXTENSION_MODE_RESTART)
+      ]]
     ]]
+    [[c values
+      <<v *lstring>>
+      <<v *asring>>
+      <<v *iter1>>
+      <<v *iter2>>
+      <<v *iter3>>
+      <<v *iter4>>
+    ]]
+    [[fs cat:F_CAT <<v *lstring>> (s "-") <<v *astring>> ]]
+    [[fi plus:F_ADD <<v *iter1>> <<v *iter2>> ]]
   ]]
   [[fi plus:F_ADD
     [[fn rng:F_PTRF [[fi hash:F_BRNG [[fi rng:F_PRNG (i 17) ]] (i 1) ]] ]]
@@ -379,6 +395,7 @@
   [[fs index_1:F_INDEX <<v ~fchoice>> (i 0) ]]
   [[fs index_2:F_INDEX <<v ~slist>> (i 1) ]]
   [[fs index_3:F_INDEX <<v ~sarray>> (i 1) ]]
+  [[fs index_4:F_INDEX <<l testiter>> (i 1) ]]
 ]]
 [[c varscope
   [[V vars
@@ -403,48 +420,120 @@
     <<v ~struct.num@t_num>>
     <<v ~struct.over@t_sover>>
   ]]
-  <<l nested@nlink
+  [[ff nlink:F_CALL
+    <<l ^.nested>>
     [[V vars
       [[i ~over 890]]
+      [[i ~other 77]]
     ]]
-  >>
+  ]]
 ]]
+
+<<l varscope.nested.t_v@inner_link>>
+
+[[ff other_95:F_CALL <<l ^.varscope>> [[V vars [[i ~other 95]] ]] ]]
+[[ff over_999:F_CALL <<l ^.varscope>> [[V vars [[i ~over 999]] ]] ]]
+[[ff other_350:F_CALL <<l ^.varscope>> [[V vars [[i ~other 350]] ]] ]]
+[[ff over_35:F_CALL <<l ^.varscope>> [[V vars [[i ~over 35]] ]] ]]
+
+<<l other_95.nested.t_v@inner_link_v>>
+<<l over_999.nested.t_over@inner_link_over>>
+
 <<l varscope@ref1>>
-<<l varscope@ref2 [[V vars [[i ~other 350]]]]>>
-<<l varscope@ref3 [[V vars [[i ~over 35]]]]>>
+<<l other_350@ref2>>
+<<l over_35@ref3>>
 
-[[o t:eqtest <<l varscope.nested.t_int>> (i 1) ]]
-[[o t:eqtest <<l varscope.nested.t_other>> (i 17) ]]
-[[o t:eqtest <<l varscope.nested.t_over>> (i 1000) ]]
-[[o t:eqtest <<l varscope.nested.t_v>> (i 17) ]]
-[[o t:eqtest <<l varscope.nested.t_num>> (n 3.5) ]]
-[[o t:eqtest <<l varscope.nested.t_sover>> (i 8) ]]
-[[o t:eqtest <<l varscope.nlink.t_over>> (i 890) ]]
-[[o t:eqtest <<l varscope.nlink.t_sover>> (i 8) ]]
+[[o t:evtest <<L test.inner_link>> (i 17) ]]
+[[o t:evtest <<L test.inner_link_v>> (i 95) ]]
+[[o t:evtest <<L test.inner_link_over>> (i 1000) ]]
 
-[[o t:eqtest <<l ref1.nested.t_int>> (i 1) ]]
-[[o t:eqtest <<l ref1.nested.t_other>> (i 17) ]]
-[[o t:eqtest <<l ref1.nested.t_over>> (i 1000) ]]
-[[o t:eqtest <<l ref1.nested.t_v>> (i 17) ]]
-[[o t:eqtest <<l ref1.nested.t_num>> (n 3.5) ]]
-[[o t:eqtest <<l ref1.nested.t_sover>> (i 8) ]]
-[[o t:eqtest <<l ref1.nlink.t_over>> (i 890) ]]
-[[o t:eqtest <<l ref1.nlink.t_sover>> (i 8) ]]
+[[o t:evtest <<L test.varscope.nested.t_int>> (i 1) ]]
+[[o t:evtest <<L test.varscope.nested.t_other>> (i 17) ]]
+[[o t:evtest <<L test.varscope.nested.t_over>> (i 1000) ]]
+[[o t:evtest <<L test.varscope.nested.t_v>> (i 17) ]]
+[[o t:evtest <<L test.varscope.nested.t_num>> (n 3.5) ]]
+[[o t:evtest <<L test.varscope.nested.t_sover>> (i 8) ]]
+[[o t:evtest <<L test.varscope.nlink.t_over>> (i 890) ]]
+[[o t:evtest <<L test.varscope.nlink.t_sover>> (i 8) ]]
+[[o t:evtest <<L test.varscope.nlink.t_other>> (i 77) ]]
+[[o t:evtest <<L test.varscope.nlink.t_v>> (i 77) ]]
 
-[[o t:eqtest <<l ref2.nested.t_int>> (i 1) ]]
-[[o t:eqtest <<l ref2.nested.t_other>> (i 350) ]]
-[[o t:eqtest <<l ref2.nested.t_over>> (i 1000) ]]
-[[o t:eqtest <<l ref2.nested.t_v>> (i 350) ]]
-[[o t:eqtest <<l ref2.nested.t_num>> (n 3.5) ]]
-[[o t:eqtest <<l ref2.nested.t_sover>> (i 8) ]]
-[[o t:eqtest <<l ref2.nlink.t_over>> (i 890) ]]
-[[o t:eqtest <<l ref2.nlink.t_sover>> (i 8) ]]
+[[o t:evtest <<L test.ref1.nested.t_int>> (i 1) ]]
+[[o t:evtest <<L test.ref1.nested.t_other>> (i 17) ]]
+[[o t:evtest <<L test.ref1.nested.t_over>> (i 1000) ]]
+[[o t:evtest <<L test.ref1.nested.t_v>> (i 17) ]]
+[[o t:evtest <<L test.ref1.nested.t_num>> (n 3.5) ]]
+[[o t:evtest <<L test.ref1.nested.t_sover>> (i 8) ]]
+[[o t:evtest <<L test.ref1.nlink.t_over>> (i 890) ]]
+[[o t:evtest <<L test.ref1.nlink.t_sover>> (i 8) ]]
+[[o t:evtest <<L test.ref1.nlink.t_other>> (i 77) ]]
+[[o t:evtest <<L test.ref1.nlink.t_v>> (i 77) ]]
 
-[[o t:eqtest <<l ref3.nested.t_int>> (i 1) ]]
-[[o t:eqtest <<l ref3.nested.t_other>> (i 17) ]]
-[[o t:eqtest <<l ref3.nested.t_over>> (i 35) ]]
-[[o t:eqtest <<l ref3.nested.t_v>> (i 17) ]]
-[[o t:eqtest <<l ref3.nested.t_num>> (n 3.5) ]]
-[[o t:eqtest <<l ref3.nested.t_sover>> (i 35) ]]
-[[o t:eqtest <<l ref3.nlink.t_over>> (i 890) ]]
-[[o t:eqtest <<l ref3.nlink.t_sover>> (i 35) ]]
+[[o t:evtest <<L test.ref2.nested.t_int>> (i 1) ]]
+[[o t:evtest <<L test.ref2.nested.t_other>> (i 350) ]]
+[[o t:evtest <<L test.ref2.nested.t_over>> (i 1000) ]]
+[[o t:evtest <<L test.ref2.nested.t_v>> (i 350) ]]
+[[o t:evtest <<L test.ref2.nested.t_num>> (n 3.5) ]]
+[[o t:evtest <<L test.ref2.nested.t_sover>> (i 8) ]]
+[[o t:evtest <<L test.ref2.nlink.t_over>> (i 890) ]]
+[[o t:evtest <<L test.ref2.nlink.t_sover>> (i 8) ]]
+[[o t:evtest <<L test.ref2.nlink.t_other>> (i 77) ]]
+[[o t:evtest <<L test.ref2.nlink.t_v>> (i 77) ]]
+
+[[o t:evtest <<L test.ref3.nested.t_int>> (i 1) ]]
+[[o t:evtest <<L test.ref3.nested.t_other>> (i 17) ]]
+[[o t:evtest <<L test.ref3.nested.t_over>> (i 35) ]]
+[[o t:evtest <<L test.ref3.nested.t_v>> (i 17) ]]
+[[o t:evtest <<L test.ref3.nested.t_num>> (n 3.5) ]]
+[[o t:evtest <<L test.ref3.nested.t_sover>> (i 35) ]]
+[[o t:evtest <<L test.ref3.nlink.t_over>> (i 890) ]]
+[[o t:evtest <<L test.ref3.nlink.t_sover>> (i 35) ]]
+[[o t:evtest <<L test.ref3.nlink.t_other>> (i 77) ]]
+[[o t:evtest <<L test.ref3.nlink.t_v>> (i 77) ]]
+
+[[c fn_test_scope
+  [[V defaults
+    [[i ~addend 1]]
+  ]]
+  [[fi plus_one:F_PLUS
+    [[V args
+      [[i ~int 5]]
+    ]]
+    <<v ~int>>
+    <<v ~addend>>
+  ]]
+]]
+<<l fn_test_scope.plus_one@noargs>>
+<<l noargs@chained>>
+[[fi wargs:F_CALL
+  <<l ^.fn_test_scope.plus_one>>
+  [[V args [[i ~int 17]] ]]
+]]
+<<l wargs@chainedargs>>
+
+[[ff fn_test_other_scope:F_CALL
+  <<l ^.fn_test_scope>>
+  [[V args
+    [[i ~addend 8]]
+  ]]
+]]
+
+<<l fn_test_other_scope.plus_one@other_noargs>>
+<<l other_noargs@other_chained>>
+[[fi other_wargs:F_CALL
+  <<l ^.fn_test_other_scope.plus_one>>
+  [[V args [[i ~int 17]] ]]
+]]
+<<l other_wargs@other_chainedargs>>
+
+[[o t:evtest <<L test.noargs>> (i 6) ]]
+[[o t:evtest <<L test.chained>> (i 6) ]]
+[[o t:evtest <<L test.wargs>> (i 18) ]]
+[[o t:evtest <<L test.chainedargs>> (i 18) ]]
+
+[[o t:evtest <<L test.other_noargs>> (i 13) ]]
+[[o t:evtest <<L test.other_chained>> (i 13) ]]
+[[o t:evtest <<L test.other_wargs>> (i 25) ]]
+[[o t:evtest <<L test.other_chainedargs>> (i 25) ]]
+
+]] // c test

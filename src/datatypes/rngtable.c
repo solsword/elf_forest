@@ -21,6 +21,16 @@ rngtable *create_rngtable(size_t size) {
   return result;
 }
 
+rngtable* copy_rngtable(rngtable *src) {
+  rngtable *result = create_rngtable(src->size);
+  size_t i;
+  for (i = 0; i < src->size; ++i) {
+    result->values[i] = src->values[i];
+    result->weights[i] = src->weights[i];
+  }
+  return result;
+}
+
 CLEANUP_IMPL(rngtable) {
   free(doomed->values);
   free(doomed->weights);

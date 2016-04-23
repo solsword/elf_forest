@@ -83,7 +83,7 @@ void ** _l_get_pointer(list *l, size_t i);
 void * l_remove_item(list *l, size_t i);
 
 // Removes all elements from the list.
-void * l_clear(list *l);
+void l_clear(list *l);
 
 // Removes the given number of items starting at the given index. The delete
 // version frees the items before removing them. If any part of the range is

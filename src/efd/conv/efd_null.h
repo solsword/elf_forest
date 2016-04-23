@@ -1,11 +1,15 @@
-#if defined(EFD_REGISTER_NAMES)
-"NULL"
+#if defined(EFD_REGISTER_DECLARATIONS)
+// no declarations
+#elif defined(EFD_REGISTER_NAMES)
+"NULL",
 #elif defined(EFD_REGISTER_UNPACKERS)
-efd__null
+efd__null,
 #elif defined(EFD_REGISTER_PACKERS)
-null__efd
+null__efd,
+#elif defined(EFD_REGISTER_COPIERS)
+dont_copy,
 #elif defined(EFD_REGISTER_DESTRUCTORS)
-dont_cleanup
+dont_cleanup,
 #else
 #ifndef INCLUDE_EFD_NULL_H
 #define INCLUDE_EFD_NULL_H

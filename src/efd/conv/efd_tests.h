@@ -1,19 +1,60 @@
-#if defined(EFD_REGISTER_NAMES)
+#if defined(EFD_REGISTER_DECLARATIONS)
+/**************
+ * Structures *
+ **************/
+
+struct efd_int_test_s;
+typedef struct efd_int_test_s efd_int_test;
+
+struct efd_num_test_s;
+typedef struct efd_num_test_s efd_num_test;
+
+struct efd_parse_test_s;
+typedef struct efd_parse_test_s efd_parse_test;
+
+/*************************
+ * Structure Definitions *
+ *************************/
+
+struct efd_int_test_s {
+  string* input;
+  string* expect;
+  ptrdiff_t output;
+  string* remainder;
+};
+
+struct efd_num_test_s {
+  string* input;
+  string* expect;
+  float output;
+  string* remainder;
+};
+
+struct efd_parse_test_s {
+  string* input;
+  string* expect;
+  string* remainder;
+};
+#elif defined(EFD_REGISTER_NAMES)
 "itest",
 "ntest",
-"ptest"
+"ptest",
 #elif defined(EFD_REGISTER_UNPACKERS)
 efd__int_test,
 efd__num_test,
-efd__parse_test
+efd__parse_test,
 #elif defined(EFD_REGISTER_PACKERS)
 int_test__efd,
 num_test__efd,
-parse_test__efd
+parse_test__efd,
+#elif defined(EFD_REGISTER_COPIERS)
+copy_int_test,
+copy_num_test,
+copy_parse_test,
 #elif defined(EFD_REGISTER_DESTRUCTORS)
 cleanup_v_int_test,
 cleanup_v_num_test,
-cleanup_v_parse_test
+cleanup_v_parse_test,
 #else
 #ifndef INCLUDE_EFD_TESTS_H
 #define INCLUDE_EFD_TESTS_H
@@ -115,6 +156,16 @@ efd_node *int_test__efd(void *v_t) {
   }
 
   return result;
+}
+
+void* copy_int_test(void *v_itest) {
+  efd_int_test *t = (efd_int_test*) v_itest;
+  efd_int_test *result = (efd_int_test*) calloc(1, sizeof(efd_int_test));
+  result->input = copy_string(t->input);
+  result->expect = copy_string(t->expect);
+  result->output = t->output;
+  result->remainder = copy_string(t->remainder);
+  return (void*) result;
 }
 
 void cleanup_v_int_test(void *v_itest) {
@@ -223,6 +274,16 @@ efd_node *num_test__efd(void *v_t) {
   return result;
 }
 
+void* copy_num_test(void *v_ntest) {
+  efd_num_test *t = (efd_num_test*) v_ntest;
+  efd_num_test *result = (efd_num_test*) calloc(1, sizeof(efd_num_test));
+  result->input = copy_string(t->input);
+  result->expect = copy_string(t->expect);
+  result->output = t->output;
+  result->remainder = copy_string(t->remainder);
+  return (void*) result;
+}
+
 void cleanup_v_num_test(void *v_ntest) {
   efd_num_test *t = (efd_num_test*) v_ntest;
   if (t->input != NULL) {
@@ -303,6 +364,15 @@ efd_node *parse_test__efd(void *v_t) {
   }
 
   return result;
+}
+
+void* copy_parse_test(void *v_ptest) {
+  efd_parse_test *t = (efd_parse_test*) v_ptest;
+  efd_parse_test *result = (efd_parse_test*) calloc(1, sizeof(efd_parse_test));
+  result->input = copy_string(t->input);
+  result->expect = copy_string(t->expect);
+  result->remainder = copy_string(t->remainder);
+  return (void*) result;
 }
 
 void cleanup_v_parse_test(void *v_ptest) {

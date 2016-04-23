@@ -98,7 +98,6 @@ void setup_unit_tests(void) {
   #include "suites/test_color.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
-  /*
   #include "suites/test_blocks.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
@@ -114,6 +113,7 @@ void setup_unit_tests(void) {
   #include "suites/test_txg_minerals.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);
+  /*
   #include "suites/test_worldgen.h"
   ts = INVOKE_IMPORTED_BUILDER;
   l_append_element(ALL_TEST_SUITES, ts);

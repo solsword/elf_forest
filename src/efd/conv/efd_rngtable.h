@@ -1,11 +1,15 @@
-#if defined(EFD_REGISTER_NAMES)
-"rngtbl"
+#if defined(EFD_REGISTER_DECLARATIONS)
+// no declarations
+#elif defined(EFD_REGISTER_NAMES)
+"rngtable"
 #elif defined(EFD_REGISTER_UNPACKERS)
-efd__rngtable
+efd__rngtable,
 #elif defined(EFD_REGISTER_PACKERS)
-rngtable__efd
+rngtable__efd,
+#elif defined(EFD_REGISTER_COPIERS)
+copy_v_rngtable,
 #elif defined(EFD_REGISTER_DESTRUCTORS)
-cleanup_v_rngtable
+cleanup_v_rngtable,
 #else
 #ifndef INCLUDE_EFD_RNGTABLE_H
 #define INCLUDE_EFD_RNGTABLE_H
@@ -81,6 +85,10 @@ efd_node *rngtable__efd(void *v_t) {
   efd_add_child(result, n);
 
   return result;
+}
+
+void* copy_v_rngtable(void *v_t) {
+  return (void*) copy_rngtable((rngtable*) v_t);
 }
 
 #endif // INCLUDE_EFD_RNGTABLE_H

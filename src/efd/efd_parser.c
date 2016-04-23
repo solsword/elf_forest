@@ -209,9 +209,6 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
     case EFD_NT_STRING:
       efd_parse_string(result, s, cr);
       break;
-    case EFD_NT_ARRAY_OBJ:
-      efd_parse_obj_array(result, s, cr);
-      break;
     case EFD_NT_ARRAY_INT:
       efd_parse_int_array(result, s, cr);
       break;
@@ -290,11 +287,6 @@ void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
     case EFD_NT_GN_AR_STR:
       children = result->b.as_function.children;
       break;
-    case EFD_NT_LINK:
-    case EFD_NT_LOCAL_LINK:
-    case EFD_NT_VARIABLE:
-      children = result->b.as_link.children;
-      break;
   }
 
   // parse any number of children and add them:
@@ -355,9 +347,6 @@ void efd_parse_link(efd_node *result, efd_parse_state *s, efd_index *cr) {
   strncpy(result->h.name, name, EFD_NODE_NAME_SIZE);
   name[EFD_NODE_NAME_SIZE] = '\0';
   result->b.as_link.target = target;
-
-  // Finally just parse any children that might be present:
-  efd_parse_children(result, s, cr);
 }
 
 void efd_parse_function(efd_node *result, efd_parse_state *s, efd_index *cr) {
@@ -414,57 +403,6 @@ void efd_parse_string(efd_node *result, efd_parse_state *s, efd_index *cr) {
   if (efd_parse_failed(s)) {
     return;
   }
-}
-
-void efd_parse_obj_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
-  size_t i;
-  void *val;
-  list *values = create_list();
-
-  s->current_index = 0;
-  while (1) {
-    val = efd_parse_obj_ref(s, cr);
-    if (efd_parse_failed(s)) {
-      if (is_closing_brace(s->input[s->pos])) {
-        s->error = EFD_PE_NO_ERROR;
-        break;
-      } else {
-        cleanup_list(values);
-        return;
-      }
-    }
-    l_append_element(values, val);
-
-    efd_parse_sep(s);
-    if (efd_parse_failed(s)) {
-      if (is_closing_brace(s->input[s->pos])) {
-        s->error = EFD_PE_NO_ERROR;
-        break;
-      } else {
-        cleanup_list(values);
-        return;
-      }
-    }
-    s->current_index += 1;
-  }
-
-  result->b.as_obj_array.count = l_get_length(values);
-#ifdef DEBUG
-  if (result->b.as_obj_array.values != NULL) {
-    fprintf(
-      stderr,
-      "ERROR: EFD object array already had values while parsing!\n"
-    );
-    exit(-1);
-  }
-#endif
-  result->b.as_obj_array.values = (void*) malloc(
-    result->b.as_obj_array.count * sizeof(void*)
-  );
-  for (i = 0; i < result->b.as_obj_array.count; ++i) {
-    result->b.as_obj_array.values[i] = l_get_item(values, i);
-  }
-  cleanup_list(values);
 }
 
 void efd_parse_int_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
@@ -948,9 +886,6 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
           s->context = e;
           return EFD_NT_INVALID;
 
-        case 'o':
-          s->pos += 1;
-          return EFD_NT_ARRAY_OBJ;
         case 'i':
           s->pos += 1;
           return EFD_NT_ARRAY_INT;

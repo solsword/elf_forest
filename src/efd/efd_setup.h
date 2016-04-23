@@ -6,19 +6,6 @@
 
 #include "efd.h"
 
-/**************
- * Structures *
- **************/
-
-struct efd_int_test_s;
-typedef struct efd_int_test_s efd_int_test;
-
-struct efd_num_test_s;
-typedef struct efd_num_test_s efd_num_test;
-
-struct efd_parse_test_s;
-typedef struct efd_parse_test_s efd_parse_test;
-
 /*************
  * Constants *
  *************/
@@ -26,31 +13,18 @@ typedef struct efd_parse_test_s efd_parse_test;
 extern char * const EFD_OBJECT_NAME_REGISTRY[];
 extern efd_unpack_function EFD_OBJECT_UNPACKER_REGISTRY[];
 extern efd_pack_function EFD_OBJECT_PACKER_REGISTRY[];
+extern efd_copy_function EFD_OBJECT_COPIER_REGISTRY[];
 extern efd_destroy_function EFD_OBJECT_DESTRUCTOR_REGISTRY[];
 
 /*************************
- * Structure Definitions *
+ * Included Declarations *
  *************************/
 
-struct efd_int_test_s {
-  string* input;
-  string* expect;
-  ptrdiff_t output;
-  string* remainder;
-};
-
-struct efd_num_test_s {
-  string* input;
-  string* expect;
-  float output;
-  string* remainder;
-};
-
-struct efd_parse_test_s {
-  string* input;
-  string* expect;
-  string* remainder;
-};
+#define EFD_REGISTER_DECLARATIONS
+#include "conv/efd_null.h"
+#include "conv/efd_tests.h"
+#include "conv/efd_rngtable.h"
+#undef EFD_REGISTER_DECLARATIONS
 
 /*************
  * Functions *

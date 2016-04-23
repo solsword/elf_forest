@@ -10,8 +10,9 @@
  * Conversion Definitions *
  **************************/
 
-#include "conv/efd_rngtable.h"
+#include "conv/efd_null.h"
 #include "conv/efd_tests.h"
+#include "conv/efd_rngtable.h"
 
 /*************
  * Constants *
@@ -19,9 +20,10 @@
 
 #define EFD_REGISTER_NAMES
 char * const EFD_OBJECT_NAME_REGISTRY[] = {
-  #include "conv/efd_rngtable.h"
-  ,
+  #include "conv/efd_null.h"
   #include "conv/efd_tests.h"
+  #include "conv/efd_rngtable.h"
+  "INVALID"
 };
 #undef EFD_REGISTER_NAMES
 
@@ -32,25 +34,37 @@ size_t EFD_OBJECT_REGISTRY_SIZE = (
 
 #define EFD_REGISTER_UNPACKERS
 efd_unpack_function EFD_OBJECT_UNPACKER_REGISTRY[] = {
-  #include "conv/efd_rngtable.h"
-  ,
+  #include "conv/efd_null.h"
   #include "conv/efd_tests.h"
+  #include "conv/efd_rngtable.h"
+  NULL
 };
 #undef EFD_REGISTER_UNPACKERS
 
 #define EFD_REGISTER_PACKERS
 efd_pack_function EFD_OBJECT_PACKER_REGISTRY[] = {
-  #include "conv/efd_rngtable.h"
-  ,
+  #include "conv/efd_null.h"
   #include "conv/efd_tests.h"
+  #include "conv/efd_rngtable.h"
+  NULL
 };
 #undef EFD_REGISTER_PACKERS
 
+#define EFD_REGISTER_COPIERS
+efd_copy_function EFD_OBJECT_COPIER_REGISTRY[] = {
+  #include "conv/efd_null.h"
+  #include "conv/efd_tests.h"
+  #include "conv/efd_rngtable.h"
+  NULL
+};
+#undef EFD_REGISTER_COPIERS
+
 #define EFD_REGISTER_DESTRUCTORS
 efd_destroy_function EFD_OBJECT_DESTRUCTOR_REGISTRY[] = {
-  #include "conv/efd_rngtable.h"
-  ,
+  #include "conv/efd_null.h"
   #include "conv/efd_tests.h"
+  #include "conv/efd_rngtable.h"
+  NULL
 };
 #undef EFD_REGISTER_DESTRUCTORS
 
@@ -60,7 +74,6 @@ efd_destroy_function EFD_OBJECT_DESTRUCTOR_REGISTRY[] = {
 
 void setup_elf_forest_data(void) {
   EFD_ROOT = create_efd_node(EFD_NT_CONTAINER, EFD_ROOT_NAME);
-  EFD_ROOT_SCOPE = create_efd_scope(NULL, EFD_ROOT);
   EFD_INT_GLOBALS = create_map(EFD_GLOBALS_KEY_ARITY, EFD_GLOBALS_TABLE_SIZE);
   EFD_NUM_GLOBALS = create_map(EFD_GLOBALS_KEY_ARITY, EFD_GLOBALS_TABLE_SIZE);
   EFD_STR_GLOBALS = create_map(EFD_GLOBALS_KEY_ARITY, EFD_GLOBALS_TABLE_SIZE);
@@ -137,6 +150,20 @@ efd_pack_function efd_lookup_packer(char const * const key) {
     return NULL;
   }
   return EFD_OBJECT_PACKER_REGISTRY[idx];
+}
+
+efd_copy_function efd_lookup_copier(char const * const key) {
+  ptrdiff_t idx = _efd_lookup_key(key);
+  if (idx < 0) {
+    fprintf(
+      stderr,
+      "Error: no copy function found for format '%.*s'.\n",
+      (int) EFD_ANNOTATION_SIZE,
+      key
+    );
+    return NULL;
+  }
+  return EFD_OBJECT_COPIER_REGISTRY[idx];
 }
 
 efd_destroy_function efd_lookup_destructor(char const * const key) {

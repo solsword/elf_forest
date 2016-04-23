@@ -23,7 +23,7 @@
  *********/
 
 // Raw types that a single EFD node can take on:
-#define EFD_NUM_TYPES 36
+#define EFD_NUM_TYPES 37
 enum efd_node_type_e {
   EFD_NT_INVALID    = 0,   //  -    marks an invalid node internally
   EFD_NT_CONTAINER  = 1,   // 'c'   no data, just children
@@ -36,33 +36,32 @@ enum efd_node_type_e {
   EFD_NT_INTEGER    = 8,   // 'i'   ptrdiff_t
   EFD_NT_NUMBER     = 9,   // 'n'   float
   EFD_NT_STRING     = 10,   // 's'   quoted string
-  EFD_NT_ARRAY_OBJ  = 11,  // 'ao'  array of void*
-  EFD_NT_ARRAY_INT  = 12,  // 'ai'  array of ptrdiff_t
-  EFD_NT_ARRAY_NUM  = 13,  // 'an'  array of float
-  EFD_NT_ARRAY_STR  = 14,  // 'as'  array of quoted strings
-  EFD_NT_GLOBAL_INT = 15,  // 'Gi'  global integer
-  EFD_NT_GLOBAL_NUM = 16,  // 'Gn'  global numeric
-  EFD_NT_GLOBAL_STR = 17,  // 'Gs'  global string
-  EFD_NT_FUNCTION   = 18,  // 'ff'  function (returns a container)
-  EFD_NT_FN_VOID    = 19,  // 'fv'  void function (returns NULL)
-  EFD_NT_FN_OBJ     = 20,  // 'fo'  function (returns an object)
-  EFD_NT_FN_INT     = 21,  // 'fi'  function (returns an integer)
-  EFD_NT_FN_NUM     = 22,  // 'fn'  function (returns a number)
-  EFD_NT_FN_STR     = 23,  // 'fs'  function (returns a string)
-  EFD_NT_FN_AR_OBJ  = 24,  // 'fao' function (returns an array of objects)
-  EFD_NT_FN_AR_INT  = 25,  // 'fai' function (returns an array of integers)
-  EFD_NT_FN_AR_NUM  = 26,  // 'fan' function (returns an array of numbers)
-  EFD_NT_FN_AR_STR  = 27,  // 'fas' function (returns an array of strings)
-  EFD_NT_GENERATOR  = 28,  // 'gg'  generator (returns containers)
-  EFD_NT_GN_VOID    = 29,  // 'gv'  void generator (returns NULLs)
-  EFD_NT_GN_OBJ     = 30,  // 'go'  generator (returns objects)
-  EFD_NT_GN_INT     = 31,  // 'gi'  generator (returns integers)
-  EFD_NT_GN_NUM     = 32,  // 'gn'  generator (returns numbers)
-  EFD_NT_GN_STR     = 33,  // 'gs'  generator (returns strings)
-  EFD_NT_GN_AR_OBJ  = 34,  // 'gao' generator (returns arrays of objects)
-  EFD_NT_GN_AR_INT  = 35,  // 'gai' generator (returns arrays of integers)
-  EFD_NT_GN_AR_NUM  = 36,  // 'gan' generator (returns arrays of numbers)
-  EFD_NT_GN_AR_STR  = 37   // 'gas' generator (returns arrays of strings)
+  EFD_NT_ARRAY_INT  = 11,  // 'ai'  array of ptrdiff_t
+  EFD_NT_ARRAY_NUM  = 12,  // 'an'  array of float
+  EFD_NT_ARRAY_STR  = 13,  // 'as'  array of quoted strings
+  EFD_NT_GLOBAL_INT = 14,  // 'Gi'  global integer
+  EFD_NT_GLOBAL_NUM = 15,  // 'Gn'  global numeric
+  EFD_NT_GLOBAL_STR = 16,  // 'Gs'  global string
+  EFD_NT_FUNCTION   = 17,  // 'ff'  function (returns a container)
+  EFD_NT_FN_VOID    = 18,  // 'fv'  void function (returns NULL)
+  EFD_NT_FN_OBJ     = 19,  // 'fo'  function (returns an object)
+  EFD_NT_FN_INT     = 20,  // 'fi'  function (returns an integer)
+  EFD_NT_FN_NUM     = 21,  // 'fn'  function (returns a number)
+  EFD_NT_FN_STR     = 22,  // 'fs'  function (returns a string)
+  EFD_NT_FN_AR_OBJ  = 23,  // 'fao' function (returns an array of objects)
+  EFD_NT_FN_AR_INT  = 24,  // 'fai' function (returns an array of integers)
+  EFD_NT_FN_AR_NUM  = 25,  // 'fan' function (returns an array of numbers)
+  EFD_NT_FN_AR_STR  = 26,  // 'fas' function (returns an array of strings)
+  EFD_NT_GENERATOR  = 27,  // 'gg'  generator (returns containers)
+  EFD_NT_GN_VOID    = 28,  // 'gv'  void generator (returns NULLs)
+  EFD_NT_GN_OBJ     = 29,  // 'go'  generator (returns objects)
+  EFD_NT_GN_INT     = 30,  // 'gi'  generator (returns integers)
+  EFD_NT_GN_NUM     = 31,  // 'gn'  generator (returns numbers)
+  EFD_NT_GN_STR     = 32,  // 'gs'  generator (returns strings)
+  EFD_NT_GN_AR_OBJ  = 33,  // 'gao' generator (returns arrays of objects)
+  EFD_NT_GN_AR_INT  = 34,  // 'gai' generator (returns arrays of integers)
+  EFD_NT_GN_AR_NUM  = 35,  // 'gan' generator (returns arrays of numbers)
+  EFD_NT_GN_AR_STR  = 36   // 'gas' generator (returns arrays of strings)
 };
 typedef enum efd_node_type_e efd_node_type;
 
@@ -78,13 +77,14 @@ enum efd_ref_type_e {
   EFD_RT_INT, // (ptrdiff_t) contents of an integer node
   EFD_RT_NUM, // (float) contents of a number node
   EFD_RT_STR, // (string*) contents of a string node
-  EFD_RT_OBJ_ARR_ENTRY, // (void*) entry in an object array
   EFD_RT_INT_ARR_ENTRY, // (ptrdiff_t) entry in an integer array
   EFD_RT_NUM_ARR_ENTRY, // (float) entry in a number array
   EFD_RT_STR_ARR_ENTRY // (string*) entry in a string array
 };
 typedef enum efd_ref_type_e efd_ref_type;
 
+/*
+ * TODO: Get rid of this!
 // Types of path elements: should a path element be treated as a normal node, a
 // reference, or skipped entirely during variable resolution?
 enum efd_path_element_type_e {
@@ -94,6 +94,7 @@ enum efd_path_element_type_e {
   EFD_PET_PARENT // a parent path element, skipped during variable resolution
 };
 typedef enum efd_path_element_type_e efd_path_element_type;
+*/
 
 /**************
  * Structures *
@@ -152,9 +153,12 @@ typedef struct efd_node_s efd_node;
 struct efd_address_s;
 typedef struct efd_address_s efd_address;
 
+/*
+ * TODO: Get rid of this!
 // An EFD path for keeping track of lookup paths and variable resolution:
 struct efd_path_s;
 typedef struct efd_path_s efd_path;
+*/
 
 // A reference specifies the location of a particular value:
 struct efd_reference_s;
@@ -175,6 +179,7 @@ typedef struct efd_index_s efd_index;
 
 typedef void* (*efd_unpack_function)(efd_node *);
 typedef efd_node* (*efd_pack_function)(void *);
+typedef void* (*efd_copy_function)(void *);
 typedef void (*efd_destroy_function)(void *);
 
 /*************
@@ -204,7 +209,7 @@ extern char const * const EFD_ANON_NAME;
 extern char const * const EFD_ROOT_NAME;
 
 extern efd_node *EFD_ROOT;
-extern efd_path *EFD_ROOT_SCOPE;
+//extern efd_path *EFD_ROOT_PATH; // TODO: axe this!
 
 extern map *EFD_INT_GLOBALS;
 extern map *EFD_NUM_GLOBALS;
@@ -226,7 +231,6 @@ struct efd_container_s {
 
 struct efd_link_s {
   efd_address *target;
-  list *children;
 };
 
 struct efd_function_s {
@@ -302,11 +306,14 @@ struct efd_address_s {
   efd_address *next;
 };
 
+/*
+ * TODO: Get rid of this!
 struct efd_path_s {
   efd_path_element_type type;
   efd_node *node;
   efd_path *parent;
 };
+*/
 
 struct efd_reference_s {
   efd_ref_type type;
@@ -388,16 +395,6 @@ static inline string** efd__s(efd_node *n) {
   return &(n->b.as_string.value);
 }
 
-static inline void*** efd__ao(efd_node *n) {
-  efd_assert_type(n, EFD_NT_ARRAY_OBJ);
-  return &(n->b.as_obj_array.values);
-}
-
-static inline size_t* efd__ao_count(efd_node *n) {
-  efd_assert_type(n, EFD_NT_ARRAY_OBJ);
-  return &(n->b.as_obj_array.count);
-}
-
 static inline ptrdiff_t** efd__ai(efd_node *n) {
   efd_assert_type(n, EFD_NT_ARRAY_INT);
   return &(n->b.as_int_array.values);
@@ -475,8 +472,6 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
       return EFD_RT_NUM;
     case EFD_NT_STRING:
       return EFD_RT_STR;
-    case EFD_NT_ARRAY_OBJ:
-      return EFD_RT_OBJ_ARR_ENTRY;
     case EFD_NT_ARRAY_INT:
       return EFD_RT_INT_ARR_ENTRY;
     case EFD_NT_ARRAY_NUM:
@@ -494,6 +489,12 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
 // EFD_NODE_NAME_SIZE characters are copied from the given string, but a
 // reference to it is not maintained.
 efd_node* create_efd_node(efd_node_type t, char const * const name);
+
+// Allocates and returns a deep copy of the given node, which of course
+// includes deep copies of all of the node's children recursively. Note that
+// any objects contained in the node or its children are also copied, as it is
+// assumed that cleanup_efd_node will be sufficient for memory management.
+efd_node* copy_efd_node(efd_node *src);
 
 // Clean up memory from the given EFD node.
 CLEANUP_DECL(efd_node);
@@ -514,6 +515,8 @@ efd_address* copy_efd_address(efd_address *src);
 // cleanup up its child.
 CLEANUP_DECL(efd_address);
 
+/*
+ * TODO: Get rid of this!
 // Allocate and create a new EFD path, with the given parent and target. If
 // type_override has a value other than EFD_PET_UNKNOWN, it will be used as the
 // resulting path's type. The newly created path contains a reference to the
@@ -534,6 +537,7 @@ efd_path* copy_efd_path(efd_path const * const src);
 // Cleans up memory from the given EFD path, along with all of its ancestors
 // recursively. Doesn't touch the node that it points to.
 CLEANUP_DECL(efd_path);
+*/
 
 // Allocate and return a new EFD reference. The given address is copied, so it
 // should be freed by the caller if it doesn't need it.
@@ -583,6 +587,10 @@ int efd_format_is(efd_node *n, char const * const fmt);
 // accommodate names up to a maximum depth of EFD_MAX_NAME_DEPTH nestings.
 char* efd_build_fqn(efd_node *n);
 
+// Gets the children list from a node of any container type (returns NULL for
+// non-container nodes and prints a warning if DEBUG is on).
+list* efd_children_list(efd_node *n);
+
 // Adds the given child to the parent's list of children (parent must be a
 // container node).
 void efd_add_child(efd_node *n, efd_node *child);
@@ -614,44 +622,39 @@ efd_address* efd_pop_address(efd_address *a);
 efd_node* efd_find_child(efd_node* parent, char const * const name);
 
 // Look for any scope node(s) within the given node and searches for the target
-// variable within them in order, returning the first match or NULL.
-efd_path* efd_find_variable_in(
-  efd_path const * const p_base,
-  efd_address const * const target
-);
+// variable within them in order, setting the given scope path to the path to
+// the matching variable or NULL if there is no match.
+efd_node* efd_find_variable_in(efd_node* base, efd_address* target);
 
-// Looks up the target of the given variable reference, returning NULL if no
-// such variable can be found. This function searches progressively upwards
-// through nested scopes, returning the first match found. However, when scopes
-// are links to each other, it returns the earliest (most distant from the
-// original scope) match from a chain of links instead of the latest. This
-// allows variable overrides within linking nodes to affect variable values
-// within their target nodes. Note that this path -> path function and those
-// that follow copy their input paths, so their callers are responsible for
-// memory management of both input and output paths.
-efd_path* efd_resolve_variable(efd_path const * const p_var);
+// Takes a variable node and returns the node that it refers to. If no referent
+// can be found, it returns NULL. This function searches progressively upwards
+// through the EFD tree, returning the first match found. This function just
+// does one step of resolution, so the node it returns may still be a link or
+// variable.
+efd_node* efd_resolve_variable(efd_node* var);
 
-// Takes any path and returns the path with its tail node fully resolved (which
-// in most cases is just the same path). For paths that end in link nodes, this
-// traverses links until it finds a non-link node. Note that this function
-// doesn't remember where it's been, so infinite loops can occur. TODO: Change
-// that?
-efd_path* efd_concrete(efd_path const * const p_base);
+// Takes a node and returns the concrete node that it refers to, following any
+// link(s) encountered until a non-link node is found. If a link is broken, it
+// returns NULL (and prints a warning if DEBUG is on). Note that this function
+// doesn't remember where it's been, so infinite loops can occur.
+// TODO: Change that?
+efd_node* efd_concrete(efd_node* base);
 
-// This function simply looks up the first child with the given key within the
-// given node. It iterates over children until it hits one with a matching
-// name, so only the first is returned if multiple children share a name. The
-// key argument is treated as a single key within the given parent node. If no
-// match is found it returns NULL. Unlike efd_find_child, this function
-// properly handles link nodes. This function always calls efd_concrete on its
-// results, so the result is never a link node.
-efd_path* efd_lookup(efd_path const * const p_base, char const * const key);
+// This function returns the child with the given key in the given node. It
+// iterates over children until it hits one with a matching name, so only the
+// first is used if multiple children share a name. The key argument is treated
+// as a single key within the given parent node. If no match is found it
+// returns NULL. Unlike efd_find_child, this function properly handles link
+// nodes. This function always calls efd_concrete on its results, so the result
+// is never a link node.
+efd_node* efd_lookup(efd_node* node, char const * const key);
 
 // The most ubiquitous EFD function 'efd' does a recursive address lookup to
-// find an EFD path given some root path to start from. Internally it uses
-// efd_lookup, so when multiple children of a node share a name, the first one
-// is used. If no match is found it returns NULL.
-efd_path* efd(efd_path const * const p_base, efd_address const * const addr);
+// find an EFD node given some root node to start from and an address to find.
+// Internally it uses efd_lookup, so when multiple children of a node share a
+// name, the first one is used. If no match is found it sets the given path to
+// NULL.
+efd_node* efd(efd_node *root, efd_address const * addr);
 
 // Works like efd, but instead of taking an address it takes a key which is
 // parsed into an address. So
@@ -670,14 +673,16 @@ efd_path* efd(efd_path const * const p_base, efd_address const * const addr);
 // solved by a mix of calls to efd and efdx to avoid buffer-length problems.
 // Note that efdx's use of efd_parse_address means that it is limited by
 // EFD_MAX_NAME_DEPTH, although multiple calls to efd/efdx can overcome this.
-efd_path* efdx(efd_path const * const p_base, char const * const saddr);
+efd_node* efdx(efd_node *root, char const * const saddr);
 
 // Evaluates a function or generator node, returning a newly-allocated node
 // (which may have newly-allocated children) representing the result. For any
 // other type of node, a copy is returned except that efd_eval is called on
 // each of its children. The caller should dispose of the returned node and its
-// children using cleanup_efd_node.
-efd_node* efd_eval(efd_path const * const target, efd_node const * const args);
+// children using cleanup_efd_node. The args argument may be given as NULL, but
+// if not, it should be a SCOPE node which will be copied and inserted into the
+// copy of the target node as its first child before evaluation begins.
+efd_node* efd_eval(efd_node const * const target, efd_node const * const args);
 
 // Adds the given bridge to the given index.
 void efd_add_crossref(efd_index *cr, efd_bridge* bridge);
@@ -696,10 +701,11 @@ void efd_pack_node(efd_node *root, efd_index *cr);
 
 // TODO: Serialization (separate files)...
 
-// Lookups for packers, unpackers, and destructors. Note that these are not
-// actually defined in efd.c but rather in  efd_setup.c.
+// Lookups for packers, unpackers, copiers, and destructors. Note that these
+// are not actually defined in efd.c but rather in  efd_setup.c.
 efd_unpack_function efd_lookup_unpacker(char const * const key);
 efd_pack_function efd_lookup_packer(char const * const key);
+efd_copy_function efd_lookup_copier(char const * const key);
 efd_destroy_function efd_lookup_destructor(char const * const key);
 
 // Functions for getting and setting global integers, numbers, and strings:
@@ -709,6 +715,11 @@ string* efd_get_global_s(char const * const key);
 void efd_set_global_i(char const * const key, ptrdiff_t value);
 void efd_set_global_n(char const * const key, float value);
 void efd_set_global_s(char const * const key, string* value);
+
+// A function with the same signature as a normal copy function that just
+// returns the original pointer (warning: may lead to a double-free if
+// misused).
+void* dont_copy(void* v);
 
 // A function with the same signature as a normal cleanup function that doesn't
 // do anything.
