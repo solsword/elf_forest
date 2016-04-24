@@ -2,9 +2,8 @@
 #define MAP_H
 
 // map.h
-// Simple hash-table-based maps that accept a variable number of keys per
-// element. Map instances must always be given the same number of keys to work
-// with of course.
+// Simple hash-table-based maps that accept a fixed number of keys per element.
+// Different map objects may have different key counts.
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -16,7 +15,7 @@
  * Types *
  *********/
 
-// A map key is just an unsigned integer:
+// A map key is just a void pointer:
 typedef void* map_key_t;
 
 /**************

@@ -255,9 +255,8 @@
 [[s t "string "" with embedded "" quotes"]]
 [[s t 'string '' with embedded '' quotes']]
 [[s name-with~some$chrs&*% "this name should be just fine"]]
-[[s name_just_short_enough__ "this name should be just short enough to work"]]
-// TODO: Allow this!
-// [[s really_long_name_that_is_very_long_and_gets_used_just_fine_anyways_because_the_language_allows_that_so_shut_up "test" ]]
+[[s really_long_name_that_is_very_long_and_gets_used_just_fine_anyways_because_the_language_allows_that_so_shut_up "test" ]]
+[[s なまえ "名前" ]]
 // object (rngtable):
 [[o test_object:rngtable
   [[i size 7]]
@@ -281,7 +280,6 @@
 [[Gs GLOBAL_STR "This string goes directly into the globals..."]]
 
 // references:
-// TODO: Sort these out!
 [[i refint 3]]
 <<L test.refint>>
 <<L test.refint@linkint>>
@@ -290,6 +288,7 @@
 <<L test.refnum@linknum>>
 [[s refstr "reference string"]]
 <<L test.refstr@linkstr>>
+<<L test.なまえ@name>>
 [[c testref
   <<L test.refint>>
   <<L test.refnum>>

@@ -634,9 +634,9 @@ efd_node* efd_find_variable_in(efd_node* base, efd_address* target);
 efd_node* efd_resolve_variable(efd_node* var);
 
 // Takes a node and returns the concrete node that it refers to, following any
-// link(s) encountered until a non-link node is found. If a link is broken, it
-// returns NULL (and prints a warning if DEBUG is on). Note that this function
-// doesn't remember where it's been, so infinite loops can occur.
+// link(s) encountered until a non-link node is found. If a link is broken or
+// if the input is NULL, it returns NULL. Note that this function doesn't
+// remember where it's been, so infinite loops can occur.
 // TODO: Change that?
 efd_node* efd_concrete(efd_node* base);
 

@@ -49,7 +49,7 @@ chunk * create_chunk(global_chunk_pos const * const glcpos) {
   for (ly = 0; ly < N_LAYERS; ++ly) {
     setup_vertex_buffer(&(c->layers[ly]));
   }
-  c->cell_entities = create_list();
+  c->cell_entities = create_list(LIST_DEFAULT_LARGE_CHUNK_SIZE);
   return c;
 }
 

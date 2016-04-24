@@ -65,6 +65,7 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/list.o \
              $(OBJ_DIR)/queue.o \
              $(OBJ_DIR)/map.o \
+             $(OBJ_DIR)/dictionary.o \
              $(OBJ_DIR)/string.o \
              $(OBJ_DIR)/bitmap.o \
              $(OBJ_DIR)/heightmap.o \

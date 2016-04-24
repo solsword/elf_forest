@@ -1,7 +1,6 @@
 // map.c
-// Simple hash-table-based maps that accept a variable number of keys per
-// element. Map instances must always be given the same number of keys to work
-// with of course.
+// Simple hash-table-based maps that accept a fixed number of keys per element.
+// Different map objects may have different key counts.
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -23,6 +22,12 @@
 
 // A map hash is the result of hashing one or more map keys.
 typedef size_t map_hash_t;
+
+/**********************
+ * Internal Constants *
+ **********************/
+
+size_t const MAP_BUCKET_SIZE = 4;
 
 /*************************
  * Structure Definitions *
@@ -374,7 +379,7 @@ void * m_put_value(map *m, void *value, ...) {
   list *l = m->table[hash];
   // Create a new list at the appropriate table entry if it was uninitialized:
   if (l == NULL) {
-    m->table[hash] = create_list();
+    m->table[hash] = create_list(MAP_BUCKET_SIZE);
     l = m->table[hash];
   }
 
@@ -427,7 +432,7 @@ void * m1_put_value(
   list *l = m->table[hash];
   // If there's no list in the table at this point, create one:
   if (l == NULL) {
-    m->table[hash] = create_list();
+    m->table[hash] = create_list(MAP_BUCKET_SIZE);
     l = m->table[hash];
   }
   length = l_get_length(l);
@@ -460,7 +465,7 @@ void * m2_put_value(
   list *l = m->table[hash];
   // If there's no list in the table at this point, create one:
   if (l == NULL) {
-    m->table[hash] = create_list();
+    m->table[hash] = create_list(MAP_BUCKET_SIZE);
     l = m->table[hash];
   }
   length = l_get_length(l);
@@ -499,7 +504,7 @@ void * m3_put_value(
   list *l = m->table[hash];
   // If there's no list in the table at this point, create one:
   if (l == NULL) {
-    m->table[hash] = create_list();
+    m->table[hash] = create_list(MAP_BUCKET_SIZE);
     l = m->table[hash];
   }
   length = l_get_length(l);

@@ -17,8 +17,8 @@
  * Globals *
  ***********/
 
-char* S_LOCALE;
-char const * S_LCHARSET;
+char* S_LOCALE = NULL;
+char const * S_LCHARSET = NULL;
 
 /********
  * Init *
@@ -70,6 +70,14 @@ string* copy_string(string *base) {
 }
 
 string* create_string_from_ntchars(char const * const chars) {
+#ifdef DEBUG
+  if (S_LCHARSET == NULL) {
+    fprintf(
+      stderr,
+      "Error: create_string_from_ntchars called before init_strings.\n"
+    );
+  }
+#endif // ifdef DEBUG
   string* s = (string*) malloc(sizeof(string));
   if (s == NULL) {
     perror("Failed to create string.");
@@ -91,6 +99,14 @@ string* create_string_from_ntchars(char const * const chars) {
 }
 
 string* create_string_from_chars(char const * const nchars, size_t len) {
+#ifdef DEBUG
+  if (S_LCHARSET == NULL) {
+    fprintf(
+      stderr,
+      "Error: create_string_from_chars called before init_strings.\n"
+    );
+  }
+#endif // ifdef DEBUG
   string* s = (string*) malloc(sizeof(string));
   if (s == NULL) {
     perror("Failed to create string.");
@@ -110,6 +126,19 @@ string* create_string_from_chars(char const * const nchars, size_t len) {
     exit(errno);
   }
   s->bytes = realloc(s->bytes, sizeof(uint8_t) * (s->length + 1));
+  s->bytes[s->length] = '\0';
+  return s;
+}
+
+string* create_raw_string(uint8_t const * const raw, size_t len) {
+  string* s = (string*) malloc(sizeof(string));
+  if (s == NULL) {
+    perror("Failed to create string.");
+    exit(errno);
+  }
+  s->length = len;
+  s->bytes = malloc(sizeof(uint8_t) * len+1);
+  memcpy(s->bytes, raw, s->length);
   s->bytes[s->length] = '\0';
   return s;
 }
@@ -150,6 +179,14 @@ int s_check_bytes(string *s, char const * const c) {
 }
 
 char* s_encode(string* s, size_t* rlen) {
+#ifdef DEBUG
+  if (S_LCHARSET == NULL) {
+    fprintf(
+      stderr,
+      "Error: s_encode called before init_strings.\n"
+    );
+  }
+#endif // ifdef DEBUG
   char* result = u8_conv_to_encoding(
     S_LCHARSET,
     iconveh_escape_sequence,
@@ -167,6 +204,14 @@ char* s_encode(string* s, size_t* rlen) {
 }
 
 char* s_encode_nt(string* s) {
+#ifdef DEBUG
+  if (S_LCHARSET == NULL) {
+    fprintf(
+      stderr,
+      "Error: s_encode_nt called before init_strings.\n"
+    );
+  }
+#endif // ifdef DEBUG
   size_t len;
   char* result;
   char* tmp = u8_conv_to_encoding(
@@ -195,6 +240,13 @@ char* s_encode_nt(string* s) {
 
 char const * const s_raw(string *s) {
   return (char*) s->bytes;
+}
+
+int s_equals(string *s, string *other) {
+  return (
+    (s->length == other->length)
+ && (strncmp((char*) s->bytes, (char*) other->bytes, s->length) == 0)
+  );
 }
 
 void s_append(string* base, string const * const extension) {

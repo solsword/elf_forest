@@ -14,11 +14,14 @@
  * Globals *
  ***********/
 
-// Defines what size memory chunk lists use internally.
-extern size_t const LIST_CHUNK_SIZE;
+// The size of list chunks determines the tradeoff between wasted space and
+// wasted malloc time when adding and removing items from a list. Custom values
+// can be used in specific situations.
+#define LIST_DEFAULT_SMALL_CHUNK_SIZE 8
+#define LIST_DEFAULT_LARGE_CHUNK_SIZE 64
 
-// Defines how many empty chunks we should keep at the end of a shrinking list
-// before reallocating to a smaller size.
+// Defines how many empty chunks are kept at the end of a shrinking list before
+// reallocating to a smaller size.
 extern size_t const LIST_KEEP_CHUNKS;
 
 /**************
@@ -37,8 +40,13 @@ typedef struct list_s list;
  * Constructors & Destructors *
  ******************************/
 
-// Allocates and sets up a new empty list:
-list *create_list(void);
+// Allocates and sets up a new empty list using the given chunk size:
+list *create_custom_list(size_t chunk_size);
+
+// Same as create_custom_list but uses a default chunk size:
+static inline list* create_list() {
+  return create_custom_list(LIST_DEFAULT_SMALL_CHUNK_SIZE);
+}
 
 // Frees the memory associated with a list.
 CLEANUP_DECL(list);

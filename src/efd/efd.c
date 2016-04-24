@@ -4,6 +4,10 @@
 #include "efd.h"
 #include "efd_parser.h"
 
+#include "datatypes/string.h"
+#include "datatypes/list.h"
+#include "datatypes/map.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -23,7 +27,6 @@ char const * const EFD_NT_NAMES[] = {
   "integer",
   "number",
   "string",
-  "array_obj",
   "array_int",
   "array_num",
   "array_str",
@@ -62,7 +65,6 @@ char const * const EFD_NT_ABBRS[] = {
   "i",
   "n",
   "s",
-  "ao",
   "ai",
   "an",
   "as",
@@ -90,6 +92,8 @@ char const * const EFD_NT_ABBRS[] = {
   "!"
 };
 
+// TODO: HERE!
+//string* EFD_ANON_NAME = 
 char const * const EFD_ANON_NAME = "-";
 
 char const * const EFD_ROOT_NAME = "_";
@@ -977,6 +981,9 @@ efd_node* efd_resolve_variable(efd_node* var) {
 }
 
 efd_node* efd_concrete(efd_node* base) {
+  if (base == NULL) {
+    return NULL;
+  }
   efd_node *linked;
   switch (base->h.type) {
     default:

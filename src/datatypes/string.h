@@ -3,7 +3,6 @@
 
 // string.h
 // Wrapped unicode strings using libunistring.
-// TODO: This datatype!
 // TODO: Replace/keep? most uses of char*
 
 #include <stdarg.h>
@@ -47,7 +46,10 @@ string* create_string_from_ntchars(char const * const chars);
   // chars must be in local encoding & null-terminated
 
 string* create_string_from_chars(char const * const nchars, size_t len);
-  // nchars should be in local encoding but can have NULs in it.
+  // nchars should be in local encoding but can have NULs in it
+
+string* create_raw_string(uint8_t const * const raw, size_t len);
+  // raw should be in utf-8 and is used without decoding
 
 CLEANUP_DECL(string);
 
@@ -82,6 +84,9 @@ char* s_encode_nt(string* s);
 // the raw data may contain NULs, and should always contain a NUL at the end.
 // The string's length is the total number of bytes without the final NUL.
 char const * const s_raw(string *s);
+
+// Returns 1 if the two strings are the same, or 0 otherwise.
+int s_equals(string *s, string *other);
 
 // Reallocates the base string to accommodate the addition of the given
 // extension.

@@ -13,9 +13,6 @@
  * Globals *
  ***********/
 
-// We want to strike a balance between reducing mallocs and saving space:
-size_t const LIST_CHUNK_SIZE = 32;
-// If a list grows though we'll let it eat plenty of space:
 size_t const LIST_KEEP_CHUNKS = 4;
 
 /*************************
@@ -23,6 +20,7 @@ size_t const LIST_KEEP_CHUNKS = 4;
  *************************/
 
 struct list_s {
+  size_t chunk_size; // The size of each chunk for this list.
   size_t size; // Measured in chunks, not entries.
   size_t count; // Measured in entries.
   void **elements;
@@ -34,10 +32,10 @@ struct list_s {
  *********************/
 
 static inline void _grow_if_necessary(list *l) {
-  if (l->count == l->size * LIST_CHUNK_SIZE) { // We need more memory.
+  if (l->count == l->size * l->chunk_size) { // We need more memory.
     void ** new_elements = (void **) realloc(
       l->elements,
-      sizeof(void *) * ((l->size + 1) * LIST_CHUNK_SIZE)
+      sizeof(void *) * ((l->size + 1) * l->chunk_size)
     );
     if (new_elements == NULL) {
       perror("Failed to allocate additional list chunk.");
@@ -50,11 +48,11 @@ static inline void _grow_if_necessary(list *l) {
 
 static inline void _grow_to_fit(list *l, size_t add_count) {
   size_t new_size;
-  if (l->count + add_count >= l->size * LIST_CHUNK_SIZE) {
-    new_size = (l->count + add_count + 1) / LIST_CHUNK_SIZE;
+  if (l->count + add_count >= l->size * l->chunk_size) {
+    new_size = (l->count + add_count + 1) / l->chunk_size;
     void ** new_elements = (void **) realloc(
       l->elements,
-      sizeof(void*) * ((new_size) * LIST_CHUNK_SIZE)
+      sizeof(void*) * ((new_size) * l->chunk_size)
     );
     if (new_elements == NULL) {
       perror("Failed to allocate additional list chunk.");
@@ -69,12 +67,12 @@ static inline void _shrink_if_necessary(list *l) {
   if (
     l->size > LIST_KEEP_CHUNKS
   &&
-    l->count < (l->size - LIST_KEEP_CHUNKS)*LIST_CHUNK_SIZE
+    l->count < (l->size - LIST_KEEP_CHUNKS)*l->chunk_size
   ) {
     // We should free our extra elements.
     void ** new_elements = (void **) realloc(
       l->elements,
-      sizeof(void *) * ((l->size - LIST_KEEP_CHUNKS)*LIST_CHUNK_SIZE)
+      sizeof(void *) * ((l->size - LIST_KEEP_CHUNKS)*l->chunk_size)
     );
     if (new_elements == NULL) {
       perror("Failed to remove empty list chunks.");
@@ -89,13 +87,14 @@ static inline void _shrink_if_necessary(list *l) {
  * Constructors & Destructors *
  ******************************/
 
-list *create_list(void) {
+list *create_custom_list(size_t chunk_size) {
   list *l = (list *) malloc(sizeof(list));
   if (l == NULL) {
     perror("Failed to create list.");
     exit(errno);
   }
-  l->elements = (void **) malloc(sizeof(void *) * LIST_CHUNK_SIZE);
+  l->chunk_size = chunk_size;
+  l->elements = (void **) malloc(sizeof(void *) * l->chunk_size);
   if (l->elements == NULL) {
     perror("Failed to create initial list chunk.");
     exit(errno);
@@ -110,6 +109,7 @@ CLEANUP_IMPL(list) {
   omp_set_lock(&(doomed->lock));
   doomed->count = 0;
   doomed->size = 0;
+  doomed->chunk_size = 0;
   omp_destroy_lock(&(doomed->lock));
   free(doomed->elements);
   free(doomed);
@@ -123,6 +123,7 @@ void destroy_list(list *l) {
   }
   l->count = 0;
   l->size = 0;
+  l->chunk_size = 0;
   omp_destroy_lock(&(l->lock));
   free(l->elements);
   free(l);
@@ -194,7 +195,7 @@ void l_clear(list *l) {
   l->count = 0;
   void ** new_elements = (void **) realloc(
     l->elements,
-    sizeof(void *) * LIST_CHUNK_SIZE
+    sizeof(void *) * l->chunk_size
   );
   if (new_elements == NULL) {
     perror("Failed to clear empty list chunks.");
@@ -416,5 +417,5 @@ size_t l_data_size(list const * const l) {
 }
 
 size_t l_overhead_size(list const * const l) {
-  return sizeof(list) + (l->size * LIST_CHUNK_SIZE - l->count) * sizeof(void *);
+  return sizeof(list) + (l->size * l->chunk_size - l->count) * sizeof(void *);
 }
