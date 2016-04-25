@@ -74,11 +74,15 @@ void* efd__int_test(efd_node *n) {
   result->input = NULL;
   result->expect = NULL;
   result->remainder = NULL;
+  SSTR(s_input, "input", 5);
+  SSTR(s_expect, "expect", 6);
+  SSTR(s_output, "output", 6);
+  SSTR(s_remainder, "remainder", 9);
 
   efd_node *field;
   efd_assert_type(n, EFD_NT_CONTAINER);
 
-  field = efd_lookup(n, "input");
+  field = efd_lookup(n, s_input);
   if (field == NULL) {
     fprintf(stderr, "ERROR: itest node missing 'input' field\n");
     free(result);
@@ -86,7 +90,7 @@ void* efd__int_test(efd_node *n) {
   }
   result->input = copy_string(*efd__s(field));
 
-  field = efd_lookup(n, "expect");
+  field = efd_lookup(n, s_expect);
   if (field == NULL) {
     fprintf(stderr, "ERROR: itest node missing 'expect' field\n");
     free(result);
@@ -95,7 +99,7 @@ void* efd__int_test(efd_node *n) {
   result->expect = copy_string(*efd__s(field));
 
   if (s_check_bytes(result->expect, "success")) {
-    field = efd_lookup(n, "output");
+    field = efd_lookup(n, s_output);
     if (field == NULL) {
       fprintf(stderr, "ERROR: itest 'success' node missing 'output' field\n");
       free(result);
@@ -103,7 +107,7 @@ void* efd__int_test(efd_node *n) {
     }
     result->output = *efd__i(field);
   } else if (s_check_bytes(result->expect, "remainder")) {
-    field = efd_lookup(n, "output");
+    field = efd_lookup(n, s_output);
     if (field == NULL) {
       fprintf(stderr, "ERROR: itest 'remainder' node missing 'output' field\n");
       free(result);
@@ -111,7 +115,7 @@ void* efd__int_test(efd_node *n) {
     }
     result->output = *efd__i(field);
 
-    field = efd_lookup(n, "remainder");
+    field = efd_lookup(n, s_remainder);
     if (field == NULL) {
       fprintf(
         stderr,
@@ -130,27 +134,31 @@ efd_node *int_test__efd(void *v_t) {
   efd_int_test *t = (efd_int_test*) v_t;
   efd_node *n;
   efd_node *result;
+  SSTR(s_input, "input", 5);
+  SSTR(s_expect, "expect", 6);
+  SSTR(s_output, "output", 6);
+  SSTR(s_remainder, "remainder", 9);
   
   result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
 
-  n = create_efd_node(EFD_NT_STRING, "input");
+  n = create_efd_node(EFD_NT_STRING, s_input);
   *efd__s(n) = copy_string(t->input);
   efd_add_child(result, n);
 
-  n = create_efd_node(EFD_NT_STRING, "expect");
+  n = create_efd_node(EFD_NT_STRING, s_expect);
   *efd__s(n) = copy_string(t->expect);
   efd_add_child(result, n);
 
   if (s_check_bytes(t->expect, "success")) {
-    n = create_efd_node(EFD_NT_INTEGER, "output");
+    n = create_efd_node(EFD_NT_INTEGER, s_output);
     *efd__i(n) = t->output;
     efd_add_child(result, n);
   } else if (s_check_bytes(t->expect, "remainder")) {
-    n = create_efd_node(EFD_NT_INTEGER, "output");
+    n = create_efd_node(EFD_NT_INTEGER, s_output);
     *efd__i(n) = t->output;
     efd_add_child(result, n);
 
-    n = create_efd_node(EFD_NT_STRING, "remainder");
+    n = create_efd_node(EFD_NT_STRING, s_remainder);
     *efd__s(n) = copy_string(t->remainder);
     efd_add_child(result, n);
   }
@@ -190,11 +198,15 @@ void* efd__num_test(efd_node *n) {
   result->input = NULL;
   result->expect = NULL;
   result->remainder = NULL;
+  SSTR(s_input, "input", 5);
+  SSTR(s_expect, "expect", 6);
+  SSTR(s_output, "output", 6);
+  SSTR(s_remainder, "remainder", 9);
 
   efd_node *field;
   efd_assert_type(n, EFD_NT_CONTAINER);
 
-  field = efd_lookup(n, "input");
+  field = efd_lookup(n, s_input);
   if (field == NULL) {
     fprintf(stderr, "ERROR: ntest node missing 'input' field\n");
     free(result);
@@ -202,7 +214,7 @@ void* efd__num_test(efd_node *n) {
   }
   result->input = copy_string(*efd__s(field));
 
-  field = efd_lookup(n, "expect");
+  field = efd_lookup(n, s_expect);
   if (field == NULL) {
     fprintf(stderr, "ERROR: ntest node missing 'expect' field\n");
     free(result);
@@ -211,7 +223,7 @@ void* efd__num_test(efd_node *n) {
   result->expect = copy_string(*efd__s(field));
 
   if (s_check_bytes(result->expect, "success")) {
-    field = efd_lookup(n, "output");
+    field = efd_lookup(n, s_output);
     if (field == NULL) {
       fprintf(stderr, "ERROR: ntest 'success' node missing 'output' field\n");
       free(result);
@@ -219,7 +231,7 @@ void* efd__num_test(efd_node *n) {
     }
     result->output = *efd__n(field);
   } else if (s_check_bytes(result->expect, "remainder")) {
-    field = efd_lookup(n, "output");
+    field = efd_lookup(n, s_output);
     if (field == NULL) {
       fprintf(stderr, "ERROR: ntest 'remainder' node missing 'output' field\n");
       free(result);
@@ -227,7 +239,7 @@ void* efd__num_test(efd_node *n) {
     }
     result->output = *efd__n(field);
 
-    field = efd_lookup(n, "remainder");
+    field = efd_lookup(n, s_remainder);
     if (field == NULL) {
       fprintf(
         stderr,
@@ -246,27 +258,31 @@ efd_node *num_test__efd(void *v_t) {
   efd_num_test *t = (efd_num_test*) v_t;
   efd_node *n;
   efd_node *result;
+  SSTR(s_input, "input", 5);
+  SSTR(s_expect, "expect", 6);
+  SSTR(s_output, "output", 6);
+  SSTR(s_remainder, "remainder", 9);
   
   result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
 
-  n = create_efd_node(EFD_NT_STRING, "input");
+  n = create_efd_node(EFD_NT_STRING, s_input);
   *efd__s(n) = copy_string(t->input);
   efd_add_child(result, n);
 
-  n = create_efd_node(EFD_NT_STRING, "expect");
+  n = create_efd_node(EFD_NT_STRING, s_expect);
   *efd__s(n) = copy_string(t->expect);
   efd_add_child(result, n);
 
   if (s_check_bytes(t->expect, "success")) {
-    n = create_efd_node(EFD_NT_NUMBER, "output");
+    n = create_efd_node(EFD_NT_NUMBER, s_output);
     *efd__n(n) = t->output;
     efd_add_child(result, n);
   } else if (s_check_bytes(t->expect, "remainder")) {
-    n = create_efd_node(EFD_NT_NUMBER, "output");
+    n = create_efd_node(EFD_NT_NUMBER, s_output);
     *efd__n(n) = t->output;
     efd_add_child(result, n);
 
-    n = create_efd_node(EFD_NT_STRING, "remainder");
+    n = create_efd_node(EFD_NT_STRING, s_remainder);
     *efd__s(n) = copy_string(t->remainder);
     efd_add_child(result, n);
   }
@@ -306,11 +322,14 @@ void* efd__parse_test(efd_node *n) {
   result->input = NULL;
   result->expect = NULL;
   result->remainder = NULL;
+  SSTR(s_input, "input", 5);
+  SSTR(s_expect, "expect", 6);
+  SSTR(s_remainder, "remainder", 9);
 
   efd_node *field;
   efd_assert_type(n, EFD_NT_CONTAINER);
 
-  field = efd_lookup(n, "input");
+  field = efd_lookup(n, s_input);
   if (field == NULL) {
     fprintf(stderr, "ERROR: ptest node missing 'input' field\n");
     free(result);
@@ -318,7 +337,7 @@ void* efd__parse_test(efd_node *n) {
   }
   result->input = copy_string(*efd__s(field));
 
-  field = efd_lookup(n, "expect");
+  field = efd_lookup(n, s_expect);
   if (field == NULL) {
     fprintf(stderr, "ERROR: ptest node missing 'expect' field\n");
     free(result);
@@ -326,8 +345,8 @@ void* efd__parse_test(efd_node *n) {
   }
   result->expect = copy_string(*efd__s(field));
 
-  if (s_check_bytes(result->expect, "remainder")) {
-    field = efd_lookup(n, "remainder");
+  if (s_equals(result->expect, s_remainder)) {
+    field = efd_lookup(n, s_remainder);
     if (field == NULL) {
       fprintf(
         stderr,
@@ -346,19 +365,22 @@ efd_node *parse_test__efd(void *v_t) {
   efd_parse_test *t = (efd_parse_test*) v_t;
   efd_node *n;
   efd_node *result;
+  SSTR(s_input, "input", 5);
+  SSTR(s_expect, "expect", 6);
+  SSTR(s_remainder, "remainder", 9);
   
   result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
 
-  n = create_efd_node(EFD_NT_STRING, "input");
+  n = create_efd_node(EFD_NT_STRING, s_input);
   *efd__s(n) = copy_string(t->input);
   efd_add_child(result, n);
 
-  n = create_efd_node(EFD_NT_STRING, "expect");
+  n = create_efd_node(EFD_NT_STRING, s_expect);
   *efd__s(n) = copy_string(t->expect);
   efd_add_child(result, n);
 
-  if (s_check_bytes(t->expect, "remainder")) {
-    n = create_efd_node(EFD_NT_STRING, "remainder");
+  if (s_equals(t->expect, s_remainder)) {
+    n = create_efd_node(EFD_NT_STRING, s_remainder);
     *efd__s(n) = copy_string(t->remainder);
     efd_add_child(result, n);
   }

@@ -26,9 +26,12 @@ void* efd__rngtable(efd_node *n) {
   ptrdiff_t *values;
   float *weights;
   efd_node *field;
+  SSTR(s_size, "size", 4);
+  SSTR(s_values, "values", 6);
+  SSTR(s_weights, "weights", 7);
   efd_assert_type(n, EFD_NT_CONTAINER);
-  s = (size_t) *efd__i(efd_lookup(n, "size"));
-  field = efd_lookup(n, "values");
+  s = (size_t) *efd__i(efd_lookup(n, s_size));
+  field = efd_lookup(n, s_values);
   values = *efd__ai(field);
   vcount = *efd__ai_count(field);
   if (vcount != s) {
@@ -39,7 +42,7 @@ void* efd__rngtable(efd_node *n) {
       vcount
     );
   }
-  field = efd_lookup(n, "weights");
+  field = efd_lookup(n, s_weights);
   weights = *efd__an(field);
   wcount = *efd__an_count(field);
   if (wcount != s) {
@@ -63,21 +66,24 @@ efd_node *rngtable__efd(void *v_t) {
   size_t i;
   efd_node *n;
   efd_node *result;
+  SSTR(s_size, "size", 4);
+  SSTR(s_values, "values", 6);
+  SSTR(s_weights, "weights", 7);
   
   result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
 
-  n = create_efd_node(EFD_NT_INTEGER, "size");
+  n = create_efd_node(EFD_NT_INTEGER, s_size);
   *efd__i(n) = t->size;
   efd_add_child(result, n);
 
-  n = create_efd_node(EFD_NT_ARRAY_INT, "values");
+  n = create_efd_node(EFD_NT_ARRAY_INT, s_values);
   *efd__ai(n) = (ptrdiff_t*) malloc(t->size * sizeof(ptrdiff_t));
   for (i = 0; i < t->size; ++i) {
     (*efd__ai(n))[i] = (ptrdiff_t) t->values[i];
   }
   efd_add_child(result, n);
 
-  n = create_efd_node(EFD_NT_ARRAY_NUM, "weights");
+  n = create_efd_node(EFD_NT_ARRAY_NUM, s_weights);
   *efd__an(n) = (float*) malloc(t->size * sizeof(float));
   for (i = 0; i < t->size; ++i) {
     (*efd__an(n))[i] = t->weights[i];

@@ -128,8 +128,8 @@ static inline int is_special(char c) {
   switch (c) {
     default:
       return 0;
-    case EFD_NODE_SEP:
-    case EFD_ADDR_PARENT:
+    case EFD_ADDR_SEP_CHR:
+    case EFD_ADDR_PARENT_CHR:
     case EFD_PARSER_COLON:
     case EFD_PARSER_OPEN_BRACE:
     case EFD_PARSER_CLOSE_BRACE:
@@ -191,10 +191,8 @@ int efd_parse_file(
   char const * const filename
 );
 
-// Parses a string as an EFD address. The string should be at most
-// EFD_MAX_NAME_DEPTH * (EFD_NODE_NAME_SIZE + 1) characters long; further
-// characters will be ignored.
-efd_address* efd_parse_string_address(char const * const astr);
+// Parses a string as an EFD address.
+efd_address* efd_parse_string_address(string const * const astr);
 
 // Top level parsing function that delegates to the more specific functions:
 efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr);
@@ -260,16 +258,12 @@ void efd_parse_close(efd_parse_state *s, char otype);
 // Parses a node type off of the front of the input:
 efd_node_type efd_parse_type(efd_parse_state *s);
 
-// Parses a node name off of the front of the input. Puts up to
-// EFD_NODE_NAME_SIZE characters into r_name (plus one for a NUL terminator),
-// overwriting whatever may have been there.
-void efd_parse_name(efd_parse_state *s, char *r_name);
+// Parses a node name off of the front of the input.
+string* efd_parse_name(efd_parse_state *s);
 
 // Parses the annotation part of an 'o', 'l', or 'L' declaration, including the
-// leading separator character (which must match the given 'sep' argument. Puts
-// up to EFD_NODE_NAME_SIZE characters (plus one for a trailing NUL) into
-// r_name, overwriting any previous contents.
-void efd_parse_annotation(efd_parse_state *s, char sep, char *r_name);
+// leading separator character (which must match the given 'sep' argument.
+string* efd_parse_annotation(efd_parse_state *s, char sep);
 
 // Parses an integer off of the front of the input:
 ptrdiff_t efd_parse_int(efd_parse_state *s);

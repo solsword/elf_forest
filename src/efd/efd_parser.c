@@ -75,17 +75,11 @@ int efd_parse_file(
   }
 }
 
-efd_address* efd_parse_string_address(char const * const astr) {
-  size_t len;
+efd_address* efd_parse_string_address(string const * const astr) {
   efd_address *result;
   efd_parse_state s;
-  s.input = astr;
-  for (len = 0; len < EFD_MAX_NAME_DEPTH * (EFD_NODE_NAME_SIZE + 1); ++len) {
-    if (astr[len] == '\0') {
-      break;
-    }
-  }
-  s.input_length = len;
+  s.input = s_raw(astr);
+  s.input_length = s_get_length(astr);
   s.pos = 0;
   s.filename = "<address string>";
   s.lineno = -1;
@@ -103,7 +97,7 @@ efd_address* efd_parse_string_address(char const * const astr) {
 efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
   efd_node_type type;
   efd_node* parent_node;
-  char name[EFD_NODE_NAME_SIZE + 1];
+  string *name;
   char btype;
 
   btype = efd_parse_open(s);
@@ -130,8 +124,7 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
       return NULL;
     }
     // name will be decided by efd_parse_link:
-    name[0] = EFD_ANON_NAME[0];
-    name[1] = '\0';
+    name = copy_string(EFD_ANON_NAME);
   } else {
     if (
       type == EFD_NT_LINK
@@ -144,16 +137,16 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
     }
     if (btype == EFD_PARSER_OPEN_PAREN) {
       // an anonymous node:
-      name[0] = EFD_ANON_NAME[0];
-      name[1] = '\0';
+      name = copy_string(EFD_ANON_NAME);
     } else {
       // parse the name immediately:
-      efd_parse_name(s, name);
+      name = efd_parse_name(s);
       if (efd_parse_failed(s)) { return NULL; }
     }
   }
 
   efd_node *result = create_efd_node(type, name);
+  cleanup_string(name);
   parent_node = s->current_node;
   s->current_node = result;
   s->current_index = -1;
@@ -319,7 +312,7 @@ void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
 }
 
 void efd_parse_link(efd_node *result, efd_parse_state *s, efd_index *cr) {
-  char name[EFD_NODE_NAME_SIZE + 1];
+  string *name;
   efd_address *target;
   efd_address *tail;
   efd_parse_state back;
@@ -328,7 +321,7 @@ void efd_parse_link(efd_node *result, efd_parse_state *s, efd_index *cr) {
   if (efd_parse_failed(s)) { return; }
 
   efd_parse_copy_state(s, &back);
-  efd_parse_annotation(s, EFD_PARSER_RENAME, name);
+  name = efd_parse_annotation(s, EFD_PARSER_RENAME);
   if (efd_parse_failed(s)) {
     if (s->error == EFD_PE_MISSING) {
       // Use the target node's name as the name of this node by default:
@@ -337,43 +330,33 @@ void efd_parse_link(efd_node *result, efd_parse_state *s, efd_index *cr) {
       while (tail->next != NULL) {
         tail = tail->next;
       }
-      strncpy(name, tail->name, EFD_NODE_NAME_SIZE);
-      name[EFD_NODE_NAME_SIZE] = '\0';
+      name = copy_string(tail->name);
     } else {
       return;
     }
   }
 
-  strncpy(result->h.name, name, EFD_NODE_NAME_SIZE);
-  name[EFD_NODE_NAME_SIZE] = '\0';
+  cleanup_string(result->h.name);
+  result->h.name = name;
   result->b.as_link.target = target;
 }
 
 void efd_parse_function(efd_node *result, efd_parse_state *s, efd_index *cr) {
-  char name[EFD_NODE_NAME_SIZE + 1];
-
-  efd_parse_annotation(s, EFD_PARSER_COLON, name);
+  result->b.as_function.function = efd_parse_annotation(s, EFD_PARSER_COLON);
   if (efd_parse_failed(s)) { return; }
-
-  strncpy(result->b.as_function.function, name, EFD_ANNOTATION_SIZE - 1);
-  result->b.as_function.function[EFD_ANNOTATION_SIZE-1] = '\0';
 
   efd_parse_children(result, s, cr);
 }
 
 void efd_parse_proto(efd_node *result, efd_parse_state *s, efd_index *cr) {
-  char format[EFD_NODE_NAME_SIZE + 1];
-
-  efd_parse_annotation(s, EFD_PARSER_COLON, format);
+  result->b.as_proto.format = efd_parse_annotation(s, EFD_PARSER_COLON);
   if (efd_parse_failed(s)) { return; }
-
-  strncpy(result->b.as_proto.format, format, EFD_ANNOTATION_SIZE - 1);
-  result->b.as_proto.format[EFD_ANNOTATION_SIZE-1] = '\0';
 
   efd_node *proto = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
   efd_parse_children(proto, s, cr);
   if (efd_parse_failed(s)) {
     cleanup_efd_node(proto);
+    cleanup_string(result->b.as_proto.format);
     return;
   }
 
@@ -1053,67 +1036,63 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
   return EFD_NT_INVALID;
 }
 
-void efd_parse_name(efd_parse_state *s, char *r_name) {
+string* efd_parse_name(efd_parse_state *s) {
   char c;
-  size_t i;
+  char *start;
+  size_t len;
 
-  r_name[0] = '\0';
+  efd_parse_skip(s);
+  if (efd_parse_failed(s)) {
+    s->context = "identifier";
+    return NULL;
+  }
 
-  SKIP_OR_ELSE(s, "identifier") //;
+  start = (s->input + s->pos);
+  len = 0;
 
-  c = '\0';
+  if (efd_parse_atend(s)) {
+    s->error = EFD_PE_INCOMPLETE;
+    s->context = "identifier (missing)";
+    return NULL;
+  }
 
-  for (i = 0; i < EFD_NODE_NAME_SIZE; ++i) {
-    if (efd_parse_atend(s)) {
-      break;
-    }
-    c = s->input[s->pos];
-    if (
+  c = s->input[s->pos];
+
+  if (c >= '0' && c <= '9') {
+    s->error == EFD_PE_MALFORMED;
+    s->context = "identifier (initial numeral not allowed)";
+    return NULL;
+  }
+
+  // Scan until we hit the end of input or find a whitespace or special char:
+  while (
+    !efd_parse_atend(s)
+ && !(
       is_whitespace(c)
    || is_special(c)
-   || (
-       c >= '0'
-    && c <= '9'
-    && i == 0
-      )
-    ) {
-      break;
-    }
-    r_name[i] = c;
+    )
+  ) {
+    len += 1;
     s->pos += 1;
-  }
-  if (i == 0) {
-    if (!efd_parse_atend(s) && c >= '0' && c <= '9') {
-      s->error = EFD_PE_MALFORMED;
-      s->context = "identifier (initial numeral not allowed)";
-    } else {
-      s->error = EFD_PE_INCOMPLETE;
-      s->context = "identifier (missing)";
-    }
-    return;
-  }
-  if (i == EFD_NODE_NAME_SIZE && !efd_parse_atend(s)) {
     c = s->input[s->pos];
-    if (!is_whitespace(c) && !is_special(c)) {
-      s->error = EFD_PE_MALFORMED;
-      s->context = "identifier (identifier too long)";
-      return;
-    }
   }
-  r_name[i] = '\0';
+  return create_string_from_chars(start, len);
 }
 
-void efd_parse_annotation(efd_parse_state *s, char sep, char *r_name) {
+string* efd_parse_annotation(efd_parse_state *s, char sep) {
   char c;
+  string *result;
 
-  r_name[0] = '\0';
-
-  SKIP_OR_ELSE(s, "annotation") //;
+  efd_parse_skip(s);
+  if (efd_parse_failed(s)) {
+    s->context = "annotation";
+    return NULL;
+  }
 
   if (efd_parse_atend(s)) {
     s->error = EFD_PE_MISSING;
     s->context = "annotation (missing)";
-    return;
+    return NULL;
   }
 
   c = s->input[s->pos];
@@ -1121,16 +1100,17 @@ void efd_parse_annotation(efd_parse_state *s, char sep, char *r_name) {
   if (c != sep) {
     s->error = EFD_PE_MISSING;
     s->context = "annotation (no indicator)";
-    return;
+    return NULL;
   }
   s->pos += 1;
 
-  efd_parse_name(s, r_name);
+  result = efd_parse_name(s);
   if (efd_parse_failed(s)) {
-    // (error from parse_name)
+    // (error from efd_parse_name)
     s->context = "annotation (invalid name)";
-    return;
+    return NULL;
   }
+  return result;
 }
 
 
@@ -1678,7 +1658,7 @@ efd_reference* construct_efd_reference_to_here(efd_parse_state* s) {
 }
 
 efd_reference* efd_parse_global_ref(efd_parse_state *s) {
-  char name[EFD_NODE_NAME_SIZE + 1];
+  string *name;
   efd_node_type n_type;
   efd_ref_type type;
   efd_address *addr;
@@ -1729,12 +1709,13 @@ efd_reference* efd_parse_global_ref(efd_parse_state *s) {
   }
   s->pos += 1;
 
-  efd_parse_name(s, name);
+  name = efd_parse_name(s);
   if (efd_parse_failed(s)) {
     return NULL;
   }
 
   addr = create_efd_address(NULL, name);
+  cleanup_string(name);
 
   result = create_efd_reference(
     type,
@@ -1746,7 +1727,7 @@ efd_reference* efd_parse_global_ref(efd_parse_state *s) {
 }
 
 efd_address* efd_parse_address(efd_parse_state *s) {
-  char name[EFD_NODE_NAME_SIZE + 1];
+  string *name;
   efd_address *result;
   efd_address *tail;
   char c;
@@ -1763,8 +1744,8 @@ efd_address* efd_parse_address(efd_parse_state *s) {
 
   result = NULL;
   tail = NULL;
-  c = EFD_NODE_SEP;
-  while (c == EFD_NODE_SEP) {
+  c = EFD_ADDR_SEP_CHR;
+  while (c == EFD_ADDR_SEP_CHR) {
     // TODO: respect max depth here?
     s->pos += 1;
     efd_parse_skip(s);
@@ -1776,15 +1757,14 @@ efd_address* efd_parse_address(efd_parse_state *s) {
       s->context = "address (pre separator)";
       return NULL;
     }
-    efd_parse_name(s, name);
+    name = efd_parse_name(s);
     if (efd_parse_failed(s)) {
       if (!efd_parse_atend(s)) {
-        // A special exception for the EFD_ADDR_PARENT character, which is not
-        // normally a valid name but may appear in addresses.
+        // A special exception for the EFD_ADDR_PARENT_CHR character, which is
+        // not normally a valid name but may appear in addresses.
         c = s->input[s->pos];
-        if (c == EFD_ADDR_PARENT) {
-          name[0] = EFD_ADDR_PARENT;
-          name[1] = '\0';
+        if (c == EFD_ADDR_PARENT_CHR) {
+          name = copy_string(EFD_ADDR_PARENT_STR);
           s->error = EFD_PE_NO_ERROR;
           s->pos += 1;
         } else {
@@ -1802,9 +1782,13 @@ efd_address* efd_parse_address(efd_parse_state *s) {
     }
     if (result == NULL) {
       result = create_efd_address(NULL, name);
+      cleanup_string(name);
+      name = NULL;
       tail = result;
     } else {
       tail->next = create_efd_address(tail, name);
+      cleanup_string(name);
+      name = NULL;
       tail = tail->next;
     }
     efd_parse_skip(s);

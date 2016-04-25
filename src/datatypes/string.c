@@ -29,15 +29,6 @@ void init_strings(void) {
   S_LCHARSET = locale_charset();
 }
 
-/*************************
- * Structure Definitions *
- *************************/
-
-struct string_s {
-  size_t length; // raw number of bytes without null terminator
-  uint8_t* bytes;
-};
-
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -53,7 +44,7 @@ string* create_string(void) {
   return s;
 }
 
-string* copy_string(string *base) {
+string* copy_string(string const * const base) {
   string *s = (string*) malloc(sizeof(string));
   if (s == NULL) {
     perror("Failed to create string for copy.");
@@ -154,7 +145,7 @@ CLEANUP_IMPL(string) {
  * Functions *
  *************/
 
-int s_contains_nul(string* s) {
+int s_contains_nul(string const * const s) {
   size_t i;
   for (i = 0; i < s->length; ++i) {
     if (s->bytes[i] == '\0') {
@@ -164,11 +155,11 @@ int s_contains_nul(string* s) {
   return 0;
 }
 
-size_t s_get_length(string *s) {
+size_t s_get_length(string const * const s) {
   return s->length;
 }
 
-int s_check_bytes(string *s, char const * const c) {
+int s_check_bytes(string const * const s, char const * const c) {
   size_t i;
   for (i = 0; i < s->length; ++i) {
     if ((char) s->bytes[i] != c[i]) {
@@ -178,7 +169,7 @@ int s_check_bytes(string *s, char const * const c) {
   return 1;
 }
 
-char* s_encode(string* s, size_t* rlen) {
+char* s_encode(string const * const s, size_t* rlen) {
 #ifdef DEBUG
   if (S_LCHARSET == NULL) {
     fprintf(
@@ -203,7 +194,7 @@ char* s_encode(string* s, size_t* rlen) {
   return result;
 }
 
-char* s_encode_nt(string* s) {
+char* s_encode_nt(string const * const s) {
 #ifdef DEBUG
   if (S_LCHARSET == NULL) {
     fprintf(
@@ -238,11 +229,11 @@ char* s_encode_nt(string* s) {
   return result;
 }
 
-char const * const s_raw(string *s) {
+char const * const s_raw(string const * const s) {
   return (char*) s->bytes;
 }
 
-int s_equals(string *s, string *other) {
+int s_equals(string const * const s, string const * const other) {
   return (
     (s->length == other->length)
  && (strncmp((char*) s->bytes, (char*) other->bytes, s->length) == 0)
@@ -271,7 +262,7 @@ void s_append(string* base, string const * const extension) {
   base->bytes[base->length] = '\0';
 }
 
-string* s_concat(string* first, string* second) {
+string* s_concat(string const * const first, string const * const second) {
   string* result = create_string();
   result->length = first->length + second->length;
   result->bytes = (uint8_t*) malloc(sizeof(uint8_t)*(result->length + 1));

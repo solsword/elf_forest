@@ -28,33 +28,31 @@
  * Constants *
  *************/
 
-char const * const WORLD_MAP_FILE_BASE = "world_map.png";
-char const * const WORLD_MAP_FILE_REGIONS = "world_map_regions.png";
-char const * const WORLD_MAP_FILE_TEMP = "world_map_temp.png";
-char const * const WORLD_MAP_FILE_WIND = "world_map_wind.png";
-char const * const WORLD_MAP_FILE_EVAP = "world_map_evaporation.png";
-char const * const WORLD_MAP_FILE_CLOUDS = "world_map_clouds.png";
-char const * const WORLD_MAP_FILE_PQ = "world_map_pq.png";
-char const * const WORLD_MAP_FILE_RAIN = "world_map_rain.png";
-char const * const WORLD_MAP_FILE_LRAIN = "world_map_land_rain.png";
+CSTR(WORLD_MAP_FILE_BASE, "world_map.png", 13);
+CSTR(WORLD_MAP_FILE_REGIONS, "world_map_regions.png", 21);
+CSTR(WORLD_MAP_FILE_TEMP, "world_map_temp.png", 18);
+CSTR(WORLD_MAP_FILE_WIND, "world_map_wind.png", 18);
+CSTR(WORLD_MAP_FILE_EVAP, "world_map_evaporation.png", 25);
+CSTR(WORLD_MAP_FILE_CLOUDS, "world_map_clouds.png", 20);
+CSTR(WORLD_MAP_FILE_PQ, "world_map_pq.png", 16);
+CSTR(WORLD_MAP_FILE_RAIN, "world_map_rain.png", 18);
+CSTR(WORLD_MAP_FILE_LRAIN, "world_map_land_rain.png", 23);
 
 /*********************
  * Private Functions *
  *********************/
 
-static inline void write_map_to_file(texture *map, char const * const file) {
+static inline void write_map_to_file(texture *map, string const * const file) {
   char *map_file;
-  string *file_string, *tmp_string;
+  string *full_file;
 
-  tmp_string = create_string_from_ntchars(file);
-  file_string = s_concat(PS_MAPS_DIR_PREFIX, tmp_string);
-  map_file = s_encode_nt(file_string);
+  full_file = s_concat(PS_MAPS_DIR_PREFIX, file);
+  map_file = s_encode_nt(full_file);
 
   write_texture_to_png(map, map_file);
 
   free(map_file);
-  cleanup_string(tmp_string);
-  cleanup_string(file_string);
+  cleanup_string(full_file);
 }
 
 /*************

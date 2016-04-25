@@ -29,7 +29,8 @@ size_t setup_efd_tests(void) {
 }
 
 size_t test_efd_simple_parse(void) {
-  efd_node *n = create_efd_node(EFD_NT_CONTAINER, "test");
+  SSTR(s_test, "test", 4);
+  efd_node *n = create_efd_node(EFD_NT_CONTAINER, s_test);
   efd_index *cr = create_efd_index();
   if (!efd_parse_file(n, cr, "res/data/test/test-simple.efd")) {
     cleanup_efd_node(n);
@@ -42,7 +43,8 @@ size_t test_efd_simple_parse(void) {
 }
 
 size_t test_efd_basic_parse(void) {
-  efd_node *n = create_efd_node(EFD_NT_CONTAINER, "test");
+  SSTR(s_test, "test", 4);
+  efd_node *n = create_efd_node(EFD_NT_CONTAINER, s_test);
   efd_index *cr = create_efd_index();
   if (!efd_parse_file(n, cr, "res/data/test/test.efd")) {
     cleanup_efd_node(n);
@@ -55,7 +57,8 @@ size_t test_efd_basic_parse(void) {
 }
 
 size_t test_efd_real_parse(void) {
-  efd_node *n = create_efd_node(EFD_NT_CONTAINER, "test");
+  SSTR(s_test, "test", 4);
+  efd_node *n = create_efd_node(EFD_NT_CONTAINER, s_test);
   efd_index *cr = create_efd_index();
   if (!efd_parse_file(n, cr, "res/data/gen/geo.efd")) {
     cleanup_efd_node(n);
@@ -75,6 +78,9 @@ int _test_efd_case(efd_node *n) {
   float float_result;
   efd_node *node_result;
   int result = 0;
+  SSTR(s_itest, "itest", 5);
+  SSTR(s_ntest, "ntest", 5);
+  SSTR(s_ptest, "ptest", 5);
 
   s.input = NULL;
   s.input_length = 0;
@@ -92,7 +98,7 @@ int _test_efd_case(efd_node *n) {
     return 0;
   }
 
-  if (efd_format_is(n, "itest")) {
+  if (efd_format_is(n, s_itest)) {
     efd_int_test *t = (efd_int_test*) (*efd__o(n));
     s.input = s_raw(t->input);
     s.input_length = s_get_length(t->input);
@@ -132,7 +138,7 @@ int _test_efd_case(efd_node *n) {
         fprintf(stderr, "  Remainder: %s\n", s.input + s.pos);
       }
     }
-  } else if (efd_format_is(n, "ntest")) {
+  } else if (efd_format_is(n, s_ntest)) {
     efd_num_test *t = (efd_num_test*) (*efd__o(n));
     s.input = s_raw(t->input);
     s.input_length = s_get_length(t->input);
@@ -172,7 +178,7 @@ int _test_efd_case(efd_node *n) {
         fprintf(stderr, "  Remainder: %s\n", s.input + s.pos);
       }
     }
-  } else if (efd_format_is(n, "ptest")) {
+  } else if (efd_format_is(n, s_ptest)) {
     efd_parse_test *t = (efd_parse_test*) (*efd__o(n));
     s.input = s_raw(t->input);
     s.input_length = s_get_length(t->input);
@@ -222,8 +228,12 @@ size_t test_efd_defined_tests(void) {
   efd_node *n;
   efd_node *test;
   efd_index *cr = create_efd_index();
+  SSTR(s_test, "test", 4);
+  SSTR(s_itest, "itest", 5);
+  SSTR(s_ntest, "ntest", 5);
+  SSTR(s_ptest, "ptest", 5);
 
-  n = create_efd_node(EFD_NT_CONTAINER, "test");
+  n = create_efd_node(EFD_NT_CONTAINER, s_test);
   if (!efd_parse_file(n, cr, "res/data/test/test.efd")) {
     cleanup_efd_node(n);
     cleanup_efd_index(cr);
@@ -238,9 +248,9 @@ size_t test_efd_defined_tests(void) {
     if (
       efd_is_type(test, EFD_NT_OBJECT)
    && (
-        efd_format_is(test, "itest")
-     || efd_format_is(test, "ntest")
-     || efd_format_is(test, "ptest")
+        efd_format_is(test, s_itest)
+     || efd_format_is(test, s_ntest)
+     || efd_format_is(test, s_ptest)
      )
    && !_test_efd_case(test)
     ) {

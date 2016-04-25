@@ -24,7 +24,7 @@ static inline string* d_get_key_s(
   );
 }
 
-static inline int d_contains_key_s(dictionary *d, string *key) {
+static inline int d_contains_key_s(dictionary *d, string const * const key) {
   return d_contains_key(
     d,
     (d_key_t*) s_raw(key),
@@ -32,7 +32,7 @@ static inline int d_contains_key_s(dictionary *d, string *key) {
   );
 }
 
-static inline void* d_get_value_s(dictionary *d, string *key) {
+static inline void* d_get_value_s(dictionary *d, string const * const key) {
   return d_get_value(
     d,
     (d_key_t*) s_raw(key),
@@ -40,7 +40,7 @@ static inline void* d_get_value_s(dictionary *d, string *key) {
   );
 }
 
-static inline list* d_get_all_s(dictionary *d, string *key) {
+static inline list* d_get_all_s(dictionary *d, string const * const key) {
   return d_get_all(
     d,
     (d_key_t*) s_raw(key),
@@ -48,34 +48,46 @@ static inline list* d_get_all_s(dictionary *d, string *key) {
   );
 }
 
-static inline void d_add_value_s(dictionary *d, void *value, string *key) {
+static inline void d_add_value_s(
+  dictionary *d,
+  string const * const key,
+  void *value
+) {
   d_add_value(
     d,
-    value,
     (d_key_t*) s_raw(key),
-    s_get_length(key) * sizeof(char) / sizeof(d_key_t)
+    s_get_length(key) * sizeof(char) / sizeof(d_key_t),
+    value
   );
 }
 
-static inline void d_set_value_s(dictionary *d, void *value, string *key) {
+static inline void d_set_value_s(
+  dictionary *d,
+  string const * const key,
+  void *value
+) {
   d_set_value(
     d,
-    value,
     (d_key_t*) s_raw(key),
-    s_get_length(key) * sizeof(char) / sizeof(d_key_t)
+    s_get_length(key) * sizeof(char) / sizeof(d_key_t),
+    value
   );
 }
 
-static inline void d_set_all_s(dictionary *d, list *values, string *key) {
+static inline void d_set_all_s(
+  dictionary *d,
+  string const * const key,
+  list *values
+) {
   d_set_all(
     d,
-    values,
     (d_key_t*) s_raw(key),
-    s_get_length(key) * sizeof(char) / sizeof(d_key_t)
+    s_get_length(key) * sizeof(char) / sizeof(d_key_t),
+    values
   );
 }
 
-static inline void* d_pop_value_s(dictionary *d, string *key) {
+static inline void* d_pop_value_s(dictionary *d, string const * const key) {
   return d_pop_value(
     d,
     (d_key_t*) s_raw(key),
@@ -83,7 +95,7 @@ static inline void* d_pop_value_s(dictionary *d, string *key) {
   );
 }
 
-static inline void d_clear_values_s(dictionary *d, string *key) {
+static inline void d_clear_values_s(dictionary *d, string const * const key) {
   d_clear_values(
     d,
     (d_key_t*) s_raw(key),

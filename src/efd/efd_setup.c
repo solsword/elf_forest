@@ -6,6 +6,9 @@
 
 #include "efd_setup.h"
 
+#include "datatypes/dictionary.h"
+#include "datatypes/string.h"
+
 /**************************
  * Conversion Definitions *
  **************************/
@@ -74,48 +77,30 @@ efd_destroy_function EFD_OBJECT_DESTRUCTOR_REGISTRY[] = {
 
 void setup_elf_forest_data(void) {
   EFD_ROOT = create_efd_node(EFD_NT_CONTAINER, EFD_ROOT_NAME);
-  EFD_INT_GLOBALS = create_map(EFD_GLOBALS_KEY_ARITY, EFD_GLOBALS_TABLE_SIZE);
-  EFD_NUM_GLOBALS = create_map(EFD_GLOBALS_KEY_ARITY, EFD_GLOBALS_TABLE_SIZE);
-  EFD_STR_GLOBALS = create_map(EFD_GLOBALS_KEY_ARITY, EFD_GLOBALS_TABLE_SIZE);
+  EFD_INT_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
+  EFD_NUM_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
+  EFD_STR_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
+#ifdef DEBUG
   if (sizeof(char) != sizeof(uint8_t)) {
     fprintf(stderr, "Warning: sizeof(char) != sizeof(uint8_t)\n");
   }
-  if (EFD_NODE_NAME_SIZE != 32) {
-    fprintf(
-      stderr,
-      "Warning: unexpected EFD node name size: %ld\n",
-      EFD_NODE_NAME_SIZE
-    );
-  }
-  if (EFD_ANNOTATION_SIZE != 8) {
-    fprintf(
-      stderr,
-      "Warning: unexpected EFD object format size: %ld\n",
-      EFD_ANNOTATION_SIZE
-    );
-  }
-}
-
-// cleanup helper:
-// TODO: Aggregate these!!
-void _cleanup_string_in_map(void* v_string) {
-  cleanup_string((string*) v_string);
+#endif
 }
 
 void cleanup_elf_forest_data(void) {
   cleanup_efd_node(EFD_ROOT);
-  cleanup_map(EFD_INT_GLOBALS);
-  cleanup_map(EFD_NUM_GLOBALS);
-  m_foreach(EFD_STR_GLOBALS, _cleanup_string_in_map);
-  cleanup_map(EFD_STR_GLOBALS);
+  cleanup_dictionary(EFD_INT_GLOBALS);
+  cleanup_dictionary(EFD_NUM_GLOBALS);
+  d_foreach(EFD_STR_GLOBALS, cleanup_v_string);
+  cleanup_dictionary(EFD_STR_GLOBALS);
 }
 
 // Private helper for looking up string keys:
-ptrdiff_t _efd_lookup_key(char const * const key) {
+ptrdiff_t _efd_lookup_key(string const * const key) {
   size_t result = 0;
   for (result = 0; result < EFD_OBJECT_REGISTRY_SIZE; ++result) {
     char *n = EFD_OBJECT_NAME_REGISTRY[result];
-    if (strncmp(key, n, EFD_ANNOTATION_SIZE) == 0) {
+    if (s_check_bytes(key, n)) {
       return result;
     }
   }
@@ -124,56 +109,56 @@ ptrdiff_t _efd_lookup_key(char const * const key) {
 
 // Note that these lookup functions are declared earlier, in efd.h
 
-efd_unpack_function efd_lookup_unpacker(char const * const key) {
+efd_unpack_function efd_lookup_unpacker(string const * const key) {
   ptrdiff_t idx = _efd_lookup_key(key);
   if (idx < 0) {
     fprintf(
       stderr,
       "Error: no unpack function found for format '%.*s'.\n",
-      (int) EFD_ANNOTATION_SIZE,
-      key
+      (int) s_get_length(key),
+      s_raw(key)
     );
     return NULL;
   }
   return EFD_OBJECT_UNPACKER_REGISTRY[idx];
 }
 
-efd_pack_function efd_lookup_packer(char const * const key) {
+efd_pack_function efd_lookup_packer(string const * const key) {
   ptrdiff_t idx = _efd_lookup_key(key);
   if (idx < 0) {
     fprintf(
       stderr,
       "Error: no pack function found for format '%.*s'.\n",
-      (int) EFD_ANNOTATION_SIZE,
-      key
+      (int) s_get_length(key),
+      s_raw(key)
     );
     return NULL;
   }
   return EFD_OBJECT_PACKER_REGISTRY[idx];
 }
 
-efd_copy_function efd_lookup_copier(char const * const key) {
+efd_copy_function efd_lookup_copier(string const * const key) {
   ptrdiff_t idx = _efd_lookup_key(key);
   if (idx < 0) {
     fprintf(
       stderr,
       "Error: no copy function found for format '%.*s'.\n",
-      (int) EFD_ANNOTATION_SIZE,
-      key
+      (int) s_get_length(key),
+      s_raw(key)
     );
     return NULL;
   }
   return EFD_OBJECT_COPIER_REGISTRY[idx];
 }
 
-efd_destroy_function efd_lookup_destructor(char const * const key) {
+efd_destroy_function efd_lookup_destructor(string const * const key) {
   ptrdiff_t idx = _efd_lookup_key(key);
   if (idx < 0) {
     fprintf(
       stderr,
       "Error: no destroy function found for format '%.*s'.\n",
-      (int) EFD_ANNOTATION_SIZE,
-      key
+      (int) s_get_length(key),
+      s_raw(key)
     );
     return NULL;
   }

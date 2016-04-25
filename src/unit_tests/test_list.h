@@ -2,8 +2,8 @@
 
 #include "suites/test_util.h"
 DEFINE_IMPORTED_BUILDER
-//#include "suites/test_efd.h"
-//DEFINE_IMPORTED_BUILDER
+#include "suites/test_efd.h"
+DEFINE_IMPORTED_BUILDER
 #include "suites/test_color.h"
 DEFINE_IMPORTED_BUILDER
 #include "suites/test_list.h"
@@ -36,9 +36,9 @@ DEFINE_IMPORTED_BUILDER
 #include "suites/test_util.h"
 ts = INVOKE_IMPORTED_BUILDER;
 l_append_element(ALL_TEST_SUITES, ts);
-//#include "suites/test_efd.h"
-//ts = INVOKE_IMPORTED_BUILDER;
-//l_append_element(ALL_TEST_SUITES, ts);
+#include "suites/test_efd.h"
+ts = INVOKE_IMPORTED_BUILDER;
+l_append_element(ALL_TEST_SUITES, ts);
 #include "suites/test_color.h"
 ts = INVOKE_IMPORTED_BUILDER;
 l_append_element(ALL_TEST_SUITES, ts);

@@ -37,7 +37,7 @@ size_t test_dictionary_growth(void) {
   size_t keylen = 3;
   dictionary *d = create_dictionary(512);
   for (i = 0; i < 10000; ++i) {
-    d_add_value(d, (void*) i, (d_key_t*) key, keylen);
+    d_add_value(d, (d_key_t*) key, keylen, (void*) i);
   }
   cleanup_dictionary(d);
   return 0;
@@ -45,16 +45,16 @@ size_t test_dictionary_growth(void) {
 
 size_t test_dictionary_add_pop(void) {
   dictionary *d = create_dictionary(1024);
-  d_add_value(d, (void *) 17, "key", 3);
+  d_add_value(d, "key", 3, (void *) 17);
   if (d_get_value(d, "key", 3) != (void *) 17) { return 1; }
   if (d_pop_value(d, "key", 3) != (void *) 17) { return 2; }
   if (d_pop_value(d, "key", 3) != NULL) { return 3; }
   if (d_pop_value(d, "key", 3) != NULL) { return 4; }
   if (d_pop_value(d, "never_put_in", 12) != NULL) { return 5; }
-  d_add_value(d, (void *) 8, "key1", 4);
-  d_add_value(d, (void *) 9, "key2", 4);
-  d_add_value(d, (void *) 10, "key3", 4);
-  d_add_value(d, (void *) 11, "key3", 4);
+  d_add_value(d, "key1", 4, (void *) 8);
+  d_add_value(d, "key2", 4, (void *) 9);
+  d_add_value(d, "key3", 4, (void *) 10);
+  d_add_value(d, "key3", 4, (void *) 11);
   if (d_get_value(d, "key1", 4) != (void *) 8) { return 6; }
   if (d_get_value(d, "key2", 4) != (void *) 9) { return 7; }
   if (d_get_value(d, "key3", 4) != (void *) 10) { return 8; }
@@ -64,11 +64,11 @@ size_t test_dictionary_add_pop(void) {
   if (d_get_value(d, "key3", 4) != (void *) 11) { return 12; }
   if (d_pop_value(d, "key3", 4) != (void *) 11) { return 13; }
   if (d_pop_value(d, "key3", 4) != NULL) { return 14; }
-  d_add_value(d, (void *) 25, "samekey", 7);
-  d_add_value(d, (void *) 26, "samekey", 7);
-  d_add_value(d, (void *) 27, "samekey", 7);
-  d_add_value(d, (void *) 28, "samekey", 7);
-  d_add_value(d, (void *) 29, "samekey", 7);
+  d_add_value(d, "samekey", 7, (void *) 25);
+  d_add_value(d, "samekey", 7, (void *) 26);
+  d_add_value(d, "samekey", 7, (void *) 27);
+  d_add_value(d, "samekey", 7, (void *) 28);
+  d_add_value(d, "samekey", 7, (void *) 29);
   list *multi = d_get_all(d, "samekey", 7);
   if (l_get_item(multi, 0) != (void*) 25) { return 15; }
   if (l_get_item(multi, 1) != (void*) 26) { return 16; }
@@ -79,12 +79,12 @@ size_t test_dictionary_add_pop(void) {
   if (d_get_value(d, "samekey", 7) != (void*) 25) { return 20; }
   d_clear_values(d, "samekey", 7);
   if (d_get_value(d, "samekey", 7) != NULL) { return 21; }
-  d_add_value(d, (void*) 88, "test", 4);
-  d_add_value(d, (void*) 89, "test", 4);
-  d_add_value(d, (void*) 90, "test", 4);
-  d_add_value(d, (void*) 90, "test", 4);
-  d_add_value(d, (void*) 140, "other", 5);
-  d_add_value(d, (void*) 141, "other", 5);
+  d_add_value(d, "test", 4, (void*) 88);
+  d_add_value(d, "test", 4, (void*) 89);
+  d_add_value(d, "test", 4, (void*) 90);
+  d_add_value(d, "test", 4, (void*) 90);
+  d_add_value(d, "other", 5, (void*) 140);
+  d_add_value(d, "other", 5, (void*) 141);
   d_clear(d);
   if (d_get_value(d, "test", 4) != NULL) { return 22; }
   if (d_get_value(d, "other", 5) != NULL) { return 23; }
@@ -98,14 +98,14 @@ size_t test_dictionary_string_keys(void) {
   string *test;
   char* tkey = NULL;
   size_t tlen = 0;
-  d_add_value_s(d, (void*) 99, key);
+  d_add_value_s(d, key, (void*) 99);
   if (d_get_value_s(d, key) != (void*) 99) { return 1; }
-  d_add_value_s(d, (void*) 100, key);
-  d_add_value_s(d, (void*) 101, key);
+  d_add_value_s(d, key, (void*) 100);
+  d_add_value_s(d, key, (void*) 101);
   if (d_pop_value_s(d, key) != (void*) 99) { return 2; }
   if (d_pop_value_s(d, key) != (void*) 100) { return 3; }
   if (d_pop_value_s(d, key) != (void*) 101) { return 4; }
-  d_add_value_s(d, (void*) 102, key);
+  d_add_value_s(d, key, (void*) 102);
   d_get_key(d, 0, &tkey, &tlen);
   if (tkey == NULL) { return 5; }
   if (tlen != 4) { return 6; }
@@ -124,7 +124,7 @@ size_t test_dictionary_collision(void) {
   size_t i;
   dictionary *d = create_dictionary(128);
   for (i = 0; i < batch_size; ++i) {
-    d_add_value(d, (void*) i, (d_key_t*) &i, sizeof(size_t));
+    d_add_value(d, (d_key_t*) &i, sizeof(size_t), (void*) i);
   }
   for (i = 0; i < batch_size; ++i) {
     if (d_get_value(d, (d_key_t*) &i, sizeof(size_t)) != (void*) i) {

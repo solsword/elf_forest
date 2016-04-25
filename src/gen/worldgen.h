@@ -19,15 +19,15 @@
  *************/
 
 // The name of the file to write a copy of the world map into:
-extern char const * const WORLD_MAP_FILE_BASE;
-extern char const * const WORLD_MAP_FILE_REGIONS;
-extern char const * const WORLD_MAP_FILE_TEMP;
-extern char const * const WORLD_MAP_FILE_WIND;
-extern char const * const WORLD_MAP_FILE_EVAP;
-extern char const * const WORLD_MAP_FILE_CLOUDS;
-extern char const * const WORLD_MAP_FILE_PQ;
-extern char const * const WORLD_MAP_FILE_RAIN;
-extern char const * const WORLD_MAP_FILE_LRAIN;
+extern string const * const WORLD_MAP_FILE_BASE;
+extern string const * const WORLD_MAP_FILE_REGIONS;
+extern string const * const WORLD_MAP_FILE_TEMP;
+extern string const * const WORLD_MAP_FILE_WIND;
+extern string const * const WORLD_MAP_FILE_EVAP;
+extern string const * const WORLD_MAP_FILE_CLOUDS;
+extern string const * const WORLD_MAP_FILE_PQ;
+extern string const * const WORLD_MAP_FILE_RAIN;
+extern string const * const WORLD_MAP_FILE_LRAIN;
 
 /*************
  * Functions *

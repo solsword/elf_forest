@@ -8,7 +8,7 @@
 
 #include "datatypes/list.h"
 #include "datatypes/string.h"
-#include "datatypes/map.h"
+#include "datatypes/dictionary.h"
 
 #include "boilerplate.h"
 
@@ -129,9 +129,6 @@ typedef struct efd_number_s efd_number;
 struct efd_string_s;
 typedef struct efd_string_s efd_string;
 
-struct efd_array_obj_s;
-typedef struct efd_array_obj_s efd_array_obj;
-
 struct efd_array_int_s;
 typedef struct efd_array_int_s efd_array_int;
 
@@ -149,7 +146,7 @@ typedef union efd_node_body_u efd_node_body;
 struct efd_node_s;
 typedef struct efd_node_s efd_node;
 
-// A global EFD node address:
+// An EFD node address:
 struct efd_address_s;
 typedef struct efd_address_s efd_address;
 
@@ -188,32 +185,24 @@ typedef void (*efd_destroy_function)(void *);
 
 #define EFD_GLOBALS_KEY_ARITY 4
 #define EFD_GLOBALS_TABLE_SIZE 2048
-#define EFD_NODE_NAME_SIZE ( \
-    EFD_GLOBALS_KEY_ARITY*(sizeof(void*) / sizeof(char)) \
-  ) // should be 32
-#define EFD_GLOBAL_NAME_SIZE ( \
-    EFD_GLOBALS_KEY_ARITY*(sizeof(void*) / sizeof(char)) \
-  ) // should be 32
-#define EFD_MAX_NAME_DEPTH 1024
 
-#define EFD_NODE_SEP '.'
-#define EFD_ADDR_PARENT '^'
+#define EFD_ADDR_SEP_CHR '.'
+#define EFD_ADDR_PARENT_CHR '^'
 
-#define EFD_ANNOTATION_SIZE (sizeof(uint64_t) / sizeof(char)) // should be 8
+extern string const * const EFD_ADDR_SEP_STR;
+extern string const * const EFD_ADDR_PARENT_STR;
+
+extern string const * const EFD_ANON_NAME;
+extern string const * const EFD_ROOT_NAME;
 
 extern char const * const EFD_NT_NAMES[];
 extern char const * const EFD_NT_ABBRS[];
 
-extern char const * const EFD_ANON_NAME;
-
-extern char const * const EFD_ROOT_NAME;
-
 extern efd_node *EFD_ROOT;
-//extern efd_path *EFD_ROOT_PATH; // TODO: axe this!
 
-extern map *EFD_INT_GLOBALS;
-extern map *EFD_NUM_GLOBALS;
-extern map *EFD_STR_GLOBALS;
+extern dictionary *EFD_INT_GLOBALS;
+extern dictionary *EFD_NUM_GLOBALS;
+extern dictionary *EFD_STR_GLOBALS;
 
 /*************************
  * Structure Definitions *
@@ -221,7 +210,7 @@ extern map *EFD_STR_GLOBALS;
 
 struct efd_node_header_s {
   efd_node_type type;
-  char name[EFD_NODE_NAME_SIZE + 1];
+  string *name;
   efd_node *parent;
 };
 
@@ -234,17 +223,17 @@ struct efd_link_s {
 };
 
 struct efd_function_s {
-  char function[EFD_ANNOTATION_SIZE];
+  string *function;
   list *children;
 };
 
 struct efd_proto_s {
-  char format[EFD_ANNOTATION_SIZE];
+  string *format;
   efd_node *input;
 };
 
 struct efd_object_s {
-  char format[EFD_ANNOTATION_SIZE];
+  string *format;
   void *value;
 };
 
@@ -258,11 +247,6 @@ struct efd_number_s {
 
 struct efd_string_s {
   string *value;
-};
-
-struct efd_array_obj_s {
-  size_t count;
-  void **values;
 };
 
 struct efd_array_int_s {
@@ -289,7 +273,6 @@ union efd_node_body_u {
   efd_integer as_integer;
   efd_number as_number;
   efd_string as_string;
-  efd_array_obj as_obj_array;
   efd_array_int as_int_array;
   efd_array_num as_num_array;
   efd_array_str as_str_array;
@@ -301,7 +284,7 @@ struct efd_node_s {
 };
 
 struct efd_address_s {
-  char name[EFD_NODE_NAME_SIZE + 1];
+  string *name;
   efd_address *parent;
   efd_address *next;
 };
@@ -365,12 +348,12 @@ static inline int efd_is_link_node(efd_node *n) {
   );
 }
 
-static inline char* efd__p_fmt(efd_node *n) {
+static inline string* efd__p_fmt(efd_node *n) {
   efd_assert_type(n, EFD_NT_PROTO);
   return n->b.as_proto.format;
 }
 
-static inline char* efd__o_fmt(efd_node *n) {
+static inline string* efd__o_fmt(efd_node *n) {
   efd_assert_type(n, EFD_NT_OBJECT);
   return n->b.as_object.format;
 }
@@ -485,10 +468,9 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
  * Constructors & Destructors *
  ******************************/
 
-// Allocate and return a new EFD node of the given type. Up to
-// EFD_NODE_NAME_SIZE characters are copied from the given string, but a
-// reference to it is not maintained.
-efd_node* create_efd_node(efd_node_type t, char const * const name);
+// Allocate and return a new EFD node of the given type. The given string is
+// copied, so the caller should clean it up if necessary.
+efd_node* create_efd_node(efd_node_type t, string const * const name);
 
 // Allocates and returns a deep copy of the given node, which of course
 // includes deep copies of all of the node's children recursively. Note that
@@ -499,9 +481,9 @@ efd_node* copy_efd_node(efd_node *src);
 // Clean up memory from the given EFD node.
 CLEANUP_DECL(efd_node);
 
-// Allocate and creates a new EFD address. Up to EFD_NODE_NAME_SIZE characters
-// are copied from the given string, but a reference to it is not maintained.
-efd_address* create_efd_address(efd_address *parent, char const * const name);
+// Allocate and creates a new EFD address. The given string is copied, so the
+// caller should clean it up if necessary.
+efd_address* create_efd_address(efd_address *parent, string const * const name);
 
 // Allocates and fills in a new EFD address for the given node.
 efd_address* construct_efd_address_of_node(efd_node *node);
@@ -579,13 +561,12 @@ int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to);
 int efd_is_type(efd_node *n, efd_node_type t);
 
 // Given an EFD_NT_PROTO or EFD_NT_OBJECT type node, checks that the format
-// matches the given string (up to the max length).
-int efd_format_is(efd_node *n, char const * const fmt);
+// matches the given string.
+int efd_format_is(efd_node *n, string const * const fmt);
 
-// Builds a fully-qualified name for the given node and returns a pointer to
-// newly-allocated memory holding this name. Note that this will only
-// accommodate names up to a maximum depth of EFD_MAX_NAME_DEPTH nestings.
-char* efd_build_fqn(efd_node *n);
+// Builds a fully-qualified name for the given node and returns a pointer to a
+// newly-allocated string holding this name.
+string* efd_build_fqn(efd_node *n);
 
 // Gets the children list from a node of any container type (returns NULL for
 // non-container nodes and prints a warning if DEBUG is on).
@@ -600,7 +581,7 @@ void efd_add_child(efd_node *n, efd_node *child);
 void efd_remove_child(efd_node *n, efd_node *child);
 
 // Appends the given name to the given address:
-void efd_append_address(efd_address *a, char const * const name);
+void efd_append_address(efd_address *a, string const * const name);
 
 // Extends the given address using the given extension. The extension can be
 // safely forgotten, as future cleanup of the base address will deal with the
@@ -608,7 +589,7 @@ void efd_append_address(efd_address *a, char const * const name);
 void efd_extend_address(efd_address *a, efd_address *e);
 
 // Adds the given name as the deepest level of the given address.
-void efd_push_address(efd_address *a, char const * const name);
+void efd_push_address(efd_address *a, string const * const name);
 
 // Removes the deepest level of the given address, returning a pointer to the
 // address that was popped (which should eventually be cleaned up).
@@ -619,7 +600,7 @@ efd_address* efd_pop_address(efd_address *a);
 // doesn't have children). Prints a warning if the given node is of a
 // non-container type. Note that this function does not handle link nodes (see
 // efd_lookup).
-efd_node* efd_find_child(efd_node* parent, char const * const name);
+efd_node* efd_find_child(efd_node* parent, string const * const name);
 
 // Look for any scope node(s) within the given node and searches for the target
 // variable within them in order, setting the given scope path to the path to
@@ -647,7 +628,7 @@ efd_node* efd_concrete(efd_node* base);
 // returns NULL. Unlike efd_find_child, this function properly handles link
 // nodes. This function always calls efd_concrete on its results, so the result
 // is never a link node.
-efd_node* efd_lookup(efd_node* node, char const * const key);
+efd_node* efd_lookup(efd_node* node, string const * const key);
 
 // The most ubiquitous EFD function 'efd' does a recursive address lookup to
 // find an EFD node given some root node to start from and an address to find.
@@ -673,7 +654,7 @@ efd_node* efd(efd_node *root, efd_address const * addr);
 // solved by a mix of calls to efd and efdx to avoid buffer-length problems.
 // Note that efdx's use of efd_parse_address means that it is limited by
 // EFD_MAX_NAME_DEPTH, although multiple calls to efd/efdx can overcome this.
-efd_node* efdx(efd_node *root, char const * const saddr);
+efd_node* efdx(efd_node *root, string const * const saddr);
 
 // Evaluates a function or generator node, returning a newly-allocated node
 // (which may have newly-allocated children) representing the result. For any
@@ -703,18 +684,18 @@ void efd_pack_node(efd_node *root, efd_index *cr);
 
 // Lookups for packers, unpackers, copiers, and destructors. Note that these
 // are not actually defined in efd.c but rather in  efd_setup.c.
-efd_unpack_function efd_lookup_unpacker(char const * const key);
-efd_pack_function efd_lookup_packer(char const * const key);
-efd_copy_function efd_lookup_copier(char const * const key);
-efd_destroy_function efd_lookup_destructor(char const * const key);
+efd_unpack_function efd_lookup_unpacker(string const * const key);
+efd_pack_function efd_lookup_packer(string const * const key);
+efd_copy_function efd_lookup_copier(string const * const key);
+efd_destroy_function efd_lookup_destructor(string const * const key);
 
 // Functions for getting and setting global integers, numbers, and strings:
-ptrdiff_t efd_get_global_i(char const * const key);
-float efd_get_global_n(char const * const key);
-string* efd_get_global_s(char const * const key);
-void efd_set_global_i(char const * const key, ptrdiff_t value);
-void efd_set_global_n(char const * const key, float value);
-void efd_set_global_s(char const * const key, string* value);
+ptrdiff_t efd_get_global_i(string const * const key);
+float efd_get_global_n(string const * const key);
+string* efd_get_global_s(string const * const key);
+void efd_set_global_i(string const * const key, ptrdiff_t value);
+void efd_set_global_n(string const * const key, float value);
+void efd_set_global_s(string const * const key, string* value);
 
 // A function with the same signature as a normal copy function that just
 // returns the original pointer (warning: may lead to a double-free if

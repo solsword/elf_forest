@@ -266,7 +266,7 @@ list* d_get_all(dictionary *d, d_key_t *key, size_t key_size) {
   return result;
 }
 
-void d_add_value(dictionary *d, void *value, d_key_t *key, size_t key_size) {
+void d_add_value(dictionary *d, d_key_t *key, size_t key_size, void *value) {
   dictionary_entry *e;
   dictionary_hash_t hash;
   list *bucket;
@@ -290,12 +290,12 @@ void d_add_value(dictionary *d, void *value, d_key_t *key, size_t key_size) {
   l_append_element(bucket, e);
 }
 
-void d_set_value(dictionary *d, void *value, d_key_t *key, size_t key_size) {
+void d_set_value(dictionary *d, d_key_t *key, size_t key_size, void *value) {
   d_clear_values(d, key, key_size);
-  d_add_value(d, value, key, key_size);
+  d_add_value(d, key, key_size, value);
 }
 
-void d_set_all(dictionary *d, list *values, d_key_t *key, size_t key_size) {
+void d_set_all(dictionary *d, d_key_t *key, size_t key_size, list *values) {
   size_t i;
   void *value;
   dictionary_entry *e;

@@ -92,15 +92,15 @@ list* d_get_all(dictionary *d, d_key_t *key, size_t key_size);
 // memory to expand the dictionary as necessary. If there is already a value
 // indexed by the given key, the given value will be inserted after it (and
 // thus will not be returned by d_get_value).
-void d_add_value(dictionary *d, void *value, d_key_t *key, size_t key_size);
+void d_add_value(dictionary *d, d_key_t *key, size_t key_size, void *value);
 
 // Removes all previous values under the given key and adds the given value.
-void d_set_value(dictionary *d, void *value, d_key_t *key, size_t key_size);
+void d_set_value(dictionary *d, d_key_t *key, size_t key_size, void *value);
 
 // Removes all previous values under the given key and copies values from the
 // given list as the new values for that key. The given list may be cleaned up
 // by the caller, although its values should not be freed.
-void d_set_all(dictionary *d, list *values, d_key_t *key, size_t key_size);
+void d_set_all(dictionary *d, d_key_t *key, size_t key_size, list *values);
 
 // Removes and returns the first value for the given key. If there are no
 // matching values it returns NULL.
