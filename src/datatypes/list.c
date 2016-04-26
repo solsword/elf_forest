@@ -256,6 +256,16 @@ void l_append_element(list *l, void *element) {
   l->count += 1;
 }
 
+void l_insert_element(list *l, void *element, size_t i) {
+  _grow_if_necessary(l);
+  size_t j;
+  for (j = l->count; j > i; --j) {
+    l->elements[j] = l->elements[j-1];
+  }
+  l->elements[i] = element;
+  l->count += 1;
+}
+
 void l_extend(list *l, list *other) {
   size_t i;
   _grow_to_fit(l, other->count);

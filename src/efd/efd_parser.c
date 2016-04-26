@@ -242,44 +242,15 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
 
 void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
   efd_parse_state back;
-  list *children;
   efd_node *child;
 
-  switch (result->h.type) {
-    default:
-      // TODO: Context here!
-      fprintf(
-        stderr,
-        "ERROR: Attempt to parse children for non-container node.\n"
-      );
-      exit(-1);
-      return;
-    case EFD_NT_CONTAINER:
-    case EFD_NT_SCOPE:
-      children = result->b.as_container.children;
-      break;
-    case EFD_NT_FUNCTION:
-    case EFD_NT_FN_VOID:
-    case EFD_NT_FN_OBJ:
-    case EFD_NT_FN_INT:
-    case EFD_NT_FN_NUM:
-    case EFD_NT_FN_STR:
-    case EFD_NT_FN_AR_OBJ:
-    case EFD_NT_FN_AR_INT:
-    case EFD_NT_FN_AR_NUM:
-    case EFD_NT_FN_AR_STR:
-    case EFD_NT_GENERATOR:
-    case EFD_NT_GN_VOID:
-    case EFD_NT_GN_OBJ:
-    case EFD_NT_GN_INT:
-    case EFD_NT_GN_NUM:
-    case EFD_NT_GN_STR:
-    case EFD_NT_GN_AR_OBJ:
-    case EFD_NT_GN_AR_INT:
-    case EFD_NT_GN_AR_NUM:
-    case EFD_NT_GN_AR_STR:
-      children = result->b.as_function.children;
-      break;
+  if (!efd_is_container_node(result)) {
+    // TODO: Context here!
+    fprintf(
+      stderr,
+      "ERROR: Attempt to parse children for non-container node.\n"
+    );
+    exit(-1);
   }
 
   // parse any number of children and add them:
@@ -305,7 +276,7 @@ void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
         efd_set_global_s(child->h.name, child->b.as_string.value);
         cleanup_efd_node(child);
       } else {
-        l_append_element(children, (void*) child);
+        efd_add_child(result, child);
       }
     }
   }
@@ -1038,7 +1009,7 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
 
 string* efd_parse_name(efd_parse_state *s) {
   char c;
-  char *start;
+  char const *start;
   size_t len;
 
   efd_parse_skip(s);
@@ -1059,7 +1030,7 @@ string* efd_parse_name(efd_parse_state *s) {
   c = s->input[s->pos];
 
   if (c >= '0' && c <= '9') {
-    s->error == EFD_PE_MALFORMED;
+    s->error = EFD_PE_MALFORMED;
     s->context = "identifier (initial numeral not allowed)";
     return NULL;
   }
@@ -1075,6 +1046,11 @@ string* efd_parse_name(efd_parse_state *s) {
     len += 1;
     s->pos += 1;
     c = s->input[s->pos];
+  }
+  if (len == 0) {
+    s->error = EFD_PE_MISSING;
+    s->context = "identifier (missing)";
+    return NULL;
   }
   return create_string_from_chars(start, len);
 }
@@ -1746,7 +1722,6 @@ efd_address* efd_parse_address(efd_parse_state *s) {
   tail = NULL;
   c = EFD_ADDR_SEP_CHR;
   while (c == EFD_ADDR_SEP_CHR) {
-    // TODO: respect max depth here?
     s->pos += 1;
     efd_parse_skip(s);
     if (efd_parse_failed(s)) {
@@ -1813,10 +1788,8 @@ efd_address* efd_parse_address(efd_parse_state *s) {
       } // else
 
       break;
-
     }
   }
-
   return result;
 }
 

@@ -77,10 +77,12 @@ int _test_efd_case(efd_node *n) {
   ptrdiff_t int_result;
   float float_result;
   efd_node *node_result;
+  efd_node *cmp, *agn;
   int result = 0;
   SSTR(s_itest, "itest", 5);
   SSTR(s_ntest, "ntest", 5);
   SSTR(s_ptest, "ptest", 5);
+  SSTR(s_evtest, "evtest", 5);
 
   s.input = NULL;
   s.input_length = 0;
@@ -217,6 +219,26 @@ int _test_efd_case(efd_node *n) {
         fprintf(stderr, "  Remainder: %s\n", s.input + s.pos);
       }
     }
+  } else if (efd_format_is(n, s_evtest)) {
+    efd_ev_test *t = (efd_ev_test*) (*efd__o(n));
+    cmp = efd_eval(t->compare, NULL);
+    agn = efd_eval(t->against, NULL);
+    result = (
+      cmp != NULL
+   && agn != NULL
+   && efd_equals(cmp, agn)
+    );
+    if (!result) {
+      if (cmp == NULL) {
+        fprintf(stderr, "Test EFD case [eval]: Failed (1st eval falied).\n");
+      } else if (agn == NULL) {
+        fprintf(stderr, "Test EFD case [eval]: Failed (2nd eval failed).\n");
+      } else {
+        fprintf(stderr, "Test EFD case [eval]: Failed (results not equal).\n");
+      }
+    }
+    if (cmp != NULL) { cleanup_efd_node(cmp); }
+    if (agn != NULL) { cleanup_efd_node(agn); }
   }
   cleanup_efd_index(cr);
   return result;
@@ -224,14 +246,16 @@ int _test_efd_case(efd_node *n) {
 
 size_t test_efd_defined_tests(void) {
   size_t i;
-  list *l;
+  dictionary *children;
   efd_node *n;
   efd_node *test;
   efd_index *cr = create_efd_index();
+  string *fqn;
   SSTR(s_test, "test", 4);
   SSTR(s_itest, "itest", 5);
   SSTR(s_ntest, "ntest", 5);
   SSTR(s_ptest, "ptest", 5);
+  SSTR(s_evtest, "evtest", 6);
 
   n = create_efd_node(EFD_NT_CONTAINER, s_test);
   if (!efd_parse_file(n, cr, "res/data/test/test.efd")) {
@@ -242,18 +266,28 @@ size_t test_efd_defined_tests(void) {
 
   efd_unpack_node(n, cr);
 
-  l = n->b.as_container.children;
-  for (i = 0; i < l_get_length(l); ++i) {
-    test = (efd_node*) l_get_item(l, i);
+  n = efdx(n, s_test); // test.test
+
+  children = n->b.as_container.children;
+  for (i = 0; i < d_get_count(children); ++i) {
+    test = (efd_node*) d_get_item(children, i);
     if (
       efd_is_type(test, EFD_NT_OBJECT)
    && (
         efd_format_is(test, s_itest)
      || efd_format_is(test, s_ntest)
      || efd_format_is(test, s_ptest)
+     || efd_format_is(test, s_evtest)
      )
    && !_test_efd_case(test)
     ) {
+      fqn = efd_build_fqn(test);
+      fprintf(
+        stderr,
+        "Dynamic test case '%.*s' failed.\n",
+        (int) s_get_length(fqn),
+        s_raw(fqn)
+      );
       return i + 2; // 2, 3, 4, etc.
     }
   }

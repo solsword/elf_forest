@@ -6,9 +6,9 @@
 
 #include "efd.h"
 
-/*************
- * Constants *
- *************/
+/***********
+ * Globals *
+ ***********/
 
 extern char * const EFD_OBJECT_NAME_REGISTRY[];
 extern efd_unpack_function EFD_OBJECT_UNPACKER_REGISTRY[];
@@ -16,14 +16,14 @@ extern efd_pack_function EFD_OBJECT_PACKER_REGISTRY[];
 extern efd_copy_function EFD_OBJECT_COPIER_REGISTRY[];
 extern efd_destroy_function EFD_OBJECT_DESTRUCTOR_REGISTRY[];
 
+extern dictionary *EFD_FUNCTION_DICT;
+
 /*************************
  * Included Declarations *
  *************************/
 
 #define EFD_REGISTER_DECLARATIONS
-#include "conv/efd_null.h"
-#include "conv/efd_tests.h"
-#include "conv/efd_rngtable.h"
+#include "conv.list"
 #undef EFD_REGISTER_DECLARATIONS
 
 /*************

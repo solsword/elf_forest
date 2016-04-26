@@ -116,15 +116,16 @@ CHECKGL_OBJECTS=$(OBJ_DIR)/check_gl_version.o
 # The default goal:
 .DEFAULT_GOAL := game
 
-.PHONY: all clean game test viewer unit_tests test_noise checkgl efd_globals
+.PHONY: all clean game test viewer unit_tests test_noise checkgl src_lists efd_globals
 
-all: game test viewer unit_tests test_noise efd_globals
+all: src_lists game test viewer unit_tests test_noise efd_globals
 
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(BIN_DIR)
 	rm -rf $(OUT_DIR)
 	rm $(DATA_DIR)/auto_globals.efd
+	rm $(SRC_DIR)/efd/conv.list
 
 game: $(BIN_DIR)/elf_forest efd_globals
 
@@ -143,6 +144,16 @@ checkgl: $(BIN_DIR)/checkgl
 	./$(BIN_DIR)/checkgl
 
 efd_globals: $(DATA_DIR)/auto_globals.efd
+
+src_lists: $(SRC_DIR)/efd/conv.list
+
+$(SRC_DIR)/efd/conv.list: $(SRC_DIR) $(SRC_DIR)/efd/conv/*
+	echo "// auto-generated conversions list" > $(SRC_DIR)/efd/conv.list
+	echo "// vim:syntax=c" >> $(SRC_DIR)/efd/conv.list
+	ls $(SRC_DIR)/efd/conv \
+		| sed "s/^/#include \"conv\//" \
+		| sed "s/$$/\"/" \
+		>> $(SRC_DIR)/efd/conv.list
 
 $(DATA_DIR)/auto_globals.efd: $(DATA_DIR) $(OBJ_DIR)/*
 	grep -rh EFD_GL[\(_] $(SRC_DIR) \
@@ -175,11 +186,15 @@ $(SRC_DIR)/*.c \
 $(SRC_DIR)/*/*.c \
 $(SRC_DIR)/*.h \
 $(SRC_DIR)/*/*.h  \
+$(SRC_DIR)/efd/conv.list \
 $(OBJ_DIR)
 	$(CC) -MM $(INCLUDE_FLAGS) $(SRC_DIR)/*.c $(SRC_DIR)/*/*.c | sed "s/^\([^ ]\)/$(OBJ_DIR)\/\1/" >\
 		$(OBJ_DIR)/obj.d
 
 Makefile: ;
+
+# Make sure that we remake the EFD conversions list before building:
+#Makefile: $(SRC_DIR)/efd/conv.list
 
 # Make sure that we remake the dependency file before building:
 #Makefile: $(OBJ_DIR)/obj.d

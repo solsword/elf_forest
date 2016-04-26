@@ -107,6 +107,12 @@ void * l_replace_item(list *l, size_t i, void *element);
 // expand the list as necessary.
 void l_append_element(list *l, void *element);
 
+// Inserts the given element before the ith member of the given list. Allocates
+// new memory to expand the list as necessary. Note that this is much more
+// expensive than l_append_element because elements after the insertion have to
+// be moved.
+void l_insert_element(list *l, void *element, size_t i);
+
 // Adds all members of the other list to this list, without altering the other
 // list.
 void l_extend(list *l, list *other);

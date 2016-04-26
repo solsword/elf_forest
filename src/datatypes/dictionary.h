@@ -66,7 +66,7 @@ size_t d_get_count(dictionary *d);
 
 // Gets the nth item in the dictionary, according to the order in which items
 // were added.
-void* d_get_item(dictionary *d, size_t index);
+void * d_get_item(dictionary *d, size_t index);
 
 // Gets the nth key in the dictionary, according to the order in which items
 // were added. Note that when multiple items are entered under the same key,
@@ -80,19 +80,23 @@ int d_contains_key(dictionary *d, d_key_t *key, size_t key_size);
 
 // Returns the first value stored under the given key, or NULL if no values are
 // present for that key.
-void* d_get_value(dictionary *d, d_key_t *key, size_t key_size);
+void * d_get_value(dictionary *d, d_key_t *key, size_t key_size);
 
 // Returns a newly allocated list containing all values stored under the given
 // key. Although the list is fresh, its values are the same as those in the
 // dictionary, so they shouldn't be freed. If there are no matches for the
 // given key, an empty list is returned.
-list* d_get_all(dictionary *d, d_key_t *key, size_t key_size);
+list * d_get_all(dictionary *d, d_key_t *key, size_t key_size);
 
 // Adds the given value to the dictionary under the given key. Allocates new
 // memory to expand the dictionary as necessary. If there is already a value
 // indexed by the given key, the given value will be inserted after it (and
 // thus will not be returned by d_get_value).
 void d_add_value(dictionary *d, d_key_t *key, size_t key_size, void *value);
+
+// Works like d_add_value, but orders the value first instead of last both
+// globally and within values with the same key.
+void d_prepend_value(dictionary *d, d_key_t *key, size_t key_size, void *value);
 
 // Removes all previous values under the given key and adds the given value.
 void d_set_value(dictionary *d, d_key_t *key, size_t key_size, void *value);
@@ -104,7 +108,11 @@ void d_set_all(dictionary *d, d_key_t *key, size_t key_size, list *values);
 
 // Removes and returns the first value for the given key. If there are no
 // matching values it returns NULL.
-void* d_pop_value(dictionary *d, d_key_t *key, size_t key_size);
+void * d_pop_value(dictionary *d, d_key_t *key, size_t key_size);
+
+// Removes the first entry with the given value from the dictionary. Returns
+// the removed value, or NULL if no matching value was found.
+void * d_remove_value(dictionary *d, void* target);
 
 // Removes all values for the given key.
 void d_clear_values(dictionary *d, d_key_t *key, size_t key_size);

@@ -179,12 +179,16 @@ typedef efd_node* (*efd_pack_function)(void *);
 typedef void* (*efd_copy_function)(void *);
 typedef void (*efd_destroy_function)(void *);
 
+typedef efd_node* (*efd_eval_function)(efd_node const * const);
+
 /*************
  * Constants *
  *************/
 
 #define EFD_GLOBALS_KEY_ARITY 4
 #define EFD_GLOBALS_TABLE_SIZE 2048
+
+#define EFD_DEFAULT_DICTIONARY_SIZE 8
 
 #define EFD_ADDR_SEP_CHR '.'
 #define EFD_ADDR_PARENT_CHR '^'
@@ -215,7 +219,7 @@ struct efd_node_header_s {
 };
 
 struct efd_container_s {
-  list *children;
+  dictionary *children;
 };
 
 struct efd_link_s {
@@ -224,7 +228,7 @@ struct efd_link_s {
 
 struct efd_function_s {
   string *function;
-  list *children;
+  dictionary *children;
 };
 
 struct efd_proto_s {
@@ -322,29 +326,57 @@ struct efd_index_s {
 // Asserts that a type matches and throws an error if it does not (or if it's
 // NULL). Can be turned off by defining EFD_NO_TYPECHECKS, although the NULL
 // check will still take place.
-void efd_assert_type(efd_node *n, efd_node_type t);
+void efd_assert_type(efd_node const * const n, efd_node_type t);
 
 /********************
  * Inline Functions *
  ********************/
 
-static inline size_t efd_node_depth(efd_node *n) {
+static inline size_t efd_node_depth(efd_node const * const n) {
   size_t result = 0;
+  efd_node const *p = n;
   do {
-    if (n->h.parent == NULL) {
+    if (p->h.parent == NULL) {
       return result;
     } else {
       result += 1;
-      n = n->h.parent;
+      p = p->h.parent;
     }
   } while (1);
 }
 
-static inline int efd_is_link_node(efd_node *n) {
+static inline int efd_is_link_node(efd_node const * const n) {
   return (
     n->h.type == EFD_NT_LINK
  || n->h.type == EFD_NT_LOCAL_LINK
  || n->h.type == EFD_NT_VARIABLE
+  );
+}
+
+static inline int efd_is_container_node(efd_node const * const n) {
+  return (
+    n->h.type == EFD_NT_CONTAINER
+ || n->h.type == EFD_NT_SCOPE
+ || n->h.type == EFD_NT_FUNCTION
+ || n->h.type == EFD_NT_FN_VOID
+ || n->h.type == EFD_NT_FN_OBJ
+ || n->h.type == EFD_NT_FN_INT
+ || n->h.type == EFD_NT_FN_NUM
+ || n->h.type == EFD_NT_FN_STR
+ || n->h.type == EFD_NT_FN_AR_OBJ
+ || n->h.type == EFD_NT_FN_AR_INT
+ || n->h.type == EFD_NT_FN_AR_NUM
+ || n->h.type == EFD_NT_FN_AR_STR
+ || n->h.type == EFD_NT_GENERATOR
+ || n->h.type == EFD_NT_GN_VOID
+ || n->h.type == EFD_NT_GN_OBJ
+ || n->h.type == EFD_NT_GN_INT
+ || n->h.type == EFD_NT_GN_NUM
+ || n->h.type == EFD_NT_GN_STR
+ || n->h.type == EFD_NT_GN_AR_OBJ
+ || n->h.type == EFD_NT_GN_AR_INT
+ || n->h.type == EFD_NT_GN_AR_NUM
+ || n->h.type == EFD_NT_GN_AR_STR
   );
 }
 
@@ -476,20 +508,24 @@ efd_node* create_efd_node(efd_node_type t, string const * const name);
 // includes deep copies of all of the node's children recursively. Note that
 // any objects contained in the node or its children are also copied, as it is
 // assumed that cleanup_efd_node will be sufficient for memory management.
-efd_node* copy_efd_node(efd_node *src);
+efd_node* copy_efd_node(efd_node const * const src);
 
 // Clean up memory from the given EFD node.
 CLEANUP_DECL(efd_node);
 
 // Allocate and creates a new EFD address. The given string is copied, so the
-// caller should clean it up if necessary.
-efd_address* create_efd_address(efd_address *parent, string const * const name);
+// caller should clean it up if necessary. The parent pointer of the new
+// address is set, but the next pointer of the parent is not modified.
+efd_address * create_efd_address(
+  efd_address *parent,
+  string const * const name
+);
 
 // Allocates and fills in a new EFD address for the given node.
-efd_address* construct_efd_address_of_node(efd_node *node);
+efd_address * construct_efd_address_of_node(efd_node const * const node);
 
 // Allocate an new efd_address and copy in information from the given address.
-efd_address* copy_efd_address(efd_address *src);
+efd_address * copy_efd_address(efd_address const * const src);
 
 // Clean up memory from the given EFD address (and recursively, all of its
 // children). Parents of the given address are not affected (so for example if
@@ -566,18 +602,30 @@ int efd_format_is(efd_node *n, string const * const fmt);
 
 // Builds a fully-qualified name for the given node and returns a pointer to a
 // newly-allocated string holding this name.
-string* efd_build_fqn(efd_node *n);
+string* efd_build_fqn(efd_node const * const n);
 
-// Gets the children list from a node of any container type (returns NULL for
-// non-container nodes and prints a warning if DEBUG is on).
-list* efd_children_list(efd_node *n);
+// Gets the children dictionary from a node of any container type (returns NULL
+// for non-container nodes and prints a warning if DEBUG is on).
+dictionary* efd_children_dict(efd_node const * const n);
 
-// Adds the given child to the parent's list of children (parent must be a
-// container node).
+// Compares the two nodes and returns 1 if they are exactly equivalent
+// (including any children, recursively) or 0 if they differ. Ancestors are not
+// compared, so two "equal" nodes with different ancestors may give different
+// results under efd_eval (if this is a concern just call efd_equals on the
+// eval results).
+int efd_equals(efd_node const * const cmp, efd_node const * const agn);
+
+// Adds the given child to the parent's dictionary of children (parent must be
+// a container node).
 void efd_add_child(efd_node *n, efd_node *child);
 
-// Removes the given child from this node's list of children (this node must be
-// a container node).
+// Works like efd_add_child but the child is treated as having been defined
+// first within its parent.
+void efd_prepend_child(efd_node *n, efd_node *child);
+
+// Removes the given child from this node's dictionary of children (this node
+// must be a container node). If DEBUG is on and the parent doesn't contain the
+// child, an error message is printed.
 void efd_remove_child(efd_node *n, efd_node *child);
 
 // Appends the given name to the given address:
@@ -600,26 +648,37 @@ efd_address* efd_pop_address(efd_address *a);
 // doesn't have children). Prints a warning if the given node is of a
 // non-container type. Note that this function does not handle link nodes (see
 // efd_lookup).
-efd_node* efd_find_child(efd_node* parent, string const * const name);
+efd_node* efd_find_child(
+  efd_node const * const parent,
+  string const * const name
+);
 
 // Look for any scope node(s) within the given node and searches for the target
 // variable within them in order, setting the given scope path to the path to
 // the matching variable or NULL if there is no match.
-efd_node* efd_find_variable_in(efd_node* base, efd_address* target);
+efd_node* efd_find_variable_in(
+  efd_node const * const base,
+  efd_address const * const target
+);
 
 // Takes a variable node and returns the node that it refers to. If no referent
 // can be found, it returns NULL. This function searches progressively upwards
 // through the EFD tree, returning the first match found. This function just
 // does one step of resolution, so the node it returns may still be a link or
 // variable.
-efd_node* efd_resolve_variable(efd_node* var);
+efd_node* efd_resolve_variable(
+  efd_node const * const var
+);
 
 // Takes a node and returns the concrete node that it refers to, following any
 // link(s) encountered until a non-link node is found. If a link is broken or
 // if the input is NULL, it returns NULL. Note that this function doesn't
 // remember where it's been, so infinite loops can occur.
 // TODO: Change that?
-efd_node* efd_concrete(efd_node* base);
+efd_node* efd_concrete(efd_node const * const base);
+
+// Returns the nth child of the given node, not counting scope nodes.
+efd_node* efd_nth(efd_node const * const node, size_t index);
 
 // This function returns the child with the given key in the given node. It
 // iterates over children until it hits one with a matching name, so only the
@@ -628,14 +687,14 @@ efd_node* efd_concrete(efd_node* base);
 // returns NULL. Unlike efd_find_child, this function properly handles link
 // nodes. This function always calls efd_concrete on its results, so the result
 // is never a link node.
-efd_node* efd_lookup(efd_node* node, string const * const key);
+efd_node* efd_lookup(efd_node const * const node, string const * const key);
 
 // The most ubiquitous EFD function 'efd' does a recursive address lookup to
 // find an EFD node given some root node to start from and an address to find.
 // Internally it uses efd_lookup, so when multiple children of a node share a
 // name, the first one is used. If no match is found it sets the given path to
 // NULL.
-efd_node* efd(efd_node *root, efd_address const * addr);
+efd_node* efd(efd_node const * const root, efd_address const * addr);
 
 // Works like efd, but instead of taking an address it takes a key which is
 // parsed into an address. So
@@ -654,7 +713,7 @@ efd_node* efd(efd_node *root, efd_address const * addr);
 // solved by a mix of calls to efd and efdx to avoid buffer-length problems.
 // Note that efdx's use of efd_parse_address means that it is limited by
 // EFD_MAX_NAME_DEPTH, although multiple calls to efd/efdx can overcome this.
-efd_node* efdx(efd_node *root, string const * const saddr);
+efd_node* efdx(efd_node const * const root, string const * const saddr);
 
 // Evaluates a function or generator node, returning a newly-allocated node
 // (which may have newly-allocated children) representing the result. For any
@@ -662,11 +721,13 @@ efd_node* efdx(efd_node *root, string const * const saddr);
 // each of its children. The caller should dispose of the returned node and its
 // children using cleanup_efd_node. The args argument may be given as NULL, but
 // if not, it should be a SCOPE node which will be copied and inserted into the
-// copy of the target node as its first child before evaluation begins.
+// copy of the target node as its first child before evaluation begins. If the
+// target node is not a container node args should be NULL (and will be
+// ignored).
 efd_node* efd_eval(efd_node const * const target, efd_node const * const args);
 
 // Adds the given bridge to the given index.
-void efd_add_crossref(efd_index *cr, efd_bridge* bridge);
+void efd_add_crossref(efd_index *cr, efd_bridge *bridge);
 
 // Unpacks this node and all of its children recursively, turning PROTO nodes
 // containing raw EFD into OBJECT nodes containing unpacked structs. At this
@@ -689,21 +750,24 @@ efd_pack_function efd_lookup_packer(string const * const key);
 efd_copy_function efd_lookup_copier(string const * const key);
 efd_destroy_function efd_lookup_destructor(string const * const key);
 
+// Lookup for functions (also defined in efd_setup.c):
+efd_eval_function efd_lookup_function(string const * const key);
+
 // Functions for getting and setting global integers, numbers, and strings:
 ptrdiff_t efd_get_global_i(string const * const key);
 float efd_get_global_n(string const * const key);
 string* efd_get_global_s(string const * const key);
 void efd_set_global_i(string const * const key, ptrdiff_t value);
 void efd_set_global_n(string const * const key, float value);
-void efd_set_global_s(string const * const key, string* value);
+void efd_set_global_s(string const * const key, string *value);
 
 // A function with the same signature as a normal copy function that just
 // returns the original pointer (warning: may lead to a double-free if
 // misused).
-void* dont_copy(void* v);
+void* dont_copy(void *v);
 
 // A function with the same signature as a normal cleanup function that doesn't
 // do anything.
-void dont_cleanup(void* v);
+void dont_cleanup(void *v);
 
 #endif // INCLUDE_EFD_H

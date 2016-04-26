@@ -12,248 +12,247 @@
 [[i t 0x80ff90ffa0ffb0ff00ff10ff20ff30ff34567890]]
 [[i t -0xff]]
 [[i t 0x0001]]
-[[o t:itest
+[[o t1:itest
   [[s input ""]]
   [[s expect "failure"]]
 ]]
-[[o t:itest
+[[o t2:itest
   [[s input "1"]]
   [[s expect "success"]]
   [[i output 1]]
 ]]
-[[o t:itest
+[[o t3:itest
   [[s input "0"]]
   [[s expect "success"]]
   [[i output 0]]
 ]]
-[[o t:itest
+[[o t4:itest
   [[s input "10"]]
   [[s expect "success"]]
   [[i output 10]]
 ]]
-[[o t:itest
+[[o t5:itest
   [[s input "23"]]
   [[s expect "success"]]
   [[i output 23]]
 ]]
-[[o t:itest
+[[o t6:itest
   [[s input "0x1"]]
   [[s expect "success"]]
   [[i output 1]]
 ]]
-[[o t:itest
+[[o t7:itest
   [[s input "0xa"]]
   [[s expect "success"]]
   [[i output 10]]
 ]]
-[[o t:itest
+[[o t8:itest
   [[s input "0x1a"]]
   [[s expect "success"]]
   [[i output 26]]
 ]]
-[[o t:itest
+[[o t9:itest
   [[s input "0x0001"]]
   [[s expect "success"]]
   [[i output 1]]
 ]]
-[[o t:itest
+[[o t10:itest
   [[s input "0xff"]]
   [[s expect "success"]]
   [[i output 255]]
 ]]
-[[o t:itest
+[[o t11:itest
   [[s input "0xf9"]]
   [[s expect "success"]]
   [[i output 249]]
 ]]
-[[o t:itest
+[[o t12:itest
   [[s input "249"]]
   [[s expect "success"]]
   [[i output 0xf9]]
 ]]
-[[o t:itest
+[[o t13:itest
   [[s input "-3"]]
   [[s expect "success"]]
   [[i output -0x03]]
 ]]
-[[o t:itest
+[[o t14:itest
   [[s input "-0x10"]]
   [[s expect "success"]]
   [[i output -16]]
 ]]
-[[o t:itest
+[[o t15:itest
   [[s input "00"]]
   [[s expect "failure"]]
 ]]
-[[o t:itest
+[[o t16:itest
   [[s input "ff"]]
   [[s expect "failure"]]
 ]]
-[[o t:itest
+[[o t17:itest
   [[s input "c9"]]
   [[s expect "failure"]]
 ]]
-[[o t:itest
+[[o t18:itest
   [[s input "--3"]]
   [[s expect "failure"]]
 ]]
-[[o t:itest
+[[o t19:itest
   [[s input "03"]]
   [[s expect "failure"]]
 ]]
-[[o t:itest
+[[o t20:itest
   [[s input "0x-5"]]
   [[s expect "remainder"]]
   [[i output 0]]
   [[s remainder "x-5"]]
 ]]
-[[o t:itest
+[[o t21:itest
   [[s input "-x35"]]
   [[s expect "failure"]]
 ]]
-[[o t:itest
+[[o t22:itest
   [[s input "0x"]]
   [[s expect "remainder"]]
   [[i output 0]]
   [[s remainder "x"]]
 ]]
-[[o t:itest
+[[o t23:itest
   [[s input "19ab"]]
   [[s expect "remainder"]]
   [[i output 19]]
   [[s remainder "ab"]]
 ]]
-[[o t:itest
+[[o t24:itest
   [[s input "0-2"]]
   [[s expect "remainder"]]
   [[i output 0]]
   [[s remainder "-2"]]
 ]]
-[[o t:itest
+[[o t25:itest
   [[s input "0xff-"]]
   [[s expect "remainder"]]
   [[i output 0xff]]
   [[s remainder "-"]]
 ]]
-[[o t:itest
+[[o t26:itest
   [[s input "123-"]]
   [[s expect "remainder"]]
   [[i output 123]]
   [[s remainder "-"]]
 ]]
-[[o t:itest
+[[o t27:itest
   [[s input "120x456"]]
   [[s expect "remainder"]]
   [[i output 120]]
   [[s remainder "x456"]]
 ]]
 // numbers
-[[n t 0.5]]
-[[n t 182.1922]]
-[[n t 1e7]]
-[[n t 1.4e3]]
-[[n t .4e3]]
-[[n t 4.e3]]
-[[n t 0]]
-[[n t 1]]
-[[o t:ntest
+[[n t28 0.5]]
+[[n t29 182.1922]]
+[[n t30 1e7]]
+[[n t31 1.4e3]]
+[[n t32 .4e3]]
+[[n t33 4.e3]]
+[[n t34 0]]
+[[n t35 1]]
+[[o t36:ntest
   [[s input ""]]
   [[s expect "failure"]]
 ]]
-[[o t:ntest
+[[o t37:ntest
   [[s input "0"]]
   [[s expect "success"]]
   [[n output 0]]
 ]]
-[[o t:ntest
+[[o t38:ntest
   [[s input "1"]]
   [[s expect "success"]]
   [[n output 1]]
 ]]
-[[o t:ntest
+[[o t39:ntest
   [[s input "1"]]
   [[s expect "success"]]
   [[n output 1.0]]
 ]]
-[[o t:ntest
+[[o t40:ntest
   [[s input "0.0"]]
   [[s expect "success"]]
   [[n output 0]]
 ]]
-[[o t:ntest
+[[o t41:ntest
   [[s input "1."]]
   [[s expect "success"]]
   [[n output 1.0]]
 ]]
-[[o t:ntest
+[[o t42:ntest
   [[s input "0003.5"]]
   [[s expect "failure"]]
 ]]
-[[o t:ntest
+[[o t43:ntest
   [[s input "0.."]]
   [[s expect "remainder"]]
   [[n output 0]]
   [[s remainder "."]]
 ]]
-[[o t:ntest
+[[o t44:ntest
   [[s input "1e+-2"]]
   [[s expect "remainder"]]
   [[n output 1]]
   [[s remainder "e+-2"]]
 ]]
-[[o t:ntest
+[[o t45:ntest
   [[s input "1e-+2"]]
   [[s expect "remainder"]]
   [[n output 1]]
   [[s remainder "e-+2"]]
 ]]
-[[o t:ntest
+[[o t46:ntest
   [[s input "1e++2"]]
   [[s expect "remainder"]]
   [[n output 1]]
   [[s remainder "e++2"]]
 ]]
-[[o t:ntest
+[[o t47:ntest
   [[s input "-2e--2"]]
   [[s expect "remainder"]]
   [[n output -2]]
   [[s remainder "e--2"]]
 ]]
-[[o t:ntest
+[[o t48:ntest
   [[s input "1+2"]]
   [[s expect "remainder"]]
   [[n output 1]]
   [[s remainder "+2"]]
 ]]
-[[o t:ntest
+[[o t49:ntest
   [[s input "1-2"]]
   [[s expect "remainder"]]
   [[n output 1]]
   [[s remainder "-2"]]
 ]]
-[[o t:ntest
+[[o t50:ntest
   [[s input "1.-2"]]
   [[s expect "remainder"]]
   [[n output 1]]
   [[s remainder "-2"]]
 ]]
 // misc:
-[[o t:ptest
-  [[s input "[[s name_a_bit_too_long______________ 'this won''t work']]"]]
-  [[s expect "remainder"]]
-  [[s remainder "_ 'this won''t work']]"]]
+[[o t51:ptest
+  [[s input "[[s name_very_long______________ 'this''ll work']]"]]
+  [[s expect "success"]]
 ]]
-[[o t:ptest
+[[o t52:ptest
   [[s input "[[s name_that's_fine 'this will work']]"]]
   [[s expect "success"]]
 ]]
 // strings:
-[[s t "test"]]
-[[s t 'test']]
-[[s t "string ' with embedded ' quotes"]]
-[[s t 'string " with embedded " quotes']]
-[[s t "string "" with embedded "" quotes"]]
-[[s t 'string '' with embedded '' quotes']]
+[[s t53 "test"]]
+[[s t54 'test']]
+[[s t55 "string ' with embedded ' quotes"]]
+[[s t56 'string " with embedded " quotes']]
+[[s t57 "string "" with embedded "" quotes"]]
+[[s t58 'string '' with embedded '' quotes']]
 [[s name-with~some$chrs&*% "this name should be just fine"]]
 [[s really_long_name_that_is_very_long_and_gets_used_just_fine_anyways_because_the_language_allows_that_so_shut_up "test" ]]
 [[s なまえ "名前" ]]
@@ -442,53 +441,54 @@
 <<l other_350@ref2>>
 <<l over_35@ref3>>
 
-[[o t:evtest <<L test.inner_link>> (i 17) ]]
-[[o t:evtest <<L test.inner_link_v>> (i 95) ]]
-[[o t:evtest <<L test.inner_link_over>> (i 1000) ]]
+[[o t59:evtest <<L test.inner_link>> (i 17) ]]
+[[o t60:evtest <<L test.inner_link_v>> (i 95) ]]
+[[o t61:evtest <<L test.inner_link_over>> (i 1000) ]]
+[[o t62:evtest (i 3) (i 17) ]]
 
-[[o t:evtest <<L test.varscope.nested.t_int>> (i 1) ]]
-[[o t:evtest <<L test.varscope.nested.t_other>> (i 17) ]]
-[[o t:evtest <<L test.varscope.nested.t_over>> (i 1000) ]]
-[[o t:evtest <<L test.varscope.nested.t_v>> (i 17) ]]
-[[o t:evtest <<L test.varscope.nested.t_num>> (n 3.5) ]]
-[[o t:evtest <<L test.varscope.nested.t_sover>> (i 8) ]]
-[[o t:evtest <<L test.varscope.nlink.t_over>> (i 890) ]]
-[[o t:evtest <<L test.varscope.nlink.t_sover>> (i 8) ]]
-[[o t:evtest <<L test.varscope.nlink.t_other>> (i 77) ]]
-[[o t:evtest <<L test.varscope.nlink.t_v>> (i 77) ]]
+[[o t63:evtest <<L test.varscope.nested.t_int>> (i 1) ]]
+[[o t64:evtest <<L test.varscope.nested.t_other>> (i 17) ]]
+[[o t65:evtest <<L test.varscope.nested.t_over>> (i 1000) ]]
+[[o t66:evtest <<L test.varscope.nested.t_v>> (i 17) ]]
+[[o t67:evtest <<L test.varscope.nested.t_num>> (n 3.5) ]]
+[[o t68:evtest <<L test.varscope.nested.t_sover>> (i 8) ]]
+[[o t69:evtest <<L test.varscope.nlink.t_over>> (i 890) ]]
+[[o t70:evtest <<L test.varscope.nlink.t_sover>> (i 8) ]]
+[[o t71:evtest <<L test.varscope.nlink.t_other>> (i 77) ]]
+[[o t72:evtest <<L test.varscope.nlink.t_v>> (i 77) ]]
 
-[[o t:evtest <<L test.ref1.nested.t_int>> (i 1) ]]
-[[o t:evtest <<L test.ref1.nested.t_other>> (i 17) ]]
-[[o t:evtest <<L test.ref1.nested.t_over>> (i 1000) ]]
-[[o t:evtest <<L test.ref1.nested.t_v>> (i 17) ]]
-[[o t:evtest <<L test.ref1.nested.t_num>> (n 3.5) ]]
-[[o t:evtest <<L test.ref1.nested.t_sover>> (i 8) ]]
-[[o t:evtest <<L test.ref1.nlink.t_over>> (i 890) ]]
-[[o t:evtest <<L test.ref1.nlink.t_sover>> (i 8) ]]
-[[o t:evtest <<L test.ref1.nlink.t_other>> (i 77) ]]
-[[o t:evtest <<L test.ref1.nlink.t_v>> (i 77) ]]
+[[o t73:evtest <<L test.ref1.nested.t_int>> (i 1) ]]
+[[o t74:evtest <<L test.ref1.nested.t_other>> (i 17) ]]
+[[o t75:evtest <<L test.ref1.nested.t_over>> (i 1000) ]]
+[[o t76:evtest <<L test.ref1.nested.t_v>> (i 17) ]]
+[[o t77:evtest <<L test.ref1.nested.t_num>> (n 3.5) ]]
+[[o t78:evtest <<L test.ref1.nested.t_sover>> (i 8) ]]
+[[o t79:evtest <<L test.ref1.nlink.t_over>> (i 890) ]]
+[[o t80:evtest <<L test.ref1.nlink.t_sover>> (i 8) ]]
+[[o t81:evtest <<L test.ref1.nlink.t_other>> (i 77) ]]
+[[o t82:evtest <<L test.ref1.nlink.t_v>> (i 77) ]]
 
-[[o t:evtest <<L test.ref2.nested.t_int>> (i 1) ]]
-[[o t:evtest <<L test.ref2.nested.t_other>> (i 350) ]]
-[[o t:evtest <<L test.ref2.nested.t_over>> (i 1000) ]]
-[[o t:evtest <<L test.ref2.nested.t_v>> (i 350) ]]
-[[o t:evtest <<L test.ref2.nested.t_num>> (n 3.5) ]]
-[[o t:evtest <<L test.ref2.nested.t_sover>> (i 8) ]]
-[[o t:evtest <<L test.ref2.nlink.t_over>> (i 890) ]]
-[[o t:evtest <<L test.ref2.nlink.t_sover>> (i 8) ]]
-[[o t:evtest <<L test.ref2.nlink.t_other>> (i 77) ]]
-[[o t:evtest <<L test.ref2.nlink.t_v>> (i 77) ]]
+[[o t83:evtest <<L test.ref2.nested.t_int>> (i 1) ]]
+[[o t84:evtest <<L test.ref2.nested.t_other>> (i 350) ]]
+[[o t85:evtest <<L test.ref2.nested.t_over>> (i 1000) ]]
+[[o t86:evtest <<L test.ref2.nested.t_v>> (i 350) ]]
+[[o t87:evtest <<L test.ref2.nested.t_num>> (n 3.5) ]]
+[[o t88:evtest <<L test.ref2.nested.t_sover>> (i 8) ]]
+[[o t89:evtest <<L test.ref2.nlink.t_over>> (i 890) ]]
+[[o t90:evtest <<L test.ref2.nlink.t_sover>> (i 8) ]]
+[[o t91:evtest <<L test.ref2.nlink.t_other>> (i 77) ]]
+[[o t92:evtest <<L test.ref2.nlink.t_v>> (i 77) ]]
 
-[[o t:evtest <<L test.ref3.nested.t_int>> (i 1) ]]
-[[o t:evtest <<L test.ref3.nested.t_other>> (i 17) ]]
-[[o t:evtest <<L test.ref3.nested.t_over>> (i 35) ]]
-[[o t:evtest <<L test.ref3.nested.t_v>> (i 17) ]]
-[[o t:evtest <<L test.ref3.nested.t_num>> (n 3.5) ]]
-[[o t:evtest <<L test.ref3.nested.t_sover>> (i 35) ]]
-[[o t:evtest <<L test.ref3.nlink.t_over>> (i 890) ]]
-[[o t:evtest <<L test.ref3.nlink.t_sover>> (i 35) ]]
-[[o t:evtest <<L test.ref3.nlink.t_other>> (i 77) ]]
-[[o t:evtest <<L test.ref3.nlink.t_v>> (i 77) ]]
+[[o t93:evtest <<L test.ref3.nested.t_int>> (i 1) ]]
+[[o t94:evtest <<L test.ref3.nested.t_other>> (i 17) ]]
+[[o t95:evtest <<L test.ref3.nested.t_over>> (i 35) ]]
+[[o t96:evtest <<L test.ref3.nested.t_v>> (i 17) ]]
+[[o t97:evtest <<L test.ref3.nested.t_num>> (n 3.5) ]]
+[[o t98:evtest <<L test.ref3.nested.t_sover>> (i 35) ]]
+[[o t99:evtest <<L test.ref3.nlink.t_over>> (i 890) ]]
+[[o t100:evtest <<L test.ref3.nlink.t_sover>> (i 35) ]]
+[[o t101:evtest <<L test.ref3.nlink.t_other>> (i 77) ]]
+[[o t102:evtest <<L test.ref3.nlink.t_v>> (i 77) ]]
 
 [[c fn_test_scope
   [[V defaults
@@ -525,14 +525,14 @@
 ]]
 <<l other_wargs@other_chainedargs>>
 
-[[o t:evtest <<L test.noargs>> (i 6) ]]
-[[o t:evtest <<L test.chained>> (i 6) ]]
-[[o t:evtest <<L test.wargs>> (i 18) ]]
-[[o t:evtest <<L test.chainedargs>> (i 18) ]]
+[[o t103:evtest <<L test.noargs>> (i 6) ]]
+[[o t104:evtest <<L test.chained>> (i 6) ]]
+[[o t105:evtest <<L test.wargs>> (i 18) ]]
+[[o t106:evtest <<L test.chainedargs>> (i 18) ]]
 
-[[o t:evtest <<L test.other_noargs>> (i 13) ]]
-[[o t:evtest <<L test.other_chained>> (i 13) ]]
-[[o t:evtest <<L test.other_wargs>> (i 25) ]]
-[[o t:evtest <<L test.other_chainedargs>> (i 25) ]]
+[[o t107:evtest <<L test.other_noargs>> (i 13) ]]
+[[o t108:evtest <<L test.other_chained>> (i 13) ]]
+[[o t109:evtest <<L test.other_wargs>> (i 25) ]]
+[[o t110:evtest <<L test.other_chainedargs>> (i 25) ]]
 
 ]] // c test

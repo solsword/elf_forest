@@ -61,23 +61,25 @@ struct dictionary_entry_s {
 
 // The hash function:
 static inline dictionary_hash_t dict_hash(d_key_t *data, size_t size) {
+  size_t i;
 #ifdef DEBUG
   if (size < 1) {
     fprintf(stderr, "Error: Dictionary key of size 0.\n");
     exit(-1);
   }
 #endif
-  return (
-    ((dictionary_hash_t) data[0]) ^
-    (((dictionary_hash_t) data[( 1 % size)]) << 3) ^
-    (((dictionary_hash_t) data[( 2 % size)]) << 6) ^
-    (((dictionary_hash_t) data[( 3 % size)]) << 9) ^
-    (((dictionary_hash_t) data[( 4 % size)]) << 12) ^
-    (((dictionary_hash_t) data[( 8 % size)]) << 16) ^
-    (((dictionary_hash_t) data[( 9 % size)]) << 20) ^
-    (((dictionary_hash_t) data[(14 % size)]) << 22) ^
-    (((dictionary_hash_t) data[(15 % size)]) << 24)
-  );
+  dictionary_hash_t result = 0;
+  for (i = 0; i < size; ++i) {
+    result ^= (
+      ((dictionary_hash_t) (data[i]))
+   << (
+        (sizeof(d_key_t) * i)
+      % (sizeof(dictionary_hash_t) - sizeof(d_key_t) + 1)
+      )
+    );
+  }
+  result = result ^ (result % 17) ^ (result % 6011);
+  return result;
 }
 
 // Matching function for computing exact matches:
@@ -290,6 +292,34 @@ void d_add_value(dictionary *d, d_key_t *key, size_t key_size, void *value) {
   l_append_element(bucket, e);
 }
 
+void d_prepend_value(dictionary *d, d_key_t *key, size_t key_size, void *value){
+  size_t i;
+  dictionary_entry *e;
+  dictionary_hash_t hash;
+  list *bucket;
+
+  // Create an entry and add it to our ordered list:
+  e = create_dictionary_entry(
+    0,
+    key,
+    key_size,
+    value
+  );
+  l_insert_element(d->ordered, e, 0);
+  for (i = 1; i < l_get_length(d->ordered); ++i) {
+    ((dictionary_entry*) l_get_item(d->ordered, i))->index += 1;
+  }
+
+  // Find the appropriate bucket and add it there too:
+  hash = dict_hash(key, key_size);
+  bucket = d->table[hash % d->table_size];
+  if (bucket == NULL) {
+    bucket = create_list(DICT_BUCKET_SIZE);
+    d->table[hash % d->table_size] = bucket;
+  }
+  l_insert_element(bucket, e, 0);
+}
+
 void d_set_value(dictionary *d, d_key_t *key, size_t key_size, void *value) {
   d_clear_values(d, key, key_size);
   d_add_value(d, key, key_size, value);
@@ -355,6 +385,60 @@ void* d_pop_value(dictionary *d, d_key_t *key, size_t key_size) {
   for (i = e->index; i < l_get_length(d->ordered); ++i) {
     ((dictionary_entry*) l_get_item(d->ordered, i))->index -= 1;
   }
+
+  // dispose of the entry:
+  cleanup_dictionary_entry(e);
+
+  // return just the value:
+  return value;
+}
+
+// Helper for d_remove_value:
+int _find_value_in_dict(void *v_entry, void *value) {
+  dictionary_entry *e = (dictionary_entry*) v_entry;
+  if (e->value == value) {
+    return 1;
+  }
+  return 0;
+}
+
+void * d_remove_value(dictionary *d, void* target) {
+  size_t i;
+  ptrdiff_t match;
+  dictionary_entry *e;
+  void *value;
+
+  match = l_scan_indices(d->ordered, target, &_find_value_in_dict);
+  if (match < 0) {
+    return NULL;
+  }
+
+  e = (dictionary_entry*) l_get_item(d->ordered, match);
+
+  // Remove from the ordered list:
+  l_remove_item(d->ordered, match);
+  for (i = match; i < l_get_length(d->ordered); ++i) {
+    ((dictionary_entry*) l_get_item(d->ordered, i))->index -= 1;
+  }
+
+  // Remove from it's bucket:
+  dictionary_hash_t hash = dict_hash(e->key, e->key_size);
+  list * bucket = d->table[hash % d->table_size];
+#ifdef DEBUG
+  if (bucket == NULL) { // shouldn't be possible
+    fprintf(stderr, "Error: Entry in ordered list has no bucket!\n");
+    exit(-1);
+  }
+#endif
+  e = l_remove_element(bucket, e);
+#ifdef DEBUG
+  if (e == NULL) { // shouldn't be possible
+    fprintf(stderr, "Error: Entry in ordered list was missing from bucket!\n");
+    exit(-1);
+  }
+#endif
+
+  value = e->value;
 
   // dispose of the entry:
   cleanup_dictionary_entry(e);

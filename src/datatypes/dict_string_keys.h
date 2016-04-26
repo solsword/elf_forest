@@ -61,6 +61,19 @@ static inline void d_add_value_s(
   );
 }
 
+static inline void d_prepend_value_s(
+  dictionary *d,
+  string const * const key,
+  void *value
+) {
+  d_prepend_value(
+    d,
+    (d_key_t*) s_raw(key),
+    s_get_length(key) * sizeof(char) / sizeof(d_key_t),
+    value
+  );
+}
+
 static inline void d_set_value_s(
   dictionary *d,
   string const * const key,

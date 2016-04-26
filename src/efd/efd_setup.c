@@ -7,25 +7,22 @@
 #include "efd_setup.h"
 
 #include "datatypes/dictionary.h"
+#include "datatypes/dict_string_keys.h"
 #include "datatypes/string.h"
 
 /**************************
  * Conversion Definitions *
  **************************/
 
-#include "conv/efd_null.h"
-#include "conv/efd_tests.h"
-#include "conv/efd_rngtable.h"
+#include "conv.list"
 
-/*************
- * Constants *
- *************/
+/***********
+ * Globals *
+ ***********/
 
 #define EFD_REGISTER_NAMES
 char * const EFD_OBJECT_NAME_REGISTRY[] = {
-  #include "conv/efd_null.h"
-  #include "conv/efd_tests.h"
-  #include "conv/efd_rngtable.h"
+  #include "conv.list"
   "INVALID"
 };
 #undef EFD_REGISTER_NAMES
@@ -37,39 +34,33 @@ size_t EFD_OBJECT_REGISTRY_SIZE = (
 
 #define EFD_REGISTER_UNPACKERS
 efd_unpack_function EFD_OBJECT_UNPACKER_REGISTRY[] = {
-  #include "conv/efd_null.h"
-  #include "conv/efd_tests.h"
-  #include "conv/efd_rngtable.h"
+  #include "conv.list"
   NULL
 };
 #undef EFD_REGISTER_UNPACKERS
 
 #define EFD_REGISTER_PACKERS
 efd_pack_function EFD_OBJECT_PACKER_REGISTRY[] = {
-  #include "conv/efd_null.h"
-  #include "conv/efd_tests.h"
-  #include "conv/efd_rngtable.h"
+  #include "conv.list"
   NULL
 };
 #undef EFD_REGISTER_PACKERS
 
 #define EFD_REGISTER_COPIERS
 efd_copy_function EFD_OBJECT_COPIER_REGISTRY[] = {
-  #include "conv/efd_null.h"
-  #include "conv/efd_tests.h"
-  #include "conv/efd_rngtable.h"
+  #include "conv.list"
   NULL
 };
 #undef EFD_REGISTER_COPIERS
 
 #define EFD_REGISTER_DESTRUCTORS
 efd_destroy_function EFD_OBJECT_DESTRUCTOR_REGISTRY[] = {
-  #include "conv/efd_null.h"
-  #include "conv/efd_tests.h"
-  #include "conv/efd_rngtable.h"
+  #include "conv.list"
   NULL
 };
 #undef EFD_REGISTER_DESTRUCTORS
+
+dictionary *EFD_FUNCTION_DICT = NULL;
 
 /*************
  * Functions *
@@ -80,6 +71,7 @@ void setup_elf_forest_data(void) {
   EFD_INT_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
   EFD_NUM_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
   EFD_STR_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
+  EFD_FUNCTION_DICT = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
 #ifdef DEBUG
   if (sizeof(char) != sizeof(uint8_t)) {
     fprintf(stderr, "Warning: sizeof(char) != sizeof(uint8_t)\n");
@@ -93,9 +85,11 @@ void cleanup_elf_forest_data(void) {
   cleanup_dictionary(EFD_NUM_GLOBALS);
   d_foreach(EFD_STR_GLOBALS, cleanup_v_string);
   cleanup_dictionary(EFD_STR_GLOBALS);
+  cleanup_dictionary(EFD_FUNCTION_DICT);
 }
 
 // Private helper for looking up string keys:
+// TODO: Use a dictionary!
 ptrdiff_t _efd_lookup_key(string const * const key) {
   size_t result = 0;
   for (result = 0; result < EFD_OBJECT_REGISTRY_SIZE; ++result) {
@@ -163,4 +157,19 @@ efd_destroy_function efd_lookup_destructor(string const * const key) {
     return NULL;
   }
   return EFD_OBJECT_DESTRUCTOR_REGISTRY[idx];
+}
+
+efd_eval_function efd_lookup_function(string const * const key) {
+  efd_eval_function result;
+  result = (efd_eval_function) d_get_value_s(EFD_FUNCTION_DICT, key);
+  if (result == NULL) {
+    fprintf(
+      stderr,
+      "Error: function '%.*s' not found.\n",
+      (int) s_get_length(key),
+      s_raw(key)
+    );
+    return NULL;
+  }
+  return result;
 }

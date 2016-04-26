@@ -76,9 +76,25 @@ size_t test_dictionary_add_pop(void) {
   if (l_get_item(multi, 3) != (void*) 28) { return 18; }
   if (l_get_item(multi, 4) != (void*) 29) { return 19; }
   cleanup_list(multi);
-  if (d_get_value(d, "samekey", 7) != (void*) 25) { return 20; }
+  d_prepend_value(d, "samekey", 7, (void*) 3);
+  d_prepend_value(d, "samekey", 7, (void*) 2);
+  multi = d_get_all(d, "samekey", 7);
+  if (l_get_item(multi, 0) != (void*) 2) { return 20; }
+  if (l_get_item(multi, 1) != (void*) 3) { return 21; }
+  if (l_get_item(multi, 2) != (void*) 25) { return 22; }
+  if (l_get_item(multi, 3) != (void*) 26) { return 23; }
+  if (l_get_item(multi, 4) != (void*) 27) { return 24; }
+  if (l_get_item(multi, 5) != (void*) 28) { return 25; }
+  if (l_get_item(multi, 6) != (void*) 29) { return 26; }
+  cleanup_list(multi);
+  if (d_remove_value(d, (void*) 26) != (void*) 26) { return 27; }
+  if (d_get_value(d, "samekey", 7) != (void*) 2) { return 28; }
+  if (d_pop_value(d, "samekey", 7) != (void*) 2) { return 29; }
+  if (d_pop_value(d, "samekey", 7) != (void*) 3) { return 30; }
+  if (d_pop_value(d, "samekey", 7) != (void*) 25) { return 31; }
+  if (d_get_value(d, "samekey", 7) != (void*) 27) { return 32; }
   d_clear_values(d, "samekey", 7);
-  if (d_get_value(d, "samekey", 7) != NULL) { return 21; }
+  if (d_get_value(d, "samekey", 7) != NULL) { return 33; }
   d_add_value(d, "test", 4, (void*) 88);
   d_add_value(d, "test", 4, (void*) 89);
   d_add_value(d, "test", 4, (void*) 90);
@@ -86,8 +102,8 @@ size_t test_dictionary_add_pop(void) {
   d_add_value(d, "other", 5, (void*) 140);
   d_add_value(d, "other", 5, (void*) 141);
   d_clear(d);
-  if (d_get_value(d, "test", 4) != NULL) { return 22; }
-  if (d_get_value(d, "other", 5) != NULL) { return 23; }
+  if (d_get_value(d, "test", 4) != NULL) { return 34; }
+  if (d_get_value(d, "other", 5) != NULL) { return 35; }
   cleanup_dictionary(d);
   return 0;
 }

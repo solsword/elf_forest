@@ -12,6 +12,9 @@ typedef struct efd_num_test_s efd_num_test;
 struct efd_parse_test_s;
 typedef struct efd_parse_test_s efd_parse_test;
 
+struct efd_ev_test_s;
+typedef struct efd_ev_test_s efd_ev_test;
+
 /*************************
  * Structure Definitions *
  *************************/
@@ -35,26 +38,36 @@ struct efd_parse_test_s {
   string* expect;
   string* remainder;
 };
+
+struct efd_ev_test_s {
+  efd_node* compare;
+  efd_node* against;
+};
 #elif defined(EFD_REGISTER_NAMES)
 "itest",
 "ntest",
 "ptest",
+"evtest",
 #elif defined(EFD_REGISTER_UNPACKERS)
 efd__int_test,
 efd__num_test,
 efd__parse_test,
+efd__ev_test,
 #elif defined(EFD_REGISTER_PACKERS)
 int_test__efd,
 num_test__efd,
 parse_test__efd,
+ev_test__efd,
 #elif defined(EFD_REGISTER_COPIERS)
 copy_int_test,
 copy_num_test,
 copy_parse_test,
+copy_ev_test,
 #elif defined(EFD_REGISTER_DESTRUCTORS)
 cleanup_v_int_test,
 cleanup_v_num_test,
 cleanup_v_parse_test,
+cleanup_v_ev_test,
 #else
 #ifndef INCLUDE_EFD_TESTS_H
 #define INCLUDE_EFD_TESTS_H
@@ -70,7 +83,7 @@ cleanup_v_parse_test,
  ************************/
 
 void* efd__int_test(efd_node *n) {
-  efd_int_test *result = (efd_int_test*) calloc(1, sizeof(efd_int_test));
+  efd_int_test *result = (efd_int_test*) malloc(sizeof(efd_int_test));
   result->input = NULL;
   result->expect = NULL;
   result->remainder = NULL;
@@ -84,7 +97,7 @@ void* efd__int_test(efd_node *n) {
 
   field = efd_lookup(n, s_input);
   if (field == NULL) {
-    fprintf(stderr, "ERROR: itest node missing 'input' field\n");
+    fprintf(stderr, "ERROR: itest node missing 'input' field.\n");
     free(result);
     return NULL;
   }
@@ -92,7 +105,7 @@ void* efd__int_test(efd_node *n) {
 
   field = efd_lookup(n, s_expect);
   if (field == NULL) {
-    fprintf(stderr, "ERROR: itest node missing 'expect' field\n");
+    fprintf(stderr, "ERROR: itest node missing 'expect' field.\n");
     free(result);
     return NULL;
   }
@@ -101,7 +114,7 @@ void* efd__int_test(efd_node *n) {
   if (s_check_bytes(result->expect, "success")) {
     field = efd_lookup(n, s_output);
     if (field == NULL) {
-      fprintf(stderr, "ERROR: itest 'success' node missing 'output' field\n");
+      fprintf(stderr, "ERROR: itest 'success' node missing 'output' field.\n");
       free(result);
       return NULL;
     }
@@ -109,7 +122,7 @@ void* efd__int_test(efd_node *n) {
   } else if (s_check_bytes(result->expect, "remainder")) {
     field = efd_lookup(n, s_output);
     if (field == NULL) {
-      fprintf(stderr, "ERROR: itest 'remainder' node missing 'output' field\n");
+      fprintf(stderr,"ERROR: itest 'remainder' node missing 'output' field.\n");
       free(result);
       return NULL;
     }
@@ -119,7 +132,7 @@ void* efd__int_test(efd_node *n) {
     if (field == NULL) {
       fprintf(
         stderr,
-        "ERROR: itest 'remainder' node missing 'remainder' field\n"
+        "ERROR: itest 'remainder' node missing 'remainder' field.\n"
       );
       free(result);
       return NULL;
@@ -168,7 +181,7 @@ efd_node *int_test__efd(void *v_t) {
 
 void* copy_int_test(void *v_itest) {
   efd_int_test *t = (efd_int_test*) v_itest;
-  efd_int_test *result = (efd_int_test*) calloc(1, sizeof(efd_int_test));
+  efd_int_test *result = (efd_int_test*) malloc(sizeof(efd_int_test));
   result->input = copy_string(t->input);
   result->expect = copy_string(t->expect);
   result->output = t->output;
@@ -194,7 +207,7 @@ void cleanup_v_int_test(void *v_itest) {
 }
 
 void* efd__num_test(efd_node *n) {
-  efd_num_test *result = (efd_num_test*) calloc(1, sizeof(efd_num_test));
+  efd_num_test *result = (efd_num_test*) malloc(sizeof(efd_num_test));
   result->input = NULL;
   result->expect = NULL;
   result->remainder = NULL;
@@ -208,7 +221,7 @@ void* efd__num_test(efd_node *n) {
 
   field = efd_lookup(n, s_input);
   if (field == NULL) {
-    fprintf(stderr, "ERROR: ntest node missing 'input' field\n");
+    fprintf(stderr, "ERROR: ntest node missing 'input' field.\n");
     free(result);
     return NULL;
   }
@@ -216,7 +229,7 @@ void* efd__num_test(efd_node *n) {
 
   field = efd_lookup(n, s_expect);
   if (field == NULL) {
-    fprintf(stderr, "ERROR: ntest node missing 'expect' field\n");
+    fprintf(stderr, "ERROR: ntest node missing 'expect' field.\n");
     free(result);
     return NULL;
   }
@@ -225,7 +238,7 @@ void* efd__num_test(efd_node *n) {
   if (s_check_bytes(result->expect, "success")) {
     field = efd_lookup(n, s_output);
     if (field == NULL) {
-      fprintf(stderr, "ERROR: ntest 'success' node missing 'output' field\n");
+      fprintf(stderr, "ERROR: ntest 'success' node missing 'output' field.\n");
       free(result);
       return NULL;
     }
@@ -233,7 +246,7 @@ void* efd__num_test(efd_node *n) {
   } else if (s_check_bytes(result->expect, "remainder")) {
     field = efd_lookup(n, s_output);
     if (field == NULL) {
-      fprintf(stderr, "ERROR: ntest 'remainder' node missing 'output' field\n");
+      fprintf(stderr,"ERROR: ntest 'remainder' node missing 'output' field.\n");
       free(result);
       return NULL;
     }
@@ -243,7 +256,7 @@ void* efd__num_test(efd_node *n) {
     if (field == NULL) {
       fprintf(
         stderr,
-        "ERROR: ntest 'remainder' node missing 'remainder' field\n"
+        "ERROR: ntest 'remainder' node missing 'remainder' field.\n"
       );
       free(result);
       return NULL;
@@ -292,7 +305,7 @@ efd_node *num_test__efd(void *v_t) {
 
 void* copy_num_test(void *v_ntest) {
   efd_num_test *t = (efd_num_test*) v_ntest;
-  efd_num_test *result = (efd_num_test*) calloc(1, sizeof(efd_num_test));
+  efd_num_test *result = (efd_num_test*) malloc(sizeof(efd_num_test));
   result->input = copy_string(t->input);
   result->expect = copy_string(t->expect);
   result->output = t->output;
@@ -318,7 +331,7 @@ void cleanup_v_num_test(void *v_ntest) {
 }
 
 void* efd__parse_test(efd_node *n) {
-  efd_parse_test *result = (efd_parse_test*) calloc(1, sizeof(efd_parse_test));
+  efd_parse_test *result = (efd_parse_test*) malloc(sizeof(efd_parse_test));
   result->input = NULL;
   result->expect = NULL;
   result->remainder = NULL;
@@ -331,7 +344,7 @@ void* efd__parse_test(efd_node *n) {
 
   field = efd_lookup(n, s_input);
   if (field == NULL) {
-    fprintf(stderr, "ERROR: ptest node missing 'input' field\n");
+    fprintf(stderr, "ERROR: ptest node missing 'input' field.\n");
     free(result);
     return NULL;
   }
@@ -339,7 +352,7 @@ void* efd__parse_test(efd_node *n) {
 
   field = efd_lookup(n, s_expect);
   if (field == NULL) {
-    fprintf(stderr, "ERROR: ptest node missing 'expect' field\n");
+    fprintf(stderr, "ERROR: ptest node missing 'expect' field.\n");
     free(result);
     return NULL;
   }
@@ -350,7 +363,7 @@ void* efd__parse_test(efd_node *n) {
     if (field == NULL) {
       fprintf(
         stderr,
-        "ERROR: ptest 'remainder' node missing 'remainder' field\n"
+        "ERROR: ptest 'remainder' node missing 'remainder' field.\n"
       );
       free(result);
       return NULL;
@@ -390,7 +403,7 @@ efd_node *parse_test__efd(void *v_t) {
 
 void* copy_parse_test(void *v_ptest) {
   efd_parse_test *t = (efd_parse_test*) v_ptest;
-  efd_parse_test *result = (efd_parse_test*) calloc(1, sizeof(efd_parse_test));
+  efd_parse_test *result = (efd_parse_test*) malloc(sizeof(efd_parse_test));
   result->input = copy_string(t->input);
   result->expect = copy_string(t->expect);
   result->remainder = copy_string(t->remainder);
@@ -410,6 +423,65 @@ void cleanup_v_parse_test(void *v_ptest) {
   if (t->remainder != NULL) {
     cleanup_string(t->remainder);
     t->remainder = NULL;
+  }
+  free(t);
+}
+
+void* efd__ev_test(efd_node *n) {
+  efd_ev_test *result = (efd_ev_test*) malloc(sizeof(efd_ev_test));
+  result->compare = NULL;
+  result->against = NULL;
+
+  efd_assert_type(n, EFD_NT_CONTAINER);
+
+  result->compare = efd_nth(n, 0);
+  if (result->compare == NULL) {
+    fprintf(stderr, "ERROR: evtest node has no children.\n");
+    free(result);
+    return NULL;
+  }
+  result->compare = copy_efd_node(result->compare);
+
+  result->against = efd_nth(n, 1);
+  if (result->against == NULL) {
+    fprintf(stderr, "ERROR: evtest node has only one child.\n");
+    free(result);
+    return NULL;
+  }
+  result->against = copy_efd_node(result->against);
+
+  return (void*) result;
+}
+
+efd_node *ev_test__efd(void *v_t) {
+  efd_ev_test *t = (efd_ev_test*) v_t;
+  efd_node *result;
+
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+
+  efd_add_child(result, copy_efd_node(t->compare));
+  efd_add_child(result, copy_efd_node(t->against));
+
+  return result;
+}
+
+void* copy_ev_test(void *v_ptest) {
+  efd_ev_test *t = (efd_ev_test*) v_ptest;
+  efd_ev_test *result = (efd_ev_test*) malloc(sizeof(efd_ev_test));
+  result->compare = copy_efd_node(t->compare);
+  result->against = copy_efd_node(t->against);
+  return (void*) result;
+}
+
+void cleanup_v_ev_test(void *v_ptest) {
+  efd_ev_test *t = (efd_ev_test*) v_ptest;
+  if (t->compare != NULL) {
+    cleanup_efd_node(t->compare);
+    t->compare = NULL;
+  }
+  if (t->against != NULL) {
+    cleanup_efd_node(t->against);
+    t->against = NULL;
   }
   free(t);
 }
