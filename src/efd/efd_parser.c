@@ -335,7 +335,7 @@ void efd_parse_proto(efd_node *result, efd_parse_state *s, efd_index *cr) {
 }
 
 void efd_parse_integer(efd_node *result, efd_parse_state *s, efd_index *cr) {
-  ptrdiff_t i = efd_parse_int_or_ref(s, cr);
+  efd_int_t i = efd_parse_int_or_ref(s, cr);
   if (efd_parse_failed(s)) {
     return;
   } else {
@@ -344,7 +344,7 @@ void efd_parse_integer(efd_node *result, efd_parse_state *s, efd_index *cr) {
 }
 
 void efd_parse_number(efd_node *result, efd_parse_state *s, efd_index *cr) {
-  float n = efd_parse_float_or_ref(s, cr);
+  efd_num_t n = efd_parse_float_or_ref(s, cr);
   if (efd_parse_failed(s)) {
     return;
   } else {
@@ -361,7 +361,7 @@ void efd_parse_string(efd_node *result, efd_parse_state *s, efd_index *cr) {
 
 void efd_parse_int_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   size_t i;
-  ptrdiff_t val;
+  efd_int_t val;
   list *l = create_list();
 
   s->current_index = 0;
@@ -401,18 +401,18 @@ void efd_parse_int_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
     exit(-1);
   }
 #endif
-  result->b.as_int_array.values = (ptrdiff_t*) malloc(
-    result->b.as_int_array.count * sizeof(ptrdiff_t)
+  result->b.as_int_array.values = (efd_int_t*) malloc(
+    result->b.as_int_array.count * sizeof(efd_int_t)
   );
   for (i = 0; i < result->b.as_int_array.count; ++i) {
-    result->b.as_int_array.values[i] = (ptrdiff_t) l_get_item(l, i);
+    result->b.as_int_array.values[i] = (efd_int_t) l_get_item(l, i);
   }
   cleanup_list(l);
 }
 
 void efd_parse_num_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   size_t i;
-  float val;
+  efd_num_t val;
   void *v;
   list *l = create_list();
 
@@ -453,12 +453,12 @@ void efd_parse_num_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
     exit(-1);
   }
 #endif
-  result->b.as_num_array.values = (float*) malloc(
-    result->b.as_num_array.count * sizeof(float)
+  result->b.as_num_array.values = (efd_num_t*) malloc(
+    result->b.as_num_array.count * sizeof(efd_num_t)
   );
   for (i = 0; i < result->b.as_num_array.count; ++i) {
     v = l_get_item(l, i);
-    result->b.as_num_array.values[i] = *((float*) &v);
+    result->b.as_num_array.values[i] = *((efd_num_t*) &v);
   }
   cleanup_list(l);
 }
@@ -589,7 +589,7 @@ void efd_parse_str_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
 // Functions for parsing pieces that might be references:
 //-------------------------------------------------------
 
-ptrdiff_t efd_parse_int_or_ref(efd_parse_state *s, efd_index *cr) {
+efd_int_t efd_parse_int_or_ref(efd_parse_state *s, efd_index *cr) {
   efd_reference *from, *to;
   efd_bridge *bridge;
   efd_parse_state back;
@@ -616,7 +616,7 @@ ptrdiff_t efd_parse_int_or_ref(efd_parse_state *s, efd_index *cr) {
   }
 }
 
-float efd_parse_float_or_ref(efd_parse_state *s, efd_index *cr) {
+efd_num_t efd_parse_float_or_ref(efd_parse_state *s, efd_index *cr) {
   efd_reference *from, *to;
   efd_bridge *bridge;
   efd_parse_state back;
@@ -1090,12 +1090,12 @@ string* efd_parse_annotation(efd_parse_state *s, char sep) {
 }
 
 
-ptrdiff_t efd_parse_int(efd_parse_state *s) {
-  ptrdiff_t result;
-  ptrdiff_t sign;
-  ptrdiff_t base;
-  ptrdiff_t digit;
-  ptrdiff_t count;
+efd_int_t efd_parse_int(efd_parse_state *s) {
+  efd_int_t result;
+  efd_int_t sign;
+  efd_int_t base;
+  efd_int_t digit;
+  efd_int_t count;
   efd_int_state state;
   char c;
 
@@ -1281,14 +1281,14 @@ ptrdiff_t efd_parse_int(efd_parse_state *s) {
   }
 }
 
-float efd_parse_float(efd_parse_state *s) {
-  float sign;
-  float characteristic;
-  float mantissa;
-  float mant_div;
-  float expsign;
-  float exponent;
-  float digit;
+efd_num_t efd_parse_float(efd_parse_state *s) {
+  efd_num_t sign;
+  efd_num_t characteristic;
+  efd_num_t mantissa;
+  efd_num_t mant_div;
+  efd_num_t expsign;
+  efd_num_t exponent;
+  efd_num_t digit;
   ptrdiff_t count;
   efd_float_state state;
   char c;

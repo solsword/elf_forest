@@ -125,6 +125,7 @@ clean:
 	rm -rf $(BIN_DIR)
 	rm -rf $(OUT_DIR)
 	rm $(DATA_DIR)/auto_globals.efd
+	rm $(SRC_DIR)/efd/func.list
 	rm $(SRC_DIR)/efd/conv.list
 
 game: $(BIN_DIR)/elf_forest efd_globals
@@ -145,7 +146,15 @@ checkgl: $(BIN_DIR)/checkgl
 
 efd_globals: $(DATA_DIR)/auto_globals.efd
 
-src_lists: $(SRC_DIR)/efd/conv.list
+src_lists: $(SRC_DIR)/efd/func.list $(SRC_DIR)/efd/conv.list
+
+$(SRC_DIR)/efd/func.list: $(SRC_DIR) $(SRC_DIR)/efd/func/*
+	echo "// auto-generated functions list" > $(SRC_DIR)/efd/func.list
+	echo "// vim:syntax=c" >> $(SRC_DIR)/efd/func.list
+	ls $(SRC_DIR)/efd/func \
+		| sed "s/^/#include \"func\//" \
+		| sed "s/$$/\"/" \
+		>> $(SRC_DIR)/efd/func.list
 
 $(SRC_DIR)/efd/conv.list: $(SRC_DIR) $(SRC_DIR)/efd/conv/*
 	echo "// auto-generated conversions list" > $(SRC_DIR)/efd/conv.list
@@ -187,14 +196,12 @@ $(SRC_DIR)/*/*.c \
 $(SRC_DIR)/*.h \
 $(SRC_DIR)/*/*.h  \
 $(SRC_DIR)/efd/conv.list \
+$(SRC_DIR)/efd/func.list \
 $(OBJ_DIR)
 	$(CC) -MM $(INCLUDE_FLAGS) $(SRC_DIR)/*.c $(SRC_DIR)/*/*.c | sed "s/^\([^ ]\)/$(OBJ_DIR)\/\1/" >\
 		$(OBJ_DIR)/obj.d
 
 Makefile: ;
-
-# Make sure that we remake the EFD conversions list before building:
-#Makefile: $(SRC_DIR)/efd/conv.list
 
 # Make sure that we remake the dependency file before building:
 #Makefile: $(OBJ_DIR)/obj.d

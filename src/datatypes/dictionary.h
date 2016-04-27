@@ -91,7 +91,8 @@ list * d_get_all(dictionary *d, d_key_t *key, size_t key_size);
 // Adds the given value to the dictionary under the given key. Allocates new
 // memory to expand the dictionary as necessary. If there is already a value
 // indexed by the given key, the given value will be inserted after it (and
-// thus will not be returned by d_get_value).
+// thus will not be returned by d_get_value). Note that the key data is copied,
+// so the caller can safely dispose of it after calling d_add_value.
 void d_add_value(dictionary *d, d_key_t *key, size_t key_size, void *value);
 
 // Works like d_add_value, but orders the value first instead of last both

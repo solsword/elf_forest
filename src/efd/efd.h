@@ -33,11 +33,11 @@ enum efd_node_type_e {
   EFD_NT_VARIABLE   = 5,   // 'v'   variable
   EFD_NT_PROTO      = 6,   //  -    raw object data pre-assembly
   EFD_NT_OBJECT     = 7,   // 'o'   automatic parse-to-struct
-  EFD_NT_INTEGER    = 8,   // 'i'   ptrdiff_t
-  EFD_NT_NUMBER     = 9,   // 'n'   float
+  EFD_NT_INTEGER    = 8,   // 'i'   efd_int_t
+  EFD_NT_NUMBER     = 9,   // 'n'   efd_num_t
   EFD_NT_STRING     = 10,   // 's'   quoted string
-  EFD_NT_ARRAY_INT  = 11,  // 'ai'  array of ptrdiff_t
-  EFD_NT_ARRAY_NUM  = 12,  // 'an'  array of float
+  EFD_NT_ARRAY_INT  = 11,  // 'ai'  array of efd_int_t
+  EFD_NT_ARRAY_NUM  = 12,  // 'an'  array of efd_num_t
   EFD_NT_ARRAY_STR  = 13,  // 'as'  array of quoted strings
   EFD_NT_GLOBAL_INT = 14,  // 'Gi'  global integer
   EFD_NT_GLOBAL_NUM = 15,  // 'Gn'  global numeric
@@ -68,17 +68,17 @@ typedef enum efd_node_type_e efd_node_type;
 // Types of reference endpoint.
 enum efd_ref_type_e {
   EFD_RT_INVALID = 0,
-  EFD_RT_GLOBAL_INT, // (ptrdiff_t) global integer
-  EFD_RT_GLOBAL_NUM, // (float) global number
+  EFD_RT_GLOBAL_INT, // (efd_int_t) global integer
+  EFD_RT_GLOBAL_NUM, // (efd_num_t) global number
   EFD_RT_GLOBAL_STR, // (string*) global string
   EFD_RT_NODE, // (void*) a void* pointer to an entire EFD node
   EFD_RT_CHAIN, // (void*) a void* pointer to an EFD node which is a link
   EFD_RT_OBJ, // (void*) contents an object node
-  EFD_RT_INT, // (ptrdiff_t) contents of an integer node
-  EFD_RT_NUM, // (float) contents of a number node
+  EFD_RT_INT, // (efd_int_t) contents of an integer node
+  EFD_RT_NUM, // (efd_num_t) contents of a number node
   EFD_RT_STR, // (string*) contents of a string node
-  EFD_RT_INT_ARR_ENTRY, // (ptrdiff_t) entry in an integer array
-  EFD_RT_NUM_ARR_ENTRY, // (float) entry in a number array
+  EFD_RT_INT_ARR_ENTRY, // (efd_int_t) entry in an integer array
+  EFD_RT_NUM_ARR_ENTRY, // (efd_num_t) entry in a number array
   EFD_RT_STR_ARR_ENTRY // (string*) entry in a string array
 };
 typedef enum efd_ref_type_e efd_ref_type;
@@ -95,6 +95,13 @@ enum efd_path_element_type_e {
 };
 typedef enum efd_path_element_type_e efd_path_element_type;
 */
+
+/*********
+ * Types *
+ *********/
+
+typedef intptr_t efd_int_t;
+typedef float efd_num_t;
 
 /**************
  * Structures *
@@ -170,6 +177,16 @@ typedef struct efd_bridge_s efd_bridge;
 struct efd_index_s;
 typedef struct efd_index_s efd_index;
 
+// An entry in the object format registry describes the string key, pack/unpack
+// functions, and copy/destroy functions for an object format.
+struct efd_object_format_s;
+typedef struct efd_object_format_s efd_object_format;
+
+// An entry in the function registry defines the string key and function for a
+// EFD eval function.
+struct efd_function_declaration_s;
+typdef struct efd_function_declaration_s efd_function_declaration;
+
 /******************
  * Function types *
  ******************/
@@ -242,11 +259,11 @@ struct efd_object_s {
 };
 
 struct efd_integer_s {
-  ptrdiff_t value;
+  efd_int_t value;
 };
 
 struct efd_number_s {
-  float value;
+  efd_num_t value;
 };
 
 struct efd_string_s {
@@ -255,12 +272,12 @@ struct efd_string_s {
 
 struct efd_array_int_s {
   size_t count;
-  ptrdiff_t *values;
+  efd_int_t *values;
 };
 
 struct efd_array_num_s {
   size_t count;
-  float *values;
+  efd_num_t *values;
 };
 
 struct efd_array_str_s {
@@ -318,6 +335,18 @@ struct efd_index_s {
   list *processed;
 };
 
+struct efd_object_format_s {
+  char *key;
+  efd_unpack_function unpacker;
+  efd_pack_function packer;
+  efd_copy_function copier;
+  efd_destroy_function destructor;
+};
+
+struct efd_function_declaration_s {
+  char *key;
+  efd_eval_function function;
+};
 
 /*******************
  * Early Functions *
@@ -395,12 +424,12 @@ static inline void** efd__o(efd_node *n) {
   return &(n->b.as_object.value);
 }
 
-static inline ptrdiff_t* efd__i(efd_node *n) {
+static inline efd_int_t* efd__i(efd_node *n) {
   efd_assert_type(n, EFD_NT_INTEGER);
   return &(n->b.as_integer.value);
 }
 
-static inline float* efd__n(efd_node *n) {
+static inline efd_num_t* efd__n(efd_node *n) {
   efd_assert_type(n, EFD_NT_NUMBER);
   return &(n->b.as_number.value);
 }
@@ -410,7 +439,7 @@ static inline string** efd__s(efd_node *n) {
   return &(n->b.as_string.value);
 }
 
-static inline ptrdiff_t** efd__ai(efd_node *n) {
+static inline efd_int_t** efd__ai(efd_node *n) {
   efd_assert_type(n, EFD_NT_ARRAY_INT);
   return &(n->b.as_int_array.values);
 }
@@ -420,7 +449,7 @@ static inline size_t* efd__ai_count(efd_node *n) {
   return &(n->b.as_int_array.count);
 }
 
-static inline float** efd__an(efd_node *n) {
+static inline efd_num_t** efd__an(efd_node *n) {
   efd_assert_type(n, EFD_NT_ARRAY_NUM);
   return &(n->b.as_num_array.values);
 }
@@ -502,13 +531,35 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
 
 // Allocate and return a new EFD node of the given type. The given string is
 // copied, so the caller should clean it up if necessary.
-efd_node* create_efd_node(efd_node_type t, string const * const name);
+efd_node * create_efd_node(efd_node_type t, string const * const name);
+
+// Allocate and return a new EFD node of type EFD_NT_OBJECT containing a copy
+// of the given object, which is produced according to the given format. The
+// format and name are also copied, rather than held as references.
+efd_node * construct_efd_obj_node(
+  string const * const name,
+  string const * const format,
+  void * obj
+);
+
+// Allocates and returns a new EFD_NT_INTEGER node with the given value.
+efd_node * construct_efd_int_node(string const * const name, efd_int_t value);
+
+// Allocates and returns a new EFD_NT_NUMBER node with the given value.
+efd_node * construct_efd_num_node(string const * const name, efd_num_t value);
+
+// Allocates and returns a new EFD_NT_STRING node using a copy of the given
+// value string.
+efd_node * construct_efd_str_node(
+  string const * const name,
+  string const * const value
+);
 
 // Allocates and returns a deep copy of the given node, which of course
 // includes deep copies of all of the node's children recursively. Note that
 // any objects contained in the node or its children are also copied, as it is
 // assumed that cleanup_efd_node will be sufficient for memory management.
-efd_node* copy_efd_node(efd_node const * const src);
+efd_node * copy_efd_node(efd_node const * const src);
 
 // Clean up memory from the given EFD node.
 CLEANUP_DECL(efd_node);
@@ -743,22 +794,23 @@ void efd_pack_node(efd_node *root, efd_index *cr);
 
 // TODO: Serialization (separate files)...
 
+// Lookup for functions (also defined in efd_setup.c):
+efd_eval_function efd_lookup_function(string const * const key);
+
 // Lookups for packers, unpackers, copiers, and destructors. Note that these
 // are not actually defined in efd.c but rather in  efd_setup.c.
+efd_object_format * efd_lookup_format(string const * const key);
 efd_unpack_function efd_lookup_unpacker(string const * const key);
 efd_pack_function efd_lookup_packer(string const * const key);
 efd_copy_function efd_lookup_copier(string const * const key);
 efd_destroy_function efd_lookup_destructor(string const * const key);
 
-// Lookup for functions (also defined in efd_setup.c):
-efd_eval_function efd_lookup_function(string const * const key);
-
 // Functions for getting and setting global integers, numbers, and strings:
-ptrdiff_t efd_get_global_i(string const * const key);
-float efd_get_global_n(string const * const key);
+efd_int_t efd_get_global_i(string const * const key);
+efd_num_t efd_get_global_n(string const * const key);
 string* efd_get_global_s(string const * const key);
-void efd_set_global_i(string const * const key, ptrdiff_t value);
-void efd_set_global_n(string const * const key, float value);
+void efd_set_global_i(string const * const key, efd_int_t value);
+void efd_set_global_n(string const * const key, efd_num_t value);
 void efd_set_global_s(string const * const key, string *value);
 
 // A function with the same signature as a normal copy function that just

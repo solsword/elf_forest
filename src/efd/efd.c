@@ -191,6 +191,38 @@ efd_node* create_efd_node(efd_node_type t, string const * const name) {
   return result;
 }
 
+efd_node * construct_efd_obj_node(
+  string const * const name,
+  string const * const format,
+  void * obj
+) {
+  efd_node *result = create_efd_node(EFD_NT_OBJECT, name);
+  result->b.as_object.format = copy_string(format);
+  result->b.as_object.value =  efd_lookup_copier(format)(obj);
+  return result;
+}
+
+efd_node * construct_efd_int_node(string const * const name, efd_int_t value) {
+  efd_node *result = create_efd_node(EFD_NT_INTEGER, name);
+  result->b.as_integer.value = value;
+  return result;
+}
+
+efd_node * construct_efd_num_node(string const * const name, efd_num_t value) {
+  efd_node *result = create_efd_node(EFD_NT_NUMBER, name);
+  result->b.as_number.value = value;
+  return result;
+}
+
+efd_node * construct_efd_str_node(
+  string const * const name,
+  string const * const value
+) {
+  efd_node *result = create_efd_node(EFD_NT_STRING, name);
+  result->b.as_string.value = copy_string(value);
+  return result;
+}
+
 efd_node* copy_efd_node(efd_node const * const src) {
   size_t i;
   dictionary *children;
@@ -290,8 +322,8 @@ efd_node* copy_efd_node(efd_node const * const src) {
 
     case EFD_NT_ARRAY_INT:
       result->b.as_int_array.count = src->b.as_int_array.count;
-      result->b.as_int_array.values = (ptrdiff_t*) malloc(
-        result->b.as_int_array.count * sizeof(ptrdiff_t)
+      result->b.as_int_array.values = (efd_int_t*) malloc(
+        result->b.as_int_array.count * sizeof(efd_int_t)
       );
       for (i = 0; i < result->b.as_int_array.count; ++i) {
         result->b.as_int_array.values[i] = src->b.as_int_array.values[i];
@@ -300,8 +332,8 @@ efd_node* copy_efd_node(efd_node const * const src) {
 
     case EFD_NT_ARRAY_NUM:
       result->b.as_num_array.count = src->b.as_num_array.count;
-      result->b.as_num_array.values = (float*) malloc(
-        result->b.as_num_array.count * sizeof(float)
+      result->b.as_num_array.values = (efd_num_t*) malloc(
+        result->b.as_num_array.count * sizeof(efd_num_t)
       );
       for (i = 0; i < result->b.as_num_array.count; ++i) {
         result->b.as_num_array.values[i] = src->b.as_num_array.values[i];
@@ -1065,31 +1097,18 @@ void efd_remove_child(efd_node *n, efd_node *child) {
 #ifdef DEBUG
   void *result;
   result = d_remove_value(efd_children_dict(n), (void*) child);
-  if (child->h.parent != n || result == NULL) {
+  if (child->h.parent != n) { // if result is NULL that's fine (shadow children)
     fqn = efd_build_fqn(n);
     cfqn = efd_build_fqn(child);
-    if (child->h.parent != n) {
-      fprintf(
-        stderr,
-        "Error: Attempt to remove child '%.*s' from node '%.*s' "
-        "but the child wasn't descended from the parent.\n",
-        (int) s_get_length(cfqn),
-        s_raw(cfqn),
-        (int) s_get_length(fqn),
-        s_raw(fqn)
-      );
-    }
-    if (result == NULL) {
-      fprintf(
-        stderr,
-        "Error: Attempt to remove child '%.*s' from node '%.*s' "
-        "but the parent didn't contain the child.\n",
-        (int) s_get_length(cfqn),
-        s_raw(cfqn),
-        (int) s_get_length(fqn),
-        s_raw(fqn)
-      );
-    }
+    fprintf(
+      stderr,
+      "Warning: Attempt to remove child '%.*s' from node '%.*s' "
+      "but the child wasn't descended from the parent.\n",
+      (int) s_get_length(cfqn),
+      s_raw(cfqn),
+      (int) s_get_length(fqn),
+      s_raw(fqn)
+    );
   }
 #else
   d_remove_value(efd_children_dict(n), (void*) child);
@@ -1317,20 +1336,33 @@ efd_node* efdx(efd_node const * const root, string const * const saddr) {
   return efd(root, efd_parse_string_address(saddr));
 }
 
-efd_node* efd_eval(efd_node const * const target, efd_node const * const args) {
+efd_node* _create_eval_env
+
+efd_node* efd_eval(
+  efd_node const * const target,
+  efd_node const * const args,
+  efd_node const * const set_parent
+) {
   size_t i;
 #ifdef DEBUG
   string *fqn;
 #endif
   efd_node *result, *transformed;
-  efd_node *child, *new_child, *shadow;
-  if (efd_is_link_node(target)) {
-    // recurse
-    return efd_eval(efd_concrete(target), args);
-  }
+  efd_node *child, *new_child;
   dictionary *children;
-  efd_eval_function function;
 
+  // If the target is a link, recurse on its target node
+  if (efd_is_link_node(target)) {
+    result = copy_efd_node(target);
+    if (set_parent != NULL) {
+      result->h.parent = set_parent;
+    }
+    transformed = efd_eval(efd_concrete(result), args, NULL);
+    cleanup_efd_node(result);
+    return transformed;
+  }
+
+  // Otherwise do real work:
   result = create_efd_node(target->h.type, target->h.name);
 
 #ifdef DEBUG
@@ -1346,6 +1378,13 @@ efd_node* efd_eval(efd_node const * const target, efd_node const * const args) {
   }
 #endif
 
+  // Set up this node for link resolution via the parent of the original node:
+  if (set_parent != NULL) {
+    result->h.parent = set_parent;
+  } else {
+    result->h.parent = target->h.parent;
+  }
+
   // Handle children:
   if (efd_is_container_node(result)) {
     if (args != NULL) {
@@ -1354,10 +1393,7 @@ efd_node* efd_eval(efd_node const * const target, efd_node const * const args) {
     children = efd_children_dict(target);
     for (i = 0; i < d_get_count(children); ++i) {
       child = (efd_node*) d_get_item(children, i);
-      shadow = copy_efd_node(child);
-      shadow->h.parent = result;
-      new_child = efd_eval(shadow, NULL);
-      cleanup_efd_node(shadow);
+      new_child = efd_eval(child, NULL, result);
       efd_add_child(result, new_child);
     }
   }
@@ -1432,8 +1468,7 @@ efd_node* efd_eval(efd_node const * const target, efd_node const * const args) {
       );
       // Call the specified function and use its result in place of the default
       // result (after cleaning up the default result, of course):
-      function = efd_lookup_function(result->b.as_function.function);
-      transformed = function(result);
+      transformed = efd_lookup_function(result->b.as_function.function)(result);
       cleanup_efd_node(result);
       result = transformed;
       break;
@@ -1459,8 +1494,8 @@ efd_node* efd_eval(efd_node const * const target, efd_node const * const args) {
 
     case EFD_NT_ARRAY_INT:
       result->b.as_int_array.count = target->b.as_int_array.count;
-      result->b.as_int_array.values = (ptrdiff_t*) malloc(
-        result->b.as_int_array.count * sizeof(ptrdiff_t)
+      result->b.as_int_array.values = (efd_int_t*) malloc(
+        result->b.as_int_array.count * sizeof(efd_int_t)
       );
       for (i = 0; i < result->b.as_int_array.count; ++i) {
         result->b.as_int_array.values[i] = target->b.as_int_array.values[i];
@@ -1469,8 +1504,8 @@ efd_node* efd_eval(efd_node const * const target, efd_node const * const args) {
 
     case EFD_NT_ARRAY_NUM:
       result->b.as_num_array.count = target->b.as_num_array.count;
-      result->b.as_num_array.values = (float*) malloc(
-        result->b.as_num_array.count * sizeof(float)
+      result->b.as_num_array.values = (efd_num_t*) malloc(
+        result->b.as_num_array.count * sizeof(efd_num_t)
       );
       for (i = 0; i < result->b.as_num_array.count; ++i) {
         result->b.as_num_array.values[i] = target->b.as_num_array.values[i];
@@ -1563,24 +1598,24 @@ void efd_pack_node(efd_node *root, efd_index *cr) {
   } // else do nothing
 }
 
-ptrdiff_t efd_get_global_i(string const * const key) {
-  return (ptrdiff_t) d_get_value_s(EFD_INT_GLOBALS, key);
+efd_int_t efd_get_global_i(string const * const key) {
+  return (efd_int_t) d_get_value_s(EFD_INT_GLOBALS, key);
 }
 
-float efd_get_global_n(string const * const key) {
+efd_num_t efd_get_global_n(string const * const key) {
   void *r = d_get_value_s(EFD_NUM_GLOBALS, key);
-  return *((float*) &r);
+  return *((efd_num_t*) &r);
 }
 
 string* efd_get_global_s(string const * const key) {
   return (string*) d_get_value_s(EFD_STR_GLOBALS, key);
 }
 
-void efd_set_global_i(string const * const key, ptrdiff_t value) {
+void efd_set_global_i(string const * const key, efd_int_t value) {
   d_set_value_s(EFD_INT_GLOBALS, key, (void*) value);
 }
 
-void efd_set_global_n(string const * const key, float value) {
+void efd_set_global_n(string const * const key, efd_num_t value) {
   uintptr_t v = 0;
   v = *((uintptr_t*) &value); // TODO: Safer float <-> void* conversion?
   d_set_value_s(EFD_NUM_GLOBALS, key, (void*) v);

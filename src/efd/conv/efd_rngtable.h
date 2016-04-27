@@ -1,15 +1,13 @@
 #if defined(EFD_REGISTER_DECLARATIONS)
 // no declarations
-#elif defined(EFD_REGISTER_NAMES)
-"rngtable"
-#elif defined(EFD_REGISTER_UNPACKERS)
-efd__rngtable,
-#elif defined(EFD_REGISTER_PACKERS)
-rngtable__efd,
-#elif defined(EFD_REGISTER_COPIERS)
-copy_v_rngtable,
-#elif defined(EFD_REGISTER_DESTRUCTORS)
-cleanup_v_rngtable,
+#elif defined(EFD_REGISTER_FORMATS)
+{
+  .key = "rngtable";
+  .unpacker = efd__rngtable;
+  .packer = rngtable__efd;
+  .copier = copy_v_rngtable;
+  .destructor = cleanup_v_rngtable;
+},
 #else
 #ifndef INCLUDE_EFD_RNGTABLE_H
 #define INCLUDE_EFD_RNGTABLE_H

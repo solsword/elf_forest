@@ -237,9 +237,9 @@ void efd_parse_str_global(efd_node *result, efd_parse_state *s, efd_index *cr);
 // Functions for parsing pieces that might be references:
 //-------------------------------------------------------
 
-ptrdiff_t efd_parse_int_or_ref(efd_parse_state *s, efd_index *cr);
+efd_int_t efd_parse_int_or_ref(efd_parse_state *s, efd_index *cr);
 
-float efd_parse_float_or_ref(efd_parse_state *s, efd_index *cr);
+efd_num_t efd_parse_float_or_ref(efd_parse_state *s, efd_index *cr);
 
 string* efd_parse_str_or_ref(efd_parse_state *s, efd_index *cr);
 
@@ -266,10 +266,10 @@ string* efd_parse_name(efd_parse_state *s);
 string* efd_parse_annotation(efd_parse_state *s, char sep);
 
 // Parses an integer off of the front of the input:
-ptrdiff_t efd_parse_int(efd_parse_state *s);
+efd_int_t efd_parse_int(efd_parse_state *s);
 
 // Parses a floating-point number off of the front of the input:
-float efd_parse_float(efd_parse_state *s);
+efd_num_t efd_parse_float(efd_parse_state *s);
 
 // Parses a quoted string off of the front of the input. Returns a newly
 // malloc'd string if it succeeds or NULL if it fails (so if it fails, freeing

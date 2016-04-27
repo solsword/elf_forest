@@ -1,15 +1,13 @@
 #if defined(EFD_REGISTER_DECLARATIONS)
 // no declarations
-#elif defined(EFD_REGISTER_NAMES)
-"NULL",
-#elif defined(EFD_REGISTER_UNPACKERS)
-efd__null,
-#elif defined(EFD_REGISTER_PACKERS)
-null__efd,
-#elif defined(EFD_REGISTER_COPIERS)
-dont_copy,
-#elif defined(EFD_REGISTER_DESTRUCTORS)
-dont_cleanup,
+#elif defined(EFD_REGISTER_FORMATS)
+{
+  .key = "NULLL";
+  .unpacker = efd__null;
+  .packer = null__efd;
+  .copier = dont_copy;
+  .destructor = dont_cleanup;
+},
 #else
 #ifndef INCLUDE_EFD_NULL_H
 #define INCLUDE_EFD_NULL_H

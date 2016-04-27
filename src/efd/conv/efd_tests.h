@@ -43,31 +43,35 @@ struct efd_ev_test_s {
   efd_node* compare;
   efd_node* against;
 };
-#elif defined(EFD_REGISTER_NAMES)
-"itest",
-"ntest",
-"ptest",
-"evtest",
-#elif defined(EFD_REGISTER_UNPACKERS)
-efd__int_test,
-efd__num_test,
-efd__parse_test,
-efd__ev_test,
-#elif defined(EFD_REGISTER_PACKERS)
-int_test__efd,
-num_test__efd,
-parse_test__efd,
-ev_test__efd,
-#elif defined(EFD_REGISTER_COPIERS)
-copy_int_test,
-copy_num_test,
-copy_parse_test,
-copy_ev_test,
-#elif defined(EFD_REGISTER_DESTRUCTORS)
-cleanup_v_int_test,
-cleanup_v_num_test,
-cleanup_v_parse_test,
-cleanup_v_ev_test,
+#elif defined(EFD_REGISTER_FORMATS)
+{
+  .key = "itest";
+  .unpacker = efd__int_test;
+  .packer = int_test__efd;
+  .copier = copy_int_test;
+  .destructor = cleanup_v_int_test;
+},
+{
+  .key = "ntest";
+  .unpacker = efd__num_test;
+  .packer = num_test__efd;
+  .copier = copy_num_test;
+  .destructor = cleanup_v_num_test;
+},
+{
+  .key = "ptest";
+  .unpacker = efd__parse_test;
+  .packer = parse_test__efd;
+  .copier = copy_parse_test;
+  .destructor = cleanup_v_parse_test;
+},
+{
+  .key = "evtest";
+  .unpacker = efd__ev_test;
+  .packer = ev_test__efd;
+  .copier = copy_ev_test;
+  .destructor = cleanup_v_ev_test;
+},
 #else
 #ifndef INCLUDE_EFD_TESTS_H
 #define INCLUDE_EFD_TESTS_H
@@ -119,7 +123,7 @@ void* efd__int_test(efd_node *n) {
       return NULL;
     }
     result->output = *efd__i(field);
-  } else if (s_check_bytes(result->expect, "remainder")) {
+  } else if (s_equals(result->expect, s_remainder)) {
     field = efd_lookup(n, s_output);
     if (field == NULL) {
       fprintf(stderr,"ERROR: itest 'remainder' node missing 'output' field.\n");
@@ -154,25 +158,16 @@ efd_node *int_test__efd(void *v_t) {
   
   result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
 
-  n = create_efd_node(EFD_NT_STRING, s_input);
-  *efd__s(n) = copy_string(t->input);
+  n = construct_efd_str_node(s_input, t->input);
   efd_add_child(result, n);
 
-  n = create_efd_node(EFD_NT_STRING, s_expect);
-  *efd__s(n) = copy_string(t->expect);
+  n = construct_efd_str_node(s_expect, t->expect);
   efd_add_child(result, n);
 
-  if (s_check_bytes(t->expect, "success")) {
-    n = create_efd_node(EFD_NT_INTEGER, s_output);
-    *efd__i(n) = t->output;
-    efd_add_child(result, n);
-  } else if (s_check_bytes(t->expect, "remainder")) {
-    n = create_efd_node(EFD_NT_INTEGER, s_output);
-    *efd__i(n) = t->output;
-    efd_add_child(result, n);
-
-    n = create_efd_node(EFD_NT_STRING, s_remainder);
-    *efd__s(n) = copy_string(t->remainder);
+  n = construct_efd_int_node(s_output, t->output);
+  efd_add_child(result, n);
+  if (s_equals(t->expect, s_remainder)) {
+    n = construct_efd_str_node(s_remainder, t->remainder);
     efd_add_child(result, n);
   }
 
@@ -185,7 +180,11 @@ void* copy_int_test(void *v_itest) {
   result->input = copy_string(t->input);
   result->expect = copy_string(t->expect);
   result->output = t->output;
-  result->remainder = copy_string(t->remainder);
+  if (t->remainder == NULL) {
+    result->remainder = NULL;
+  } else {
+    result->remainder = copy_string(t->remainder);
+  }
   return (void*) result;
 }
 
@@ -243,7 +242,7 @@ void* efd__num_test(efd_node *n) {
       return NULL;
     }
     result->output = *efd__n(field);
-  } else if (s_check_bytes(result->expect, "remainder")) {
+  } else if (s_equals(result->expect, s_remainder)) {
     field = efd_lookup(n, s_output);
     if (field == NULL) {
       fprintf(stderr,"ERROR: ntest 'remainder' node missing 'output' field.\n");
@@ -278,25 +277,17 @@ efd_node *num_test__efd(void *v_t) {
   
   result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
 
-  n = create_efd_node(EFD_NT_STRING, s_input);
-  *efd__s(n) = copy_string(t->input);
+  n = construct_efd_str_node(s_input, t->input);
   efd_add_child(result, n);
 
-  n = create_efd_node(EFD_NT_STRING, s_expect);
-  *efd__s(n) = copy_string(t->expect);
+  n = construct_efd_str_node(s_expect, t->expect);
   efd_add_child(result, n);
 
-  if (s_check_bytes(t->expect, "success")) {
-    n = create_efd_node(EFD_NT_NUMBER, s_output);
-    *efd__n(n) = t->output;
-    efd_add_child(result, n);
-  } else if (s_check_bytes(t->expect, "remainder")) {
-    n = create_efd_node(EFD_NT_NUMBER, s_output);
-    *efd__n(n) = t->output;
-    efd_add_child(result, n);
+  n = construct_efd_str_node(s_output, t->output);
+  efd_add_child(result, n);
 
-    n = create_efd_node(EFD_NT_STRING, s_remainder);
-    *efd__s(n) = copy_string(t->remainder);
+  if (s_equals(t->expect, s_remainder)) {
+    n = construct_efd_str_node(s_remainder, t->remainder);
     efd_add_child(result, n);
   }
 
@@ -309,7 +300,11 @@ void* copy_num_test(void *v_ntest) {
   result->input = copy_string(t->input);
   result->expect = copy_string(t->expect);
   result->output = t->output;
-  result->remainder = copy_string(t->remainder);
+  if (t->remainder == NULL) {
+    result->remainder = NULL;
+  } else {
+    result->remainder = copy_string(t->remainder);
+  }
   return (void*) result;
 }
 
@@ -384,17 +379,14 @@ efd_node *parse_test__efd(void *v_t) {
   
   result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
 
-  n = create_efd_node(EFD_NT_STRING, s_input);
-  *efd__s(n) = copy_string(t->input);
+  n = construct_efd_str_node(s_input, t->input);
   efd_add_child(result, n);
 
-  n = create_efd_node(EFD_NT_STRING, s_expect);
-  *efd__s(n) = copy_string(t->expect);
+  n = construct_efd_str_node(s_expect, t->expect);
   efd_add_child(result, n);
 
   if (s_equals(t->expect, s_remainder)) {
-    n = create_efd_node(EFD_NT_STRING, s_remainder);
-    *efd__s(n) = copy_string(t->remainder);
+    n = construct_efd_str_node(s_remainder, t->remainder);
     efd_add_child(result, n);
   }
 
@@ -406,7 +398,11 @@ void* copy_parse_test(void *v_ptest) {
   efd_parse_test *result = (efd_parse_test*) malloc(sizeof(efd_parse_test));
   result->input = copy_string(t->input);
   result->expect = copy_string(t->expect);
-  result->remainder = copy_string(t->remainder);
+  if (t->remainder == NULL) {
+    result->remainder = NULL;
+  } else {
+    result->remainder = copy_string(t->remainder);
+  }
   return (void*) result;
 }
 

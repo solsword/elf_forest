@@ -10,19 +10,21 @@
  * Globals *
  ***********/
 
-extern char * const EFD_OBJECT_NAME_REGISTRY[];
-extern efd_unpack_function EFD_OBJECT_UNPACKER_REGISTRY[];
-extern efd_pack_function EFD_OBJECT_PACKER_REGISTRY[];
-extern efd_copy_function EFD_OBJECT_COPIER_REGISTRY[];
-extern efd_destroy_function EFD_OBJECT_DESTRUCTOR_REGISTRY[];
+extern efd_function_declaration EFD_FUNCTION_REGISTRY[];
+extern efd_object_format EFD_FORMAT_REGISTRY[];
+
+extern size_t EFD_FUNCTION_REGISTRY_SIZE;
+extern size_t EFD_FORMAT_REGISTRY_SIZE;
 
 extern dictionary *EFD_FUNCTION_DICT;
+extern dictionary *EFD_FORMAT_DICT;
 
 /*************************
  * Included Declarations *
  *************************/
 
 #define EFD_REGISTER_DECLARATIONS
+#include "func.list"
 #include "conv.list"
 #undef EFD_REGISTER_DECLARATIONS
 
