@@ -132,7 +132,6 @@ efd_node* create_efd_node(efd_node_type t, string const * const name) {
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
     case EFD_NT_FN_STR:
-    case EFD_NT_FN_AR_OBJ:
     case EFD_NT_FN_AR_INT:
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
@@ -142,7 +141,6 @@ efd_node* create_efd_node(efd_node_type t, string const * const name) {
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
     case EFD_NT_GN_STR:
-    case EFD_NT_GN_AR_OBJ:
     case EFD_NT_GN_AR_INT:
     case EFD_NT_GN_AR_NUM:
     case EFD_NT_GN_AR_STR:
@@ -259,7 +257,6 @@ efd_node* copy_efd_node(efd_node const * const src) {
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
     case EFD_NT_FN_STR:
-    case EFD_NT_FN_AR_OBJ:
     case EFD_NT_FN_AR_INT:
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
@@ -269,7 +266,6 @@ efd_node* copy_efd_node(efd_node const * const src) {
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
     case EFD_NT_GN_STR:
-    case EFD_NT_GN_AR_OBJ:
     case EFD_NT_GN_AR_INT:
     case EFD_NT_GN_AR_NUM:
     case EFD_NT_GN_AR_STR:
@@ -383,7 +379,6 @@ CLEANUP_IMPL(efd_node) {
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
     case EFD_NT_FN_STR:
-    case EFD_NT_FN_AR_OBJ:
     case EFD_NT_FN_AR_INT:
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
@@ -393,7 +388,6 @@ CLEANUP_IMPL(efd_node) {
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
     case EFD_NT_GN_STR:
-    case EFD_NT_GN_AR_OBJ:
     case EFD_NT_GN_AR_INT:
     case EFD_NT_GN_AR_NUM:
     case EFD_NT_GN_AR_STR:
@@ -691,7 +685,7 @@ int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to) {
 
 void efd_assert_type(efd_node const * const n, efd_node_type t) {
   if (n == NULL) {
-    fprintf(stderr, "Error: Missing EFD node in efd_assert_type!\n");
+    fprintf(stderr, "ERROR: Missing EFD node in efd_assert_type!\n");
     exit(1);
   }
 #ifndef EFD_NO_TYPECHECKS
@@ -704,7 +698,7 @@ void efd_assert_type(efd_node const * const n, efd_node_type t) {
     ) {
       fprintf(
         stderr,
-        "Error: EFD node '%.*s' has type '%s' rather than '%s' as required.\n",
+        "ERROR: EFD node '%.*s' has type '%s' rather than '%s' as required.\n",
         (int) s_get_length(fqn),
         s_raw(fqn),
         EFD_NT_NAMES[n->h.type],
@@ -713,7 +707,7 @@ void efd_assert_type(efd_node const * const n, efd_node_type t) {
     } else {
       fprintf(
         stderr,
-        "Error: EFD node '%.*s' has type '%d' rather than '%d' as required.\n",
+        "ERROR: EFD node '%.*s' has type '%d' rather than '%d' as required.\n",
         (int) s_get_length(fqn),
         s_raw(fqn),
         n->h.type,
@@ -723,6 +717,45 @@ void efd_assert_type(efd_node const * const n, efd_node_type t) {
     free(fqn);
     exit(1);
   }
+#endif // EFD_NO_TYPECHECKS
+}
+
+void efd_assert_return_type(efd_node const * const n, efd_node_type t) {
+#ifndef EFD_NO_TYPECHECKS
+  efd_node_type rt;
+  rt = efd_return_type_of(n);
+  if (rt != t) {
+    string *fqn = efd_build_fqn(n);
+    if (rt >= 0
+     && rt < EFD_NUM_TYPES
+     && t >= 0
+     && t < EFD_NUM_TYPES
+    ) {
+      fprintf(
+        stderr,
+        "ERROR: EFD node '%.*s' has return type '%s' "
+        "rather than '%s' as required.\n",
+        (int) s_get_length(fqn),
+        s_raw(fqn),
+        EFD_NT_NAMES[rt],
+        EFD_NT_NAMES[t]
+      );
+    } else {
+      fprintf(
+        stderr,
+        "ERROR: EFD node '%.*s' has return type '%d' "
+        "rather than '%d' as required.\n",
+        (int) s_get_length(fqn),
+        s_raw(fqn),
+        rt,
+        t
+      );
+    }
+    free(fqn);
+    exit(1);
+  }
+#else
+  return;
 #endif // EFD_NO_TYPECHECKS
 }
 
@@ -797,7 +830,6 @@ dictionary* efd_children_dict(efd_node const * const n) {
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
     case EFD_NT_FN_STR:
-    case EFD_NT_FN_AR_OBJ:
     case EFD_NT_FN_AR_INT:
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
@@ -807,7 +839,6 @@ dictionary* efd_children_dict(efd_node const * const n) {
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
     case EFD_NT_GN_STR:
-    case EFD_NT_GN_AR_OBJ:
     case EFD_NT_GN_AR_INT:
     case EFD_NT_GN_AR_NUM:
     case EFD_NT_GN_AR_STR:
@@ -831,7 +862,7 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
 #ifdef DEBUG
       fprintf(
         stderr,
-        "Error: Invalid node type %d in efd_equals.\n",
+        "ERROR: Invalid node type %d in efd_equals.\n",
         cmp->h.type
       );
 #endif
@@ -857,7 +888,6 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
     case EFD_NT_FN_STR:
-    case EFD_NT_FN_AR_OBJ:
     case EFD_NT_FN_AR_INT:
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
@@ -867,7 +897,6 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
     case EFD_NT_GN_STR:
-    case EFD_NT_GN_AR_OBJ:
     case EFD_NT_GN_AR_INT:
     case EFD_NT_GN_AR_NUM:
     case EFD_NT_GN_AR_STR:
@@ -987,7 +1016,7 @@ void efd_add_child(efd_node *n, efd_node *child) {
     if (n->h.type >= 0 && n->h.type < EFD_NUM_TYPES) {
       fprintf(
         stderr,
-        "Error: Can't add child to non-container EFD node '%.*s' "
+        "ERROR: Can't add child to non-container EFD node '%.*s' "
         "of type '%s'.\n",
         (int) s_get_length(fqn),
         s_raw(fqn),
@@ -996,7 +1025,7 @@ void efd_add_child(efd_node *n, efd_node *child) {
     } else {
       fprintf(
         stderr,
-        "Error: Can't add child to non-container EFD node '%.*s' "
+        "ERROR: Can't add child to non-container EFD node '%.*s' "
         "of type '%d'.\n",
         (int) s_get_length(fqn),
         s_raw(fqn),
@@ -1031,7 +1060,7 @@ void efd_prepend_child(efd_node *n, efd_node *child) {
     if (n->h.type >= 0 && n->h.type < EFD_NUM_TYPES) {
       fprintf(
         stderr,
-        "Error: Can't prepend child to non-container EFD node '%.*s' "
+        "ERROR: Can't prepend child to non-container EFD node '%.*s' "
         "of type '%s'.\n",
         (int) s_get_length(fqn),
         s_raw(fqn),
@@ -1040,7 +1069,7 @@ void efd_prepend_child(efd_node *n, efd_node *child) {
     } else {
       fprintf(
         stderr,
-        "Error: Can't prepend child to non-container EFD node '%.*s' "
+        "ERROR: Can't prepend child to non-container EFD node '%.*s' "
         "of type '%d'.\n",
         (int) s_get_length(fqn),
         s_raw(fqn),
@@ -1075,7 +1104,7 @@ void efd_remove_child(efd_node *n, efd_node *child) {
     if (n->h.type >= 0 && n->h.type < EFD_NUM_TYPES) {
       fprintf(
         stderr,
-        "Error: Can't remove child from non-container EFD node '%.*s' "
+        "ERROR: Can't remove child from non-container EFD node '%.*s' "
         "of type '%s'.\n",
         (int) s_get_length(fqn),
         s_raw(fqn),
@@ -1084,7 +1113,7 @@ void efd_remove_child(efd_node *n, efd_node *child) {
     } else {
       fprintf(
         stderr,
-        "Error: Can't remove child from non-container EFD node '%.*s' "
+        "ERROR: Can't remove child from non-container EFD node '%.*s' "
         "of type '%d'.\n",
         (int) s_get_length(fqn),
         s_raw(fqn),
@@ -1268,6 +1297,26 @@ efd_node* efd_concrete(efd_node const * const base) {
   return efd_concrete(linked);
 }
 
+ptrdiff_t efd_normal_child_count(efd_node const * const node) {
+  ptrdiff_t result;
+  dictionary *children;
+  efd_node *child;
+
+  if (!efd_is_container_node(node)) {
+    return -1;
+  }
+
+  result = 0;
+  children = efd_children_dict(node);
+  for (i = 0; i < d_get_count(children); ++i) {
+    child = d_get_item(children, i);
+    if (child->h.type != EFD_NT_SCOPE) {
+      result += 1;
+    }
+  }
+  return result;
+}
+
 efd_node *efd_nth(efd_node const * const node, size_t index) {
   size_t i;
 #ifdef DEBUG
@@ -1407,7 +1456,7 @@ efd_node* efd_eval(
       fqn = efd_build_fqn(target);
       fprintf(
         stderr,
-        "Error: efd_concrete resulted in a link node '%.*s' "
+        "ERROR: efd_concrete resulted in a link node '%.*s' "
         "during evaluation.\n",
         (int) s_get_length(fqn),
         s_raw(fqn)
@@ -1420,7 +1469,7 @@ efd_node* efd_eval(
       fqn = efd_build_fqn(target);
       fprintf(
         stderr,
-        "Error: encountered invalid node '%.*s' (type %d) during evaluation.\n",
+        "ERROR: encountered invalid node '%.*s' (type %d) during evaluation.\n",
         (int) s_get_length(fqn),
         s_raw(fqn),
         result->h.type
@@ -1431,7 +1480,7 @@ efd_node* efd_eval(
       fqn = efd_build_fqn(target);
       fprintf(
         stderr,
-        "Error: encountered packed node '%.*s' during evaluation.\n",
+        "ERROR: encountered packed node '%.*s' during evaluation.\n",
         (int) s_get_length(fqn),
         s_raw(fqn)
       );
@@ -1448,7 +1497,6 @@ efd_node* efd_eval(
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
     case EFD_NT_FN_STR:
-    case EFD_NT_FN_AR_OBJ:
     case EFD_NT_FN_AR_INT:
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
@@ -1458,7 +1506,6 @@ efd_node* efd_eval(
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
     case EFD_NT_GN_STR:
-    case EFD_NT_GN_AR_OBJ:
     case EFD_NT_GN_AR_INT:
     case EFD_NT_GN_AR_NUM:
     case EFD_NT_GN_AR_STR:

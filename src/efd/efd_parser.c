@@ -174,7 +174,6 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
     case EFD_NT_FN_STR:
-    case EFD_NT_FN_AR_OBJ:
     case EFD_NT_FN_AR_INT:
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
@@ -184,7 +183,6 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
     case EFD_NT_GN_STR:
-    case EFD_NT_GN_AR_OBJ:
     case EFD_NT_GN_AR_INT:
     case EFD_NT_GN_AR_NUM:
     case EFD_NT_GN_AR_STR:
@@ -922,9 +920,6 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
               s->context = e;
               return EFD_NT_INVALID;
 
-            case 'o':
-              s->pos += 1;
-              return EFD_NT_FN_AR_OBJ;
             case 'i':
               s->pos += 1;
               return EFD_NT_FN_AR_INT;
@@ -984,9 +979,6 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
               s->context = e;
               return EFD_NT_INVALID;
 
-            case 'o':
-              s->pos += 1;
-              return EFD_NT_GN_AR_OBJ;
             case 'i':
               s->pos += 1;
               return EFD_NT_GN_AR_INT;

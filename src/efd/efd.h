@@ -23,32 +23,32 @@
  *********/
 
 // Raw types that a single EFD node can take on:
-#define EFD_NUM_TYPES 37
+#define EFD_NUM_TYPES 36
 enum efd_node_type_e {
   EFD_NT_INVALID    = 0,   //  -    marks an invalid node internally
-  EFD_NT_CONTAINER  = 1,   // 'c'   no data, just children
-  EFD_NT_LINK       = 2,   // 'L'   global link
-  EFD_NT_LOCAL_LINK = 3,   // 'l'   local link
-  EFD_NT_SCOPE      = 4,   // 'V'   scope
-  EFD_NT_VARIABLE   = 5,   // 'v'   variable
-  EFD_NT_PROTO      = 6,   //  -    raw object data pre-assembly
-  EFD_NT_OBJECT     = 7,   // 'o'   automatic parse-to-struct
-  EFD_NT_INTEGER    = 8,   // 'i'   efd_int_t
-  EFD_NT_NUMBER     = 9,   // 'n'   efd_num_t
-  EFD_NT_STRING     = 10,   // 's'   quoted string
-  EFD_NT_ARRAY_INT  = 11,  // 'ai'  array of efd_int_t
-  EFD_NT_ARRAY_NUM  = 12,  // 'an'  array of efd_num_t
-  EFD_NT_ARRAY_STR  = 13,  // 'as'  array of quoted strings
-  EFD_NT_GLOBAL_INT = 14,  // 'Gi'  global integer
-  EFD_NT_GLOBAL_NUM = 15,  // 'Gn'  global numeric
-  EFD_NT_GLOBAL_STR = 16,  // 'Gs'  global string
-  EFD_NT_FUNCTION   = 17,  // 'ff'  function (returns a container)
-  EFD_NT_FN_VOID    = 18,  // 'fv'  void function (returns NULL)
-  EFD_NT_FN_OBJ     = 19,  // 'fo'  function (returns an object)
-  EFD_NT_FN_INT     = 20,  // 'fi'  function (returns an integer)
-  EFD_NT_FN_NUM     = 21,  // 'fn'  function (returns a number)
-  EFD_NT_FN_STR     = 22,  // 'fs'  function (returns a string)
-  EFD_NT_FN_AR_OBJ  = 23,  // 'fao' function (returns an array of objects)
+  EFD_NT_ANY        = 1,   //  -    stands for any valid type
+  EFD_NT_CONTAINER  = 2,   // 'c'   no data, just children
+  EFD_NT_LINK       = 3,   // 'L'   global link
+  EFD_NT_LOCAL_LINK = 4,   // 'l'   local link
+  EFD_NT_SCOPE      = 5,   // 'V'   scope
+  EFD_NT_VARIABLE   = 6,   // 'v'   variable
+  EFD_NT_PROTO      = 7,   //  -    raw object data pre-assembly
+  EFD_NT_OBJECT     = 8,   // 'o'   automatic parse-to-struct
+  EFD_NT_INTEGER    = 9,   // 'i'   efd_int_t
+  EFD_NT_NUMBER     = 10,   // 'n'   efd_num_t
+  EFD_NT_STRING     = 11,   // 's'   quoted string
+  EFD_NT_ARRAY_INT  = 12,  // 'ai'  array of efd_int_t
+  EFD_NT_ARRAY_NUM  = 13,  // 'an'  array of efd_num_t
+  EFD_NT_ARRAY_STR  = 14,  // 'as'  array of quoted strings
+  EFD_NT_GLOBAL_INT = 15,  // 'Gi'  global integer
+  EFD_NT_GLOBAL_NUM = 16,  // 'Gn'  global numeric
+  EFD_NT_GLOBAL_STR = 17,  // 'Gs'  global string
+  EFD_NT_FUNCTION   = 18,  // 'ff'  function (returns a container)
+  EFD_NT_FN_VOID    = 19,  // 'fv'  void function (returns NULL)
+  EFD_NT_FN_OBJ     = 20,  // 'fo'  function (returns an object)
+  EFD_NT_FN_INT     = 21,  // 'fi'  function (returns an integer)
+  EFD_NT_FN_NUM     = 22,  // 'fn'  function (returns a number)
+  EFD_NT_FN_STR     = 23,  // 'fs'  function (returns a string)
   EFD_NT_FN_AR_INT  = 24,  // 'fai' function (returns an array of integers)
   EFD_NT_FN_AR_NUM  = 25,  // 'fan' function (returns an array of numbers)
   EFD_NT_FN_AR_STR  = 26,  // 'fas' function (returns an array of strings)
@@ -58,10 +58,9 @@ enum efd_node_type_e {
   EFD_NT_GN_INT     = 30,  // 'gi'  generator (returns integers)
   EFD_NT_GN_NUM     = 31,  // 'gn'  generator (returns numbers)
   EFD_NT_GN_STR     = 32,  // 'gs'  generator (returns strings)
-  EFD_NT_GN_AR_OBJ  = 33,  // 'gao' generator (returns arrays of objects)
-  EFD_NT_GN_AR_INT  = 34,  // 'gai' generator (returns arrays of integers)
-  EFD_NT_GN_AR_NUM  = 35,  // 'gan' generator (returns arrays of numbers)
-  EFD_NT_GN_AR_STR  = 36   // 'gas' generator (returns arrays of strings)
+  EFD_NT_GN_AR_INT  = 33,  // 'gai' generator (returns arrays of integers)
+  EFD_NT_GN_AR_NUM  = 34,  // 'gan' generator (returns arrays of numbers)
+  EFD_NT_GN_AR_STR  = 35   // 'gas' generator (returns arrays of strings)
 };
 typedef enum efd_node_type_e efd_node_type;
 
@@ -357,6 +356,12 @@ struct efd_function_declaration_s {
 // check will still take place.
 void efd_assert_type(efd_node const * const n, efd_node_type t);
 
+// Asserts that the given node is a function or generator node and that its
+// return type matches the given type. Throws an error if the type doesn't
+// match. Defining EFD_NO_TYPECHECKS will make this a no-op. Unlike
+// efd_assert_type, this does not check whether the incoming node is NULL.
+void efd_assert_return_type(efd_node const * const n, efd_node_type t);
+
 /********************
  * Inline Functions *
  ********************/
@@ -392,7 +397,6 @@ static inline int efd_is_container_node(efd_node const * const n) {
  || n->h.type == EFD_NT_FN_INT
  || n->h.type == EFD_NT_FN_NUM
  || n->h.type == EFD_NT_FN_STR
- || n->h.type == EFD_NT_FN_AR_OBJ
  || n->h.type == EFD_NT_FN_AR_INT
  || n->h.type == EFD_NT_FN_AR_NUM
  || n->h.type == EFD_NT_FN_AR_STR
@@ -402,7 +406,6 @@ static inline int efd_is_container_node(efd_node const * const n) {
  || n->h.type == EFD_NT_GN_INT
  || n->h.type == EFD_NT_GN_NUM
  || n->h.type == EFD_NT_GN_STR
- || n->h.type == EFD_NT_GN_AR_OBJ
  || n->h.type == EFD_NT_GN_AR_INT
  || n->h.type == EFD_NT_GN_AR_NUM
  || n->h.type == EFD_NT_GN_AR_STR
@@ -469,10 +472,58 @@ static inline size_t* efd__as_count(efd_node *n) {
   return &(n->b.as_str_array.count);
 }
 
+// Type casting functions with well-defined behavior for out-of-bounds values:
+static inline efd_int_t efd_cast_to_int(efd_num_t value) {
+  efd_num_t rounded = roundf(value);
+  if (rounded > (efd_num_t) smaxof(efd_int_t)) {
+    return smaxof(efd_int_t);
+  } else if (rounded < (efd_num_t) sminof(efd_int_t)) {
+    return sminof(efd_int_t);
+  }
+  return (efd_int_t) rounded;
+}
+
+static inline efd_num_t efd_cast_to_num(efd_int_t value) {
+  return (efd_num_t) value;
+}
+
+// Type coercion functions:
+static inline efd_int_t efd_as_i(efd_node *n) {
+  if (n->h.type == EFD_NT_INTEGER) {
+    return *efd__i(n);
+  } else if (n->h.type == EFD_NT_NUMBER) {
+    return efd_cast_to_int(*(efd__n(n)));
+  } else { // invalid
+    // TODO: Context here!
+    fprintf(
+      stderr,
+      "Error: Attempted to coerce non-numeric type to an integer.\n";
+    );
+    exit(-1);
+  }
+}
+
+static inline efd_int_t efd_as_n(efd_node *n) {
+  if (n->h.type == EFD_NT_INTEGER) {
+    return efd_cast_to_num(*efd__i(n));
+  } else if (n->h.type == EFD_NT_NUMBER) {
+    return *(efd__n(n));
+  } else { // invalid
+    // TODO: Context here!
+    fprintf(
+      stderr,
+      "Error: Attempted to coerce non-numeric type to a number.\n";
+    );
+    exit(-1);
+  }
+}
+
+// Converts a node type to the corresponding reference type.
 static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
   switch (nt) {
     default:
     case EFD_NT_INVALID:
+    case EFD_NT_ANY:
       return EFD_RT_INVALID;
     case EFD_NT_CONTAINER:
     case EFD_NT_SCOPE:
@@ -482,7 +533,6 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
     case EFD_NT_FN_STR:
-    case EFD_NT_FN_AR_OBJ:
     case EFD_NT_FN_AR_INT:
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
@@ -492,7 +542,6 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
     case EFD_NT_GN_STR:
-    case EFD_NT_GN_AR_OBJ:
     case EFD_NT_GN_AR_INT:
     case EFD_NT_GN_AR_NUM:
     case EFD_NT_GN_AR_STR:
@@ -522,6 +571,40 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
       return EFD_RT_NUM_ARR_ENTRY;
     case EFD_NT_ARRAY_STR:
       return EFD_RT_STR_ARR_ENTRY;
+  }
+}
+
+// Takes a function node and returns the 
+static inline efd_node_type efd_return_type_of(efd_node * function_node) {
+  switch (nt) {
+    default:
+    case EFD_NT_FN_VOID:
+    case EFD_NT_GN_VOID:
+      return EFD_NT_INVALID;
+    case EFD_NT_FUNCTION:
+    case EFD_NT_GENERATOR:
+      return EFD_NT_ANY;
+    case EFD_NT_FN_OBJ:
+    case EFD_NT_GN_OBJ:
+      return EFD_NT_OBJECT;
+    case EFD_NT_FN_INT:
+    case EFD_NT_GN_INT:
+      return EFD_NT_INTEGER;
+    case EFD_NT_FN_NUM:
+    case EFD_NT_GN_NUM:
+      return EFD_NT_NUMBER;
+    case EFD_NT_FN_STR:
+    case EFD_NT_GN_STR:
+      return EFD_NT_STRING;
+    case EFD_NT_FN_AR_INT:
+    case EFD_NT_GN_AR_INT:
+      return EFD_NT_ARRAY_INT;
+    case EFD_NT_FN_AR_NUM:
+    case EFD_NT_GN_AR_NUM:
+      return EFD_NT_ARRAY_NUM;
+    case EFD_NT_FN_AR_STR:
+    case EFD_NT_GN_AR_STR:
+      return EFD_NT_ARRAY_STR;
   }
 }
 
@@ -727,6 +810,10 @@ efd_node* efd_resolve_variable(
 // remember where it's been, so infinite loops can occur.
 // TODO: Change that?
 efd_node* efd_concrete(efd_node const * const base);
+
+// Returns the number of non-SCOPE children that the given node has. Returns -1
+// if the given node is a non-container node.
+ptrdiff_t efd_normal_child_count(efd_node const * const node);
 
 // Returns the nth child of the given node, not counting scope nodes.
 efd_node* efd_nth(efd_node const * const node, size_t index);

@@ -112,7 +112,7 @@ efd_eval_function efd_lookup_function(string const * const key) {
   if (result == NULL) {
     fprintf(
       stderr,
-      "Error: function '%.*s' not found.\n",
+      "ERROR: function '%.*s' not found.\n",
       (int) s_get_length(key),
       s_raw(key)
     );
@@ -127,7 +127,7 @@ efd_object_format * efd_lookup_format(string const * const key) {
   if (result == NULL) {
     fprintf(
       stderr,
-      "Error: object format '%.*s' not found.\n",
+      "ERROR: object format '%.*s' not found.\n",
       (int) s_get_length(key),
       s_raw(key)
     );

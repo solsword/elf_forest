@@ -79,7 +79,6 @@ struct efd_ev_test_s {
 // Conversions efd <-> test structs
 
 #include "efd/efd.h"
-#include "efd/efd_setup.h"
 #include "datatypes/string.h"
 
 /************************
