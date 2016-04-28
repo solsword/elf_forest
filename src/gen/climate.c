@@ -304,7 +304,7 @@ void _iter_grow_rivers(void *v_river, void *v_wm) {
                 stderr,
                 "Failed to find river node in traversed region for merging!\n"
               );
-              exit(1);
+              exit(EXIT_FAILURE);
             }
 #endif
             // Find the first/closest path point for merging:
@@ -739,7 +739,7 @@ void generate_hydrology(world_map *wm) {
     }
   }
   // DEBUG: REMOVE
-  //exit(1);
+  //exit(EXIT_FAILURE);
   // Grow rivers:
   for (i = 0; i < CL_RIVER_GROWTH_ITERATIONS; ++i) {
     // Grow each river once

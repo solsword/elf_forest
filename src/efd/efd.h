@@ -23,62 +23,60 @@
  *********/
 
 // Raw types that a single EFD node can take on:
-#define EFD_NUM_TYPES 36
+#define EFD_NUM_TYPES 34
 enum efd_node_type_e {
-  EFD_NT_INVALID    = 0,   //  -    marks an invalid node internally
-  EFD_NT_ANY        = 1,   //  -    stands for any valid type
-  EFD_NT_CONTAINER  = 2,   // 'c'   no data, just children
-  EFD_NT_LINK       = 3,   // 'L'   global link
-  EFD_NT_LOCAL_LINK = 4,   // 'l'   local link
-  EFD_NT_SCOPE      = 5,   // 'V'   scope
-  EFD_NT_VARIABLE   = 6,   // 'v'   variable
-  EFD_NT_PROTO      = 7,   //  -    raw object data pre-assembly
-  EFD_NT_OBJECT     = 8,   // 'o'   automatic parse-to-struct
-  EFD_NT_INTEGER    = 9,   // 'i'   efd_int_t
-  EFD_NT_NUMBER     = 10,   // 'n'   efd_num_t
-  EFD_NT_STRING     = 11,   // 's'   quoted string
-  EFD_NT_ARRAY_INT  = 12,  // 'ai'  array of efd_int_t
-  EFD_NT_ARRAY_NUM  = 13,  // 'an'  array of efd_num_t
-  EFD_NT_ARRAY_STR  = 14,  // 'as'  array of quoted strings
-  EFD_NT_GLOBAL_INT = 15,  // 'Gi'  global integer
-  EFD_NT_GLOBAL_NUM = 16,  // 'Gn'  global numeric
-  EFD_NT_GLOBAL_STR = 17,  // 'Gs'  global string
-  EFD_NT_FUNCTION   = 18,  // 'ff'  function (returns a container)
-  EFD_NT_FN_VOID    = 19,  // 'fv'  void function (returns NULL)
-  EFD_NT_FN_OBJ     = 20,  // 'fo'  function (returns an object)
-  EFD_NT_FN_INT     = 21,  // 'fi'  function (returns an integer)
-  EFD_NT_FN_NUM     = 22,  // 'fn'  function (returns a number)
-  EFD_NT_FN_STR     = 23,  // 'fs'  function (returns a string)
-  EFD_NT_FN_AR_INT  = 24,  // 'fai' function (returns an array of integers)
-  EFD_NT_FN_AR_NUM  = 25,  // 'fan' function (returns an array of numbers)
-  EFD_NT_FN_AR_STR  = 26,  // 'fas' function (returns an array of strings)
-  EFD_NT_GENERATOR  = 27,  // 'gg'  generator (returns containers)
-  EFD_NT_GN_VOID    = 28,  // 'gv'  void generator (returns NULLs)
-  EFD_NT_GN_OBJ     = 29,  // 'go'  generator (returns objects)
-  EFD_NT_GN_INT     = 30,  // 'gi'  generator (returns integers)
-  EFD_NT_GN_NUM     = 31,  // 'gn'  generator (returns numbers)
-  EFD_NT_GN_STR     = 32,  // 'gs'  generator (returns strings)
-  EFD_NT_GN_AR_INT  = 33,  // 'gai' generator (returns arrays of integers)
-  EFD_NT_GN_AR_NUM  = 34,  // 'gan' generator (returns arrays of numbers)
-  EFD_NT_GN_AR_STR  = 35   // 'gas' generator (returns arrays of strings)
+  EFD_GL(i, EFD_NT_INVALID    = 0 ), //  -    marks an invalid node internally
+  EFD_GL(i, EFD_NT_ANY        = 1 ), //  -    stands for any valid type
+  EFD_GL(i, EFD_NT_CONTAINER  = 2 ), // 'c'   no data, just children
+  EFD_GL(i, EFD_NT_LINK       = 3 ), // 'L'   global link
+  EFD_GL(i, EFD_NT_LOCAL_LINK = 4 ), // 'l'   local link
+  EFD_GL(i, EFD_NT_SCOPE      = 5 ), // 'V'   scope
+  EFD_GL(i, EFD_NT_VARIABLE   = 6 ), // 'v'   variable
+  EFD_GL(i, EFD_NT_PROTO      = 7 ), //  -    raw object data pre-assembly
+  EFD_GL(i, EFD_NT_OBJECT     = 8 ), // 'o'   automatic parse-to-struct
+  EFD_GL(i, EFD_NT_INTEGER    = 9 ), // 'i'   efd_int_t
+  EFD_GL(i, EFD_NT_NUMBER     = 10), // 'n'   efd_num_t
+  EFD_GL(i, EFD_NT_STRING     = 11), // 's'   quoted string
+  EFD_GL(i, EFD_NT_ARRAY_INT  = 12), // 'ai'  array of efd_int_t
+  EFD_GL(i, EFD_NT_ARRAY_NUM  = 13), // 'an'  array of efd_num_t
+  EFD_GL(i, EFD_NT_ARRAY_STR  = 14), // 'as'  array of quoted strings
+  EFD_GL(i, EFD_NT_GLOBAL_INT = 15), // 'Gi'  global integer
+  EFD_GL(i, EFD_NT_GLOBAL_NUM = 16), // 'Gn'  global numeric
+  EFD_GL(i, EFD_NT_GLOBAL_STR = 17), // 'Gs'  global string
+  EFD_GL(i, EFD_NT_FUNCTION   = 18), // 'ff'  function (returns a container)
+  EFD_GL(i, EFD_NT_FN_OBJ     = 19), // 'fo'  function (returns an object)
+  EFD_GL(i, EFD_NT_FN_INT     = 20), // 'fi'  function (returns an integer)
+  EFD_GL(i, EFD_NT_FN_NUM     = 21), // 'fn'  function (returns a number)
+  EFD_GL(i, EFD_NT_FN_STR     = 22), // 'fs'  function (returns a string)
+  EFD_GL(i, EFD_NT_FN_AR_INT  = 23), // 'fai' function (returns array of ints)
+  EFD_GL(i, EFD_NT_FN_AR_NUM  = 24), // 'fan' function (returns array of nums)
+  EFD_GL(i, EFD_NT_FN_AR_STR  = 25), // 'fas' function (returns array of strs)
+  EFD_GL(i, EFD_NT_GENERATOR  = 26), // 'gg'  generator (returns containers)
+  EFD_GL(i, EFD_NT_GN_OBJ     = 27), // 'go'  generator (returns objects)
+  EFD_GL(i, EFD_NT_GN_INT     = 28), // 'gi'  generator (returns integers)
+  EFD_GL(i, EFD_NT_GN_NUM     = 29), // 'gn'  generator (returns numbers)
+  EFD_GL(i, EFD_NT_GN_STR     = 30), // 'gs'  generator (returns strings)
+  EFD_GL(i, EFD_NT_GN_AR_INT  = 31), // 'gai' generator (returns arrays of ints)
+  EFD_GL(i, EFD_NT_GN_AR_NUM  = 32), // 'gan' generator (returns arrays of nums)
+  EFD_GL(i, EFD_NT_GN_AR_STR  = 33), // 'gas' generator (returns arrays of strs)
 };
 typedef enum efd_node_type_e efd_node_type;
 
 // Types of reference endpoint.
 enum efd_ref_type_e {
   EFD_RT_INVALID = 0,
-  EFD_RT_GLOBAL_INT, // (efd_int_t) global integer
-  EFD_RT_GLOBAL_NUM, // (efd_num_t) global number
-  EFD_RT_GLOBAL_STR, // (string*) global string
-  EFD_RT_NODE, // (void*) a void* pointer to an entire EFD node
-  EFD_RT_CHAIN, // (void*) a void* pointer to an EFD node which is a link
-  EFD_RT_OBJ, // (void*) contents an object node
-  EFD_RT_INT, // (efd_int_t) contents of an integer node
-  EFD_RT_NUM, // (efd_num_t) contents of a number node
-  EFD_RT_STR, // (string*) contents of a string node
-  EFD_RT_INT_ARR_ENTRY, // (efd_int_t) entry in an integer array
-  EFD_RT_NUM_ARR_ENTRY, // (efd_num_t) entry in a number array
-  EFD_RT_STR_ARR_ENTRY // (string*) entry in a string array
+  EFD_RT_GLOBAL_INT,     // (efd_int_t) global integer
+  EFD_RT_GLOBAL_NUM,     // (efd_num_t) global number
+  EFD_RT_GLOBAL_STR,     // (string*) global string
+  EFD_RT_NODE,           // (void*) a pointer to an entire EFD node
+  EFD_RT_CHAIN,          // (void*) a pointer to an EFD node which is a link
+  EFD_RT_OBJ,            // (void*) contents an object node
+  EFD_RT_INT,            // (efd_int_t) contents of an integer node
+  EFD_RT_NUM,            // (efd_num_t) contents of a number node
+  EFD_RT_STR,            // (string*) contents of a string node
+  EFD_RT_INT_ARR_ENTRY,  // (efd_int_t) entry in an integer array
+  EFD_RT_NUM_ARR_ENTRY,  // (efd_num_t) entry in a number array
+  EFD_RT_STR_ARR_ENTRY,  // (string*) entry in a string array
 };
 typedef enum efd_ref_type_e efd_ref_type;
 
@@ -96,13 +94,13 @@ typedef enum efd_path_element_type_e efd_path_element_type;
 */
 
 enum efd_generator_type_e {
-  EFD_GT_INVALID = 0,
-  EFD_GT_NODE_CHILDREN, // iterate over non-SCOPE children of an EFD node
-  EFD_GT_ARRAY_NODE_INDICES, // iterate through entries in an array node
-  EFD_GT_FUNCTION, // call a generator function
-  EFD_GT_EXTEND_RESTART, // extend another generator by restarting it
-  EFD_GT_EXTEND_HOLD, // extend another generator by repeating the final value
-  EFD_GT_PARALLEL // generate SCOPE nodes containing parallel results
+  EFD_GL(i, EFD_GT_INVALID        = 0),
+  EFD_GL(i, EFD_GT_CHILDREN       = 1), // iterate over non-SCOPE children
+  EFD_GL(i, EFD_GT_INDICES        = 2), // iterate through array entries
+  EFD_GL(i, EFD_GT_FUNCTION       = 3), // call a generator function
+  EFD_GL(i, EFD_GT_EXTEND_RESTART = 4), // extend by restarting
+  EFD_GL(i, EFD_GT_EXTEND_HOLD    = 5), // extend repeating the final value
+  EFD_GL(i, EFD_GT_PARALLEL       = 6), // generate parallel results
 };
 typedef enum efd_generator_type_e efd_generator_type;
 
@@ -114,17 +112,21 @@ typedef intptr_t efd_int_t;
 typedef float efd_num_t;
 
 /******************
- * Function types *
+ * Function Types *
  ******************/
 
-typedef void* (*efd_unpack_function)(efd_node *);
+typedef void * (*efd_unpack_function)(efd_node *);
 typedef efd_node* (*efd_pack_function)(void *);
-typedef void* (*efd_copy_function)(void *);
+typedef void * (*efd_copy_function)(void *);
 typedef void (*efd_destroy_function)(void *);
 
 typedef efd_node* (*efd_eval_function)(efd_node const * const);
 
 typedef efd_node* (*efd_generator_function)(efd_generator_state *state);
+
+typedef efd_generator_state * (*efd_generator_constructor)(
+  efd_node const * const base
+);
 
 /**************
  * Structures *
@@ -209,6 +211,11 @@ typedef struct efd_object_format_s efd_object_format;
 // EFD eval function.
 struct efd_function_declaration_s;
 typdef struct efd_function_declaration_s efd_function_declaration;
+
+// An entry in the generator registry defines a string key plus a function for
+// creating a generator from an EFD_NT_GN_* node.
+struct efd_generator_declaration_s;
+typdef struct efd_generator_declaration_s efd_generator_declaration;
 
 // Generic generator state specifies the type of generator and information
 // needed to generate the next result.
@@ -365,6 +372,11 @@ struct efd_function_declaration_s {
   efd_eval_function function;
 };
 
+struct efd_generator_declaration_s {
+  char *key;
+  efd_generator_constructor constructor;
+};
+
 struct efd_generator_state_s {
   efd_generator_type type;
   string *name;
@@ -418,7 +430,6 @@ static inline int efd_is_container_node(efd_node const * const n) {
     n->h.type == EFD_NT_CONTAINER
  || n->h.type == EFD_NT_SCOPE
  || n->h.type == EFD_NT_FUNCTION
- || n->h.type == EFD_NT_FN_VOID
  || n->h.type == EFD_NT_FN_OBJ
  || n->h.type == EFD_NT_FN_INT
  || n->h.type == EFD_NT_FN_NUM
@@ -427,7 +438,6 @@ static inline int efd_is_container_node(efd_node const * const n) {
  || n->h.type == EFD_NT_FN_AR_NUM
  || n->h.type == EFD_NT_FN_AR_STR
  || n->h.type == EFD_NT_GENERATOR
- || n->h.type == EFD_NT_GN_VOID
  || n->h.type == EFD_NT_GN_OBJ
  || n->h.type == EFD_NT_GN_INT
  || n->h.type == EFD_NT_GN_NUM
@@ -525,7 +535,7 @@ static inline efd_int_t efd_as_i(efd_node *n) {
       stderr,
       "Error: Attempted to coerce non-numeric type to an integer.\n";
     );
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 }
 
@@ -540,7 +550,7 @@ static inline efd_int_t efd_as_n(efd_node *n) {
       stderr,
       "Error: Attempted to coerce non-numeric type to a number.\n";
     );
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 }
 
@@ -554,7 +564,6 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
     case EFD_NT_CONTAINER:
     case EFD_NT_SCOPE:
     case EFD_NT_FUNCTION:
-    case EFD_NT_FN_VOID:
     case EFD_NT_FN_OBJ:
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
@@ -563,7 +572,6 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
     case EFD_NT_GENERATOR:
-    case EFD_NT_GN_VOID:
     case EFD_NT_GN_OBJ:
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
@@ -604,9 +612,6 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
 static inline efd_node_type efd_return_type_of(efd_node * function_node) {
   switch (nt) {
     default:
-    case EFD_NT_FN_VOID:
-    case EFD_NT_GN_VOID:
-      return EFD_NT_INVALID;
     case EFD_NT_FUNCTION:
     case EFD_NT_GENERATOR:
       return EFD_NT_ANY;
@@ -927,10 +932,13 @@ void efd_pack_node(efd_node *root, efd_index *cr);
 
 // TODO: Serialization (separate files)...
 
-// Lookup for functions (also defined in efd_setup.c):
+// Lookup for functions (defined in efd_setup.c).
 efd_eval_function efd_lookup_function(string const * const key);
 
-// Lookups for packers, unpackers, copiers, and destructors. Note that these
+// Lookup for generator constructors (as above).
+efd_generator_constructor efd_lookup_generator(string const * const key) {
+
+// Lookups for packers, unpackers, copiers, and destructors. As above, these
 // are not actually defined in efd.c but rather in  efd_setup.c.
 efd_object_format * efd_lookup_format(string const * const key);
 efd_unpack_function efd_lookup_unpacker(string const * const key);

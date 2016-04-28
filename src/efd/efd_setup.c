@@ -10,10 +10,12 @@
 #include "datatypes/dict_string_keys.h"
 #include "datatypes/string.h"
 
-/**************************
- * Conversion Definitions *
- **************************/
+/***********************
+ * Plug-in Definitions *
+ ***********************/
 
+#include "func.list"
+#include "gen.list"
 #include "conv.list"
 
 /***********
@@ -29,6 +31,16 @@ efd_function_declaration const EFD_FUNCTION_REGISTRY[] = {
   }
 };
 #undef EFD_REGISTER_FUNCTIONS
+
+#define EFD_REGISTER_GENERATORS
+efd_generator_declaration const EFD_GENERATOR_REGISTRY[] = {
+  #include "gen.list"
+  { // for the trailing comma
+    .key = NULL;
+    .constructor = NULL;
+  }
+};
+#undef EFD_REGISTER_GENERATORS
 
 #define EFD_REGISTER_FORMATS
 efd_object_format const EFD_FORMAT_REGISTRY[] = {
@@ -46,12 +58,16 @@ efd_object_format const EFD_FORMAT_REGISTRY[] = {
 size_t EFD_FUNCTION_REGISTRY_SIZE = (
   sizeof(EFD_FUNCTION_REGISTRY) / sizeof(efd_function_declaration)
 ) - 1; // -1 for the extra entry
+size_t EFD_GENERATOR_REGISTRY_SIZE = (
+  sizeof(EFD_GENERATOR_REGISTRY) / sizeof(efd_generator_declaration)
+) - 1; // -1 for the extra entry
 size_t EFD_FORMAT_REGISTRY_SIZE = (
   sizeof(EFD_FORMAT_REGISTRY) / sizeof(efd_object_format)
 ) - 1; // -1 for the extra entry
 
 
 dictionary *EFD_FUNCTION_DICT = NULL;
+dictionary *EFD_GENERATOR_DICT = NULL;
 dictionary *EFD_FORMAT_DICT = NULL;
 
 /*************
@@ -62,6 +78,7 @@ void setup_elf_forest_data(void) {
   size_t i;
   string *s;
   efd_function_declaration *fd;
+  efd_generator_declaration *gd;
   efd_object_format *of;
 
   EFD_ROOT = create_efd_node(EFD_NT_CONTAINER, EFD_ROOT_NAME);
@@ -70,13 +87,20 @@ void setup_elf_forest_data(void) {
   EFD_NUM_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
   EFD_STR_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
 
-  EFD_FUNCTION_DICT = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
-  EFD_FORMAT_DICT = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
+  EFD_FUNCTION_DICT = create_dictionary(EFD_FUNCTION_REGISTRY_SIZE);
+  EFD_GENERATOR_DICT = create_dictionary(EFD_GENERATOR_REGISTRY_SIZE);
+  EFD_FORMAT_DICT = create_dictionary(EFD_FORMAT_REGISTRY_SIZE);
 
   for (i = 0; i < EFD_FUNCTION_REGISTRY_SIZE; ++i) {
     fd = &(EFD_FUNCTION_REGISTRY[i]);
     s = create_string_from_ntchars(fd->key);
     d_add_value_s(EFD_FUNCTION_DICT, s, (void*) fd->function);
+  }
+
+  for (i = 0; i < EFD_GENERATOR_REGISTRY_SIZE; ++i) {
+    gd = &(EFD_GENERATOR_REGISTRY[i]);
+    s = create_string_from_ntchars(fd->key);
+    d_add_value_s(EFD_GENERATOR_DICT, s, (void*) gd->constructor);
   }
 
   for (i = 0; i < EFD_FORMAT_REGISTRY_SIZE; ++i) {
@@ -113,6 +137,21 @@ efd_eval_function efd_lookup_function(string const * const key) {
     fprintf(
       stderr,
       "ERROR: function '%.*s' not found.\n",
+      (int) s_get_length(key),
+      s_raw(key)
+    );
+    return NULL;
+  }
+  return result;
+}
+
+efd_generator_constructor efd_lookup_generator(string const * const key) {
+  efd_generator_constructor result;
+  result = (efd_generator_constructor) d_get_value_s(EFD_GENERATOR_DICT, key);
+  if (result == NULL) {
+    fprintf(
+      stderr,
+      "ERROR: constructor for generator '%.*s' not found.\n",
       (int) s_get_length(key),
       s_raw(key)
     );

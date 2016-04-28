@@ -57,7 +57,7 @@ void cleanup_chunk(chunk *c) {
 #ifdef DEBUG
   if (c->type != CA_TYPE_CHUNK) {
     fprintf(stderr, "Error: bad chunk in cleanup_chunk.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   layer ly;
@@ -101,7 +101,7 @@ void cleanup_chunk_approximation(chunk_approximation *ca) {
 #ifdef DEBUG
   if (ca->type != CA_TYPE_APPROXIMATION) {
     fprintf(stderr, "Error: bad approx in cleanup_chunk_approximation.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   layer ly;
@@ -195,7 +195,7 @@ size_t chunk_gpu_size(chunk *c) {
 size_t chunk_approx_data_size(chunk_approximation *ca) {
   if (ca->detail == LOD_BASE) {
     fprintf(stderr, "Error: found approx with base LOD.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   } else if (ca->detail == LOD_HALF) {
     return sizeof(approx_data_1);
   } else if (ca->detail == LOD_QUARTER) {
@@ -210,7 +210,7 @@ size_t chunk_approx_data_size(chunk_approximation *ca) {
       "Error: found approx with bad detail level: %d.\n",
       ca->detail
     );
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 }
 
@@ -312,7 +312,7 @@ void iter_ray(
 #ifdef DEBUG
     } else { // shouldn't be possible because of vmag2 test above
       fprintf(stderr, "Error: bad x/y/z-intercept ordering in iter_ray.\n");
-      exit(1);
+      exit(EXIT_FAILURE);
 #endif
     }
     // Add our step to our origin & rereference it to the next position:

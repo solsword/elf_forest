@@ -11,12 +11,15 @@
  ***********/
 
 extern efd_function_declaration EFD_FUNCTION_REGISTRY[];
+extern efd_function_declaration EFD_GENERATOR_REGISTRY[];
 extern efd_object_format EFD_FORMAT_REGISTRY[];
 
 extern size_t EFD_FUNCTION_REGISTRY_SIZE;
+extern size_t EFD_GENERATOR_REGISTRY_SIZE;
 extern size_t EFD_FORMAT_REGISTRY_SIZE;
 
 extern dictionary *EFD_FUNCTION_DICT;
+extern dictionary *EFD_GENERATOR_DICT;
 extern dictionary *EFD_FORMAT_DICT;
 
 /*************************
@@ -25,6 +28,7 @@ extern dictionary *EFD_FORMAT_DICT;
 
 #define EFD_REGISTER_DECLARATIONS
 #include "func.list"
+#include "gen.list"
 #include "conv.list"
 #undef EFD_REGISTER_DECLARATIONS
 

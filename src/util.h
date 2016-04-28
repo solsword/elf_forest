@@ -306,7 +306,7 @@ static inline char * load_file(char const * const filename, size_t *size) {
       "Error: unable to open file '%s'.\n",
       filename
     );
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   fseek (f, 0, SEEK_END);
   *size = ftell(f);
@@ -319,7 +319,7 @@ static inline char * load_file(char const * const filename, size_t *size) {
       filename
     );
     fclose(f);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   fread(buffer, 1, *size, f);
   fclose(f);

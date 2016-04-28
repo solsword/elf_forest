@@ -708,7 +708,7 @@ void fill_with_regions(
 #ifdef DEBUG
     if (chosen < 0) {
       printf("Error: failed to properly select a valid world region!\n");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 #endif
     wmpos.x = chosen % wm->width;

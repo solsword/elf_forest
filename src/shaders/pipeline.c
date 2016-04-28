@@ -65,13 +65,13 @@ static inline void show_program_log(GLuint object) {
  ***************************/
 
 void setup_shaders() {
-  if (report_opengl_error("Pre-shaders-setup error.\n")) { exit(1); }
+  if (report_opengl_error("Pre-shaders-setup error.\n")) { exit(EXIT_FAILURE); }
   setup_pipeline(&RAW_PIPELINE);
-  if (report_opengl_error("Raw pipeline error.\n")) { exit(1); }
+  if (report_opengl_error("Raw pipeline error.\n")) { exit(EXIT_FAILURE); }
   setup_pipeline(&CELL_PIPELINE);
-  if (report_opengl_error("Cell pipeline error.\n")) { exit(1); }
+  if (report_opengl_error("Cell pipeline error.\n")) { exit(EXIT_FAILURE); }
   setup_pipeline(&TEXT_PIPELINE);
-  if (report_opengl_error("Text pipeline error.\n")) { exit(1); }
+  if (report_opengl_error("Text pipeline error.\n")) { exit(EXIT_FAILURE); }
 }
 
 void cleanup_shaders() {
@@ -90,35 +90,35 @@ void setup_pipeline(pipeline *p) {
   p->frag = load_shader(GL_FRAGMENT_SHADER, p->ffile);
 
   p->program = glCreateProgram();
-  if (report_opengl_error("Program creation error.\n")) { exit(1); }
+  if (report_opengl_error("Program creation error.\n")) { exit(EXIT_FAILURE); }
 
   glAttachShader(p->program, p->vert);
-  if (report_opengl_error("Vertex shader attachment error.\n")) { exit(1); }
+  if (report_opengl_error("Vertex shader attachment error.\n")) { exit(EXIT_FAILURE); }
   if (p->geom) {
     glAttachShader(p->program, p->geom);
-    if (report_opengl_error("Geometry shader attachment error.\n")) { exit(1); }
+    if (report_opengl_error("Geometry shader attachment error.\n")) { exit(EXIT_FAILURE); }
   }
   glAttachShader(p->program, p->frag);
-  if (report_opengl_error("Fragment shader attachment error.\n")) { exit(1); }
+  if (report_opengl_error("Fragment shader attachment error.\n")) { exit(EXIT_FAILURE); }
 
   glLinkProgram(p->program);
-  if (report_opengl_error("Program linking error.\n")) { exit(1); }
+  if (report_opengl_error("Program linking error.\n")) { exit(EXIT_FAILURE); }
 
   check_program(p->program);
 
   // Bind the program as active in order to set up the texture uniform:
   glUseProgram(p->program);
-  if (report_opengl_error("Unable to use fresh program.\n")) { exit(1); }
+  if (report_opengl_error("Unable to use fresh program.\n")) { exit(EXIT_FAILURE); }
 
   // If the "texture" uniform exists, set it up to use texture unit 0.
   GLint txloc = glGetUniformLocation(p->program, "texture");
-  if (report_opengl_error("Texture location error.\n")) { exit(1); }
+  if (report_opengl_error("Texture location error.\n")) { exit(EXIT_FAILURE); }
   if (txloc != -1) {
     glUniform1i(txloc, 0);
-    if (report_opengl_error("Texture setup error.\n")) { exit(1); }
+    if (report_opengl_error("Texture setup error.\n")) { exit(EXIT_FAILURE); }
     // Set the OpenGL active texture to 0.
     glActiveTexture( GL_TEXTURE0 );
-    if (report_opengl_error("Texture activation error.\n")) { exit(1); }
+    if (report_opengl_error("Texture activation error.\n")) { exit(EXIT_FAILURE); }
   }
 }
 
@@ -135,7 +135,7 @@ void cleanup_pipeline(pipeline *p) {
 
 void use_pipeline(pipeline *p) {
   glUseProgram(p->program);
-  if (report_opengl_error("Unable to use program.\n")) { exit(1); }
+  if (report_opengl_error("Unable to use program.\n")) { exit(EXIT_FAILURE); }
 }
 
 GLuint load_shader(GLenum type, const char * const filename) {
@@ -145,20 +145,20 @@ GLuint load_shader(GLenum type, const char * const filename) {
   GLuint shader;
   GLint shader_ok = 0;
 
-  if (report_opengl_error("Pre-loading error.\n")) { exit(1); }
+  if (report_opengl_error("Pre-loading error.\n")) { exit(EXIT_FAILURE); }
   source = load_file(filename, &filesize);
   if (!source) {
     fprintf(stderr, "Error: could not find shader file '%s'!\n", filename);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   sourcesize = filesize;
   shader = glCreateShader(type);
-  if (report_opengl_error("Shader creation error.\n")) { exit(1); }
+  if (report_opengl_error("Shader creation error.\n")) { exit(EXIT_FAILURE); }
   glShaderSource(shader, 1, (GLchar const **) &source, &sourcesize);
-  if (report_opengl_error("Shader sourcing error.\n")) { exit(1); }
+  if (report_opengl_error("Shader sourcing error.\n")) { exit(EXIT_FAILURE); }
   free(source);
   glCompileShader(shader);
-  if (report_opengl_error("Shader compilation error.\n")) { exit(1); }
+  if (report_opengl_error("Shader compilation error.\n")) { exit(EXIT_FAILURE); }
   glGetShaderiv(shader, GL_COMPILE_STATUS, &shader_ok);
   if (shader_ok != GL_TRUE) {
     fprintf(stderr, "Failed to compile shader '%s':\n", filename);
@@ -166,7 +166,7 @@ GLuint load_shader(GLenum type, const char * const filename) {
       show_shader_log(shader);
     }
     glDeleteShader(shader);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   return shader;
 }
@@ -175,11 +175,11 @@ void check_program(GLuint program) {
   GLint program_ok;
 
   glGetProgramiv(program, GL_LINK_STATUS, &program_ok);
-  if (report_opengl_error("Link status reporting error.\n")) { exit(1); }
+  if (report_opengl_error("Link status reporting error.\n")) { exit(EXIT_FAILURE); }
   if (!program_ok) {
       fprintf(stderr, "Failed to link shader program:\n");
       show_program_log(program);
       glDeleteProgram(program);
-      exit(1);
+      exit(EXIT_FAILURE);
   }
 }

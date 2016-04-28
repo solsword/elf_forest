@@ -126,6 +126,7 @@ clean:
 	rm -rf $(OUT_DIR)
 	rm $(DATA_DIR)/auto_globals.efd
 	rm $(SRC_DIR)/efd/func.list
+	rm $(SRC_DIR)/efd/gen.list
 	rm $(SRC_DIR)/efd/conv.list
 
 game: $(BIN_DIR)/elf_forest efd_globals
@@ -146,7 +147,10 @@ checkgl: $(BIN_DIR)/checkgl
 
 efd_globals: $(DATA_DIR)/auto_globals.efd
 
-src_lists: $(SRC_DIR)/efd/func.list $(SRC_DIR)/efd/conv.list
+src_lists: \
+ $(SRC_DIR)/efd/func.list \
+ $(SRC_DIR)/efd/gen.list \
+ $(SRC_DIR)/efd/conv.list
 
 $(SRC_DIR)/efd/func.list: $(SRC_DIR) $(SRC_DIR)/efd/func/*
 	echo "// auto-generated functions list" > $(SRC_DIR)/efd/func.list
@@ -155,6 +159,14 @@ $(SRC_DIR)/efd/func.list: $(SRC_DIR) $(SRC_DIR)/efd/func/*
 		| sed "s/^/#include \"func\//" \
 		| sed "s/$$/\"/" \
 		>> $(SRC_DIR)/efd/func.list
+
+$(SRC_DIR)/efd/gen.list: $(SRC_DIR) $(SRC_DIR)/efd/gen/*
+	echo "// auto-generated generators list" > $(SRC_DIR)/efd/gen.list
+	echo "// vim:syntax=c" >> $(SRC_DIR)/efd/gen.list
+	ls $(SRC_DIR)/efd/gen \
+		| sed "s/^/#include \"gen\//" \
+		| sed "s/$$/\"/" \
+		>> $(SRC_DIR)/efd/gen.list
 
 $(SRC_DIR)/efd/conv.list: $(SRC_DIR) $(SRC_DIR)/efd/conv/*
 	echo "// auto-generated conversions list" > $(SRC_DIR)/efd/conv.list
@@ -191,15 +203,17 @@ $(SRC_DIR)/*.h: ;
 $(SRC_DIR)/*/*.h: ;
 
 $(OBJ_DIR)/obj.d: \
-$(SRC_DIR)/*.c \
-$(SRC_DIR)/*/*.c \
-$(SRC_DIR)/*.h \
-$(SRC_DIR)/*/*.h  \
-$(SRC_DIR)/efd/conv.list \
-$(SRC_DIR)/efd/func.list \
-$(OBJ_DIR)
-	$(CC) -MM $(INCLUDE_FLAGS) $(SRC_DIR)/*.c $(SRC_DIR)/*/*.c | sed "s/^\([^ ]\)/$(OBJ_DIR)\/\1/" >\
-		$(OBJ_DIR)/obj.d
+ $(SRC_DIR)/*.c \
+ $(SRC_DIR)/*/*.c \
+ $(SRC_DIR)/*.h \
+ $(SRC_DIR)/*/*.h  \
+ $(SRC_DIR)/efd/func.list \
+ $(SRC_DIR)/efd/gen.list \
+ $(SRC_DIR)/efd/conv.list \
+ $(OBJ_DIR)
+	$(CC) -MM $(INCLUDE_FLAGS) $(SRC_DIR)/*.c $(SRC_DIR)/*/*.c \
+		| sed "s/^\([^ ]\)/$(OBJ_DIR)\/\1/" \
+		> $(OBJ_DIR)/obj.d
 
 Makefile: ;
 

@@ -628,7 +628,7 @@ frequent_species pick_appropriate_frequent_species(
   }
 #ifdef DEBUG
   printf("Error: Ran out of appropriate species to pick from!\n");
-  exit(1);
+  exit(EXIT_FAILURE);
 #endif
   // Just arbitrarily return the first item (this shouldn't be reachable):
   return (frequent_species) l_get_item(sp_list, 0);

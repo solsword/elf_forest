@@ -807,7 +807,7 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
   // corrosion resistance
   switch (esp->solubility) {
     case SOLUBILITY_SOLUBLE:
-      esp->corrosion_resistance = randi(
+      esp->corrosion_resistance = randf(
         seed,
         MIN_SOLUBLE_CORROSION_RESISTANCE,
         MAX_SOLUBLE_CORROSION_RESISTANCE
@@ -816,7 +816,7 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
       break;
     default:
     case SOLUBILITY_SLIGHTLY_SOLUBLE:
-      esp->corrosion_resistance = randi(
+      esp->corrosion_resistance = randf(
         seed,
         MIN_SLIGHTLY_CORROSION_RESISTANCE,
         MAX_SLIGHTLY_CORROSION_RESISTANCE
@@ -824,7 +824,7 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
       seed = prng(seed);
       break;
     case SOLUBILITY_INSOLUBLE:
-      esp->corrosion_resistance = randi(
+      esp->corrosion_resistance = randf(
         seed,
         MIN_INSOLUBLE_CORROSION_RESISTANCE,
         MAX_INSOLUBLE_CORROSION_RESISTANCE
@@ -870,6 +870,7 @@ void fill_out_element(element_species *esp, ptrdiff_t seed) {
   seed = prng(seed);
   esp->metal_chroma = randf(seed, 0, 2*M_PI);
   seed = prng(seed);
+  // TODO: Metal oxide chroma!
   esp->metal_tint_chroma = randf(seed, 0, 2*M_PI);
   seed = prng(seed);
 

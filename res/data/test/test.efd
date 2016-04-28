@@ -356,18 +356,18 @@
     <<v ~ichoice@testscope>>
   ]]
   [[ff testiter:iterate
-    [[V iterate
+    [[V iter_vars
       <<v ~slist@*lstring>>
       <<v ~sarray@*astring>>
       [[gi *iter1:range (i 1) ]]
       [[gi *iter2:range (i 3) (i 8) (i 2) ]]
       [[gi *iter3:extend
         [[gi iter:range (i 1) (i 2) ]]
-        (i #i:EFD_GEN_EXTENSION_MODE_HOLD)
+        (i #i:EFD_GT_EXTEND_HOLD)
       ]]
       [[gi *iter4:extend
         [[gi iter:range (i 1) (i 2) ]]
-        (i #i:EFD_GEN_EXTENSION_MODE_RESTART)
+        (i #i:EFD_GT_EXTEND_RESTART)
       ]]
     ]]
     [[c values

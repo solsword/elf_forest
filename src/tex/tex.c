@@ -108,21 +108,21 @@ texture* load_texture_from_png(char const * const filename) {
   );
   if (png_ptr == NULL) {
     fprintf(stderr, "Failed to create PNG read struct.\n");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 
   png_infop info_ptr = png_create_info_struct(png_ptr);
   if (info_ptr == NULL) {
     png_destroy_read_struct(&png_ptr, (png_infopp)NULL, (png_infopp)NULL);
     fprintf(stderr, "Failed to create PNG info struct.\n");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 
   png_infop end_info = png_create_info_struct(png_ptr);
   if (end_info == NULL) {
     png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
     fprintf(stderr, "Failed to create PNG end info struct.\n");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 
   // Get ready to read data:
@@ -170,7 +170,7 @@ texture* load_texture_from_png(char const * const filename) {
       filename
     );
     png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   result->pixels = (pixel*) malloc(
@@ -218,7 +218,7 @@ void write_texture_to_ppm(texture *tx, char const * const filename) {
   fp = fopen(filename, "w");
   if (!fp) {
     fprintf(stderr, "Error: couldn't open destination file '%s'.\n", filename);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   fprintf(fp, "P3\n");
   fprintf(fp, "# texture ppm\n");
@@ -251,7 +251,7 @@ void write_texture_to_png(texture *tx, char const * const filename) {
   fp = fopen(filename, "wb");
   if (!fp) {
     fprintf(stderr, "Error: couldn't open destination file '%s'.\n", filename);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   png_ptr = png_create_write_struct(
     PNG_LIBPNG_VER_STRING,
@@ -259,13 +259,13 @@ void write_texture_to_png(texture *tx, char const * const filename) {
   );
   if (!png_ptr) {
     fprintf(stderr, "Error: couldn't create png write struct.\n");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
   info_ptr = png_create_info_struct(png_ptr);
   if (!info_ptr) {
     png_destroy_write_struct(&png_ptr, (png_infopp) NULL);
     fprintf(stderr, "Error: couldn't create png write struct.\n");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
   // Setup the IO process:
   png_init_io(png_ptr, fp);
@@ -356,7 +356,7 @@ void tx_paste_region(
       "Error: region overruns destination width: %zu + %zu > %d\n",
       dst_left, region_width, dst->width
     );
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   if (dst_top + region_height > dst->height) {
     fprintf(
@@ -364,7 +364,7 @@ void tx_paste_region(
       "Error: region overruns destination height: %zu + %zu > %d\n",
       dst_top, region_height, dst->height
     );
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   if (src_left + region_width > src->width) {
     fprintf(
@@ -372,7 +372,7 @@ void tx_paste_region(
       "Error: region exceeds source width: %zu + %zu > %d\n",
       src_left, region_width, src->width
     );
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   if (src_top + region_height > src->height) {
     fprintf(
@@ -380,7 +380,7 @@ void tx_paste_region(
       "Error: region exceeds source height: %zu + %zu > %d\n",
       src_top, region_height, src->height
     );
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   for (row = 0; row < region_height; ++row) {
@@ -409,19 +409,19 @@ void tx_draw_region(
   // Some bounds checking:
   if (dst_left + region_width > dst->width) {
     fprintf(stderr, "Error: region overruns destination width.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   if (dst_top + region_height > dst->height) {
     fprintf(stderr, "Error: region overruns destination height.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   if (src_left + region_width > src->width) {
     fprintf(stderr, "Error: region exceeds source width.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   if (src_top + region_height > src->height) {
     fprintf(stderr, "Error: region exceeds source height.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   for (row = 0; row < region_height; ++row) {

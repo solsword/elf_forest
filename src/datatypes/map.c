@@ -91,7 +91,7 @@ map *create_map(size_t key_arity, size_t table_size) {
   size_t i = 0;
   if (key_arity <= 0) {
     perror("Map key arity must be at least 1.");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   map * m = (map *) malloc(sizeof(map));
   if (m == NULL) {

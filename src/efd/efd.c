@@ -24,6 +24,8 @@ CSTR(EFD_ANON_NAME, "-", 1);
 CSTR(EFD_ROOT_NAME, "_", 1);
 
 char const * const EFD_NT_NAMES[] = {
+  "<invalid>",
+  "<any>",
   "container",
   "global_link",
   "local_link",
@@ -45,7 +47,6 @@ char const * const EFD_NT_NAMES[] = {
   "function_integer",
   "function_number",
   "function_string",
-  "function_array_object",
   "function_array_integer",
   "function_array_number",
   "function_array_string",
@@ -54,14 +55,14 @@ char const * const EFD_NT_NAMES[] = {
   "generator_integer",
   "generator_number",
   "generator_string",
-  "generator_array_object",
   "generator_array_integer",
   "generator_array_number",
-  "generator_array_string",
-  "<invalid>"
+  "generator_array_string"
 };
 
 char const * const EFD_NT_ABBRS[] = {
+  "!",
+  "*",
   "c",
   "L",
   "l",
@@ -83,7 +84,6 @@ char const * const EFD_NT_ABBRS[] = {
   "fi",
   "fn",
   "fs",
-  "fao",
   "fai",
   "fan",
   "fas",
@@ -92,11 +92,9 @@ char const * const EFD_NT_ABBRS[] = {
   "gi",
   "gn",
   "gs",
-  "gao",
   "gai",
   "gan",
-  "gas",
-  "!"
+  "gas"
 };
 
 efd_node *EFD_ROOT = NULL;
@@ -127,7 +125,6 @@ efd_node* create_efd_node(efd_node_type t, string const * const name) {
       break;
 
     case EFD_NT_FUNCTION:
-    case EFD_NT_FN_VOID:
     case EFD_NT_FN_OBJ:
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
@@ -136,7 +133,6 @@ efd_node* create_efd_node(efd_node_type t, string const * const name) {
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
     case EFD_NT_GENERATOR:
-    case EFD_NT_GN_VOID:
     case EFD_NT_GN_OBJ:
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
@@ -252,7 +248,6 @@ efd_node* copy_efd_node(efd_node const * const src) {
       break;
 
     case EFD_NT_FUNCTION:
-    case EFD_NT_FN_VOID:
     case EFD_NT_FN_OBJ:
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
@@ -261,7 +256,6 @@ efd_node* copy_efd_node(efd_node const * const src) {
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
     case EFD_NT_GENERATOR:
-    case EFD_NT_GN_VOID:
     case EFD_NT_GN_OBJ:
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
@@ -381,7 +375,6 @@ CLEANUP_IMPL(efd_node) {
       break;
 
     case EFD_NT_FUNCTION:
-    case EFD_NT_FN_VOID:
     case EFD_NT_FN_OBJ:
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
@@ -390,7 +383,6 @@ CLEANUP_IMPL(efd_node) {
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
     case EFD_NT_GENERATOR:
-    case EFD_NT_GN_VOID:
     case EFD_NT_GN_OBJ:
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
@@ -659,11 +651,16 @@ CLEANUP_IMPL(efd_generator_state) {
   cleanup_string(doomed->name);
   switch(doomed->type) {
     case EFD_GT_INVALID:
-    case EFD_GT_NODE_CHILDREN: // doesn't copy the parent node
-    case EFD_GT_ARRAY_NODE_INDICES: // doesn't copy the array node
-    case EFD_GT_FUNCTION:
-      // TODO: custom cleanup for generator functions?
+    case EFD_GT_CHILDREN: // doesn't copy the parent node
+    case EFD_GT_INDICES: // doesn't copy the array node
       // nothing to do
+      break;
+
+    case EFD_GT_FUNCTION:
+      // functions may use an efd_node as their stash if they want
+      if (doomed->stash != NULL) {
+        cleanup_v_efd_node(doomed->stash);
+      }
       break;
 
     case EFD_GT_EXTEND_RESTART:
@@ -737,7 +734,7 @@ int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to) {
 void efd_assert_type(efd_node const * const n, efd_node_type t) {
   if (n == NULL) {
     fprintf(stderr, "ERROR: Missing EFD node in efd_assert_type!\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #ifndef EFD_NO_TYPECHECKS
   if (n->h.type != t) {
@@ -766,7 +763,7 @@ void efd_assert_type(efd_node const * const n, efd_node_type t) {
       );
     }
     free(fqn);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif // EFD_NO_TYPECHECKS
 }
@@ -803,7 +800,7 @@ void efd_assert_return_type(efd_node const * const n, efd_node_type t) {
       );
     }
     free(fqn);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #else
   return;
@@ -881,7 +878,6 @@ dictionary* efd_children_dict(efd_node const * const n) {
     case EFD_NT_SCOPE:
       return n->b.as_container.children;
     case EFD_NT_FUNCTION:
-    case EFD_NT_FN_VOID:
     case EFD_NT_FN_OBJ:
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
@@ -890,7 +886,6 @@ dictionary* efd_children_dict(efd_node const * const n) {
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
     case EFD_NT_GENERATOR:
-    case EFD_NT_GN_VOID:
     case EFD_NT_GN_OBJ:
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
@@ -939,7 +934,6 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
       break;
 
     case EFD_NT_FUNCTION:
-    case EFD_NT_FN_VOID:
     case EFD_NT_FN_OBJ:
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
@@ -948,7 +942,6 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
     case EFD_NT_GENERATOR:
-    case EFD_NT_GN_VOID:
     case EFD_NT_GN_OBJ:
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
@@ -1088,7 +1081,7 @@ void efd_add_child(efd_node *n, efd_node *child) {
         n->h.type
       );
     }
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
   if (child->h.parent != NULL) {
     fqn = efd_build_fqn(n);
@@ -1132,7 +1125,7 @@ void efd_prepend_child(efd_node *n, efd_node *child) {
         n->h.type
       );
     }
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
   if (child->h.parent != NULL) {
     fqn = efd_build_fqn(n);
@@ -1176,7 +1169,7 @@ void efd_remove_child(efd_node *n, efd_node *child) {
         n->h.type
       );
     }
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 #endif
 #ifdef DEBUG
@@ -1217,7 +1210,7 @@ void efd_extend_address(efd_address *a, efd_address *e) {
       stderr,
       "ERROR: Tried to extend using an address that already had a parent!"
     );
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   e->parent = n;
@@ -1373,6 +1366,7 @@ intptr_t efd_normal_child_count(efd_node const * const node) {
   return result;
 }
 
+// TODO: Separate scopes to make this much more efficient?
 efd_node *efd_nth(efd_node const * const node, size_t index) {
   size_t i;
 #ifdef DEBUG
@@ -1517,7 +1511,7 @@ efd_node* efd_eval(
         (int) s_get_length(fqn),
         s_raw(fqn)
       );
-      exit(-1);
+      exit(EXIT_FAILURE);
 #endif // else fall through:
 
     default:
@@ -1530,7 +1524,7 @@ efd_node* efd_eval(
         s_raw(fqn),
         result->h.type
       );
-      exit(-1);
+      exit(EXIT_FAILURE);
 
     case EFD_NT_PROTO:
       fqn = efd_build_fqn(target);
@@ -1540,7 +1534,7 @@ efd_node* efd_eval(
         (int) s_get_length(fqn),
         s_raw(fqn)
       );
-      exit(-1);
+      exit(EXIT_FAILURE);
 
     case EFD_NT_CONTAINER:
     case EFD_NT_SCOPE:
@@ -1548,7 +1542,6 @@ efd_node* efd_eval(
       break;
 
     case EFD_NT_FUNCTION:
-    case EFD_NT_FN_VOID:
     case EFD_NT_FN_OBJ:
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
@@ -1557,7 +1550,6 @@ efd_node* efd_eval(
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
     case EFD_NT_GENERATOR:
-    case EFD_NT_GN_VOID:
     case EFD_NT_GN_OBJ:
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
@@ -1757,7 +1749,7 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
       );
       return NULL;
 
-    case EFD_GT_NODE_CHILDREN:
+    case EFD_GT_CHILDREN:
       node = (efd_node*) gen->state;
       if (gen->index < efd_normal_child_count(node)) {
         return copy_efd_node(efd_nth(node, gen->index++));
@@ -1765,7 +1757,7 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
         return NULL;
       } // all paths return
 
-    case EFD_GT_ARRAY_NODE_INDICES:
+    case EFD_GT_INDICES:
       node = (efd_node*) gen->state;
       switch (node->h.type) {
         default:
@@ -1850,11 +1842,10 @@ void efd_gen_reset(efd_generator_state *gen) {
       );
       break;
 
-    case EFD_GT_NODE_CHILDREN:
-    case EFD_GT_ARRAY_NODE_INDICES:
+    case EFD_GT_CHILDREN:
+    case EFD_GT_INDICES:
     case EFD_GT_FUNCTION:
       // nothing to do
-      // TODO: Allow functions to have custom reset behavior for better stashes?
       break;
 
     case EFD_GT_EXTEND_RESTART:
@@ -1884,32 +1875,35 @@ efd_node * efd_gen_all(efd_generator_state *gen) {
 }
 
 efd_generator_state * efd_generator_for(efd_node *node) {
-  efd_generator_type type;
-  void *state;
-
   switch (node->h.type) {
     default:
     case EFD_NT_INVALID:
       return NULL;
 
     case EFD_NT_CONTAINER:
-      type = EFD_GT_NODE_CHILDREN;
-      state = (void*) node;
-      break;
+      return create_efd_generator_state(
+        EFD_GT_CHILDREN,
+        node->h.name,
+        (void*) node
+      );
 
     case EFD_NT_ARRAY_INT:
     case EFD_NT_ARRAY_NUM:
     case EFD_NT_ARRAY_STR:
-      type = EFD_GT_ARRAY_NODE_INDICES;
-      state = (void*) node;
-      break;
+      return create_efd_generator_state(
+        EFD_GT_INDICES,
+        node->h.name,
+        (void*) node
+      );
 
     case EFD_NT_GENERATOR:
-      // TODO: HERE
+    case EFD_NT_GN_OBJ:
+    case EFD_NT_GN_INT:
+    case EFD_NT_GN_NUM:
+    case EFD_NT_GN_STR:
+    case EFD_NT_GN_AR_INT:
+    case EFD_NT_GN_AR_NUM:
+    case EFD_NT_GN_AR_STR:
+      return efd_lookup_generator(node->b.as_function.function)(node);
   }
-  return create_efd_generator_state(
-    type,
-    node->h.name,
-    state
-  );
 }

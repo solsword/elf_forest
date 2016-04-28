@@ -461,7 +461,7 @@ void render_area(
             );
             fprintf(stderr, "Chunk: %zu\n", which_chunk);
             fprintf(stderr, "Max: %d\n", MAX_VIEWABLE_CHUNKS);
-            exit(1);
+            exit(EXIT_FAILURE);
           }
         }
 #ifdef PROFILE_TIME

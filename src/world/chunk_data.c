@@ -53,7 +53,7 @@ block compute_cell_exposure(
     step = 1 << (((chunk_approximation*) (coa->ptr))->detail);
   } else {
     fprintf(stderr, "Attempted to compute exposure of unloaded cell.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   // Get main block and neighbors:

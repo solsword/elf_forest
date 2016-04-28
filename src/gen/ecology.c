@@ -1686,7 +1686,7 @@ int _fill_biome_from_table(world_region *wr, void *v_table, ptrdiff_t seed) {
 #ifdef DEBUG
   if (bc == (biome_category) NULL) {
     printf("Error: no valid biomes for region during biome placement!\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
 
@@ -1826,7 +1826,7 @@ void init_any_biome(biome *b, world_region *wr) {
       printf(
         "Error: Attempt to initialize a biome with an unknown category!\n"
       );
-      exit(1);
+      exit(EXIT_FAILURE);
 #endif
       break;
     case WM_BC_DEEP_AQ:

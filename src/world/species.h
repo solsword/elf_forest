@@ -39,7 +39,7 @@ _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
         "exists.", \
         s \
       ); \
-      exit(-1); \
+      exit(EXIT_FAILURE); \
     } \
   } \
   \
@@ -58,7 +58,7 @@ _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
         s, \
         m_get_count(SP_CAPS ## _SPECIES) \
       ); \
-      exit(-1); \
+      exit(EXIT_FAILURE); \
     } \
     return result; \
   } \

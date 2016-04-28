@@ -265,7 +265,7 @@ void mark_for_compilation(chunk_or_approx *coa) {
     enqueue_chunk_approximation(COMPILE_QUEUES, ca);
   } else {
     fprintf(stderr, "Can't mark an unloaded chunk for compilation.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 }
 

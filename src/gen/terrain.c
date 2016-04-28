@@ -215,7 +215,7 @@ uint8_t run_particle(
 #ifdef DEBUG
       } else {
         fprintf(stderr, "Bad direction!");
-        exit(1);
+        exit(EXIT_FAILURE);
 #endif
       }
       if (nx < 0 || nx > hm->width - 1 || ny < 0 || ny > hm->height - 1) {
@@ -495,7 +495,7 @@ void compute_terrain_height(
 #ifdef DEBUG
   if (divisor == 0) {
     fprintf(stderr, "Sum of interpolation values is zero!\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   // TODO: Should the divisor be a manifold?
@@ -577,11 +577,11 @@ void compute_terrain_height(
 #ifdef DEBUG
   if (isnan(rocks_height.z)||isnan(rocks_height.dx)||isnan(rocks_height.dy)) {
     printf("nan final rocks_height\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   if (isnan(dirt_height.z) || isnan(dirt_height.dx) || isnan(dirt_height.dy)) {
     printf("nan final dirt_height\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
 

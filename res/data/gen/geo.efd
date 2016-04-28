@@ -406,10 +406,10 @@
         ]]
       ]]
       [[ff ~el_chroma:iterate
-        // TODO: Better here
-        [[V iterate
+        // TODO: Better color mixing here
+        [[V iter_vars
           <<v ~constitutents@*constituent>>
-          [[gi *iter:G_RANGE (i 1) ]]
+          [[gi *iter:range (i 1) ]]
         ]]
         [[fo element:get_element_species <<v *constituent>> ]]
         [[fn weight:weight
@@ -448,7 +448,7 @@
           <<l ^.weight>>
           [[fn cosine:cosine
             [[fn chroma:get_el_attr
-              <<l ^.^.element>>
+              <<l ^.^.^.element>>
               [[i attr #i:EL_P_ST_TND_CHROMA]]
             ]]
           ]]
@@ -457,7 +457,7 @@
           <<l ^.weight>>
           [[fn sine:sine
             [[fn chroma:get_el_attr
-              <<l ^.^.element>>
+              <<l ^.^.^.element>>
               [[i attr #i:EL_P_ST_TND_CHROMA]]
             ]]
           ]]
@@ -650,76 +650,37 @@
           <<v %EXPAND_TRACES>>
           [[V args <<v ~trace_composition@~traces>> ]]
         ]]
-        [[o ~used:list]]
       ]]
       [[fo first_element:pick_element
         <<v ~world_map>>
         [[fi cat:index <<v ~categories>> (i 0) ]]
-        <<v ~used>>
+        [[c used /* empty */ ]]
         [[fi rng:brng <<v ~hash>> (i 2) ]]
-      ]]
-      [[fv check:if_non_null
-        <<l ^.first_element>>
-        [[fv append:l_append
-          <<v ~used>>
-          <<l ^.^.first_element>>
-        ]]
       ]]
       [[fo second_element:pick_element
         <<v ~world_map>>
         [[fi cat:index <<v ~categories>> (i 1) ]]
-        <<l ^.used>>
+        [[c used <<l ^.^.first_element>> ]]
         [[fi rng:brng <<v ~hash>> (i 3) ]]
-      ]]
-      [[fv check:if_non_null
-        <<l ^.second_element>>
-        [[fv append:l_append
-          <<v ~used>>
-          <<l ^.^.second_element>>
-        ]]
       ]]
       [[fo third_element:pick_element
         <<v ~world_map>>
         [[fi cat:index <<v ~categories>> (i 2) ]]
-        <<v ~used>>
+        [[c used <<l ^.^.first_element>> <<l ^.^.second_element>> ]]
         [[fi rng:brng <<v ~hash>> (i 4) ]]
       ]]
-      /* Don't need used after this.
-      [[fv check:if_non_null
-        <<l ^.third_element>>
-        [[fv append:l_append
-          <<v ~used>>
-          <<l ^.^.third_element>>
-        ]]
-      ]] */
-      [[fv clear_used:clear_list <<v ~used>>]]
       [[fo first_trace:pick_element
         <<v ~world_map>>
         [[fi cat:index <<v ~trace_categories>> (i 0) ]]
-        <<v ~used>>
+        [[c used /* empty */ ]]
         [[fi rng:brng <<v ~hash>> (i 5) ]]
-      ]]
-      [[fv check:if_non_null
-        <<l ^.first_trace>>
-        [[fv append:l_append
-          <<v ~used>>
-          <<l ^.^.first_trace>>
-        ]]
       ]]
       [[fo second_trace:pick_element
         <<v ~world_map>>
         [[fi cat:index <<v ~trace_categories>> [[i idx 1]] ]]
-        <<v ~used>>
+        [[c used <<l ^.^.first_trace>> ]]
         [[fi rng:brng <<v ~hash>> (i 6) ]]
       ]]
-      /* Don't need used after this.
-      [[fv check:if_non_null
-        <<l ^.second_trace>>
-        [[fv append:l_append
-          <<v ~used>>
-          <<l ^.^.second_trace>>
-        ]]
-      ]] */
       // Summary arrays:
       [[c constituents
         [[fi get_species:get_el_species <<l ^.first_element>> ]]

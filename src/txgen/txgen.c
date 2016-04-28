@@ -66,7 +66,7 @@ static inline tx_grammar_literal* choose_child(
     stderr,
     "Reached unthinkable state: non-terminated disjunction list.\n"
   );
-  exit(-1);
+  exit(EXIT_FAILURE);
 #else
   return NULL;
 #endif
@@ -390,7 +390,7 @@ void run_grammar(tx_grammar_literal *lit) {
         "Error: grammar with NULL filename must have nonzero anchor values.\n"
       );
       fprintf(stderr, "(found: %zu, %zu)\n", lit->anchor_x, lit->anchor_y);
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     lit->result = create_texture(lit->anchor_x, lit->anchor_y);
   } else {

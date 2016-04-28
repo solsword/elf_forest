@@ -59,7 +59,7 @@ void setup_persist(char const * const world_directory) {
   PS_WORLD_DIRECTORY = create_string_from_ntchars(world_directory);
   if (s_contains_nul(PS_WORLD_DIRECTORY)) {
     perror("World directory string contains NUL!");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 
   rdir = create_string_from_ntchars(RAW_BLOCKS_DIRECTORY);
@@ -113,7 +113,7 @@ string* block_filename(ps_block_pos* pos) {
 #ifdef DEBUG
   if (PS_BLOCK_DIR_PREFIX == NULL) {
     fprintf(stderr, "ERROR: setup_persist wasn't called!\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   result = s_concat(PS_BLOCK_DIR_PREFIX, s);

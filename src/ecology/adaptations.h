@@ -87,7 +87,7 @@ static inline int includes_adaptation(adaptation_list *list, adaptation_id aid){
 #ifdef DEBUG
   if ((aid / sizeof(adpt_lentry)) >= ADAPTATION_LIST_SIZE) {
     printf("Error: Adaptation ID %d is too large!\n", aid);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   return (
@@ -100,7 +100,7 @@ static inline void set_adaptation(adaptation_list *list, adaptation_id aid){
 #ifdef DEBUG
   if ((aid / sizeof(adpt_lentry)) >= ADAPTATION_LIST_SIZE) {
     printf("Error: Adaptation ID %d is too large!\n", aid);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   list->entries[aid / sizeof(adpt_lentry)] |= 1 << (aid % sizeof(adpt_lentry));
@@ -110,7 +110,7 @@ static inline void clear_adaptation(adaptation_list *list, adaptation_id aid){
 #ifdef DEBUG
   if ((aid / sizeof(adpt_lentry)) >= ADAPTATION_LIST_SIZE) {
     printf("Error: Adaptation ID %d is too large!\n", aid);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   list->entries[aid / sizeof(adpt_lentry)] &= ~(1<<(aid % sizeof(adpt_lentry)));

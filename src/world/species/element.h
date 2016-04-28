@@ -11,34 +11,34 @@
  *********/
 
 enum element_property_e {
-  EL_P_CATEGORIES,
-  EL_P_FREQUENCY,
-  EL_P_PH_TENDENCY,
-  EL_P_SOLUBILITY,
-  EL_P_CORR_RES,
+  EL_PRP_I_CATEGORIES,
+  EL_PRP_I_FREQUENCY,
+  EL_PRP_F_PH_TENDENCY,
+  EL_PRP_I_SOLUBILITY,
+  EL_PRP_F_CORROSION_RESISTANCE,
 
-  EL_P_ST_TND_DENSITY,
-  EL_P_ST_TND_SP_HEAT,
-  EL_P_ST_TND_TR_TEMP,
-  EL_P_ST_TND_PLASTICITY,
-  EL_P_ST_TND_HARDNESS,
-  EL_P_ST_TND_BRIGHTNESS,
-  EL_P_ST_TND_CHROMA,
-  EL_P_ST_TND_OX_CHROMA,
-  EL_P_ST_TND_TN_CHROMA,
+  EL_PRP_F_STONE_TND_DENSITY,
+  EL_PRP_F_STONE_TND_SP_HEAT,
+  EL_PRP_F_STONE_TND_TR_TEMP,
+  EL_PRP_F_STONE_TND_PLASTICITY,
+  EL_PRP_F_STONE_TND_HARDNESS,
+  EL_PRP_F_STONE_TND_BRIGHTNESS,
+  EL_PRP_F_STONE_TND_CHROMA,
+  EL_PRP_F_STONE_TND_OX_CHROMA,
+  EL_PRP_F_STONE_TND_TN_CHROMA,
 
-  EL_P_ML_TND_LUSTER,
-  EL_P_ML_TND_HARDNESS,
-  EL_P_ML_TND_PLASTICITY,
-  EL_P_ML_TND_BRIGHTNESS,
-  EL_P_ML_TND_CHROMA,
-  EL_P_ML_TND_OX_CHROMA,
-  EL_P_ML_TND_TN_CHROMA,
+  EL_PRP_F_METAL_TND_LUSTER,
+  EL_PRP_F_METAL_TND_HARDNESS,
+  EL_PRP_F_METAL_TND_PLASTICITY,
+  EL_PRP_F_METAL_TND_BRIGHTNESS,
+  EL_PRP_F_METAL_TND_CHROMA,
+  EL_PRP_F_METAL_TND_OX_CHROMA,
+  EL_PRP_F_METAL_TND_TN_CHROMA,
 
-  EL_P_ALLOY_PERFORMANCE,
+  EL_PRP_F_ALLOY_PERFORMANCE,
 
-  EL_P_PlANT_NUTRITION,
-  EL_P_ANIMAL_NUTRITION,
+  EL_PRP_I_PlANT_NUTRITION,
+  EL_PRP_I_ANIMAL_NUTRITION,
 };
 typedef enum element_property_e element_property;
 
@@ -73,7 +73,7 @@ typedef enum nutrient_category_e nutrient_category;
  *********/
 
 // Each element is a member of one or more categories:
-typedef uint8_t element_categorization;
+typedef int element_categorization;
 
 #define EL_CATEGORY_NONE   0x00
 #define EL_CATEGORY_AIR    0x01
@@ -109,7 +109,7 @@ struct element_species_s {
 
   pH pH_tendency; // acidic/basic tendency; neutral = 7.0
   solubility solubility; // solubility of derived substances in water
-  uint8_t corrosion_resistance; // tendency for metals to resist corrosion
+  float corrosion_resistance; // tendency for metals to resist corrosion
 
   // Tendencies when forming stone:
   float stone_density_tendency;
@@ -128,6 +128,7 @@ struct element_species_s {
   float metal_plasticity_tendency;
   float metal_brightness_tendency;
   float metal_chroma;
+  float metal_oxide_chroma;
   float metal_tint_chroma;
   float alloy_performance; // -1 to 1: tendency to synergize in alloys
 
@@ -198,6 +199,74 @@ static inline size_t el_is_member_of_any(
   element_categorization categories
 ) {
   return (sp->categories & categories) != 0;
+}
+
+static inline int el_int_property(
+  element_species *sp,
+  element_property property
+) {
+  switch (
+}
+
+static inline float el_float_property(
+  element_species *sp,
+  element_property property
+) {
+  switch (property) {
+    default:
+    case EL_PRP_I_CATEGORIES:
+    case EL_PRP_I_FREQUENCY:
+    case EL_PRP_I_SOLUBILITY:
+    case EL_PRP_I_PlANT_NUTRITION:
+    case EL_PRP_I_ANIMAL_NUTRITION:
+      fprintf(
+        stderr,
+        "ERROR: Attempt to access integer property %d via el_float_property.\n",
+        property
+      );
+      exit(EXIT_FAILURE);
+
+    case EL_PRP_F_PH_TENDENCY:
+      return sp->pH_tendency;
+    case EL_PRP_F_CORROSION_RESISTANCE:
+      return sp->corrosion_resistance
+    case EL_PRP_F_STONE_TND_DENSITY:
+      return sp->stone_density_tendency;
+    case EL_PRP_F_STONE_TND_SP_HEAT:
+      return sp->stone_specific_heat_tendency;
+    case EL_PRP_F_STONE_TND_TR_TEMP:
+      return sp->stone_transition_temp_tendency;
+    case EL_PRP_F_STONE_TND_PLASTICITY:
+      return sp->stone_plasticity_tendency;
+    case EL_PRP_F_STONE_TND_HARDNESS:
+      return sp->stone_hardness_tendency;
+    case EL_PRP_F_STONE_TND_BRIGHTNESS:
+      return sp->stone_brightness_tendency
+    case EL_PRP_F_STONE_TND_CHROMA:
+      return sp->stone_chroma;
+    case EL_PRP_F_STONE_TND_OX_CHROMA:
+      return sp->stone_oxide_chroma;
+    case EL_PRP_F_STONE_TND_TN_CHROMA:
+      return sp->stone_tint_chroma;
+
+    case EL_PRP_F_METAL_TND_LUSTER:
+      return sp->metal_luster_tendency;
+    case EL_PRP_F_METAL_TND_HARDNESS:
+      return sp->metal_hardness_tendency;
+    case EL_PRP_F_METAL_TND_PLASTICITY:
+      return sp->metal_plasticity_tendency;
+    case EL_PRP_F_METAL_TND_BRIGHTNESS:
+      return sp->metal_brightness_tendency;
+    case EL_PRP_F_METAL_TND_CHROMA:
+      return sp->metal_chroma;
+    case EL_PRP_F_METAL_TND_OX_CHROMA:
+      return sp->metal_oxide_chroma;
+    case EL_PRP_F_METAL_TND_TN_CHROMA:
+      return sp->metal_tint_chroma;
+
+    case EL_PRP_F_ALLOY_PERFORMANCE:
+      return sp->alloy_performance;
+  }
 }
 
 #endif // #ifndef ELEMENT_SPECIES_H

@@ -289,7 +289,7 @@ void compute_manifold(world_map *wm) {
         isnan(wr->topography.terrain_height.dy)
       ) {
         printf("ERROR!\n");
-        exit(1);
+        exit(EXIT_FAILURE);
       }
 #endif
     }

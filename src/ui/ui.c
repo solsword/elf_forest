@@ -485,7 +485,7 @@ void setup_ui(void) {
   FONT = ftglCreateTextureFont(FONT_FILE);
   if (!FONT) {
     fprintf(stderr, "Failed to load font '%s'.\n", FONT_FILE);
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
   ftglSetFontFaceSize(FONT, FONT_RESOLUTION, FONT_RESOLUTION);
 }

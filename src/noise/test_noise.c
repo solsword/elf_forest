@@ -402,7 +402,7 @@ void write_noise_ppm(
   fp = fopen(filename, "w");
   if (!fp) {
     fprintf(stderr, "Error: couldn't open destination file '%s'.\n", filename);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   fprintf(fp, "P3\n");
   fprintf(fp, "# noise test ppm\n");
@@ -515,7 +515,7 @@ void write_grad_ppm(
   fp = fopen(filename, "w");
   if (!fp) {
     fprintf(stderr, "Error: couldn't open destination file '%s'.\n", filename);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   fprintf(fp, "P3\n");
   fprintf(fp, "# noise test ppm\n");

@@ -18,7 +18,7 @@ enum efd_parse_error_e {
   EFD_PE_MISSING,
   EFD_PE_UNKNOWN,
   EFD_PE_MALFORMED,
-  EFD_PE_INCOMPLETE
+  EFD_PE_INCOMPLETE,
 };
 typedef enum efd_parse_error_e efd_parse_error;
 
@@ -49,7 +49,7 @@ typedef enum efd_float_state_e efd_float_state;
 enum efd_quote_state_e {
   EFD_QUOTE_STATE_NORMAL,
   EFD_QUOTE_STATE_MAYBE_DONE,
-  EFD_QUOTE_STATE_DONE
+  EFD_QUOTE_STATE_DONE,
 };
 typedef enum efd_quote_state_e efd_quote_state;
 
@@ -60,7 +60,7 @@ enum efd_skip_state_e {
   EFD_SKIP_STATE_LINE_COMMENT,
   EFD_SKIP_STATE_BLOCK_COMMENT,
   EFD_SKIP_STATE_MAYBE_BLOCK_END,
-  EFD_SKIP_STATE_DONE
+  EFD_SKIP_STATE_DONE,
 };
 typedef enum efd_skip_state_e efd_skip_state;
 

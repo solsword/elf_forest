@@ -674,7 +674,7 @@ void generate_soil(world_map *wm) {
 #ifdef DEBUG
     if (wr == NULL) {
       fprintf(stderr, "ERROR: soil selection selected region not in map!\n");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
 #endif
     create_appropriate_soil(wr);
@@ -1239,13 +1239,13 @@ rngtable* pick_alt_dirt_table(world_region *wr, ptrdiff_t seed) {
 #ifdef DEBUG
   } else { // shouldn't be possible
     printf("ERROR: impossible else case in pick_alt_dirt_table!");
-    exit(1);
+    exit(EXIT_FAILURE);
 #endif
   }
 #ifdef DEBUG
   // shouldn't be possible
   printf("ERROR: fell out of if/else in pick_alt_dirt_table!");
-  exit(1);
+  exit(EXIT_FAILURE);
 #else
   // last-resort default
   return &LOAMY_DIRT_ALTS;
@@ -1766,7 +1766,7 @@ void fill_dirt_species(
               "ERROR: element %d in all_nutrients list is not a nutrient!\n",
               esp->id
             );
-            exit(1);
+            exit(EXIT_FAILURE);
 #endif
             break;
         }
@@ -1994,7 +1994,7 @@ void fill_dirt_variant(
                 "ERROR: element %d in all_nutrients list is not a nutrient!\n",
                 esp->id
               );
-              exit(1);
+              exit(EXIT_FAILURE);
 #endif
               break;
           }

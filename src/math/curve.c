@@ -25,7 +25,7 @@ void curve_foreach(curve *c, float spacing, void (*f)(float, vector*,vector*)) {
     printf(
       "Error: can't iterate over a curve with zero or negative spacing.\n"
     );
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   for (t = 0; t <= 1.0; t += inc) {
@@ -51,7 +51,7 @@ void curve_witheach(
       stderr,
       "Error: can't iterate over a curve with zero or negative spacing.\n"
     );
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   // compute our increment

@@ -39,7 +39,7 @@ static inline size_t bm_get_bit(bitmap *bm, size_t index) {
 #ifdef DEBUG_CHECK_BITMAP_ACCESS
   if (index >= bm->size) {
     fprintf(stderr, "Error: out-of-range bitmap access in bm_get_bit.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   return (bm->data[index / BITMAP_ROW_WIDTH] >> (index % BITMAP_ROW_WIDTH)) & 1;
@@ -50,7 +50,7 @@ static inline void bm_set_bit(bitmap *bm, size_t index) {
 #ifdef DEBUG_CHECK_BITMAP_ACCESS
   if (index >= bm->size) {
     fprintf(stderr, "Error: out-of-range bitmap access in bm_set_bit.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   bm->data[index / BITMAP_ROW_WIDTH] |= 1 << (index % BITMAP_ROW_WIDTH);
@@ -61,7 +61,7 @@ static inline void bm_clear_bit(bitmap *bm, size_t index) {
 #ifdef DEBUG_CHECK_BITMAP_ACCESS
   if (index >= bm->size) {
     fprintf(stderr, "Error: out-of-range bitmap access in bm_clear_bit.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 #endif
   bm->data[index / BITMAP_ROW_WIDTH] &= ~(1 << (index % BITMAP_ROW_WIDTH));

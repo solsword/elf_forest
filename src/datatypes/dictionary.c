@@ -65,7 +65,7 @@ static inline dictionary_hash_t dict_hash(d_key_t *data, size_t size) {
 #ifdef DEBUG
   if (size < 1) {
     fprintf(stderr, "Error: Dictionary key of size 0.\n");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 #endif
   dictionary_hash_t result = 0;
@@ -91,7 +91,7 @@ static inline int dict_is_match(
 #ifdef DEBUG
   if (key_size < 1) {
     fprintf(stderr, "Error: Dictionary key of size 0.\n");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 #endif
   if (key_size != e->key_size) {
@@ -427,14 +427,14 @@ void * d_remove_value(dictionary *d, void* target) {
 #ifdef DEBUG
   if (bucket == NULL) { // shouldn't be possible
     fprintf(stderr, "Error: Entry in ordered list has no bucket!\n");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 #endif
   e = l_remove_element(bucket, e);
 #ifdef DEBUG
   if (e == NULL) { // shouldn't be possible
     fprintf(stderr, "Error: Entry in ordered list was missing from bucket!\n");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 #endif
 

@@ -169,7 +169,6 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
       efd_parse_link(result, s, cr);
       break;
     case EFD_NT_FUNCTION:
-    case EFD_NT_FN_VOID:
     case EFD_NT_FN_OBJ:
     case EFD_NT_FN_INT:
     case EFD_NT_FN_NUM:
@@ -178,7 +177,6 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
     case EFD_NT_FN_AR_NUM:
     case EFD_NT_FN_AR_STR:
     case EFD_NT_GENERATOR:
-    case EFD_NT_GN_VOID:
     case EFD_NT_GN_OBJ:
     case EFD_NT_GN_INT:
     case EFD_NT_GN_NUM:
@@ -248,7 +246,7 @@ void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
       stderr,
       "ERROR: Attempt to parse children for non-container node.\n"
     );
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 
   // parse any number of children and add them:
@@ -396,7 +394,7 @@ void efd_parse_int_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
       stderr,
       "ERROR: EFD integer array already had values while parsing!\n"
     );
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 #endif
   result->b.as_int_array.values = (efd_int_t*) malloc(
@@ -448,7 +446,7 @@ void efd_parse_num_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
       stderr,
       "ERROR: EFD number array already had values while parsing!\n"
     );
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 #endif
   result->b.as_num_array.values = (efd_num_t*) malloc(
@@ -502,7 +500,7 @@ void efd_parse_str_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
       stderr,
       "ERROR: EFD string array already had values while parsing!\n"
     );
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 #endif
   result->b.as_str_array.values = (string**) malloc(
@@ -891,9 +889,6 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
         case 'f':
           s->pos += 1;
           return EFD_NT_FUNCTION;
-        case 'v':
-          s->pos += 1;
-          return EFD_NT_FN_VOID;
         case 'o':
           s->pos += 1;
           return EFD_NT_FN_OBJ;
@@ -950,9 +945,6 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
         case 'g':
           s->pos += 1;
           return EFD_NT_GENERATOR;
-        case 'v':
-          s->pos += 1;
-          return EFD_NT_GN_VOID;
         case 'o':
           s->pos += 1;
           return EFD_NT_GN_OBJ;
@@ -2011,6 +2003,6 @@ void efd_print_parse_error(efd_parse_state *s) {
 void efd_throw_parse_error(efd_parse_state *s) {
   if (s->error != EFD_PE_NO_ERROR) {
     efd_print_parse_error(s);
-    exit(-s->error);
+    exit(s->error);
   }
 }

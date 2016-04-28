@@ -156,7 +156,7 @@ void render(GLFWwindow *window) {
 
 void init_context(int* argc, char** argv) {
   if (!glfwInit()) {
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 }
 
@@ -232,7 +232,7 @@ void prepare(
   WINDOW = glfwCreateWindow( w, h, name, NULL, NULL );
   if (!WINDOW) {
     glfwTerminate();
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
   glfwGetWindowSize(WINDOW, &WINDOW_WIDTH, &WINDOW_HEIGHT);
   glfwMakeContextCurrent(WINDOW);
@@ -242,7 +242,7 @@ void prepare(
   if (err != GLEW_OK) {
     printf("Failed to initialize GLEW:\n");
     printf("  %s\n", glewGetErrorString(err));
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 
   // Settings
