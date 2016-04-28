@@ -1281,7 +1281,7 @@ efd_num_t efd_parse_float(efd_parse_state *s) {
   efd_num_t expsign;
   efd_num_t exponent;
   efd_num_t digit;
-  ptrdiff_t count;
+  intptr_t count;
   efd_float_state state;
   char c;
 
@@ -1621,7 +1621,7 @@ char * efd_purify_string(
 efd_reference* construct_efd_reference_to_here(efd_parse_state* s) {
   efd_ref_type type = efd_nt__rt(s->current_node->h.type);
   efd_address *addr = construct_efd_address_of_node(s->current_node);
-  ptrdiff_t idx = s->current_index;
+  intptr_t idx = s->current_index;
   return create_efd_reference(type, addr, idx);
 }
 
@@ -1879,8 +1879,8 @@ void efd_print_parse_error(efd_parse_state *s) {
   char after[EFD_PARSER_ERROR_LINE+1];
   char above[EFD_PARSER_ERROR_LINE+1];
   char below[EFD_PARSER_ERROR_LINE+1];
-  ptrdiff_t offset;
-  ptrdiff_t sursize;
+  int offset;
+  int sursize;
   if (s->error != EFD_PE_NO_ERROR) {
     // figure out our surroundings:
     memset(before, ' ', EFD_PARSER_ERROR_LINE / 2);

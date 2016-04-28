@@ -95,12 +95,36 @@ enum efd_path_element_type_e {
 typedef enum efd_path_element_type_e efd_path_element_type;
 */
 
+enum efd_generator_type_e {
+  EFD_GT_INVALID = 0,
+  EFD_GT_NODE_CHILDREN, // iterate over non-SCOPE children of an EFD node
+  EFD_GT_ARRAY_NODE_INDICES, // iterate through entries in an array node
+  EFD_GT_FUNCTION, // call a generator function
+  EFD_GT_EXTEND_RESTART, // extend another generator by restarting it
+  EFD_GT_EXTEND_HOLD, // extend another generator by repeating the final value
+  EFD_GT_PARALLEL // generate SCOPE nodes containing parallel results
+};
+typedef enum efd_generator_type_e efd_generator_type;
+
 /*********
  * Types *
  *********/
 
 typedef intptr_t efd_int_t;
 typedef float efd_num_t;
+
+/******************
+ * Function types *
+ ******************/
+
+typedef void* (*efd_unpack_function)(efd_node *);
+typedef efd_node* (*efd_pack_function)(void *);
+typedef void* (*efd_copy_function)(void *);
+typedef void (*efd_destroy_function)(void *);
+
+typedef efd_node* (*efd_eval_function)(efd_node const * const);
+
+typedef efd_node* (*efd_generator_function)(efd_generator_state *state);
 
 /**************
  * Structures *
@@ -186,16 +210,10 @@ typedef struct efd_object_format_s efd_object_format;
 struct efd_function_declaration_s;
 typdef struct efd_function_declaration_s efd_function_declaration;
 
-/******************
- * Function types *
- ******************/
-
-typedef void* (*efd_unpack_function)(efd_node *);
-typedef efd_node* (*efd_pack_function)(void *);
-typedef void* (*efd_copy_function)(void *);
-typedef void (*efd_destroy_function)(void *);
-
-typedef efd_node* (*efd_eval_function)(efd_node const * const);
+// Generic generator state specifies the type of generator and information
+// needed to generate the next result.
+struct efd_generator_state_s;
+typedef struct efd_generator_state_s efd_generator_state;
 
 /*************
  * Constants *
@@ -321,7 +339,7 @@ struct efd_path_s {
 struct efd_reference_s {
   efd_ref_type type;
   efd_address *addr;
-  ptrdiff_t idx;
+  intptr_t idx;
 };
 
 struct efd_bridge_s {
@@ -345,6 +363,14 @@ struct efd_object_format_s {
 struct efd_function_declaration_s {
   char *key;
   efd_eval_function function;
+};
+
+struct efd_generator_state_s {
+  efd_generator_type type;
+  string *name;
+  intptr_t index;
+  void *state;
+  void *stash;
 };
 
 /*******************
@@ -644,6 +670,13 @@ efd_node * construct_efd_str_node(
 // assumed that cleanup_efd_node will be sufficient for memory management.
 efd_node * copy_efd_node(efd_node const * const src);
 
+// Same as copy_efd_node, but renames the new node, using a copy of the given
+// new_name string.
+efd_node * copy_efd_node_as(
+  efd_node const * const src,
+  string const * const new_name
+);
+
 // Clean up memory from the given EFD node.
 CLEANUP_DECL(efd_node);
 
@@ -696,7 +729,7 @@ CLEANUP_DECL(efd_path);
 efd_reference* create_efd_reference(
   efd_ref_type type,
   efd_address *addr,
-  ptrdiff_t idx
+  intptr_t idx
 );
 
 // Clean up memory from the given reference, including its address.
@@ -707,16 +740,26 @@ CLEANUP_DECL(efd_reference);
 // If the types of the given references aren't compatible, it doesn't allocate
 // anything and returns NULL. In that case, the caller should clean up the from
 // and to references.
-efd_bridge* create_efd_bridge(efd_reference *from, efd_reference *to);
+efd_bridge * create_efd_bridge(efd_reference *from, efd_reference *to);
 
 // Clean up memory from the given bridge, including its references.
 CLEANUP_DECL(efd_bridge);
 
 // Allocate and return a new empty EFD index.
-efd_index* create_efd_index(void);
+efd_index * create_efd_index(void);
 
 // Clean up memory for the given index, including any bridges it contains.
 CLEANUP_DECL(efd_index);
+
+// Allocates and returns a new efd_generator_state, using a copy of the given
+// name string but taking the given state without copying it.
+efd_generator_state * create_efd_generator_state(
+  efd_generator_type type,
+  string const * const name,
+  void *state
+);
+
+CLEANUP_DECL(efd_generator_state);
 
 /*************
  * Functions *
@@ -733,6 +776,9 @@ int efd_is_type(efd_node *n, efd_node_type t);
 // Given an EFD_NT_PROTO or EFD_NT_OBJECT type node, checks that the format
 // matches the given string.
 int efd_format_is(efd_node *n, string const * const fmt);
+
+// Renames the given node using a copy of the given string.
+void efd_rename(efd_node * node, string const * const new_name);
 
 // Builds a fully-qualified name for the given node and returns a pointer to a
 // newly-allocated string holding this name.
@@ -813,7 +859,7 @@ efd_node* efd_concrete(efd_node const * const base);
 
 // Returns the number of non-SCOPE children that the given node has. Returns -1
 // if the given node is a non-container node.
-ptrdiff_t efd_normal_child_count(efd_node const * const node);
+intptr_t efd_normal_child_count(efd_node const * const node);
 
 // Returns the nth child of the given node, not counting scope nodes.
 efd_node* efd_nth(efd_node const * const node, size_t index);
@@ -908,5 +954,23 @@ void* dont_copy(void *v);
 // A function with the same signature as a normal cleanup function that doesn't
 // do anything.
 void dont_cleanup(void *v);
+
+// Given a generator, returns the next value from it (a newly allocated EFD
+// node) and advances its state. If the generator is exhausted, it will return
+// NULL.
+efd_node * efd_gen_next(efd_generator_state *gen);
+
+// Resets the given generator.
+void efd_gen_reset(efd_generator_state *gen);
+
+// Calls next on the given generator until it is exhausted, collecting results
+// into a newly-allocated container node and  returning that. Warning: calling
+// this on an infinite generator will hang and/or crash.
+efd_node * efd_gen_all(efd_generator_state *gen);
+
+// Takes an EFD node and returns the corresponding generator object for
+// iteration over that node. Works with container, generator function, and
+// array nodes, but returns NULL for other node types (including link types).
+efd_generator_state * efd_generator_for(efd_node *node);
 
 #endif // INCLUDE_EFD_H

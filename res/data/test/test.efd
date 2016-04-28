@@ -359,14 +359,14 @@
     [[V iterate
       <<v ~slist@*lstring>>
       <<v ~sarray@*astring>>
-      [[gi *iter1:G_RANGE (i 1) ]]
-      [[gi *iter2:G_RANGE (i 3) (i 8) (i 2) ]]
-      [[gi *iter3:G_EXTEND
-        [[gi iter:G_RANGE (i 1) (i 2) ]]
-        (i #i:EFD_GEN_EXTENSION_MODE_REPEAT)
+      [[gi *iter1:range (i 1) ]]
+      [[gi *iter2:range (i 3) (i 8) (i 2) ]]
+      [[gi *iter3:extend
+        [[gi iter:range (i 1) (i 2) ]]
+        (i #i:EFD_GEN_EXTENSION_MODE_HOLD)
       ]]
-      [[gi *iter4:G_EXTEND
-        [[gi iter:G_RANGE (i 1) (i 2) ]]
+      [[gi *iter4:extend
+        [[gi iter:range (i 1) (i 2) ]]
         (i #i:EFD_GEN_EXTENSION_MODE_RESTART)
       ]]
     ]]

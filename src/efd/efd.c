@@ -351,6 +351,13 @@ efd_node* copy_efd_node(efd_node const * const src) {
   return result;
 }
 
+efd_node * copy_efd_node_as(efd_node const * const src, string * new_name) {
+  efd_node *result = copy_efd_node(src);
+  cleanup_string(src->h.name);
+  src->h.name = copy_string(new_name);
+  return result;
+}
+
 CLEANUP_IMPL(efd_node) {
   size_t i;
   efd_destroy_function df;
@@ -581,7 +588,7 @@ CLEANUP_IMPL(efd_path) {
 efd_reference* create_efd_reference(
   efd_ref_type type,
   efd_address *addr,
-  ptrdiff_t idx
+  intptr_t idx
 ) {
   efd_reference *result = (efd_reference*) malloc(sizeof(efd_reference));
   result->type = type;
@@ -631,6 +638,50 @@ CLEANUP_IMPL(efd_index) {
   l_foreach(doomed->processed, &cleanup_v_efd_bridge);
   cleanup_list(doomed->unprocessed);
   cleanup_list(doomed->processed);
+}
+
+efd_generator_state * create_efd_generator_state(
+  efd_generator_type type,
+  string const * const name,
+  void *state
+) {
+  efd_generator_state *result = (efd_generator_state*) malloc(i
+    sizeof(efd_generator_state)
+  );
+  result->type = type;
+  result->name = copy_string(name);
+  result->index = 0;
+  result->state = state;
+  result->stash = NULL;
+}
+
+CLEANUP_IMPL(efd_generator_state) {
+  cleanup_string(doomed->name);
+  switch(doomed->type) {
+    case EFD_GT_INVALID:
+    case EFD_GT_NODE_CHILDREN: // doesn't copy the parent node
+    case EFD_GT_ARRAY_NODE_INDICES: // doesn't copy the array node
+    case EFD_GT_FUNCTION:
+      // TODO: custom cleanup for generator functions?
+      // nothing to do
+      break;
+
+    case EFD_GT_EXTEND_RESTART:
+      cleanup_v_efd_generator_state(doomed->state);
+      break;
+
+    case EFD_GT_EXTEND_HOLD:
+      cleanup_v_efd_generator_state(doomed->state);
+      if (doomed->stash != NULL) {
+        cleanup_v_efd_node(doomed->stash);
+      }
+      break;
+
+    case EFD_GT_PARALLEL:
+      l_foreach((list*) doomed->state, &cleanup_v_efd_generator_state);
+      cleanup_list((list*) doomed->state);
+      break;
+  }
 }
 
 /*************
@@ -778,6 +829,11 @@ int efd_format_is(efd_node *n, string const * const fmt) {
   }
   // failsafe
   return 0;
+}
+
+void efd_rename(efd_node * node, string const * const new_name) {
+  cleanup_string(node->h.name);
+  node->h.name = copy_string(new_name);
 }
 
 string* efd_build_fqn(efd_node const * const n) {
@@ -1297,8 +1353,8 @@ efd_node* efd_concrete(efd_node const * const base) {
   return efd_concrete(linked);
 }
 
-ptrdiff_t efd_normal_child_count(efd_node const * const node) {
-  ptrdiff_t result;
+intptr_t efd_normal_child_count(efd_node const * const node) {
+  intptr_t result;
   dictionary *children;
   efd_node *child;
 
@@ -1684,4 +1740,176 @@ void* dont_copy(void *v) {
 
 void dont_cleanup(void *v) {
   return;
+}
+
+efd_node * efd_gen_next(efd_generator_state *gen) {
+  size_t i;
+  efd_node *node, *scope;
+  efd_generator_state *sub;
+  list *children;
+
+  switch (gen->type) {
+    default:
+    case EFD_GT_INVALID:
+      fprintf(
+        stderr,
+        "Warning: Attempt to get next value from INVALID generator.\n"
+      );
+      return NULL;
+
+    case EFD_GT_NODE_CHILDREN:
+      node = (efd_node*) gen->state;
+      if (gen->index < efd_normal_child_count(node)) {
+        return copy_efd_node(efd_nth(node, gen->index++));
+      } else {
+        return NULL;
+      } // all paths return
+
+    case EFD_GT_ARRAY_NODE_INDICES:
+      node = (efd_node*) gen->state;
+      switch (node->h.type) {
+        default:
+          fprintf(
+            stderr,
+            "Warning: Array index generator has invalid non-array node state.\n"
+          );
+          return NULL;
+        case EFD_NT_ARRAY_INT:
+          return construct_efd_int_node(
+            gen->name,
+            (*efd__ai(node))[gen->index++]
+          );
+        case EFD_NT_ARRAY_NUM:
+          return construct_efd_num_node(
+            gen->name,
+            (*efd__an(node))[gen->index++]
+          );
+        case EFD_NT_ARRAY_STR:
+          return construct_efd_str_node(
+            gen->name,
+            (*efd__as(node))[gen->index++]
+          );
+      } // all paths return
+
+    case EFD_GT_FUNCTION:
+      return ((efd_generator_function) gen->state)(gen);
+
+    case EFD_GT_EXTEND_RESTART:
+      sub = (efd_generator_state*) gen->state;
+      node = efd_gen_next(sub);
+      if (node == NULL) {
+        efd_gen_reset(sub);
+        node = efd_gen_next(sub);
+      }
+      efd_rename(node, gen->name);
+      return node;
+
+    case EFD_GT_EXTEND_HOLD:
+      sub = (efd_generator_state*) gen->state;
+      node = efd_gen_next(sub);
+      if (node == NULL) {
+        return copy_efd_node((efd_node*) stash);
+      }
+      if (gen->stash != NULL) {
+        cleanup_v_efd_node(gen->stash);
+      }
+      gen->stash = (void*) copy_efd_node_as(node, gen->name);
+      efd_rename(node, gen->name);
+      return node;
+
+    case EFD_GT_PARALLEL:
+      children = (list*) gen->state;
+      scope = create_efd_node(EFD_NT_SCOPE, gen->name);
+      for (i = 0; i < l_get_length(children); ++i) {
+        sub = (efd_generator_state*) l_get_item(children, i);
+        node = efd_gen_next(sub);
+        if (node == NULL) {
+          cleanup_efd_node(scope);
+          return NULL;
+        } else {
+          efd_add_child(scope, node);
+        }
+      }
+      return scope;
+  }
+}
+
+void efd_gen_reset(efd_generator_state *gen) {
+  size_t i;
+  list *children;
+  efd_generator_state *sub;
+  // reset our index:
+  gen->index = 0;
+  // any additional reset functionality:
+  switch (gen->type) {
+    default:
+    case EFD_GT_INVALID:
+      fprintf(
+        stderr,
+        "Warning: Attempt to reset an INVALID generator.\n"
+      );
+      break;
+
+    case EFD_GT_NODE_CHILDREN:
+    case EFD_GT_ARRAY_NODE_INDICES:
+    case EFD_GT_FUNCTION:
+      // nothing to do
+      // TODO: Allow functions to have custom reset behavior for better stashes?
+      break;
+
+    case EFD_GT_EXTEND_RESTART:
+    case EFD_GT_EXTEND_HOLD:
+      // reset the sub-generator as well
+      efd_gen_reset((efd_generator_state*) gen->state);
+      break;
+
+    case EFD_GT_PARALLEL:
+      //reset each sub-generator
+      children = (list*) gen->state;
+      for (i = 0; i < l_get_length(children); ++i) {
+        sub = (efd_generator_state*) l_get_item(children, i);
+        efd_gen_reset(sub);
+      }
+      break;
+  }
+}
+
+efd_node * efd_gen_all(efd_generator_state *gen) {
+  efd_node *result = create_efd_node(EFD_NT_CONTAINER, gen->name);
+  next = efd_gen_next(gen);
+  while (next != NULL) {
+    efd_add_child(result, next);
+  }
+  return result;
+}
+
+efd_generator_state * efd_generator_for(efd_node *node) {
+  efd_generator_type type;
+  void *state;
+
+  switch (node->h.type) {
+    default:
+    case EFD_NT_INVALID:
+      return NULL;
+
+    case EFD_NT_CONTAINER:
+      type = EFD_GT_NODE_CHILDREN;
+      state = (void*) node;
+      break;
+
+    case EFD_NT_ARRAY_INT:
+    case EFD_NT_ARRAY_NUM:
+    case EFD_NT_ARRAY_STR:
+      type = EFD_GT_ARRAY_NODE_INDICES;
+      state = (void*) node;
+      break;
+
+    case EFD_NT_GENERATOR:
+      // TODO: HERE
+  }
+  return create_efd_generator_state(
+    type,
+    node->h.name,
+    state
+  );
 }
