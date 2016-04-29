@@ -10,9 +10,9 @@
  * Globals *
  ***********/
 
-extern efd_function_declaration EFD_FUNCTION_REGISTRY[];
-extern efd_function_declaration EFD_GENERATOR_REGISTRY[];
-extern efd_object_format EFD_FORMAT_REGISTRY[];
+extern efd_function_declaration const EFD_FUNCTION_REGISTRY[];
+extern efd_generator_declaration const EFD_GENERATOR_REGISTRY[];
+extern efd_object_format const EFD_FORMAT_REGISTRY[];
 
 extern size_t EFD_FUNCTION_REGISTRY_SIZE;
 extern size_t EFD_GENERATOR_REGISTRY_SIZE;

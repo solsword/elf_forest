@@ -512,10 +512,10 @@ void d_witheach(
 }
 
 list * d_as_list(dictionary const * const d) {
-  return = copy_list(d->ordered);
+  return copy_list(d->ordered);
 }
 
-size_t d_data_size(dictionary *d) {
+size_t d_data_size(dictionary const * const d) {
   size_t i;
   dictionary_entry *e;
   size_t result = 0;

@@ -26,8 +26,8 @@
 efd_function_declaration const EFD_FUNCTION_REGISTRY[] = {
   #include "func.list"
   { // for the trailing comma
-    .key = NULL;
-    .function = NULL;
+    .key = NULL,
+    .function = NULL
   }
 };
 #undef EFD_REGISTER_FUNCTIONS
@@ -36,8 +36,8 @@ efd_function_declaration const EFD_FUNCTION_REGISTRY[] = {
 efd_generator_declaration const EFD_GENERATOR_REGISTRY[] = {
   #include "gen.list"
   { // for the trailing comma
-    .key = NULL;
-    .constructor = NULL;
+    .key = NULL,
+    .constructor = NULL
   }
 };
 #undef EFD_REGISTER_GENERATORS
@@ -46,11 +46,11 @@ efd_generator_declaration const EFD_GENERATOR_REGISTRY[] = {
 efd_object_format const EFD_FORMAT_REGISTRY[] = {
   #include "conv.list"
   { // for the trailing comma
-    .key = NULL;
-    .unpacker = NULL;
-    .packer = NULL;
-    .copier = NULL;
-    .destructor = NULL;
+    .key = NULL,
+    .unpacker = NULL,
+    .packer = NULL,
+    .copier = NULL,
+    .destructor = NULL
   }
 };
 #undef EFD_REGISTER_FORMATS
@@ -77,9 +77,9 @@ dictionary *EFD_FORMAT_DICT = NULL;
 void setup_elf_forest_data(void) {
   size_t i;
   string *s;
-  efd_function_declaration *fd;
-  efd_generator_declaration *gd;
-  efd_object_format *of;
+  efd_function_declaration const *fd;
+  efd_generator_declaration const *gd;
+  efd_object_format const *of;
 
   EFD_ROOT = create_efd_node(EFD_NT_CONTAINER, EFD_ROOT_NAME);
 
@@ -99,7 +99,7 @@ void setup_elf_forest_data(void) {
 
   for (i = 0; i < EFD_GENERATOR_REGISTRY_SIZE; ++i) {
     gd = &(EFD_GENERATOR_REGISTRY[i]);
-    s = create_string_from_ntchars(fd->key);
+    s = create_string_from_ntchars(gd->key);
     d_add_value_s(EFD_GENERATOR_DICT, s, (void*) gd->constructor);
   }
 

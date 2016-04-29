@@ -8,4 +8,5 @@ gmon.out
 /valg
 /res/data/auto_globals.efd
 /src/efd/func.list
+/src/efd/gen.list
 /src/efd/conv.list

@@ -142,7 +142,7 @@ static inline float * p_as_f(void **p) {
 
 // The inverse of the above, this reinterprets a float as a void*.
 static inline void ** f_as_p(float *f) {
-  return (intptr_t*) f;
+  return (void**) f;
 }
 
 // Stupid-simple PRNG:

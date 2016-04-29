@@ -45,32 +45,32 @@ struct efd_ev_test_s {
 };
 #elif defined(EFD_REGISTER_FORMATS)
 {
-  .key = "itest";
-  .unpacker = efd__int_test;
-  .packer = int_test__efd;
-  .copier = copy_int_test;
-  .destructor = cleanup_v_int_test;
+  .key = "itest",
+  .unpacker = efd__int_test,
+  .packer = int_test__efd,
+  .copier = copy_int_test,
+  .destructor = cleanup_v_int_test
 },
 {
-  .key = "ntest";
-  .unpacker = efd__num_test;
-  .packer = num_test__efd;
-  .copier = copy_num_test;
-  .destructor = cleanup_v_num_test;
+  .key = "ntest",
+  .unpacker = efd__num_test,
+  .packer = num_test__efd,
+  .copier = copy_num_test,
+  .destructor = cleanup_v_num_test
 },
 {
-  .key = "ptest";
-  .unpacker = efd__parse_test;
-  .packer = parse_test__efd;
-  .copier = copy_parse_test;
-  .destructor = cleanup_v_parse_test;
+  .key = "ptest",
+  .unpacker = efd__parse_test,
+  .packer = parse_test__efd,
+  .copier = copy_parse_test,
+  .destructor = cleanup_v_parse_test
 },
 {
-  .key = "evtest";
-  .unpacker = efd__ev_test;
-  .packer = ev_test__efd;
-  .copier = copy_ev_test;
-  .destructor = cleanup_v_ev_test;
+  .key = "evtest",
+  .unpacker = efd__ev_test,
+  .packer = ev_test__efd,
+  .copier = copy_ev_test,
+  .destructor = cleanup_v_ev_test
 },
 #else
 #ifndef INCLUDE_EFD_TESTS_H
@@ -165,6 +165,7 @@ efd_node *int_test__efd(void *v_t) {
 
   n = construct_efd_int_node(s_output, t->output);
   efd_add_child(result, n);
+
   if (s_equals(t->expect, s_remainder)) {
     n = construct_efd_str_node(s_remainder, t->remainder);
     efd_add_child(result, n);
@@ -282,7 +283,7 @@ efd_node *num_test__efd(void *v_t) {
   n = construct_efd_str_node(s_expect, t->expect);
   efd_add_child(result, n);
 
-  n = construct_efd_str_node(s_output, t->output);
+  n = construct_efd_num_node(s_output, t->output);
   efd_add_child(result, n);
 
   if (s_equals(t->expect, s_remainder)) {

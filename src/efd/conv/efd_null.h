@@ -2,11 +2,11 @@
 // no declarations
 #elif defined(EFD_REGISTER_FORMATS)
 {
-  .key = "NULLL";
-  .unpacker = efd__null;
-  .packer = null__efd;
-  .copier = dont_copy;
-  .destructor = dont_cleanup;
+  .key = "NULLL",
+  .unpacker = efd__null,
+  .packer = null__efd,
+  .copier = dont_copy,
+  .destructor = dont_cleanup
 },
 #else
 #ifndef INCLUDE_EFD_NULL_H

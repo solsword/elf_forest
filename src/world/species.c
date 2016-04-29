@@ -47,6 +47,36 @@ map *PIGMENT_SPECIES = NULL; // various sources; uniform use
  * Functions *
  *************/
 
+// create/get functions for various species types:
+SPECIES_ACCESS_FUNCTIONS(element, ELEMENT)
+
+SPECIES_ACCESS_FUNCTIONS(gas, GAS)
+
+SPECIES_ACCESS_FUNCTIONS(dirt, DIRT)
+SPECIES_ACCESS_FUNCTIONS(clay, CLAY)
+SPECIES_ACCESS_FUNCTIONS(stone, STONE)
+SPECIES_ACCESS_FUNCTIONS(metal, METAL)
+
+SPECIES_ACCESS_FUNCTIONS(fungus, FUNGUS)
+SPECIES_ACCESS_FUNCTIONS(moss, MOSS)
+SPECIES_ACCESS_FUNCTIONS(grass, GRASS)
+SPECIES_ACCESS_FUNCTIONS(vine, VINE)
+SPECIES_ACCESS_FUNCTIONS(herb, HERB)
+SPECIES_ACCESS_FUNCTIONS(bush, BUSH)
+SPECIES_ACCESS_FUNCTIONS(shrub, SHRUB)
+SPECIES_ACCESS_FUNCTIONS(tree, TREE)
+SPECIES_ACCESS_FUNCTIONS(aquatic_grass, AQUATIC_GRASS)
+SPECIES_ACCESS_FUNCTIONS(aquatic_plant, AQUATIC_PLANT)
+SPECIES_ACCESS_FUNCTIONS(coral, CORAL)
+
+SPECIES_ACCESS_FUNCTIONS(animal, ANIMAL)
+SPECIES_ACCESS_FUNCTIONS(mythical, MYTHICAL)
+SPECIES_ACCESS_FUNCTIONS(sentient, SENTIENT)
+
+SPECIES_ACCESS_FUNCTIONS(fiber, FIBER)
+SPECIES_ACCESS_FUNCTIONS(pigment, PIGMENT)
+
+
 void setup_species(void) {
   ELEMENT_SPECIES = create_map(1, 1024);
 
@@ -140,35 +170,6 @@ void* get_species_data(any_species sp) {
   }
 }
 
-// create/get functions for various species types:
-SPECIES_ACCESS_FUNCTIONS(element, ELEMENT)
-
-SPECIES_ACCESS_FUNCTIONS(gas, GAS)
-
-SPECIES_ACCESS_FUNCTIONS(dirt, DIRT)
-SPECIES_ACCESS_FUNCTIONS(clay, CLAY)
-SPECIES_ACCESS_FUNCTIONS(stone, STONE)
-SPECIES_ACCESS_FUNCTIONS(metal, METAL)
-
-SPECIES_ACCESS_FUNCTIONS(fungus, FUNGUS)
-SPECIES_ACCESS_FUNCTIONS(moss, MOSS)
-SPECIES_ACCESS_FUNCTIONS(grass, GRASS)
-SPECIES_ACCESS_FUNCTIONS(vine, VINE)
-SPECIES_ACCESS_FUNCTIONS(herb, HERB)
-SPECIES_ACCESS_FUNCTIONS(bush, BUSH)
-SPECIES_ACCESS_FUNCTIONS(shrub, SHRUB)
-SPECIES_ACCESS_FUNCTIONS(tree, TREE)
-SPECIES_ACCESS_FUNCTIONS(aquatic_grass, AQUATIC_GRASS)
-SPECIES_ACCESS_FUNCTIONS(aquatic_plant, AQUATIC_PLANT)
-SPECIES_ACCESS_FUNCTIONS(coral, CORAL)
-
-SPECIES_ACCESS_FUNCTIONS(animal, ANIMAL)
-SPECIES_ACCESS_FUNCTIONS(mythical, MYTHICAL)
-SPECIES_ACCESS_FUNCTIONS(sentient, SENTIENT)
-
-SPECIES_ACCESS_FUNCTIONS(fiber, FIBER)
-SPECIES_ACCESS_FUNCTIONS(pigment, PIGMENT)
-
 /*********************
  * Element Functions *
  *********************/
@@ -240,7 +241,7 @@ float el_float_property(
     case EL_PRP_F_PH_TENDENCY:
       return sp->pH_tendency;
     case EL_PRP_F_CORROSION_RESISTANCE:
-      return sp->corrosion_resistance
+      return sp->corrosion_resistance;
     case EL_PRP_F_STONE_TND_DENSITY:
       return sp->stone_density_tendency;
     case EL_PRP_F_STONE_TND_SP_HEAT:
@@ -252,7 +253,7 @@ float el_float_property(
     case EL_PRP_F_STONE_TND_HARDNESS:
       return sp->stone_hardness_tendency;
     case EL_PRP_F_STONE_TND_BRIGHTNESS:
-      return sp->stone_brightness_tendency
+      return sp->stone_brightness_tendency;
     case EL_PRP_F_STONE_TND_CHROMA:
       return sp->stone_chroma;
     case EL_PRP_F_STONE_TND_OX_CHROMA:

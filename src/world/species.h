@@ -19,18 +19,21 @@
  **********/
 
 #define SPECIES_ACCESS_FUNCTIONS_DECL(SP_LOWER) \
-  void add_ ## SP_LOWER ## _species(species s, SP_LOWER ## _species* sp); \
+  species add_ ## SP_LOWER ## _species(SP_LOWER ## _species* sp); \
   SP_LOWER ## _species* get_ ## SP_LOWER ## _species(species s); \
   species create_ ## SP_LOWER ## _species(void);
 
 // TODO: More graceful failure for both adding and getting.
+#ifdef DEBUG
 #define SPECIES_ACCESS_FUNCTIONS(SP_LOWER, SP_CAPS) \
-  void add_ ## SP_LOWER ## _species(species s, SP_LOWER ## _species* sp) { \
+  species add_ ## SP_LOWER ## _species(SP_LOWER ## _species* sp) { \
+    species result = 1 + m_get_count(SP_CAPS ## _SPECIES); \
+    sp->id = result; \
 _Pragma("GCC diagnostic ignored \"-Wint-to-pointer-cast\"") \
     SP_LOWER ## _species* old = (SP_LOWER ## _species*) m1_put_value( \
       SP_CAPS ## _SPECIES, \
       sp, \
-      (map_key_t) s \
+      (map_key_t) result \
     ); \
 _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
     if (old != NULL) { \
@@ -38,10 +41,11 @@ _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
         stderr, \
         "Error: Attempt to add new " #SP_LOWER " species %d which already " \
         "exists.", \
-        s \
+        result \
       ); \
       exit(EXIT_FAILURE); \
     } \
+    return result; \
   } \
   \
   SP_LOWER ## _species* get_ ## SP_LOWER ## _species(species s) { \
@@ -65,15 +69,49 @@ _Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
   } \
   \
   species create_ ## SP_LOWER ## _species(void) { \
-    species result = 1 + m_get_count(SP_CAPS ## _SPECIES); \
+    species result; \
     SP_LOWER ## _species* new_species = (SP_LOWER ## _species*) calloc( \
       1, \
       sizeof(SP_LOWER ## _species) \
     ); \
-    add_ ## SP_LOWER ## _species(result, new_species); \
-    new_species->id = result; \
+    result = add_ ## SP_LOWER ## _species(new_species); \
     return result; \
   }
+#else // ifdef DEBUG
+#define SPECIES_ACCESS_FUNCTIONS(SP_LOWER, SP_CAPS) \
+  species add_ ## SP_LOWER ## _species(SP_LOWER ## _species* sp) { \
+    species result = 1 + m_get_count(SP_CAPS ## _SPECIES); \
+    sp->id = result; \
+_Pragma("GCC diagnostic ignored \"-Wint-to-pointer-cast\"") \
+    SP_LOWER ## _species* old = (SP_LOWER ## _species*) m1_put_value( \
+      SP_CAPS ## _SPECIES, \
+      sp, \
+      (map_key_t) result \
+    ); \
+_Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
+    return result; \
+  } \
+  \
+  SP_LOWER ## _species* get_ ## SP_LOWER ## _species(species s) { \
+_Pragma("GCC diagnostic ignored \"-Wint-to-pointer-cast\"") \
+    SP_LOWER ## _species* result = (SP_LOWER ## _species*) m1_get_value( \
+      SP_CAPS ## _SPECIES, \
+      (map_key_t) s \
+    ); \
+_Pragma("GCC diagnostic warning \"-Wint-to-pointer-cast\"") \
+    return result; \
+  } \
+  \
+  species create_ ## SP_LOWER ## _species(void) { \
+    species result; \
+    SP_LOWER ## _species* new_species = (SP_LOWER ## _species*) calloc( \
+      1, \
+      sizeof(SP_LOWER ## _species) \
+    ); \
+    result = add_ ## SP_LOWER ## _species(new_species); \
+    return result; \
+  }
+#endif // ifdef DEBUG
 
 // TODO: thread safety here!
 
@@ -256,7 +294,7 @@ SPECIES_ACCESS_FUNCTIONS_DECL(stone);
 SPECIES_ACCESS_FUNCTIONS_DECL(metal);
 
 SPECIES_ACCESS_FUNCTIONS_DECL(fungus);
-
+SPECIES_ACCESS_FUNCTIONS_DECL(moss);
 SPECIES_ACCESS_FUNCTIONS_DECL(grass);
 SPECIES_ACCESS_FUNCTIONS_DECL(vine);
 SPECIES_ACCESS_FUNCTIONS_DECL(herb);

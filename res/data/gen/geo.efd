@@ -603,11 +603,14 @@
 [[c %gen_stone_species
   [[V args
     [[o ~world_map:NULL]]
-    [[i ~source 0]]
     [[i ~seed 0]]
   ]]
   [[V locals
     [[fi ~hash:brng <<v ~seed>> (i 467541) ]]
+    [[fi ~source:sample_rngtable
+      [[fi rng:brng <<v ~hash>> (i 0) ]]
+      <<v ~SOURCE_DISTRIBUTION>>
+    ]]
     [[fo ~comp_table:choose
       [[fi index:index_by
         <<v ~source@input>>
@@ -1846,14 +1849,17 @@
       ]]
     ]]
   ]]
+  <<v ~source>>
   <<v ~composition>>
   <<v ~material>>
   <<v ~appearance>>
 ]]
 
+// TODO: Make this "return" a SCOPE node?
 [[c %gen_strata_params
   [[V args
     [[i ~i 0]]
+    [[i ~species 0]] // TODO: use this!
     [[i ~wm_seed 0]]
     [[i ~wm_width 0]]
     [[i ~wm_height 0]]
@@ -1861,18 +1867,15 @@
   [[V locals
     [[fi ~hash:brng <<v ~wm_seed>> [[fi mult:mult <<v ~i>> (i 567) ]] ]]
   ]]
-  <<v ~hash@seed>>
-  [[fi source:sample_rngtable
-    [[fi rng:brng <<v ~hash>> (i 0) ]]
-    <<v ~SOURCE_DISTRIBUTION>>
-  ]]
-  [[fi profile:choose
+  <<v ~hash@~seed>>
+  <<v ~species@~species>>
+  [[fi ~profile:choose
     [[fi rng:brng <<v ~hash>> (i 1) ]]
     [[i option #i:MFN_SPREAD_UP]]
     [[i option #i:MFN_TERRACE]]
     [[i option #i:MFN_HILL]]
   ]]
-  [[fn thickness:mult
+  [[fn ~thickness:mult
     [[i base #i:BASE_STRATUM_THICKNESS]]
     [[fn exp:exp
       [[fn exponent:rng_uniform
@@ -1882,7 +1885,7 @@
       ]]
     ]]
   ]]
-  [[fn size:mult
+  [[fn ~size:mult
     [[fn wsgavg:sqrt
       [[fn world_size:mult
         <<v ~wm_width>>
@@ -1897,12 +1900,12 @@
       (n 1.4)
     ]]
   ]]
-  [[fn cx:rng_uniform
+  [[fn ~cx:rng_uniform
     [[fi rng:brng <<v ~hash>> (i 4) ]]
     (n 0)
     <<v ~wm_width@max>>
   ]]
-  [[fn cy:rng_uniform
+  [[fn ~cy:rng_uniform
     [[fi rng:brng <<v ~hash>> (i 5) ]]
     (n 0)
     <<v ~wm_height@max>>
@@ -1912,6 +1915,7 @@
 [[c %gen_stratum
   [[V args
     [[i ~seed 0]]
+    [[i ~species 0]] // TODO: Use this
     [[i ~source 0]]
     [[i ~profile 0]]
     [[n ~thickness 0]]

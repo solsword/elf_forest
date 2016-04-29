@@ -5,12 +5,14 @@
 // Definition of the Elf Forest Data format.
 
 #include <stdint.h>
+#include <math.h>
 
 #include "datatypes/list.h"
 #include "datatypes/string.h"
 #include "datatypes/dictionary.h"
 
 #include "boilerplate.h"
+#include "util.h"
 
 /********
  * Meta *
@@ -111,23 +113,6 @@ typedef enum efd_generator_type_e efd_generator_type;
 typedef intptr_t efd_int_t;
 typedef float efd_num_t;
 
-/******************
- * Function Types *
- ******************/
-
-typedef void * (*efd_unpack_function)(efd_node *);
-typedef efd_node* (*efd_pack_function)(void *);
-typedef void * (*efd_copy_function)(void *);
-typedef void (*efd_destroy_function)(void *);
-
-typedef efd_node* (*efd_eval_function)(efd_node const * const);
-
-typedef efd_node* (*efd_generator_function)(efd_generator_state *state);
-
-typedef efd_generator_state * (*efd_generator_constructor)(
-  efd_node const * const base
-);
-
 /**************
  * Structures *
  **************/
@@ -210,17 +195,34 @@ typedef struct efd_object_format_s efd_object_format;
 // An entry in the function registry defines the string key and function for a
 // EFD eval function.
 struct efd_function_declaration_s;
-typdef struct efd_function_declaration_s efd_function_declaration;
+typedef struct efd_function_declaration_s efd_function_declaration;
 
 // An entry in the generator registry defines a string key plus a function for
 // creating a generator from an EFD_NT_GN_* node.
 struct efd_generator_declaration_s;
-typdef struct efd_generator_declaration_s efd_generator_declaration;
+typedef struct efd_generator_declaration_s efd_generator_declaration;
 
 // Generic generator state specifies the type of generator and information
 // needed to generate the next result.
 struct efd_generator_state_s;
 typedef struct efd_generator_state_s efd_generator_state;
+
+/******************
+ * Function Types *
+ ******************/
+
+typedef void * (*efd_unpack_function)(efd_node *);
+typedef efd_node* (*efd_pack_function)(void *);
+typedef void * (*efd_copy_function)(void *);
+typedef void (*efd_destroy_function)(void *);
+
+typedef efd_node* (*efd_eval_function)(efd_node const * const);
+
+typedef efd_node* (*efd_generator_function)(efd_generator_state *state);
+
+typedef efd_generator_state * (*efd_generator_constructor)(
+  efd_node const * const base
+);
 
 /*************
  * Constants *
@@ -533,7 +535,7 @@ static inline efd_int_t efd_as_i(efd_node *n) {
     // TODO: Context here!
     fprintf(
       stderr,
-      "Error: Attempted to coerce non-numeric type to an integer.\n";
+      "Error: Attempted to coerce non-numeric type to an integer.\n"
     );
     exit(EXIT_FAILURE);
   }
@@ -548,7 +550,7 @@ static inline efd_int_t efd_as_n(efd_node *n) {
     // TODO: Context here!
     fprintf(
       stderr,
-      "Error: Attempted to coerce non-numeric type to a number.\n";
+      "Error: Attempted to coerce non-numeric type to a number.\n"
     );
     exit(EXIT_FAILURE);
   }
@@ -609,8 +611,10 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
 }
 
 // Takes a function node and returns the 
-static inline efd_node_type efd_return_type_of(efd_node * function_node) {
-  switch (nt) {
+static inline efd_node_type efd_return_type_of(
+  efd_node const * const function_node
+) {
+  switch (function_node->h.type) {
     default:
     case EFD_NT_FUNCTION:
     case EFD_NT_GENERATOR:
@@ -908,7 +912,7 @@ efd_node* efd(efd_node const * const root, efd_address const * addr);
 // solved by a mix of calls to efd and efdx to avoid buffer-length problems.
 // Note that efdx's use of efd_parse_address means that it is limited by
 // EFD_MAX_NAME_DEPTH, although multiple calls to efd/efdx can overcome this.
-efd_node* efdx(efd_node const * const root, string const * const saddr);
+efd_node * efdx(efd_node const * const root, string const * const saddr);
 
 // Evaluates a function or generator node, returning a newly-allocated node
 // (which may have newly-allocated children) representing the result. For any
@@ -919,7 +923,19 @@ efd_node* efdx(efd_node const * const root, string const * const saddr);
 // copy of the target node as its first child before evaluation begins. If the
 // target node is not a container node args should be NULL (and will be
 // ignored).
-efd_node* efd_eval(efd_node const * const target, efd_node const * const args);
+// Does the real work:
+efd_node * efd_eval_in_context(
+  efd_node const * const target,
+  efd_node const * const args,
+  efd_node const * const set_parent
+);
+// Shorthand:
+static inline efd_node * efd_eval(
+  efd_node const * const target,
+  efd_node const * const args
+) {
+  return efd_eval_in_context(target, args, NULL);
+}
 
 // Adds the given bridge to the given index.
 void efd_add_crossref(efd_index *cr, efd_bridge *bridge);
@@ -942,7 +958,7 @@ void efd_pack_node(efd_node *root, efd_index *cr);
 efd_eval_function efd_lookup_function(string const * const key);
 
 // Lookup for generator constructors (as above).
-efd_generator_constructor efd_lookup_generator(string const * const key) {
+efd_generator_constructor efd_lookup_generator(string const * const key);
 
 // Lookups for packers, unpackers, copiers, and destructors. As above, these
 // are not actually defined in efd.c but rather in  efd_setup.c.

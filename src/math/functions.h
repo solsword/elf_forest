@@ -30,7 +30,7 @@ typedef enum map_function_e map_function;
  ********************/
 
 // Maps the given value through the given function.
-static float fmap(float x, map_function f) {
+static inline float fmap(float x, map_function f) {
   switch (f) {
     case MFN_LINEAR:
       return x;

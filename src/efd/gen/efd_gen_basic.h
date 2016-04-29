@@ -1,8 +1,8 @@
 #if defined(EFD_REGISTER_DECLARATIONS)
 // nothing to declare
 #elif defined(EFD_REGISTER_GENERATORS)
-{ .key = "range";    .function = efd_gn_range; },
-{ .key = "extend";   .function = efd_gn_extend; },
+{ .key = "range",    .constructor = efd_gn_range   },
+{ .key = "extend",   .constructor = efd_gn_extend  },
 #else
 #ifndef INCLUDE_EFD_GEN_BASIC_H
 #define INCLUDE_EFD_GEN_BASIC_H
@@ -10,6 +10,29 @@
 // Generator constructors for basic generator types like range.
 
 #include "efd/efd.h"
+
+// The generator function that implements range as described below.
+efd_node * efd_gn_impl_range(efd_generator_state *state) {
+  efd_node *params = (efd_node*) state->stash;
+  efd_int_t start, stop, step, result;
+  SSTR(s_start, "start", 5);
+  SSTR(s_stop, "stop", 4);
+  SSTR(s_step, "step", 4);
+
+  start = *efd__i(efd_lookup(params, s_start));
+  stop = *efd__i(efd_lookup(params, s_stop));
+  step = *efd__i(efd_lookup(params, s_step));
+
+  result = start + step * state->index;
+  if (
+    (step >= 0 && result >= stop)
+ || (step < 0 && result <= stop)
+  ) {
+    return NULL; // finished
+  }
+  state->index += 1;
+  return construct_efd_int_node(state->name, result);
+}
 
 // Takes up to three arguments: the start, stop, and step values. Creates a
 // generator which generates integers starting with the start value and
@@ -24,9 +47,6 @@ efd_generator_state * efd_gn_range(efd_node const * const node) {
   size_t child_count;
   efd_node *stash;
   efd_generator_state *result;
-  SSTR(s_start, "start");
-  SSTR(s_stop, "stop");
-  SSTR(s_step, "step");
 
   efd_assert_return_type(node, EFD_NT_INTEGER);
 
@@ -62,29 +82,6 @@ efd_generator_state * efd_gn_range(efd_node const * const node) {
   result->stash = (void*) stash;
 
   return result;
-}
-
-// The generator function that implements range as described above.
-efd_node * efd_gn_impl_range(efd_generator_state *state) {
-  efd_node *params = (efd_node*) state->stash;
-  efd_int_t start, stop, step, result;
-  SSTR(s_start, "start");
-  SSTR(s_stop, "stop");
-  SSTR(s_step, "step");
-
-  start = efd__i(efd_lookup(params, s_start));
-  stop = efd__i(efd_lookup(params, s_stop));
-  step = efd__i(efd_lookup(params, s_step));
-
-  result = start + step * state->index;
-  if (
-    (step >= 0 && result >= stop)
- || (step < 0 && result <= stop)
-  ) {
-    return NULL; // finished
-  }
-  state->index += 1;
-  return construct_efd_int_node(state->name, result);
 }
 
 // Takes a generator and an integer node containing one of the EFD_GT_EXTEND_*

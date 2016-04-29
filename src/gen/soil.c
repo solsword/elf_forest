@@ -2305,6 +2305,9 @@ void compute_combined_dirt_color(
   seed = prng(seed);
 
   // Lightness
+  avg = 0.5;
+  // TODO: Transition this algorithm to EFD!
+  /*
   AVERAGE_ELEMENT_PROPERTY(
     species->trace_minerals,
     MN_MAX_TRACE_CONSTITUENTS,
@@ -2314,6 +2317,7 @@ void compute_combined_dirt_color(
     stone_brightness_tendency,
     avg
   );
+  */
   color->x = 100.0 * (ptrf(seed) + ptrf(prng(seed + 18291))) / 2.0;
   seed = prng(seed);
   color->x = 0.4 * color->x + 0.6 * avg;

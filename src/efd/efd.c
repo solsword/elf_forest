@@ -345,10 +345,13 @@ efd_node* copy_efd_node(efd_node const * const src) {
   return result;
 }
 
-efd_node * copy_efd_node_as(efd_node const * const src, string * new_name) {
+efd_node * copy_efd_node_as(
+  efd_node const * const src,
+  string const * const new_name
+) {
   efd_node *result = copy_efd_node(src);
-  cleanup_string(src->h.name);
-  src->h.name = copy_string(new_name);
+  cleanup_string(result->h.name);
+  result->h.name = copy_string(new_name);
   return result;
 }
 
@@ -637,7 +640,7 @@ efd_generator_state * create_efd_generator_state(
   string const * const name,
   void *state
 ) {
-  efd_generator_state *result = (efd_generator_state*) malloc(i
+  efd_generator_state *result = (efd_generator_state*) malloc(
     sizeof(efd_generator_state)
   );
   result->type = type;
@@ -645,6 +648,7 @@ efd_generator_state * create_efd_generator_state(
   result->index = 0;
   result->state = state;
   result->stash = NULL;
+  return result;
 }
 
 CLEANUP_IMPL(efd_generator_state) {
@@ -1189,9 +1193,9 @@ void efd_remove_child(efd_node *n, efd_node *child) {
   }
 #endif
 #ifdef DEBUG
-  void *result;
-  result = d_remove_value(efd_children_dict(n), (void*) child);
-  if (child->h.parent != n) { // if result is NULL that's fine (shadow children)
+  d_remove_value(efd_children_dict(n), (void*) child);
+  // if d_remove_value returns NULL that's fine (shadow children)
+  if (child->h.parent != n) {
     fqn = efd_build_fqn(n);
     cfqn = efd_build_fqn(child);
     fprintf(
@@ -1363,6 +1367,7 @@ efd_node* efd_concrete(efd_node const * const base) {
 }
 
 intptr_t efd_normal_child_count(efd_node const * const node) {
+  size_t i;
   intptr_t result;
   dictionary *children;
   efd_node *child;
@@ -1451,9 +1456,7 @@ efd_node* efdx(efd_node const * const root, string const * const saddr) {
   return efd(root, efd_parse_string_address(saddr));
 }
 
-efd_node* _create_eval_env
-
-efd_node* efd_eval(
+efd_node* efd_eval_in_context(
   efd_node const * const target,
   efd_node const * const args,
   efd_node const * const set_parent
@@ -1470,9 +1473,9 @@ efd_node* efd_eval(
   if (efd_is_link_node(target)) {
     result = copy_efd_node(target);
     if (set_parent != NULL) {
-      result->h.parent = set_parent;
+      result->h.parent = (efd_node*) set_parent;
     }
-    transformed = efd_eval(efd_concrete(result), args, NULL);
+    transformed = efd_eval_in_context(efd_concrete(result), args, NULL);
     cleanup_efd_node(result);
     return transformed;
   }
@@ -1495,7 +1498,7 @@ efd_node* efd_eval(
 
   // Set up this node for link resolution via the parent of the original node:
   if (set_parent != NULL) {
-    result->h.parent = set_parent;
+    result->h.parent = (efd_node*) set_parent;
   } else {
     result->h.parent = target->h.parent;
   }
@@ -1508,7 +1511,7 @@ efd_node* efd_eval(
     children = efd_children_dict(target);
     for (i = 0; i < d_get_count(children); ++i) {
       child = (efd_node*) d_get_item(children, i);
-      new_child = efd_eval(child, NULL, result);
+      new_child = efd_eval_in_context(child, NULL, result);
       efd_add_child(result, new_child);
     }
   }
@@ -1727,9 +1730,9 @@ void efd_set_global_i(string const * const key, efd_int_t value) {
 }
 
 void efd_set_global_n(string const * const key, efd_num_t value) {
-  intptr_t *v;
+  void **v;
   v = f_as_p(&value);
-  d_set_value_s(EFD_NUM_GLOBALS, key, (void*) (*v));
+  d_set_value_s(EFD_NUM_GLOBALS, key, *v);
 }
 
 void efd_set_global_s(string const * const key, string *value) {
@@ -1816,7 +1819,7 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
       sub = (efd_generator_state*) gen->state;
       node = efd_gen_next(sub);
       if (node == NULL) {
-        return copy_efd_node((efd_node*) stash);
+        return copy_efd_node((efd_node*) gen->stash);
       }
       if (gen->stash != NULL) {
         cleanup_v_efd_node(gen->stash);
@@ -1883,7 +1886,7 @@ void efd_gen_reset(efd_generator_state *gen) {
 
 efd_node * efd_gen_all(efd_generator_state *gen) {
   efd_node *result = create_efd_node(EFD_NT_CONTAINER, gen->name);
-  next = efd_gen_next(gen);
+  efd_node *next = efd_gen_next(gen);
   while (next != NULL) {
     efd_add_child(result, next);
   }
