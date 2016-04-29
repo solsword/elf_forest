@@ -59,34 +59,39 @@ void d_unlock(dictionary *d);
  *************/
 
 // Tests whether the given dictionary is empty.
-int d_is_empty(dictionary *d);
+int d_is_empty(dictionary const * const d);
 
 // Returns the number of values in the given dictionary.
-size_t d_get_count(dictionary *d);
+size_t d_get_count(dictionary const * const d);
 
 // Gets the nth item in the dictionary, according to the order in which items
 // were added.
-void * d_get_item(dictionary *d, size_t index);
+void * d_get_item(dictionary const * const d, size_t index);
 
 // Gets the nth key in the dictionary, according to the order in which items
 // were added. Note that when multiple items are entered under the same key,
 // that key appears multiple times in the dictionary's key list. The key is
 // returned via the r_key and r_size parameters, which are set to point to the
 // key data (needless to say said data shouldn't be altered).
-void d_get_key(dictionary *d, size_t index, d_key_t **r_key, size_t *r_size);
+void d_get_key(
+  dictionary const * const d,
+  size_t index,
+  d_key_t **r_key,
+  size_t *r_size
+);
 
 // Test whether the given dictionary contains any values under the given key.
-int d_contains_key(dictionary *d, d_key_t *key, size_t key_size);
+int d_contains_key(dictionary const * const d, d_key_t *key, size_t key_size);
 
 // Returns the first value stored under the given key, or NULL if no values are
 // present for that key.
-void * d_get_value(dictionary *d, d_key_t *key, size_t key_size);
+void * d_get_value(dictionary const * const d, d_key_t *key, size_t key_size);
 
 // Returns a newly allocated list containing all values stored under the given
 // key. Although the list is fresh, its values are the same as those in the
 // dictionary, so they shouldn't be freed. If there are no matches for the
 // given key, an empty list is returned.
-list * d_get_all(dictionary *d, d_key_t *key, size_t key_size);
+list * d_get_all(dictionary const * const d, d_key_t *key, size_t key_size);
 
 // Adds the given value to the dictionary under the given key. Allocates new
 // memory to expand the dictionary as necessary. If there is already a value
@@ -123,24 +128,33 @@ void d_clear(dictionary *d);
 
 // Runs the given function sequentially on each value in the dictionary,
 // according to the order they were added in.
-void d_foreach(dictionary *d, void (*f)(void *));
+void d_foreach(dictionary const * const d, void (*f)(void *));
 
 // Runs the given function sequentially on each value in the dictionary with
 // the given extra argument as its second argument.
-void d_witheach(dictionary *d, void *arg, void (*f)(void *, void *));
+void d_witheach(
+  dictionary const * const d,
+  void *arg,
+  void (*f)(void *, void *)
+);
+
+// Allocates and returns a new list containing all of the values of the given
+// dictionary in their nominal order. Value references are shared between the
+// dictionary and the list created.
+list * d_as_list(dictionary const * const d);
 
 // Counts the number of bytes of data/overhead used by the given dictionary.
 // For a dictionary, the data size is the space devoted to storing keys and
 // values, while the overhead is all other space.
-size_t d_data_size(dictionary *d);
-size_t d_overhead_size(dictionary *d);
+size_t d_data_size(dictionary const * const d);
+size_t d_overhead_size(dictionary const * const d);
 
 // Returns a number between 0 and 1 representing the fraction of the
 // dictionary's table entries that are being used.
-float d_utilization(dictionary *d);
+float d_utilization(dictionary const * const d);
 
 // Returns the average number of entries per cell. This correlates with lookup
 // times.
-float d_crowding(dictionary *d);
+float d_crowding(dictionary const * const d);
 
 #endif // ifndef DICTIONARY_H

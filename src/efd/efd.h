@@ -770,6 +770,12 @@ CLEANUP_DECL(efd_generator_state);
  * Functions *
  *************/
 
+// Functions for using with e.g. l_map to convert efd nodes to corresponding
+// raw types:
+void * v_efd__v_i(void *v_node);
+void * v_efd__v_n(void *v_node);
+void * v_efd__v_s(void *v_node);
+
 // Returns 1 if the given reference types are compatible and 0 otherwise.
 int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to);
 

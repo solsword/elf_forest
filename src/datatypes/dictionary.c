@@ -196,26 +196,31 @@ void d_unlock(dictionary *d) { omp_unset_lock(&(d->lock)); }
  * Functions *
  *************/
 
-int d_is_empty(dictionary *d) {
+int d_is_empty(dictionary const * const d) {
   return l_get_length(d->ordered) == 0;
 }
 
-size_t d_get_count(dictionary *d) {
+size_t d_get_count(dictionary const * const d) {
   return l_get_length(d->ordered);
 }
 
-void* d_get_item(dictionary *d, size_t index) {
+void* d_get_item(dictionary const * const d, size_t index) {
   dictionary_entry *e = (dictionary_entry*) l_get_item(d->ordered, index);
   return e->value;
 }
 
-void d_get_key(dictionary *d, size_t index, d_key_t **r_key, size_t *r_size) {
+void d_get_key(
+  dictionary const * const d,
+  size_t index,
+  d_key_t **r_key,
+  size_t *r_size
+) {
   dictionary_entry *e = (dictionary_entry*) l_get_item(d->ordered, index);
   *r_key = e->key;
   *r_size = e->key_size;
 }
 
-int d_contains_key(dictionary *d, d_key_t *key, size_t key_size) {
+int d_contains_key(dictionary const * const d, d_key_t *key, size_t key_size) {
   size_t i;
   dictionary_entry *e;
   dictionary_hash_t hash = dict_hash(key, key_size);
@@ -232,7 +237,7 @@ int d_contains_key(dictionary *d, d_key_t *key, size_t key_size) {
   return 0;
 }
 
-void* d_get_value(dictionary *d, d_key_t *key, size_t key_size) {
+void* d_get_value(dictionary const * const d, d_key_t *key, size_t key_size) {
   size_t i;
   dictionary_entry *e;
   dictionary_hash_t hash = dict_hash(key, key_size);
@@ -249,7 +254,7 @@ void* d_get_value(dictionary *d, d_key_t *key, size_t key_size) {
   return NULL;
 }
 
-list* d_get_all(dictionary *d, d_key_t *key, size_t key_size) {
+list* d_get_all(dictionary const * const d, d_key_t *key, size_t key_size) {
   list *result;
   size_t i;
   dictionary_entry *e;
@@ -484,7 +489,7 @@ void d_clear(dictionary *d) {
   l_clear(d->ordered);
 }
 
-void d_foreach(dictionary *d, void (*f)(void *)) {
+void d_foreach(dictionary const * const d, void (*f)(void *)) {
   size_t i;
   dictionary_entry *e;
   for (i = 0; i < l_get_length(d->ordered); ++i) {
@@ -493,13 +498,21 @@ void d_foreach(dictionary *d, void (*f)(void *)) {
   }
 }
 
-void d_witheach(dictionary *d, void *arg, void (*f)(void *, void *)) {
+void d_witheach(
+  dictionary const * const d,
+  void *arg,
+  void (*f)(void *, void *)
+) {
   size_t i;
   dictionary_entry *e;
   for (i = 0; i < l_get_length(d->ordered); ++i) {
     e = (dictionary_entry*) l_get_item(d->ordered, i);
     f(e->value, arg);
   }
+}
+
+list * d_as_list(dictionary const * const d) {
+  return = copy_list(d->ordered);
 }
 
 size_t d_data_size(dictionary *d) {
@@ -513,7 +526,7 @@ size_t d_data_size(dictionary *d) {
   }
   return result;
 }
-size_t d_overhead_size(dictionary *d) {
+size_t d_overhead_size(dictionary const * const d) {
   size_t i;
   list *bucket;
   size_t result = (
@@ -530,7 +543,7 @@ size_t d_overhead_size(dictionary *d) {
   return result;
 }
 
-float d_utilization(dictionary *d) {
+float d_utilization(dictionary const * const d) {
   size_t i;
   list *bucket;
   float result = 0;
@@ -543,7 +556,7 @@ float d_utilization(dictionary *d) {
   return result / ((float) d->table_size);
 }
 
-float d_crowding(dictionary *d) {
+float d_crowding(dictionary const * const d) {
   size_t i;
   list *bucket;
   float result = 0;

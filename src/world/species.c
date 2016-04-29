@@ -168,3 +168,170 @@ SPECIES_ACCESS_FUNCTIONS(sentient, SENTIENT)
 
 SPECIES_ACCESS_FUNCTIONS(fiber, FIBER)
 SPECIES_ACCESS_FUNCTIONS(pigment, PIGMENT)
+
+/*********************
+ * Element Functions *
+ *********************/
+// see element.h
+
+int el_int_property(
+  element_species *sp,
+  element_property property
+) {
+  switch (property) {
+    case EL_PRP_I_CATEGORIES:
+      return sp->categories;
+    case EL_PRP_I_FREQUENCY:
+      return sp->frequency;
+    case EL_PRP_I_SOLUBILITY:
+      return sp->solubility;
+    case EL_PRP_I_PlANT_NUTRITION:
+      return sp->plant_nutrition;
+    case EL_PRP_I_ANIMAL_NUTRITION:
+      return sp->animal_nutrition;
+
+    default:
+    case EL_PRP_F_PH_TENDENCY:
+    case EL_PRP_F_CORROSION_RESISTANCE:
+    case EL_PRP_F_STONE_TND_DENSITY:
+    case EL_PRP_F_STONE_TND_SP_HEAT:
+    case EL_PRP_F_STONE_TND_TR_TEMP:
+    case EL_PRP_F_STONE_TND_PLASTICITY:
+    case EL_PRP_F_STONE_TND_HARDNESS:
+    case EL_PRP_F_STONE_TND_BRIGHTNESS:
+    case EL_PRP_F_STONE_TND_CHROMA:
+    case EL_PRP_F_STONE_TND_OX_CHROMA:
+    case EL_PRP_F_STONE_TND_TN_CHROMA:
+    case EL_PRP_F_METAL_TND_LUSTER:
+    case EL_PRP_F_METAL_TND_HARDNESS:
+    case EL_PRP_F_METAL_TND_PLASTICITY:
+    case EL_PRP_F_METAL_TND_BRIGHTNESS:
+    case EL_PRP_F_METAL_TND_CHROMA:
+    case EL_PRP_F_METAL_TND_OX_CHROMA:
+    case EL_PRP_F_METAL_TND_TN_CHROMA:
+    case EL_PRP_F_ALLOY_PERFORMANCE:
+      fprintf(
+        stderr,
+        "ERROR: Attempt to access float property %d via el_int_property.\n",
+        property
+      );
+      exit(EXIT_FAILURE);
+  }
+}
+
+float el_float_property(
+  element_species *sp,
+  element_property property
+) {
+  switch (property) {
+    default:
+    case EL_PRP_I_CATEGORIES:
+    case EL_PRP_I_FREQUENCY:
+    case EL_PRP_I_SOLUBILITY:
+    case EL_PRP_I_PlANT_NUTRITION:
+    case EL_PRP_I_ANIMAL_NUTRITION:
+      fprintf(
+        stderr,
+        "ERROR: Attempt to access integer property %d via el_float_property.\n",
+        property
+      );
+      exit(EXIT_FAILURE);
+
+    case EL_PRP_F_PH_TENDENCY:
+      return sp->pH_tendency;
+    case EL_PRP_F_CORROSION_RESISTANCE:
+      return sp->corrosion_resistance
+    case EL_PRP_F_STONE_TND_DENSITY:
+      return sp->stone_density_tendency;
+    case EL_PRP_F_STONE_TND_SP_HEAT:
+      return sp->stone_specific_heat_tendency;
+    case EL_PRP_F_STONE_TND_TR_TEMP:
+      return sp->stone_transition_temp_tendency;
+    case EL_PRP_F_STONE_TND_PLASTICITY:
+      return sp->stone_plasticity_tendency;
+    case EL_PRP_F_STONE_TND_HARDNESS:
+      return sp->stone_hardness_tendency;
+    case EL_PRP_F_STONE_TND_BRIGHTNESS:
+      return sp->stone_brightness_tendency
+    case EL_PRP_F_STONE_TND_CHROMA:
+      return sp->stone_chroma;
+    case EL_PRP_F_STONE_TND_OX_CHROMA:
+      return sp->stone_oxide_chroma;
+    case EL_PRP_F_STONE_TND_TN_CHROMA:
+      return sp->stone_tint_chroma;
+
+    case EL_PRP_F_METAL_TND_LUSTER:
+      return sp->metal_luster_tendency;
+    case EL_PRP_F_METAL_TND_HARDNESS:
+      return sp->metal_hardness_tendency;
+    case EL_PRP_F_METAL_TND_PLASTICITY:
+      return sp->metal_plasticity_tendency;
+    case EL_PRP_F_METAL_TND_BRIGHTNESS:
+      return sp->metal_brightness_tendency;
+    case EL_PRP_F_METAL_TND_CHROMA:
+      return sp->metal_chroma;
+    case EL_PRP_F_METAL_TND_OX_CHROMA:
+      return sp->metal_oxide_chroma;
+    case EL_PRP_F_METAL_TND_TN_CHROMA:
+      return sp->metal_tint_chroma;
+
+    case EL_PRP_F_ALLOY_PERFORMANCE:
+      return sp->alloy_performance;
+  }
+}
+
+float el_avg_property(
+  list const * const species,
+  element_property property
+) {
+  size_t i;
+  element_species *sp;
+  float denom = 0;
+  float result = 0;
+
+  for (i = 0; i < l_get_length(species); ++i) {
+    sp = l_get_item(species, i);
+    result += el_float_property(sp, property);
+    denom += 1;
+  }
+  if (denom > 0) {
+    result /= denom;
+  }
+  return result;
+}
+
+float el_weighted_property(
+  list const * const species,
+  list const * const weights,
+  element_property property
+) {
+  size_t i;
+  element_species *sp;
+  void * v_weight;
+  float weight;
+  float denom = 0;
+  float result = 0;
+
+#ifdef DEBUG
+  if (l_get_length(species) != l_get_length(weights)) {
+    fprintf(
+      stderr,
+      "ERROR: species and weight list lengths don't match "
+      "in el_weighted_property [%d]!\n",
+      property
+    );
+  }
+#endif
+
+  for (i = 0; i < l_get_length(species); ++i) {
+    sp = l_get_item(species, i);
+    v_weight = l_get_item(weights, i);
+    weight = *p_as_f(v_weight);
+    result += weight * el_float_property(sp, property);
+    denom += weight;
+  }
+  if (denom > 0) {
+    result /= denom;
+  }
+  return result;
+}

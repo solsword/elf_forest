@@ -48,6 +48,10 @@ static inline list* create_list() {
   return create_custom_list(LIST_DEFAULT_SMALL_CHUNK_SIZE);
 }
 
+// Copies the given list, returning a newly-allocated list containing the same
+// data. If list items are references, they will be shared by both lists.
+list *copy_list(list const * const src);
+
 // Frees the memory associated with a list.
 CLEANUP_DECL(list);
 
@@ -175,6 +179,11 @@ void * l_scan_elements(
   void *ref,
   int (*match)(void *, void *)
 );
+
+// Takes a transformation function and returns a newly allocated list
+// constructed by applying the transformation function to each element of the
+// given list.
+list * l_map(list const * const input, void * (*map)(void *));
 
 // Counts the number of bytes of data/overhead used by the given list.
 size_t l_data_size(list const * const l);

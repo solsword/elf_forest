@@ -2,6 +2,7 @@
 #define SPECIES_H
 
 #include "datatypes/map.h"
+#include "datatypes/list.h"
 
 #include "ecology/adaptations.h"
 #include "txgen/txg_minerals.h"
@@ -233,9 +234,9 @@ static inline void any_species_set_species(any_species *asp, species sp) {
   *asp |= (sp & ANY_SP_SPECIES_MASK) << ANY_SP_SPECIES_SHIFT;
 }
 
-/*************
- * Functions *
- *************/
+/*********************
+ * General Functions *
+ *********************/
 
 // Required setup for the species tables.
 void setup_species(void);
@@ -255,7 +256,7 @@ SPECIES_ACCESS_FUNCTIONS_DECL(stone);
 SPECIES_ACCESS_FUNCTIONS_DECL(metal);
 
 SPECIES_ACCESS_FUNCTIONS_DECL(fungus);
-SPECIES_ACCESS_FUNCTIONS_DECL(moss);
+
 SPECIES_ACCESS_FUNCTIONS_DECL(grass);
 SPECIES_ACCESS_FUNCTIONS_DECL(vine);
 SPECIES_ACCESS_FUNCTIONS_DECL(herb);
@@ -272,5 +273,42 @@ SPECIES_ACCESS_FUNCTIONS_DECL(sentient);
 
 SPECIES_ACCESS_FUNCTIONS_DECL(fiber);
 SPECIES_ACCESS_FUNCTIONS_DECL(pigment);
+
+/*********************
+ * Element Functions *
+ *********************/
+// see element.h
+
+// Returns one of the integer properties of an element looked up via an
+// element_property constant. If given a float property, it prints an error
+// message and exits the program.
+int el_int_property(
+  element_species *sp,
+  element_property property
+);
+
+// As above for a floating point property. Note that the constant names include
+// _I_ or _F_ specifying whether a property is an integer or float.
+float el_float_property(
+  element_species *sp,
+  element_property property
+);
+
+// Returns the average of a float property across several element species
+// (given as a list of pointers to element_species structs). The given list is
+// not modified and the caller retains responsibility for it.
+float el_avg_property(
+  list const * const species,
+  element_property property
+);
+
+// As above, but also accepts a list of weights (use f_as_p to get floating
+// point values into a list). The list of weights must be the same length as
+// the list of species.
+float el_weighted_property(
+  list const * const species,
+  list const * const weights,
+  element_property property
+);
 
 #endif // ifndef SPECIES_H

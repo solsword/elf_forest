@@ -105,6 +105,16 @@ list *create_custom_list(size_t chunk_size) {
   return l;
 }
 
+list *copy_list(list const * const src) {
+  // TODO: More efficiency here!
+  size_t i;
+  list *result = create_custom_list(src->chunk_size);
+  for (i = 0; i < l_get_length(src); ++i) {
+    l_append_element(result, l_get_item(src, i));
+  }
+  return result;
+}
+
 CLEANUP_IMPL(list) {
   omp_set_lock(&(doomed->lock));
   doomed->count = 0;
@@ -420,6 +430,15 @@ void * l_scan_elements(
   } else {
     return l->elements[idx];
   }
+}
+
+list * l_map(list const * const input, void * (*map)(void *)) {
+  size_t i;
+  list *result = create_custom_list(input->chunk_size);
+  for (i = 0; i < l_get_length(input); ++i) {
+    l_append_element(result, map(l_get_item(input, i)));
+  }
+  return result;
 }
 
 size_t l_data_size(list const * const l) {

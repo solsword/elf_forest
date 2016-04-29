@@ -685,6 +685,22 @@ CLEANUP_IMPL(efd_generator_state) {
  * Functions *
  *************/
 
+void * v_efd__v_i(void *v_node) {
+  efd_node *n = (efd_node*) v_node;
+  return (void*) efd_as_i(n);
+}
+
+void * v_efd__v_n(void *v_node) {
+  efd_node *n = (efd_node*) v_node;
+  efd_num_t num = efd_as_n(n);
+  return *f_as_p(&num);
+}
+
+void * v_efd__v_s(void *v_node) {
+  efd_node *n = (efd_node*) v_node;
+  return (void*) (*efd__s(n));
+}
+
 int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to) {
   switch (from) {
     default:
@@ -1711,9 +1727,9 @@ void efd_set_global_i(string const * const key, efd_int_t value) {
 }
 
 void efd_set_global_n(string const * const key, efd_num_t value) {
-  uintptr_t v = 0;
-  v = *((uintptr_t*) &value); // TODO: Safer float <-> void* conversion?
-  d_set_value_s(EFD_NUM_GLOBALS, key, (void*) v);
+  intptr_t *v;
+  v = f_as_p(&value);
+  d_set_value_s(EFD_NUM_GLOBALS, key, (void*) (*v));
 }
 
 void efd_set_global_s(string const * const key, string *value) {

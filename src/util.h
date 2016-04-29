@@ -134,6 +134,17 @@ static inline float rounddenom(float x, int denom) {
   return roundf(x*denom)/((float) denom);
 }
 
+// Reinterprets the bits of a void* as a float. Useful when floats need to be
+// stored in containers that accept void*s.
+static inline float * p_as_f(void **p) {
+  return (float*) p;
+}
+
+// The inverse of the above, this reinterprets a float as a void*.
+static inline void ** f_as_p(float *f) {
+  return (intptr_t*) f;
+}
+
 // Stupid-simple PRNG:
 static inline ptrdiff_t prng(ptrdiff_t seed) {
   return (seed * 49103) + 2147483659; // both are prime
