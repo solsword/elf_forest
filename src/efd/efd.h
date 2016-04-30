@@ -795,13 +795,19 @@ int efd_format_is(efd_node *n, string const * const fmt);
 // Renames the given node using a copy of the given string.
 void efd_rename(efd_node * node, string const * const new_name);
 
+// Creates a string from an EFD address.
+string * efd_addr_string(efd_address *a);
+
 // Builds a fully-qualified name for the given node and returns a pointer to a
 // newly-allocated string holding this name.
-string* efd_build_fqn(efd_node const * const n);
+string * efd_build_fqn(efd_node const * const n);
+
+// Creates a new string containing a representation of the given EFD node.
+string * efd_repr(efd_node const * const n);
 
 // Gets the children dictionary from a node of any container type (returns NULL
 // for non-container nodes and prints a warning if DEBUG is on).
-dictionary* efd_children_dict(efd_node const * const n);
+dictionary * efd_children_dict(efd_node const * const n);
 
 // Compares the two nodes and returns 1 if they are exactly equivalent
 // (including any children, recursively) or 0 if they differ. Ancestors are not
@@ -809,6 +815,10 @@ dictionary* efd_children_dict(efd_node const * const n);
 // results under efd_eval (if this is a concern just call efd_equals on the
 // eval results).
 int efd_equals(efd_node const * const cmp, efd_node const * const agn);
+
+// Compares two nodes as with efd_equals, but only looks at values and ignores
+// node names (including for children).
+int efd_equivalent(efd_node const * const cmp, efd_node const * const agn);
 
 // Adds the given child to the parent's dictionary of children (parent must be
 // a container node).

@@ -60,6 +60,22 @@ string* copy_string(string const * const base) {
   return s;
 }
 
+string* create_empty_string(void) {
+  string* s = (string*) malloc(sizeof(string));
+  if (s == NULL) {
+    perror("Failed to create empty string.");
+    exit(errno);
+  }
+  s->bytes = (uint8_t*) malloc(sizeof(uint8_t));
+  if (s->bytes == NULL) {
+    perror("Failed to create empty string byte.");
+    exit(errno);
+  }
+  s->length = 0;
+  s->bytes[0] = '\0';
+  return s;
+}
+
 string* create_string_from_ntchars(char const * const chars) {
 #ifdef DEBUG
   if (S_LCHARSET == NULL) {
@@ -262,6 +278,11 @@ void s_append(string* base, string const * const extension) {
   base->bytes[base->length] = '\0';
 }
 
+void s_devour(string *base, string *extension) {
+  s_append(base, extension);
+  cleanup_string(extension);
+}
+
 string* s_concat(string const * const first, string const * const second) {
   string* result = create_string();
   result->length = first->length + second->length;
@@ -316,14 +337,20 @@ string* s_vsprintf(char const * const fmt, va_list args) {
 }
 
 void s_print(string *s) {
-  char* encoded = s_encode_nt(s);
-  fputs(encoded, stdout);
-  free(encoded);
+  s_fprint(stdout, s);
 }
 
 void s_println(string *s) {
+  s_fprintln(stdout, s);
+}
+
+void s_fprint(FILE *out, string *s) {
   char* encoded = s_encode_nt(s);
-  fputs(encoded, stdout);
-  fputc('\n', stdout);
+  fputs(encoded, out);
   free(encoded);
+}
+
+void s_fprintln(FILE *out, string *s) {
+  s_fprint(out, s);
+  fputc('\n', out);
 }

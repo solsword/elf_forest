@@ -853,9 +853,8 @@ void efd_rename(efd_node * node, string const * const new_name) {
   node->h.name = copy_string(new_name);
 }
 
-string* efd_build_fqn(efd_node const * const n) {
-  efd_address *a = construct_efd_address_of_node(n);
-  string *result = create_string();
+string * efd_addr_string(efd_address *a) {
+  string *result = create_empty_string();
   while (a->next != NULL) {
     s_append(result, a->name);
     s_append(result, EFD_ADDR_SEP_STR);
@@ -865,7 +864,232 @@ string* efd_build_fqn(efd_node const * const n) {
   return result;
 }
 
-dictionary* efd_children_dict(efd_node const * const n) {
+string * efd_build_fqn(efd_node const * const n) {
+  efd_address *a = construct_efd_address_of_node(n);
+  string *result = efd_addr_string(a);
+  cleanup_efd_address(a);
+  return result;
+}
+
+string * efd_repr(efd_node const * const n) {
+  dictionary *children;
+  efd_node *child;
+  string *fqn, *scopes, *contents, *value;
+  string *result;
+  intptr_t ncount, i;
+  size_t count;
+
+  SSTR(s_space, " ", 1);
+  SSTR(s_lsb, "[[", 2);
+  SSTR(s_rsb, "]]", 2);
+  SSTR(s_slsb, "[", 1);
+  SSTR(s_srsb, "]", 1);
+  SSTR(s_lab, "<<", 2);
+  SSTR(s_rab, ">>", 2);
+  SSTR(s_rcb, "{", 1);
+  SSTR(s_lcb, "}", 1);
+  SSTR(s_dots, "...", 3);
+  SSTR(s_colon, ":", 1);
+  SSTR(s_tilde, "~", 1);
+  SSTR(s_pct, "%", 1);
+  SSTR(s_caret, "->", 2);
+  SSTR(s_quote, "\"", 1);
+
+  fqn = efd_build_fqn(n);
+
+  ncount = efd_normal_child_count(n);
+
+  if (ncount >= 0) {
+    children = efd_children_dict(n);
+  } else {
+    children = NULL;
+  }
+
+  scopes = create_empty_string();
+  if (ncount >= 0 && ncount != d_get_count(children)) {
+    // must be a scope in there
+    for (i = 0; i < d_get_count(children); ++i) {
+      child = d_get_item(children, i);
+      if (child->h.type == EFD_NT_SCOPE) {
+        s_append(scopes, s_rcb);
+        s_append(scopes, child->h.name);
+        s_append(scopes, s_lcb);
+      }
+      s_append(scopes, s_space);
+    }
+  } else {
+    s_append(scopes, s_space);
+  } // scopes always has a trailing space
+  
+
+  contents = create_empty_string();
+  for (i = 0; i < ncount && i < 3; ++i) {
+    child = efd_nth(n, i);
+    if (efd_is_link_node(child)) {
+      s_append(contents, s_lab);
+      s_devour(
+        contents,
+        create_string_from_ntchars(EFD_NT_ABBRS[child->h.type])
+      );
+      s_append(contents, s_space);
+      s_append(contents, child->h.name);
+      s_append(contents, s_rab);
+    } else {
+      s_append(contents, s_lsb);
+      s_devour(
+        contents,
+        create_string_from_ntchars(EFD_NT_ABBRS[child->h.type])
+      );
+      s_append(contents, s_space);
+      s_append(contents, child->h.name);
+      s_append(contents, s_rsb);
+    }
+    if (i < ncount - 1) {
+      s_append(contents, s_space);
+    }
+  }
+  if (ncount >= 0 && i < ncount) {
+    s_append(contents, s_dots);
+  }
+
+  value = create_empty_string();
+  switch (n->h.type) {
+    default:
+      // leave 'value' empty
+      break;
+
+    case EFD_NT_FUNCTION:
+    case EFD_NT_FN_OBJ:
+    case EFD_NT_FN_INT:
+    case EFD_NT_FN_NUM:
+    case EFD_NT_FN_STR:
+    case EFD_NT_FN_AR_INT:
+    case EFD_NT_FN_AR_NUM:
+    case EFD_NT_FN_AR_STR:
+    case EFD_NT_GENERATOR:
+    case EFD_NT_GN_OBJ:
+    case EFD_NT_GN_INT:
+    case EFD_NT_GN_NUM:
+    case EFD_NT_GN_STR:
+    case EFD_NT_GN_AR_INT:
+    case EFD_NT_GN_AR_NUM:
+    case EFD_NT_GN_AR_STR:
+      s_append(value, s_pct);
+      s_append(value, n->b.as_function.function);
+      break;
+
+    case EFD_NT_LINK:
+    case EFD_NT_LOCAL_LINK:
+    case EFD_NT_VARIABLE:
+      s_append(value, s_caret);
+      s_devour(value, efd_addr_string(n->b.as_link.target));
+      break;
+
+    case EFD_NT_PROTO:
+      s_append(value, s_colon);
+      s_append(value, s_tilde);
+      s_append(value, n->b.as_proto.format);
+      break;
+
+    case EFD_NT_OBJECT:
+      s_append(value, s_colon);
+      s_append(value, n->b.as_proto.format);
+      break;
+
+    case EFD_NT_INTEGER:
+      s_devour(value, s_sprintf("%ld", n->b.as_integer.value));
+      break;
+
+    case EFD_NT_NUMBER:
+      s_devour(value, s_sprintf("%0.3f", n->b.as_number.value));
+      break;
+
+    case EFD_NT_STRING:
+      s_append(value, s_quote);
+      s_append(value, n->b.as_string.value);
+      s_append(value, s_quote);
+      break;
+
+    case EFD_NT_ARRAY_INT:
+      s_append(value, s_slsb);
+      count = n->b.as_int_array.count;
+      for (i = 0; i < count && i < 3; ++i) {
+        s_devour(value, s_sprintf("%ld", n->b.as_int_array.values[i]));
+        if (i < count - 1) {
+          s_append(value, s_space);
+        }
+      }
+      if (i < count) {
+        s_append(value, s_dots);
+      }
+      s_append(value, s_srsb);
+      break;
+
+    case EFD_NT_ARRAY_NUM:
+      s_append(value, s_slsb);
+      count = n->b.as_num_array.count;
+      for (i = 0; i < count && i < 3; ++i) {
+        s_devour(value, s_sprintf("%0.3f", n->b.as_num_array.values[i]));
+        if (i < count - 1) {
+          s_append(value, s_space);
+        }
+      }
+      if (i < count) {
+        s_append(value, s_dots);
+      }
+      s_append(value, s_srsb);
+      break;
+
+    case EFD_NT_ARRAY_STR:
+      s_append(value, s_slsb);
+      count = n->b.as_str_array.count;
+      for (i = 0; i < count && i < 3; ++i) {
+        s_append(value, s_quote);
+        s_devour(value, n->b.as_str_array.values[i]);
+        s_append(value, s_quote);
+        if (i < count - 1) {
+          s_append(value, s_space);
+        }
+      }
+      if (i < count) {
+        s_append(value, s_dots);
+      }
+      s_append(value, s_srsb);
+      break;
+  }
+
+  // Finally, assembly all of our strings into one big one:
+  result = create_empty_string();
+  if (efd_is_link_node(n)) {
+    s_append(result, s_lab);
+  } else {
+    s_append(result, s_lsb);
+  }
+
+  s_devour(result, create_string_from_ntchars(EFD_NT_ABBRS[n->h.type]));
+  s_append(result, s_space);
+
+  s_devour(result, fqn);
+  s_append(result, s_space);
+
+  s_devour(result, scopes);
+  // scopes comes with a trailing space built-in
+
+  s_devour(result, contents);
+  s_append(result, s_space);
+
+  s_devour(result, value);
+
+  if (efd_is_link_node(n)) {
+    s_append(result, s_rab);
+  } else {
+    s_append(result, s_rsb);
+  }
+
+  return result;
+}
+
+dictionary * efd_children_dict(efd_node const * const n) {
 #ifdef DEBUG
   string *fqn;
 #endif
@@ -917,14 +1141,19 @@ dictionary* efd_children_dict(efd_node const * const n) {
   }
 }
 
-int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
+// private helper for both efd_equals and efd_equivalent
+int _efd_cmp(
+  efd_node const * const cmp,
+  efd_node const * const agn,
+  int cmp_names
+) {
   size_t i;
   dictionary *cmp_ch, *agn_ch;
   efd_node *cmp_t, *agn_t;
   efd_index *empty_index;
   if (
     cmp->h.type != agn->h.type
- || !s_equals(cmp->h.name, agn->h.name)
+ || (cmp_names && !s_equals(cmp->h.name, agn->h.name))
   ) {
     return 0;
   }
@@ -933,7 +1162,7 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
 #ifdef DEBUG
       fprintf(
         stderr,
-        "ERROR: Invalid node type %d in efd_equals.\n",
+        "ERROR: Invalid node type %d in efd comparison.\n",
         cmp->h.type
       );
 #endif
@@ -947,7 +1176,7 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
         return 0;
       }
       for (i = 0; i < d_get_count(cmp_ch); ++i) {
-        if (!efd_equals(d_get_item(cmp_ch, i), d_get_item(agn_ch, i))) {
+        if (!_efd_cmp(d_get_item(cmp_ch, i), d_get_item(agn_ch, i), cmp_names)){
           return 0;
         }
       }
@@ -978,7 +1207,7 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
         return 0;
       }
       for (i = 0; i < d_get_count(cmp_ch); ++i) {
-        if (!efd_equals(d_get_item(cmp_ch, i), d_get_item(agn_ch, i))) {
+        if (!_efd_cmp(d_get_item(cmp_ch, i), d_get_item(agn_ch, i), cmp_names)){
           return 0;
         }
       }
@@ -987,7 +1216,7 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
     case EFD_NT_LINK:
     case EFD_NT_LOCAL_LINK:
     case EFD_NT_VARIABLE:
-      if (!efd_equals(efd_concrete(cmp), efd_concrete(agn))) {
+      if (!_efd_cmp(efd_concrete(cmp), efd_concrete(agn), cmp_names)) {
         return 0;
       }
       break;
@@ -995,7 +1224,7 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
     case EFD_NT_PROTO:
       if (
         !s_equals(cmp->b.as_proto.format, agn->b.as_proto.format)
-     || !efd_equals(cmp->b.as_proto.input, agn->b.as_proto.input)
+     || !_efd_cmp(cmp->b.as_proto.input, agn->b.as_proto.input, cmp_names)
       ) {
         return 0;
       }
@@ -1008,7 +1237,7 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
       empty_index = create_efd_index();
       efd_pack_node(cmp_t, empty_index);
       efd_pack_node(agn_t, empty_index);
-      if (!efd_equals(cmp_t, agn_t)) {
+      if (!_efd_cmp(cmp_t, agn_t, cmp_names)) {
         cleanup_efd_node(cmp_t);
         cleanup_efd_node(agn_t);
         return 0;
@@ -1075,6 +1304,14 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
       break;
   }
   return 1;
+}
+
+int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
+  return _efd_cmp(cmp, agn, 1);
+}
+
+int efd_equivalent(efd_node const * const cmp, efd_node const * const agn) {
+  return _efd_cmp(cmp, agn, 0);
 }
 
 void efd_add_child(efd_node *n, efd_node *child) {
@@ -1358,10 +1595,13 @@ efd_node* efd_concrete(efd_node const * const base) {
       return (efd_node*) base;
     case EFD_NT_LINK:
       linked = efd(EFD_ROOT, base->b.as_link.target);
+      break;
     case EFD_NT_LOCAL_LINK:
       linked = efd(base->h.parent, base->b.as_link.target);
+      break;
     case EFD_NT_VARIABLE:
       linked = efd_resolve_variable(base);
+      break;
   }
   return efd_concrete(linked);
 }
@@ -1462,9 +1702,7 @@ efd_node* efd_eval_in_context(
   efd_node const * const set_parent
 ) {
   size_t i;
-#ifdef DEBUG
-  string *fqn;
-#endif
+  string *fqn, *taddr;
   efd_node *result, *transformed;
   efd_node *child, *new_child;
   dictionary *children;
@@ -1475,7 +1713,22 @@ efd_node* efd_eval_in_context(
     if (set_parent != NULL) {
       result->h.parent = (efd_node*) set_parent;
     }
-    transformed = efd_eval_in_context(efd_concrete(result), args, NULL);
+    transformed = efd_concrete(result);
+    if (transformed == NULL) {
+      fqn = efd_build_fqn(target);
+      taddr = efd_addr_string(result->b.as_link.target);
+      fprintf(
+        stderr,
+        "Broken link during evaluation at node '%.*s' "
+        "(target '%.*s' doesn't exist).\n",
+        (int) s_get_length(fqn),
+        s_raw(fqn),
+        (int) s_get_length(taddr),
+        s_raw(taddr)
+      );
+      exit(EXIT_FAILURE);
+    }
+    transformed = efd_eval_in_context(transformed, args, NULL);
     cleanup_efd_node(result);
     return transformed;
   }

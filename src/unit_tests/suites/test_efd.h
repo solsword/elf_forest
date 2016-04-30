@@ -78,11 +78,12 @@ int _test_efd_case(efd_node *n) {
   float float_result;
   efd_node *node_result;
   efd_node *cmp, *agn;
+  string *repr;
   int result = 0;
   SSTR(s_itest, "itest", 5);
   SSTR(s_ntest, "ntest", 5);
   SSTR(s_ptest, "ptest", 5);
-  SSTR(s_evtest, "evtest", 5);
+  SSTR(s_evtest, "evtest", 6);
 
   s.input = NULL;
   s.input_length = 0;
@@ -226,7 +227,7 @@ int _test_efd_case(efd_node *n) {
     result = (
       cmp != NULL
    && agn != NULL
-   && efd_equals(cmp, agn)
+   && efd_equivalent(cmp, agn)
     );
     if (!result) {
       if (cmp == NULL) {
@@ -235,6 +236,13 @@ int _test_efd_case(efd_node *n) {
         fprintf(stderr, "Test EFD case [eval]: Failed (2nd eval failed).\n");
       } else {
         fprintf(stderr, "Test EFD case [eval]: Failed (results not equal).\n");
+        repr = efd_repr(cmp);
+        s_fprint(stderr, repr);
+        cleanup_string(repr);
+        fprintf(stderr, " =/= ");
+        repr = efd_repr(agn);
+        s_fprintln(stderr, repr);
+        cleanup_string(repr);
       }
     }
     if (cmp != NULL) { cleanup_efd_node(cmp); }
@@ -257,16 +265,14 @@ size_t test_efd_defined_tests(void) {
   SSTR(s_ptest, "ptest", 5);
   SSTR(s_evtest, "evtest", 6);
 
-  n = create_efd_node(EFD_NT_CONTAINER, s_test);
-  if (!efd_parse_file(n, cr, "res/data/test/test.efd")) {
-    cleanup_efd_node(n);
+  if (!efd_parse_file(EFD_ROOT, cr, "res/data/test/test.efd")) {
     cleanup_efd_index(cr);
     return 1;
   }
 
-  efd_unpack_node(n, cr);
+  efd_unpack_node(EFD_ROOT, cr);
 
-  n = efdx(n, s_test); // test.test
+  n = efdx(EFD_ROOT, s_test); // test.test
 
   children = n->b.as_container.children;
   for (i = 0; i < d_get_count(children); ++i) {

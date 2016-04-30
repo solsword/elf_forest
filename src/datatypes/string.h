@@ -6,6 +6,7 @@
 // TODO: Replace/keep? most uses of char*
 
 #include <stdarg.h>
+#include <stdio.h>
 
 #include "boilerplate.h"
 
@@ -64,17 +65,19 @@ void init_strings(void);
  * Constructors & Destructors *
  ******************************/
 
-string* create_string(void);
+string * create_string(void);
 
-string* copy_string(string const * const base);
+string * copy_string(string const * const base);
 
-string* create_string_from_ntchars(char const * const chars);
+string * create_empty_string(void);
+
+string * create_string_from_ntchars(char const * const chars);
   // chars must be in local encoding & null-terminated
 
-string* create_string_from_chars(char const * const nchars, size_t len);
+string * create_string_from_chars(char const * const nchars, size_t len);
   // nchars should be in local encoding but can have NULs in it
 
-string* create_raw_string(uint8_t const * const raw, size_t len);
+string * create_raw_string(uint8_t const * const raw, size_t len);
   // raw should be in utf-8 and is used without decoding
 
 CLEANUP_DECL(string);
@@ -99,11 +102,11 @@ int s_check_bytes(string const * const s, char const * const c);
 // Encodes the given string into the user's locale, returning a newly malloc'd
 // char* and its length in the return parameter. Note that the result might
 // contain NULs, and won't usually be NUL-terminated.
-char* s_encode(string const * const s, size_t* rlen);
+char * s_encode(string const * const s, size_t* rlen);
 
 // Like s_encode, but returns a NUL-terminated string. Remember that the result
 // is malloc'd and so should be freed by the caller.
-char* s_encode_nt(string const * const s);
+char * s_encode_nt(string const * const s);
 
 // Returns a pointer to the raw string data in UTF-8. The pointer isn't
 // malloc'd, so it may be broken if other string operations are used. Note that
@@ -116,25 +119,31 @@ int s_equals(string const * const s, string const * const other);
 
 // Reallocates the base string to accommodate the addition of the given
 // extension.
-void s_append(string* base, string const * const extension);
+void s_append(string *base, string const * const extension);
+
+// Same as s_append but cleans up the extension string.
+void s_devour(string *base, string *extension);
 
 // Creates a new string that contains the first string followed by the second.
-string* s_concat(string const * const first, string const * const second);
+string * s_concat(string const * const first, string const * const second);
 
 // Joins together several strings, separating them with the given separator.
 // The list of arguments to join MUST be terminated with a NULL.
-string* s_join(string const * const sep, ...);
-string* s_vjoin(string const * const sep, va_list args);
+string * s_join(string const * const sep, ...);
+string * s_vjoin(string const * const sep, va_list args);
 
 // Printfs starting with a char* format string allocating and returning a new
 // string pointer.
-string* s_sprintf(char const * const fmt, ...);
-string* s_vsprintf(char const * const fmt, va_list args);
+string * s_sprintf(char const * const fmt, ...);
+string * s_vsprintf(char const * const fmt, va_list args);
 
-// Prints the string to stdout (optionally adding a newline). If the string
-// contains NUL bytes, printing will stop there, and in the println case, no
-// newline will be added. The string is encoded into the user's encoding first.
+// Prints the string to stdout (or the given file; optionally with a newline).
+// If the string contains NUL bytes, printing will stop there, and in the
+// println case, no newline will be added. The string is encoded into the
+// user's encoding first.
 void s_print(string *s);
 void s_println(string *s);
+void s_fprint(FILE *out, string *s);
+void s_fprintln(FILE *out, string *s);
 
 #endif // #ifndef STRING_H
