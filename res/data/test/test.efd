@@ -434,7 +434,10 @@
 [[ff other_350:call <<l ^.varscope>> [[V vars [[i ~other 350]] ]] ]]
 [[ff over_35:call <<l ^.varscope>> [[V vars [[i ~over 35]] ]] ]]
 
-<<l other_95.nested.t_v@inner_link_v>>
+//<<l varscope.nested.t_v@inner_link_v>>
+// TODO: DEBUG THIS!
+<<l other_95@inner_link_v>>
+//<<l other_95.nested.t_v@inner_link_v>>
 <<l over_999.nested.t_over@inner_link_over>>
 
 <<l varscope@ref1>>
@@ -442,8 +445,8 @@
 <<l over_35@ref3>>
 
 [[o t59:evtest <<L test.inner_link>> (i 17) ]]
-/*
 [[o t60:evtest <<L test.inner_link_v>> (i 95) ]]
+/*
 [[o t61:evtest <<L test.inner_link_over>> (i 1000) ]]
 [[o t62:evtest (i 3) (i 17) ]]
 
@@ -480,6 +483,7 @@
 [[o t91:evtest <<L test.ref2.nlink.t_other>> (i 77) ]]
 [[o t92:evtest <<L test.ref2.nlink.t_v>> (i 77) ]]
 
+/*
 [[o t93:evtest <<L test.ref3.nested.t_int>> (i 1) ]]
 [[o t94:evtest <<L test.ref3.nested.t_other>> (i 17) ]]
 [[o t95:evtest <<L test.ref3.nested.t_over>> (i 35) ]]

@@ -222,6 +222,11 @@ int _test_efd_case(efd_node *n) {
     }
   } else if (efd_format_is(n, s_evtest)) {
     efd_ev_test *t = (efd_ev_test*) (*efd__o(n));
+    printf("HERE\n");
+    string *a = create_string_from_ntchars("test.inner_link_v");
+    efd_node *nd = efdx(EFD_ROOT, a);
+    string *r = efd_repr(nd);
+    s_fprintln(stderr, r);
     cmp = efd_eval(t->compare, NULL);
     agn = efd_eval(t->against, NULL);
     result = (
