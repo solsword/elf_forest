@@ -336,21 +336,21 @@ string* s_vsprintf(char const * const fmt, va_list args) {
   return result;
 }
 
-void s_print(string *s) {
+void s_print(string const * const s) {
   s_fprint(stdout, s);
 }
 
-void s_println(string *s) {
+void s_println(string const * const s) {
   s_fprintln(stdout, s);
 }
 
-void s_fprint(FILE *out, string *s) {
+void s_fprint(FILE *out, string const * const s) {
   char* encoded = s_encode_nt(s);
   fputs(encoded, out);
   free(encoded);
 }
 
-void s_fprintln(FILE *out, string *s) {
+void s_fprintln(FILE *out, string const * const s) {
   s_fprint(out, s);
   fputc('\n', out);
 }

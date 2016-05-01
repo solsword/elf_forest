@@ -676,7 +676,8 @@ efd_node * construct_efd_str_node(
 // Allocates and returns a deep copy of the given node, which of course
 // includes deep copies of all of the node's children recursively. Note that
 // any objects contained in the node or its children are also copied, as it is
-// assumed that cleanup_efd_node will be sufficient for memory management.
+// assumed that cleanup_efd_node will be sufficient for memory management. The
+// copied node has its parent set to NULL.
 efd_node * copy_efd_node(efd_node const * const src);
 
 // Same as copy_efd_node, but renames the new node, using a copy of the given
@@ -795,6 +796,12 @@ int efd_format_is(efd_node *n, string const * const fmt);
 // Renames the given node using a copy of the given string.
 void efd_rename(efd_node * node, string const * const new_name);
 
+// Creates and returns a string holding the name of the given type:
+string * efd_type_name(efd_node_type t);
+
+// Creates and returns a string holding the abbreviation of the given type:
+string * efd_type_abbr(efd_node_type t);
+
 // Creates a string from an EFD address.
 string * efd_addr_string(efd_address *a);
 
@@ -802,8 +809,33 @@ string * efd_addr_string(efd_address *a);
 // newly-allocated string holding this name.
 string * efd_build_fqn(efd_node const * const n);
 
-// Creates a new string containing a representation of the given EFD node.
+// Creates a new string containing an abbreviated representation of the given
+// EFD node.
 string * efd_repr(efd_node const * const n);
+
+// Creates a new string containing a full representation of the given EFD node.
+// This doesn't handle things like global references, so it's not suitable for
+// persistence to a file, but it can be used for debugging and diagnostics.
+string * efd_full_repr(efd_node const * const n);
+
+// Reports an error with the given node, displaying the given message on stderr
+// along with a representation of the given node. Devours the given message, so
+// the caller doesn't need to free it.
+void efd_report_error(efd_node const * const n, string *message);
+
+// Reports an error with a link, printing the given message on stderr as well
+// as an analysis of where the given node (which should be a link node) fails
+// to resolve. Devours the given message.
+void efd_report_broken_link(efd_node const * const n, string *message);
+
+// Report an error with evaluation, displaying the given message along with a
+// summary of the original node and a full report of the (partial) evaluation
+// result. Devours the given message.
+void efd_report_eval_error(
+  efd_node const * const orig,
+  efd_node const * const evald,
+  string *message
+);
 
 // Gets the children dictionary from a node of any container type (returns NULL
 // for non-container nodes and prints a warning if DEBUG is on).
@@ -937,14 +969,15 @@ efd_node * efdx(efd_node const * const root, string const * const saddr);
 efd_node * efd_eval_in_context(
   efd_node const * const target,
   efd_node const * const args,
-  efd_node const * const set_parent
+  efd_node const * const set_parent,
+  efd_node const * const eval_root
 );
 // Shorthand:
 static inline efd_node * efd_eval(
   efd_node const * const target,
   efd_node const * const args
 ) {
-  return efd_eval_in_context(target, args, NULL);
+  return efd_eval_in_context(target, args, NULL, target);
 }
 
 // Adds the given bridge to the given index.

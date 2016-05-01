@@ -74,6 +74,11 @@ string * create_empty_string(void);
 string * create_string_from_ntchars(char const * const chars);
   // chars must be in local encoding & null-terminated
 
+// shorthand:
+static inline string * s_(char const * const chars) {
+  return create_string_from_ntchars(chars);
+}
+
 string * create_string_from_chars(char const * const nchars, size_t len);
   // nchars should be in local encoding but can have NULs in it
 
@@ -141,9 +146,9 @@ string * s_vsprintf(char const * const fmt, va_list args);
 // If the string contains NUL bytes, printing will stop there, and in the
 // println case, no newline will be added. The string is encoded into the
 // user's encoding first.
-void s_print(string *s);
-void s_println(string *s);
-void s_fprint(FILE *out, string *s);
-void s_fprintln(FILE *out, string *s);
+void s_print(string const * const s);
+void s_println(string const * const s);
+void s_fprint(FILE *out, string const * const s);
+void s_fprintln(FILE *out, string const * const s);
 
 #endif // #ifndef STRING_H
