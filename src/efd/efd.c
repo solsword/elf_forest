@@ -231,6 +231,7 @@ efd_node* copy_efd_node(efd_node const * const src) {
         src,
         s_("Warning: copy_efd_node called on INVALID node.")
       );
+      fprintf(stderr, "\n");
 #endif
       break;
     case EFD_NT_CONTAINER:
@@ -766,6 +767,7 @@ void efd_assert_type(efd_node const * const n, efd_node_type t) {
       n,
       s_("ERROR: type of node doesn't match required type:")
     );
+    fprintf(stderr, "\n");
     tn = create_string_from_ntchars(" Expected: ");
     s_devour(tn, efd_type_name(t));
     s_devour(tn, create_string_from_ntchars("\n Got: "));
@@ -923,9 +925,7 @@ string * efd_repr(efd_node const * const n) {
       }
       s_append(scopes, s_space);
     }
-  } else {
-    s_append(scopes, s_space);
-  } // scopes always has a trailing space
+  } // otherwise it remains empty
   
 
   contents = create_empty_string();
@@ -1086,12 +1086,12 @@ string * efd_repr(efd_node const * const n) {
   s_append(result, s_space);
 
   s_devour(result, scopes);
-  // scopes comes with a trailing space built-in
+  // scopes comes with a trailing space when needed
+
+  s_devour(result, value);
 
   s_devour(result, contents);
   // contents also contains a trailing space when needed
-
-  s_devour(result, value);
 
   if (efd_is_link_node(n)) {
     s_append(result, s_rab);
@@ -1102,7 +1102,7 @@ string * efd_repr(efd_node const * const n) {
   return result;
 }
 
-string * efd_full_repr(efd_node const * const n) {
+string * _efd_full_repr(efd_node const * const n, size_t indent) {
   dictionary *children;
   efd_node *child;
   string *fqn, *contents, *value;
@@ -1122,7 +1122,17 @@ string * efd_full_repr(efd_node const * const n) {
   SSTR(s_pct, "%", 1);
   SSTR(s_caret, "->", 2);
   SSTR(s_quote, "\"", 1);
-  SSTR(s_nl, "\n", 1);
+
+  string *s_nl = s_("\n");
+  string *s_outer_nl = s_("\n");
+  string *ind = create_empty_string();
+  for (i = 0; i < indent; ++i) {
+    s_append(ind, s_space);
+    if (i < indent - 2) {
+      s_append(s_outer_nl, s_space);
+    }
+  }
+  s_append(s_nl, ind);
 
   fqn = efd_build_fqn(n);
 
@@ -1132,8 +1142,12 @@ string * efd_full_repr(efd_node const * const n) {
     s_append(contents, s_nl);
     for (i = 0; i < d_get_count(children); ++i) {
       child = d_get_item(children, i);
-      s_devour(contents, efd_full_repr(child));
-      s_append(contents, s_nl);
+      s_devour(contents, _efd_full_repr(child, indent + 2));
+      if (i < d_get_count(children) - 1) {
+        s_append(contents, s_nl);
+      } else {
+        s_append(contents, s_outer_nl);
+      }
     }
   }
 
@@ -1229,7 +1243,7 @@ string * efd_full_repr(efd_node const * const n) {
       count = n->b.as_str_array.count;
       for (i = 0; i < count; ++i) {
         s_append(value, s_quote);
-        s_devour(value, n->b.as_str_array.values[i]);
+        s_append(value, n->b.as_str_array.values[i]);
         s_append(value, s_quote);
         if (i < count - 1) {
           s_append(value, s_comma);
@@ -1254,10 +1268,10 @@ string * efd_full_repr(efd_node const * const n) {
   s_devour(result, fqn);
   s_append(result, s_space);
 
+  s_devour(result, value);
+
   s_devour(result, contents);
   // contents contains a trailing space when needed
-
-  s_devour(result, value);
 
   if (efd_is_link_node(n)) {
     s_append(result, s_rab);
@@ -1268,9 +1282,13 @@ string * efd_full_repr(efd_node const * const n) {
   return result;
 }
 
+string * efd_full_repr(efd_node const * const n) {
+  return _efd_full_repr(n, 2);
+}
+
 void efd_report_error(efd_node const * const n, string *message) {
   string *repr = efd_repr(n);
-  fprintf(stderr, "Error with EFD node:\n");
+  fprintf(stderr, "Error with EFD node:\n  ");
   s_fprintln(stderr, repr);
   s_fprintln(stderr, message);
   cleanup_string(message);
@@ -1281,6 +1299,7 @@ string *_efd_trace_link(efd_node const * const n, string * sofar) {
   efd_node *linked;
   SSTR(s_arrow, "\n  -> ", 6);
   SSTR(s_broken, "\n  -X> ", 7);
+  SSTR(s_nl, "\n  ", 3);
   SSTR(s_lab, "<", 1);
   SSTR(s_rab, ">", 1);
 
@@ -1320,6 +1339,10 @@ string *_efd_trace_link(efd_node const * const n, string * sofar) {
   if (linked == NULL) {
     s_append(sofar, s_broken);
     s_devour(sofar, efd_addr_string(n->b.as_link.target));
+    if (n->h.type == EFD_NT_VARIABLE) {
+      s_append(sofar, s_nl);
+      s_devour(sofar, efd_variable_search_trace(n));
+    }
     return sofar;
   } else {
     return _efd_trace_link(linked, sofar);
@@ -1367,6 +1390,7 @@ dictionary * efd_children_dict(efd_node const * const n) {
         n,
         s_("Warning: Attempt to get children of non-container node.")
       );
+      fprintf(stderr, "\n");
 #endif
       return NULL;
     case EFD_NT_CONTAINER:
@@ -1415,6 +1439,7 @@ int _efd_cmp(
         cmp,
         s_("ERROR: Invalid node type in efd comparison.")
       );
+      fprintf(stderr, "\n");
 #endif
       return 0;
 
@@ -1571,17 +1596,19 @@ void efd_add_child(efd_node *n, efd_node *child) {
       n,
       s_("ERROR: Can't add child to non-container node.")
     );
+    fprintf(stderr, "\n");
     exit(EXIT_FAILURE);
   }
-  if (child->h.parent != NULL) {
+  if (child->h.parent != NULL && child->h.parent != n) {
     efd_report_error(
       n,
       s_("(while adding to parent)")
     );
     efd_report_error(
       child,
-      s_("Warning: child already had a parent.")
+      s_("Warning: efd_add_child: child already had a parent.")
     );
+    fprintf(stderr, "\n");
   }
 #endif
   d_add_value_s(efd_children_dict(n), child->h.name, (void*) child);
@@ -1595,6 +1622,7 @@ void efd_prepend_child(efd_node *n, efd_node *child) {
       n,
       s_("ERROR: Can't add child to non-container node.")
     );
+    fprintf(stderr, "\n");
     exit(EXIT_FAILURE);
   }
   if (child->h.parent != NULL) {
@@ -1604,8 +1632,9 @@ void efd_prepend_child(efd_node *n, efd_node *child) {
     );
     efd_report_error(
       child,
-      s_("Warning: child already had a parent.")
+      s_("Warning: efd_prepend_child: child already had a parent.")
     );
+    fprintf(stderr, "\n");
   }
 #endif
   d_prepend_value_s(efd_children_dict(n), child->h.name, (void*) child);
@@ -1619,6 +1648,7 @@ void efd_remove_child(efd_node *n, efd_node *child) {
       n,
       s_("ERROR: Can't remove child from non-container node.")
     );
+    fprintf(stderr, "\n");
     exit(EXIT_FAILURE);
   }
   d_remove_value(efd_children_dict(n), (void*) child);
@@ -1632,6 +1662,7 @@ void efd_remove_child(efd_node *n, efd_node *child) {
       child,
       s_("Warning: child not descended from parent.")
     );
+    fprintf(stderr, "\n");
   }
 #else
   d_remove_value(efd_children_dict(n), (void*) child);
@@ -1708,6 +1739,7 @@ efd_node* efd_find_child(
       s_("Warning: efd_find_child on non-container node with key:")
     );
     s_fprintln(stderr, name);
+    fprintf(stderr, "\n");
 #endif
     return NULL;
   }
@@ -1728,6 +1760,7 @@ efd_node* efd_find_variable_in(
       s_("Warning: efd_find_variable_in on non-container node with key:")
     );
     s_fprintln(stderr, target->name);
+    fprintf(stderr, "\n");
 #endif
     return NULL;
   }
@@ -1742,10 +1775,13 @@ efd_node* efd_find_variable_in(
       }
     }
   }
+  if (result == NULL && node->h.type == EFD_NT_SCOPE) {
+    result = efd(node, target);
+  }
   return result;
 }
 
-efd_node* efd_resolve_variable(efd_node const * const var) {
+efd_node * efd_resolve_variable(efd_node const * const var) {
   efd_address *target;
   efd_node *result, *scope;
 
@@ -1760,6 +1796,35 @@ efd_node* efd_resolve_variable(efd_node const * const var) {
     scope = scope->h.parent;
   }
   return result;
+}
+
+string * efd_variable_search_trace(efd_node const * const var) {
+  efd_address *target;
+  efd_node *result, *scope;
+  string *trace;
+  SSTR(s_nl, "\n  ", 3);
+
+  efd_assert_type(var, EFD_NT_VARIABLE);
+  target = var->b.as_link.target;
+  trace = s_("Var trace:");
+
+  scope = var->h.parent;
+
+  result = NULL;
+  while (scope != NULL && result == NULL && result != var) {
+    s_append(trace, s_nl);
+    s_devour(trace, efd_full_repr(scope));
+    result = efd_find_variable_in(scope, target);
+    scope = scope->h.parent;
+  }
+  if (result != NULL) {
+    s_append(trace, s_nl);
+    s_devour(trace, s_("*success*"));
+  } else {
+    s_append(trace, s_nl);
+    s_devour(trace, s_("-failure-"));
+  }
+  return trace;
 }
 
 efd_node* efd_concrete(efd_node const * const base) {
@@ -1819,6 +1884,7 @@ efd_node *efd_nth(efd_node const * const node, size_t index) {
       node,
       s_("Warning: attempt to get indexed child in non-container node.")
     );
+    fprintf(stderr, "\n");
 #endif
     return NULL;
   }
@@ -1839,6 +1905,7 @@ efd_node *efd_nth(efd_node const * const node, size_t index) {
     s_("Warning: efd_index called with out-of-range index:")
   );
   fprintf(stderr, "%lu\n", original);
+  fprintf(stderr, "\n");
 #endif
   return NULL;
 }
@@ -1880,12 +1947,20 @@ efd_node* efd_eval_in_context(
   efd_node const * const eval_root
 ) {
   size_t i;
+  int is_function = 0;
   efd_node *result, *transformed;
   efd_node *child, *new_child;
   dictionary *children;
+  efd_eval_function feval;
 
   // If the target is a link, recurse on its target node
   if (efd_is_link_node(target)) {
+    /* DEBUG
+    efd_report_error(
+      target,
+      s_("LINK:TARGET\n")
+    );
+    */
     result = copy_efd_node(target);
     if (set_parent != NULL) {
       result->h.parent = (efd_node*) set_parent;
@@ -1898,10 +1973,33 @@ efd_node* efd_eval_in_context(
       );
       exit(EXIT_FAILURE);
     }
+    /* DEBUG
+    efd_report_error(
+      transformed,
+      s_("LINK:PRE-EVAL\n")
+    );
+    */
     transformed = efd_eval_in_context(transformed, args, NULL, eval_root);
+    efd_rename(transformed, result->h.name);
+    if (set_parent != NULL) {
+      transformed->h.parent = (efd_node*) set_parent;
+    }
+    /* DEBUG
+    efd_report_error(
+      transformed,
+      s_("LINK:EVALUATED\n")
+    );
+    */
     cleanup_efd_node(result);
     return transformed;
   }
+
+  /* DEBUG
+  efd_report_error(
+    target,
+    s_("NORMAL:TARGET\n")
+  );
+  */
 
   // Otherwise do real work:
   result = create_efd_node(target->h.type, target->h.name);
@@ -1921,19 +2019,6 @@ efd_node* efd_eval_in_context(
     result->h.parent = (efd_node*) set_parent;
   } else {
     result->h.parent = target->h.parent;
-  }
-
-  // Handle children:
-  if (efd_is_container_node(result)) {
-    if (args != NULL) {
-      efd_add_child(result, copy_efd_node(args));
-    }
-    children = efd_children_dict(target);
-    for (i = 0; i < d_get_count(children); ++i) {
-      child = (efd_node*) d_get_item(children, i);
-      new_child = efd_eval_in_context(child, NULL, result, eval_root);
-      efd_add_child(result, new_child);
-    }
   }
 
   // Handle node contents:
@@ -1969,7 +2054,7 @@ efd_node* efd_eval_in_context(
 
     case EFD_NT_CONTAINER:
     case EFD_NT_SCOPE:
-      // Nothing to do (children were already copied above)
+      // Nothing to do (children will be copied below)
       break;
 
     case EFD_NT_FUNCTION:
@@ -1988,15 +2073,12 @@ efd_node* efd_eval_in_context(
     case EFD_NT_GN_AR_INT:
     case EFD_NT_GN_AR_NUM:
     case EFD_NT_GN_AR_STR:
-      // children have already been evaluated
+      // children will be added bellow
       result->b.as_function.function = copy_string(
         target->b.as_function.function
       );
-      // Call the specified function and use its result in place of the default
-      // result (after cleaning up the default result, of course):
-      transformed = efd_lookup_function(result->b.as_function.function)(result);
-      cleanup_efd_node(result);
-      result = transformed;
+      // note that we'll need evaluation later
+      is_function = 1;
       break;
 
     case EFD_NT_OBJECT:
@@ -2050,6 +2132,47 @@ efd_node* efd_eval_in_context(
       }
       break;
   }
+
+  // Handle children:
+  if (efd_is_container_node(result)) {
+    if (args != NULL) {
+      efd_add_child(result, copy_efd_node(args));
+    }
+    children = efd_children_dict(target);
+    for (i = 0; i < d_get_count(children); ++i) {
+      child = (efd_node*) d_get_item(children, i);
+      new_child = efd_eval_in_context(child, NULL, result, eval_root);
+      efd_add_child(result, new_child);
+    }
+  }
+
+  // If it's a function node, call the specified function and use its result in
+  // place of the default result (after cleaning up the default result):
+  if (is_function) {
+    feval = efd_lookup_function(result->b.as_function.function);
+    if (feval == NULL) {
+      efd_report_eval_error(
+        eval_root,
+        target,
+        s_("ERROR: function node with invalid function.")
+      );
+    }
+    transformed = feval(result);
+    if (set_parent != NULL) {
+      transformed->h.parent = (efd_node*) set_parent;
+    } else {
+      transformed->h.parent = target->h.parent;
+    }
+    cleanup_efd_node(result);
+    result = transformed;
+  }
+
+  /* DEBUG
+  efd_report_error(
+    result,
+    s_("NORMAL:RESULT\n")
+  );
+  */
   return result;
 }
 
@@ -2196,6 +2319,7 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
             node,
             s_("Warning: Array index generator has non-array node state.")
           );
+          fprintf(stderr, "\n");
           return NULL;
         case EFD_NT_ARRAY_INT:
           return construct_efd_int_node(

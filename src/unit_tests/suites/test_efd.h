@@ -222,11 +222,26 @@ int _test_efd_case(efd_node *n) {
     }
   } else if (efd_format_is(n, s_evtest)) {
     efd_ev_test *t = (efd_ev_test*) (*efd__o(n));
+    /* DEBUG
     printf("HERE\n");
-    string *a = create_string_from_ntchars("test.inner_link_v");
-    efd_node *nd = efdx(EFD_ROOT, a);
-    string *r = efd_repr(nd);
-    s_fprintln(stderr, r);
+    string *cmp_r = efd_full_repr(t->compare);
+    string *agn_r = efd_full_repr(t->against);
+    string *trace;
+    s_fprintln(stderr, cmp_r);
+    if (efd_is_link_node(t->compare)) {
+      trace = efd_trace_link(t->compare);
+      s_fprintln(stderr, trace);
+      cleanup_string(trace);
+    }
+    s_fprintln(stderr, agn_r);
+    if (efd_is_link_node(t->against)) {
+      trace = efd_trace_link(t->against);
+      s_fprintln(stderr, trace);
+      cleanup_string(trace);
+    }
+    cleanup_string(cmp_r);
+    cleanup_string(agn_r);
+    // END DEBUG */
     cmp = efd_eval(t->compare, NULL);
     agn = efd_eval(t->against, NULL);
     result = (

@@ -823,6 +823,9 @@ string * efd_full_repr(efd_node const * const n);
 // the caller doesn't need to free it.
 void efd_report_error(efd_node const * const n, string *message);
 
+// Returns a string containing a trace of resolution of the given link.
+string *efd_trace_link(efd_node const * const n);
+
 // Reports an error with a link, printing the given message on stderr as well
 // as an analysis of where the given node (which should be a link node) fails
 // to resolve. Devours the given message.
@@ -903,9 +906,11 @@ efd_node* efd_find_variable_in(
 // through the EFD tree, returning the first match found. This function just
 // does one step of resolution, so the node it returns may still be a link or
 // variable.
-efd_node* efd_resolve_variable(
-  efd_node const * const var
-);
+efd_node* efd_resolve_variable(efd_node const * const var);
+
+// Returns a string showing the trace of search locations checked for the given
+// variable.
+string * efd_variable_search_trace(efd_node const * const var);
 
 // Takes a node and returns the concrete node that it refers to, following any
 // link(s) encountered until a non-link node is found. If a link is broken or
