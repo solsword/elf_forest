@@ -256,11 +256,11 @@ int _test_efd_case(efd_node *n) {
         fprintf(stderr, "Test EFD case [eval]: Failed (2nd eval failed).\n");
       } else {
         fprintf(stderr, "Test EFD case [eval]: Failed (results not equal).\n");
-        repr = efd_repr(cmp);
-        s_fprint(stderr, repr);
+        repr = efd_full_repr(cmp);
+        s_fprintln(stderr, repr);
         cleanup_string(repr);
-        fprintf(stderr, " =/= ");
-        repr = efd_repr(agn);
+        fprintf(stderr, "\n =/= \n");
+        repr = efd_full_repr(agn);
         s_fprintln(stderr, repr);
         cleanup_string(repr);
       }

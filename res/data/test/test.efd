@@ -445,7 +445,10 @@
 <<l over_35@ref3>>
 
 [[o t59:evtest <<L test.inner_link>> (i 17) ]]
-[[o t60:evtest <<L test.inner_link_v>> (i 95) ]]
+[[o t60:evtest
+  [[c scope [[V vars <<L test.other_95@~var>>]] <<v ~var.nested.t_v>>]]
+  [[c scope (i 95) ]]
+]]
 /*
 [[o t61:evtest <<L test.inner_link_over>> (i 1000) ]]
 [[o t62:evtest (i 3) (i 17) ]]

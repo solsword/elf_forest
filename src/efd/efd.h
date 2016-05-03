@@ -852,7 +852,8 @@ dictionary * efd_children_dict(efd_node const * const n);
 int efd_equals(efd_node const * const cmp, efd_node const * const agn);
 
 // Compares two nodes as with efd_equals, but only looks at values and ignores
-// node names (including for children).
+// node names (including for children). Also ignores scopes entirely, testing
+// just normal nodes.
 int efd_equivalent(efd_node const * const cmp, efd_node const * const agn);
 
 // Adds the given child to the parent's dictionary of children (parent must be

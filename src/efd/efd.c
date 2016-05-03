@@ -1420,15 +1420,15 @@ dictionary * efd_children_dict(efd_node const * const n) {
 int _efd_cmp(
   efd_node const * const cmp,
   efd_node const * const agn,
-  int cmp_names
+  int strict
 ) {
-  size_t i;
+  intptr_t i, count;
   dictionary *cmp_ch, *agn_ch;
   efd_node *cmp_t, *agn_t;
   efd_index *empty_index;
   if (
     cmp->h.type != agn->h.type
- || (cmp_names && !s_equals(cmp->h.name, agn->h.name))
+ || (strict && !s_equals(cmp->h.name, agn->h.name))
   ) {
     return 0;
   }
@@ -1445,16 +1445,7 @@ int _efd_cmp(
 
     case EFD_NT_CONTAINER:
     case EFD_NT_SCOPE:
-      cmp_ch = cmp->b.as_container.children;
-      agn_ch = agn->b.as_container.children;
-      if (d_get_count(cmp_ch) != d_get_count(agn_ch)) {
-        return 0;
-      }
-      for (i = 0; i < d_get_count(cmp_ch); ++i) {
-        if (!_efd_cmp(d_get_item(cmp_ch, i), d_get_item(agn_ch, i), cmp_names)){
-          return 0;
-        }
-      }
+      // children are compared below
       break;
 
     case EFD_NT_FUNCTION:
@@ -1476,22 +1467,13 @@ int _efd_cmp(
       if (!s_equals(cmp->b.as_function.function, agn->b.as_function.function)) {
         return 0;
       }
-      cmp_ch = cmp->b.as_function.children;
-      agn_ch = agn->b.as_function.children;
-      if (d_get_count(cmp_ch) != d_get_count(agn_ch)) {
-        return 0;
-      }
-      for (i = 0; i < d_get_count(cmp_ch); ++i) {
-        if (!_efd_cmp(d_get_item(cmp_ch, i), d_get_item(agn_ch, i), cmp_names)){
-          return 0;
-        }
-      }
+      // children are compared below
       break;
 
     case EFD_NT_LINK:
     case EFD_NT_LOCAL_LINK:
     case EFD_NT_VARIABLE:
-      if (!_efd_cmp(efd_concrete(cmp), efd_concrete(agn), cmp_names)) {
+      if (!_efd_cmp(efd_concrete(cmp), efd_concrete(agn), strict)) {
         return 0;
       }
       break;
@@ -1499,7 +1481,7 @@ int _efd_cmp(
     case EFD_NT_PROTO:
       if (
         !s_equals(cmp->b.as_proto.format, agn->b.as_proto.format)
-     || !_efd_cmp(cmp->b.as_proto.input, agn->b.as_proto.input, cmp_names)
+     || !_efd_cmp(cmp->b.as_proto.input, agn->b.as_proto.input, strict)
       ) {
         return 0;
       }
@@ -1512,7 +1494,7 @@ int _efd_cmp(
       empty_index = create_efd_index();
       efd_pack_node(cmp_t, empty_index);
       efd_pack_node(agn_t, empty_index);
-      if (!_efd_cmp(cmp_t, agn_t, cmp_names)) {
+      if (!_efd_cmp(cmp_t, agn_t, strict)) {
         cleanup_efd_node(cmp_t);
         cleanup_efd_node(agn_t);
         return 0;
@@ -1577,6 +1559,31 @@ int _efd_cmp(
         }
       }
       break;
+  }
+  // if the nodes are containers, compare children:
+  if (efd_is_container_node(cmp)) {
+    if (strict) {
+      cmp_ch = cmp->b.as_container.children;
+      agn_ch = agn->b.as_container.children;
+      if (d_get_count(cmp_ch) != d_get_count(agn_ch)) {
+        return 0;
+      }
+      for (i = 0; i < d_get_count(cmp_ch); ++i) {
+        if (!_efd_cmp(d_get_item(cmp_ch, i), d_get_item(agn_ch, i), strict)) {
+          return 0;
+        }
+      }
+    } else {
+      if (efd_normal_child_count(cmp) != efd_normal_child_count(agn)) {
+        return 0;
+      }
+      count = efd_normal_child_count(cmp);
+      for (i = 0; i < count; ++i) {
+        if (!_efd_cmp(efd_nth(cmp, i), efd_nth(agn, i), strict)) {
+          return 0;
+        }
+      }
+    }
   }
   return 1;
 }
@@ -1967,6 +1974,11 @@ efd_node* efd_eval_in_context(
     }
     transformed = efd_concrete(result);
     if (transformed == NULL) {
+      efd_report_eval_error(
+        eval_root,
+        target,
+        s_("(during evaluation of)")
+      );
       efd_report_broken_link(
         result,
         s_("Broken link during evaluation.")
