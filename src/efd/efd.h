@@ -450,6 +450,27 @@ static inline int efd_is_container_node(efd_node const * const n) {
   );
 }
 
+static inline int efd_is_function_node(efd_node const * const n) {
+  return (
+    n->h.type == EFD_NT_FUNCTION
+ || n->h.type == EFD_NT_FN_OBJ
+ || n->h.type == EFD_NT_FN_INT
+ || n->h.type == EFD_NT_FN_NUM
+ || n->h.type == EFD_NT_FN_STR
+ || n->h.type == EFD_NT_FN_AR_INT
+ || n->h.type == EFD_NT_FN_AR_NUM
+ || n->h.type == EFD_NT_FN_AR_STR
+ || n->h.type == EFD_NT_GENERATOR
+ || n->h.type == EFD_NT_GN_OBJ
+ || n->h.type == EFD_NT_GN_INT
+ || n->h.type == EFD_NT_GN_NUM
+ || n->h.type == EFD_NT_GN_STR
+ || n->h.type == EFD_NT_GN_AR_INT
+ || n->h.type == EFD_NT_GN_AR_NUM
+ || n->h.type == EFD_NT_GN_AR_STR
+  );
+}
+
 static inline string* efd__p_fmt(efd_node *n) {
   efd_assert_type(n, EFD_NT_PROTO);
   return n->b.as_proto.format;
@@ -826,10 +847,16 @@ void efd_report_error(efd_node const * const n, string *message);
 // Returns a string containing a trace of resolution of the given link.
 string *efd_trace_link(efd_node const * const n);
 
+// As efd_trace_link but traces evaluation of efd_eval_concrete.
+string *efd_eval_trace(efd_node const * const n);
+
 // Reports an error with a link, printing the given message on stderr as well
 // as an analysis of where the given node (which should be a link node) fails
 // to resolve. Devours the given message.
 void efd_report_broken_link(efd_node const * const n, string *message);
+
+// As efd_report_broken_link but prints a trace via efd_eval_trace.
+void efd_eval_report_link(efd_node const * const n, string *message);
 
 // Report an error with evaluation, displaying the given message along with a
 // summary of the original node and a full report of the (partial) evaluation
@@ -889,7 +916,7 @@ efd_address* efd_pop_address(efd_address *a);
 // doesn't have children). Prints a warning if the given node is of a
 // non-container type. Note that this function does not handle link nodes (see
 // efd_lookup).
-efd_node* efd_find_child(
+efd_node * efd_find_child(
   efd_node const * const parent,
   string const * const name
 );
@@ -897,7 +924,14 @@ efd_node* efd_find_child(
 // Look for any scope node(s) within the given node and searches for the target
 // variable within them in order, setting the given scope path to the path to
 // the matching variable or NULL if there is no match.
-efd_node* efd_find_variable_in(
+efd_node * efd_find_variable_in(
+  efd_node const * const base,
+  efd_address const * const target
+);
+
+// Works like efd_find_variable_in but uses efd_eval_seek internally.
+// Accordingly always returns a newly-allocated node if it finds a match.
+efd_node * efd_eval_find_variable(
   efd_node const * const base,
   efd_address const * const target
 );
@@ -907,7 +941,13 @@ efd_node* efd_find_variable_in(
 // through the EFD tree, returning the first match found. This function just
 // does one step of resolution, so the node it returns may still be a link or
 // variable.
-efd_node* efd_resolve_variable(efd_node const * const var);
+efd_node * efd_resolve_variable(efd_node const * const var);
+
+// Works like efd_resolve_variable but evaluates function nodes that it
+// encounters while resolving the given variable (it doesn't evaluate searched
+// scopes or their parents; only their matching entries). Unlike
+// efd_resolve_variable, it always returns a freshly allocated EFD node.
+efd_node * efd_eval_resolve(efd_node const * const var);
 
 // Returns a string showing the trace of search locations checked for the given
 // variable.
@@ -918,14 +958,20 @@ string * efd_variable_search_trace(efd_node const * const var);
 // if the input is NULL, it returns NULL. Note that this function doesn't
 // remember where it's been, so infinite loops can occur.
 // TODO: Change that?
-efd_node* efd_concrete(efd_node const * const base);
+efd_node * efd_concrete(efd_node const * const base);
+
+// Works like efd_concrete, but when it encounters a function node during link
+// resolution, it evaluates that node before searching within it. Because of
+// this, it always returns a freshly-allocated node rather than a pointer to an
+// existing node.
+efd_node * efd_eval_concrete(efd_node const * const base);
 
 // Returns the number of non-SCOPE children that the given node has. Returns -1
 // if the given node is a non-container node.
 intptr_t efd_normal_child_count(efd_node const * const node);
 
 // Returns the nth child of the given node, not counting scope nodes.
-efd_node* efd_nth(efd_node const * const node, size_t index);
+efd_node * efd_nth(efd_node const * const node, size_t index);
 
 // This function returns the child with the given key in the given node. It
 // iterates over children until it hits one with a matching name, so only the
@@ -934,14 +980,18 @@ efd_node* efd_nth(efd_node const * const node, size_t index);
 // returns NULL. Unlike efd_find_child, this function properly handles link
 // nodes. This function always calls efd_concrete on its results, so the result
 // is never a link node.
-efd_node* efd_lookup(efd_node const * const node, string const * const key);
+efd_node * efd_lookup(efd_node const * const node, string const * const key);
 
 // The most ubiquitous EFD function 'efd' does a recursive address lookup to
 // find an EFD node given some root node to start from and an address to find.
 // Internally it uses efd_lookup, so when multiple children of a node share a
 // name, the first one is used. If no match is found it sets the given path to
 // NULL.
-efd_node* efd(efd_node const * const root, efd_address const * addr);
+efd_node * efd(efd_node const * const root, efd_address const * addr);
+
+// Works like efd(), but during address resolution it evaluates any function
+// nodes it encounters before looking inside the result for the next item.
+efd_node * efd_eval_seek(efd_node const * const root, efd_address const * addr);
 
 // Works like efd, but instead of taking an address it takes a key which is
 // parsed into an address. So
