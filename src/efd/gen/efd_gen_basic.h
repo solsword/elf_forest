@@ -75,11 +75,11 @@ efd_generator_state * efd_gn_range(
     efd_add_child(stash, copy_efd_node(efd_get_value(efd_nth(node, 2), cache)));
   } else {
     efd_report_error(
-      node,
       s_sprintf(
         "ERROR: 'range' iterator must have 1-3 arguments (had %lu):",
         child_count
-      )
+      ),
+      node
     );
     exit(EXIT_FAILURE);
     // TODO: Better here?
@@ -109,11 +109,11 @@ efd_generator_state * efd_gn_extend(
   type = (efd_generator_type) efd__i(efd_get_value(efd_nth(node, 1), cache));
   if (type != EFD_GT_EXTEND_RESTART && type != EFD_GT_EXTEND_HOLD) {
     efd_report_error(
-      node,
       s_sprintf(
         "ERROR: 'extend' iterator has invalid extension type (%d):",
         type
-      )
+      ),
+      node
     );
     exit(EXIT_FAILURE);
     // TODO: better here?

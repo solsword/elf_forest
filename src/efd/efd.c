@@ -21,7 +21,7 @@ CSTR(EFD_ADDR_SEP_STR, ".", 1);
 CSTR(EFD_ADDR_PARENT_STR, "^", 1);
 
 CSTR(EFD_ANON_NAME, "-", 1);
-CSTR(EFD_ROOT_NAME, "_", 1);
+CSTR(EFD_ROOT_NAME, "_R_", 3);
 
 char const * const EFD_NT_NAMES[] = {
   "<invalid>",
@@ -244,8 +244,8 @@ efd_node * copy_efd_node(efd_node const * const src) {
     case EFD_NT_INVALID:
 #ifdef DEBUG
       efd_report_error(
-        src,
-        s_("Warning: copy_efd_node called on INVALID node.")
+        s_("Warning: copy_efd_node called on INVALID node:"),
+        src
       );
       fprintf(stderr, "\n");
 #endif
@@ -483,6 +483,8 @@ CLEANUP_IMPL(efd_node) {
       }
       break;
   }
+  // Mark the node as corrupt:
+  doomed->h.type = EFD_NUM_TYPES + 1;
   // If this node is a child, remove it from its parent's children:
   if (doomed->h.parent != NULL) {
     efd_remove_child(doomed->h.parent, doomed);
@@ -491,7 +493,6 @@ CLEANUP_IMPL(efd_node) {
   // Clean up the node's name:
   cleanup_string(doomed->h.name);
   doomed->h.name = NULL;
-  doomed->h.type = EFD_NT_INVALID;
   // Finally free the memory for this node:
   free(doomed);
 }
@@ -510,7 +511,11 @@ efd_address * create_efd_address(
 // Private helper which returns an address tail:
 efd_address * _construct_efd_node_direct_address(efd_node const * const node) {
   efd_address *result = (efd_address*) malloc(sizeof(efd_address));
-  if (node->h.name != NULL) {
+  if (node->h.type >= EFD_NUM_TYPES || node->h.type < 0) { // a corrupted node
+    result->name = s_("<corrupt>");
+    result->parent = NULL;
+    return result;
+  } else if (node->h.name != NULL) {
     result->name = copy_string(node->h.name);
   } else {
     fprintf(
@@ -761,8 +766,8 @@ void efd_assert_type(efd_node const * const n, efd_node_type t) {
 #ifndef EFD_NO_TYPECHECKS
   if (n->h.type != t) {
     efd_report_error(
-      n,
-      s_("ERROR: type of node doesn't match required type:")
+      s_("ERROR: type of node doesn't match required type:"),
+      n
     );
     fprintf(stderr, "\n");
     tn = create_string_from_ntchars(" Expected: ");
@@ -787,21 +792,21 @@ void efd_assert_return_type(efd_node const * const n, efd_node_type t) {
      && t < EFD_NUM_TYPES
     ) {
       efd_report_error(
-        n,
         s_sprintf(
           "ERROR: node has return type '%s' rather than the required '%s':",
           EFD_NT_NAMES[rt],
           EFD_NT_NAMES[t]
-        )
+        ),
+        n
       );
     } else {
       efd_report_error(
-        n,
         s_sprintf(
           "ERROR: node has return type (%s) rather than the required (%s):",
           rt,
           t
-        )
+        ),
+        n
       );
     }
     exit(EXIT_FAILURE);
@@ -896,6 +901,10 @@ string * efd_repr(efd_node const * const n) {
   SSTR(s_caret, "->", 2);
   SSTR(s_reroute, "*>", 2);
   SSTR(s_quote, "\"", 1);
+
+  if (n->h.type >= EFD_NUM_TYPES || n->h.type < 0) { // a corrupted node
+    return s_("<corrupt node>");
+  }
 
   fqn = efd_build_fqn(n);
 
@@ -1136,6 +1145,10 @@ string * _efd_full_repr(efd_node const * const n, size_t indent) {
   }
   s_append(s_nl, ind);
 
+  if (n->h.type >= EFD_NUM_TYPES || n->h.type < 0) { // a corrupted node
+    return s_("<corrupt node>");
+  }
+
   fqn = efd_build_fqn(n);
 
   contents = create_empty_string();
@@ -1295,11 +1308,17 @@ string * efd_full_repr(efd_node const * const n) {
   return _efd_full_repr(n, 2);
 }
 
-void efd_report_error(efd_node const * const n, string *message) {
+void efd_report_error(string *message, efd_node const * const n) {
   string *repr = efd_repr(n);
-  fprintf(stderr, "Error with EFD node:\n  ");
-  s_fprintln(stderr, repr);
   s_fprintln(stderr, message);
+  s_fprintln(stderr, repr);
+  cleanup_string(message);
+}
+
+void efd_report_error_full(string *message, efd_node const * const n) {
+  string *repr = efd_full_repr(n);
+  s_fprintln(stderr, message);
+  s_fprintln(stderr, repr);
   cleanup_string(message);
 }
 
@@ -1397,8 +1416,8 @@ dictionary * efd_children_dict(efd_node const * const n) {
     default:
 #ifdef DEBUG
       efd_report_error(
-        n,
-        s_("Warning: Attempt to get children of non-container node.")
+        s_("Warning: Attempt to get children of non-container node:"),
+        n
       );
       fprintf(stderr, "\n");
 #endif
@@ -1446,8 +1465,8 @@ int _efd_cmp(
     default:
 #ifdef DEBUG
       efd_report_error(
-        cmp,
-        s_("ERROR: Invalid node type in efd comparison.")
+        s_("ERROR: Invalid node type in efd comparison:"),
+        cmp
       );
       fprintf(stderr, "\n");
 #endif
@@ -1617,89 +1636,123 @@ int efd_equivalent(efd_node const * const cmp, efd_node const * const agn) {
 
 void efd_add_child(efd_node *n, efd_node *child) {
 #ifdef DEBUG
-  if (!efd_is_container_node(n)) {
+  if (!efd_is_container_node(n) && n->h.type != EFD_NT_REROUTE) {
     efd_report_error(
-      n,
-      s_("ERROR: Can't add child to non-container node.")
+      s_("ERROR: Can't add child to non-container node."),
+      n
     );
     fprintf(stderr, "\n");
     exit(EXIT_FAILURE);
   }
   if (child->h.parent != NULL && child->h.parent != n) {
     efd_report_error(
-      n,
-      s_("(while adding to parent)")
+      s_("(while adding to parent:)"),
+      n
     );
     efd_report_error(
-      child,
-      s_("Warning: efd_add_child: child already had a parent.")
+      s_("Warning: efd_add_child: child already had a parent."),
+      child
     );
     fprintf(stderr, "\n");
   }
 #endif
-  d_add_value_s(efd_children_dict(n), child->h.name, (void*) child);
-  child->h.parent = n;
+  if (n->h.type == EFD_NT_REROUTE) {
+    if (n->b.as_reroute.child != NULL) {
+      efd_report_error(
+        s_("ERROR: Can't add child to REROUTE node which already has one:"),
+        n
+      );
+      exit(EXIT_FAILURE);
+    }
+    n->b.as_reroute.child = child;
+    child->h.parent = n;
+  } else {
+    d_add_value_s(efd_children_dict(n), child->h.name, (void*) child);
+    child->h.parent = n;
+  }
 }
 
 void efd_prepend_child(efd_node *n, efd_node *child) {
 #ifdef DEBUG
-  if (!efd_is_container_node(n)) {
+  if (!efd_is_container_node(n) && n->h.type != EFD_NT_REROUTE) {
     efd_report_error(
-      n,
-      s_("ERROR: Can't add child to non-container node.")
+      s_("ERROR: Can't add child to non-container node:"),
+      n
     );
     fprintf(stderr, "\n");
     exit(EXIT_FAILURE);
   }
   if (child->h.parent != NULL) {
     efd_report_error(
-      n,
-      s_("(while adding to parent)")
+      s_("(while adding to parent:)"),
+      n
     );
     efd_report_error(
-      child,
-      s_("Warning: efd_prepend_child: child already had a parent.")
+      s_("Warning: efd_prepend_child: child already had a parent:"),
+      child
     );
     fprintf(stderr, "\n");
   }
 #endif
-  d_prepend_value_s(efd_children_dict(n), child->h.name, (void*) child);
-  child->h.parent = n;
+  if (n->h.type == EFD_NT_REROUTE) {
+    if (n->b.as_reroute.child != NULL) {
+      efd_report_error(
+        s_("ERROR: Can't add child to REROUTE node which already has one:"),
+        n
+      );
+      exit(EXIT_FAILURE);
+    }
+    n->b.as_reroute.child = child;
+    child->h.parent = n;
+  } else {
+    d_prepend_value_s(efd_children_dict(n), child->h.name, (void*) child);
+    child->h.parent = n;
+  }
 }
 
 void efd_remove_child(efd_node *n, efd_node *child) {
 #ifdef DEBUG
-  if (!efd_is_container_node(n)) {
+  efd_node *r;
+  if (!efd_is_container_node(n) && n->h.type != EFD_NT_REROUTE) {
     efd_report_error(
-      n,
-      s_("ERROR: Can't remove child from non-container node.")
+      s_("ERROR: Can't remove child from non-container node:"),
+      n
     );
     exit(EXIT_FAILURE);
   }
   if (child->h.parent != n) {
     efd_report_error(
-      n,
-      s_("(while removing from parent)")
+      s_("(while removing from parent:)"),
+      n
     );
     efd_report_error(
-      child,
-      s_("Warning: child not descended from parent.")
+      s_("Warning: child not descended from parent."),
+      child
     );
   }
-  efd_node *r = (efd_node*) d_remove_value(efd_children_dict(n), (void*) child);
-  if (r == NULL) {
+  if (n->h.type == EFD_NT_REROUTE) {
+    r = n->b.as_reroute.child;
+    n->b.as_reroute.child = NULL;
+  } else {
+    r = (efd_node*) d_remove_value(efd_children_dict(n), (void*) child);
+  }
+  if (r == NULL || r != child) {
     efd_report_error(
-      n,
-      s_("(while removing from parent)")
+      s_("(while removing from parent:)"),
+      n
     );
     efd_report_error(
-      child,
-      s_("Warning: child wasn't present among parent's children.")
+      s_("Warning: child wasn't present among parent's children."),
+      child
     );
     exit(EXIT_FAILURE);
   }
 #else
-  d_remove_value(efd_children_dict(n), (void*) child);
+  if (n->h.type == EFD_NT_REROUTE) {
+    n->b.as_reroute.child = NULL;
+  } else {
+    d_remove_value(efd_children_dict(n), (void*) child);
+  }
 #endif
   child->h.parent = NULL;
 }
@@ -1777,9 +1830,10 @@ efd_node * efd_find_child(
   if (!efd_is_container_node(parent)) {
 #ifdef DEBUG
     efd_report_error(
-      parent,
-      s_("Warning: efd_find_child on non-container node with key:")
+      s_("Warning: efd_find_child on non-container node:"),
+      parent
     );
+    fprintf(stderr, "Key was:\n  ");
     s_fprintln(stderr, name);
     fprintf(stderr, "\n");
 #endif
@@ -1798,9 +1852,10 @@ efd_node * efd_find_variable_in(
   if (!efd_is_container_node(node)) {
 #ifdef DEBUG
     efd_report_error(
-      node,
-      s_("Warning: efd_find_variable_in on non-container node with key:")
+      s_("Warning: efd_find_variable_in on non-container node:"),
+      node
     );
+    fprintf(stderr, "Key was:\n  ");
     s_fprintln(stderr, target->name);
     fprintf(stderr, "\n");
 #endif
@@ -1817,7 +1872,7 @@ efd_node * efd_find_variable_in(
       }
     }
   }
-  if (result == NULL && node->h.type == EFD_NT_SCOPE) {
+  if (result == NULL && node->h.type == EFD_NT_SCOPE && node->h.parent == NULL){
     result = efd(node, target);
   }
   return result;
@@ -1898,6 +1953,15 @@ efd_node * efd_concrete(efd_node const * const base) {
       linked = efd_resolve_variable(base);
       break;
   }
+#ifdef DEBUG
+  if (linked == base) {
+    efd_report_error(
+      s_("ERROR: Link which refers to itself!"),
+      base
+    );
+    exit(EXIT_FAILURE);
+  }
+#endif
   return efd_concrete(linked);
 }
 
@@ -1934,8 +1998,8 @@ efd_node *efd_nth(efd_node const * const node, size_t index) {
   if (!efd_is_container_node(node)) {
 #ifdef DEBUG
     efd_report_error(
-      node,
-      s_("Warning: attempt to get indexed child in non-container node.")
+      s_("Warning: attempt to get indexed child in non-container node:"),
+      node
     );
     fprintf(stderr, "\n");
 #endif
@@ -1954,10 +2018,10 @@ efd_node *efd_nth(efd_node const * const node, size_t index) {
   }
 #ifdef DEBUG
   efd_report_error(
-    node,
-    s_("Warning: efd_index called with out-of-range index:")
+    s_("Warning: efd_index called with out-of-range index."),
+    node
   );
-  fprintf(stderr, "%lu\n", original);
+  fprintf(stderr, "Index was: %lu\n", original);
   fprintf(stderr, "\n");
 #endif
   return NULL;
@@ -2012,14 +2076,14 @@ efd_node * efd_eval(efd_node const * const target, efd_value_cache *cache) {
     // Check for evaluation cycles:
     if (m1_contains_key(cache->stack, (map_key_t) target)) {
       efd_report_error(
-        target,
-        s_("ERROR: Evaluation target depends on its own value...")
+        s_("ERROR: Evaluation target depends on its own value."),
+        target
       );
       trace = (efd_node*) m1_get_value(cache->stack, (map_key_t) target);
       while (trace != NULL) {
         efd_report_error(
-          trace,
-          s_("   ...during evaluation of...")
+          s_("   ...during evaluation of..."),
+          trace
         );
         trace = (efd_node*) m1_get_value(cache->stack, (map_key_t) trace);
       }
@@ -2038,8 +2102,8 @@ efd_node * efd_eval(efd_node const * const target, efd_value_cache *cache) {
     feval = efd_lookup_function(target->b.as_function.function);
     if (feval == NULL) {
       efd_report_error(
-        target,
-        s_("ERROR: function node with invalid function.")
+        s_("ERROR: function node with invalid function:"),
+        target
       );
     }
     result = feval(target, cache);
@@ -2105,13 +2169,15 @@ efd_node * _efd_flatten(efd_node const * const target, efd_value_cache *cache) {
         s_("ERROR: Broken link during efd_flatten.")
       );
     }
-    return _efd_flatten(sub, cache);
+    result = _efd_flatten(sub, cache);
+    efd_rename(result, target->h.name);
+    return result;
   } else if (efd_is_function_node(target)) {
     sub = efd_get_value(target, cache);
     if (sub == NULL) {
       efd_report_error(
-        target,
-        s_("ERROR: Target with NULL value during efd_flatten.")
+        s_("ERROR: Target with NULL value during efd_flatten:"),
+        target
       );
     }
     return _efd_flatten(sub, cache);
@@ -2123,8 +2189,8 @@ efd_node * _efd_flatten(efd_node const * const target, efd_value_cache *cache) {
         sub = (efd_node*) d_get_item(children, i);
         if (sub == NULL) {
           efd_report_error(
-            target,
-            s_sprintf("ERROR: NULL child (%lu) during efd_flatten.", i)
+            s_sprintf("ERROR: NULL child (%lu) during efd_flatten:", i),
+            target
           );
         }
         efd_add_child(
@@ -2319,8 +2385,8 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
       switch (node->h.type) {
         default:
           efd_report_error(
-            node,
-            s_("Warning: Array index generator has non-array node state.")
+            s_("Warning: Array index generator has non-array node state:"),
+            node
           );
           fprintf(stderr, "\n");
           return NULL;

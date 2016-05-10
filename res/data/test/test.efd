@@ -524,7 +524,7 @@
 ]]
 [[o t95:evtest
   [[fi p:peek <<L test.ref3>> <<l nested.t_over>> ]]
-  (i 35)
+  (i 1000)
 ]]
 [[o t96:evtest
   [[fi p:peek <<L test.ref3>> <<l nested.t_v>> ]]
@@ -555,12 +555,11 @@
   (i 77)
 ]]
 
-/*
 [[c fn_test_scope
   [[V defaults
     [[i ~addend 1]]
   ]]
-  [[fi plus_one:plus
+  [[fi plus_one:add
     [[V args
       [[i ~int 5]]
     ]]
@@ -583,13 +582,8 @@
   ]]
 ]]
 
-<<l fn_test_other_scope.plus_one@other_noargs>>
+[[fi other_noargs:peek <<L test.fn_test_other_scope >> <<l plus_one>> ]]
 <<l other_noargs@other_chained>>
-[[fi other_wargs:call
-  <<l ^.fn_test_other_scope.plus_one>>
-  [[V args [[i ~int 17]] ]]
-]]
-<<l other_wargs@other_chainedargs>>
 
 [[o t103:evtest <<L test.noargs>> (i 6) ]]
 [[o t104:evtest <<L test.chained>> (i 6) ]]
@@ -598,8 +592,5 @@
 
 [[o t107:evtest <<L test.other_noargs>> (i 13) ]]
 [[o t108:evtest <<L test.other_chained>> (i 13) ]]
-[[o t109:evtest <<L test.other_wargs>> (i 25) ]]
-[[o t110:evtest <<L test.other_chainedargs>> (i 25) ]]
-*/
 
 ]] // c test

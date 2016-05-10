@@ -409,8 +409,10 @@ void efd_assert_return_type(efd_node const * const n, efd_node_type t);
 
 // Reports an error with the given node, displaying the given message on stderr
 // along with a representation of the given node. Devours the given message, so
-// the caller doesn't need to free it.
-void efd_report_error(efd_node const * const n, string *message);
+// the caller doesn't need to free it. The _full version prints a full
+// representation of the given node instead of an abbreviation.
+void efd_report_error(string *message, efd_node const * const n);
+void efd_report_error_full(string *message, efd_node const * const n);
 
 // Returns a string containing a trace of resolution of the given link.
 string *efd_trace_link(efd_node const * const n);
@@ -588,8 +590,8 @@ static inline efd_int_t efd_as_i(efd_node *n) {
     return efd_cast_to_int(*(efd__n(n)));
   } else { // invalid
     efd_report_error(
-      n,
-      s_("Error: Attempted to coerce non-numeric type to an integer.\n")
+      s_("Error: Attempted to coerce non-numeric type to an integer:"),
+      n
     );
     exit(EXIT_FAILURE);
   }
@@ -602,8 +604,8 @@ static inline efd_int_t efd_as_n(efd_node *n) {
     return *(efd__n(n));
   } else { // invalid
     efd_report_error(
-      n,
-      s_("Error: Attempted to coerce non-numeric type to a number.\n")
+      s_("Error: Attempted to coerce non-numeric type to a number:"),
+      n
     );
     exit(EXIT_FAILURE);
   }
