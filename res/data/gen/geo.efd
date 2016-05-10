@@ -1856,7 +1856,7 @@
 ]]
 
 // TODO: Make this "return" a SCOPE node?
-[[c %gen_strata_params
+[[V %gen_strata_params
   [[V args
     [[i ~i 0]]
     [[i ~species 0]] // TODO: use this!

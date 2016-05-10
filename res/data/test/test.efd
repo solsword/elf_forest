@@ -427,31 +427,29 @@
   ]]
 ]]
 
-<<l varscope.nested.t_v@inner_link>>
-
 [[ff other_95:call <<l ^.varscope>> [[V vars [[i ~other 95]] ]] ]]
 [[ff over_999:call <<l ^.varscope>> [[V vars [[i ~over 999]] ]] ]]
 [[ff other_350:call <<l ^.varscope>> [[V vars [[i ~other 350]] ]] ]]
 [[ff over_35:call <<l ^.varscope>> [[V vars [[i ~over 35]] ]] ]]
 
-//<<l varscope.nested.t_v@inner_link_v>>
-// TODO: DEBUG THIS!
-<<l other_95.nested@inner_link_v>>
-//<<l other_95.nested.t_v@inner_link_v>>
-//<<l over_999.nested.t_over@inner_link_over>>
+<<l varscope.nested.t_v@inner_link>>
+[[fi inner_link_v:peek <<l ^.other_95>> <<l nested.t_v>> ]]
+<<l varscope.nested.t_over@inner_link_over>>
 
 <<l varscope@ref1>>
 <<l other_350@ref2>>
 <<l over_35@ref3>>
 
 [[o t59:evtest <<L test.inner_link>> (i 17) ]]
-[[o t60:evtest
-  [[c scope [[V vars <<L test.other_95@~var>>]] <<v ~var.nested.t_v>>]]
-  [[c scope (i 95) ]]
+[[o t60:evtest <<L test.inner_link_v>> (i 95) ]]
+[[o t61:evtest
+  [[fi p:peek <<L test.over_999>> <<l nested.t_over>> ]]
+  (i 1000)
 ]]
-/*
-[[o t61:evtest <<L test.inner_link_over>> (i 1000) ]]
-[[o t62:evtest (i 3) (i 17) ]]
+[[o t62:evtest
+  [[fi p:peek <<L test.other_350>> <<l nested.t_other>> ]]
+  (i 350)
+]]
 
 [[o t63:evtest <<L test.varscope.nested.t_int>> (i 1) ]]
 [[o t64:evtest <<L test.varscope.nested.t_other>> (i 17) ]]
@@ -459,10 +457,10 @@
 [[o t66:evtest <<L test.varscope.nested.t_v>> (i 17) ]]
 [[o t67:evtest <<L test.varscope.nested.t_num>> (n 3.5) ]]
 [[o t68:evtest <<L test.varscope.nested.t_sover>> (i 8) ]]
-[[o t69:evtest <<L test.varscope.nlink.t_over>> (i 890) ]]
-[[o t70:evtest <<L test.varscope.nlink.t_sover>> (i 8) ]]
-[[o t71:evtest <<L test.varscope.nlink.t_other>> (i 77) ]]
-[[o t72:evtest <<L test.varscope.nlink.t_v>> (i 77) ]]
+[[o t69:evtest [[fi p:peek <<L test.varscope.nlink>> <<l t_over>> ]] (i 890) ]]
+[[o t70:evtest [[fi p:peek <<L test.varscope.nlink>> <<l t_sover>> ]] (i 8) ]]
+[[o t71:evtest [[fi p:peek <<L test.varscope.nlink>> <<l t_other>> ]] (i 77) ]]
+[[o t72:evtest [[fi p:peek <<L test.varscope.nlink>> <<l t_v>> ]] (i 77) ]]
 
 [[o t73:evtest <<L test.ref1.nested.t_int>> (i 1) ]]
 [[o t74:evtest <<L test.ref1.nested.t_other>> (i 17) ]]
@@ -470,34 +468,94 @@
 [[o t76:evtest <<L test.ref1.nested.t_v>> (i 17) ]]
 [[o t77:evtest <<L test.ref1.nested.t_num>> (n 3.5) ]]
 [[o t78:evtest <<L test.ref1.nested.t_sover>> (i 8) ]]
-[[o t79:evtest <<L test.ref1.nlink.t_over>> (i 890) ]]
-[[o t80:evtest <<L test.ref1.nlink.t_sover>> (i 8) ]]
-[[o t81:evtest <<L test.ref1.nlink.t_other>> (i 77) ]]
-[[o t82:evtest <<L test.ref1.nlink.t_v>> (i 77) ]]
+[[o t79:evtest [[fi p:peek <<L test.ref1.nlink>> <<l t_over>> ]] (i 890) ]]
+[[o t80:evtest [[fi p:peek <<L test.ref1.nlink>> <<l t_sover>> ]] (i 8) ]]
+[[o t81:evtest [[fi p:peek <<L test.ref1.nlink>> <<l t_other>> ]] (i 77) ]]
+[[o t82:evtest [[fi p:peek <<L test.ref1.nlink>> <<l t_v>> ]] (i 77) ]]
 
-[[o t83:evtest <<L test.ref2.nested.t_int>> (i 1) ]]
-[[o t84:evtest <<L test.ref2.nested.t_other>> (i 350) ]]
-[[o t85:evtest <<L test.ref2.nested.t_over>> (i 1000) ]]
-[[o t86:evtest <<L test.ref2.nested.t_v>> (i 350) ]]
-[[o t87:evtest <<L test.ref2.nested.t_num>> (n 3.5) ]]
-[[o t88:evtest <<L test.ref2.nested.t_sover>> (i 8) ]]
-[[o t89:evtest <<L test.ref2.nlink.t_over>> (i 890) ]]
-[[o t90:evtest <<L test.ref2.nlink.t_sover>> (i 8) ]]
-[[o t91:evtest <<L test.ref2.nlink.t_other>> (i 77) ]]
-[[o t92:evtest <<L test.ref2.nlink.t_v>> (i 77) ]]
+[[o t83:evtest
+  [[fi p:peek <<L test.ref2>> <<l nested.t_int>> ]]
+  (i 1)
+]]
+[[o t84:evtest
+  [[fi p:peek <<L test.ref2>> <<l nested.t_other>> ]]
+  (i 350)
+]]
+[[o t85:evtest
+  [[fi p:peek <<L test.ref2>> <<l nested.t_over>> ]]
+  (i 1000)
+]]
+[[o t86:evtest
+  [[fi p:peek <<L test.ref2>> <<l nested.t_v>> ]]
+  (i 350)
+]]
+[[o t87:evtest
+  [[fi p:peek <<L test.ref2>> <<l nested.t_num>> ]]
+  (n 3.5)
+]]
+[[o t88:evtest
+  [[fi p:peek <<L test.ref2>> <<l nested.t_sover>> ]]
+  (i 8)
+]]
+[[o t89:evtest
+  [[fi p:peek [[ff p:peek <<L test.ref2>> <<l nlink>> ]] <<l t_over>> ]]
+  (i 890)
+]]
+[[o t90:evtest
+  [[fi p:peek [[ff p:peek <<L test.ref2>> <<l nlink>> ]] <<l t_sover>> ]]
+  (i 8)
+]]
+[[o t91:evtest
+  [[fi p:peek [[ff p:peek <<L test.ref2>> <<l nlink>> ]] <<l t_other>> ]]
+  (i 77)
+]]
+[[o t92:evtest
+  [[fi p:peek [[ff p:peek <<L test.ref2>> <<l nlink>> ]] <<l t_v>> ]]
+  (i 77)
+]]
+
+[[o t93:evtest
+  [[fi p:peek <<L test.ref3>> <<l nested.t_int>> ]]
+  (i 1)
+]]
+[[o t94:evtest
+  [[fi p:peek <<L test.ref3>> <<l nested.t_other>> ]]
+  (i 17)
+]]
+[[o t95:evtest
+  [[fi p:peek <<L test.ref3>> <<l nested.t_over>> ]]
+  (i 35)
+]]
+[[o t96:evtest
+  [[fi p:peek <<L test.ref3>> <<l nested.t_v>> ]]
+  (i 17)
+]]
+[[o t97:evtest
+  [[fi p:peek <<L test.ref3>> <<l nested.t_num>> ]]
+  (n 3.5)
+]]
+[[o t98:evtest
+  [[fi p:peek <<L test.ref3>> <<l nested.t_sover>> ]]
+  (i 35)
+]]
+[[o t99:evtest
+  [[fi p:peek [[ff p:peek <<L test.ref3>> <<l nlink>> ]] <<l t_over>> ]]
+  (i 890)
+]]
+[[o t100:evtest
+  [[fi p:peek [[ff p:peek <<L test.ref3>> <<l nlink>> ]] <<l t_sover>> ]]
+  (i 35)
+]]
+[[o t101:evtest
+  [[fi p:peek [[ff p:peek <<L test.ref3>> <<l nlink>> ]] <<l t_other>> ]]
+  (i 77)
+]]
+[[o t102:evtest
+  [[fi p:peek [[ff p:peek <<L test.ref3>> <<l nlink>> ]] <<l t_v>> ]]
+  (i 77)
+]]
 
 /*
-[[o t93:evtest <<L test.ref3.nested.t_int>> (i 1) ]]
-[[o t94:evtest <<L test.ref3.nested.t_other>> (i 17) ]]
-[[o t95:evtest <<L test.ref3.nested.t_over>> (i 35) ]]
-[[o t96:evtest <<L test.ref3.nested.t_v>> (i 17) ]]
-[[o t97:evtest <<L test.ref3.nested.t_num>> (n 3.5) ]]
-[[o t98:evtest <<L test.ref3.nested.t_sover>> (i 35) ]]
-[[o t99:evtest <<L test.ref3.nlink.t_over>> (i 890) ]]
-[[o t100:evtest <<L test.ref3.nlink.t_sover>> (i 35) ]]
-[[o t101:evtest <<L test.ref3.nlink.t_other>> (i 77) ]]
-[[o t102:evtest <<L test.ref3.nlink.t_v>> (i 77) ]]
-
 [[c fn_test_scope
   [[V defaults
     [[i ~addend 1]]

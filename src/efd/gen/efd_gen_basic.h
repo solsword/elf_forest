@@ -43,7 +43,10 @@ efd_node * efd_gn_impl_range(efd_generator_state *state) {
 // If three values are given they are used as start, stop, and step. A
 // container node may be used in place of the stop value to specify no stop
 // value (an infinite generator) when a step value is to be specified.
-efd_generator_state * efd_gn_range(efd_node const * const node) {
+efd_generator_state * efd_gn_range(
+  efd_node const * const node,
+  efd_value_cache *cache
+) {
   size_t child_count;
   efd_node *stash;
   efd_generator_state *result;
@@ -59,24 +62,27 @@ efd_generator_state * efd_gn_range(efd_node const * const node) {
 
   child_count = efd_normal_child_count(node);
   if (child_count == 1) {
-    efd_add_child(stash, copy_efd_node(efd_nth(node, 0)));
+    efd_add_child(stash, copy_efd_node(efd_get_value(efd_nth(node, 0), cache)));
     efd_add_child(stash, create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME));
     efd_add_child(stash, construct_efd_int_node(EFD_ANON_NAME, 1));
   } else if (child_count == 2) {
-    efd_add_child(stash, copy_efd_node(efd_nth(node, 0)));
-    efd_add_child(stash, copy_efd_node(efd_nth(node, 1)));
+    efd_add_child(stash, copy_efd_node(efd_get_value(efd_nth(node, 0), cache)));
+    efd_add_child(stash, copy_efd_node(efd_get_value(efd_nth(node, 1), cache)));
     efd_add_child(stash, construct_efd_int_node(EFD_ANON_NAME, 1));
   } else if (child_count == 3) {
-    efd_add_child(stash, copy_efd_node(efd_nth(node, 0)));
-    efd_add_child(stash, copy_efd_node(efd_nth(node, 1)));
-    efd_add_child(stash, copy_efd_node(efd_nth(node, 2)));
+    efd_add_child(stash, copy_efd_node(efd_get_value(efd_nth(node, 0), cache)));
+    efd_add_child(stash, copy_efd_node(efd_get_value(efd_nth(node, 1), cache)));
+    efd_add_child(stash, copy_efd_node(efd_get_value(efd_nth(node, 2), cache)));
   } else {
-    // TODO: Better & standardized error behavior
-    fprintf(
-      stderr, 
-      "ERROR: 'range' iterator must have 1-3 arguments (%lu given).\n",
-      child_count
+    efd_report_error(
+      node,
+      s_sprintf(
+        "ERROR: 'range' iterator must have 1-3 arguments (had %lu):",
+        child_count
+      )
     );
+    exit(EXIT_FAILURE);
+    // TODO: Better here?
   }
 
   result->stash = (void*) stash;
@@ -87,24 +93,30 @@ efd_generator_state * efd_gn_range(efd_node const * const node) {
 // Takes a generator and an integer node containing one of the EFD_GT_EXTEND_*
 // constants and creates a generator which extends the base generator using the
 // given extension method.
-efd_generator_state * efd_gn_extend(efd_node const * const node) {
+efd_generator_state * efd_gn_extend(
+  efd_node const * const node,
+  efd_value_cache *cache
+) {
   efd_node *child;
   efd_generator_type type;
   efd_generator_state *sub;
 
-  child = efd_nth(node, 0);
+  child = efd_get_value(efd_nth(node, 0), cache);
   efd_assert_return_type(node, efd_return_type_of(child));
 
-  sub = efd_generator_for(child);
+  sub = efd_generator_for(child, cache);
 
-  type = (efd_generator_type) efd__i(efd_nth(node, 1));
+  type = (efd_generator_type) efd__i(efd_get_value(efd_nth(node, 1), cache));
   if (type != EFD_GT_EXTEND_RESTART && type != EFD_GT_EXTEND_HOLD) {
-    // TODO: Better & standardized error behavior
-    fprintf(
-      stderr, 
-      "ERROR: 'extend' iterator has invalid type argument (%d).\n",
-      type
+    efd_report_error(
+      node,
+      s_sprintf(
+        "ERROR: 'extend' iterator has invalid extension type (%d):",
+        type
+      )
     );
+    exit(EXIT_FAILURE);
+    // TODO: better here?
   }
 
   return create_efd_generator_state(

@@ -242,8 +242,8 @@ int _test_efd_case(efd_node *n) {
     cleanup_string(cmp_r);
     cleanup_string(agn_r);
     // END DEBUG */
-    cmp = efd_eval(t->compare, NULL);
-    agn = efd_eval(t->against, NULL);
+    cmp = efd_fresh_value(t->compare);
+    agn = efd_fresh_value(t->against);
     result = (
       cmp != NULL
    && agn != NULL

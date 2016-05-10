@@ -73,7 +73,9 @@ int m2_contains_key(map *m, map_key_t x, map_key_t y);
 int m3_contains_key(map *m, map_key_t x, map_key_t y, map_key_t z);
 
 // Returns the value corresponding to the given key(s), or NULL if no value is
-// present for those key(s).
+// present for those key(s). Note that NULL values may be stored in the map,
+// and if this is the case, m_contains_key can be used to verify whether a NULL
+// return value is due to a missing key or a stored NULL value.
 void * m_get_value(map *m, ...);
 void * m1_get_value(map *m, map_key_t x);
 void * m2_get_value(map *m, map_key_t x, map_key_t y);

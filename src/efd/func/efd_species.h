@@ -25,7 +25,10 @@ void * _map_v_id_to_v_element_species(void *v_id) {
 // EL_PROPERTY_* constant attribute to be averaged. Computes the weighted
 // average of the given property across the given elements, returning it as a
 // number.
-efd_node * efd_fn_weighted_el_prop(efd_node const * const node) {
+efd_node * efd_fn_weighted_el_prop(
+  efd_node const * const node,
+  efd_value_cache *cache
+) {
   efd_generator_state *ids_gen, *weights_gen;
   efd_node *id_node_container, *weight_node_container;
   list *id_nodes, *ids, *species, *weight_nodes, *weights;
@@ -35,9 +38,9 @@ efd_node * efd_fn_weighted_el_prop(efd_node const * const node) {
   efd_assert_return_type(node, EFD_NT_NUMBER);
 
   // Unpack arguments:
-  ids_gen = efd_generator_for(efd_nth(node, 0));
-  weights_gen = efd_generator_for(efd_nth(node, 1));
-  prop = (element_property) *efd__i(efd_nth(node, 2));
+  ids_gen = efd_generator_for(efd_get_value(efd_nth(node, 0), cache), cache);
+  weights_gen = efd_generator_for(efd_get_value(efd_nth(node, 1), cache),cache);
+  prop = (element_property) *efd__i(efd_get_value(efd_nth(node, 2), cache));
   // TODO: bounds-checking here?
 
   // Assemble a list of species pointers:

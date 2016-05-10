@@ -897,7 +897,8 @@ void generate_geology(world_map *wm) {
   efd_node *gen_node;
   efd_node *gen_strata_params_node, *gen_stratum_node;
   efd_node *gen_stone_species_node;
-  efd_node *args_node, *params_node, *species_node, *stratum_node;
+  efd_node *call_node, *args_node;
+  efd_node *params_node, *species_node, *stratum_node;
 
   SSTR(vn_i, "~i", 2);
   SSTR(vn_wm_seed, "~wm_seed", 8);
@@ -925,20 +926,32 @@ void generate_geology(world_map *wm) {
 
     // Create a stratum and append it to the list of all strata...
 
-    // Arguments for gen_stone_species:
+    // Function call to gen_stone_species:
+    call_node = create_efd_node(EFD_NT_FUNCTION, EFD_ANON_NAME);
+    efd_add_child(
+      call_node,
+      construct_efd_link_node_to(EFD_ANON_NAME, gen_stone_species_node)
+    );
     args_node = create_efd_node(EFD_NT_SCOPE, EFD_ANON_NAME);
     efd_add_child(args_node, construct_efd_obj_node(vn_world_map, f_wm, wm));
     efd_add_child(args_node, construct_efd_int_node(vn_seed, hash));
+    efd_add_child(call_node, args_node);
+
 
     // Generate and unpack the species for this stratum:
-    species_node = efd_eval(gen_stone_species_node, args_node);
-    cleanup_efd_node(args_node);
+    species_node = efd_fresh_value(call_node);
+    cleanup_efd_node(call_node);
     st_sp = (stone_species*) efd_lookup_unpacker(s_stone_species)(species_node);
 
     // Add the new species to the global registry (thereby assigning its ID):
     st_id = add_stone_species(st_sp);
 
-    // Arguments for gen_strata_params:
+    // Function call to gen_strata_params:
+    call_node = create_efd_node(EFD_NT_FUNCTION, EFD_ANON_NAME);
+    efd_add_child(
+      call_node,
+      construct_efd_link_node_to(EFD_ANON_NAME, gen_strata_params_node)
+    );
     args_node = create_efd_node(EFD_NT_SCOPE, EFD_ANON_NAME);
     efd_add_child(args_node, construct_efd_int_node(vn_i, i));
     efd_add_child(args_node, construct_efd_int_node(vn_wm_seed, wm->seed));
@@ -946,21 +959,26 @@ void generate_geology(world_map *wm) {
     efd_add_child(args_node, construct_efd_int_node(vn_wm_width, wm->width));
     efd_add_child(args_node, construct_efd_int_node(vn_wm_height, wm->height));
     efd_add_child(args_node, construct_efd_int_node(vn_species, st_id));
+    efd_add_child(call_node, args_node);
 
     // now we can cleanup the species node after copying out its source:
     cleanup_efd_node(species_node);
 
     // Generate parameters for this stratum
-    params_node = efd_eval(gen_strata_params_node, args_node);
-    cleanup_efd_node(args_node);
+    params_node = efd_fresh_value(call_node);
+    cleanup_efd_node(call_node);
 
-    // Hack the parameters into a SCOPE node:
-    // TODO: Better here?
-    params_node->h.type = EFD_NT_SCOPE;
+    // Function call to gen_stratum:
+    call_node = create_efd_node(EFD_NT_FUNCTION, EFD_ANON_NAME);
+    efd_add_child(
+      call_node,
+      construct_efd_link_node_to(EFD_ANON_NAME, gen_stratum_node)
+    );
+    efd_add_child(call_node, params_node);
 
     // Generate the stratum:
-    stratum_node = efd_eval(gen_stratum_node, params_node);
-    cleanup_efd_node(params_node);
+    stratum_node = efd_fresh_value(call_node);
+    cleanup_efd_node(call_node);
 
     // Unpack it into a stratum_s struct.
     s = (stratum*) efd_lookup_unpacker(s_stratum)(stratum_node);
