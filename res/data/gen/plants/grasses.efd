@@ -1,0 +1,94 @@
+{{c gen
+{{c plants
+[[c grasses
+
+[[c bases
+  [[c base_grass
+    [[s type "species_template"]]
+    [[c header
+    ]]
+    [[c anatomy
+      [[c sap
+        [[s type "vital_fluid"]] // TODO: Properties?
+        [[c nutrition
+          // TODO
+        ]]
+      ]]
+      [[c nectar
+        [[s type "secretion"]]
+        [[s property "sweet"]] // TODO
+        [[c nutrition
+          // TODO
+        ]]
+      ]]
+      [[c leaf_tissue
+        [[s type "tissue"]]
+        [[n toughness 0.8]]
+        [[n resilience 0.8]]
+        [[c contains
+          (s "sap")
+        ]]
+        [[c nutrition
+          // TODO
+        ]]
+      ]]
+      [[c flower_tissue
+        [[s type "tissue"]]
+        [[n toughness 0.2]]
+        [[n resilience 0.2]]
+        [[c contains
+          (s "nectar")
+        ]]
+        [[c nutrition
+          // TODO
+        ]]
+      ]]
+      [[c seed_tissue
+        [[s type "tissue"]]
+        [[n toughness 0.6]]
+        [[n resilience 0.2]]
+        [[c nutrition
+          // TODO
+        ]]
+      ]]
+      [[c leaves
+        [[s type "part"]]
+        [[s tissue "leaf_tissue"]]
+        [[c appearance
+          // TODO
+        ]]
+      ]]
+      [[c stems
+        [[s type "part"]]
+        [[s tissue "leaf_tissue"]]
+        [[c appearance
+          // TODO
+        ]]
+      ]]
+      [[c flowers
+        [[s type "part"]]
+        [[s tissue "flower_tissue"]]
+        [[c appearance
+          // TODO
+        ]]
+        // TODO: seasonal
+        // TODO: becomes seeds
+      ]]
+      [[c seeds
+        [[s type "part"]]
+        [[s tissue "seed_tissue"]]
+        [[c appearance
+          // TODO
+        ]]
+        // TODO: seasonal
+      ]]
+    ]]
+  ]]
+]]
+
+[[c adaptations
+]]
+
+]] // c grasses
+}} // c plants
+}} // c gen

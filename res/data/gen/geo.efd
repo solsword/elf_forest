@@ -1,4 +1,4 @@
-[[c gen
+{{c gen
 [[c geo
 
 [[V locals
@@ -2073,4 +2073,4 @@
 ]]
 
 ]] // c geo
-]] // c gen
+}} // c gen
