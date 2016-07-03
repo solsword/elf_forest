@@ -9,6 +9,8 @@
 
 #include "util.h"
 
+#include "filesys/filesys.h"
+
 #include "efd_parser.h"
 #include "efd.h"
 
@@ -79,7 +81,7 @@ efd_address* efd_parse_string_address(string const * const astr) {
   efd_address *result;
   efd_parse_state s;
   s.input = s_raw(astr);
-  s.input_length = s_get_length(astr);
+  s.input_length = s_count_bytes(astr);
   s.pos = 0;
   s.filename = "<address string>";
   s.lineno = -1;

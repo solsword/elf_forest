@@ -1,0 +1,57 @@
+{{c gen
+{{c plants
+  [[c properties
+    [[o stem_composition:exclusive_property
+      (s "succulent")
+      (s "woody_stems")
+      (s "green_stems")
+    ]]
+    [[o sap_properties:optional_property_list
+      (s "sweet_sap")
+    ]]
+    [[o fruit_type:exclusive_property
+      (s "drupe") // plum
+      (s "pome") // apple
+      (s "single_berry") // blueberry
+      (s "compound_berry") // blackberry
+      (s "melon") // canteloupe
+      (s "fleshy_pod") // banana
+      (s "fused_pod") // breadfruit
+      (s "dry_pod") // poppy
+      (s "nut") // walnut
+      (s "samara") // ash
+      (s "diaspore") // dandelion
+      (s "seed_cluster") // amaranth
+      (s "grain") // wheat
+      (s "bean") // soy bean
+      (s "simple_cone") // pine
+      (s "winged_cone") // spruce
+      (s "scaly_cone") // juniper
+      (s "seed_cup") // yew
+    ]]
+    [[o resin_qualities:optional_property_list
+      (s "insect_repellant_resin")
+      (s "waterproof_resin")
+      (s "incendiary_resin")
+      (s "drips_resin")
+    ]]
+    [[o resin_product:exclusive_property
+      (s "milk")
+      (s "gum")
+      (s "amber")
+      (s "rubber")
+    ]]
+    [[o resin_aroma:exclusive_property
+      (s "absent")
+      (s "foul")
+      (s "pleasant")
+      (s "fragrant")
+    ]]
+    [[c resin_quantity:exclusive_property
+      (s "low")
+      (s "normal")
+      (s "abundant")
+    ]]
+  ]]
+}}
+}}

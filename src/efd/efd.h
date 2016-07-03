@@ -233,6 +233,8 @@ typedef efd_generator_state * (*efd_generator_constructor)(
 #define EFD_ADDR_SEP_CHR '.'
 #define EFD_ADDR_PARENT_CHR '^'
 
+extern string const * const EFD_FILE_EXTENSION;
+
 extern string const * const EFD_ADDR_SEP_STR;
 extern string const * const EFD_ADDR_PARENT_STR;
 
@@ -243,6 +245,7 @@ extern char const * const EFD_NT_NAMES[];
 extern char const * const EFD_NT_ABBRS[];
 
 extern efd_node *EFD_ROOT;
+extern efd_index *EFD_COMMON_INDEX;
 
 extern dictionary *EFD_INT_GLOBALS;
 extern dictionary *EFD_NUM_GLOBALS;

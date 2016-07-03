@@ -14,6 +14,9 @@
  * Types & Structures *
  **********************/
 
+// A single unicode character:
+typedef ucs4_t codepoint;
+
 // Strings hold pointers to character arrays but also know how long they are.
 struct string_s;
 typedef struct string_s string;
@@ -52,6 +55,16 @@ struct string_s {
   size_t length; // raw number of bytes without null terminator
   uint8_t* bytes;
 };
+
+/********************
+ * Inline Functions *
+ ********************/
+
+// char -> codepoint conversions
+// TODO: Test this!
+static inline codepoint s_as_codepoint(char c) {
+  return (codepoint) c;
+}
 
 /********
  * Init *
@@ -97,6 +110,9 @@ int s_contains_nul(string const * const s);
 // Returns the length of the string in characters (minus the terminating NUL).
 size_t s_get_length(string const * const s);
 
+// Returns the number of bytes in the string (minus the terminating NUL).
+size_t s_count_bytes(string const * const s);
+
 // Checks whether the string s exactly and completely matches the given
 // characters. A number of characters less than or equal to the length of the
 // string will be inspected. Returns 1 if the string matches and 0 otherwise.
@@ -118,6 +134,11 @@ char * s_encode_nt(string const * const s);
 // the raw data may contain NULs, and should always contain a NUL at the end.
 // The string's length is the total number of bytes without the final NUL.
 char const * const s_raw(string const * const s);
+
+// This function returns the ith character of a string, or NUL if the given
+// index is beyond the end of the string. Note that it has to scan through the
+// string to do so so it's relatively inefficient.
+codepoint s_get_char(string const * const s, size_t i);
 
 // Returns 1 if the two strings are the same, or 0 otherwise.
 int s_equals(string const * const s, string const * const other);

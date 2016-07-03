@@ -53,8 +53,10 @@ typedef struct ps_block_s ps_block;
 // from eight adjacent blocks.
 #define PS_BLOCK_CACHE_SIZE 12
 
-extern char const * const BLOCKS_DIRECTORY;
-extern char const * const DEFAULT_WORLD_DIRECTORY;
+extern string const * const PS_BLOCK_DIR_NAME;
+extern string const * const PS_MAPS_DIR_NAME;
+
+extern string const * const PS_DEFAULT_WORLD_DIR;
 
 /*************************
  * Structure Definitions *
@@ -81,17 +83,14 @@ struct ps_block_s {
  * Globals *
  ***********/
 
-// The directory separator for this OS
-extern string* DIRSEP;
-
 // The world directory
 extern string* PS_WORLD_DIRECTORY;
 
 // The full prefix for block filenames
-extern string* PS_BLOCK_DIR_PREFIX;
+extern string* PS_BLOCK_DIR_PATH;
 
 // The full prefix for map filenames
-extern string* PS_MAPS_DIR_PREFIX;
+extern string* PS_MAPS_DIR_PATH;
 
 // The persist block cache
 extern ps_block PS_BLOCK_CACHE[];

@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
   setup_textures();
   setup_ui();
   setup_data();
-  setup_persist(DEFAULT_WORLD_DIRECTORY);
+  setup_persist(PS_DEFAULT_WORLD_DIR);
   setup_entities(&origin);
   setup_species();
   //setup_worldgen(1821271);

@@ -9,8 +9,11 @@
 #include <stdlib.h>
 #include <malloc.h>
 
-#include "pipeline.h"
 #include "util.h"
+
+#include "filesys/filesys.h"
+
+#include "pipeline.h"
 
 /********************
  * Global variables *

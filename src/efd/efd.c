@@ -17,6 +17,8 @@
  * Constants *
  *************/
 
+CSTR(EFD_FILE_EXTENSION, "efd", 3);
+
 CSTR(EFD_ADDR_SEP_STR, ".", 1);
 CSTR(EFD_ADDR_PARENT_STR, "^", 1);
 
@@ -100,6 +102,7 @@ char const * const EFD_NT_ABBRS[] = {
 };
 
 efd_node *EFD_ROOT = NULL;
+efd_index *EFD_COMMON_INDEX = NULL;
 
 dictionary *EFD_INT_GLOBALS = NULL;
 dictionary *EFD_NUM_GLOBALS = NULL;
@@ -2028,6 +2031,9 @@ efd_node *efd_nth(efd_node const * const node, size_t index) {
 }
 
 efd_node * efd_lookup(efd_node const * const node, string const * const key) {
+  if (node == NULL) {
+    return NULL;
+  }
   if (s_equals(key, EFD_ADDR_PARENT_STR)) {
     // Special handling for 'parent' path entries:
     return node->h.parent;

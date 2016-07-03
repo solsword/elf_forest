@@ -306,49 +306,4 @@ static inline int report_opengl_error(char const * const reason) {
   return 1;
 }
 
-// Reads a file and returns a malloc'd char *:
-static inline char * load_file(char const * const filename, size_t *size) {
-  char * buffer = NULL;
-  FILE * f = fopen(filename, "rb");
-
-  if (f == NULL) {
-    fprintf(
-      stderr,
-      "Error: unable to open file '%s'.\n",
-      filename
-    );
-    exit(EXIT_FAILURE);
-  }
-  fseek (f, 0, SEEK_END);
-  *size = ftell(f);
-  fseek (f, 0, SEEK_SET);
-  buffer = malloc(*size);
-  if (buffer == NULL) {
-    fprintf(
-      stderr,
-      "Error: unable to allocate memory to read file '%s'.\n",
-      filename
-    );
-    fclose(f);
-    exit(EXIT_FAILURE);
-  }
-  fread(buffer, 1, *size, f);
-  fclose(f);
-  return buffer;
-}
-
-static inline void mkdir_p(char const * const filename, mode_t mode) {
-  struct stat st;
-  if (stat(filename, &st) != 0) {
-#ifdef DEBUG
-    // TODO: Careful around that user-supplied string!
-    printf("Creating directory '%s'...\n", filename);
-#endif
-    if (mkdir(filename, mode) != 0) {
-      perror("Failed to create directory.");
-      exit(errno);
-    }
-  }
-}
-
 #endif // ifndef UTIL_H

@@ -10,6 +10,8 @@
 #include "datatypes/dict_string_keys.h"
 #include "datatypes/string.h"
 
+#include "filesys/filesys.h"
+
 /***********************
  * Plug-in Definitions *
  ***********************/
@@ -82,6 +84,7 @@ void setup_elf_forest_data(void) {
   efd_object_format const *of;
 
   EFD_ROOT = create_efd_node(EFD_NT_CONTAINER, EFD_ROOT_NAME);
+  EFD_COMMON_INDEX = create_efd_index();
 
   EFD_INT_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
   EFD_NUM_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
@@ -137,7 +140,7 @@ efd_eval_function efd_lookup_function(string const * const key) {
     fprintf(
       stderr,
       "ERROR: function '%.*s' not found.\n",
-      (int) s_get_length(key),
+      (int) s_count_bytes(key),
       s_raw(key)
     );
     return NULL;
@@ -152,7 +155,7 @@ efd_generator_constructor efd_lookup_generator(string const * const key) {
     fprintf(
       stderr,
       "ERROR: constructor for generator '%.*s' not found.\n",
-      (int) s_get_length(key),
+      (int) s_count_bytes(key),
       s_raw(key)
     );
     return NULL;
@@ -167,7 +170,7 @@ efd_object_format * efd_lookup_format(string const * const key) {
     fprintf(
       stderr,
       "ERROR: object format '%.*s' not found.\n",
-      (int) s_get_length(key),
+      (int) s_count_bytes(key),
       s_raw(key)
     );
     return NULL;
@@ -189,4 +192,19 @@ efd_copy_function efd_lookup_copier(string const * const key) {
 
 efd_destroy_function efd_lookup_destructor(string const * const key) {
   return efd_lookup_format(key)->destructor;
+}
+
+void load_efd_file(
+  string const * const filename,
+  struct stat const * const st,
+  void* v_context
+) {
+  efd_load_context *context = (efd_load_context*) v_context;
+
+  // TODO: consider return value?
+  efd_parse_file(context->root, context->index, s_raw(filename));
+}
+
+void load_common_efd(void) {
+  // TODO: HERE!
 }

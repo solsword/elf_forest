@@ -104,7 +104,7 @@ int _test_efd_case(efd_node *n) {
   if (efd_format_is(n, s_itest)) {
     efd_int_test *t = (efd_int_test*) (*efd__o(n));
     s.input = s_raw(t->input);
-    s.input_length = s_get_length(t->input);
+    s.input_length = s_count_bytes(t->input);
     int_result = efd_parse_int(&s);
     if (s_check_bytes(t->expect, "failure")) {
       result = efd_parse_failed(&s);
@@ -144,7 +144,7 @@ int _test_efd_case(efd_node *n) {
   } else if (efd_format_is(n, s_ntest)) {
     efd_num_test *t = (efd_num_test*) (*efd__o(n));
     s.input = s_raw(t->input);
-    s.input_length = s_get_length(t->input);
+    s.input_length = s_count_bytes(t->input);
     float_result = efd_parse_float(&s);
     if (s_check_bytes(t->expect, "failure")) {
       result = efd_parse_failed(&s);
@@ -184,7 +184,7 @@ int _test_efd_case(efd_node *n) {
   } else if (efd_format_is(n, s_ptest)) {
     efd_parse_test *t = (efd_parse_test*) (*efd__o(n));
     s.input = s_raw(t->input);
-    s.input_length = s_get_length(t->input);
+    s.input_length = s_count_bytes(t->input);
     node_result = efd_parse_any(&s, cr);
     if (node_result != NULL) { cleanup_efd_node(node_result); }
     if (s_check_bytes(t->expect, "failure")) {
@@ -311,7 +311,7 @@ size_t test_efd_defined_tests(void) {
       fprintf(
         stderr,
         "Dynamic test case '%.*s' failed.\n",
-        (int) s_get_length(fqn),
+        (int) s_count_bytes(fqn),
         s_raw(fqn)
       );
       return i + 2; // 2, 3, 4, etc.

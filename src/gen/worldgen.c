@@ -46,7 +46,7 @@ static inline void write_map_to_file(texture *map, string const * const file) {
   char *map_file;
   string *full_file;
 
-  full_file = s_concat(PS_MAPS_DIR_PREFIX, file);
+  full_file = s_concat(PS_MAPS_DIR_PATH, file);
   map_file = s_encode_nt(full_file);
 
   write_texture_to_png(map, map_file);

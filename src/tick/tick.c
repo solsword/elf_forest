@@ -92,7 +92,7 @@ void _get_everything_set_up(ptrdiff_t seed, int argc, char** argv) {
   printf("  ...data...\n");
   setup_data();
   printf("  ...persist...\n");
-  setup_persist(DEFAULT_WORLD_DIRECTORY);
+  setup_persist(PS_DEFAULT_WORLD_DIR);
   printf("  ...entities...\n");
   setup_entities();
   printf("  ...species...\n");

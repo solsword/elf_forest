@@ -11,6 +11,7 @@
 #include "datatypes/string.h"
 #include "world/blocks.h"
 #include "world/world.h"
+#include "filesys/filesys.h"
 
 #include "persist.h"
 
@@ -18,29 +19,20 @@
  * Constants *
  *************/
 
-// TODO: Better OS branching!
-#ifdef __linux__
-char const * const RAW_DIRSEP = "/";
-#elif _WIN32
-char const * const RAW_DIRSEP = "\\";
-#else
-#error "OS not supported!"
-#endif
-char const * const RAW_BLOCKS_DIRECTORY = "blocks";
-char const * const RAW_MAPS_DIRECTORY = "maps";
-char const * const DEFAULT_WORLD_DIRECTORY = "world";
+CSTR(PS_BLOCK_DIR_NAME "blocks", 6);
+CSTR(PS_MAPS_DIR_NAME "maps", 4);
+
+CSTR(PS_DEFAULT_WORLD_DIR "world", 5);
 
 /***********
  * Globals *
  ***********/
 
-string* DIRSEP = NULL;
-
 string* PS_WORLD_DIRECTORY = NULL;
 
-string* PS_BLOCK_DIR_PREFIX = NULL;
+string* PS_BLOCK_DIR_PATH = NULL;
 
-string* PS_MAPS_DIR_PREFIX = NULL;
+string* PS_MAPS_DIR_PATH = NULL;
 
 ps_block PS_BLOCK_CACHE[PS_BLOCK_CACHE_SIZE];
 
@@ -50,41 +42,29 @@ uint64_t EMPTY_INDICES[PS_BLOCK_TOTAL_CHUNKS];
  * Functions *
  *************/
 
-void setup_persist(char const * const world_directory) {
+void setup_persist(string const * const world_directory) {
   size_t i;
   char *dir;
   string *rdir;
-  // Convert some char*s to strings and set up the PS_BLOCK_DIR_PREFIX string:
-  DIRSEP = create_string_from_ntchars(RAW_DIRSEP);
-  PS_WORLD_DIRECTORY = create_string_from_ntchars(world_directory);
+  // Set up the PS_BLOCK_DIR_PATH strings:
+  PS_WORLD_DIRECTORY = copy_string(world_directory);
   if (s_contains_nul(PS_WORLD_DIRECTORY)) {
     perror("World directory string contains NUL!");
     exit(EXIT_FAILURE);
   }
 
-  rdir = create_string_from_ntchars(RAW_BLOCKS_DIRECTORY);
-  PS_BLOCK_DIR_PREFIX = s_join(DIRSEP, PS_WORLD_DIRECTORY, rdir, NULL);
-  cleanup_string(rdir);
+  PS_BLOCK_DIR_PATH = fs_dirchild(PS_WORLD_DIRECTORY, PS_BLOCK_DIR_NAME);
+  s_append(PS_BLOCK_DIR_PATH, FS_DIRSEP);
 
-  rdir = create_string_from_ntchars(RAW_MAPS_DIRECTORY);
-  PS_MAPS_DIR_PREFIX = s_join(DIRSEP, PS_WORLD_DIRECTORY, rdir, NULL);
-  cleanup_string(rdir);
-
-  s_append(PS_BLOCK_DIR_PREFIX, DIRSEP);
-  s_append(PS_MAPS_DIR_PREFIX, DIRSEP);
+  PS_MAPS_DIR_PATH = fs_dirchild(PS_WORLD_DIRECTORY, PS_MAPS_DIR_NAME)
+  s_append(PS_MAPS_DIR_PATH, DIRSEP);
 
   // Create directories as needed:
-  dir = s_encode_nt(PS_WORLD_DIRECTORY);
-  mkdir_p(dir, 0755);
-  free(dir);
+  fs_ensure_dir(PS_WORLD_DIRECTORY, 0755);
 
-  dir = s_encode_nt(PS_BLOCK_DIR_PREFIX);
-  mkdir_p(dir, 0755);
-  free(dir);
+  fs_ensure_dir(PS_BLOCK_DIR_PATH, 0755);
 
-  dir = s_encode_nt(PS_MAPS_DIR_PREFIX);
-  mkdir_p(dir, 0755);
-  free(dir);
+  fs_ensure_dir(PS_MAPS_DIR_PATH, 0755);
 
   // Initialize the block arrays:
   for (i = 0; i < PS_BLOCK_CACHE_SIZE; ++i) {
@@ -111,12 +91,12 @@ string* block_filename(ps_block_pos* pos) {
   string* result;
   string* s = s_sprintf("b%u-%u-%u.efb", pos->x, pos->y, pos->z);
 #ifdef DEBUG
-  if (PS_BLOCK_DIR_PREFIX == NULL) {
+  if (PS_BLOCK_DIR_PATH == NULL) {
     fprintf(stderr, "ERROR: setup_persist wasn't called!\n");
     exit(EXIT_FAILURE);
   }
 #endif
-  result = s_concat(PS_BLOCK_DIR_PREFIX, s);
+  result = s_concat(PS_BLOCK_DIR_PATH, s);
   cleanup_string(s);
   return result;
 }

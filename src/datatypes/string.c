@@ -172,6 +172,10 @@ int s_contains_nul(string const * const s) {
 }
 
 size_t s_get_length(string const * const s) {
+  return u8_mbsnlen(s->bytes, s->length);
+}
+
+size_t s_count_bytes(string const * const s) {
   return s->length;
 }
 
@@ -247,6 +251,38 @@ char* s_encode_nt(string const * const s) {
 
 char const * const s_raw(string const * const s) {
   return (char*) s->bytes;
+}
+
+codepoint s_get_char(string const * const s, size_t i) {
+  uint8_t *here;
+  int remaining;
+  int cplen;
+  codepoint result;
+
+  remaining = (int) s->length;
+  here = s->bytes;
+  while (i > 0) {
+    cplen = u8_mblen(here, remaining);
+    if (cplen == 0) {
+      cplen = 1;
+    } else if (cplen == -1) {
+      return 0;
+    }
+    remaining -= cplen;
+#ifdef DEBUG
+    if (remaining < 0) {
+      return 0;
+    }
+#endif
+    here += cplen;
+    i -= 1;
+  }
+
+  cplen = u8_mbtouc(&result, here, remaining);
+  if (cplen == -1 || result == 0xfffd) {
+    return 0;
+  }
+  return result;
 }
 
 int s_equals(string const * const s, string const * const other) {

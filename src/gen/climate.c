@@ -29,14 +29,21 @@ body_of_water* create_body_of_water(
   salinity salt
 ) {
   body_of_water *result = (body_of_water*) malloc(sizeof(body_of_water));
+  result->origin.x = 0;
+  result->origin.y = 0;
+  result->shorigin.x = 0;
+  result->shorigin.y = 0;
+  result->type = type;
   result->level = level;
   result->salt = salt;
   result->area = 0;
   result->shore_area = 0;
+  result->rivers = create_list();
   return result;
 }
 
 void cleanup_body_of_water(body_of_water *body) {
+  cleanup_list(body->rivers);
   free(body);
 }
 
@@ -52,6 +59,8 @@ river* create_river() {
 void cleanup_river(river *r) {
   cleanup_list(r->path);
   cleanup_list(r->control_points);
+  cleanup_list(r->widths);
+  cleanup_list(r->depths);
   free(r);
 }
 
@@ -738,8 +747,6 @@ void generate_hydrology(world_map *wm) {
       wr->climate.soil.base_soil.main_block_type = 0;
     }
   }
-  // DEBUG: REMOVE
-  //exit(EXIT_FAILURE);
   // Grow rivers:
   for (i = 0; i < CL_RIVER_GROWTH_ITERATIONS; ++i) {
     // Grow each river once

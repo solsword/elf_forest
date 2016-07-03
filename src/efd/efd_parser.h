@@ -184,7 +184,8 @@ static inline int efd_parse_atend(efd_parse_state *s) {
 void efd_parse_copy_state(efd_parse_state *from, efd_parse_state *to);
 
 // Parses an entire file, adding node(s) encountered as children of the given
-// parent node (must be a container). Returns 1 if it succeeds or 0 otherwise.
+// parent node (must be a container). Nodes encountered are unpacked and global
+// reference values are filled in. Returns 1 if it succeeds or 0 otherwise.
 int efd_parse_file(
   efd_node *parent,
   efd_index *cr,
