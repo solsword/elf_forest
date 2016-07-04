@@ -83,6 +83,8 @@ void setup_elf_forest_data(void) {
   efd_generator_declaration const *gd;
   efd_object_format const *of;
 
+  EFD_COMMON_DIR = fs_dirchild(FS_RES_DIR, EFD_COMMON_DIR_NAME);
+
   EFD_ROOT = create_efd_node(EFD_NT_CONTAINER, EFD_ROOT_NAME);
   EFD_COMMON_INDEX = create_efd_index();
 
@@ -117,9 +119,13 @@ void setup_elf_forest_data(void) {
     fprintf(stderr, "Warning: sizeof(char) != sizeof(uint8_t)\n");
   }
 #endif
+
+  load_common_efd();
 }
 
 void cleanup_elf_forest_data(void) {
+  cleanup_string(EFD_COMMON_DIR);
+
   cleanup_efd_node(EFD_ROOT);
 
   cleanup_dictionary(EFD_INT_GLOBALS);
@@ -194,17 +200,35 @@ efd_destroy_function efd_lookup_destructor(string const * const key) {
   return efd_lookup_format(key)->destructor;
 }
 
-void load_efd_file(
+void load_common_efd_file(
   string const * const filename,
   struct stat const * const st,
   void* v_context
 ) {
-  efd_load_context *context = (efd_load_context*) v_context;
-
   // TODO: consider return value?
-  efd_parse_file(context->root, context->index, s_raw(filename));
+  efd_parse_file(EFD_ROOT, EFD_COMMON_INDEX, s_raw(filename));
 }
 
 void load_common_efd(void) {
+  walk_dir_tree(
+    EFD_COMMON_DIR,
+    &fs_walk_filter_handle_all,
+    NULL,
+    &fs_walk_filter_ignore_hidden,
+    NULL,
+    &fs_walk_filter_by_extension,
+    (void*) s_raw(EFD_FILE_EXTENSION),
+    &load_common_efd_file,
+    NULL
+  );
+
+  // Process references:
+  efd_process_references(EFD_ROOT, EFD_COMMON_INDEX);
+
+  // Unpack prototypes into objects:
+  efd_unpack_node(EFD_ROOT);
+}
+
+void save_common_efd(void) {
   // TODO: HERE!
 }

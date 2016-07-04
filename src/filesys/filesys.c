@@ -24,6 +24,8 @@ CSTR(FS_DIRSEP, "\\", 1);
 #error "OS not supported!"
 #endif
 
+CSTR(FS_RES_DIR, "res", 3);
+
 /*************
  * Functions *
  *************/

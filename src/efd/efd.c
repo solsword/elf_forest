@@ -19,6 +19,9 @@
 
 CSTR(EFD_FILE_EXTENSION, "efd", 3);
 
+CSTR(EFD_COMMON_DIR_NAME, "data", 4);
+string * EFD_COMMON_DIR; // assigned in efd_setup.h based on PS_RES_DIRECTORY
+
 CSTR(EFD_ADDR_SEP_STR, ".", 1);
 CSTR(EFD_ADDR_PARENT_STR, "^", 1);
 
@@ -719,6 +722,7 @@ int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to) {
     default:
     case EFD_RT_INVALID:
     case EFD_RT_NODE:
+    case EFD_RT_CHAIN:
       return 0;
     case EFD_RT_GLOBAL_INT:
     case EFD_RT_INT:
@@ -747,11 +751,15 @@ int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to) {
     case EFD_RT_OBJ:
       return (
         to == EFD_RT_NODE
+     || to == EFD_RT_CHAIN
      || to == EFD_RT_OBJ
+     || to == EFD_RT_GLOBAL_INT
      || to == EFD_RT_INT
      || to == EFD_RT_INT_ARR_ENTRY
+     || to == EFD_RT_GLOBAL_NUM
      || to == EFD_RT_NUM
      || to == EFD_RT_NUM_ARR_ENTRY
+     || to == EFD_RT_GLOBAL_STR
      || to == EFD_RT_STR
      || to == EFD_RT_STR_ARR_ENTRY
       );
@@ -2255,26 +2263,295 @@ void efd_add_crossref(efd_index *cr, efd_bridge *bridge) {
   l_append_element(cr->unprocessed, bridge);
 }
 
-// Private iterator:
-void _iter_efd_unpack_children(void *v_child, void *v_cr) {
-  efd_unpack_node((efd_node*) v_child, (efd_index*) v_cr);
+// Private iteration helper:
+void _iter_efd_process_child_references(void *v_child, void *v_cr) {
+  efd_process_references((efd_node*) v_child, (efd_index*) v_cr);
 }
 
-void efd_unpack_node(efd_node *root, efd_index *cr) {
+// Private search function:
+int _find_matching_reference(void *element, void *ref) {
+  efd_bridge *b = (efd_bridge*) element;
+  efd_node *target = (efd_node*) ref;
+  efd_node *cmp = efd(EFD_ROOT, b->from->addr);
+  return cmp == target;
+}
+
+void efd_process_references(efd_node *root, efd_index *cr) {
+  // First process references in any children recursively:
+  if (efd_is_container_node(root)) {
+    d_witheach(
+      efd_children_dict(root),
+      (void*) cr,
+      &_iter_efd_process_child_references
+    );
+  } else if (root->h.type == EFD_NT_PROTO) {
+    // Recurse into the inputs for prototypes as well as normal children:
+    efd_process_references(root->b.as_proto.input, cr);
+  }
+
+  // Then if this node is the target of a global reference change it's value:
+  // TODO: more efficiency here!
+  efd_bridge *match = (efd_bridge*) l_scan_elements(
+    cr->unprocessed,
+    (void*) root,
+    &_find_matching_reference
+  );
+
+  if (match != NULL && efd_process_bridge(match)) {
+    l_remove_element(cr->unprocessed, (void*) match);
+    l_append_element(cr->processed, (void*) match);
+  }
+}
+
+int efd_process_bridge(efd_bridge *b) {
+  efd_node *src = efd(EFD_ROOT, b->to->addr);
+  efd_node *dst = efd(EFD_ROOT, b->from->addr);
+
+  string *err_addr;
+  efd_node *node;
+  size_t acount;
+
+  efd_int_t int_value = 0;
+  efd_num_t num_value = 0;
+  string * str_value = NULL;
+  void * obj_value = NULL;
+
+  if (src == NULL) {
+    return 0; // this bridge is still missing it's target
+  }
+  if (dst == NULL) {
+    // This bridge has an invalid target!
+    fprintf(
+      stderr,
+      "ERROR: efd_process_bridge called with an invalid destination:\n"
+    );
+    err_addr = efd_addr_string(b->to->addr);
+    s_fprintln(stderr, err_addr);
+    cleanup_string(err_addr);
+    exit(EXIT_FAILURE);
+  }
+  if (!efd_ref_types_are_compatible(b->from->type, b->to->type)) {
+    // This bridge is broken as its endpoints are incompatible
+    fprintf(
+      stderr,
+      "ERROR: efd_process_bridge called with incompatible endpoints from:\n"
+    );
+    err_addr = efd_addr_string(b->from->addr);
+    s_fprintln(stderr, err_addr);
+    cleanup_string(err_addr);
+    fprintf(stderr, "to:\n");
+    err_addr = efd_addr_string(b->to->addr);
+    s_fprintln(stderr, err_addr);
+    cleanup_string(err_addr);
+    exit(EXIT_FAILURE);
+  }
+  switch (b->to->type) {
+    default:
+    case EFD_RT_INVALID:
+      fprintf(
+        stderr,
+        "ERROR: efd_process_bridge called with invalid source type.\n"
+      );
+      exit(EXIT_FAILURE);
+    case EFD_RT_GLOBAL_INT:
+      int_value = efd_get_global_i(b->to->addr->name);
+      obj_value = (void*) int_value;
+      break;
+    case EFD_RT_GLOBAL_NUM:
+      num_value = efd_get_global_n(b->to->addr->name);
+      obj_value = (void*) num_value;
+      break;
+    case EFD_RT_GLOBAL_STR:
+      str_value = efd_get_global_s(b->to->addr->name);
+      obj_value = (void*) str_value;
+      break;
+    case EFD_RT_NODE:
+      obj_value = efd(EFD_ROOT, b->to->addr);
+      break;
+    case EFD_RT_CHAIN:
+      obj_value = efd(EFD_ROOT, b->to->addr);
+      break;
+    case EFD_RT_OBJ:
+      obj_value = *efd__o(efd(EFD_ROOT, b->to->addr));
+      break;
+    case EFD_RT_INT:
+      int_value = *efd__i(efd(EFD_ROOT, b->to->addr));
+      obj_value = (void*) int_value;
+      break;
+    case EFD_RT_NUM:
+      num_value = *efd__n(efd(EFD_ROOT, b->to->addr));
+      obj_value = (void*) num_value;
+      break;
+    case EFD_RT_STR:
+      str_value = *efd__s(efd(EFD_ROOT, b->to->addr));
+      obj_value = (void*) str_value;
+      break;
+    case EFD_RT_INT_ARR_ENTRY:
+      node = efd(EFD_ROOT, b->to->addr);
+      acount = *efd__ai_count(node);
+      if (b->to->idx < 0 || b->to->idx >= acount) {
+        fprintf(
+          stderr,
+          "ERROR: efd_process_bridge called with bad array index %d into:\n",
+          b->to->idx
+        );
+        err_addr = efd_addr_string(b->to->addr);
+        s_fprintln(stderr, err_addr);
+        cleanup_string(err_addr);
+        exit(EXIT_FAILURE);
+      }
+      int_value = (*efd__ai(node))[b->to->idx];
+      obj_value = (void*) int_value;
+      break;
+    case EFD_RT_NUM_ARR_ENTRY:
+      node = efd(EFD_ROOT, b->to->addr);
+      acount = *efd__an_count(node);
+      if (b->to->idx < 0 || b->to->idx >= acount) {
+        fprintf(
+          stderr,
+          "ERROR: efd_process_bridge called with bad array index %d into:\n",
+          b->to->idx
+        );
+        err_addr = efd_addr_string(b->to->addr);
+        s_fprintln(stderr, err_addr);
+        cleanup_string(err_addr);
+        exit(EXIT_FAILURE);
+      }
+      num_value = (*efd__an(node))[b->to->idx];
+      obj_value = (void*) num_value;
+      break;
+    case EFD_RT_STR_ARR_ENTRY:
+      node = efd(EFD_ROOT, b->to->addr);
+      acount = *efd__as_count(node);
+      if (b->to->idx < 0 || b->to->idx >= acount) {
+        fprintf(
+          stderr,
+          "ERROR: efd_process_bridge called with bad array index %d into:\n",
+          b->to->idx
+        );
+        err_addr = efd_addr_string(b->to->addr);
+        s_fprintln(stderr, err_addr);
+        cleanup_string(err_addr);
+        exit(EXIT_FAILURE);
+      }
+      str_value = (*efd__as(node))[b->to->idx];
+      obj_value = (void*) str_value;
+      break;
+  }
+  // Now that we have a value, put it in the appropriate spot (the
+  // compatibility check earlier ensures that the switch statement above always
+  // produces the value we need here.
+  switch (b->from->type) {
+    default:
+    case EFD_RT_INVALID:
+    case EFD_RT_NODE:
+    case EFD_RT_CHAIN:
+      fprintf(
+        stderr,
+        "ERROR: efd_process_bridge called with invalid destination type.\n"
+      );
+      exit(EXIT_FAILURE);
+    case EFD_RT_GLOBAL_INT:
+      efd_set_global_i(b->from->addr->name, int_value);
+      break;
+    case EFD_RT_GLOBAL_NUM:
+      efd_set_global_n(b->from->addr->name, num_value);
+      break;
+    case EFD_RT_GLOBAL_STR:
+      efd_set_global_s(b->from->addr->name, copy_string(str_value));
+      break;
+    case EFD_RT_OBJ:
+      // TODO: Handle the old value more gently?
+      node = efd(EFD_ROOT, b->from->addr);
+      if (node->b.as_object.value != NULL) {
+        fprintf(
+          stderr,
+          "ERROR: efd_process_bridge called to replace non-NULL obj value at:\n"
+        );
+        err_addr = efd_addr_string(b->from->addr);
+        s_fprintln(stderr, err_addr);
+        cleanup_string(err_addr);
+        exit(EXIT_FAILURE);
+      }
+      node->b.as_object.value = obj_value;
+      break;
+    case EFD_RT_INT:
+      efd(EFD_ROOT, b->from->addr)->b.as_integer.value = int_value;
+      break;
+    case EFD_RT_NUM:
+      efd(EFD_ROOT, b->from->addr)->b.as_number.value = num_value;
+      break;
+    case EFD_RT_STR:
+      efd(EFD_ROOT, b->from->addr)->b.as_string.value = str_value;
+      break;
+    case EFD_RT_INT_ARR_ENTRY:
+      node = efd(EFD_ROOT, b->from->addr);
+      acount = *efd__ai_count(node);
+      if (b->from->idx < 0 || b->from->idx >= acount) {
+        fprintf(
+          stderr,
+          "ERROR: efd_process_bridge called with bad array index %d into:\n",
+          b->from->idx
+        );
+        err_addr = efd_addr_string(b->from->addr);
+        s_fprintln(stderr, err_addr);
+        cleanup_string(err_addr);
+      }
+      (*efd__ai(node))[b->from->idx] = int_value;
+      break;
+    case EFD_RT_NUM_ARR_ENTRY:
+      node = efd(EFD_ROOT, b->from->addr);
+      acount = *efd__an_count(node);
+      if (b->from->idx < 0 || b->from->idx >= acount) {
+        fprintf(
+          stderr,
+          "ERROR: efd_process_bridge called with bad array index %d into:\n",
+          b->from->idx
+        );
+        err_addr = efd_addr_string(b->from->addr);
+        s_fprintln(stderr, err_addr);
+        cleanup_string(err_addr);
+      }
+      (*efd__an(node))[b->from->idx] = num_value;
+      break;
+    case EFD_RT_STR_ARR_ENTRY:
+      node = efd(EFD_ROOT, b->from->addr);
+      acount = *efd__as_count(node);
+      if (b->from->idx < 0 || b->from->idx >= acount) {
+        fprintf(
+          stderr,
+          "ERROR: efd_process_bridge called with bad array index %d into:\n",
+          b->from->idx
+        );
+        err_addr = efd_addr_string(b->from->addr);
+        s_fprintln(stderr, err_addr);
+        cleanup_string(err_addr);
+      }
+      (*efd__as(node))[b->from->idx] = str_value;
+      break;
+  }
+  return 1;
+}
+
+// Private iterator:
+void _iter_efd_unpack_children(void *v_child) {
+  efd_unpack_node((efd_node*) v_child);
+}
+
+void efd_unpack_node(efd_node *root) {
   void *obj;
   efd_proto *p;
   efd_object *o;
 
   // First unpack any children recursively:
   if (efd_is_container_node(root)) {
-    d_witheach(
+    d_foreach(
       efd_children_dict(root),
-      (void*) cr,
       &_iter_efd_unpack_children
     );
   }
 
-  // Transform this node into an OBJECT if necessary:
+  // Then transform this node into an OBJECT if necessary:
   if (root->h.type == EFD_NT_PROTO) {
     root->h.type = EFD_NT_OBJECT; // change the node type
     p = &(root->b.as_proto);
@@ -2284,8 +2561,7 @@ void efd_unpack_node(efd_node *root, efd_index *cr) {
     o = &(root->b.as_object);
     // format field should overlap perfectly and thus need no change
     o->value = obj; // o->value is in the same place as p->input
-  } // else just need to process globals
-  // TODO: Process global links!
+  }
 }
 
 // Private iterator:
@@ -2485,7 +2761,7 @@ void efd_gen_reset(efd_generator_state *gen) {
       break;
 
     case EFD_GT_PARALLEL:
-      //reset each sub-generator
+      // reset each sub-generator
       children = (list*) gen->state;
       for (i = 0; i < l_get_length(children); ++i) {
         sub = (efd_generator_state*) l_get_item(children, i);

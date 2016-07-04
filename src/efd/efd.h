@@ -235,6 +235,10 @@ typedef efd_generator_state * (*efd_generator_constructor)(
 
 extern string const * const EFD_FILE_EXTENSION;
 
+extern string const * const EFD_COMMON_DIR_NAME;
+
+extern string * EFD_COMMON_DIR;
+
 extern string const * const EFD_ADDR_SEP_STR;
 extern string const * const EFD_ADDR_PARENT_STR;
 
@@ -1031,16 +1035,24 @@ efd_value_cache * efd_compute_values(efd_node const * const root);
 // Adds the given bridge to the given index.
 void efd_add_crossref(efd_index *cr, efd_bridge *bridge);
 
+// Overwrites reference-target values from unprocessed references with their
+// source values where available, marking the references substituted as
+// processed. Applies to the givne node and recursively to all of its children.
+void efd_process_references(efd_node *root, efd_index *cr);
+
+// Processes an EFD bridge by setting the appropriate value of the "from" node
+// to the value supplied by the "to" node.
+int efd_process_bridge(efd_bridge *b);
+
 // Unpacks this node and all of its children recursively, turning PROTO nodes
-// containing raw EFD into OBJECT nodes containing unpacked structs. At this
-// point global references are replaced by the corresponding global values
-// wherever possible.
-void efd_unpack_node(efd_node *root, efd_index *cr);
+// containing raw EFD into OBJECT nodes containing unpacked structs. Global
+// references are not dealt with (see efd_process_references).
+void efd_unpack_node(efd_node *root);
 
 // Packs this node and all of its children recursively, turning OBJECT nodes
 // containing unpacked structs into PROTO nodes containing EFD COLLECTIONs.
-// Unlike efd_unpack_node, it does not deal with global references; those must
-// be handled at serialization time.
+// Like efd_unpack_node, it does not deal with global references; those must be
+// handled at serialization time.
 void efd_pack_node(efd_node *root, efd_index *cr);
 
 // TODO: Serialization (separate files)...

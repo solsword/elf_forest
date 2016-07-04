@@ -167,7 +167,7 @@ static inline size_t block_chunk_index_offset(ps_block* b,ps_chunk_pos* pscpos){
  *************/
 
 // Sets up the persistence module, binding the given world directory.
-void setup_persist(char const * const world_directory);
+void setup_persist(string const * const world_directory);
 
 // Initializes the given block struct.
 void init_block(ps_block* block);

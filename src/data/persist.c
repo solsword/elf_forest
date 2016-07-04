@@ -19,10 +19,10 @@
  * Constants *
  *************/
 
-CSTR(PS_BLOCK_DIR_NAME "blocks", 6);
-CSTR(PS_MAPS_DIR_NAME "maps", 4);
+CSTR(PS_BLOCK_DIR_NAME, "blocks", 6);
+CSTR(PS_MAPS_DIR_NAME, "maps", 4);
 
-CSTR(PS_DEFAULT_WORLD_DIR "world", 5);
+CSTR(PS_DEFAULT_WORLD_DIR, "world", 5);
 
 /***********
  * Globals *
@@ -44,9 +44,9 @@ uint64_t EMPTY_INDICES[PS_BLOCK_TOTAL_CHUNKS];
 
 void setup_persist(string const * const world_directory) {
   size_t i;
-  char *dir;
-  string *rdir;
+
   // Set up the PS_BLOCK_DIR_PATH strings:
+
   PS_WORLD_DIRECTORY = copy_string(world_directory);
   if (s_contains_nul(PS_WORLD_DIRECTORY)) {
     perror("World directory string contains NUL!");
@@ -56,8 +56,8 @@ void setup_persist(string const * const world_directory) {
   PS_BLOCK_DIR_PATH = fs_dirchild(PS_WORLD_DIRECTORY, PS_BLOCK_DIR_NAME);
   s_append(PS_BLOCK_DIR_PATH, FS_DIRSEP);
 
-  PS_MAPS_DIR_PATH = fs_dirchild(PS_WORLD_DIRECTORY, PS_MAPS_DIR_NAME)
-  s_append(PS_MAPS_DIR_PATH, DIRSEP);
+  PS_MAPS_DIR_PATH = fs_dirchild(PS_WORLD_DIRECTORY, PS_MAPS_DIR_NAME);
+  s_append(PS_MAPS_DIR_PATH, FS_DIRSEP);
 
   // Create directories as needed:
   fs_ensure_dir(PS_WORLD_DIRECTORY, 0755);

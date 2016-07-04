@@ -17,6 +17,9 @@
 // The directory separator for the current OS.
 extern string const * const FS_DIRSEP;
 
+// The location of the resources directory.
+extern string const * const FS_RES_DIR;
+
 /*************
  * Functions *
  *************/

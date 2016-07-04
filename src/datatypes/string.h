@@ -7,6 +7,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <unistr.h>
 
 #include "boilerplate.h"
 
