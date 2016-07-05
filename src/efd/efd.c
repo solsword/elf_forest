@@ -703,13 +703,12 @@ CLEANUP_IMPL(efd_generator_state) {
 
 void * v_efd__v_i(void *v_node) {
   efd_node *n = (efd_node*) v_node;
-  return (void*) efd_as_i(n);
+  return i_as_p(efd_as_i(n));
 }
 
 void * v_efd__v_n(void *v_node) {
   efd_node *n = (efd_node*) v_node;
-  efd_num_t num = efd_as_n(n);
-  return *f_as_p(&num);
+  return f_as_p(efd_as_n(n));
 }
 
 void * v_efd__v_s(void *v_node) {
@@ -2355,11 +2354,11 @@ int efd_process_bridge(efd_bridge *b) {
       exit(EXIT_FAILURE);
     case EFD_RT_GLOBAL_INT:
       int_value = efd_get_global_i(b->to->addr->name);
-      obj_value = (void*) int_value;
+      obj_value = i_as_p(int_value);
       break;
     case EFD_RT_GLOBAL_NUM:
       num_value = efd_get_global_n(b->to->addr->name);
-      obj_value = (void*) num_value;
+      obj_value = f_as_p(num_value);
       break;
     case EFD_RT_GLOBAL_STR:
       str_value = efd_get_global_s(b->to->addr->name);
@@ -2376,11 +2375,11 @@ int efd_process_bridge(efd_bridge *b) {
       break;
     case EFD_RT_INT:
       int_value = *efd__i(efd(EFD_ROOT, b->to->addr));
-      obj_value = (void*) int_value;
+      obj_value = i_as_p(int_value);
       break;
     case EFD_RT_NUM:
       num_value = *efd__n(efd(EFD_ROOT, b->to->addr));
-      obj_value = (void*) num_value;
+      obj_value = f_as_p(num_value);
       break;
     case EFD_RT_STR:
       str_value = *efd__s(efd(EFD_ROOT, b->to->addr));
@@ -2392,7 +2391,7 @@ int efd_process_bridge(efd_bridge *b) {
       if (b->to->idx < 0 || b->to->idx >= acount) {
         fprintf(
           stderr,
-          "ERROR: efd_process_bridge called with bad array index %d into:\n",
+          "ERROR: efd_process_bridge called with bad array index %ld into:\n",
           b->to->idx
         );
         err_addr = efd_addr_string(b->to->addr);
@@ -2401,7 +2400,7 @@ int efd_process_bridge(efd_bridge *b) {
         exit(EXIT_FAILURE);
       }
       int_value = (*efd__ai(node))[b->to->idx];
-      obj_value = (void*) int_value;
+      obj_value = i_as_p(int_value);
       break;
     case EFD_RT_NUM_ARR_ENTRY:
       node = efd(EFD_ROOT, b->to->addr);
@@ -2409,7 +2408,7 @@ int efd_process_bridge(efd_bridge *b) {
       if (b->to->idx < 0 || b->to->idx >= acount) {
         fprintf(
           stderr,
-          "ERROR: efd_process_bridge called with bad array index %d into:\n",
+          "ERROR: efd_process_bridge called with bad array index %ld into:\n",
           b->to->idx
         );
         err_addr = efd_addr_string(b->to->addr);
@@ -2418,7 +2417,7 @@ int efd_process_bridge(efd_bridge *b) {
         exit(EXIT_FAILURE);
       }
       num_value = (*efd__an(node))[b->to->idx];
-      obj_value = (void*) num_value;
+      obj_value = f_as_p(num_value);
       break;
     case EFD_RT_STR_ARR_ENTRY:
       node = efd(EFD_ROOT, b->to->addr);
@@ -2426,7 +2425,7 @@ int efd_process_bridge(efd_bridge *b) {
       if (b->to->idx < 0 || b->to->idx >= acount) {
         fprintf(
           stderr,
-          "ERROR: efd_process_bridge called with bad array index %d into:\n",
+          "ERROR: efd_process_bridge called with bad array index %ld into:\n",
           b->to->idx
         );
         err_addr = efd_addr_string(b->to->addr);
@@ -2490,7 +2489,7 @@ int efd_process_bridge(efd_bridge *b) {
       if (b->from->idx < 0 || b->from->idx >= acount) {
         fprintf(
           stderr,
-          "ERROR: efd_process_bridge called with bad array index %d into:\n",
+          "ERROR: efd_process_bridge called with bad array index %ld into:\n",
           b->from->idx
         );
         err_addr = efd_addr_string(b->from->addr);
@@ -2505,7 +2504,7 @@ int efd_process_bridge(efd_bridge *b) {
       if (b->from->idx < 0 || b->from->idx >= acount) {
         fprintf(
           stderr,
-          "ERROR: efd_process_bridge called with bad array index %d into:\n",
+          "ERROR: efd_process_bridge called with bad array index %ld into:\n",
           b->from->idx
         );
         err_addr = efd_addr_string(b->from->addr);
@@ -2520,7 +2519,7 @@ int efd_process_bridge(efd_bridge *b) {
       if (b->from->idx < 0 || b->from->idx >= acount) {
         fprintf(
           stderr,
-          "ERROR: efd_process_bridge called with bad array index %d into:\n",
+          "ERROR: efd_process_bridge called with bad array index %ld into:\n",
           b->from->idx
         );
         err_addr = efd_addr_string(b->from->addr);
@@ -2555,7 +2554,7 @@ void efd_unpack_node(efd_node *root) {
   if (root->h.type == EFD_NT_PROTO) {
     root->h.type = EFD_NT_OBJECT; // change the node type
     p = &(root->b.as_proto);
-    efd_unpack_node(p->input, cr); // First recursively unpack the input
+    efd_unpack_node(p->input); // First recursively unpack the input
     obj = efd_lookup_unpacker(p->format)(p->input); // unpack
     cleanup_efd_node(p->input); // free now-unnecessary EFD data
     o = &(root->b.as_object);
@@ -2616,9 +2615,7 @@ void efd_set_global_i(string const * const key, efd_int_t value) {
 }
 
 void efd_set_global_n(string const * const key, efd_num_t value) {
-  void **v;
-  v = f_as_p(&value);
-  d_set_value_s(EFD_NUM_GLOBALS, key, *v);
+  d_set_value_s(EFD_NUM_GLOBALS, key, f_as_p(value));
 }
 
 void efd_set_global_s(string const * const key, string *value) {

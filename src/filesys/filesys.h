@@ -40,35 +40,35 @@ void fs_ensure_dir(string const * const filestring, mode_t mode);
 // processed using the given filtering functions (each passed the corresponding
 // extra argument).
 void walk_dir_tree(
-  char const * const root,
-  int (*filter_links)(char const * const, struct stat const* const, void*),
+  string const * const root,
+  int (*filter_links)(string const * const, struct stat const* const, void*),
   void *fl_arg,
-  int (*filter_dirs)(char const * const, struct stat const * const, void*),
+  int (*filter_dirs)(string const * const, struct stat const * const, void*),
   void *fd_arg,
-  int (*filter_files)(char const * const, struct stat const * const, void*),
+  int (*filter_files)(string const * const, struct stat const * const, void*),
   void *ff_arg,
-  void (*op)(char const * const, struct stat const * const, void*),
+  void (*op)(string const * const, struct stat const * const, void*),
   void *op_arg
 );
 
 // Some basic functions to use as arguments for walk_dir_tree:
 int fs_walk_filter_skip_all(
-  char const * const filename,
+  string const * const filename,
   struct stat const * const st,
   void *arg
 );
 int fs_walk_filter_handle_all(
-  char const * const filename,
+  string const * const filename,
   struct stat const * const st,
   void *arg
 );
 int fs_walk_filter_ignore_hidden(
-  char const * const filename,
+  string const * const filename,
   struct stat const * const st,
   void *arg
 );
 int fs_walk_filter_by_extension(
-  char const * const filename,
+  string const * const filename,
   struct stat const * const st,
   void *v_ext
 );

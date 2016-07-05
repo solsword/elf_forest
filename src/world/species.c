@@ -327,7 +327,7 @@ float el_weighted_property(
   for (i = 0; i < l_get_length(species); ++i) {
     sp = l_get_item(species, i);
     v_weight = l_get_item(weights, i);
-    weight = *p_as_f(v_weight);
+    weight = p_as_f(v_weight);
     result += weight * el_float_property(sp, property);
     denom += weight;
   }

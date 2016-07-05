@@ -75,6 +75,7 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/worldgen.o \
              $(OBJ_DIR)/data.o \
              $(OBJ_DIR)/persist.o \
+             $(OBJ_DIR)/filesys.o \
              $(OBJ_DIR)/elements.o \
              $(OBJ_DIR)/climate.o \
              $(OBJ_DIR)/geology.o \
@@ -124,10 +125,10 @@ clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(BIN_DIR)
 	rm -rf $(OUT_DIR)
-	rm $(DATA_DIR)/auto_globals.efd
-	rm $(SRC_DIR)/efd/func.list
-	rm $(SRC_DIR)/efd/gen.list
-	rm $(SRC_DIR)/efd/conv.list
+	rm -f $(DATA_DIR)/auto_globals.efd
+	rm -f $(SRC_DIR)/efd/func.list
+	rm -f $(SRC_DIR)/efd/gen.list
+	rm -f $(SRC_DIR)/efd/conv.list
 
 game: $(BIN_DIR)/elf_forest efd_globals
 

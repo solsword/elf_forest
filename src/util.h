@@ -14,6 +14,22 @@
 
 #include <GL/gl.h>
 
+/*********
+ * Types *
+ *********/
+
+union fp_conv_u {
+  void *p;
+  float f;
+};
+typedef union fp_conv_u fp_conv;
+
+union ip_conv_u {
+  void *p;
+  intptr_t i;
+};
+typedef union ip_conv_u ip_conv;
+
 /**********
  * MACROS *
  **********/
@@ -134,15 +150,34 @@ static inline float rounddenom(float x, int denom) {
   return roundf(x*denom)/((float) denom);
 }
 
+// Reinterprets the bits of a void* as an intptr_t. Useful when ints need to be
+// stored in containers that accept void*s.
+static inline intptr_t p_as_i(void *p) {
+  ip_conv conv;
+  conv.p = p;
+  return conv.i;
+}
+
+// The inverse of the above, this reinterprets an intptr_t as a void*.
+static inline void * i_as_p(intptr_t i) {
+  ip_conv conv;
+  conv.i = i;
+  return conv.p;
+}
+
 // Reinterprets the bits of a void* as a float. Useful when floats need to be
 // stored in containers that accept void*s.
-static inline float * p_as_f(void **p) {
-  return (float*) p;
+static inline float p_as_f(void *p) {
+  fp_conv conv;
+  conv.p = p;
+  return conv.f;
 }
 
 // The inverse of the above, this reinterprets a float as a void*.
-static inline void ** f_as_p(float *f) {
-  return (void**) f;
+static inline void * f_as_p(float f) {
+  fp_conv conv;
+  conv.f = f;
+  return conv.p;
 }
 
 // Stupid-simple PRNG:

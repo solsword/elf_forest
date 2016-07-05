@@ -6,6 +6,8 @@
 
 #include "efd_setup.h"
 
+#include "efd_parser.h"
+
 #include "datatypes/dictionary.h"
 #include "datatypes/dict_string_keys.h"
 #include "datatypes/string.h"

@@ -1,7 +1,9 @@
 // filesys.c
 // Functions for interacting with directories and files.
 
+#include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -66,7 +68,7 @@ char * load_file(char const * const filename, size_t *size) {
 }
 
 void fs_ensure_dir(string const * const filestring, mode_t mode) {
-  char *filename
+  char *filename;
   struct stat st;
 
   filename = s_encode_nt(filestring);
@@ -124,13 +126,13 @@ void walk_dir_tree(
     fprintf(
       stderr,
       "ERROR: walk_dir_tree given invalid root directory '%.*s'.\n",
-      s_count_bytes(root),
+      (int) s_count_bytes(root),
       s_raw(root)
     );
     exit(EXIT_FAILURE);
   }
 
-  while ( (entry = readdir(dir)) ) { // assignment + check
+  while ( (entry = readdir(directory)) ) { // assignment + check
     if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
       continue;
     }
@@ -143,7 +145,7 @@ void walk_dir_tree(
       fprintf(
         stderr,
         "ERROR: walk_dir_tree failed to stat entry '%.*s'.\n",
-        s_count_bytes(current_filename),
+        (int) s_count_bytes(current_filename),
         s_raw(current_filename)
       );
       perror("Bad entry or filename length exceeded.\n");
@@ -162,7 +164,7 @@ void walk_dir_tree(
         fprintf(
           stderr,
           "ERROR: walk_dir_tree failed to stat target of link '%.*s'.\n",
-          s_count_bytes(current_filename),
+          (int) s_count_bytes(current_filename),
           s_raw(current_filename)
         );
         perror("Broken link.\n");
