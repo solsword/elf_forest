@@ -8,6 +8,7 @@
     &test_dictionary_add_pop, \
     &test_dictionary_string_keys, \
     &test_dictionary_collision, \
+    &test_dictionary_looping, \
     NULL, \
   }
 
@@ -146,6 +147,41 @@ size_t test_dictionary_collision(void) {
     if (d_get_value(d, (d_key_t*) &i, sizeof(size_t)) != (void*) i) {
       return i+1;
     }
+  }
+  cleanup_dictionary(d);
+  return 0;
+}
+
+size_t dictionary_unit_tests_foreach_check;
+
+void _check_dictionary_foreach(void *entry) {
+  dictionary_unit_tests_foreach_check += 1;
+}
+
+void _check_dictionary_witheach(void *entry, void *verify) {
+  size_t *val = (size_t*) verify;
+  *val += 1;
+}
+
+size_t test_dictionary_looping(void) {
+  static size_t const batch_size = 64;
+  size_t i;
+  size_t check;
+  dictionary *d = create_dictionary(256);
+  for (i = 0; i < batch_size; ++i) {
+    d_add_value(d, (d_key_t*) &i, sizeof(size_t), (void*) i);
+  }
+  dictionary_unit_tests_foreach_check = 0;
+  d_foreach(d, &_check_dictionary_foreach);
+  if (dictionary_unit_tests_foreach_check != batch_size) {
+    cleanup_dictionary(d);
+    return 1;
+  }
+  check = 0;
+  d_witheach(d, (void*) &check, &_check_dictionary_witheach);
+  if (check != batch_size) {
+    cleanup_dictionary(d);
+    return 2;
   }
   cleanup_dictionary(d);
   return 0;

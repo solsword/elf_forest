@@ -165,6 +165,7 @@ size_t test_plants_herb_leaves(void) {
   texture *tx = create_texture(BLOCK_TEXTURE_SIZE, BLOCK_TEXTURE_SIZE);
   fltr_herb_leaves(tx, &example_herb_leaves_args);
   write_texture_to_png(tx, "out/test/test-herb_leaves.png");
+  cleanup_texture(tx);
   // TODO: doublecheck
   /*
   texture *doublecheck = load_texture_from_png("out/test/tmoss.png");
@@ -192,6 +193,9 @@ size_t test_plants_herb_stems(void) {
   tx_paste(combined, stems_tx, BLOCK_TEXTURE_SIZE*2, BLOCK_TEXTURE_SIZE);
   tx_paste(combined, stems_tx, BLOCK_TEXTURE_SIZE*2, BLOCK_TEXTURE_SIZE*2);
   write_texture_to_png(combined, "out/test/test-herb_combined.png");
+  cleanup_texture(leaves_tx);
+  cleanup_texture(stems_tx);
+  cleanup_texture(combined);
   // TODO: doublecheck
   /*
   texture *doublecheck = load_texture_from_png("out/test/tmoss.png");

@@ -385,6 +385,23 @@ efd_node * copy_efd_node_as(
 CLEANUP_IMPL(efd_node) {
   size_t i;
   efd_destroy_function df;
+#ifdef DEBUG
+  // recognize double-cleanups:
+  if (doomed->h.type >= EFD_NUM_TYPES + 1 || doomed->h.name == NULL) {
+    efd_report_error(
+      s_("Cleanup targeting already-cleaned-up node:"),
+      doomed
+    );
+    return;
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+  } else {
+    efd_report_error(
+      s_("Cleanup of fresh node:"),
+      doomed
+    );
+#endif
+  }
+#endif
   // Special-case cleanup:
   switch (doomed->h.type) {
     default:
@@ -400,12 +417,23 @@ CLEANUP_IMPL(efd_node) {
     case EFD_NT_CONTAINER:
     case EFD_NT_SCOPE:
       // Clean up all of our children:
-      d_foreach(doomed->b.as_container.children, &cleanup_v_efd_node);
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+      fprintf(stderr, "Doomed container children cleanup.\n");
+#endif
+      while (d_get_count(doomed->b.as_container.children) > 0) {
+        cleanup_v_efd_node(d_get_item(doomed->b.as_container.children, 0));
+      }
       cleanup_dictionary(doomed->b.as_container.children);
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+      fprintf(stderr, "Doomed container children done.\n");
+#endif
       break;
 
     case EFD_NT_REROUTE:
       // Clean up our child:
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+      fprintf(stderr, "Doomed reroute child cleanup.\n");
+#endif
       cleanup_efd_node(doomed->b.as_reroute.child);
       // don't clean up the target
       break;
@@ -436,7 +464,12 @@ CLEANUP_IMPL(efd_node) {
     case EFD_NT_GN_AR_NUM:
     case EFD_NT_GN_AR_STR:
       // Clean up any children:
-      d_foreach(doomed->b.as_function.children, &cleanup_v_efd_node);
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+      fprintf(stderr, "Doomed function children cleanup.\n");
+#endif
+      while (d_get_count(doomed->b.as_function.children) > 0) {
+        cleanup_v_efd_node(d_get_item(doomed->b.as_function.children, 0));
+      }
       cleanup_dictionary(doomed->b.as_function.children);
       // Clean up the function name:
       cleanup_string(doomed->b.as_function.function);
@@ -445,6 +478,9 @@ CLEANUP_IMPL(efd_node) {
     case EFD_NT_PROTO:
       // Clean up the input node:
       if (doomed->b.as_proto.input != NULL) {
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+        fprintf(stderr, "Doomed proto input cleanup.\n");
+#endif
         cleanup_efd_node(doomed->b.as_proto.input);
       }
       // Clean up the format string *afterwards*:
@@ -495,7 +531,6 @@ CLEANUP_IMPL(efd_node) {
   if (doomed->h.parent != NULL) {
     efd_remove_child(doomed->h.parent, doomed);
   }
-  doomed->h.parent = NULL;
   // Clean up the node's name:
   cleanup_string(doomed->h.name);
   doomed->h.name = NULL;
@@ -640,6 +675,9 @@ efd_value_cache * create_efd_value_cache(void) {
 
 CLEANUP_IMPL(efd_value_cache) {
   // TODO: Are we sure these nodes aren't children of each other?
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+  fprintf(stderr, "Doomed value cache cleanup.\n");
+#endif
   m_foreach(doomed->values, &cleanup_v_efd_node);
   cleanup_map(doomed->values);
   cleanup_map(doomed->stack);
@@ -674,6 +712,9 @@ CLEANUP_IMPL(efd_generator_state) {
     case EFD_GT_FUNCTION:
       // functions may use an efd_node as their stash if they want
       if (doomed->stash != NULL) {
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+        fprintf(stderr, "Doomed FUNCTION generator state stash cleanup.\n");
+#endif
         cleanup_v_efd_node(doomed->stash);
       }
       break;
@@ -685,6 +726,9 @@ CLEANUP_IMPL(efd_generator_state) {
     case EFD_GT_EXTEND_HOLD:
       cleanup_v_efd_generator_state(doomed->state);
       if (doomed->stash != NULL) {
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+        fprintf(stderr, "Doomed EXT_HOLD generator state stash cleanup.\n");
+#endif
         cleanup_v_efd_node(doomed->stash);
       }
       break;
@@ -1077,7 +1121,7 @@ string * efd_repr(efd_node const * const n) {
       count = n->b.as_str_array.count;
       for (i = 0; i < count && i < 3; ++i) {
         s_append(value, s_quote);
-        s_devour(value, n->b.as_str_array.values[i]);
+        s_append(value, n->b.as_str_array.values[i]);
         s_append(value, s_quote);
         if (i < count - 1) {
           s_append(value, s_comma);
@@ -1543,11 +1587,17 @@ int _efd_cmp(
       efd_pack_node(cmp_t, empty_index);
       efd_pack_node(agn_t, empty_index);
       if (!_efd_cmp(cmp_t, agn_t, strict)) {
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+        fprintf(stderr, "Object CMP fail cleanup.\n");
+#endif
         cleanup_efd_node(cmp_t);
         cleanup_efd_node(agn_t);
         return 0;
       }
       cleanup_efd_index(empty_index);
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+      fprintf(stderr, "Object CMP match cleanup.\n");
+#endif
       cleanup_efd_node(cmp_t);
       cleanup_efd_node(agn_t);
       break;
@@ -2068,7 +2118,10 @@ efd_node * efd(efd_node const * const root, efd_address const * addr) {
 }
 
 efd_node * efdx(efd_node const * const root, string const * const saddr) {
-  return efd(root, efd_parse_string_address(saddr));
+  efd_address *addr = efd_parse_string_address(saddr);
+  efd_node *result = efd(root, addr);
+  cleanup_efd_address(addr);
+  return result;
 }
 
 efd_node * efd_eval(efd_node const * const target, efd_value_cache *cache) {
@@ -2228,7 +2281,6 @@ efd_node * _efd_flatten(efd_node const * const target, efd_value_cache *cache) {
 efd_node * efd_flatten(efd_node const * const target) {
   efd_value_cache *tmp = create_efd_value_cache();
   efd_node *result = _efd_flatten(target, tmp);
-  result = copy_efd_node(result);
   cleanup_efd_value_cache(tmp);
   return result;
 }
@@ -2556,6 +2608,9 @@ void efd_unpack_node(efd_node *root) {
     p = &(root->b.as_proto);
     efd_unpack_node(p->input); // First recursively unpack the input
     obj = efd_lookup_unpacker(p->format)(p->input); // unpack
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+    fprintf(stderr, "Object input cleanup.\n");
+#endif
     cleanup_efd_node(p->input); // free now-unnecessary EFD data
     o = &(root->b.as_object);
     // format field should overlap perfectly and thus need no change
@@ -2706,6 +2761,7 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
         return copy_efd_node((efd_node*) gen->stash);
       }
       if (gen->stash != NULL) {
+        fprintf(stderr, "EXT_HOLD generator stash turnover cleanup.\n");
         cleanup_v_efd_node(gen->stash);
       }
       gen->stash = (void*) copy_efd_node_as(node, gen->name);
@@ -2719,6 +2775,7 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
         sub = (efd_generator_state*) l_get_item(children, i);
         node = efd_gen_next(sub);
         if (node == NULL) {
+          fprintf(stderr, "Finished generator scope cleanup.\n");
           cleanup_efd_node(scope);
           return NULL;
         } else {

@@ -973,8 +973,7 @@ efd_node * efd_lookup(efd_node const * const node, string const * const key);
 // The most ubiquitous EFD function 'efd' does a recursive address lookup to
 // find an EFD node given some root node to start from and an address to find.
 // Internally it uses efd_lookup, so when multiple children of a node share a
-// name, the first one is used. If no match is found it sets the given path to
-// NULL.
+// name, the first one is used. If no match is found it returns NULL.
 efd_node * efd(efd_node const * const root, efd_address const * addr);
 
 // Works like efd, but instead of taking an address it takes a key which is

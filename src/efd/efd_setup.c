@@ -102,18 +102,21 @@ void setup_elf_forest_data(void) {
     fd = &(EFD_FUNCTION_REGISTRY[i]);
     s = create_string_from_ntchars(fd->key);
     d_add_value_s(EFD_FUNCTION_DICT, s, (void*) fd->function);
+    cleanup_string(s);
   }
 
   for (i = 0; i < EFD_GENERATOR_REGISTRY_SIZE; ++i) {
     gd = &(EFD_GENERATOR_REGISTRY[i]);
     s = create_string_from_ntchars(gd->key);
     d_add_value_s(EFD_GENERATOR_DICT, s, (void*) gd->constructor);
+    cleanup_string(s);
   }
 
   for (i = 0; i < EFD_FORMAT_REGISTRY_SIZE; ++i) {
     of = &(EFD_FORMAT_REGISTRY[i]);
     s = create_string_from_ntchars(of->key);
     d_add_value_s(EFD_FORMAT_DICT, s, (void*) of);
+    cleanup_string(s);
   }
 
 #ifdef DEBUG
@@ -121,8 +124,6 @@ void setup_elf_forest_data(void) {
     fprintf(stderr, "Warning: sizeof(char) != sizeof(uint8_t)\n");
   }
 #endif
-
-  load_common_efd();
 }
 
 void cleanup_elf_forest_data(void) {

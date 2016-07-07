@@ -290,7 +290,8 @@ size_t test_efd_defined_tests(void) {
     return 1;
   }
 
-  efd_unpack_node(EFD_ROOT, cr);
+  efd_process_references(EFD_ROOT, cr);
+  efd_unpack_node(EFD_ROOT);
 
   n = efdx(EFD_ROOT, s_test); // test.test
 

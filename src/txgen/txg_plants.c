@@ -823,7 +823,9 @@ static inline void herb_setup(
   lfargs->main_color = hlfargs->main_color;
   lfargs->vein_color = hlfargs->vein_color;
   lfargs->dark_color = hlfargs->dark_color;
-  lfargs->width = 1;
+  lfargs->bend = hlfargs->bend;
+  lfargs->length = hlfargs->length;
+  lfargs->width = hlfargs->width;
   lfargs->stem_length = 0;
   // shape is set differently for leaves/stems
 }
@@ -1061,6 +1063,10 @@ void fltr_herb_leaves(texture *tx, void const * const fargs) {
   leaf_filter_args lfargs; // stores individual leaf parameters
   curve c; // stores individual leaf shapes
   c.from.y = BLOCK_TEXTURE_SIZE;
+  c.from.z = 0;
+  c.come_from.z = 0;
+  c.go_towards.z = 0;
+  c.to.z = 0;
 
   herb_setup(hlfargs, &hash, &noise, &nstalks, &spread, &lfargs);
   lfargs.shape = LS_DELTOID;
@@ -1132,6 +1138,10 @@ void fltr_herb_stems(texture *tx, void const * const fargs) {
   curve c; // stores individual leaf shapes
   c.from.y = BLOCK_TEXTURE_SIZE;
   c.to.y = 0;
+  c.from.z = 0;
+  c.come_from.z = 0;
+  c.go_towards.z = 0;
+  c.to.z = 0;
 
   herb_setup(hlfargs, &hash, &noise, &nstalks, &spread, &lfargs);
   lfargs.shape = LS_LINEAR;

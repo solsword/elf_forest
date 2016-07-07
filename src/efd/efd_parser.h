@@ -93,6 +93,8 @@ typedef struct efd_parse_state_s efd_parse_state;
 #define EFD_PARSER_CLOSE_BRACE ']'
 #define EFD_PARSER_OPEN_ANGLE '<'
 #define EFD_PARSER_CLOSE_ANGLE '>'
+#define EFD_PARSER_OPEN_CURLY '{'
+#define EFD_PARSER_CLOSE_CURLY '}'
 #define EFD_PARSER_OPEN_PAREN '('
 #define EFD_PARSER_CLOSE_PAREN ')'
 #define EFD_PARSER_EQUALS '='
@@ -135,6 +137,8 @@ static inline int is_special(char c) {
     case EFD_PARSER_CLOSE_BRACE:
     case EFD_PARSER_OPEN_ANGLE:
     case EFD_PARSER_CLOSE_ANGLE:
+    case EFD_PARSER_OPEN_CURLY:
+    case EFD_PARSER_CLOSE_CURLY:
     case EFD_PARSER_OPEN_PAREN:
     case EFD_PARSER_CLOSE_PAREN:
     case EFD_PARSER_EQUALS:
@@ -151,6 +155,7 @@ static inline int is_opening_brace(char c) {
       return 0;
     case EFD_PARSER_OPEN_BRACE:
     case EFD_PARSER_OPEN_ANGLE:
+    case EFD_PARSER_OPEN_CURLY:
     case EFD_PARSER_OPEN_PAREN:
       return 1;
   }
@@ -162,6 +167,7 @@ static inline int is_closing_brace(char c) {
       return 0;
     case EFD_PARSER_CLOSE_BRACE:
     case EFD_PARSER_CLOSE_ANGLE:
+    case EFD_PARSER_CLOSE_CURLY:
     case EFD_PARSER_CLOSE_PAREN:
       return 1;
   }
@@ -192,7 +198,7 @@ int efd_parse_file(
   char const * const filename
 );
 
-// Parses a string as an EFD address.
+// Parses a string as an EFD address and returns a newly-allocated address.
 efd_address* efd_parse_string_address(string const * const astr);
 
 // Top level parsing function that delegates to the more specific functions:
@@ -298,7 +304,7 @@ char * efd_purify_string(
 );
 
 
-// Constructs and returns a reference to the node being parsed.
+// Constructs and returns a newly-allocated reference to the node being parsed.
 efd_reference* construct_efd_reference_to_here(efd_parse_state* s);
 
 // Parses a reference off of the front of the input, allocating and returning a
