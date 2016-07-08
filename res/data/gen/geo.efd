@@ -1,5 +1,5 @@
 {{c gen
-[[c geo
+{{c geo
 
 [[V locals
   [[an ~CNST_AVG_WEIGHTS 1.5, 1.0, 0.7]]
@@ -2072,5 +2072,5 @@
   ]]
 ]]
 
-]] // c geo
+}} // c geo
 }} // c gen

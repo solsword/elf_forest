@@ -188,19 +188,39 @@ efd_object_format * efd_lookup_format(string const * const key) {
 }
 
 efd_unpack_function efd_lookup_unpacker(string const * const key) {
-  return efd_lookup_format(key)->unpacker;
+  efd_object_format *format = efd_lookup_format(key);
+  if (format == NULL) {
+    fprintf(stderr, "Error while looking up unpack function.\n");
+    return NULL;
+  }
+  return format->unpacker;
 }
 
 efd_pack_function efd_lookup_packer(string const * const key) {
-  return efd_lookup_format(key)->packer;
+  efd_object_format *format = efd_lookup_format(key);
+  if (format == NULL) {
+    fprintf(stderr, "Error while looking up unpack function.\n");
+    return NULL;
+  }
+  return format->packer;
 }
 
 efd_copy_function efd_lookup_copier(string const * const key) {
-  return efd_lookup_format(key)->copier;
+  efd_object_format *format = efd_lookup_format(key);
+  if (format == NULL) {
+    fprintf(stderr, "Error while looking up unpack function.\n");
+    return NULL;
+  }
+  return format->copier;
 }
 
 efd_destroy_function efd_lookup_destructor(string const * const key) {
-  return efd_lookup_format(key)->destructor;
+  efd_object_format *format = efd_lookup_format(key);
+  if (format == NULL) {
+    fprintf(stderr, "Error while looking up unpack function.\n");
+    return NULL;
+  }
+  return format->destructor;
 }
 
 void load_common_efd_file(

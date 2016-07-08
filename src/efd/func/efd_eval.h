@@ -63,8 +63,8 @@ efd_node * efd_fn_peek(efd_node const * const node, efd_value_cache *cache) {
 
     if (value == NULL) {
       efd_report_broken_link(
-        sub,
-        s_("ERROR: broken link within value during 'peek' call.")
+        s_("ERROR: broken link within value during 'peek' call."),
+        sub
       );
     }
   }
@@ -99,7 +99,7 @@ efd_node * _efd_call_impl(
 // (second argument) as its first child, and evaluates the result.
 efd_node * efd_fn_call(efd_node const * const node, efd_value_cache *cache) {
   dictionary *children;
-  efd_node *target, *args, *result;
+  efd_node *target, *link, *args, *result;
 
   children = efd_children_dict(node);
   if (d_get_count(children) != 2) {
@@ -111,7 +111,33 @@ efd_node * efd_fn_call(efd_node const * const node, efd_value_cache *cache) {
     return NULL;
   }
 
-  target = efd_concrete(d_get_item(children, 0));
+  link = d_get_item(children, 0);
+  target = efd_concrete(link);
+
+  if (target == NULL) {
+    efd_report_broken_link(
+      s_("ERROR: Invalid argument to 'call' "
+         "(couldn't resolve link)."),
+      link
+    );
+    efd_report_error(
+      s_("TEST"),
+      EFD_ROOT
+    );
+    efd_report_error(
+      s_("TEST_2"),
+      efd_lookup(EFD_ROOT, s_("gen"))
+    );
+    efd_report_error(
+      s_("TEST_3"),
+      efdx(EFD_ROOT, s_("gen.geo"))
+    );
+    efd_report_error(
+      s_("TEST_3"),
+      efdx(EFD_ROOT, s_("gen.geo.%gen_stone_species"))
+    );
+    return NULL;
+  }
 
   if (!efd_is_container_node(target)) {
     efd_report_error(

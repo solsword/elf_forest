@@ -2,7 +2,7 @@
 // no declarations
 #elif defined(EFD_REGISTER_FORMATS)
 {
-  .key = "NULLL",
+  .key = "NULL",
   .unpacker = efd__null,
   .packer = null__efd,
   .copier = dont_copy,

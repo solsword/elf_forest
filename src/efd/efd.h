@@ -427,7 +427,7 @@ string *efd_trace_link(efd_node const * const n);
 // Reports an error with a link, printing the given message on stderr as well
 // as an analysis of where the given node (which should be a link node) fails
 // to resolve. Devours the given message.
-void efd_report_broken_link(efd_node const * const n, string *message);
+void efd_report_broken_link(string *message, efd_node const * const n);
 
 // Report an error with evaluation, displaying the given message along with a
 // summary of the original node and a full report of the (partial) evaluation
@@ -673,7 +673,7 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
   }
 }
 
-// Takes a function node and returns the 
+// Takes a function node and returns the kind of node it will return:
 static inline efd_node_type efd_return_type_of(
   efd_node const * const function_node
 ) {
@@ -706,6 +706,34 @@ static inline efd_node_type efd_return_type_of(
   }
 }
 
+// Takes a node type and returns the type of function node that returns that
+// node type, or INVALID if there is no such type.
+static inline efd_node_type efd_function_type_that_returns(
+  efd_node_type return_type
+) {
+  switch (return_type) {
+    default:
+      return EFD_NT_INVALID;
+    case EFD_NT_ANY:
+    case EFD_NT_CONTAINER:
+      return EFD_NT_FUNCTION;
+    case EFD_NT_OBJECT:
+      return EFD_NT_FN_OBJ;
+    case EFD_NT_INTEGER:
+      return EFD_NT_FN_INT;
+    case EFD_NT_NUMBER:
+      return EFD_NT_FN_NUM;
+    case EFD_NT_STRING:
+      return EFD_NT_FN_STR;
+    case EFD_NT_ARRAY_INT:
+      return EFD_NT_FN_AR_INT;
+    case EFD_NT_ARRAY_NUM:
+      return EFD_NT_FN_AR_NUM;
+    case EFD_NT_ARRAY_STR:
+      return EFD_NT_FN_AR_STR;
+  }
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -716,7 +744,9 @@ efd_node * create_efd_node(efd_node_type t, string const * const name);
 
 // Allocate and return a new EFD node of type EFD_NT_OBJECT containing a copy
 // of the given object, which is produced according to the given format. The
-// format and name are also copied, rather than held as references.
+// format and name are also copied, rather than held as references. The
+// "SINGLETON" format can be used for separately-managed objects which can't be
+// copied, although the resulting node will not be packable.
 efd_node * construct_efd_obj_node(
   string const * const name,
   string const * const format,
@@ -740,6 +770,14 @@ efd_node * construct_efd_str_node(
 efd_node * construct_efd_link_node_to(
   string const * const name,
   efd_node const * const target
+);
+
+// Allocates and returns a new function node whose type corresponds to the
+// given return type. The given function name is copied.
+efd_node * construct_efd_function_node(
+  string const * const name,
+  efd_node_type returns,
+  string const * const function
 );
 
 // Allocates and returns a deep copy of the given node, which of course
@@ -1026,10 +1064,21 @@ efd_node * efd_fresh_value(efd_node const * const target);
 efd_node * efd_flatten(efd_node const * const target);
 
 // Evaluates all nodes under the given root node, returning a newly-allocated
-// efd_value_cache maps node pointers to their values that covers all
+// efd_value_cache that maps node pointers to their values that covers all
 // function- and generator-type nodes found, including nodes linked from the
 // given subtree.
 efd_value_cache * efd_compute_values(efd_node const * const root);
+
+// Takes a pointer to an EFD node and creates a temporary function node with
+// function type "call" that calls that node using the given scope node as
+// arguments. Proceeds to evaluate the temporary function node and return its
+// value using efd_fresh_value. The newly-returned node and the first argument
+// are the responsibility of the caller, but the args node is cleaned up during
+// the evaluation process.
+efd_node * efd_call_function(
+  efd_node const * const function,
+  efd_node * args
+);
 
 // Adds the given bridge to the given index.
 void efd_add_crossref(efd_index *cr, efd_bridge *bridge);

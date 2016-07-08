@@ -1,15 +1,18 @@
 {{c gen
 {{c plants
   [[c properties
-    [[o stem_composition:exclusive_property
+    [[c stem_composition
+      [[s property_type "exclusive_property"]]
       (s "succulent")
       (s "woody_stems")
       (s "green_stems")
     ]]
-    [[o sap_properties:optional_property_list
+    [[c sap_properties
+      [[s property_type "optional_property_list"]]
       (s "sweet_sap")
     ]]
-    [[o fruit_type:exclusive_property
+    [[c fruit_type
+      [[s property_type "exclusive_property"]]
       (s "drupe") // plum
       (s "pome") // apple
       (s "single_berry") // blueberry
@@ -29,25 +32,29 @@
       (s "scaly_cone") // juniper
       (s "seed_cup") // yew
     ]]
-    [[o resin_qualities:optional_property_list
+    [[c resin_qualities
+      [[s property_type "optional_property_list"]]
       (s "insect_repellant_resin")
       (s "waterproof_resin")
       (s "incendiary_resin")
       (s "drips_resin")
     ]]
-    [[o resin_product:exclusive_property
+    [[c resin_product
+      [[s property_type "exclusive_property"]]
       (s "milk")
       (s "gum")
       (s "amber")
       (s "rubber")
     ]]
-    [[o resin_aroma:exclusive_property
+    [[c resin_aroma
+      [[s property_type "exclusive_property"]]
       (s "absent")
       (s "foul")
       (s "pleasant")
       (s "fragrant")
     ]]
-    [[o resin_quantity:exclusive_property
+    [[c resin_quantity
+      [[s property_type "exclusive_property"]]
       (s "low")
       (s "normal")
       (s "abundant")

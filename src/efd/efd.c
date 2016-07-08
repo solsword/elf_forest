@@ -25,8 +25,8 @@ string * EFD_COMMON_DIR; // assigned in efd_setup.h based on PS_RES_DIRECTORY
 CSTR(EFD_ADDR_SEP_STR, ".", 1);
 CSTR(EFD_ADDR_PARENT_STR, "^", 1);
 
-CSTR(EFD_ANON_NAME, "-", 1);
-CSTR(EFD_ROOT_NAME, "_R_", 3);
+CSTR(EFD_ANON_NAME, "_ANON_", 6);
+CSTR(EFD_ROOT_NAME, "_ROOT_", 6);
 
 char const * const EFD_NT_NAMES[] = {
   "<invalid>",
@@ -205,7 +205,14 @@ efd_node * construct_efd_obj_node(
 ) {
   efd_node *result = create_efd_node(EFD_NT_OBJECT, name);
   result->b.as_object.format = copy_string(format);
-  result->b.as_object.value =  efd_lookup_copier(format)(obj);
+  efd_copy_function copier = efd_lookup_copier(format);
+  if (copier == NULL) {
+    efd_report_error(
+      s_("Error finding copier during attempt to construct object node:"),
+      result
+    );
+  }
+  result->b.as_object.value =  copier(obj);
   return result;
 }
 
@@ -236,6 +243,17 @@ efd_node * construct_efd_link_node_to(
 ) {
   efd_node *result = create_efd_node(EFD_NT_LINK, name);
   result->b.as_link.target = construct_efd_address_of_node(target);
+  return result;
+}
+
+efd_node * construct_efd_function_node(
+  string const * const name,
+  efd_node_type returns,
+  string const * const function
+) {
+  efd_node_type type = efd_function_type_that_returns(returns);
+  efd_node *result = create_efd_node(type, name);
+  result->b.as_function.function = copy_string(function);
   return result;
 }
 
@@ -320,9 +338,14 @@ efd_node * copy_efd_node(efd_node const * const src) {
       // format
       result->b.as_object.format = copy_string(src->b.as_object.format);
       // value
-      result->b.as_object.value = efd_lookup_copier(src->b.as_object.format)(
-        src->b.as_object.value
-      );
+      efd_copy_function copier = efd_lookup_copier(src->b.as_object.format);
+      if (copier == NULL) {
+        efd_report_error(
+          s_("Error finding copier during attempt to copy object node:"),
+          src
+        );
+      }
+      result->b.as_object.value = copier(src->b.as_object.value);
       break;
 
     case EFD_NT_INTEGER:
@@ -490,7 +513,12 @@ CLEANUP_IMPL(efd_node) {
     case EFD_NT_OBJECT:
       // Clean up the object:
       df = efd_lookup_destructor(doomed->b.as_object.format);
-      if (df != NULL) {
+      if (df == NULL) {
+        efd_report_error(
+          s_("Error finding destructor during cleanup of object node:"),
+          doomed
+        );
+      } else {
         df(doomed->b.as_object.value);
       }
       // the destructor must call free if needed
@@ -1384,6 +1412,7 @@ string *_efd_trace_link(efd_node const * const n, string * sofar) {
   SSTR(s_nl, "\n  ", 3);
   SSTR(s_lab, "<", 1);
   SSTR(s_rab, ">", 1);
+  SSTR(s_space, " ", 1);
 
   if (n == NULL) {
     // We should never hit this case while recursing---only from an initial
@@ -1400,6 +1429,7 @@ string *_efd_trace_link(efd_node const * const n, string * sofar) {
 
   s_append(sofar, s_arrow);
   s_devour(sofar, ltype);
+  s_append(sofar, s_space);
   s_devour(sofar, fqn);
 
   switch (n->h.type) {
@@ -1439,7 +1469,7 @@ string *efd_trace_link(efd_node const * const n) {
   return _efd_trace_link(n, s_("Trace:"));
 }
 
-void efd_report_broken_link(efd_node const * const n, string *message) {
+void efd_report_broken_link(string *message, efd_node const * const n) {
   string *repr = efd_repr(n);
   string *trace = efd_trace_link(n);
   fprintf(stderr, "EFD link node has an invalid target:\n");
@@ -2204,8 +2234,8 @@ efd_node * efd_get_value(
       );
     } else if (result == NULL) {
       efd_report_broken_link(
-        target,
-        s_("ERROR: broken link in efd_get_value.")
+        s_("ERROR: broken link in efd_get_value."),
+        target
       );
     }
 #endif // ifdef DEBUG
@@ -2217,7 +2247,7 @@ efd_node * efd_get_value(
 efd_node * efd_fresh_value(efd_node const * const target) {
   efd_value_cache *tmp = create_efd_value_cache();
   efd_node *result = efd_get_value(target, tmp);
-  result = copy_efd_node(result);
+  result = copy_efd_node(result); // old result is in the value cache
   cleanup_efd_value_cache(tmp);
   return result;
 }
@@ -2231,8 +2261,8 @@ efd_node * _efd_flatten(efd_node const * const target, efd_value_cache *cache) {
     sub = efd_concrete(target);
     if (sub == NULL) {
       efd_report_broken_link(
-        target,
-        s_("ERROR: Broken link during efd_flatten.")
+        s_("ERROR: Broken link during efd_flatten."),
+        target
       );
     }
     result = _efd_flatten(sub, cache);
@@ -2302,6 +2332,32 @@ void _efd_compute_values(efd_node const * const root, efd_value_cache * cache) {
       _efd_compute_values(child, cache);
     }
   }
+}
+
+efd_node * efd_call_function(
+  efd_node const * const function,
+  efd_node *args
+) {
+  SSTR(s_ftype, "call", 4);
+
+  efd_node *call_node;
+  efd_node *result;
+
+  call_node = construct_efd_function_node(
+    EFD_ANON_NAME,
+    EFD_NT_CONTAINER,
+    s_ftype
+  );
+  efd_add_child(
+    call_node,
+    construct_efd_link_node_to(EFD_ANON_NAME, function)
+  );
+  efd_add_child(call_node, args);
+
+  result = efd_fresh_value(call_node);
+  cleanup_efd_node(call_node);
+
+  return result;
 }
 
 efd_value_cache * efd_compute_values(efd_node const * const root) {
@@ -2607,7 +2663,14 @@ void efd_unpack_node(efd_node *root) {
     root->h.type = EFD_NT_OBJECT; // change the node type
     p = &(root->b.as_proto);
     efd_unpack_node(p->input); // First recursively unpack the input
-    obj = efd_lookup_unpacker(p->format)(p->input); // unpack
+    efd_unpack_function unpacker = efd_lookup_unpacker(p->format);
+    if (unpacker == NULL) {
+      efd_report_error(
+        s_("Error during attempt to unpack node:"),
+        root
+      );
+    }
+    obj = unpacker(p->input); // unpack
 #ifdef DEBUG_TRACE_EFD_CLEANUP
     fprintf(stderr, "Object input cleanup.\n");
 #endif
@@ -2643,8 +2706,22 @@ void efd_pack_node(efd_node *root, efd_index *cr) {
   if (root->h.type == EFD_NT_OBJECT) {
     root->h.type = EFD_NT_PROTO; // change the node type
     o = &(root->b.as_object);
-    n = efd_lookup_packer(o->format)(o->value); // pack
-    efd_lookup_destructor(o->format)(o->value); // free unpacked data
+    efd_pack_function packer = efd_lookup_packer(o->format);
+    if (packer == NULL) {
+      efd_report_error(
+        s_("Error finding packer during attempt to pack node:"),
+        root
+      );
+    }
+    efd_destroy_function destructor = efd_lookup_destructor(o->format);
+    if (destructor == NULL) {
+      efd_report_error(
+        s_("Error finding destructor during attempt to pack node:"),
+        root
+      );
+    }
+    n = packer(o->value); // pack
+    destructor(o->value); // free unpacked data
     efd_pack_node(n, cr); // recursively pack the results
     p = &(root->b.as_proto);
     // format field should overlap perfectly and thus need no change
