@@ -73,8 +73,8 @@ struct efd_ev_test_s {
   .destructor = cleanup_v_ev_test
 },
 #else
-#ifndef INCLUDE_EFD_TESTS_H
-#define INCLUDE_EFD_TESTS_H
+#ifndef INCLUDE_EFD_CONV_TESTS_H
+#define INCLUDE_EFD_CONV_TESTS_H
 // efd_tests.h
 // Conversions efd <-> test structs
 
@@ -482,5 +482,5 @@ void cleanup_v_ev_test(void *v_ptest) {
   free(t);
 }
 
-#endif // INCLUDE_EFD_TESTS_H
+#endif // INCLUDE_EFD_CONV_TESTS_H
 #endif // EFD_REGISTRATION

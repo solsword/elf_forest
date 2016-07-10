@@ -9,8 +9,8 @@
   .destructor = dont_cleanup
 },
 #else
-#ifndef INCLUDE_EFD_NULL_H
-#define INCLUDE_EFD_NULL_H
+#ifndef INCLUDE_EFD_CONV_NULL_H
+#define INCLUDE_EFD_CONV_NULL_H
 // efd_null.h
 // Creates NULL pointers
 
@@ -24,5 +24,5 @@ efd_node *null__efd(void *v_t) {
   return create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
 }
 
-#endif // INCLUDE_EFD_NULL_H
+#endif // INCLUDE_EFD_CONV_NULL_H
 #endif // EFD_REGISTRATION

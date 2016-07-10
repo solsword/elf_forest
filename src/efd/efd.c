@@ -2140,6 +2140,9 @@ efd_node * efd_lookup(efd_node const * const node, string const * const key) {
 
 efd_node * efd(efd_node const * const root, efd_address const * addr) {
   efd_node const * result = root;
+  if (root == EFD_ROOT && s_equals(addr->name, EFD_ROOT_NAME)) {
+    addr = addr->next;
+  }
   while (addr != NULL && result != NULL) {
     result = efd_lookup(result, addr->name);
     addr = addr->next;
@@ -2222,6 +2225,12 @@ efd_node * efd_get_value(
   efd_node *result, *ct;
 
   ct = efd_concrete(target);
+  if (ct == NULL) {
+    efd_report_broken_link(
+      s_("ERROR: Broken link passed to efd_get_value:"),
+      target
+    );
+  }
   result = m1_get_value(cache->values, (map_key_t) ct);
 
   if (result == NULL) { // cache miss
@@ -2232,9 +2241,10 @@ efd_node * efd_get_value(
         stderr,
         "ERROR: NULL target for efd_get_value.\n"
       );
+      exit(EXIT_FAILURE);
     } else if (result == NULL) {
-      efd_report_broken_link(
-        s_("ERROR: broken link in efd_get_value."),
+      efd_report_error(
+        s_("Warning: evaluation result is NULL in efd_get_value:"),
         target
       );
     }

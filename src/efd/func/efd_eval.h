@@ -5,8 +5,8 @@
 { .key = "call",          .function = &efd_fn_call },
 { .key = "call_value",    .function = &efd_fn_call_value },
 #else
-#ifndef INCLUDE_EFD_EVAL_H
-#define INCLUDE_EFD_EVAL_H
+#ifndef INCLUDE_EFD_FUNC_EVAL_H
+#define INCLUDE_EFD_FUNC_EVAL_H
 // efd_eval.h
 // Eval functions for recursive evaluation
 
@@ -120,22 +120,26 @@ efd_node * efd_fn_call(efd_node const * const node, efd_value_cache *cache) {
          "(couldn't resolve link)."),
       link
     );
+    // DEBUG: TODO: REMOVE
     efd_report_error(
       s_("TEST"),
-      EFD_ROOT
-    );
-    efd_report_error(
-      s_("TEST_2"),
-      efd_lookup(EFD_ROOT, s_("gen"))
-    );
-    efd_report_error(
-      s_("TEST_3"),
-      efdx(EFD_ROOT, s_("gen.geo"))
-    );
-    efd_report_error(
-      s_("TEST_3"),
       efdx(EFD_ROOT, s_("gen.geo.%gen_stone_species"))
     );
+    string *tlname = s_("test node");
+    string *lookup = s_("gen.geo.%gen_stone_species");
+    efd_node *tlink = create_efd_node(EFD_NT_LINK, tlname);
+    cleanup_string(tlname);
+    /*
+    tlink->b.as_link.target = construct_efd_address_of_node(
+      efdx(EFD_ROOT, lookup)
+    );
+    */
+    tlink->b.as_link.target = efd_parse_string_address(lookup);
+    efd_report_broken_link(
+      s_("Link test."),
+      tlink
+    );
+    cleanup_string(lookup);
     return NULL;
   }
 
@@ -212,5 +216,5 @@ efd_node * efd_fn_call_value(
   return result;
 }
 
-#endif // INCLUDE_EFD_EVAL_H
+#endif // INCLUDE_EFD_FUNC_EVAL_H
 #endif // EFD_REGISTRATION

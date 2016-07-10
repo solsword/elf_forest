@@ -7,8 +7,8 @@
 { .key = "rng_uniform",  .function = &efd_fn_rng_uniform  },
 { .key = "rng_normal",   .function = &efd_fn_rng_normal   },
 #else
-#ifndef INCLUDE_EFD_RNG_H
-#define INCLUDE_EFD_RNG_H
+#ifndef INCLUDE_EFD_FUNC_RNG_H
+#define INCLUDE_EFD_FUNC_RNG_H
 // efd_rng.h
 // Eval functions for random number generation
 
@@ -81,5 +81,5 @@ efd_node * efd_fn_rng_normal(
   return construct_efd_num_node(node->h.name, randf_pnorm(seed, min, max));
 }
 
-#endif // INCLUDE_EFD_RNG_H
+#endif // INCLUDE_EFD_FUNC_RNG_H
 #endif // EFD_REGISTRATION

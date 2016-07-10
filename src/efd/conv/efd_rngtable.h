@@ -9,8 +9,8 @@
   .destructor = cleanup_v_rngtable
 },
 #else
-#ifndef INCLUDE_EFD_RNGTABLE_H
-#define INCLUDE_EFD_RNGTABLE_H
+#ifndef INCLUDE_EFD_CONV_RNGTABLE_H
+#define INCLUDE_EFD_CONV_RNGTABLE_H
 // efd_rngtable.h
 // Conversions efd <-> rngtable
 
@@ -95,5 +95,5 @@ void* copy_v_rngtable(void *v_t) {
   return (void*) copy_rngtable((rngtable*) v_t);
 }
 
-#endif // INCLUDE_EFD_RNGTABLE_H
+#endif // INCLUDE_EFD_CONV_RNGTABLE_H
 #endif // EFD_REGISTRATION

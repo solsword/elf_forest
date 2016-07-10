@@ -3,8 +3,8 @@
 #elif defined(EFD_REGISTER_FUNCTIONS)
 { .key = "weighted_el_prop",   .function = &efd_fn_weighted_el_prop },
 #else
-#ifndef INCLUDE_EFD_SPECIES_H
-#define INCLUDE_EFD_SPECIES_H
+#ifndef INCLUDE_EFD_FUNC_SPECIES_H
+#define INCLUDE_EFD_FUNC_SPECIES_H
 // efd_species.h
 // Eval functions for dealing with species values.
 
@@ -85,5 +85,5 @@ efd_node * efd_fn_weighted_el_prop(
   return result;
 }
 
-#endif // INCLUDE_EFD_SPECIES_H
+#endif // INCLUDE_EFD_FUNC_SPECIES_H
 #endif // EFD_REGISTRATION

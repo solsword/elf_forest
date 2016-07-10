@@ -8,8 +8,8 @@
 { .key = "scale",  .function = &efd_fn_scale },
 { .key = "weight", .function = &efd_fn_weight },
 #else
-#ifndef INCLUDE_EFD_MATH_H
-#define INCLUDE_EFD_MATH_H
+#ifndef INCLUDE_EFD_FUNC_MATH_H
+#define INCLUDE_EFD_FUNC_MATH_H
 // efd_math.h
 // Eval functions for math operations
 
@@ -150,5 +150,5 @@ efd_node * efd_fn_weight(efd_node const * const node, efd_value_cache *cache) {
   return construct_efd_num_node(node->h.name, result);
 }
 
-#endif // INCLUDE_EFD_MATH_H
+#endif // INCLUDE_EFD_FUNC_MATH_H
 #endif // EFD_REGISTRATION
