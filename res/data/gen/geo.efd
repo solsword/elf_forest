@@ -164,14 +164,14 @@
       0.03, 0.02, 0.02   //  7% | 100%
     ]]
   ]]
-  [[fai %EXPAND_COMPOSITION:map
-    [[V args
+  [[fai %EXPAND_COMPOSITION:lookup_key
+    [[V default_arguments
       [[i ~composition #i:MNRL_COMP_STONE]]
     ]]
     <<v ~composition@input>>
     [[c entry
       [[i key #i:MNRL_COMP_STONE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_NONE,
         #i:EL_CATEGORY_NONE
@@ -179,7 +179,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_LIFE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_LIFE,
         #i:EL_CATEGORY_NONE,
         #i:EL_CATEGORY_NONE
@@ -187,7 +187,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_STONE_AIR]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_AIR,
         #i:EL_CATEGORY_NONE
@@ -195,7 +195,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_STONE_WATER]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_WATER,
         #i:EL_CATEGORY_NONE
@@ -203,7 +203,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_STONE_LIFE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_LIFE,
         #i:EL_CATEGORY_NONE
@@ -211,7 +211,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_STONE_STONE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_NONE
@@ -219,7 +219,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_STONE_STONE_LIFE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_LIFE
@@ -227,7 +227,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_STONE_STONE_STONE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_STONE
@@ -235,7 +235,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_STONE_METAL]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_METAL,
         #i:EL_CATEGORY_NONE
@@ -243,7 +243,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_STONE_STONE_METAL]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_METAL
@@ -251,7 +251,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_STONE_METAL_METAL]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_METAL,
         #i:EL_CATEGORY_METAL
@@ -259,7 +259,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_STONE_METAL_RARE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_METAL,
         #i:EL_CATEGORY_RARE
@@ -267,7 +267,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_STONE_RARE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_RARE,
         #i:EL_CATEGORY_NONE
@@ -275,7 +275,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_STONE_STONE_RARE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_RARE
@@ -283,7 +283,7 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_STONE_RARE_RARE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_RARE,
         #i:EL_CATEGORY_RARE
@@ -291,91 +291,91 @@
     ]]
     [[c entry
       [[i key #i:MNRL_COMP_RARE_RARE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_RARE,
         #i:EL_CATEGORY_RARE,
         #i:EL_CATEGORY_NONE
       ]]
     ]]
   ]]
-  [[fai %EXPAND_TRACES:map
-    [[V args
+  [[fai %EXPAND_TRACES:lookup_key
+    [[V default_arguments
       [[i ~traces #i:MNRL_TRACE_AIR]]
     ]]
     <<v ~traces@input>>
     [[c entry
       [[i key #i:MNRL_TRACE_AIR]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_AIR,
         #i:EL_CATEGORY_NONE
       ]]
     ]]
     [[c entry
       [[i key #i:MNRL_TRACE_WATER]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_WATER,
         #i:EL_CATEGORY_NONE
       ]]
     ]]
     [[c entry
       [[i key #i:MNRL_TRACE_LIFE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_LIFE,
         #i:EL_CATEGORY_NONE
       ]]
     ]]
     [[c entry
       [[i key #i:MNRL_TRACE_STONE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_NONE
       ]]
     ]]
     [[c entry
       [[i key #i:MNRL_TRACE_STONE_METAL]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_STONE,
         #i:EL_CATEGORY_METAL
       ]]
     ]]
     [[c entry
       [[i key #i:MNRL_TRACE_METAL]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_METAL,
         #i:EL_CATEGORY_NONE
       ]]
     ]]
     [[c entry
       [[i key #i:MNRL_TRACE_METAL_METAL]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_METAL,
         #i:EL_CATEGORY_METAL
       ]]
     ]]
     [[c entry
       [[i key #i:MNRL_TRACE_METAL_RARE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_METAL,
         #i:EL_CATEGORY_RARE
       ]]
     ]]
     [[c entry
       [[i key #i:MNRL_TRACE_RARE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_RARE,
         #i:EL_CATEGORY_NONE
       ]]
     ]]
     [[c entry
       [[i key #i:MNRL_TRACE_RARE_RARE]]
-      [[ai values
+      [[ai value
         #i:EL_CATEGORY_RARE,
         #i:EL_CATEGORY_RARE
       ]]
     ]]
   ]]
   [[ff %COMPUTE_STONE_COLOR:choose
-    [[V args
+    [[V default_arguments
       [[o ~constituents:NULL]]
       [[o ~traces:NULL]]
       [[i ~source 0]]
@@ -500,7 +500,7 @@
         ]]
       ]]
     ]]
-    [[fi index:index_by
+    [[fi index:index_of
       <<v ~source@input>>
       [[i entry #i:GEO_IGNEOUS]]
       [[i entry #i:GEO_METAMORPHIC]]
@@ -601,7 +601,7 @@
 ]]
 
 [[c %gen_stone_species
-  [[V args
+  [[V default_arguments
     [[o ~world_map:NULL]]
     [[i ~seed 0]]
   ]]
@@ -612,7 +612,7 @@
       <<v ~SOURCE_DISTRIBUTION>>
     ]]
     [[fo ~comp_table:choose
-      [[fi index:index_by
+      [[fi index:index_of
         <<v ~source@input>>
         [[i entry #i:GEO_IGNEOUS]]
         [[i entry #i:GEO_METAMORPHIC]]
@@ -623,7 +623,7 @@
       <<v ~SEDIMENTARY_COMP>>
     ]]
     [[fo ~trace_table:choose
-      [[fi index:index_by
+      [[fi index:index_of
         <<v ~source@input>>
         [[i entry #i:GEO_IGNEOUS]]
         [[i entry #i:GEO_METAMORPHIC]]
@@ -654,31 +654,31 @@
           [[V args <<v ~trace_composition@~traces>> ]]
         ]]
       ]]
-      [[fo first_element:pick_element
+      [[fi first_element:pick_element
         <<v ~world_map>>
         [[fi cat:index <<v ~categories>> (i 0) ]]
         [[c used /* empty */ ]]
         [[fi rng:brng <<v ~hash>> (i 2) ]]
       ]]
-      [[fo second_element:pick_element
+      [[fi second_element:pick_element
         <<v ~world_map>>
         [[fi cat:index <<v ~categories>> (i 1) ]]
         [[c used <<l ^.^.first_element>> ]]
         [[fi rng:brng <<v ~hash>> (i 3) ]]
       ]]
-      [[fo third_element:pick_element
+      [[fi third_element:pick_element
         <<v ~world_map>>
         [[fi cat:index <<v ~categories>> (i 2) ]]
         [[c used <<l ^.^.first_element>> <<l ^.^.second_element>> ]]
         [[fi rng:brng <<v ~hash>> (i 4) ]]
       ]]
-      [[fo first_trace:pick_element
+      [[fi first_trace:pick_element
         <<v ~world_map>>
         [[fi cat:index <<v ~trace_categories>> (i 0) ]]
         [[c used /* empty */ ]]
         [[fi rng:brng <<v ~hash>> (i 5) ]]
       ]]
-      [[fo second_trace:pick_element
+      [[fi second_trace:pick_element
         <<v ~world_map>>
         [[fi cat:index <<v ~trace_categories>> [[i idx 1]] ]]
         [[c used <<l ^.^.first_trace>> ]]
@@ -686,13 +686,13 @@
       ]]
       // Summary arrays:
       [[c constituents
-        [[fi get_species:get_el_species <<l ^.first_element>> ]]
-        [[fi get_species:get_el_species <<l ^.second_element>> ]]
-        [[fi get_species:get_el_species <<l ^.third_element>> ]]
+        <<l ^.first_element>>
+        <<l ^.second_element>>
+        <<l ^.third_element>>
       ]]
       [[c traces
-        [[fi get_species:get_el_species <<l ^.first_trace>> ]]
-        [[fi get_species:get_el_species <<l ^.second_trace>> ]]
+        <<l ^.first_trace>>
+        <<l ^.second_trace>>
       ]]
     ]]
     [[c ~material
@@ -701,7 +701,7 @@
         <<v ~composition.traces@~traces>>
       ]]
       [[ff typechoice:choose
-        [[fi index:index_by
+        [[fi index:index_of
           <<v ~source@input>>
           [[i entry #i:GEO_IGNEOUS]]
           [[i entry #i:GEO_METAMORPHIC]]
@@ -1134,7 +1134,7 @@
         ]]
       ]]
       [[ff typechoice:choose
-        [[fi index:index_by
+        [[fi index:index_of
           <<v ~source@input>>
           [[i entry #i:GEO_IGNEOUS]]
           [[i entry #i:GEO_METAMORPHIC]]
@@ -1857,7 +1857,7 @@
 
 // TODO: Make this "return" a SCOPE node?
 [[V %gen_strata_params
-  [[V args
+  [[V default_arguments
     [[i ~i 0]]
     [[i ~species 0]] // TODO: use this!
     [[i ~wm_seed 0]]
@@ -1913,7 +1913,7 @@
 ]]
 
 [[c %gen_stratum
-  [[V args
+  [[V default_arguments
     [[i ~seed 0]]
     [[i ~species 0]] // TODO: Use this
     [[i ~source 0]]
@@ -1928,7 +1928,7 @@
   ]]
   <<v ~hash@seed>>
   [[ff typechoice:choose
-    [[fi index:index_by
+    [[fi index:index_of
       <<v ~source@input>>
       [[i entry #i:GEO_IGNEOUS]]
       [[i entry #i:GEO_METAMORPHIC]]

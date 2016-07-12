@@ -20,6 +20,14 @@
 char* S_LOCALE = NULL;
 char const * S_LCHARSET = NULL;
 
+CSTR(S_SPACE, " ", 1);
+CSTR(S_NL, "\n", 1);
+CSTR(S_COMMA, ",", 1);
+CSTR(S_COLON, ":", 1);
+CSTR(S_SEMI, ";", 1);
+CSTR(S_TILDE, "~", 1);
+CSTR(S_PERCENT, "%", 1);
+
 /********
  * Init *
  ********/

@@ -85,6 +85,9 @@ void setup_elf_forest_data(void) {
   efd_generator_declaration const *gd;
   efd_object_format const *of;
 
+  EFD_ERROR_CONTEXT = create_list();
+  efd_push_error_context(s_("Error context:"));
+
   EFD_COMMON_DIR = fs_dirchild(FS_RES_DIR, EFD_COMMON_DIR_NAME);
 
   EFD_ROOT = create_efd_node(EFD_NT_CONTAINER, EFD_ROOT_NAME);
@@ -138,6 +141,9 @@ void cleanup_elf_forest_data(void) {
 
   cleanup_dictionary(EFD_FUNCTION_DICT);
   cleanup_dictionary(EFD_FORMAT_DICT);
+
+  l_foreach(EFD_ERROR_CONTEXT, &cleanup_v_string);
+  cleanup_list(EFD_ERROR_CONTEXT);
 }
 
 // Note that these lookup functions are declared in efd.h

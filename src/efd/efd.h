@@ -233,6 +233,13 @@ typedef efd_generator_state * (*efd_generator_constructor)(
 #define EFD_ADDR_SEP_CHR '.'
 #define EFD_ADDR_PARENT_CHR '^'
 
+/***********
+ * Globals *
+ ***********/
+
+// A list of error context for debug tracing.
+extern list *EFD_ERROR_CONTEXT;
+
 extern string const * const EFD_FILE_EXTENSION;
 
 extern string const * const EFD_COMMON_DIR_NAME;
@@ -409,6 +416,18 @@ void efd_assert_type(efd_node const * const n, efd_node_type t);
 // efd_assert_type, this does not check whether the incoming node is NULL.
 void efd_assert_return_type(efd_node const * const n, efd_node_type t);
 
+// Asserts that the given node is an object node with the given format. Throws
+// an error if either of those assertions are false. Defining EFD_NO_TYPECHECKS
+// will make this a no-op. Calls efd_assert_type which performs a NULL check.
+void efd_assert_object_format(
+  efd_node const * const n,
+  string const * const fmt
+);
+
+// For use with e.g. l_witheach to verify that multiple objects have a given
+// format. The first argument must be an efd_node while the second must be a
+// string.
+void efd_v_assert_object_format(void *v_node, void *v_fmt);
 
 /*****************************
  * Error-Reporting Functions *
@@ -514,14 +533,14 @@ static inline int efd_is_generator_node(efd_node const * const n) {
   );
 }
 
-static inline string* efd__p_fmt(efd_node *n) {
+static inline string** efd__p_fmt(efd_node *n) {
   efd_assert_type(n, EFD_NT_PROTO);
-  return n->b.as_proto.format;
+  return &(n->b.as_proto.format);
 }
 
-static inline string* efd__o_fmt(efd_node *n) {
+static inline string** efd__o_fmt(efd_node *n) {
   efd_assert_type(n, EFD_NT_OBJECT);
-  return n->b.as_object.format;
+  return &(n->b.as_object.format);
 }
 
 static inline void** efd__o(efd_node *n) {
@@ -734,6 +753,17 @@ static inline efd_node_type efd_function_type_that_returns(
   }
 }
 
+// Returns the type of node that the value of the given node will be: uses
+// efd_return_type_of if it's a function node, or just returns the base type if
+// it's not a function node.
+static inline efd_node_type efd_value_type_of(efd_node const * const base) {
+  if (efd_is_function_node(base)) {
+    return efd_return_type_of(base);
+  } else {
+    return base->h.type;
+  }
+}
+
 /******************************
  * Constructors & Destructors *
  ******************************/
@@ -870,6 +900,25 @@ CLEANUP_DECL(efd_generator_state);
 void * v_efd__v_i(void *v_node);
 void * v_efd__v_n(void *v_node);
 void * v_efd__v_s(void *v_node);
+void * v_efd__o(void *v_node);
+
+// TODO: Make this stuff thread-safe!
+// Sets the EFD error context. The given string is devoured, so the caller
+// should abdicate responsibility for it.
+void efd_push_error_context(string *context);
+
+// Sets the EFD error context including details of the given node. The given
+// message is devoured so the caller should abdicate responsibility for it.
+void efd_push_error_context_with_node(
+  string *message,
+  efd_node const * const node
+);
+
+// Removes the most-specific element of the current EFD error context.
+void efd_pop_error_context(void);
+
+// Prints the EFD error context.
+void efd_print_error_context(void);
 
 // Returns 1 if the given reference types are compatible and 0 otherwise.
 int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to);
@@ -877,11 +926,11 @@ int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to);
 // Checks that a type matches and returns 1 if it does or 0 if it does not (or
 // if the given node is NULL). Setting EFD_NO_TYPECHECKS will turn off the type
 // check but retain the NULL check.
-int efd_is_type(efd_node *n, efd_node_type t);
+int efd_is_type(efd_node const * const n, efd_node_type t);
 
 // Given an EFD_NT_PROTO or EFD_NT_OBJECT type node, checks that the format
 // matches the given string.
-int efd_format_is(efd_node *n, string const * const fmt);
+int efd_format_is(efd_node  const * const n, string const * const fmt);
 
 // Renames the given node using a copy of the given string.
 void efd_rename(efd_node * node, string const * const new_name);
@@ -916,12 +965,12 @@ dictionary * efd_children_dict(efd_node const * const n);
 // (including any children, recursively) or 0 if they differ. Ancestors are not
 // compared, so two "equal" nodes with different ancestors may give different
 // results under efd_eval (if this is a concern just call efd_equals on the
-// eval results).
+// eval results). NULL arguments are accepted.
 int efd_equals(efd_node const * const cmp, efd_node const * const agn);
 
 // Compares two nodes as with efd_equals, but only looks at values and ignores
 // node names (including for children). Also ignores scopes entirely, testing
-// just normal nodes.
+// just normal nodes. NULL arguments are accepted.
 int efd_equivalent(efd_node const * const cmp, efd_node const * const agn);
 
 // Adds the given child to the parent's dictionary of children (parent must be
@@ -956,12 +1005,27 @@ efd_address* efd_pop_address(efd_address *a);
 // contains a copy of the given node.
 efd_node * efd_create_shadow_clone(efd_node const * const original);
 
+// Creates a new REROUTE node which targets the given shadow parent and
+// contains a copy of the given node.
+efd_node * efd_create_reroute(
+  efd_node const * const shadow_parent,
+  efd_node const * const original
+);
+
 // Looks up a child node within a parent, returning NULL if no node with the
 // given name exists as a child of the given node (or when the given node
 // doesn't have children). Prints a warning if the given node is of a
 // non-container type. Note that this function does not handle link nodes (see
 // efd_lookup).
 efd_node * efd_find_child(
+  efd_node const * const parent,
+  string const * const name
+);
+
+// Works like efd_find_child, but returns a newly-allocated list containing
+// *all* children of the given node with the given name. The list's values are
+// not copies, so the list should be cleaned up, not destroyed.
+list * efd_find_all_children(
   efd_node const * const parent,
   string const * const name
 );
@@ -1002,11 +1066,20 @@ efd_node * efd_nth(efd_node const * const node, size_t index);
 // This function returns the child with the given key in the given node. It
 // iterates over children until it hits one with a matching name, so only the
 // first is used if multiple children share a name. The key argument is treated
-// as a single key within the given parent node. If no match is found it
-// returns NULL. Unlike efd_find_child, this function properly handles link
-// nodes. This function always calls efd_concrete on its results, so the result
-// is never a link node.
+// as a single key within the given parent node. If no match is found or if the
+// input node is NULL it returns NULL. Unlike efd_find_child, this function
+// properly handles link nodes. This function always calls efd_concrete on its
+// results, so the result is never a link node.
 efd_node * efd_lookup(efd_node const * const node, string const * const key);
+
+// Works like efd_lookup, returns a list of all matching children with the
+// given key, instead of just the first. The list's values are not copies, but
+// the list itself should be cleaned up by the caller. If the 'parent' path
+// string is passed to efd_lookup_all it returns NULL and a warning is printed.
+list * efd_lookup_all(
+  efd_node const * const node,
+  string const * const key
+);
 
 // The most ubiquitous EFD function 'efd' does a recursive address lookup to
 // find an EFD node given some root node to start from and an address to find.
@@ -1046,7 +1119,8 @@ efd_node * efd_eval(efd_node const * const target, efd_value_cache * cache);
 // for the node as it will be present in the value cache. This function calls
 // efd_concrete on its input before trying to fetch a value, so the result
 // won't be the same as just looking up the target node in the value cache when
-// the target is a link node.
+// the target is a link node. If the input is NULL this will return NULL
+// immediately.
 efd_node * efd_get_value(
   efd_node const * const target,
   efd_value_cache * cache

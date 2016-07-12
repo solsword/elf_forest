@@ -10,6 +10,7 @@
 
 #include "grammar.h"
 #include "materials.h"
+#include "blocks.h"
 
 // species.h
 // Manages species info for different block/item/entity types.
@@ -166,6 +167,9 @@ typedef uint32_t any_species;
  * Cross-Species Constants *
  ***************************/
 
+// Species '0' is reserved as an 'invalid species' indicator.
+#define SP_INVALID 0
+
 // This number needs to be at least as large as the maximum number of life
 // elements (each of which is a nutrient) plus the sum of the maximums of each
 // nutrient category (for animals and plants). That number is currently:
@@ -239,6 +243,18 @@ extern map *PIGMENT_SPECIES; // various sources; uniform use
 /********************
  * Inline Functions *
  ********************/
+
+static inline void * species__v(species s) {
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+  return (void*) s;
+#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
+}
+
+static inline species v__species(void *v_species) {
+#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
+  return (species) v_species;
+#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
+}
 
 // Fills in the given any_species struct with information from the given block.
 static inline void block__any_species(block b, any_species *sp) {

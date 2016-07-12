@@ -76,6 +76,7 @@ efd_node * efd_fn_peek(efd_node const * const node, efd_value_cache *cache) {
 
 // Common implementation for efd_fn_call and efd_fn_call_value:
 efd_node * _efd_call_impl(
+  efd_node const * const fn_link,
   efd_node const * const target,
   efd_node const * const args
 ) {
@@ -83,7 +84,7 @@ efd_node * _efd_call_impl(
 
   shadow = efd_create_shadow_clone(target);
   tmp = shadow->b.as_reroute.child;
-  targs = copy_efd_node(args);
+  targs = efd_flatten(args);
   efd_prepend_child(tmp, targs); // will be cleaned up when tmp is
 
   // Get a flat result that doesn't contain any links & which has no parent:
@@ -120,26 +121,6 @@ efd_node * efd_fn_call(efd_node const * const node, efd_value_cache *cache) {
          "(couldn't resolve link)."),
       link
     );
-    // DEBUG: TODO: REMOVE
-    efd_report_error(
-      s_("TEST"),
-      efdx(EFD_ROOT, s_("gen.geo.%gen_stone_species"))
-    );
-    string *tlname = s_("test node");
-    string *lookup = s_("gen.geo.%gen_stone_species");
-    efd_node *tlink = create_efd_node(EFD_NT_LINK, tlname);
-    cleanup_string(tlname);
-    /*
-    tlink->b.as_link.target = construct_efd_address_of_node(
-      efdx(EFD_ROOT, lookup)
-    );
-    */
-    tlink->b.as_link.target = efd_parse_string_address(lookup);
-    efd_report_broken_link(
-      s_("Link test."),
-      tlink
-    );
-    cleanup_string(lookup);
     return NULL;
   }
 
@@ -163,7 +144,7 @@ efd_node * efd_fn_call(efd_node const * const node, efd_value_cache *cache) {
     return NULL;
   }
 
-  result = _efd_call_impl(target, args);
+  result = _efd_call_impl(link, target, args);
   efd_rename(result, node->h.name);
 
   return result;
@@ -176,19 +157,20 @@ efd_node * efd_fn_call_value(
   efd_value_cache *cache
 ) {
   dictionary *children;
-  efd_node *target, *args, *result;
+  efd_node *link, *target, *args, *result;
 
   children = efd_children_dict(node);
   if (d_get_count(children) != 2) {
     efd_report_error(
-      s_("ERROR: Invalid number of arguments to 'call' "
+      s_("ERROR: Invalid number of arguments to 'call_value' "
          "(needs 2; extra scopes not allowed)."),
       node
     );
     return NULL;
   }
 
-  target = efd_get_value(d_get_item(children, 0), cache);
+  link = d_get_item(children, 0);
+  target = efd_get_value(link, cache);
 
   if (!efd_is_container_node(target)) {
     efd_report_error(
@@ -210,7 +192,7 @@ efd_node * efd_fn_call_value(
     return NULL;
   }
 
-  result = _efd_call_impl(target, args);
+  result = _efd_call_impl(link, target, args);
   efd_rename(result, node->h.name);
 
   return result;

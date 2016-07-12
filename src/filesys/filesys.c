@@ -237,7 +237,7 @@ int fs_walk_filter_by_extension(
   char *ext = (char*) v_ext;
   int el = strlen(ext);
   int fl = s_count_bytes(filename);
-  char *fbytes = s_raw(filename);
+  char const * const fbytes = s_raw(filename);
   size_t i, j;
   if (el >= fl || fbytes[fl - el - 1] != '.') { return 0; }
   j = 0;

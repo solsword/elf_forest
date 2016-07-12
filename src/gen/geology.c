@@ -941,6 +941,7 @@ void generate_geology(world_map *wm) {
   }
 #endif
 
+  printf("    ...generating strata...\n");
   world_region *wr;
   for (i = 0; i < WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY; ++i) {
     hash = prng(prng(wm->seed + 567*i));
@@ -1021,14 +1022,14 @@ void generate_geology(world_map *wm) {
     }
     if (i % 10 == 0) {
       printf(
-        "    ...%zu / %zu strata done...\r",
+        "      ...%zu / %zu strata done...\r",
         i,
         (size_t) (WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
       );
     }
   }
   printf(
-    "    ...%zu / %zu strata done...\r",
+    "      ...%zu / %zu strata done...\r",
     (size_t) (WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY),
     (size_t) (WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
   );

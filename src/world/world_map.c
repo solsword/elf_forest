@@ -847,7 +847,7 @@ void merge_and_scale_frequent_species(
   }
 }
 
-element_species* pick_element(
+species pick_element(
   world_map *wm,
   element_categorization constraints,
   list *exclude,
@@ -855,9 +855,9 @@ element_species* pick_element(
 ) {
   size_t i;
   list *valid;
-  element_species* result = NULL;
+  species result = SP_INVALID;
   if (constraints == EL_CATEGORY_NONE) {
-    return NULL;
+    return SP_INVALID;
   }
   valid = create_list();
   for (i = 0; i < l_get_length(wm->all_elements); ++i) {
@@ -869,17 +869,17 @@ element_species* pick_element(
         )
      && (
           exclude == NULL
-       || !l_contains(exclude, (void*) el)
+       || !l_contains(exclude, species__v(el->id))
         )
     ) {
-      l_append_element(valid, (void*) el);
+      l_append_element(valid, species__v(el->id));
     }
   }
   if (!l_is_empty(valid)) {
 //#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-    result = (element_species*) l_pick_random(valid, seed);
+    result = v__species(l_pick_random(valid, seed));
 //#pragma GCC diagnostic warning "-Wint-to-pointer-cast"
-  } // else result is still 0
+  } // else result is still SP_INVALID
   cleanup_list(valid);
   return result;
 }

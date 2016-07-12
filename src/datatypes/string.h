@@ -48,6 +48,13 @@ typedef struct string_s string;
 extern char* S_LOCALE;
 extern char const * S_LCHARSET;
 
+extern string const * const S_SPACE;
+extern string const * const S_NL;
+extern string const * const S_COMMA;
+extern string const * const S_COLON;
+extern string const * const S_SEMI;
+extern string const * const S_TILDE;
+
 /*************************
  * Structure Definitions *
  *************************/

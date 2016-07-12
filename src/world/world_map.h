@@ -1188,10 +1188,10 @@ void merge_and_scale_frequent_species(
 
 // Picks an element present in the given world using a uniform distribution
 // over all elements subject to the given constraints: a category constraint,
-// and a list of elements to ignore (which may be given as NULL if there aren't
-// any elements to ignore). If it's impossible to pick such an element, it will
-// return 0 (the generic/invalid species).
-element_species* pick_element(
+// and a list of elements to ignore (as species integers; may be given as NULL
+// if there aren't any elements to ignore). If it's impossible to pick such an
+// element, it will return the invalid species id.
+species pick_element(
   world_map *wm,
   element_categorization constraints,
   list *exclude,
