@@ -24,7 +24,7 @@
 
 size_t setup_efd_tests(void) {
   init_strings();
-  setup_elf_forest_data();
+  setup_elf_forest_data(1);
   return 0;
 }
 

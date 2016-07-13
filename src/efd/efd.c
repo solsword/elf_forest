@@ -17,6 +17,7 @@
  * Globals *
  ***********/
 
+int EFD_TRACK_ERROR_CONTEXTS;
 list *EFD_ERROR_CONTEXT;
 
 CSTR(EFD_FILE_EXTENSION, "efd", 3);
@@ -813,20 +814,29 @@ void * v_efd__o(void *v_node) {
 }
 
 void efd_push_error_context(string *context) {
-  l_append_element(EFD_ERROR_CONTEXT, (void*) context);
+  if (EFD_TRACK_ERROR_CONTEXTS) {
+    l_append_element(EFD_ERROR_CONTEXT, (void*) context);
+  }
 }
 
 void efd_push_error_context_with_node(
   string *message,
   efd_node const * const node
 ) {
-  s_append(message, S_NL);
-  s_devour(message, efd_repr(node));
-  efd_push_error_context(message);
+  efd_address *a;
+  if (EFD_TRACK_ERROR_CONTEXTS) {
+    a = construct_efd_address_of_node(node);
+    s_append(message, S_NL);
+    s_devour(message, efd_addr_string(a));
+    cleanup_efd_address(a);
+    efd_push_error_context(message);
+  }
 }
 
 void efd_pop_error_context(void) {
-  cleanup_string((string*) l_pop_element(EFD_ERROR_CONTEXT));
+  if (EFD_TRACK_ERROR_CONTEXTS) {
+    cleanup_string((string*) l_pop_element(EFD_ERROR_CONTEXT));
+  }
 }
 
 void efd_print_error_context(void) {
@@ -836,6 +846,7 @@ void efd_print_error_context(void) {
     message = (string*) l_get_item(EFD_ERROR_CONTEXT, i);
     s_fprintln(stderr, message);
   }
+  fprintf(stderr, "\n");
 }
 
 int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to) {
@@ -1078,7 +1089,7 @@ string * efd_repr(efd_node const * const n) {
   SSTR(s_quote, "\"", 1);
 
   if (n->h.type >= EFD_NUM_TYPES || n->h.type < 0) { // a corrupted node
-    return s_("<corrupt node>");
+    return s_sprintf("<corrupt node [%d]>", n->h.type);
   }
 
   fqn = efd_build_fqn(n);
@@ -1317,7 +1328,7 @@ string * _efd_full_repr(efd_node const * const n, size_t indent) {
   s_append(s_nl, ind);
 
   if (n->h.type >= EFD_NUM_TYPES || n->h.type < 0) { // a corrupted node
-    return s_("<corrupt node>");
+    return s_sprintf("<corrupt node [%d]>", n->h.type);
   }
 
   fqn = efd_build_fqn(n);
@@ -2452,7 +2463,14 @@ efd_node * efd_eval(efd_node const * const target, efd_value_cache *cache) {
         target
       );
     }
+    efd_push_error_context(
+      s_sprintf(
+        "...during call to function '%U':",
+        s_raw(target->b.as_function.function)
+      )
+    );
     result = feval(target, cache);
+    efd_pop_error_context();
     cache->active = last_active;
 
     // Cache the result:

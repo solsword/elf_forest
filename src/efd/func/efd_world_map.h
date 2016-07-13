@@ -28,6 +28,9 @@ efd_node * efd_fn_pick_element(
   list *ignore_nodes, *ignore_list;
   ptrdiff_t seed;
 
+  // TODO: REMOVE
+  fprintf(stderr, "efd_fn_pick_element::start\n");
+
   efd_node *result;
 
   efd_assert_return_type(node, EFD_NT_INTEGER);
@@ -69,6 +72,9 @@ efd_node * efd_fn_pick_element(
     return NULL;
   }
 
+  // TODO: REMOVE
+  fprintf(stderr, "efd_fn_pick_element::got_wm\n");
+
   // Category constraint(s):
   cat_constraints = (element_categorization) (*efd__i(categories_node));
 
@@ -76,12 +82,21 @@ efd_node * efd_fn_pick_element(
   ignore_container = efd_gen_all(ignore_gen);
   cleanup_efd_generator_state(ignore_gen);
 
+  // TODO: REMOVE
+  fprintf(stderr, "efd_fn_pick_element::ignore_container\n");
+  s_fprintln(stderr, efd_full_repr(ignore_container));
+
   ignore_nodes = d_as_list(efd_children_dict(ignore_container));
-  cleanup_efd_node(ignore_container);
+
+  // TODO: REMOVE
+  fprintf(stderr, "efd_fn_pick_element::got_ignore_nodes\n");
 
   ignore_list = l_map(ignore_nodes, &v_efd__v_i);
-  l_foreach(ignore_nodes, &cleanup_v_efd_node);
   cleanup_list(ignore_nodes);
+  cleanup_efd_node(ignore_container);
+
+  // TODO: REMOVE
+  fprintf(stderr, "efd_fn_pick_element::got_ignore_list\n");
 
   // The seed:
   seed = (ptrdiff_t) *efd__i(seed_node);
@@ -91,6 +106,9 @@ efd_node * efd_fn_pick_element(
     node->h.name,
     (efd_int_t) pick_element(wm, cat_constraints, ignore_list, seed)
   );
+
+  // TODO: REMOVE
+  fprintf(stderr, "efd_fn_pick_element::built_result\n");
 
   // Final cleanup:
   cleanup_list(ignore_list);

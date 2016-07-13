@@ -237,7 +237,8 @@ typedef efd_generator_state * (*efd_generator_constructor)(
  * Globals *
  ***********/
 
-// A list of error context for debug tracing.
+// A switch to control tracing and a list of error contexts for tracing:
+extern int EFD_TRACK_ERROR_CONTEXTS;
 extern list *EFD_ERROR_CONTEXT;
 
 extern string const * const EFD_FILE_EXTENSION;

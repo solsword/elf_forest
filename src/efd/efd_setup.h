@@ -37,7 +37,7 @@ extern dictionary *EFD_FORMAT_DICT;
  *************/
 
 // Gets the data system set up.
-void setup_elf_forest_data(void);
+void setup_elf_forest_data(int track_error_contexts);
 
 // Cleans up the data system.
 void cleanup_elf_forest_data(void);

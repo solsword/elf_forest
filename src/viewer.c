@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
   printf("Setting up viewing area...\n");
 
   // Set up EFD first:
-  setup_elf_forest_data();
+  setup_elf_forest_data(1);
   load_common_efd();
 
   // Initialize stateless subsystems:

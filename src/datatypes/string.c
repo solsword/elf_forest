@@ -44,7 +44,7 @@ void init_strings(void) {
 string* create_string(void) {
   string* s = (string*) malloc(sizeof(string));
   if (s == NULL) {
-    perror("Failed to create string.");
+    perror("Failed to create string");
     exit(errno);
   }
   s->length = 0;
@@ -55,12 +55,12 @@ string* create_string(void) {
 string* copy_string(string const * const base) {
   string *s = (string*) malloc(sizeof(string));
   if (s == NULL) {
-    perror("Failed to create string for copy.");
+    perror("Failed to create string for copy");
     exit(errno);
   }
   s->bytes = (uint8_t*) malloc(sizeof(uint8_t) * (base->length + 1));
   if (s->bytes == NULL) {
-    perror("Failed to create bytes for string copy.");
+    perror("Failed to create bytes for string copy");
     exit(errno);
   }
   s->length = base->length;
@@ -71,12 +71,12 @@ string* copy_string(string const * const base) {
 string* create_empty_string(void) {
   string* s = (string*) malloc(sizeof(string));
   if (s == NULL) {
-    perror("Failed to create empty string.");
+    perror("Failed to create empty string");
     exit(errno);
   }
   s->bytes = (uint8_t*) malloc(sizeof(uint8_t));
   if (s->bytes == NULL) {
-    perror("Failed to create empty string byte.");
+    perror("Failed to create empty string byte");
     exit(errno);
   }
   s->length = 0;
@@ -95,7 +95,7 @@ string* create_string_from_ntchars(char const * const chars) {
 #endif // ifdef DEBUG
   string* s = (string*) malloc(sizeof(string));
   if (s == NULL) {
-    perror("Failed to create string.");
+    perror("Failed to create string");
     exit(errno);
   }
   s->bytes = u8_strconv_from_encoding(
@@ -104,7 +104,7 @@ string* create_string_from_ntchars(char const * const chars) {
     iconveh_escape_sequence
   );
   if (s->bytes == NULL) {
-    perror("Failed to get string from local encoding.");
+    perror("Failed to get string from local encoding");
     exit(errno);
   }
   s->length = strlen((char*) (s->bytes)); // orphan the NUL byte
@@ -124,7 +124,7 @@ string* create_string_from_chars(char const * const nchars, size_t len) {
 #endif // ifdef DEBUG
   string* s = (string*) malloc(sizeof(string));
   if (s == NULL) {
-    perror("Failed to create string.");
+    perror("Failed to create string");
     exit(errno);
   }
   s->bytes = u8_conv_from_encoding(
@@ -137,7 +137,7 @@ string* create_string_from_chars(char const * const nchars, size_t len) {
     &(s->length)
   );
   if (s->bytes == NULL) {
-    perror("Failed to get string from local encoding.");
+    perror("Failed to get string from local encoding");
     exit(errno);
   }
   s->bytes = realloc(s->bytes, sizeof(uint8_t) * (s->length + 1));
@@ -148,7 +148,7 @@ string* create_string_from_chars(char const * const nchars, size_t len) {
 string* create_raw_string(uint8_t const * const raw, size_t len) {
   string* s = (string*) malloc(sizeof(string));
   if (s == NULL) {
-    perror("Failed to create string.");
+    perror("Failed to create string");
     exit(errno);
   }
   s->length = len;
@@ -216,7 +216,7 @@ char* s_encode(string const * const s, size_t* rlen) {
     rlen
   );
   if (result == NULL) {
-    perror("Failed to encode string.");
+    perror("Failed to encode string");
     exit(errno);
   }
   return result;
@@ -243,13 +243,13 @@ char* s_encode_nt(string const * const s) {
     &len
   );
   if (tmp == NULL) {
-    perror("Failed to encode string.");
+    perror("Failed to encode string");
     exit(errno);
   }
   result = tmp;
   tmp = (char*) realloc(result, sizeof(char) * (len+1));
   if (tmp == NULL) {
-    perror("Failed to expand encoded string to add NUL.");
+    perror("Failed to expand encoded string to add NUL");
     exit(errno);
   }
   result = tmp;
@@ -313,7 +313,7 @@ void s_append(string* base, string const * const extension) {
     );
   }
   if (newbytes == NULL) {
-    perror("Failed to allocate new bytes for appending.");
+    perror("Failed to allocate new bytes for appending");
     exit(errno);
   }
   u8_cpy(newbytes + base->length, extension->bytes, extension->length);

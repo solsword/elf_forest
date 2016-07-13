@@ -78,15 +78,23 @@ dictionary *EFD_FORMAT_DICT = NULL;
  * Functions *
  *************/
 
-void setup_elf_forest_data(void) {
+void setup_elf_forest_data(int track_error_contexts) {
   size_t i;
   string *s;
   efd_function_declaration const *fd;
   efd_generator_declaration const *gd;
   efd_object_format const *of;
 
+  EFD_TRACK_ERROR_CONTEXTS = track_error_contexts;
   EFD_ERROR_CONTEXT = create_list();
-  efd_push_error_context(s_("Error context:"));
+  if (EFD_TRACK_ERROR_CONTEXTS) {
+    efd_push_error_context(s_("Error context:"));
+  } else {
+    l_append_element(
+      EFD_ERROR_CONTEXT,
+      (void*) s_("(error contexts not tracked)")
+    );
+  }
 
   EFD_COMMON_DIR = fs_dirchild(FS_RES_DIR, EFD_COMMON_DIR_NAME);
 
