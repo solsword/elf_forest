@@ -48,6 +48,10 @@ static inline list* create_list() {
   return create_custom_list(LIST_DEFAULT_SMALL_CHUNK_SIZE);
 }
 
+// Allocates and sets up a new empty list that uses the same chunk size as the
+// given list.
+list *create_list_like(list const * const src);
+
 // Copies the given list, returning a newly-allocated list containing the same
 // data. If list items are references, they will be shared by both lists.
 list *copy_list(list const * const src);
@@ -184,6 +188,14 @@ void * l_scan_elements(
 // constructed by applying the transformation function to each element of the
 // given list.
 list * l_map(list const * const input, void * (*map)(void *));
+
+// Works like l_map, but the mapping function gets the given extra argument as
+// its second argument.
+list * l_map_with(
+  list const * const input,
+  void * arg,
+  void * (*map)(void *, void *)
+);
 
 // Counts the number of bytes of data/overhead used by the given list.
 size_t l_data_size(list const * const l);

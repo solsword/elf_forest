@@ -604,6 +604,10 @@ efd_address * _construct_efd_node_direct_address(efd_node const * const node) {
     result->name = s_("<corrupt>");
     result->parent = NULL;
     return result;
+  } else if (node->h.type == EFD_NT_INVALID) {
+    result->name = s_("<deleted>");
+    result->parent = NULL;
+    return result;
   } else if (node->h.name != NULL) {
     result->name = copy_string(node->h.name);
   } else {
@@ -825,10 +829,15 @@ void efd_push_error_context_with_node(
 ) {
   efd_address *a;
   if (EFD_TRACK_ERROR_CONTEXTS) {
-    a = construct_efd_address_of_node(node);
-    s_append(message, S_NL);
-    s_devour(message, efd_addr_string(a));
-    cleanup_efd_address(a);
+    if (node == NULL) {
+      s_append(message, S_NL);
+      s_devour(message, s_("<NULL node>"));
+    } else {
+      a = construct_efd_address_of_node(node);
+      s_append(message, S_NL);
+      s_devour(message, efd_addr_string(a));
+      cleanup_efd_address(a);
+    }
     efd_push_error_context(message);
   }
 }
@@ -3096,7 +3105,7 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
     case EFD_GT_CHILDREN:
       node = (efd_node*) gen->state;
       if (gen->index < efd_normal_child_count(node)) {
-        result = copy_efd_node(efd_nth(node, gen->index));
+        result = efd_fresh_value(efd_nth(node, gen->index));
         gen->index += 1;
         efd_pop_error_context();
         return result;

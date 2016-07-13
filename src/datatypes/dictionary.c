@@ -512,7 +512,22 @@ void d_witheach(
 }
 
 list * d_as_list(dictionary const * const d) {
-  return copy_list(d->ordered);
+  size_t i, count, size;
+  dictionary_entry *e;
+  list *result;
+
+  count = d_get_count(d);
+  size = count/2;
+
+  if (size < LIST_DEFAULT_SMALL_CHUNK_SIZE) {
+    size = LIST_DEFAULT_SMALL_CHUNK_SIZE;
+  }
+  result = create_custom_list(size);
+  for (i = 0; i < count; ++i) {
+    e = (dictionary_entry*) l_get_item(d->ordered, i);
+    l_append_element(result, e->value);
+  }
+  return result;
 }
 
 size_t d_data_size(dictionary const * const d) {

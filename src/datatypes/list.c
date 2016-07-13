@@ -105,12 +105,28 @@ list *create_custom_list(size_t chunk_size) {
   return l;
 }
 
+list *create_list_like(list const * const src) {
+  return create_custom_list(src->chunk_size);
+}
+
 list *copy_list(list const * const src) {
   // TODO: More efficiency here!
   size_t i;
   list *result = create_custom_list(src->chunk_size);
   for (i = 0; i < l_get_length(src); ++i) {
+    fprintf(
+      stderr,
+      "** copy_list::in::ptr %zu: %p\n",
+      i,
+      l_get_item(src, i)
+    );
     l_append_element(result, l_get_item(src, i));
+    fprintf(
+      stderr,
+      "** copy_list::out::ptr %zu: %p\n",
+      i,
+      l_get_item(result, i)
+    );
   }
   return result;
 }
@@ -437,6 +453,19 @@ list * l_map(list const * const input, void * (*map)(void *)) {
   list *result = create_custom_list(input->chunk_size);
   for (i = 0; i < l_get_length(input); ++i) {
     l_append_element(result, map(l_get_item(input, i)));
+  }
+  return result;
+}
+
+list * l_map_with(
+  list const * const input,
+  void * arg,
+  void * (*map)(void *, void *)
+) {
+  size_t i;
+  list *result = create_custom_list(input->chunk_size);
+  for (i = 0; i < l_get_length(input); ++i) {
+    l_append_element(result, map(l_get_item(input, i), arg));
   }
   return result;
 }
