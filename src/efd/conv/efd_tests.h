@@ -436,7 +436,7 @@ void* efd__ev_test(efd_node *n) {
     free(result);
     return NULL;
   }
-  result->compare = copy_efd_node(result->compare);
+  result->compare = efd_create_shadow_clone(result->compare);
 
   result->against = efd_nth(n, 1);
   if (result->against == NULL) {
@@ -444,7 +444,7 @@ void* efd__ev_test(efd_node *n) {
     free(result);
     return NULL;
   }
-  result->against = copy_efd_node(result->against);
+  result->against = efd_create_shadow_clone(result->against);
 
   return (void*) result;
 }
@@ -455,8 +455,10 @@ efd_node *ev_test__efd(void *v_t) {
 
   result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
 
-  efd_add_child(result, copy_efd_node(t->compare));
-  efd_add_child(result, copy_efd_node(t->against));
+  efd_assert_type(t->compare, EFD_NT_REROUTE);
+  efd_assert_type(t->against, EFD_NT_REROUTE);
+  efd_add_child(result, copy_efd_node(t->compare->b.as_reroute.child));
+  efd_add_child(result, copy_efd_node(t->against->b.as_reroute.child));
 
   return result;
 }

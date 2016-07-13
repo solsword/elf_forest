@@ -141,7 +141,17 @@ efd_node * efd_fn_choose(efd_node const * const node, efd_value_cache *cache) {
     return NULL;
   }
   result = efd_nth(node, index + 1);
-  return copy_efd_node(efd_get_value(result, cache));
+  result = efd_create_reroute((efd_node*) node, efd_get_value(result, cache));
+
+  if (s_equals(s_("typechoice"), node->h.name)) {
+    efd_report_error(
+      s_("TEST: efd_fn_choose."),
+      result
+    );
+    exit(EXIT_FAILURE);
+  }
+
+  return result;
 }
 
 // Looks at the first argument and scans through remaining arguments until it
@@ -285,7 +295,7 @@ efd_node * efd_fn_lookup_key(
   if (this_value == NULL) {
     return NULL;
   }
-  return copy_efd_node(this_value);
+  return efd_create_reroute((efd_node*) node, this_value);
 }
 
 #endif // INCLUDE_EFD_FUNC_STRUCTURE_H

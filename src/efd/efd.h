@@ -971,7 +971,9 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn);
 
 // Compares two nodes as with efd_equals, but only looks at values and ignores
 // node names (including for children). Also ignores scopes entirely, testing
-// just normal nodes. NULL arguments are accepted.
+// just normal nodes. Finally, equivalent ignores reroute nodes entirely,
+// comparing their children when one or more are given. NULL arguments are
+// accepted.
 int efd_equivalent(efd_node const * const cmp, efd_node const * const agn);
 
 // Adds the given child to the parent's dictionary of children (parent must be
@@ -1009,7 +1011,7 @@ efd_node * efd_create_shadow_clone(efd_node const * const original);
 // Creates a new REROUTE node which targets the given shadow parent and
 // contains a copy of the given node.
 efd_node * efd_create_reroute(
-  efd_node const * const shadow_parent,
+  efd_node *shadow_parent,
   efd_node const * const original
 );
 
@@ -1121,7 +1123,7 @@ efd_node * efd_eval(efd_node const * const target, efd_value_cache * cache);
 // efd_concrete on its input before trying to fetch a value, so the result
 // won't be the same as just looking up the target node in the value cache when
 // the target is a link node. If the input is NULL this will return NULL
-// immediately.
+// immediately. The returned node will have a NULL parent.
 efd_node * efd_get_value(
   efd_node const * const target,
   efd_value_cache * cache
@@ -1135,7 +1137,8 @@ efd_node * efd_fresh_value(efd_node const * const target);
 
 // Returns a copy of the given node, but with all links replaced by flattened
 // versions of their destinations and all functions replaced by flattened
-// versions of their values, recursively.
+// versions of their values, recursively. The parent of the resulting node is
+// set to NULL.
 efd_node * efd_flatten(efd_node const * const target);
 
 // Evaluates all nodes under the given root node, returning a newly-allocated

@@ -1097,6 +1097,10 @@ string * efd_repr(efd_node const * const n) {
   SSTR(s_reroute, "*>", 2);
   SSTR(s_quote, "\"", 1);
 
+  if (n == NULL) {
+    return s_("<NULL node>");
+  }
+  
   if (n->h.type >= EFD_NUM_TYPES || n->h.type < 0) { // a corrupted node
     return s_sprintf("<corrupt node [%d]>", n->h.type);
   }
@@ -1500,13 +1504,16 @@ string * efd_full_repr(efd_node const * const n) {
 }
 
 void efd_report_error(string *message, efd_node const * const n) {
+  string *repr;
+
   efd_print_error_context();
-  string *repr = efd_repr(n);
+
   s_fprintln(stderr, message);
+  cleanup_string(message);
   fprintf(stderr, "\n");
+  repr = efd_repr(n);
   s_fprintln(stderr, repr);
   fprintf(stderr, "\n");
-  cleanup_string(message);
 }
 
 void efd_report_error_full(string *message, efd_node const * const n) {
@@ -1648,7 +1655,7 @@ int _efd_cmp(
 ) {
   intptr_t i, count;
   dictionary *cmp_ch, *agn_ch;
-  efd_node *cmp_t, *agn_t;
+  efd_node *cmp_shadow, *agn_shadow;
   efd_index *empty_index;
 
   string *ctx = s_("...in efd_cmp for nodes:\n");
@@ -1742,26 +1749,35 @@ int _efd_cmp(
 
     case EFD_NT_OBJECT:
       // pack copies of each node and compare them as protos:
-      cmp_t = copy_efd_node(cmp);
-      agn_t = copy_efd_node(agn);
+      cmp_shadow = efd_create_shadow_clone(cmp);
+      agn_shadow = efd_create_shadow_clone(agn);
+
       empty_index = create_efd_index();
-      efd_pack_node(cmp_t, empty_index);
-      efd_pack_node(agn_t, empty_index);
-      if (!_efd_cmp(cmp_t, agn_t, strict)) {
+      efd_pack_node(cmp_shadow->b.as_reroute.child, empty_index);
+      efd_pack_node(agn_shadow->b.as_reroute.child, empty_index);
+      if (
+        !_efd_cmp(
+          cmp_shadow->b.as_reroute.child,
+          agn_shadow->b.as_reroute.child,
+          strict
+        )
+      ) {
 #ifdef DEBUG_TRACE_EFD_CLEANUP
         fprintf(stderr, "Object CMP fail cleanup.\n");
 #endif
-        cleanup_efd_node(cmp_t);
-        cleanup_efd_node(agn_t);
+        cleanup_efd_node(cmp_shadow);
+        cleanup_efd_node(agn_shadow);
+        cleanup_efd_index(empty_index);
+
         efd_pop_error_context();
         return 0;
       }
-      cleanup_efd_index(empty_index);
 #ifdef DEBUG_TRACE_EFD_CLEANUP
       fprintf(stderr, "Object CMP match cleanup.\n");
 #endif
-      cleanup_efd_node(cmp_t);
-      cleanup_efd_node(agn_t);
+      cleanup_efd_node(cmp_shadow);
+      cleanup_efd_node(agn_shadow);
+      cleanup_efd_index(empty_index);
       break;
 
     case EFD_NT_INTEGER:
@@ -1867,7 +1883,15 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
 }
 
 int efd_equivalent(efd_node const * const cmp, efd_node const * const agn) {
-  return _efd_cmp(cmp, agn, 0);
+  efd_node const * _cmp = cmp;
+  efd_node const * _agn = agn;
+  while (efd_is_type(_cmp, EFD_NT_REROUTE)) {
+    _cmp = _cmp->b.as_reroute.child;
+  }
+  while (efd_is_type(_agn, EFD_NT_REROUTE)) {
+    _agn = _agn->b.as_reroute.child;
+  }
+  return _efd_cmp(_cmp, _agn, 0);
 }
 
 void efd_add_child(efd_node *n, efd_node *child) {
@@ -2051,23 +2075,31 @@ efd_address* efd_pop_address(efd_address *a) {
 }
 
 efd_node * efd_create_shadow_clone(efd_node const * const original) {
-  efd_node *result = create_efd_node(EFD_NT_REROUTE, original->h.name);
-  result->b.as_reroute.child = copy_efd_node(original);
+  efd_node *result;
+  result = create_efd_node(EFD_NT_REROUTE, original->h.name);
+  if (efd_is_type(original, EFD_NT_REROUTE)) {
+    result->b.as_reroute.child = copy_efd_node(original->b.as_reroute.child);
+    result->b.as_reroute.target = original->b.as_reroute.target;
+  } else {
+    result->b.as_reroute.child = copy_efd_node(original);
+    result->b.as_reroute.target = original->h.parent;
+  }
   result->b.as_reroute.child->h.parent = result;
-  result->b.as_reroute.target = original->h.parent;
   return result;
 }
 
 efd_node * efd_create_reroute(
-  efd_node const * const shadow_parent,
+  efd_node *shadow_parent,
   efd_node const * const original
 ) {
   efd_node *result = create_efd_node(EFD_NT_REROUTE, original->h.name);
-  result->b.as_reroute.child = copy_efd_node(original);
-  result->b.as_reroute.child->h.parent = result;
-#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+  if (efd_is_type(original, EFD_NT_REROUTE)) {
+    result->b.as_reroute.child = copy_efd_node(original->b.as_reroute.child);
+  } else {
+    result->b.as_reroute.child = copy_efd_node(original);
+  }
   result->b.as_reroute.target = shadow_parent;
-#pragma GCC diagnostic warning "-Wdiscarded-qualifiers"
+  result->b.as_reroute.child->h.parent = result;
   return result;
 }
 
@@ -3105,7 +3137,7 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
     case EFD_GT_CHILDREN:
       node = (efd_node*) gen->state;
       if (gen->index < efd_normal_child_count(node)) {
-        result = efd_fresh_value(efd_nth(node, gen->index));
+        result = efd_create_shadow_clone(efd_nth(node, gen->index));
         gen->index += 1;
         efd_pop_error_context();
         return result;
@@ -3165,14 +3197,14 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
       node = efd_gen_next(sub);
       if (node == NULL) {
         efd_pop_error_context();
-        return copy_efd_node((efd_node*) gen->stash);
+        return efd_create_shadow_clone((efd_node*) gen->stash);
       }
       if (gen->stash != NULL) {
         fprintf(stderr, "EXT_HOLD generator stash turnover cleanup.\n");
         cleanup_v_efd_node(gen->stash);
       }
-      gen->stash = (void*) copy_efd_node_as(node, gen->name);
       efd_rename(node, gen->name);
+      gen->stash = (void*) efd_create_shadow_clone(node);
       efd_pop_error_context();
       return node;
 

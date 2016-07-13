@@ -69,7 +69,8 @@ efd_node * efd_fn_peek(efd_node const * const node, efd_value_cache *cache) {
     }
   }
 
-  value = copy_efd_node(value);
+  // TODO: Should this be a straight copy?
+  value = efd_create_shadow_clone(value);
   efd_rename(value, node->h.name);
   return value;
 }
