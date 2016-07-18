@@ -96,7 +96,9 @@ void setup_elf_forest_data(int track_error_contexts) {
     );
   }
 
-  EFD_COMMON_DIR = fs_dirchild(FS_RES_DIR, EFD_COMMON_DIR_NAME);
+  EFD_DATA_DIR = fs_dirchild(FS_RES_DIR, EFD_DATA_DIR_NAME);
+  EFD_GLOBALS_DIR = fs_dirchild(EFD_DATA_DIR, EFD_GLOBALS_DIR_NAME);
+  EFD_COMMON_DIR = fs_dirchild(EFD_DATA_DIR, EFD_COMMON_DIR_NAME);
 
   EFD_ROOT = create_efd_node(EFD_NT_CONTAINER, EFD_ROOT_NAME);
 
@@ -135,6 +137,7 @@ void setup_elf_forest_data(int track_error_contexts) {
 }
 
 void cleanup_elf_forest_data(void) {
+  cleanup_string(EFD_DATA_DIR);
   cleanup_string(EFD_COMMON_DIR);
 
   cleanup_efd_node(EFD_ROOT);
@@ -242,6 +245,18 @@ void load_common_efd_file(
 }
 
 void load_common_efd(void) {
+  walk_dir_tree(
+    EFD_GLOBALS_DIR,
+    &fs_walk_filter_handle_all,
+    NULL,
+    &fs_walk_filter_ignore_hidden,
+    NULL,
+    &fs_walk_filter_by_extension,
+    (void*) s_raw(EFD_FILE_EXTENSION),
+    &load_common_efd_file,
+    NULL
+  );
+
   walk_dir_tree(
     EFD_COMMON_DIR,
     &fs_walk_filter_handle_all,

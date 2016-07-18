@@ -127,7 +127,7 @@ clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(BIN_DIR)
 	rm -rf $(OUT_DIR)
-	rm -f $(DATA_DIR)/auto_globals.efd
+	rm -f $(DATA_DIR)/globals/auto.efd
 	rm -f $(SRC_DIR)/efd/func.list
 	rm -f $(SRC_DIR)/efd/gen.list
 	rm -f $(SRC_DIR)/efd/conv.list
@@ -148,7 +148,7 @@ test_noise: $(BIN_DIR)/test_noise $(TEST_DIR)
 checkgl: $(BIN_DIR)/checkgl
 	./$(BIN_DIR)/checkgl
 
-efd_globals: $(DATA_DIR)/auto_globals.efd
+efd_globals: $(DATA_DIR)/globals/auto.efd
 
 src_lists: \
  $(SRC_DIR)/efd/func.list \
@@ -180,15 +180,15 @@ $(SRC_DIR)/efd/conv.list: $(SRC_DIR) $(SRC_DIR)/efd/conv/*
 		>> $(SRC_DIR)/efd/conv.list
 
 EFD_GLOBAL=^.*EFD_GL.*(\([^,]*\),\s*\([^,= ]*\)\s*=\s*\?\([^, ]*\)\s*).*$$
-$(DATA_DIR)/auto_globals.efd: $(DATA_DIR) $(OBJ_DIR)/*
+$(DATA_DIR)/globals/auto.efd: $(DATA_DIR)/globals $(OBJ_DIR)/*
 	echo "// auto-generated global values gleaned from source code" \
-		> $(DATA_DIR)/auto_globals.efd
-	echo -e "##G auto_globals\n" >> $(DATA_DIR)/auto_globals.efd
-	grep -rh EFD_GL[\(_] $(SRC_DIR) \
+		> $(DATA_DIR)/globals/auto.efd
+	echo -e "##G auto_globals\n" >> $(DATA_DIR)/globals/auto.efd
+	grep -rh EFD_GL\( $(SRC_DIR) \
 		| grep -v "#define" \
 		| sed "s/$(EFD_GLOBAL)/[[\1 \2 \3]]/" \
-		>> $(DATA_DIR)/auto_globals.efd
-	echo -e "\n##" >> $(DATA_DIR)/auto_globals.efd
+		>> $(DATA_DIR)/globals/auto.efd
+	echo -e "\n##" >> $(DATA_DIR)/globals/auto.efd
 
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
@@ -204,6 +204,12 @@ $(TEST_DIR):
 
 $(DATA_DIR):
 	mkdir -p $(DATA_DIR)
+
+$(DATA_DIR)/common: $(DATA_DIR)
+	mkdir -p $(DATA_DIR)/common
+
+$(DATA_DIR)/globals: $(DATA_DIR)
+	mkdir -p $(DATA_DIR)/globals
 
 $(SRC_DIR)/*.c: ;
 $(SRC_DIR)/*/*.c: ;

@@ -15,11 +15,7 @@
 #include "boilerplate.h"
 #include "util.h"
 
-/********
- * Meta *
- ********/
-
-#define EFD_GL(x, y) y
+#include "efd_gl.h"
 
 /*********
  * Enums *
@@ -234,8 +230,12 @@ extern list *EFD_ERROR_CONTEXT;
 
 extern string const * const EFD_FILE_EXTENSION;
 
+extern string const * const EFD_DATA_DIR_NAME;
 extern string const * const EFD_COMMON_DIR_NAME;
+extern string const * const EFD_GLOBALS_DIR_NAME;
 
+extern string * EFD_DATA_DIR;
+extern string * EFD_GLOBALS_DIR;
 extern string * EFD_COMMON_DIR;
 
 extern string const * const EFD_ADDR_SEP_STR;

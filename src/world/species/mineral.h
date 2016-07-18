@@ -2,52 +2,54 @@
 #define MINERAL_SPECIES_H
 // Mineral-based species types.
 
+#include "efd/efd_gl.h"
+
 /*********
  * Enums *
  *********/
 
 // Geologic sources influence how stone species are generated.
 enum geologic_source_e {
-  GEO_IGNEOUS,
-  GEO_METAMORPHIC,
-  GEO_SEDIMENTARY
+  EFD_GL(i, GEO_IGNEOUS = 0),
+  EFD_GL(i, GEO_METAMORPHIC = 1),
+  EFD_GL(i, GEO_SEDIMENTARY = 2)
 };
 typedef enum geologic_source_e geologic_source;
 
 // Categories for the primary composition of minerals:
 enum mineral_composition_e {
-  MNRL_COMP_STONE,
-  MNRL_COMP_LIFE,
-  MNRL_COMP_STONE_AIR,
-  MNRL_COMP_STONE_WATER,
-  MNRL_COMP_STONE_LIFE,
-  MNRL_COMP_STONE_STONE,
-  MNRL_COMP_STONE_STONE_LIFE,
-  MNRL_COMP_STONE_STONE_STONE,
-  MNRL_COMP_STONE_METAL,
-  MNRL_COMP_STONE_STONE_METAL,
-  MNRL_COMP_STONE_METAL_METAL,
-  MNRL_COMP_STONE_METAL_RARE,
-  MNRL_COMP_STONE_RARE,
-  MNRL_COMP_STONE_STONE_RARE,
-  MNRL_COMP_STONE_RARE_RARE,
-  MNRL_COMP_RARE_RARE
+  EFD_GL(i, MNRL_COMP_STONE = 0),
+  EFD_GL(i, MNRL_COMP_LIFE = 1),
+  EFD_GL(i, MNRL_COMP_STONE_AIR = 2),
+  EFD_GL(i, MNRL_COMP_STONE_WATER = 3),
+  EFD_GL(i, MNRL_COMP_STONE_LIFE = 4),
+  EFD_GL(i, MNRL_COMP_STONE_STONE = 5),
+  EFD_GL(i, MNRL_COMP_STONE_STONE_LIFE = 6),
+  EFD_GL(i, MNRL_COMP_STONE_STONE_STONE = 7),
+  EFD_GL(i, MNRL_COMP_STONE_METAL = 8),
+  EFD_GL(i, MNRL_COMP_STONE_STONE_METAL = 9),
+  EFD_GL(i, MNRL_COMP_STONE_METAL_METAL = 10),
+  EFD_GL(i, MNRL_COMP_STONE_METAL_RARE = 11),
+  EFD_GL(i, MNRL_COMP_STONE_RARE = 12),
+  EFD_GL(i, MNRL_COMP_STONE_STONE_RARE = 13),
+  EFD_GL(i, MNRL_COMP_STONE_RARE_RARE = 14),
+  EFD_GL(i, MNRL_COMP_RARE_RARE = 15)
 };
 typedef enum mineral_composition_e mineral_composition;
 
 // Categories for mineral trace content:
 enum mineral_trace_composition_e {
-  MNRL_TRACE_NONE = 0,
-  MNRL_TRACE_AIR,
-  MNRL_TRACE_WATER,
-  MNRL_TRACE_LIFE,
-  MNRL_TRACE_STONE,
-  MNRL_TRACE_STONE_METAL,
-  MNRL_TRACE_METAL,
-  MNRL_TRACE_METAL_METAL,
-  MNRL_TRACE_METAL_RARE,
-  MNRL_TRACE_RARE,
-  MNRL_TRACE_RARE_RARE
+  EFD_GL(i, MNRL_TRACE_NONE = 0),
+  EFD_GL(i, MNRL_TRACE_AIR = 1),
+  EFD_GL(i, MNRL_TRACE_WATER = 2),
+  EFD_GL(i, MNRL_TRACE_LIFE = 3),
+  EFD_GL(i, MNRL_TRACE_STONE = 4),
+  EFD_GL(i, MNRL_TRACE_STONE_METAL = 5),
+  EFD_GL(i, MNRL_TRACE_METAL = 6),
+  EFD_GL(i, MNRL_TRACE_METAL_METAL = 7),
+  EFD_GL(i, MNRL_TRACE_METAL_RARE = 8),
+  EFD_GL(i, MNRL_TRACE_RARE = 9),
+  EFD_GL(i, MNRL_TRACE_RARE_RARE = 10)
 };
 typedef enum mineral_trace_composition_e mineral_trace_composition;
 

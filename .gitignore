@@ -6,7 +6,7 @@ gmon.out
 /prof
 /supr
 /valg
-/res/data/auto_globals.efd
+/res/data/globals/auto.efd
 /src/efd/func.list
 /src/efd/gen.list
 /src/efd/conv.list

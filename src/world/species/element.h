@@ -5,66 +5,67 @@
 #include "world/measures.h"
 #include "world/materials.h"
 #include "tex/tex.h"
+#include "efd/efd_gl.h"
 
 /*********
  * Enums *
  *********/
 
 enum element_property_e {
-  EL_PRP_I_CATEGORIES,
-  EL_PRP_I_FREQUENCY,
-  EL_PRP_F_PH_TENDENCY,
-  EL_PRP_I_SOLUBILITY,
-  EL_PRP_F_CORROSION_RESISTANCE,
+  EFD_GL(i, EL_PRP_I_CATEGORIES = 0),
+  EFD_GL(i, EL_PRP_I_FREQUENCY = 1),
+  EFD_GL(i, EL_PRP_F_PH_TENDENCY = 2),
+  EFD_GL(i, EL_PRP_I_SOLUBILITY = 3),
+  EFD_GL(i, EL_PRP_F_CORROSION_RESISTANCE = 4),
 
-  EL_PRP_F_STONE_TND_DENSITY,
-  EL_PRP_F_STONE_TND_SP_HEAT,
-  EL_PRP_F_STONE_TND_TR_TEMP,
-  EL_PRP_F_STONE_TND_PLASTICITY,
-  EL_PRP_F_STONE_TND_HARDNESS,
-  EL_PRP_F_STONE_TND_BRIGHTNESS,
-  EL_PRP_F_STONE_TND_CHROMA,
-  EL_PRP_F_STONE_TND_OX_CHROMA,
-  EL_PRP_F_STONE_TND_TN_CHROMA,
+  EFD_GL(i, EL_PRP_F_STONE_TND_DENSITY = 5),
+  EFD_GL(i, EL_PRP_F_STONE_TND_SP_HEAT = 6),
+  EFD_GL(i, EL_PRP_F_STONE_TND_TR_TEMP = 7),
+  EFD_GL(i, EL_PRP_F_STONE_TND_PLASTICITY = 8),
+  EFD_GL(i, EL_PRP_F_STONE_TND_HARDNESS = 9),
+  EFD_GL(i, EL_PRP_F_STONE_TND_BRIGHTNESS = 10),
+  EFD_GL(i, EL_PRP_F_STONE_TND_CHROMA = 11),
+  EFD_GL(i, EL_PRP_F_STONE_TND_OX_CHROMA = 12),
+  EFD_GL(i, EL_PRP_F_STONE_TND_TN_CHROMA = 13),
 
-  EL_PRP_F_METAL_TND_LUSTER,
-  EL_PRP_F_METAL_TND_HARDNESS,
-  EL_PRP_F_METAL_TND_PLASTICITY,
-  EL_PRP_F_METAL_TND_BRIGHTNESS,
-  EL_PRP_F_METAL_TND_CHROMA,
-  EL_PRP_F_METAL_TND_OX_CHROMA,
-  EL_PRP_F_METAL_TND_TN_CHROMA,
+  EFD_GL(i, EL_PRP_F_METAL_TND_LUSTER = 14),
+  EFD_GL(i, EL_PRP_F_METAL_TND_HARDNESS = 15),
+  EFD_GL(i, EL_PRP_F_METAL_TND_PLASTICITY = 16),
+  EFD_GL(i, EL_PRP_F_METAL_TND_BRIGHTNESS = 17),
+  EFD_GL(i, EL_PRP_F_METAL_TND_CHROMA = 18),
+  EFD_GL(i, EL_PRP_F_METAL_TND_OX_CHROMA = 19),
+  EFD_GL(i, EL_PRP_F_METAL_TND_TN_CHROMA = 20),
 
-  EL_PRP_F_ALLOY_PERFORMANCE,
+  EFD_GL(i, EL_PRP_F_ALLOY_PERFORMANCE = 21),
 
-  EL_PRP_I_PlANT_NUTRITION,
-  EL_PRP_I_ANIMAL_NUTRITION,
+  EFD_GL(i, EL_PRP_I_PlANT_NUTRITION = 22),
+  EFD_GL(i, EL_PRP_I_ANIMAL_NUTRITION = 23),
 };
 typedef enum element_property_e element_property;
 
 enum element_frequency_e {
-  EL_FREQ_UBIQUITOUS,
-  EL_FREQ_COMMON,
-  EL_FREQ_UNCOMMON,
-  EL_FREQ_RARE
+  EFD_GL(i, EL_FREQ_UBIQUITOUS = 0),
+  EFD_GL(i, EL_FREQ_COMMON = 1),
+  EFD_GL(i, EL_FREQ_UNCOMMON = 2),
+  EFD_GL(i, EL_FREQ_RARE = 3)
 };
 typedef enum element_frequency_e element_frequency;
 
 enum solubility_e {
-  SOLUBILITY_INSOLUBLE,
-  SOLUBILITY_SLIGHTLY_SOLUBLE,
-  SOLUBILITY_SOLUBLE
+  EFD_GL(i, SOLUBILITY_INSOLUBLE = 0),
+  EFD_GL(i, SOLUBILITY_SLIGHTLY_SOLUBLE = 1),
+  EFD_GL(i, SOLUBILITY_SOLUBLE = 2)
 };
 typedef enum solubility_e solubility;
 
 enum nutrient_category_e {
-  NT_CAT_NONE = 0,
-  NT_CAT_CRITICAL = 1,
-  NT_CAT_CRITICAL_CAN_OVERDOSE = 2,
-  NT_CAT_BENEFICIAL = 3,
-  NT_CAT_BENEFICIAL_CAN_OVERDOSE = 4,
-  NT_CAT_DETRIMENTAL = 5,
-  NT_CAT_POISONOUS = 6
+  EFD_GL(i, NT_CAT_NONE = 0),
+  EFD_GL(i, NT_CAT_CRITICAL = 1),
+  EFD_GL(i, NT_CAT_CRITICAL_CAN_OVERDOSE = 2),
+  EFD_GL(i, NT_CAT_BENEFICIAL = 3),
+  EFD_GL(i, NT_CAT_BENEFICIAL_CAN_OVERDOSE = 4),
+  EFD_GL(i, NT_CAT_DETRIMENTAL = 5),
+  EFD_GL(i, NT_CAT_POISONOUS = 6)
 };
 typedef enum nutrient_category_e nutrient_category;
 
@@ -75,14 +76,14 @@ typedef enum nutrient_category_e nutrient_category;
 // Each element is a member of one or more categories:
 typedef int element_categorization;
 
-#define EL_CATEGORY_NONE   0x00
-#define EL_CATEGORY_AIR    0x01
-#define EL_CATEGORY_WATER  0x02
-#define EL_CATEGORY_LIFE   0x04
-#define EL_CATEGORY_STONE  0x08
-#define EL_CATEGORY_METAL  0x10
-#define EL_CATEGORY_RARE   0x20
-#define EL_CATEGORY_ANY    0x3f
+static element_categorization const EFD_GL(i, EL_CATEGORY_NONE  = 0x00);
+static element_categorization const EFD_GL(i, EL_CATEGORY_AIR   = 0x01);
+static element_categorization const EFD_GL(i, EL_CATEGORY_WATER = 0x02);
+static element_categorization const EFD_GL(i, EL_CATEGORY_LIFE  = 0x04);
+static element_categorization const EFD_GL(i, EL_CATEGORY_STONE = 0x08);
+static element_categorization const EFD_GL(i, EL_CATEGORY_METAL = 0x10);
+static element_categorization const EFD_GL(i, EL_CATEGORY_RARE  = 0x20);
+static element_categorization const EFD_GL(i, EL_CATEGORY_ANY   = 0x3f);
 
 /**************
  * Structures *

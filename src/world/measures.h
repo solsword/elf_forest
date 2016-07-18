@@ -6,6 +6,8 @@
 
 #include <stdint.h>
 
+#include "efd/efd_gl.h"
+
 #include "util.h"
 
 /*********
@@ -78,50 +80,50 @@ typedef float pH;
 // Density of water (~1000 kg/m^3) on the 0-255 scale used for solid and liquid
 // densities and of air (~1.2 kg/m^3) on the 0-255 scale used for gas
 // densities.
-static density const BASE_DENSITY = 12;
+static density const EFD_GL(i, BASE_DENSITY = 12);
 
 // Specific heat of air (~1 J/gK) on the 0-255 scale used for specific heat.
-static specific_heat const BASE_SPECIFIC_HEAT = 16;
+static specific_heat const EFD_GL(i, BASE_SPECIFIC_HEAT = 16);
 
 // Viscosity of water in centiPoise at ~20C:
-static viscosity const NO_VISCOSITY = 0.0001;
-static viscosity const GAS_VISCOSITY = 0.01;
-static viscosity const WATER_VISCOSITY = 1.0;
-static viscosity const SMOOTH_OIL_VISCOSITY = 100.0;
-static viscosity const THICK_OIL_VISCOSITY = 1000.0;
-static viscosity const HONEY_VISCOSITY = 5000.0;
-static viscosity const LARD_VISCOSITY = 100000.0;
-static viscosity const PITCH_VISCOSITY = 2e11;
+static viscosity const EFD_GL(n, NO_VISCOSITY = 0.0001);
+static viscosity const EFD_GL(n, GAS_VISCOSITY = 0.01);
+static viscosity const EFD_GL(n, WATER_VISCOSITY = 1.0);
+static viscosity const EFD_GL(n, SMOOTH_OIL_VISCOSITY = 100.0);
+static viscosity const EFD_GL(n, THICK_OIL_VISCOSITY = 1000.0);
+static viscosity const EFD_GL(n, HONEY_VISCOSITY = 5000.0);
+static viscosity const EFD_GL(n, LARD_VISCOSITY = 100000.0);
+static viscosity const EFD_GL(n, PITCH_VISCOSITY = 2e11);
 
 // Hardness is an arbitrary scale, but the following constants pin it down:
-static hardness const GENERIC_WOOD_HARDNESS = 60;
-static hardness const GENERIC_STONE_HARDNESS = 180;
+static hardness const EFD_GL(i, GENERIC_WOOD_HARDNESS = 60);
+static hardness const EFD_GL(i, GENERIC_STONE_HARDNESS = 180);
 
 // Plasticity is an arbitrary scale; these are some landmarks:
-static plasticity const NO_PLASTICITY = 0; // glass, ceramic
-static plasticity const LOW_PLASTICITY = 10; // chilled metals
-static plasticity const MEDIUM_PLASTICITY = 120; // copper
-static plasticity const HIGH_PLASTICITY = 200; // clay
+static plasticity const EFD_GL(i, NO_PLASTICITY = 0); // glass, ceramic
+static plasticity const EFD_GL(i, LOW_PLASTICITY = 10); // chilled metals
+static plasticity const EFD_GL(i, MEDIUM_PLASTICITY = 120); // copper
+static plasticity const EFD_GL(i, HIGH_PLASTICITY = 200); // clay
 
 // pH constants are those you'd expect:
-static pH const PH_PURE_ACID = 0.0;
-static pH const PH_NEUTRAL = 7.0;
-static pH const PH_PURE_BASE = 14.0;
+static pH const EFD_GL(n, PH_PURE_ACID = 0.0);
+static pH const EFD_GL(n, PH_NEUTRAL = 7.0);
+static pH const EFD_GL(n, PH_PURE_BASE = 14.0);
 
 /**********
  * Limits *
  **********/
 
-#define MAT_MIN_DENSITY uminof(density)
-#define MAT_MAX_DENSITY umaxof(density)
+static density const EFD_GL(i, MAT_MIN_DENSITY = uminof(density));
+static density const EFD_GL(i, MAT_MAX_DENSITY = umaxof(density));
 
-#define MAT_MIN_SP_HEAT uminof(specific_heat)
-#define MAT_MAX_SP_HEAT umaxof(specific_heat)
+static specific_heat const EFD_GL(i, MAT_MIN_SP_HEAT = uminof(specific_heat));
+static specific_heat const EFD_GL(i, MAT_MAX_SP_HEAT = umaxof(specific_heat));
 
-#define MAT_MIN_TEMP sminof(temperature)
-#define MAT_MAX_TEMP smaxof(temperature)
+static temperature const EFD_GL(i, MAT_MIN_TEMP = uminof(temperature));
+static temperature const EFD_GL(i, MAT_MAX_TEMP = umaxof(temperature));
 
-#define MAT_MIN_PLASTICITY uminof(plasticity)
-#define MAT_MAX_PLASTICITY umaxof(plasticity)
+static plasticity const EFD_GL(i, MAT_MIN_PLASTICITY = uminof(plasticity));
+static plasticity const EFD_GL(i, MAT_MAX_PLASTICITY = umaxof(plasticity));
 
 #endif // #ifndef MEASURES_H

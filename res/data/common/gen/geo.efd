@@ -402,7 +402,7 @@
         [[fn cnst_tend:weighted_el_prop
           <<v ~constituents>>
           <<v ~CNST_AVG_WEIGHTS>>
-          [[i attribute #i:EL_P_ST_TND_BRIGHTNESS]]
+          [[i attribute #i:EL_PRP_F_STONE_TND_BRIGHTNESS]]
         ]]
       ]]
       [[ff ~el_chroma:iterate
@@ -449,7 +449,7 @@
           [[fn cosine:cosine
             [[fn chroma:get_el_attr
               <<l ^.^.^.element>>
-              [[i attr #i:EL_P_ST_TND_CHROMA]]
+              [[i attr #i:EL_PRP_F_STONE_TND_CHROMA]]
             ]]
           ]]
         ]]
@@ -458,7 +458,7 @@
           [[fn sine:sine
             [[fn chroma:get_el_attr
               <<l ^.^.^.element>>
-              [[i attr #i:EL_P_ST_TND_CHROMA]]
+              [[i attr #i:EL_PRP_F_STONE_TND_CHROMA]]
             ]]
           ]]
         ]]
@@ -540,8 +540,8 @@
         <<v ~el_hue>>
         [[fn rng:rng_normal
           [[fi rng:brng <<v ~hash>> (i 6) ]]
-          [[fn min:div (n #n:PI) (n -16.0) ]]
-          [[fn max:div (n #n:PI) (n 16.0) ]]
+          [[fn min:div (n #n:M_PI) (n -16.0) ]]
+          [[fn max:div (n #n:M_PI) (n 16.0) ]]
         ]]
       ]]
     ]]
@@ -568,8 +568,8 @@
         <<v ~el_hue>>
         [[fn rng:rng_normal
           [[fi rng:brng <<v ~hash>> (i 9) ]]
-          [[fn min:div (n #n:PI) (n -6.0) ]]
-          [[fn max:div (n #n:PI) (n 6.0) ]]
+          [[fn min:div (n #n:M_PI) (n -6.0) ]]
+          [[fn max:div (n #n:M_PI) (n 6.0) ]]
         ]]
       ]]
     ]]
@@ -592,8 +592,8 @@
         <<v ~el_hue>>
         [[fn rng:rng_normal
           [[fi rng:brng <<v ~hash>> (i 12) ]]
-          [[fn min:div (n #n:PI) (n -12.0) ]]
-          [[fn max:div (n #n:PI) (n 12.0) ]]
+          [[fn min:div (n #n:M_PI) (n -12.0) ]]
+          [[fn max:div (n #n:M_PI) (n 12.0) ]]
         ]]
       ]]
     ]]
@@ -716,7 +716,7 @@
               [[fn cnst_tend:weighted_el_prop
                 <<v ~constituents>>
                 <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_DENSITY]]
+                [[i attribute #i:EL_PRP_F_STONE_TND_DENSITY]]
               ]]
             ]]
             [[fn ~base_sp_heat:weight
@@ -731,7 +731,7 @@
               [[fn cnst_tend:weighted_el_prop
                 <<v ~constituents>>
                 <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_SP_HEAT]]
+                [[i attribute #i:EL_PRP_F_STONE_TND_SP_HEAT]]
               ]]
             ]]
             [[fn ~base_tr_temp:weight
@@ -742,7 +742,7 @@
               [[fn cnst_tend:weighted_el_prop
                 <<v ~constituents>>
                 <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_TR_TEMP]]
+                [[i attribute #i:EL_PRP_F_STONE_TND_TR_TEMP]]
               ]]
             ]]
             [[fn ~base_plastic_temp:pow
@@ -753,7 +753,7 @@
             [[fn ~cnst_plasticity:weighted_el_prop
               <<v ~constituents>>
               <<v ~CNST_AVG_WEIGHTS>>
-              [[i attribute #i:EL_P_ST_TND_PLASTICITY]]
+              [[i attribute #i:EL_PRP_F_STONE_TND_PLASTICITY]]
             ]]
             // More than 75% of values fall into [0, 0.33]:
             [[fn ~base_cold_plasticity:weight
@@ -783,7 +783,7 @@
               [[fn cnst_tend:weighted_el_prop
                 <<v ~constituents>>
                 <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_HARDNESS]]
+                [[i attribute #i:EL_PRP_F_STONE_TND_HARDNESS]]
               ]]
             ]]
           ]]
@@ -853,7 +853,7 @@
               [[fn cnst_tend:weighted_el_prop
                 <<v ~constituents>>
                 <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_DENSITY]]
+                [[i attribute #i:EL_PRP_F_STONE_TND_DENSITY]]
               ]]
             ]]
             [[fn ~base_sp_heat:weight
@@ -864,7 +864,7 @@
               [[fn cnst_tend:weighted_el_prop
                 <<v ~constituents>>
                 <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_SP_HEAT]]
+                [[i attribute #i:EL_PRP_F_STONE_TND_SP_HEAT]]
               ]]
             ]]
             [[fn ~base_tr_temp:weight
@@ -875,7 +875,7 @@
               [[fn cnst_tend:weighted_el_prop
                 <<v ~constituents>>
                 <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_TR_TEMP]]
+                [[i attribute #i:EL_PRP_F_STONE_TND_TR_TEMP]]
               ]]
             ]]
             [[fn ~base_plastic_temp:pow
@@ -886,7 +886,7 @@
             [[fn ~cnst_plasticity:weighted_el_prop
               <<v ~constituents>>
               <<v ~CNST_AVG_WEIGHTS>>
-              [[i attribute #i:EL_P_ST_TND_PLASTICITY]]
+              [[i attribute #i:EL_PRP_F_STONE_TND_PLASTICITY]]
             ]]
             [[fn ~base_cold_plasticity:weight
               [[an weights 0.5, 0.5 ]]
@@ -917,7 +917,7 @@
               [[fn cnst_tend:weighted_el_prop
                 <<v ~constituents>>
                 <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_HARDNESS]]
+                [[i attribute #i:EL_PRP_F_STONE_TND_HARDNESS]]
               ]]
             ]]
           ]]
@@ -987,7 +987,7 @@
               [[fn cnst_tend:weighted_el_prop
                 <<v ~constituents>>
                 <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_DENSITY]]
+                [[i attribute #i:EL_PRP_F_STONE_TND_DENSITY]]
               ]]
             ]]
             [[fn ~base_sp_heat:weight
@@ -998,7 +998,7 @@
               [[fn cnst_tend:weighted_el_prop
                 <<v ~constituents>>
                 <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_SP_HEAT]]
+                [[i attribute #i:EL_PRP_F_STONE_TND_SP_HEAT]]
               ]]
             ]]
             [[fn ~base_tr_temp:weight
@@ -1009,7 +1009,7 @@
               [[fn cnst_tend:weighted_el_prop
                 <<v ~constituents>>
                 <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_TR_TEMP]]
+                [[i attribute #i:EL_PRP_F_STONE_TND_TR_TEMP]]
               ]]
             ]]
             [[fn ~base_plastic_temp:pow
@@ -1020,7 +1020,7 @@
             [[fn ~cnst_plasticity:weighted_el_prop
               <<v ~constituents>>
               <<v ~CNST_AVG_WEIGHTS>>
-              [[i attribute #i:EL_P_ST_TND_PLASTICITY]]
+              [[i attribute #i:EL_PRP_F_STONE_TND_PLASTICITY]]
             ]]
             // Sedimentary rock is generally quite brittle
             [[fn ~base_cold_plasticity:weight
@@ -1053,7 +1053,7 @@
               [[fn cnst_tend:weighted_el_prop
                 <<v ~constituents>>
                 <<v ~CNST_AVG_WEIGHTS>>
-                [[i attribute #i:EL_P_ST_TND_HARDNESS]]
+                [[i attribute #i:EL_PRP_F_STONE_TND_HARDNESS]]
               ]]
             ]]
           ]]
@@ -1940,7 +1940,7 @@
       [[fn scale_bias:rng_uniform
         [[fi rng:brng <<v ~hash>> (i 1) ]] (n 0.7) (n 1.1) ]]
       [[fn radial_frequency:div
-        [[n pi #n:PI]]
+        [[n pi #n:M_PI]]
         [[fn uniform:rng_uniform
           [[fi rng:brng <<v ~hash>> (i 2) ]] (n 2.4) (n 4.0) ]]
       ]]
@@ -1985,7 +1985,7 @@
       [[fn scale_bias:rng_uniform
         [[fi rng:brng <<v ~hash>> (i 14) ]] (n 0.8) (n 1.2) ]]
       [[fn radial_frequency:div
-        [[n pi #n:PI]]
+        [[n pi #n:M_PI]]
         [[fn uniform:rng_uniform
           [[fi rng:brng <<v ~hash>> (i 15) ]] (n 2.8) (n 4.8) ]]
       ]]
@@ -2030,7 +2030,7 @@
       [[fn scale_bias:rng_uniform
         [[fi rng:brng <<v ~hash>> (i 27) ]] (n 1.1) (n 1.4) ]]
       [[fn radial_frequency:div
-        [[n pi #n:PI]]
+        [[n pi #n:M_PI]]
         [[fn uniform:rng_uniform
           [[fi rng:brng <<v ~hash>> (i 28) ]] (n 2.1) (n 3.3) ]]
       ]]

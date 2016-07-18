@@ -22,8 +22,12 @@ list *EFD_ERROR_CONTEXT;
 
 CSTR(EFD_FILE_EXTENSION, "efd", 3);
 
-CSTR(EFD_COMMON_DIR_NAME, "data", 4);
-string * EFD_COMMON_DIR; // assigned in efd_setup.h based on PS_RES_DIRECTORY
+CSTR(EFD_DATA_DIR_NAME, "data", 4);
+CSTR(EFD_COMMON_DIR_NAME, "common", 6);
+CSTR(EFD_GLOBALS_DIR_NAME, "globals", 7);
+string * EFD_DATA_DIR; // assigned in efd_setup.h based on FS_RES_DIR
+string * EFD_GLOBALS_DIR; // assigned in efd_setup.h based on FS_RES_DIR
+string * EFD_COMMON_DIR; // assigned in efd_setup.h based on FS_RES_DIR
 
 CSTR(EFD_ADDR_SEP_STR, ".", 1);
 CSTR(EFD_ADDR_PARENT_STR, "^", 1);

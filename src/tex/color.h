@@ -6,6 +6,8 @@
 
 #include <stdint.h>
 
+#include "efd/efd_gl.h"
+
 #include "util.h"
 
 /*********
@@ -13,11 +15,11 @@
  *********/
 
 enum {
-  CFMT_INVALID = 0,
-  CFMT_RGB,
-  CFMT_XYZ,
-  CFMT_LAB,
-  CFMT_LCH
+  EFD_GL(i, CFMT_INVALID = 0),
+  EFD_GL(i, CFMT_RGB = 1),
+  EFD_GL(i, CFMT_XYZ = 2),
+  EFD_GL(i, CFMT_LAB = 3),
+  EFD_GL(i, CFMT_LCH = 4)
 } color_format_e;
 typedef enum color_format_e color_format;
 
