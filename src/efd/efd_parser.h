@@ -14,11 +14,14 @@
 
 // Different kinds of parsing errors:
 enum efd_parse_error_e {
-  EFD_PE_NO_ERROR = 0,
-  EFD_PE_MISSING,
-  EFD_PE_UNKNOWN,
-  EFD_PE_MALFORMED,
-  EFD_PE_INCOMPLETE,
+  EFD_PE_NO_ERROR = 0,     // carry on
+  EFD_PE_UNKNOWN,          // ???
+  EFD_PE_MISSING,          // no input
+  EFD_PE_MALFORMED,        // wrong input
+  EFD_PE_CLOSING_BRACE,    // wrong input (closing brace)
+  EFD_PE_INCOMPLETE,       // partial input
+  EFD_PE_SKIP_CHILD,       // efd_parse_children should skip this node
+  EFD_PE_CHILDREN_DONE     // efd_parse_children should terminate
 };
 typedef enum efd_parse_error_e efd_parse_error;
 
@@ -76,7 +79,7 @@ typedef struct efd_parse_state_s efd_parse_state;
  *************/
 
 #define EFD_PARSER_MAX_FILENAME_DISPLAY 4096
-#define EFD_PARSER_MAX_CONTEXT_DISPLAY 32
+#define EFD_PARSER_MAX_CONTEXT_DISPLAY 160
 #define EFD_PARSER_ERROR_BEFORE 35
 #define EFD_PARSER_ERROR_AFTER 35
 #define EFD_PARSER_ERROR_LINE 80
@@ -84,9 +87,7 @@ typedef struct efd_parse_state_s efd_parse_state;
 
 #define EFD_PARSER_MAX_DIGITS 1024
 #define EFD_PARSER_INT_ERROR 1717
-#define EFD_PARSER_INT_REFVAL 1718
-#define EFD_PARSER_FLOAT_ERROR 9995.5
-#define EFD_PARSER_FLOAT_REFVAL 9995.6
+#define EFD_PARSER_NUM_ERROR 9995.5
 
 #define EFD_PARSER_COLON ':'
 #define EFD_PARSER_OPEN_BRACE '['
@@ -112,8 +113,10 @@ struct efd_parse_state_s {
   ptrdiff_t pos;
   char const * filename;
   ptrdiff_t lineno;
+  char next_closing_brace;
   char const * context;
   efd_parse_error error;
+  efd_address *current_address;
   efd_node *current_node;
   ptrdiff_t current_index;
 };
@@ -157,6 +160,7 @@ static inline int is_opening_brace(char c) {
     case EFD_PARSER_OPEN_ANGLE:
     case EFD_PARSER_OPEN_CURLY:
     case EFD_PARSER_OPEN_PAREN:
+    case EFD_PARSER_HASH:
       return 1;
   }
 }
@@ -169,7 +173,26 @@ static inline int is_closing_brace(char c) {
     case EFD_PARSER_CLOSE_ANGLE:
     case EFD_PARSER_CLOSE_CURLY:
     case EFD_PARSER_CLOSE_PAREN:
+    case EFD_PARSER_HASH:
       return 1;
+  }
+}
+
+static inline char closing_brace_for(char o) {
+  switch (o) {
+    default:
+      fprintf(stderr, "ERROR: Invalid opening brace type '%c'.", o);
+      return '\0';
+    case EFD_PARSER_OPEN_BRACE:
+      return EFD_PARSER_CLOSE_BRACE;
+    case EFD_PARSER_OPEN_ANGLE:
+      return EFD_PARSER_CLOSE_ANGLE;
+    case EFD_PARSER_OPEN_CURLY:
+      return EFD_PARSER_CLOSE_CURLY;
+    case EFD_PARSER_OPEN_PAREN:
+      return EFD_PARSER_CLOSE_PAREN;
+    case EFD_PARSER_HASH:
+      return EFD_PARSER_HASH;
   }
 }
 
@@ -186,15 +209,17 @@ static inline int efd_parse_atend(efd_parse_state *s) {
  * Functions *
  *************/
 
-// State copying for backtracking (input isn't copied):
+// State copying for backtracking (input and current node aren't copied):
 void efd_parse_copy_state(efd_parse_state *from, efd_parse_state *to);
+
+// Cleans up the state's current address for backtracking:
+void efd_parse_scrub_state(efd_parse_state *state);
 
 // Parses an entire file, adding node(s) encountered as children of the given
 // parent node (must be a container). Nodes encountered are unpacked and global
 // reference values are filled in. Returns 1 if it succeeds or 0 otherwise.
 int efd_parse_file(
   efd_node *parent,
-  efd_index *cr,
   char const * const filename
 );
 
@@ -202,55 +227,55 @@ int efd_parse_file(
 efd_address* efd_parse_string_address(string const * const astr);
 
 // Top level parsing function that delegates to the more specific functions:
-efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr);
+efd_node* efd_parse_any(efd_parse_state *s);
 
 
 // Parsing functions for the EFD primitive types:
 //-----------------------------------------------
 
-void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_children(efd_node *result, efd_parse_state *s);
 
-void efd_parse_link(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_link(efd_node *result, efd_parse_state *s);
 
-void efd_parse_function(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_function(efd_node *result, efd_parse_state *s);
 
-void efd_parse_proto(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_proto(efd_node *result, efd_parse_state *s);
 
-void efd_parse_integer(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_integer(efd_node *result, efd_parse_state *s);
 
-void efd_parse_number(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_number(efd_node *result, efd_parse_state *s);
 
-void efd_parse_string(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_string(efd_node *result, efd_parse_state *s);
 
-void efd_parse_obj_array(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_obj_array(efd_node *result, efd_parse_state *s);
 
-void efd_parse_int_array(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_int_array(efd_node *result, efd_parse_state *s);
 
-void efd_parse_num_array(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_num_array(efd_node *result, efd_parse_state *s);
 
-void efd_parse_str_array(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_str_array(efd_node *result, efd_parse_state *s);
 
 
 // Parsing functions for EFD globals:
 //-----------------------------------
 
-void efd_parse_int_global(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_int_global(efd_node *result, efd_parse_state *s);
 
-void efd_parse_num_global(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_num_global(efd_node *result, efd_parse_state *s);
 
-void efd_parse_str_global(efd_node *result, efd_parse_state *s, efd_index *cr);
+void efd_parse_str_global(efd_node *result, efd_parse_state *s);
 
 
 // Functions for parsing pieces that might be references:
 //-------------------------------------------------------
 
-efd_int_t efd_parse_int_or_ref(efd_parse_state *s, efd_index *cr);
+efd_int_t efd_parse_int_or_ref(efd_parse_state *s);
 
-efd_num_t efd_parse_float_or_ref(efd_parse_state *s, efd_index *cr);
+efd_num_t efd_parse_float_or_ref(efd_parse_state *s);
 
-string* efd_parse_str_or_ref(efd_parse_state *s, efd_index *cr);
+string * efd_parse_str_or_ref(efd_parse_state *s);
 
-void* efd_parse_obj_ref(efd_parse_state *s, efd_index *cr);
+void * efd_parse_obj_ref(efd_parse_state *s);
 
 
 // Functions for parsing bits & pieces:
@@ -260,7 +285,7 @@ void* efd_parse_obj_ref(efd_parse_state *s, efd_index *cr);
 // the type of bracket used, and the second accepts that character to ensure a
 // match.
 char efd_parse_open(efd_parse_state *s);
-void efd_parse_close(efd_parse_state *s, char otype);
+void efd_parse_close(efd_parse_state *s);
 
 // Parses a node type off of the front of the input:
 efd_node_type efd_parse_type(efd_parse_state *s);

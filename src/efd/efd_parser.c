@@ -33,15 +33,28 @@
 
 void efd_parse_copy_state(efd_parse_state *from, efd_parse_state *to) {
   to->pos = from->pos;
-  to->lineno = from->lineno;
   to->filename = from->filename;
+  to->lineno = from->lineno;
+  to->next_closing_brace = from->next_closing_brace;
   to->context = from->context;
   to->error = from->error;
+  if (to->current_address != NULL) {
+    cleanup_efd_address(to->current_address);
+  }
+  to->current_address = copy_efd_address(from->current_address);
+  to->current_node = from->current_node;
+  to->current_index = from->current_index;
+}
+
+void efd_parse_scrub_state(efd_parse_state *state) {
+  if (state->current_address != NULL) {
+    cleanup_efd_address(state->current_address);
+    state->current_address = NULL;
+  }
 }
 
 int efd_parse_file(
   efd_node *parent,
-  efd_index *cr,
   char const * const filename
 ) {
   efd_parse_state s;
@@ -52,8 +65,10 @@ int efd_parse_file(
   s.pos = 0;
   s.filename = filename;
   s.lineno = 0;
+  s.next_closing_brace = '\0';
   s.context = NULL;
   s.error = EFD_PE_NO_ERROR;
+  s.current_address = construct_efd_address_of_node(parent);
   s.current_node = parent;
   s.current_index = -1;
 
@@ -61,7 +76,7 @@ int efd_parse_file(
   s.input = contents;
 
   efd_assert_type(parent, EFD_NT_CONTAINER);
-  efd_parse_children(parent, &s, cr);
+  efd_parse_children(parent, &s);
 
   if (efd_parse_failed(&s)) {
     efd_throw_parse_error(&s);
@@ -69,12 +84,14 @@ int efd_parse_file(
     s.input_length = 0;
     free(contents);
     s.context = NULL;
+    efd_parse_scrub_state(&s);
     return 0;
   } else {
     s.input = NULL;
     s.input_length = 0;
     free(contents);
     s.context = NULL;
+    efd_parse_scrub_state(&s);
     return 1;
   }
 }
@@ -87,8 +104,10 @@ efd_address* efd_parse_string_address(string const * const astr) {
   s.pos = 0;
   s.filename = "<address string>";
   s.lineno = -1;
+  s.next_closing_brace = '\0';
   s.context = "string address";
   s.error = EFD_PE_NO_ERROR;
+  s.current_address = NULL;
   s.current_node = NULL;
   s.current_index = -1;
 
@@ -100,35 +119,76 @@ efd_address* efd_parse_string_address(string const * const astr) {
   return result;
 }
 
-efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
+// Private helper for adding global nodes:
+void _efd_add_v_global(void *v_node) {
+  efd_node *n = (efd_node*) v_node;
+  n = copy_efd_node(n); // original will be cleaned up with the GLOBAL node
+  efd_set_global(n->h.name, n);
+}
+
+efd_node* efd_parse_any(efd_parse_state *s) {
   efd_node_type type;
-  efd_node *parent_node;
-  efd_node *existing_node;
+  efd_node *parent;
+  efd_node *existing_node = NULL;
   efd_node *result;
   string *name;
-  char btype;
+  char btype, old_ctype;
 
   btype = efd_parse_open(s);
   if (efd_parse_failed(s)) {
     if (s->error == EFD_PE_MISSING) {
-      s->error = EFD_PE_NO_ERROR;
       // if there's nothing here (as opposed to something malformed) then we'll
-      // just return NULL without an error.
+      // just let efd_parse_children know that it's done
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(stderr, "* EFD parsing:?:?:node-missing\n");
+#endif
+      s->error = EFD_PE_CHILDREN_DONE;
+    } else if (
+      s->error == EFD_PE_MALFORMED
+   && is_closing_brace(s->input[s->pos])
+    ) {
+      // if there's a closing brace instead of an opening one, let
+      // efd_parse_children know it should rewind.
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(stderr, "* EFD parsing:?:?:closing-brace\n");
+#endif
+      s->error = EFD_PE_CLOSING_BRACE;
     }
+    // in any case if there's an error return NULL
+    return NULL;
+  }
+  if (s->next_closing_brace == EFD_PARSER_HASH && btype == EFD_PARSER_HASH) {
+    // this is the expected closing brace rather than the opening brace of a
+    // child: let efd_parse_children know that it should rewind.
+#ifdef DEBUG_TRACE_EFD_PARSING
+    fprintf(stderr, "* EFD parsing:?:?:closing-hash\n");
+#endif
+    s->error = EFD_PE_CLOSING_BRACE;
     return NULL;
   }
 
+  old_ctype = s->next_closing_brace;
+  s->next_closing_brace = closing_brace_for(btype);
+
   type = efd_parse_type(s);
-  if (efd_parse_failed(s)) { return NULL; }
+  if (efd_parse_failed(s)) {
+#ifdef DEBUG_TRACE_EFD_PARSING
+    fprintf(stderr, "! EFD parsing:?:?:bad-type\n");
+#endif
+    return NULL;
+  }
 
   if (btype == EFD_PARSER_OPEN_ANGLE) {
-    if (
-      type != EFD_NT_LINK
-   && type != EFD_NT_LOCAL_LINK
-   && type != EFD_NT_VARIABLE
-    ) {
+    if (!efd_is_link_type(type)) {
       s->error = EFD_PE_MALFORMED;
       s->context = "node (angle braces are for links)";
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "! EFD parsing:%s:?:non-link-angle-braces\n",
+        EFD_NT_ABBRS[type]
+      );
+#endif
       return NULL;
     }
     // name will be decided by efd_parse_link:
@@ -137,19 +197,57 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
     if (type != EFD_NT_CONTAINER) {
       s->error = EFD_PE_MALFORMED;
       s->context = "node (curly braces are for containers only)";
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "! EFD parsing:%s:?:non-container-curly-braces\n",
+        EFD_NT_ABBRS[type]
+      );
+#endif
+      return NULL;
+    }
+    // parse the name immediately:
+    name = efd_parse_name(s);
+    if (efd_parse_failed(s)) { return NULL; }
+  } else if (btype == EFD_PARSER_HASH) {
+    if (type != EFD_NT_GLOBAL) {
+      s->error = EFD_PE_MALFORMED;
+      s->context = "node (hashes are for global declarations only)";
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "! EFD parsing:%s:?:non-global-hashes\n",
+        EFD_NT_ABBRS[type]
+      );
+#endif
       return NULL;
     }
     // parse the name immediately:
     name = efd_parse_name(s);
     if (efd_parse_failed(s)) { return NULL; }
   } else {
-    if (
-      type == EFD_NT_LINK
-   || type == EFD_NT_LOCAL_LINK
-   || type == EFD_NT_VARIABLE
-    ) {
+    if (efd_is_link_type(type)) {
       s->error = EFD_PE_MALFORMED;
       s->context = "node (links require angle braces)";
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "! EFD parsing:%s:?:link-without-angle-braces\n",
+        EFD_NT_ABBRS[type]
+      );
+#endif
+      return NULL;
+    }
+    if (type == EFD_NT_GLOBAL) {
+      s->error = EFD_PE_MALFORMED;
+      s->context = "node (global declarations require octothorpes)";
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "! EFD parsing:%s:?:global-without-hashes\n",
+        EFD_NT_ABBRS[type]
+      );
+#endif
       return NULL;
     }
     if (btype == EFD_PARSER_OPEN_PAREN) {
@@ -158,7 +256,16 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
     } else {
       // parse the name immediately:
       name = efd_parse_name(s);
-      if (efd_parse_failed(s)) { return NULL; }
+      if (efd_parse_failed(s)) {
+#ifdef DEBUG_TRACE_EFD_PARSING
+        fprintf(
+          stderr,
+          "! EFD parsing:%s:?:bad-name\n",
+          EFD_NT_ABBRS[type]
+        );
+#endif
+        return NULL;
+      }
     }
   }
 
@@ -166,10 +273,6 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
     existing_node = efdx(s->current_node, name);
     if (existing_node != NULL) {
       result = existing_node;
-      if (result == s->current_node) {
-        fprintf(stderr, "ERRROR!!\n");
-        exit(EXIT_FAILURE);
-      }
     } else {
       result = create_efd_node(type, name);
     }
@@ -177,7 +280,8 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
     result = create_efd_node(type, name);
   }
   cleanup_string(name);
-  parent_node = s->current_node;
+  parent = s->current_node;
+  efd_append_address(s->current_address, result->h.name);
   s->current_node = result;
   s->current_index = -1;
 
@@ -187,16 +291,43 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
     case EFD_NT_OBJECT:
       s->error = EFD_PE_MALFORMED;
       s->context = "node (invalid type)";
-      s->current_node = parent_node;
+      s->current_node = parent;
+      cleanup_efd_address(efd_pop_address(s->current_address));
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "! EFD parsing:%s:%s:invalid-type\n",
+        EFD_NT_ABBRS[type],
+        s_raw(result->h.name)
+      );
+#endif
       return NULL;
     case EFD_NT_CONTAINER:
     case EFD_NT_SCOPE:
-      efd_parse_children(result, s, cr);
+    case EFD_NT_GLOBAL:
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "  EFD parsing:%s:%s:container\n",
+        EFD_NT_ABBRS[type],
+        s_raw(result->h.name)
+      );
+#endif
+      efd_parse_children(result, s);
       break;
-    case EFD_NT_LINK:
+    case EFD_NT_ROOT_LINK:
+    case EFD_NT_GLOBAL_LINK:
     case EFD_NT_LOCAL_LINK:
     case EFD_NT_VARIABLE:
-      efd_parse_link(result, s, cr);
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "  EFD parsing:%s:%s:link\n",
+        EFD_NT_ABBRS[type],
+        s_raw(result->h.name)
+      );
+#endif
+      efd_parse_link(result, s);
       break;
     case EFD_NT_FUNCTION:
     case EFD_NT_FN_OBJ:
@@ -214,62 +345,181 @@ efd_node* efd_parse_any(efd_parse_state *s, efd_index *cr) {
     case EFD_NT_GN_AR_INT:
     case EFD_NT_GN_AR_NUM:
     case EFD_NT_GN_AR_STR:
-      efd_parse_function(result, s, cr);
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "  EFD parsing:%s:%s:function\n",
+        EFD_NT_ABBRS[type],
+        s_raw(result->h.name)
+      );
+#endif
+      efd_parse_function(result, s);
       break;
     case EFD_NT_PROTO:
-      efd_parse_proto(result, s, cr);
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "  EFD parsing:%s:%s:proto\n",
+        EFD_NT_ABBRS[type],
+        s_raw(result->h.name)
+      );
+#endif
+      efd_parse_proto(result, s);
       break;
     case EFD_NT_INTEGER:
-      efd_parse_integer(result, s, cr);
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "  EFD parsing:%s:%s:integer\n",
+        EFD_NT_ABBRS[type],
+        s_raw(result->h.name)
+      );
+#endif
+      efd_parse_integer(result, s);
       break;
     case EFD_NT_NUMBER:
-      efd_parse_number(result, s, cr);
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "  EFD parsing:%s:%s:number\n",
+        EFD_NT_ABBRS[type],
+        s_raw(result->h.name)
+      );
+#endif
+      efd_parse_number(result, s);
       break;
     case EFD_NT_STRING:
-      efd_parse_string(result, s, cr);
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "  EFD parsing:%s:%s:string\n",
+        EFD_NT_ABBRS[type],
+        s_raw(result->h.name)
+      );
+#endif
+      efd_parse_string(result, s);
       break;
     case EFD_NT_ARRAY_INT:
-      efd_parse_int_array(result, s, cr);
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "  EFD parsing:%s:%s:int-array\n",
+        EFD_NT_ABBRS[type],
+        s_raw(result->h.name)
+      );
+#endif
+      efd_parse_int_array(result, s);
       break;
     case EFD_NT_ARRAY_NUM:
-      efd_parse_num_array(result, s, cr);
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "  EFD parsing:%s:%s:num-array\n",
+        EFD_NT_ABBRS[type],
+        s_raw(result->h.name)
+      );
+#endif
+      efd_parse_num_array(result, s);
       break;
     case EFD_NT_ARRAY_STR:
-      efd_parse_str_array(result, s, cr);
-      break;
-    case EFD_NT_GLOBAL_INT:
-      efd_parse_int_global(result, s, cr);
-      break;
-    case EFD_NT_GLOBAL_NUM:
-      efd_parse_num_global(result, s, cr);
-      break;
-    case EFD_NT_GLOBAL_STR:
-      efd_parse_str_global(result, s, cr);
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "  EFD parsing:%s:%s:str-array\n",
+        EFD_NT_ABBRS[type],
+        s_raw(result->h.name)
+      );
+#endif
+      efd_parse_str_array(result, s);
       break;
   }
-  s->current_node = parent_node;
+  if (efd_parse_failed(s)) {
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "! EFD parsing:%s:%s:parse-failed\n",
+        EFD_NT_ABBRS[type],
+        s_raw(result->h.name)
+      );
+#endif
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+    fprintf(
+      stderr,
+      "~ EFD cleanup[%p]:%s:failed-parse\n",
+      result,
+      s_raw(result->h.name)
+    );
+#endif
+    cleanup_efd_node(result);
+    return NULL;
+  }
+
+  efd_parse_close(s);
+  if (efd_parse_failed(s)) {
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "! EFD parsing:%s:%s:unclosed\n",
+        EFD_NT_ABBRS[type],
+        s_raw(result->h.name)
+      );
+#endif
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+    fprintf(
+      stderr,
+      "~ EFD cleanup[%p]:%s:bad-closure.\n",
+      result,
+      s_raw(result->h.name)
+    );
+#endif
+    cleanup_efd_node(result);
+    return NULL;
+  }
+
+  s->next_closing_brace = old_ctype;
+  cleanup_efd_address(efd_pop_address(s->current_address));
+  s->current_node = parent;
   s->current_index = -1;
-  if (efd_parse_failed(s)) {
-    fprintf(stderr, "Cleanup after failed parse.\n");
+
+  if (type == EFD_NT_GLOBAL) {
+    // Add our children to the globals dictionary, clean ourselves up, and
+    // signal efd_parse_children that it should skip this result.
+#ifdef DEBUG_TRACE_EFD_PARSING
+    fprintf(
+      stderr,
+      "  EFD parsing:%s:%s:handle-globals\n",
+      EFD_NT_ABBRS[type],
+      s_raw(result->h.name)
+    );
+#endif
+    d_foreach(efd_children_dict(result), &_efd_add_v_global);
     cleanup_efd_node(result);
+    s->error = EFD_PE_SKIP_CHILD;
     return NULL;
   }
 
-  efd_parse_close(s, btype);
-  if (efd_parse_failed(s)) {
-    fprintf(stderr, "Cleanup after bad closure.\n");
-    cleanup_efd_node(result);
-    return NULL;
+#ifdef DEBUG_TRACE_EFD_PARSING
+  fprintf(
+    stderr,
+    "  EFD parsing:%s:%s:done\n",
+    EFD_NT_ABBRS[type],
+    s_raw(result->h.name)
+  );
+#endif
+  if (existing_node != NULL) {
+    // If we added to an existing node, let efd_parse_children know that we
+    // shouldn't give that node an extra entry among its parents' children.
+    s->error = EFD_PE_SKIP_CHILD;
   }
-
   return result;
 }
 
 // Parsing functions for the EFD primitive types:
 //-----------------------------------------------
 
-void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
+void efd_parse_children(efd_node *result, efd_parse_state *s) {
   efd_parse_state back;
+  back.current_address = NULL;
   efd_node *child;
 
   if (!efd_is_container_node(result)) {
@@ -284,49 +534,91 @@ void efd_parse_children(efd_node *result, efd_parse_state *s, efd_index *cr) {
   // parse any number of children and add them:
   while (1) {
     efd_parse_copy_state(s, &back);
-    child = efd_parse_any(s, cr);
+    child = efd_parse_any(s);
     if (efd_parse_failed(s)) {
-      if (s->error == EFD_PE_MALFORMED && is_closing_brace(s->input[s->pos])) {
-        // we've probably hit the end of this object: return without error
+      if (s->error == EFD_PE_SKIP_CHILD) {
+        // we need to skip this child
+#ifdef DEBUG_TRACE_EFD_PARSING
+        fprintf(
+          stderr,
+          "  EFD parsing:%s:%s:skip\n",
+          EFD_NT_ABBRS[result->h.type],
+          s_raw(result->h.name)
+        );
+#endif
+        s->error = EFD_PE_NO_ERROR;
+        continue;
+      } else if (s->error == EFD_PE_CHILDREN_DONE) {
+        // we've hit the end of this object: return
+#ifdef DEBUG_TRACE_EFD_PARSING
+        fprintf(
+          stderr,
+          "  EFD parsing:%s:%s:children-done\n",
+          EFD_NT_ABBRS[result->h.type],
+          s_raw(result->h.name)
+        );
+#endif
+        s->error = EFD_PE_NO_ERROR;
+        break;
+      } else if (s->error == EFD_PE_CLOSING_BRACE) {
+        // we've probably hit the end of this object: rewind and return
+#ifdef DEBUG_TRACE_EFD_PARSING
+        fprintf(
+          stderr,
+          "  EFD parsing:%s:%s:closing-brace\n",
+          EFD_NT_ABBRS[result->h.type],
+          s_raw(result->h.name)
+        );
+#endif
+        s->error = EFD_PE_NO_ERROR;
         efd_parse_copy_state(&back, s);
-      } // otherwise return w/ error
-      break;
-    } else if (child == NULL) {
-      break;
-    } else {
-      if (child->h.type == EFD_NT_GLOBAL_INT) {
-        efd_set_global_i(child->h.name, child->b.as_integer.value);
-#ifdef DEBUG_TRACE_EFD_CLEANUP
-        fprintf(stderr, "Cleanup after setting global I.\n");
-#endif
-        cleanup_efd_node(child);
-      } else if (child->h.type == EFD_NT_GLOBAL_NUM) {
-        efd_set_global_n(child->h.name, child->b.as_number.value);
-#ifdef DEBUG_TRACE_EFD_CLEANUP
-        fprintf(stderr, "Cleanup after setting global N.\n");
-#endif
-        cleanup_efd_node(child);
-      } else if (child->h.type == EFD_NT_GLOBAL_STR) {
-        efd_set_global_s(child->h.name, child->b.as_string.value);
-#ifdef DEBUG_TRACE_EFD_CLEANUP
-        fprintf(stderr, "Cleanup after setting global S.\n");
-#endif
-        cleanup_efd_node(child);
+        break;
       } else {
-        efd_add_child(result, child);
+        // a real error that we should throw up the stack
+#ifdef DEBUG_TRACE_EFD_PARSING
+        fprintf(
+          stderr,
+          "  EFD parsing:%s:%s:error-up\n",
+          EFD_NT_ABBRS[result->h.type],
+          s_raw(result->h.name)
+        );
+#endif
+        break;
       }
+    } else {
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "  EFD parsing:%s:%s:child\n",
+        EFD_NT_ABBRS[result->h.type],
+        s_raw(result->h.name)
+      );
+#endif
+      efd_add_child(result, child);
     }
   }
+  efd_parse_scrub_state(&back);
 }
 
-void efd_parse_link(efd_node *result, efd_parse_state *s, efd_index *cr) {
+void efd_parse_link(efd_node *result, efd_parse_state *s) {
   string *name;
   efd_address *target;
   efd_address *tail;
   efd_parse_state back;
+  back.current_address = NULL;
 
   target = efd_parse_address(s);
-  if (efd_parse_failed(s)) { return; }
+  if (efd_parse_failed(s)) {
+#ifdef DEBUG_TRACE_EFD_PARSING
+      fprintf(
+        stderr,
+        "! EFD parsing:%s:%s:bad-address\n",
+        EFD_NT_ABBRS[result->h.type],
+        s_raw(result->h.name)
+      );
+#endif
+    return;
+  }
 
   efd_parse_copy_state(s, &back);
   name = efd_parse_annotation(s, EFD_PARSER_RENAME);
@@ -340,6 +632,7 @@ void efd_parse_link(efd_node *result, efd_parse_state *s, efd_index *cr) {
       }
       name = copy_string(tail->name);
     } else {
+      efd_parse_scrub_state(&back);
       return;
     }
   }
@@ -347,33 +640,40 @@ void efd_parse_link(efd_node *result, efd_parse_state *s, efd_index *cr) {
   cleanup_string(result->h.name);
   result->h.name = name;
   result->b.as_link.target = target;
+  efd_parse_scrub_state(&back);
 }
 
-void efd_parse_function(efd_node *result, efd_parse_state *s, efd_index *cr) {
+void efd_parse_function(efd_node *result, efd_parse_state *s) {
   result->b.as_function.function = efd_parse_annotation(s, EFD_PARSER_COLON);
   if (efd_parse_failed(s)) { return; }
 
-  efd_parse_children(result, s, cr);
+  efd_parse_children(result, s);
 }
 
-void efd_parse_proto(efd_node *result, efd_parse_state *s, efd_index *cr) {
+void efd_parse_proto(efd_node *result, efd_parse_state *s) {
   result->b.as_proto.format = efd_parse_annotation(s, EFD_PARSER_COLON);
   if (efd_parse_failed(s)) { return; }
 
   efd_node *proto = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
-  efd_parse_children(proto, s, cr);
+  efd_parse_children(proto, s);
   if (efd_parse_failed(s)) {
-    fprintf(stderr, "Cleanup proto parse failure.\n");
+#ifdef DEBUG_TRACE_EFD_CLEANUP
+    fprintf(
+      stderr,
+      "~ EFD cleanup[%p]:%s:proto-parse-failure\n",
+      proto,
+      s_raw(proto->h.name)
+    );
+#endif
     cleanup_efd_node(proto);
-    cleanup_string(result->b.as_proto.format);
     return;
   }
 
   result->b.as_proto.input = proto;
 }
 
-void efd_parse_integer(efd_node *result, efd_parse_state *s, efd_index *cr) {
-  efd_int_t i = efd_parse_int_or_ref(s, cr);
+void efd_parse_integer(efd_node *result, efd_parse_state *s) {
+  efd_int_t i = efd_parse_int_or_ref(s);
   if (efd_parse_failed(s)) {
     return;
   } else {
@@ -381,8 +681,8 @@ void efd_parse_integer(efd_node *result, efd_parse_state *s, efd_index *cr) {
   }
 }
 
-void efd_parse_number(efd_node *result, efd_parse_state *s, efd_index *cr) {
-  efd_num_t n = efd_parse_float_or_ref(s, cr);
+void efd_parse_number(efd_node *result, efd_parse_state *s) {
+  efd_num_t n = efd_parse_float_or_ref(s);
   if (efd_parse_failed(s)) {
     return;
   } else {
@@ -390,21 +690,21 @@ void efd_parse_number(efd_node *result, efd_parse_state *s, efd_index *cr) {
   }
 }
 
-void efd_parse_string(efd_node *result, efd_parse_state *s, efd_index *cr) {
-  result->b.as_string.value = efd_parse_str_or_ref(s, cr);
+void efd_parse_string(efd_node *result, efd_parse_state *s) {
+  result->b.as_string.value = efd_parse_str_or_ref(s);
   if (efd_parse_failed(s)) {
     return;
   }
 }
 
-void efd_parse_int_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
+void efd_parse_int_array(efd_node *result, efd_parse_state *s) {
   size_t i;
   efd_int_t val;
   list *l = create_list();
 
   s->current_index = 0;
   while (1) {
-    val = efd_parse_int_or_ref(s, cr);
+    val = efd_parse_int_or_ref(s);
     if (efd_parse_failed(s)) {
       if (is_closing_brace(s->input[s->pos])) {
         s->error = EFD_PE_NO_ERROR;
@@ -448,7 +748,7 @@ void efd_parse_int_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   cleanup_list(l);
 }
 
-void efd_parse_num_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
+void efd_parse_num_array(efd_node *result, efd_parse_state *s) {
   size_t i;
   efd_num_t val;
   void *v;
@@ -456,7 +756,7 @@ void efd_parse_num_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
 
   s->current_index = 0;
   while (1) {
-    val = efd_parse_float_or_ref(s, cr);
+    val = efd_parse_float_or_ref(s);
     if (efd_parse_failed(s)) {
       if (is_closing_brace(s->input[s->pos])) {
         s->error = EFD_PE_NO_ERROR;
@@ -501,14 +801,14 @@ void efd_parse_num_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   cleanup_list(l);
 }
 
-void efd_parse_str_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
+void efd_parse_str_array(efd_node *result, efd_parse_state *s) {
   size_t i;
   string *val;
   list *l = create_list();
 
   s->current_index = 0;
   while (1) {
-    val = efd_parse_str_or_ref(s, cr);
+    val = efd_parse_str_or_ref(s);
     if (efd_parse_failed(s)) {
       if (is_closing_brace(s->input[s->pos])) {
         s->error = EFD_PE_NO_ERROR;
@@ -555,7 +855,7 @@ void efd_parse_str_array(efd_node *result, efd_parse_state *s, efd_index *cr) {
   // Don't clean up the strings, of course, as they're now in the array.
 }
 
-void efd_parse_int_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
+void efd_parse_int_global(efd_node *result, efd_parse_state *s) {
   static char const * const e = "global integer";
   char c;
 
@@ -573,11 +873,11 @@ void efd_parse_int_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
     SKIP_OR_ELSE(s, e) //;
   }
 
-  result->b.as_integer.value = efd_parse_int_or_ref(s, cr);
+  result->b.as_integer.value = efd_parse_int_or_ref(s);
   // return whether or not there's an error...
 }
 
-void efd_parse_num_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
+void efd_parse_num_global(efd_node *result, efd_parse_state *s) {
   static char const * const e = "global number";
   char c;
 
@@ -595,11 +895,11 @@ void efd_parse_num_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
     SKIP_OR_ELSE(s, e) //;
   }
 
-  result->b.as_number.value = efd_parse_float_or_ref(s, cr);
+  result->b.as_number.value = efd_parse_float_or_ref(s);
   // return whether or not there's an error...
 }
 
-void efd_parse_str_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
+void efd_parse_str_global(efd_node *result, efd_parse_state *s) {
   static char const * const e = "global string";
   char c;
 
@@ -617,7 +917,7 @@ void efd_parse_str_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
     SKIP_OR_ELSE(s, e) //;
   }
 
-  result->b.as_string.value = efd_parse_str_or_ref(s, cr);
+  result->b.as_string.value = efd_parse_str_or_ref(s);
   if (efd_parse_failed(s)) {
     result->b.as_string.value = NULL;
     return;
@@ -627,104 +927,201 @@ void efd_parse_str_global(efd_node *result, efd_parse_state *s, efd_index *cr) {
 // Functions for parsing pieces that might be references:
 //-------------------------------------------------------
 
-efd_int_t efd_parse_int_or_ref(efd_parse_state *s, efd_index *cr) {
-  efd_reference *from, *to;
-  efd_bridge *bridge;
+efd_int_t efd_parse_int_or_ref(efd_parse_state *s) {
+  efd_int_t result;
   efd_parse_state back;
+  back.current_address = NULL;
+  efd_reference *to;
+  efd_node *gl, *glv;
 
   efd_parse_copy_state(s, &back);
   to = efd_parse_global_ref(s);
   if (efd_parse_failed(s)) {
     s->error = EFD_PE_NO_ERROR;
     efd_parse_copy_state(&back, s);
+    efd_parse_scrub_state(&back);
     return efd_parse_int(s);
   } else {
-    from = construct_efd_reference_to_here(s);
-    bridge = create_efd_bridge(from, to);
-    if (bridge != NULL) {
-      efd_add_crossref(cr, bridge);
-      return EFD_PARSER_INT_REFVAL;
+    efd_parse_scrub_state(&back);
+    if (to->type == EFD_RT_GLOBAL_INT) {
+      gl = efd_get_global(to->addr->name);
+      if (gl == NULL) {
+        s->error = EFD_PE_MALFORMED;
+        s->context = "int ref (destination does not exist)";
+        cleanup_efd_reference(to);
+        return EFD_PARSER_INT_ERROR;
+      }
+      if (gl->h.type == EFD_NT_INTEGER || gl->h.type == EFD_NT_NUMBER) {
+        cleanup_efd_reference(to);
+        return efd_as_i(gl);
+      } else if (gl->h.type == EFD_NT_FN_INT || gl->h.type == EFD_NT_FN_NUM) {
+        glv = efd_fresh_value(gl);
+        result = efd_as_i(glv);
+        cleanup_efd_node(glv);
+        cleanup_efd_reference(to);
+        return result;
+      } else {
+        s->error = EFD_PE_MALFORMED;
+        s->context = "int ref (found global with incompatible type)";
+        cleanup_efd_reference(to);
+        return EFD_PARSER_INT_ERROR;
+      }
     } else {
       s->error = EFD_PE_MALFORMED;
       s->context = "int ref (incompatible destination type)";
-      cleanup_efd_reference(from);
       cleanup_efd_reference(to);
       return EFD_PARSER_INT_ERROR;
     }
   }
 }
 
-efd_num_t efd_parse_float_or_ref(efd_parse_state *s, efd_index *cr) {
-  efd_reference *from, *to;
-  efd_bridge *bridge;
+efd_num_t efd_parse_float_or_ref(efd_parse_state *s) {
+  efd_num_t result;
   efd_parse_state back;
+  back.current_address = NULL;
+  efd_reference *to;
+  efd_node *gl, *glv;
 
   efd_parse_copy_state(s, &back);
   to = efd_parse_global_ref(s);
   if (efd_parse_failed(s)) {
     s->error = EFD_PE_NO_ERROR;
     efd_parse_copy_state(&back, s);
+    efd_parse_scrub_state(&back);
     return efd_parse_float(s);
   } else {
-    from = construct_efd_reference_to_here(s);
-    bridge = create_efd_bridge(from, to);
-    if (bridge != NULL) {
-      efd_add_crossref(cr, bridge);
-      return EFD_PARSER_FLOAT_REFVAL;
+    efd_parse_scrub_state(&back);
+    if (to->type == EFD_RT_GLOBAL_NUM) {
+      gl = efd_get_global(to->addr->name);
+      if (gl == NULL) {
+        s->error = EFD_PE_MALFORMED;
+        s->context = "num ref (destination does not exist)";
+        cleanup_efd_reference(to);
+        return EFD_PARSER_NUM_ERROR;
+      }
+      if (gl->h.type == EFD_NT_INTEGER || gl->h.type == EFD_NT_NUMBER) {
+        cleanup_efd_reference(to);
+        return efd_as_n(gl);
+      } else if (gl->h.type == EFD_NT_FN_INT || gl->h.type == EFD_NT_FN_NUM) {
+        glv = efd_fresh_value(gl);
+        result = efd_as_n(glv);
+        cleanup_efd_node(glv);
+        cleanup_efd_reference(to);
+        return result;
+      } else {
+        s->error = EFD_PE_MALFORMED;
+        s->context = "num ref (found global with incompatible type)";
+        cleanup_efd_reference(to);
+        return EFD_PARSER_NUM_ERROR;
+      }
     } else {
       s->error = EFD_PE_MALFORMED;
       s->context = "num ref (incompatible destination type)";
-      cleanup_efd_reference(from);
       cleanup_efd_reference(to);
-      return EFD_PARSER_FLOAT_ERROR;
+      return EFD_PARSER_NUM_ERROR;
     }
   }
 }
 
-string* efd_parse_str_or_ref(efd_parse_state *s, efd_index *cr) {
-  efd_reference *from, *to;
-  efd_bridge *bridge;
+string* efd_parse_str_or_ref(efd_parse_state *s) {
+  string *result;
   efd_parse_state back;
+  back.current_address = NULL;
+  efd_reference *to;
+  efd_node *gl, *glv;
 
   efd_parse_copy_state(s, &back);
   to = efd_parse_global_ref(s);
   if (efd_parse_failed(s)) {
     s->error = EFD_PE_NO_ERROR;
     efd_parse_copy_state(&back, s);
+    efd_parse_scrub_state(&back);
     return efd_parse_str(s);
   } else {
-    from = construct_efd_reference_to_here(s);
-    bridge = create_efd_bridge(from, to);
-    if (bridge != NULL) {
-      efd_add_crossref(cr, bridge);
-      return NULL;
+    efd_parse_scrub_state(&back);
+    if (to->type == EFD_RT_GLOBAL_STR) {
+      gl = efd_get_global(to->addr->name);
+      if (gl == NULL) {
+        s->error = EFD_PE_MALFORMED;
+        s->context = "str ref (destination does not exist)";
+        cleanup_efd_reference(to);
+        return NULL;
+      }
+      if (gl->h.type == EFD_NT_STRING) {
+        cleanup_efd_reference(to);
+        return copy_string(*efd__s(gl));
+      } else if (gl->h.type == EFD_NT_FN_STR) {
+        glv = efd_fresh_value(gl);
+        result = copy_string(*efd__s(glv));
+        cleanup_efd_node(glv);
+        cleanup_efd_reference(to);
+        return result;
+      } else {
+        s->error = EFD_PE_MALFORMED;
+        s->context = "str ref (found global with incompatible type)";
+        cleanup_efd_reference(to);
+        return NULL;
+      }
     } else {
       s->error = EFD_PE_MALFORMED;
       s->context = "str ref (incompatible destination type)";
-      cleanup_efd_reference(from);
       cleanup_efd_reference(to);
       return NULL;
     }
   }
 }
 
-void* efd_parse_obj_ref(efd_parse_state *s, efd_index *cr) {
-  efd_reference *from, *to;
-  efd_bridge *bridge;
+void* efd_parse_obj_ref(efd_parse_state *s) {
+  void *result;
+  efd_copy_function copier;
+  efd_reference *to;
+  efd_node *gl, *glv;
 
   to = efd_parse_global_ref(s);
   if (efd_parse_failed(s)) {
     return NULL;
   } else {
-    from = construct_efd_reference_to_here(s);
-    bridge = create_efd_bridge(from, to);
-    if (bridge != NULL) {
-      efd_add_crossref(cr, bridge);
-      return NULL;
+    if (to->type == EFD_RT_GLOBAL_OBJ) {
+      gl = efd_get_global(to->addr->name);
+      if (gl == NULL) {
+        s->error = EFD_PE_MALFORMED;
+        s->context = "obj ref (destination does not exist)";
+        cleanup_efd_reference(to);
+        return NULL;
+      }
+      if (gl->h.type == EFD_NT_OBJECT) {
+        copier = efd_lookup_copier(gl->b.as_object.format);
+        if (copier == NULL) {
+          efd_report_error(
+            s_("Error finding copier during attempt get reference value from:"),
+            gl
+          );
+        }
+        cleanup_efd_reference(to);
+        return copier(gl->b.as_object.value);
+      } else if (gl->h.type == EFD_NT_FN_OBJ) {
+        glv = efd_fresh_value(gl);
+        result = copy_string(*efd__s(glv));
+        copier = efd_lookup_copier(glv->b.as_object.format);
+        if (copier == NULL) {
+          efd_report_error(
+            s_("Error finding copier during attempt get reference value from:"),
+            glv
+          );
+        }
+        result = copier(glv->b.as_object.value);
+        cleanup_efd_node(glv);
+        cleanup_efd_reference(to);
+        return result;
+      } else {
+        s->error = EFD_PE_MALFORMED;
+        s->context = "obj ref (found global with incompatible type)";
+        cleanup_efd_reference(to);
+        return NULL;
+      }
     } else {
       s->error = EFD_PE_MALFORMED;
       s->context = "obj ref (incompatible destination type)";
-      cleanup_efd_reference(from);
       cleanup_efd_reference(to);
       return NULL;
     }
@@ -774,9 +1171,8 @@ char efd_parse_open(efd_parse_state *s) {
   return c;
 }
 
-void efd_parse_close(efd_parse_state *s, char otype) {
+void efd_parse_close(efd_parse_state *s) {
   static char* e = "closing brace";
-  char ctype;
   SKIP_OR_ELSE(s, e) //;
 
   if (efd_parse_atend(s)) {
@@ -784,22 +1180,13 @@ void efd_parse_close(efd_parse_state *s, char otype) {
     s->context = e;
     return;
   }
-  if (otype == EFD_PARSER_OPEN_ANGLE) {
-    ctype = EFD_PARSER_CLOSE_ANGLE;
-  } else if (otype == EFD_PARSER_OPEN_PAREN) {
-    ctype = EFD_PARSER_CLOSE_PAREN;
-  } else if (otype == EFD_PARSER_OPEN_CURLY) {
-    ctype = EFD_PARSER_CLOSE_CURLY;
-  } else {
-    ctype = EFD_PARSER_CLOSE_BRACE;
-  }
-  if (s->input[s->pos] != ctype) {
+  if (s->input[s->pos] != s->next_closing_brace) {
     s->error = EFD_PE_MALFORMED;
     s->context = e;
     return;
   }
   s->pos += 1;
-  if (ctype == EFD_PARSER_CLOSE_PAREN) {
+  if (s->next_closing_brace == EFD_PARSER_CLOSE_PAREN) {
     return;
   } // other types must be doubled
 
@@ -808,7 +1195,7 @@ void efd_parse_close(efd_parse_state *s, char otype) {
     s->context = e;
     return;
   }
-  if (s->input[s->pos] != ctype) {
+  if (s->input[s->pos] != s->next_closing_brace) {
     s->error = EFD_PE_MALFORMED;
     s->context = e;
     return;
@@ -844,7 +1231,7 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
       return EFD_NT_CONTAINER;
     case 'L':
       s->pos += 1;
-      return EFD_NT_LINK;
+      return EFD_NT_ROOT_LINK;
     case 'l':
       s->pos += 1;
       return EFD_NT_LOCAL_LINK;
@@ -894,26 +1281,15 @@ efd_node_type efd_parse_type(efd_parse_state *s) {
     case 'G':
       s->pos += 1;
       if (efd_parse_atend(s)) {
-        s->error = EFD_PE_INCOMPLETE;
-        s->context = e;
-        return EFD_NT_INVALID;
+        return EFD_NT_GLOBAL;
       }
       c = s->input[s->pos];
       switch (c) {
         default:
-          s->error = EFD_PE_MALFORMED;
-          s->context = e;
-          return EFD_NT_INVALID;
-
-        case 'i':
+          return EFD_NT_GLOBAL;
+        case 'L':
           s->pos += 1;
-          return EFD_NT_GLOBAL_INT;
-        case 'n':
-          s->pos += 1;
-          return EFD_NT_GLOBAL_NUM;
-        case 's':
-          s->pos += 1;
-          return EFD_NT_GLOBAL_STR;
+          return EFD_NT_GLOBAL_LINK;
       }
       break;
     case 'f':
@@ -1356,7 +1732,7 @@ efd_num_t efd_parse_float(efd_parse_state *s) {
         } else {
           s->error = EFD_PE_MALFORMED;
           s->context = "number";
-          return EFD_PARSER_FLOAT_ERROR;
+          return EFD_PARSER_NUM_ERROR;
         }
         break;
 
@@ -1367,7 +1743,7 @@ efd_num_t efd_parse_float(efd_parse_state *s) {
           } else {
             s->error = EFD_PE_MALFORMED;
             s->context = "number (multiple signs)";
-            return EFD_PARSER_FLOAT_ERROR;
+            return EFD_PARSER_NUM_ERROR;
           }
         } else if (state == EFD_FLOAT_STATE_EXP_SIGN) {
           if (expsign == 0) {
@@ -1401,7 +1777,7 @@ efd_num_t efd_parse_float(efd_parse_state *s) {
         } else if (state == EFD_FLOAT_STATE_PRE) {
           s->error = EFD_PE_MALFORMED;
           s->context = "number (initial '+')";
-          return EFD_PARSER_FLOAT_ERROR;
+          return EFD_PARSER_NUM_ERROR;
         } else {
           state = EFD_FLOAT_STATE_DONE;
           s->pos -= 1; // about to be incremented before leaving while
@@ -1512,7 +1888,7 @@ efd_num_t efd_parse_float(efd_parse_state *s) {
     if (count > EFD_PARSER_MAX_DIGITS) {
       s->error = EFD_PE_MALFORMED;
       s->context = "number (too many digits)";
-      return EFD_PARSER_FLOAT_ERROR;
+      return EFD_PARSER_NUM_ERROR;
     }
   }
   if (
@@ -1532,7 +1908,7 @@ efd_num_t efd_parse_float(efd_parse_state *s) {
   } else {
     s->error = EFD_PE_MALFORMED;
     s->context = "number";
-    return EFD_PARSER_FLOAT_ERROR;
+    return EFD_PARSER_NUM_ERROR;
   }
 }
 
@@ -1656,10 +2032,8 @@ char * efd_purify_string(
 
 efd_reference* construct_efd_reference_to_here(efd_parse_state* s) {
   efd_ref_type type = efd_nt__rt(s->current_node->h.type);
-  efd_address *addr = construct_efd_address_of_node(s->current_node);
   intptr_t idx = s->current_index;
-  efd_reference *result = create_efd_reference(type, addr, idx);
-  cleanup_efd_address(addr);
+  efd_reference *result = create_efd_reference(type, s->current_address, idx);
   return result;
 }
 
@@ -1700,6 +2074,9 @@ efd_reference* efd_parse_global_ref(efd_parse_state *s) {
       break;
     case EFD_RT_STR:
       type = EFD_RT_GLOBAL_STR;
+      break;
+    case EFD_RT_OBJ:
+      type = EFD_RT_GLOBAL_OBJ;
       break;
     default:
       s->error = EFD_PE_MALFORMED;

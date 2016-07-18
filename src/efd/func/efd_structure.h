@@ -282,9 +282,19 @@ efd_node * efd_fn_lookup_key(
   entries = efd_lookup_all(node, s_entry);
 
   this_value = NULL;
+
+  // DEBUG: REMOVE
+  fprintf(stderr, "lookup_key::look_for: ");
+  s_fprintln(stderr, efd_repr(look_for));
+
   for (i = 0; i < l_get_length(entries); ++i) {
     this_entry = efd_get_value((efd_node*) l_get_item(entries, i), cache);
     this_key = efd_get_value(efd_lookup(this_entry, s_key), cache);
+
+    // DEBUG: REMOVE
+    fprintf(stderr, "lookup_key::key: ");
+    s_fprintln(stderr, efd_repr(this_key));
+
     if (efd_equivalent(look_for, this_key)) {
       this_value = efd_get_value(efd_lookup(this_entry, s_value), cache);
       break;

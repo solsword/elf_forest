@@ -15,8 +15,10 @@ MAKEFLAGS+=--assume-old=$(TEST_DIR)
 
 # Compiler & Flags:
 CC=gcc
-#DEBUG_FLAGS=-g -O1 -DDEBUG -DDEBUG_DETECT_JUMPS -DDEBUG_TRACE_EFD_CLEEANUP -DPROFILE_MEM -DPROFILE_TIME
-DEBUG_FLAGS=-g -O1 -DDEBUG -DDEBUG_DETECT_JUMPS -DPROFILE_MEM -DPROFILE_TIME
+DEBUG_FLAGS=-g -O1 -DDEBUG -DDEBUG_DETECT_JUMPS
+DEBUG_FLAGS+=-DPROFILE_MEM -DPROFILE_TIME
+#DEBUG_FLAGS+=-DDEBUG_TRACE_EFD_CLEANUP
+#DEBUG_FLAGS+=-DDEBUG_TRACE_EFD_PARSING
 PROFILE_FLAGS=
 #PROFILE_FLAGS=-pg
 #PROFILE_FLAGS=-pg -fprofile-arcs -ftest-coverage
@@ -177,11 +179,16 @@ $(SRC_DIR)/efd/conv.list: $(SRC_DIR) $(SRC_DIR)/efd/conv/*
 		| sed "s/$$/\"/" \
 		>> $(SRC_DIR)/efd/conv.list
 
+EFD_GLOBAL=^.*EFD_GL.*(\([^,]*\),\s*\([^,= ]*\)\s*=\s*\?\([^, ]*\)\s*).*$$
 $(DATA_DIR)/auto_globals.efd: $(DATA_DIR) $(OBJ_DIR)/*
+	echo "// auto-generated global values gleaned from source code" \
+		> $(DATA_DIR)/auto_globals.efd
+	echo -e "##G auto_globals\n" >> $(DATA_DIR)/auto_globals.efd
 	grep -rh EFD_GL[\(_] $(SRC_DIR) \
 		| grep -v "#define" \
-		| sed "s/^.*EFD_GL.*(\([^,]*\),\([^,]*\)).*$$/[[G\1 \2]]/" \
-		> $(DATA_DIR)/auto_globals.efd
+		| sed "s/$(EFD_GLOBAL)/[[\1 \2 \3]]/" \
+		>> $(DATA_DIR)/auto_globals.efd
+	echo -e "\n##" >> $(DATA_DIR)/auto_globals.efd
 
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)

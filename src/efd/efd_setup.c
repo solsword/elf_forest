@@ -99,11 +99,8 @@ void setup_elf_forest_data(int track_error_contexts) {
   EFD_COMMON_DIR = fs_dirchild(FS_RES_DIR, EFD_COMMON_DIR_NAME);
 
   EFD_ROOT = create_efd_node(EFD_NT_CONTAINER, EFD_ROOT_NAME);
-  EFD_COMMON_INDEX = create_efd_index();
 
-  EFD_INT_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
-  EFD_NUM_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
-  EFD_STR_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
+  EFD_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
 
   EFD_FUNCTION_DICT = create_dictionary(EFD_FUNCTION_REGISTRY_SIZE);
   EFD_GENERATOR_DICT = create_dictionary(EFD_GENERATOR_REGISTRY_SIZE);
@@ -142,10 +139,8 @@ void cleanup_elf_forest_data(void) {
 
   cleanup_efd_node(EFD_ROOT);
 
-  cleanup_dictionary(EFD_INT_GLOBALS);
-  cleanup_dictionary(EFD_NUM_GLOBALS);
-  d_foreach(EFD_STR_GLOBALS, &cleanup_v_string);
-  cleanup_dictionary(EFD_STR_GLOBALS);
+  d_foreach(EFD_GLOBALS, &cleanup_v_efd_node);
+  cleanup_dictionary(EFD_GLOBALS);
 
   cleanup_dictionary(EFD_FUNCTION_DICT);
   cleanup_dictionary(EFD_FORMAT_DICT);
@@ -243,7 +238,7 @@ void load_common_efd_file(
   void* v_context
 ) {
   // TODO: consider return value?
-  efd_parse_file(EFD_ROOT, EFD_COMMON_INDEX, s_raw(filename));
+  efd_parse_file(EFD_ROOT, s_raw(filename));
 }
 
 void load_common_efd(void) {
@@ -259,11 +254,9 @@ void load_common_efd(void) {
     NULL
   );
 
-  // Process references:
-  efd_process_references(EFD_ROOT, EFD_COMMON_INDEX);
-
   // Unpack prototypes into objects:
   efd_unpack_node(EFD_ROOT);
+  d_foreach(EFD_GLOBALS, &efd_unpack_v_node);
 }
 
 void save_common_efd(void) {

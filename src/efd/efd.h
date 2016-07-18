@@ -26,43 +26,42 @@
  *********/
 
 // Raw types that a single EFD node can take on:
-#define EFD_NUM_TYPES 35
+#define EFD_NUM_TYPES 34
 enum efd_node_type_e {
-  EFD_GL(i, EFD_NT_INVALID    = 0 ), //  -    marks an invalid node internally
-  EFD_GL(i, EFD_NT_ANY        = 1 ), //  -    stands for any valid type
-  EFD_GL(i, EFD_NT_CONTAINER  = 2 ), // 'c'   no data, just children
-  EFD_GL(i, EFD_NT_SCOPE      = 3 ), // 'V'   scope
-  EFD_GL(i, EFD_NT_REROUTE    = 4 ), // 'R'   a link for routing variables
-  EFD_GL(i, EFD_NT_LINK       = 5 ), // 'L'   global link
-  EFD_GL(i, EFD_NT_LOCAL_LINK = 6 ), // 'l'   local link
-  EFD_GL(i, EFD_NT_VARIABLE   = 7 ), // 'v'   variable
-  EFD_GL(i, EFD_NT_PROTO      = 8 ), //  -    raw object data pre-assembly
-  EFD_GL(i, EFD_NT_OBJECT     = 9 ), // 'o'   automatic parse-to-struct
-  EFD_GL(i, EFD_NT_INTEGER    = 10 ), // 'i'   efd_int_t
-  EFD_GL(i, EFD_NT_NUMBER     = 11), // 'n'   efd_num_t
-  EFD_GL(i, EFD_NT_STRING     = 12), // 's'   quoted string
-  EFD_GL(i, EFD_NT_ARRAY_INT  = 13), // 'ai'  array of efd_int_t
-  EFD_GL(i, EFD_NT_ARRAY_NUM  = 14), // 'an'  array of efd_num_t
-  EFD_GL(i, EFD_NT_ARRAY_STR  = 15), // 'as'  array of quoted strings
-  EFD_GL(i, EFD_NT_GLOBAL_INT = 16), // 'Gi'  global integer
-  EFD_GL(i, EFD_NT_GLOBAL_NUM = 17), // 'Gn'  global numeric
-  EFD_GL(i, EFD_NT_GLOBAL_STR = 18), // 'Gs'  global string
-  EFD_GL(i, EFD_NT_FUNCTION   = 19), // 'ff'  function (returns a container)
-  EFD_GL(i, EFD_NT_FN_OBJ     = 20), // 'fo'  function (returns an object)
-  EFD_GL(i, EFD_NT_FN_INT     = 21), // 'fi'  function (returns an integer)
-  EFD_GL(i, EFD_NT_FN_NUM     = 22), // 'fn'  function (returns a number)
-  EFD_GL(i, EFD_NT_FN_STR     = 23), // 'fs'  function (returns a string)
-  EFD_GL(i, EFD_NT_FN_AR_INT  = 24), // 'fai' function (returns array of ints)
-  EFD_GL(i, EFD_NT_FN_AR_NUM  = 25), // 'fan' function (returns array of nums)
-  EFD_GL(i, EFD_NT_FN_AR_STR  = 26), // 'fas' function (returns array of strs)
-  EFD_GL(i, EFD_NT_GENERATOR  = 27), // 'gg'  generator (returns containers)
-  EFD_GL(i, EFD_NT_GN_OBJ     = 28), // 'go'  generator (returns objects)
-  EFD_GL(i, EFD_NT_GN_INT     = 29), // 'gi'  generator (returns integers)
-  EFD_GL(i, EFD_NT_GN_NUM     = 30), // 'gn'  generator (returns numbers)
-  EFD_GL(i, EFD_NT_GN_STR     = 31), // 'gs'  generator (returns strings)
-  EFD_GL(i, EFD_NT_GN_AR_INT  = 32), // 'gai' generator (returns arrays of ints)
-  EFD_GL(i, EFD_NT_GN_AR_NUM  = 33), // 'gan' generator (returns arrays of nums)
-  EFD_GL(i, EFD_NT_GN_AR_STR  = 34), // 'gas' generator (returns arrays of strs)
+  EFD_GL(i, EFD_NT_INVALID     = 0 ), // -    marks an invalid node internally
+  EFD_GL(i, EFD_NT_ANY         = 1 ), // -    stands for any valid type
+  EFD_GL(i, EFD_NT_CONTAINER   = 2 ), //'c'   no data, just children
+  EFD_GL(i, EFD_NT_SCOPE       = 3 ), //'V'   scope
+  EFD_GL(i, EFD_NT_GLOBAL      = 4 ), //'G'   globals declaration
+  EFD_GL(i, EFD_NT_REROUTE     = 5 ), //'R'   a link for routing var resolution
+  EFD_GL(i, EFD_NT_ROOT_LINK   = 6 ), //'L'   root link
+  EFD_GL(i, EFD_NT_GLOBAL_LINK = 7 ), //'GL'  global link
+  EFD_GL(i, EFD_NT_LOCAL_LINK  = 8 ), //'l'   local link
+  EFD_GL(i, EFD_NT_VARIABLE    = 9 ), //'v'   variable
+  EFD_GL(i, EFD_NT_PROTO       = 10), // -    raw object data pre-assembly
+  EFD_GL(i, EFD_NT_OBJECT      = 11), //'o'   automatic parse-to-struct
+  EFD_GL(i, EFD_NT_INTEGER     = 12), //'i'   efd_int_t
+  EFD_GL(i, EFD_NT_NUMBER      = 13), //'n'   efd_num_t
+  EFD_GL(i, EFD_NT_STRING      = 14), //'s'   quoted string
+  EFD_GL(i, EFD_NT_ARRAY_INT   = 15), //'ai'  array of efd_int_t
+  EFD_GL(i, EFD_NT_ARRAY_NUM   = 16), //'an'  array of efd_num_t
+  EFD_GL(i, EFD_NT_ARRAY_STR   = 17), //'as'  array of quoted strings
+  EFD_GL(i, EFD_NT_FUNCTION    = 18), //'ff'  function (returns a container)
+  EFD_GL(i, EFD_NT_FN_OBJ      = 19), //'fo'  function (returns an object)
+  EFD_GL(i, EFD_NT_FN_INT      = 20), //'fi'  function (returns an integer)
+  EFD_GL(i, EFD_NT_FN_NUM      = 21), //'fn'  function (returns a number)
+  EFD_GL(i, EFD_NT_FN_STR      = 22), //'fs'  function (returns a string)
+  EFD_GL(i, EFD_NT_FN_AR_INT   = 23), //'fai' function (returns array of ints)
+  EFD_GL(i, EFD_NT_FN_AR_NUM   = 24), //'fan' function (returns array of nums)
+  EFD_GL(i, EFD_NT_FN_AR_STR   = 25), //'fas' function (returns array of strs)
+  EFD_GL(i, EFD_NT_GENERATOR   = 26), //'gg'  generator (returns containers)
+  EFD_GL(i, EFD_NT_GN_OBJ      = 27), //'go'  generator (returns objects)
+  EFD_GL(i, EFD_NT_GN_INT      = 28), //'gi'  generator (returns integers)
+  EFD_GL(i, EFD_NT_GN_NUM      = 29), //'gn'  generator (returns numbers)
+  EFD_GL(i, EFD_NT_GN_STR      = 30), //'gs'  generator (returns strings)
+  EFD_GL(i, EFD_NT_GN_AR_INT   = 31), //'gai' generator (returns arrays of ints)
+  EFD_GL(i, EFD_NT_GN_AR_NUM   = 32), //'gan' generator (returns arrays of nums)
+  EFD_GL(i, EFD_NT_GN_AR_STR   = 33), //'gas' generator (returns arrays of strs)
 };
 typedef enum efd_node_type_e efd_node_type;
 
@@ -72,6 +71,7 @@ enum efd_ref_type_e {
   EFD_RT_GLOBAL_INT,     // (efd_int_t) global integer
   EFD_RT_GLOBAL_NUM,     // (efd_num_t) global number
   EFD_RT_GLOBAL_STR,     // (string*) global string
+  EFD_RT_GLOBAL_OBJ,     // (void*) global object
   EFD_RT_NODE,           // (void*) a pointer to an entire EFD node
   EFD_RT_CHAIN,          // (void*) a pointer to an EFD node which is a link
   EFD_RT_OBJ,            // (void*) contents an object node
@@ -163,15 +163,6 @@ typedef struct efd_address_s efd_address;
 struct efd_reference_s;
 typedef struct efd_reference_s efd_reference;
 
-// A bridge contains two compatible references:
-struct efd_bridge_s;
-typedef struct efd_bridge_s efd_bridge;
-
-// A comprehensive set of cross-references that consists of a list of bridges
-// each of which is either processed or unprocessed.
-struct efd_index_s;
-typedef struct efd_index_s efd_index;
-
 // A cache of function node eval results, including tracking for which node(s)
 // are currently being evaluated to detect circular dependencies.
 struct efd_value_cache_s;
@@ -257,11 +248,8 @@ extern char const * const EFD_NT_NAMES[];
 extern char const * const EFD_NT_ABBRS[];
 
 extern efd_node *EFD_ROOT;
-extern efd_index *EFD_COMMON_INDEX;
 
-extern dictionary *EFD_INT_GLOBALS;
-extern dictionary *EFD_NUM_GLOBALS;
-extern dictionary *EFD_STR_GLOBALS;
+extern dictionary *EFD_GLOBALS;
 
 /*************************
  * Structure Definitions *
@@ -360,16 +348,6 @@ struct efd_reference_s {
   intptr_t idx;
 };
 
-struct efd_bridge_s {
-  efd_reference *from;
-  efd_reference *to;
-};
-
-struct efd_index_s {
-  list *unprocessed;
-  list *processed;
-};
-
 struct efd_value_cache_s {
   map *values;
   efd_node const * active;
@@ -437,7 +415,9 @@ void efd_v_assert_object_format(void *v_node, void *v_fmt);
 // Reports an error with the given node, displaying the given message on stderr
 // along with a representation of the given node. Devours the given message, so
 // the caller doesn't need to free it. The _full version prints a full
-// representation of the given node instead of an abbreviation.
+// representation of the given node instead of an abbreviation, while the
+// _light version prints just the node's address.
+void efd_report_error_light(string *message, efd_node const * const n);
 void efd_report_error(string *message, efd_node const * const n);
 void efd_report_error_full(string *message, efd_node const * const n);
 
@@ -476,62 +456,80 @@ static inline size_t efd_node_depth(efd_node const * const n) {
   } while (1);
 }
 
-static inline int efd_is_link_node(efd_node const * const n) {
+static inline int efd_is_link_type(efd_node_type t) {
   return (
-    n->h.type == EFD_NT_REROUTE
- || n->h.type == EFD_NT_LINK
- || n->h.type == EFD_NT_LOCAL_LINK
- || n->h.type == EFD_NT_VARIABLE
+    t == EFD_NT_REROUTE
+ || t == EFD_NT_ROOT_LINK
+ || t == EFD_NT_GLOBAL_LINK
+ || t == EFD_NT_LOCAL_LINK
+ || t == EFD_NT_VARIABLE
+  );
+}
+
+static inline int efd_is_link_node(efd_node const * const n) {
+  return efd_is_link_type(n->h.type);
+}
+
+static inline int efd_is_container_type(efd_node_type t) {
+  return (
+    t == EFD_NT_CONTAINER
+ || t == EFD_NT_SCOPE
+ || t == EFD_NT_GLOBAL
+ || t == EFD_NT_FUNCTION
+ || t == EFD_NT_FN_OBJ
+ || t == EFD_NT_FN_INT
+ || t == EFD_NT_FN_NUM
+ || t == EFD_NT_FN_STR
+ || t == EFD_NT_FN_AR_INT
+ || t == EFD_NT_FN_AR_NUM
+ || t == EFD_NT_FN_AR_STR
+ || t == EFD_NT_GENERATOR
+ || t == EFD_NT_GN_OBJ
+ || t == EFD_NT_GN_INT
+ || t == EFD_NT_GN_NUM
+ || t == EFD_NT_GN_STR
+ || t == EFD_NT_GN_AR_INT
+ || t == EFD_NT_GN_AR_NUM
+ || t == EFD_NT_GN_AR_STR
   );
 }
 
 static inline int efd_is_container_node(efd_node const * const n) {
+  return efd_is_container_type(n->h.type);
+}
+
+static inline int efd_is_function_type(efd_node_type t) {
   return (
-    n->h.type == EFD_NT_CONTAINER
- || n->h.type == EFD_NT_SCOPE
- || n->h.type == EFD_NT_FUNCTION
- || n->h.type == EFD_NT_FN_OBJ
- || n->h.type == EFD_NT_FN_INT
- || n->h.type == EFD_NT_FN_NUM
- || n->h.type == EFD_NT_FN_STR
- || n->h.type == EFD_NT_FN_AR_INT
- || n->h.type == EFD_NT_FN_AR_NUM
- || n->h.type == EFD_NT_FN_AR_STR
- || n->h.type == EFD_NT_GENERATOR
- || n->h.type == EFD_NT_GN_OBJ
- || n->h.type == EFD_NT_GN_INT
- || n->h.type == EFD_NT_GN_NUM
- || n->h.type == EFD_NT_GN_STR
- || n->h.type == EFD_NT_GN_AR_INT
- || n->h.type == EFD_NT_GN_AR_NUM
- || n->h.type == EFD_NT_GN_AR_STR
+    t == EFD_NT_FUNCTION
+ || t == EFD_NT_FN_OBJ
+ || t == EFD_NT_FN_INT
+ || t == EFD_NT_FN_NUM
+ || t == EFD_NT_FN_STR
+ || t == EFD_NT_FN_AR_INT
+ || t == EFD_NT_FN_AR_NUM
+ || t == EFD_NT_FN_AR_STR
   );
 }
 
 static inline int efd_is_function_node(efd_node const * const n) {
+  return efd_is_function_type(n->h.type);
+}
+
+static inline int efd_is_generator_type(efd_node_type t) {
   return (
-    n->h.type == EFD_NT_FUNCTION
- || n->h.type == EFD_NT_FN_OBJ
- || n->h.type == EFD_NT_FN_INT
- || n->h.type == EFD_NT_FN_NUM
- || n->h.type == EFD_NT_FN_STR
- || n->h.type == EFD_NT_FN_AR_INT
- || n->h.type == EFD_NT_FN_AR_NUM
- || n->h.type == EFD_NT_FN_AR_STR
+    t == EFD_NT_GENERATOR
+ || t == EFD_NT_GN_OBJ
+ || t == EFD_NT_GN_INT
+ || t == EFD_NT_GN_NUM
+ || t == EFD_NT_GN_STR
+ || t == EFD_NT_GN_AR_INT
+ || t == EFD_NT_GN_AR_NUM
+ || t == EFD_NT_GN_AR_STR
   );
 }
 
 static inline int efd_is_generator_node(efd_node const * const n) {
-  return (
-    n->h.type == EFD_NT_GENERATOR
- || n->h.type == EFD_NT_GN_OBJ
- || n->h.type == EFD_NT_GN_INT
- || n->h.type == EFD_NT_GN_NUM
- || n->h.type == EFD_NT_GN_STR
- || n->h.type == EFD_NT_GN_AR_INT
- || n->h.type == EFD_NT_GN_AR_NUM
- || n->h.type == EFD_NT_GN_AR_STR
-  );
+  return efd_is_generator_type(n->h.type);
 }
 
 static inline string** efd__p_fmt(efd_node *n) {
@@ -644,6 +642,7 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
     default:
     case EFD_NT_INVALID:
     case EFD_NT_ANY:
+    case EFD_NT_GLOBAL:
       return EFD_RT_INVALID;
     case EFD_NT_CONTAINER:
     case EFD_NT_SCOPE:
@@ -665,17 +664,12 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
     case EFD_NT_GN_AR_STR:
       return EFD_RT_NODE;
     case EFD_NT_REROUTE:
-    case EFD_NT_LINK:
+    case EFD_NT_ROOT_LINK:
+    case EFD_NT_GLOBAL_LINK:
     case EFD_NT_LOCAL_LINK:
     case EFD_NT_VARIABLE:
       return EFD_RT_CHAIN;
     case EFD_NT_PROTO:
-    case EFD_NT_GLOBAL_INT:
-      return EFD_RT_GLOBAL_INT;
-    case EFD_NT_GLOBAL_NUM:
-      return EFD_RT_GLOBAL_NUM;
-    case EFD_NT_GLOBAL_STR:
-      return EFD_RT_GLOBAL_STR;
     case EFD_NT_OBJECT:
       return EFD_RT_OBJ;
     case EFD_NT_INTEGER:
@@ -797,7 +791,9 @@ efd_node * construct_efd_str_node(
   string const * const value
 );
 
-// Allocates and returns a new EFD_NT_LINK node that points to the given node.
+// Allocates and returns a new EFD_NT_ROOT_LINK node that points to the given
+// node. Note that because of the use of addresses, if the given node has
+// siblings with identical names the link may not be accurate.
 efd_node * construct_efd_link_node_to(
   string const * const name,
   efd_node const * const target
@@ -858,22 +854,6 @@ efd_reference* create_efd_reference(
 
 // Clean up memory from the given reference, including its address.
 CLEANUP_DECL(efd_reference);
-
-// Allocate and return a new bridge between the two given references. They will
-// be cleaned up when the bridge is so the caller doesn't need to track them.
-// If the types of the given references aren't compatible, it doesn't allocate
-// anything and returns NULL. In that case, the caller should clean up the from
-// and to references.
-efd_bridge * create_efd_bridge(efd_reference *from, efd_reference *to);
-
-// Clean up memory from the given bridge, including its references.
-CLEANUP_DECL(efd_bridge);
-
-// Allocate and return a new empty EFD index.
-efd_index * create_efd_index(void);
-
-// Clean up memory for the given index, including any bridges it contains.
-CLEANUP_DECL(efd_index);
 
 // Allocate and return a new empty EFD value cache.
 efd_value_cache * create_efd_value_cache(void);
@@ -1158,28 +1138,19 @@ efd_node * efd_call_function(
   efd_node * args
 );
 
-// Adds the given bridge to the given index.
-void efd_add_crossref(efd_index *cr, efd_bridge *bridge);
-
-// Overwrites reference-target values from unprocessed references with their
-// source values where available, marking the references substituted as
-// processed. Applies to the givne node and recursively to all of its children.
-void efd_process_references(efd_node *root, efd_index *cr);
-
-// Processes an EFD bridge by setting the appropriate value of the "from" node
-// to the value supplied by the "to" node.
-int efd_process_bridge(efd_bridge *b);
-
 // Unpacks this node and all of its children recursively, turning PROTO nodes
-// containing raw EFD into OBJECT nodes containing unpacked structs. Global
-// references are not dealt with (see efd_process_references).
+// containing raw EFD into OBJECT nodes containing unpacked structs.
 void efd_unpack_node(efd_node *root);
+
+// Void version of efd_unpack_node.
+void efd_unpack_v_node(void *v_node);
 
 // Packs this node and all of its children recursively, turning OBJECT nodes
 // containing unpacked structs into PROTO nodes containing EFD COLLECTIONs.
-// Like efd_unpack_node, it does not deal with global references; those must be
-// handled at serialization time.
-void efd_pack_node(efd_node *root, efd_index *cr);
+void efd_pack_node(efd_node *root);
+
+// Void version of efd_pack_node.
+void efd_pack_v_node(void *v_node);
 
 // TODO: Serialization (separate files)...
 
@@ -1197,13 +1168,10 @@ efd_pack_function efd_lookup_packer(string const * const key);
 efd_copy_function efd_lookup_copier(string const * const key);
 efd_destroy_function efd_lookup_destructor(string const * const key);
 
-// Functions for getting and setting global integers, numbers, and strings:
-efd_int_t efd_get_global_i(string const * const key);
-efd_num_t efd_get_global_n(string const * const key);
-string* efd_get_global_s(string const * const key);
-void efd_set_global_i(string const * const key, efd_int_t value);
-void efd_set_global_n(string const * const key, efd_num_t value);
-void efd_set_global_s(string const * const key, string *value);
+// Functions for getting and setting globals. Note that efd_get_global calls
+// efd_concrete on its result.
+efd_node* efd_get_global(string const * const key);
+void efd_set_global(string const * const key, efd_node *value);
 
 // A function with the same signature as a normal copy function that just
 // returns the original pointer (warning: may lead to a double-free if

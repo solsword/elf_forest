@@ -274,9 +274,14 @@
 ]]
 
 // globals:
-[[Gi GLOBAL_INT 5]]
-[[Gn GLOBAL_NUM 3.1415926]]
-[[Gs GLOBAL_STR "This string goes directly into the globals..."]]
+##G test_globals
+  [[i GLOBAL_INT 5]]
+  [[n GLOBAL_NUM 3.1415926]]
+  [[s GLOBAL_STR "This string goes directly into the globals..."]]
+  [[c GLOBAL_NODE (i 1) (i 2) (s "complex global child") ]]
+##
+
+[[ai tarray 1, 2, 3, 4, #i:GLOBAL_INT ]]
 
 // references:
 [[i refint 3]]
@@ -363,11 +368,11 @@
       [[gi *iter2:range (i 3) (i 8) (i 2) ]]
       [[gi *iter3:extend
         [[gi iter:range (i 1) (i 2) ]]
-        (i #i:EFD_GT_EXTEND_HOLD)
+        <<GL EFD_GT_EXTEND_HOLD>>
       ]]
       [[gi *iter4:extend
         [[gi iter:range (i 1) (i 2) ]]
-        (i #i:EFD_GT_EXTEND_RESTART)
+        <<GL EFD_GT_EXTEND_RESTART>>
       ]]
     ]]
     [[c values
