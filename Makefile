@@ -3,6 +3,7 @@ OBJ_DIR=obj
 BIN_DIR=bin
 OUT_DIR=out
 SRC_DIR=src
+DYN_DIR=dyn
 RES_DIR=res
 DATA_DIR=$(RES_DIR)/data
 TEST_DIR=$(OUT_DIR)/test
@@ -179,16 +180,14 @@ $(SRC_DIR)/efd/conv.list: $(SRC_DIR) $(SRC_DIR)/efd/conv/*
 		| sed "s/$$/\"/" \
 		>> $(SRC_DIR)/efd/conv.list
 
-EFD_GLOBAL=^.*EFD_GL.*(\([^,]*\),\s*\([^,= ]*\)\s*=\s*\?\([^, ]*\)\s*).*$$
-$(DATA_DIR)/globals/auto.efd: $(DATA_DIR)/globals $(OBJ_DIR)/*
-	echo "// auto-generated global values gleaned from source code" \
-		> $(DATA_DIR)/globals/auto.efd
-	echo -e "##G auto_globals\n" >> $(DATA_DIR)/globals/auto.efd
-	grep -rh EFD_GL\( $(SRC_DIR) \
-		| grep -v "#define" \
-		| sed "s/$(EFD_GLOBAL)/[[\1 \2 \3]]/" \
-		>> $(DATA_DIR)/globals/auto.efd
-	echo -e "\n##" >> $(DATA_DIR)/globals/auto.efd
+$(DYN_DIR)/print_efd_globals.c: $(DYN_DIR) $(OBJ_DIR)/*
+	./collect_efd_globals.sh $(SRC_DIR) $(DYN_DIR)
+
+$(DATA_DIR)/globals/auto.efd: $(BIN_DIR)/print_efd_globals
+	$(BIN_DIR)/print_efd_globals > $(DATA_DIR)/globals/auto.efd
+
+$(DYN_DIR):
+	mkdir -p $(DYN_DIR)
 
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
@@ -239,6 +238,13 @@ include $(OBJ_DIR)/obj.d
 # How to build things based on their dependencies as specified in obj.d:
 $(OBJ_DIR)/%.o:
 	$(CC) $(CFLAGS) $< -o $@
+
+# Dynamic sources:
+$(OBJ_DIR)/print_efd_globals.o: $(DYN_DIR)/print_efd_globals.c
+	$(CC) $(CFLAGS) $< -o $@
+
+$(BIN_DIR)/print_efd_globals: $(OBJ_DIR)/print_efd_globals.o $(BIN_DIR)
+	$(CC) $(OBJ_DIR)/print_efd_globals.o $(LFLAGS) -o $(BIN_DIR)/print_efd_globals
 
 $(BIN_DIR)/elf_forest: $(CORE_OBJECTS) $(MAIN_OBJECTS) $(BIN_DIR) $(OUT_DIR)
 	$(CC) $(CORE_OBJECTS) $(MAIN_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/elf_forest

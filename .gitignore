@@ -2,6 +2,7 @@
 /obj
 /bin
 /out
+/dyn
 gmon.out
 /prof
 /supr

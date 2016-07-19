@@ -87,14 +87,17 @@
 // ------------------
 
 // Controls the size of strata relative to the world map size.
-#define STRATA_AVG_SIZE 0.25
+static float const STRATA_AVG_SIZE = 0.25;
+EFD_GL(n, STRATA_AVG_SIZE)
 
 // Controls how many strata to generate (a multiple of MAX_STRATA_LAYERS).
 //#define STRATA_COMPLEXITY 3.0
-#define STRATA_COMPLEXITY (1/18.0)
+static float const STRATA_COMPLEXITY = (1.0/18.0);
+EFD_GL(n, STRATA_COMPLEXITY)
 
 // The base stratum thickness (before an exponential distribution).
-#define BASE_STRATUM_THICKNESS 10.0
+static float const BASE_STRATUM_THICKNESS = 10.0;
+EFD_GL(n, BASE_STRATUM_THICKNESS);
 
 /***********
  * Globals *

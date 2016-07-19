@@ -17,23 +17,39 @@
  ************************/
 
 enum material_origin_e {
-  EFD_GL(i, MO_UNKNOWN = 0), // ???
-  EFD_GL(i, MO_PURE_ELEMENT = 1), // a pure element
-  EFD_GL(i, MO_ATMOSPHERE = 2), // air
-  EFD_GL(i, MO_WATER = 3), // water; clouds
-  EFD_GL(i, MO_IGNEOUS_MINERAL = 4), // stone
-  EFD_GL(i, MO_SEDIMENTARY_MINERAL = 5), // stone
-  EFD_GL(i, MO_METAMORPHIC_MINERAL = 6), // stone
-  EFD_GL(i, MO_METALLIC = 7), // iron
-  EFD_GL(i, MO_ERODED = 8), // clay
-  EFD_GL(i, MO_DECOMPOSED = 9), // dirt; coal
-  EFD_GL(i, MO_ORGANIC = 10), // hay; flesh; wood
-  EFD_GL(i, MO_REACTION = 11), // acid
-  EFD_GL(i, MO_COMBUSTION = 12), // charcoal; smoke
-  EFD_GL(i, MO_MIXTURE = 13), // plaster; cement
-  EFD_GL(i, MO_MAGIC = 14) // ectoplasm; ether
+  MO_UNKNOWN = 0, // ???
+  MO_PURE_ELEMENT, // a pure element
+  MO_ATMOSPHERE, // air
+  MO_WATER, // water; clouds
+  MO_IGNEOUS_MINERAL, // stone
+  MO_SEDIMENTARY_MINERAL, // stone
+  MO_METAMORPHIC_MINERAL, // stone
+  MO_METALLIC, // iron
+  MO_ERODED, // clay
+  MO_DECOMPOSED, // dirt; coal
+  MO_ORGANIC, // hay; flesh; wood
+  MO_REACTION, // acid
+  MO_COMBUSTION, // charcoal; smoke
+  MO_MIXTURE, // plaster; cement
+  MO_MAGIC, // ectoplasm; ether
 };
 typedef enum material_origin_e material_origin;
+
+EFD_GL(i, MO_UNKNOWN)
+EFD_GL(i, MO_PURE_ELEMENT)
+EFD_GL(i, MO_ATMOSPHERE)
+EFD_GL(i, MO_WATER)
+EFD_GL(i, MO_IGNEOUS_MINERAL)
+EFD_GL(i, MO_SEDIMENTARY_MINERAL)
+EFD_GL(i, MO_METAMORPHIC_MINERAL)
+EFD_GL(i, MO_METALLIC)
+EFD_GL(i, MO_ERODED)
+EFD_GL(i, MO_DECOMPOSED)
+EFD_GL(i, MO_ORGANIC)
+EFD_GL(i, MO_REACTION)
+EFD_GL(i, MO_COMBUSTION)
+EFD_GL(i, MO_MIXTURE)
+EFD_GL(i, MO_MAGIC)
 
 // A material carries with it the basic properties of origin and form as well
 // as general physical properties, some of which are only applicable to certain

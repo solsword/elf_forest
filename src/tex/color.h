@@ -15,13 +15,19 @@
  *********/
 
 enum {
-  EFD_GL(i, CFMT_INVALID = 0),
-  EFD_GL(i, CFMT_RGB = 1),
-  EFD_GL(i, CFMT_XYZ = 2),
-  EFD_GL(i, CFMT_LAB = 3),
-  EFD_GL(i, CFMT_LCH = 4)
+  CFMT_INVALID = 0,
+  CFMT_RGB,
+  CFMT_XYZ,
+  CFMT_LAB,
+  CFMT_LCH
 } color_format_e;
 typedef enum color_format_e color_format;
+
+EFD_GL(i, CFMT_INVALID)
+EFD_GL(i, CFMT_RGB)
+EFD_GL(i, CFMT_XYZ)
+EFD_GL(i, CFMT_LAB)
+EFD_GL(i, CFMT_LCH)
 
 /*********
  * Types *

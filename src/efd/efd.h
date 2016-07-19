@@ -24,42 +24,77 @@
 // Raw types that a single EFD node can take on:
 #define EFD_NUM_TYPES 34
 enum efd_node_type_e {
-  EFD_GL(i, EFD_NT_INVALID     = 0 ), // -    marks an invalid node internally
-  EFD_GL(i, EFD_NT_ANY         = 1 ), // -    stands for any valid type
-  EFD_GL(i, EFD_NT_CONTAINER   = 2 ), //'c'   no data, just children
-  EFD_GL(i, EFD_NT_SCOPE       = 3 ), //'V'   scope
-  EFD_GL(i, EFD_NT_GLOBAL      = 4 ), //'G'   globals declaration
-  EFD_GL(i, EFD_NT_REROUTE     = 5 ), //'R'   a link for routing var resolution
-  EFD_GL(i, EFD_NT_ROOT_LINK   = 6 ), //'L'   root link
-  EFD_GL(i, EFD_NT_GLOBAL_LINK = 7 ), //'GL'  global link
-  EFD_GL(i, EFD_NT_LOCAL_LINK  = 8 ), //'l'   local link
-  EFD_GL(i, EFD_NT_VARIABLE    = 9 ), //'v'   variable
-  EFD_GL(i, EFD_NT_PROTO       = 10), // -    raw object data pre-assembly
-  EFD_GL(i, EFD_NT_OBJECT      = 11), //'o'   automatic parse-to-struct
-  EFD_GL(i, EFD_NT_INTEGER     = 12), //'i'   efd_int_t
-  EFD_GL(i, EFD_NT_NUMBER      = 13), //'n'   efd_num_t
-  EFD_GL(i, EFD_NT_STRING      = 14), //'s'   quoted string
-  EFD_GL(i, EFD_NT_ARRAY_INT   = 15), //'ai'  array of efd_int_t
-  EFD_GL(i, EFD_NT_ARRAY_NUM   = 16), //'an'  array of efd_num_t
-  EFD_GL(i, EFD_NT_ARRAY_STR   = 17), //'as'  array of quoted strings
-  EFD_GL(i, EFD_NT_FUNCTION    = 18), //'ff'  function (returns a container)
-  EFD_GL(i, EFD_NT_FN_OBJ      = 19), //'fo'  function (returns an object)
-  EFD_GL(i, EFD_NT_FN_INT      = 20), //'fi'  function (returns an integer)
-  EFD_GL(i, EFD_NT_FN_NUM      = 21), //'fn'  function (returns a number)
-  EFD_GL(i, EFD_NT_FN_STR      = 22), //'fs'  function (returns a string)
-  EFD_GL(i, EFD_NT_FN_AR_INT   = 23), //'fai' function (returns array of ints)
-  EFD_GL(i, EFD_NT_FN_AR_NUM   = 24), //'fan' function (returns array of nums)
-  EFD_GL(i, EFD_NT_FN_AR_STR   = 25), //'fas' function (returns array of strs)
-  EFD_GL(i, EFD_NT_GENERATOR   = 26), //'gg'  generator (returns containers)
-  EFD_GL(i, EFD_NT_GN_OBJ      = 27), //'go'  generator (returns objects)
-  EFD_GL(i, EFD_NT_GN_INT      = 28), //'gi'  generator (returns integers)
-  EFD_GL(i, EFD_NT_GN_NUM      = 29), //'gn'  generator (returns numbers)
-  EFD_GL(i, EFD_NT_GN_STR      = 30), //'gs'  generator (returns strings)
-  EFD_GL(i, EFD_NT_GN_AR_INT   = 31), //'gai' generator (returns arrays of ints)
-  EFD_GL(i, EFD_NT_GN_AR_NUM   = 32), //'gan' generator (returns arrays of nums)
-  EFD_GL(i, EFD_NT_GN_AR_STR   = 33), //'gas' generator (returns arrays of strs)
+  EFD_NT_INVALID     = 0, // -    marks an invalid node internally
+  EFD_NT_ANY            , // -    stands for any valid type
+  EFD_NT_CONTAINER      , //'c'   no data, just children
+  EFD_NT_SCOPE          , //'V'   scope
+  EFD_NT_GLOBAL         , //'G'   globals declaration
+  EFD_NT_REROUTE        , //'R'   a link for routing var resolution
+  EFD_NT_ROOT_LINK      , //'L'   root link
+  EFD_NT_GLOBAL_LINK    , //'GL'  global link
+  EFD_NT_LOCAL_LINK     , //'l'   local link
+  EFD_NT_VARIABLE       , //'v'   variable
+  EFD_NT_PROTO          , // -    raw object data pre-assembly
+  EFD_NT_OBJECT         , //'o'   automatic parse-to-struct
+  EFD_NT_INTEGER        , //'i'   efd_int_t
+  EFD_NT_NUMBER         , //'n'   efd_num_t
+  EFD_NT_STRING         , //'s'   quoted string
+  EFD_NT_ARRAY_INT      , //'ai'  array of efd_int_t
+  EFD_NT_ARRAY_NUM      , //'an'  array of efd_num_t
+  EFD_NT_ARRAY_STR      , //'as'  array of quoted strings
+  EFD_NT_FUNCTION       , //'ff'  function (returns a container)
+  EFD_NT_FN_OBJ         , //'fo'  function (returns an object)
+  EFD_NT_FN_INT         , //'fi'  function (returns an integer)
+  EFD_NT_FN_NUM         , //'fn'  function (returns a number)
+  EFD_NT_FN_STR         , //'fs'  function (returns a string)
+  EFD_NT_FN_AR_INT      , //'fai' function (returns array of ints)
+  EFD_NT_FN_AR_NUM      , //'fan' function (returns array of nums)
+  EFD_NT_FN_AR_STR      , //'fas' function (returns array of strs)
+  EFD_NT_GENERATOR      , //'gg'  generator (returns containers)
+  EFD_NT_GN_OBJ         , //'go'  generator (returns objects)
+  EFD_NT_GN_INT         , //'gi'  generator (returns integers)
+  EFD_NT_GN_NUM         , //'gn'  generator (returns numbers)
+  EFD_NT_GN_STR         , //'gs'  generator (returns strings)
+  EFD_NT_GN_AR_INT      , //'gai' generator (returns arrays of ints)
+  EFD_NT_GN_AR_NUM      , //'gan' generator (returns arrays of nums)
+  EFD_NT_GN_AR_STR      , //'gas' generator (returns arrays of strs)
 };
 typedef enum efd_node_type_e efd_node_type;
+
+EFD_GL(i, EFD_NT_INVALID)
+EFD_GL(i, EFD_NT_ANY)
+EFD_GL(i, EFD_NT_CONTAINER)
+EFD_GL(i, EFD_NT_SCOPE)
+EFD_GL(i, EFD_NT_GLOBAL)
+EFD_GL(i, EFD_NT_REROUTE)
+EFD_GL(i, EFD_NT_ROOT_LINK)
+EFD_GL(i, EFD_NT_GLOBAL_LINK)
+EFD_GL(i, EFD_NT_LOCAL_LINK)
+EFD_GL(i, EFD_NT_VARIABLE)
+EFD_GL(i, EFD_NT_PROTO)
+EFD_GL(i, EFD_NT_OBJECT)
+EFD_GL(i, EFD_NT_INTEGER)
+EFD_GL(i, EFD_NT_NUMBER)
+EFD_GL(i, EFD_NT_STRING)
+EFD_GL(i, EFD_NT_ARRAY_INT)
+EFD_GL(i, EFD_NT_ARRAY_NUM)
+EFD_GL(i, EFD_NT_ARRAY_STR)
+EFD_GL(i, EFD_NT_FUNCTION)
+EFD_GL(i, EFD_NT_FN_OBJ)
+EFD_GL(i, EFD_NT_FN_INT)
+EFD_GL(i, EFD_NT_FN_NUM)
+EFD_GL(i, EFD_NT_FN_STR)
+EFD_GL(i, EFD_NT_FN_AR_INT)
+EFD_GL(i, EFD_NT_FN_AR_NUM)
+EFD_GL(i, EFD_NT_FN_AR_STR)
+EFD_GL(i, EFD_NT_GENERATOR)
+EFD_GL(i, EFD_NT_GN_OBJ)
+EFD_GL(i, EFD_NT_GN_INT)
+EFD_GL(i, EFD_NT_GN_NUM)
+EFD_GL(i, EFD_NT_GN_STR)
+EFD_GL(i, EFD_NT_GN_AR_INT)
+EFD_GL(i, EFD_NT_GN_AR_NUM)
+EFD_GL(i, EFD_NT_GN_AR_STR)
 
 // Types of reference endpoint.
 enum efd_ref_type_e {
@@ -81,15 +116,23 @@ enum efd_ref_type_e {
 typedef enum efd_ref_type_e efd_ref_type;
 
 enum efd_generator_type_e {
-  EFD_GL(i, EFD_GT_INVALID        = 0),
-  EFD_GL(i, EFD_GT_CHILDREN       = 1), // iterate over non-SCOPE children
-  EFD_GL(i, EFD_GT_INDICES        = 2), // iterate through array entries
-  EFD_GL(i, EFD_GT_FUNCTION       = 3), // call a generator function
-  EFD_GL(i, EFD_GT_EXTEND_RESTART = 4), // extend by restarting
-  EFD_GL(i, EFD_GT_EXTEND_HOLD    = 5), // extend repeating the final value
-  EFD_GL(i, EFD_GT_PARALLEL       = 6), // generate parallel results
+  EFD_GT_INVALID        = 0,
+  EFD_GT_CHILDREN          , // iterate over non-SCOPE children
+  EFD_GT_INDICES           , // iterate through array entries
+  EFD_GT_FUNCTION          , // call a generator function
+  EFD_GT_EXTEND_RESTART    , // extend by restarting
+  EFD_GT_EXTEND_HOLD       , // extend repeating the final value
+  EFD_GT_PARALLEL          , // generate parallel results
 };
 typedef enum efd_generator_type_e efd_generator_type;
+
+EFD_GL(i, EFD_GT_INVALID)
+EFD_GL(i, EFD_GT_CHILDREN)
+EFD_GL(i, EFD_GT_INDICES)
+EFD_GL(i, EFD_GT_FUNCTION)
+EFD_GL(i, EFD_GT_EXTEND_RESTART)
+EFD_GL(i, EFD_GT_EXTEND_HOLD)
+EFD_GL(i, EFD_GT_PARALLEL)
 
 /*********
  * Types *

@@ -8,6 +8,8 @@
  * Macros *
  **********/
 
-#define EFD_GL(x, y) y
+// Declares that a name 'y' (with EFD type 'x') should be accessible as an EFD
+// constant.
+#define EFD_GL(x, y)
 
 #endif // INCLUDE_EFD_GL_H

@@ -45,6 +45,8 @@ typedef union ip_conv_u ip_conv;
 #define full(t) (0xFULL << (bits(t) - 4ULL))
 #define tull(t) (0x7ULL << (bits(t) - 4ULL))
 
+// Min for unsigned is just 0:
+#define uminof(t) ( (t) 0 )
 // Max for unsigned is all 1s:
 #define umaxof(t) ( (t) (full(t) | lull(t)) )
 

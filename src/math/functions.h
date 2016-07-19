@@ -6,6 +6,8 @@
 
 #include <stdint.h>
 
+#include "efd/efd_gl.h"
+
 /*********
  * Enums *
  *********/
@@ -24,6 +26,18 @@ enum map_function_e {
   MFN_SPREAD_DOWN, // quadratic; pushes things a bit lower
 };
 typedef enum map_function_e map_function;
+
+EFD_GL(i, MFN_LINEAR)
+EFD_GL(i, MFN_QUADRATIC)
+EFD_GL(i, MFN_CUBIC)
+EFD_GL(i, MFN_SQRT)
+EFD_GL(i, MFN_EXPONENTIAL)
+EFD_GL(i, MFN_EX_EXPONENTIAL)
+EFD_GL(i, MFN_SIGMOID)
+EFD_GL(i, MFN_HILL)
+EFD_GL(i, MFN_TERRACE)
+EFD_GL(i, MFN_SPREAD_UP)
+EFD_GL(i, MFN_SPREAD_DOWN)
 
 /********************
  * Inline Functions *
