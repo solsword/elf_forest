@@ -18,7 +18,7 @@
 // argument (which must be an integer).
 efd_node * efd_fn_prng(efd_node const * const node, efd_value_cache *cache) {
   efd_assert_return_type(node, EFD_NT_INTEGER);
-  efd_int_t result = prng(*efd__i(efd_get_value(efd_nth(node, 0), cache)));
+  efd_int_t result = prng(efd_as_i(efd_get_value(efd_nth(node, 0), cache)));
   return construct_efd_int_node(node->h.name, result);
 }
 
@@ -29,8 +29,8 @@ efd_node * efd_fn_prng(efd_node const * const node, efd_value_cache *cache) {
 efd_node * efd_fn_brng(efd_node const * const node, efd_value_cache *cache) {
   efd_assert_return_type(node, EFD_NT_INTEGER);
   efd_int_t result = prng(
-    *efd__i(efd_get_value(efd_nth(node, 0), cache))
-  + 1173 * (*efd__i(efd_get_value(efd_nth(node, 1), cache)))
+    efd_as_i(efd_get_value(efd_nth(node, 0), cache))
+  + 1173 * (efd_as_i(efd_get_value(efd_nth(node, 1), cache)))
   );
   return construct_efd_int_node(node->h.name, result);
 }
@@ -39,7 +39,7 @@ efd_node * efd_fn_brng(efd_node const * const node, efd_value_cache *cache) {
 // number value in [0, 1).
 efd_node * efd_fn_rng_n(efd_node const * const node, efd_value_cache *cache) {
   efd_assert_return_type(node, EFD_NT_INTEGER);
-  efd_int_t result = ptrf(*efd__i(efd_get_value(efd_nth(node, 0), cache)));
+  efd_int_t result = ptrf(efd_as_i(efd_get_value(efd_nth(node, 0), cache)));
   return construct_efd_int_node(node->h.name, result);
 }
 
@@ -55,9 +55,9 @@ efd_node * efd_fn_rng_uniform(
 
   efd_assert_return_type(node, EFD_NT_NUMBER);
 
-  seed = *efd__i(efd_get_value(efd_nth(node, 0), cache));
-  min = *efd__n(efd_get_value(efd_nth(node, 1), cache));
-  max = *efd__n(efd_get_value(efd_nth(node, 2), cache));
+  seed = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
+  min = efd_as_n(efd_get_value(efd_nth(node, 1), cache));
+  max = efd_as_n(efd_get_value(efd_nth(node, 2), cache));
 
   return construct_efd_num_node(node->h.name, randf(seed, min, max));
 }
@@ -74,9 +74,9 @@ efd_node * efd_fn_rng_normal(
 
   efd_assert_return_type(node, EFD_NT_NUMBER);
 
-  seed = *efd__i(efd_get_value(efd_nth(node, 0), cache));
-  min = *efd__n(efd_get_value(efd_nth(node, 1), cache));
-  max = *efd__n(efd_get_value(efd_nth(node, 2), cache));
+  seed = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
+  min = efd_as_n(efd_get_value(efd_nth(node, 1), cache));
+  max = efd_as_n(efd_get_value(efd_nth(node, 2), cache));
 
   return construct_efd_num_node(node->h.name, randf_pnorm(seed, min, max));
 }

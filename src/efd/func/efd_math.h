@@ -113,9 +113,9 @@ efd_node * efd_fn_scale(efd_node const * const node, efd_value_cache *cache) {
 
   efd_assert_return_type(node, EFD_NT_NUMBER);
 
-  input = *efd__n(efd_get_value(efd_nth(node, 0), cache));
-  min = *efd__n(efd_get_value(efd_nth(node, 1), cache));
-  max = *efd__n(efd_get_value(efd_nth(node, 2), cache));
+  input = efd_as_n(efd_get_value(efd_nth(node, 0), cache));
+  min = efd_as_n(efd_get_value(efd_nth(node, 1), cache));
+  max = efd_as_n(efd_get_value(efd_nth(node, 2), cache));
 
   result = min + input * (max - min);
 
@@ -134,11 +134,11 @@ efd_node * efd_fn_weight(efd_node const * const node, efd_value_cache *cache) {
   efd_assert_return_type(node, EFD_NT_NUMBER);
 
   wnode = efd_get_value(efd_nth(node, 0), cache);
-  count = *efd__an_count(wnode);
-  weights = *efd__an(wnode);
+  count = efd_array_count(wnode);
+  weights = efd_as_an(wnode);
 
   for (i = 0; i < count; ++i) {
-    numerator += weights[i] * (*efd__n(efd_get_value(efd_nth(node, i+1),cache)));
+    numerator += weights[i] * efd_as_n(efd_get_value(efd_nth(node, i+1),cache));
     denominator += weights[i];
   }
   if (denominator == 0) {

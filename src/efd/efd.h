@@ -650,35 +650,6 @@ static inline efd_num_t efd_cast_to_num(efd_int_t value) {
   return (efd_num_t) value;
 }
 
-// Type coercion functions:
-static inline efd_int_t efd_as_i(efd_node *n) {
-  if (n->h.type == EFD_NT_INTEGER) {
-    return *efd__i(n);
-  } else if (n->h.type == EFD_NT_NUMBER) {
-    return efd_cast_to_int(*(efd__n(n)));
-  } else { // invalid
-    efd_report_error(
-      s_("Error: Attempted to coerce non-numeric type to an integer:"),
-      n
-    );
-    exit(EXIT_FAILURE);
-  }
-}
-
-static inline efd_int_t efd_as_n(efd_node *n) {
-  if (n->h.type == EFD_NT_INTEGER) {
-    return efd_cast_to_num(*efd__i(n));
-  } else if (n->h.type == EFD_NT_NUMBER) {
-    return *(efd__n(n));
-  } else { // invalid
-    efd_report_error(
-      s_("Error: Attempted to coerce non-numeric type to a number:"),
-      n
-    );
-    exit(EXIT_FAILURE);
-  }
-}
-
 // Converts a node type to the corresponding reference type.
 static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
   switch (nt) {
@@ -1246,5 +1217,158 @@ efd_generator_state * efd_generator_for(
   efd_node *node,
   efd_value_cache *cache
 );
+
+/**************************
+ * Extra Inline Functions *
+ **************************/
+
+// Type coercion functions:
+static inline efd_int_t efd_as_i(efd_node *n) {
+  if (efd_is_link_node(n)) {
+    n = efd_concrete(n);
+  }
+  if (efd_is_type(n, EFD_NT_INTEGER)) {
+    return *efd__i(n);
+  } else if (efd_is_type(n, EFD_NT_NUMBER)) {
+    return efd_cast_to_int(*(efd__n(n)));
+  } else { // invalid
+    efd_report_error(
+      s_("Error: Attempted to coerce non-numeric type to an integer:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+static inline efd_int_t efd_as_n(efd_node *n) {
+  if (efd_is_link_node(n)) {
+    n = efd_concrete(n);
+  }
+  if (efd_is_type(n, EFD_NT_INTEGER)) {
+    return efd_cast_to_num(*efd__i(n));
+  } else if (efd_is_type(n, EFD_NT_NUMBER)) {
+    return *(efd__n(n));
+  } else { // invalid
+    efd_report_error(
+      s_("Error: Attempted to coerce non-numeric type to a number:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+static inline string* efd_as_s(efd_node *n) {
+  if (efd_is_link_node(n)) {
+    n = efd_concrete(n);
+  }
+  if (efd_is_type(n, EFD_NT_STRING)) {
+    return *(efd__s(n));
+  } else {
+    efd_report_error(
+      s_("Error: Attempted to coerce non-string node to a string:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+static inline void* efd_as_o(efd_node *n) {
+  if (efd_is_link_node(n)) {
+    n = efd_concrete(n);
+  }
+  if (efd_is_type(n, EFD_NT_OBJECT)) {
+    return *(efd__o(n));
+  } else {
+    efd_report_error(
+      s_("Error: Attempted to coerce non-object node to an object:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+static inline void* efd_as_o_fmt(efd_node *n, string const * const fmt) {
+  if (efd_is_link_node(n)) {
+    n = efd_concrete(n);
+  }
+  if (efd_is_type(n, EFD_NT_OBJECT)) {
+    efd_assert_object_format(n, fmt);
+    return *(efd__o(n));
+  } else {
+    efd_report_error(
+      s_sprintf(
+        "Error: Attempted to coerce non-object node to a '%.*s' object:",
+        (int) s_get_length(fmt),
+        s_raw(fmt)
+      ),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+static inline size_t efd_array_count(efd_node *n) {
+  if (efd_is_link_node(n)) {
+    n = efd_concrete(n);
+  }
+  if (efd_is_type(n, EFD_NT_ARRAY_INT)) {
+    return *efd__ai_count(n);
+  } else if (efd_is_type(n, EFD_NT_ARRAY_NUM)) {
+    return *efd__an_count(n);
+  } else if (efd_is_type(n, EFD_NT_ARRAY_STR)) {
+    return *efd__as_count(n);
+  } else {
+    efd_report_error(
+      s_("Error: Attempted to get array count of non-array node:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+static inline efd_int_t* efd_as_ai(efd_node *n) {
+  if (efd_is_link_node(n)) {
+    n = efd_concrete(n);
+  }
+  if (efd_is_type(n, EFD_NT_ARRAY_INT)) {
+    return *efd__ai(n);
+  } else {
+    efd_report_error(
+      s_("Error: Attempted to coerce non-array node to an integer array:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+static inline efd_num_t* efd_as_an(efd_node *n) {
+  if (efd_is_link_node(n)) {
+    n = efd_concrete(n);
+  }
+  if (efd_is_type(n, EFD_NT_ARRAY_NUM)) {
+    return *efd__an(n);
+  } else {
+    efd_report_error(
+      s_("Error: Attempted to coerce non-array node to a number array:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+static inline string** efd_as_as(efd_node *n) {
+  if (efd_is_link_node(n)) {
+    n = efd_concrete(n);
+  }
+  if (efd_is_type(n, EFD_NT_ARRAY_NUM)) {
+    return *efd__as(n);
+  } else {
+    efd_report_error(
+      s_("Error: Attempted to coerce non-array node to a string array:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
 
 #endif // INCLUDE_EFD_H

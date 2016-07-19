@@ -40,7 +40,7 @@ efd_node * efd_fn_weighted_el_prop(
   // Unpack arguments:
   ids_gen = efd_generator_for(efd_get_value(efd_nth(node, 0), cache), cache);
   weights_gen = efd_generator_for(efd_get_value(efd_nth(node, 1), cache),cache);
-  prop = (element_property) *efd__i(efd_get_value(efd_nth(node, 2), cache));
+  prop = (element_property) efd_as_i(efd_get_value(efd_nth(node, 2), cache));
   // TODO: bounds-checking here?
 
   // Assemble a list of species pointers:

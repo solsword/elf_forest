@@ -70,7 +70,7 @@ efd_node * efd_fn_pick_element(
   }
 
   // Category constraint(s):
-  cat_constraints = (element_categorization) (*efd__i(categories_node));
+  cat_constraints = (element_categorization) efd_as_i(categories_node);
 
   // The list of species to ignore:
   ignore_container = efd_gen_all(ignore_gen);
@@ -83,7 +83,7 @@ efd_node * efd_fn_pick_element(
   cleanup_efd_node(ignore_container);
 
   // The seed:
-  seed = (ptrdiff_t) *efd__i(seed_node);
+  seed = (ptrdiff_t) efd_as_i(seed_node);
 
   // Construct the result node:
   result = construct_efd_int_node(

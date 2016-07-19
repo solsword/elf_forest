@@ -44,19 +44,19 @@ efd_node * efd_fn_index(efd_node const * const node, efd_value_cache *cache) {
       return NULL;
     case EFD_NT_ARRAY_INT:
       efd_assert_return_type(node, EFD_NT_INTEGER);
-      acount = *efd__ai_count(array);
+      acount = efd_array_count(array);
       break;
     case EFD_NT_ARRAY_NUM:
       efd_assert_return_type(node, EFD_NT_NUMBER);
-      acount = *efd__an_count(array);
+      acount = efd_array_count(array);
       break;
     case EFD_NT_ARRAY_STR:
       efd_assert_return_type(node, EFD_NT_STRING);
-      acount = *efd__as_count(array);
+      acount = efd_array_count(array);
       break;
   }
 
-  index = *efd__i(efd_get_value(efd_nth(node, 1), cache));
+  index = efd_as_i(efd_get_value(efd_nth(node, 1), cache));
   if (index < 0) {
     efd_report_error(
       s_("ERROR: 'index' node's index argument must be >= 0."),
@@ -89,13 +89,13 @@ efd_node * efd_fn_index(efd_node const * const node, efd_value_cache *cache) {
       return NULL;
 #endif
     case EFD_NT_ARRAY_INT:
-      result = construct_efd_int_node(node->h.name, (*efd__ai(array))[index]);
+      result = construct_efd_int_node(node->h.name, efd_as_ai(array)[index]);
       break;
     case EFD_NT_ARRAY_NUM:
-      result = construct_efd_num_node(node->h.name, (*efd__an(array))[index]);
+      result = construct_efd_num_node(node->h.name, efd_as_an(array)[index]);
       break;
     case EFD_NT_ARRAY_STR:
-      result = construct_efd_str_node(node->h.name, (*efd__as(array))[index]);
+      result = construct_efd_str_node(node->h.name, efd_as_as(array)[index]);
       break;
   }
   return result;
@@ -119,7 +119,7 @@ efd_node * efd_fn_choose(efd_node const * const node, efd_value_cache *cache) {
     return NULL;
   }
   
-  index = *efd__i(efd_get_value(efd_nth(node, 0), cache));
+  index = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
   if (index < 0) {
     efd_report_error(
       s_("ERROR: 'choose' node's index argument must be >= 0."),
@@ -179,10 +179,10 @@ efd_node * efd_fn_index_of(
     return NULL;
   }
   
-  look_for = *efd__i(efd_get_value(efd_nth(node, 0), cache));
+  look_for = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
   for (i = 1; i < count; ++i) {
     test = efd_get_value(efd_nth(node, i), cache);
-    if (*efd__i(test) == look_for) {
+    if (efd_as_i(test) == look_for) {
       break;
     }
   }

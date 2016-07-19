@@ -830,12 +830,12 @@ void * v_efd__v_n(void *v_node) {
 
 void * v_efd__v_s(void *v_node) {
   efd_node *n = (efd_node*) v_node;
-  return (void*) (*efd__s(n));
+  return (void*) efd_as_s(n);
 }
 
 void * v_efd__o(void *v_node) {
   efd_node *n = (efd_node*) v_node;
-  return *efd__o(n);
+  return efd_as_o(n);
 }
 
 void efd_push_error_context(string *context) {

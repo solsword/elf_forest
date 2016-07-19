@@ -18,12 +18,20 @@ efd_node * efd_fn_sample_rngtable(
   efd_node const * const node,
   efd_value_cache *cache
 ) {
-  efd_assert_return_type(node, EFD_NT_INTEGER);
-  efd_int_t seed = *efd__i(efd_get_value(efd_nth(node, 0), cache));
-  efd_node *obj = efd_get_value(efd_nth(node, 1), cache);
-  rngtable *table = (rngtable*) obj->b.as_object.value;
+  SSTR(fmt_rngtable, "rngtable", 8);
+  efd_int_t seed, result;
+  efd_node *obj;
+  rngtable *table;
 
-  efd_int_t result = (efd_int_t) rt_pick_result(table, seed);
+  efd_assert_return_type(node, EFD_NT_INTEGER);
+
+  seed = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
+  obj = efd_get_value(efd_nth(node, 1), cache);
+  table = (rngtable*) efd_as_o_fmt(obj, fmt_rngtable);
+
+  result = (efd_int_t) rt_pick_result(table, seed);
+  // DEBUG TODO REMOVE
+  fprintf(stderr, "sample_rngtable::%ld\n", result);
 
   return construct_efd_int_node(node->h.name, result);
 }
