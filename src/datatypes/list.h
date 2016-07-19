@@ -84,6 +84,12 @@ size_t l_get_length(list const * const l);
 // comparison).
 int l_contains(list const * const l, void *element);
 
+// Scans the list until it finds the given element, and returns that element's
+// index. If the element appears multiple times in the list, the index of the
+// first occurrence is returned. Returns -1 if the given element isn't in the
+// list.
+ptrdiff_t l_index_of(list const * const l, void *element);
+
 // Returns the ith element of the given list, or NULL if i is out of range.
 void * l_get_item(list const * const l, size_t i);
 

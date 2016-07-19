@@ -143,13 +143,14 @@ efd_node * efd_fn_choose(efd_node const * const node, efd_value_cache *cache) {
   result = efd_nth(node, index + 1);
   result = efd_create_reroute((efd_node*) node, efd_get_value(result, cache));
 
-  if (s_equals(s_("typechoice"), node->h.name)) {
-    efd_report_error(
-      s_("TEST: efd_fn_choose."),
-      result
-    );
-    exit(EXIT_FAILURE);
-  }
+  // TODO: REMOVE
+  //if (s_equals(s_("typechoice"), node->h.name)) {
+  //  efd_report_error(
+  //    s_("TEST: efd_fn_choose."),
+  //    result
+  //  );
+  //  exit(EXIT_FAILURE);
+  //}
 
   return result;
 }
@@ -283,17 +284,9 @@ efd_node * efd_fn_lookup_key(
 
   this_value = NULL;
 
-  // DEBUG: REMOVE
-  fprintf(stderr, "lookup_key::look_for: ");
-  s_fprintln(stderr, efd_repr(look_for));
-
   for (i = 0; i < l_get_length(entries); ++i) {
     this_entry = efd_get_value((efd_node*) l_get_item(entries, i), cache);
     this_key = efd_get_value(efd_lookup(this_entry, s_key), cache);
-
-    // DEBUG: REMOVE
-    fprintf(stderr, "lookup_key::key: ");
-    s_fprintln(stderr, efd_repr(this_key));
 
     if (efd_equivalent(look_for, this_key)) {
       this_value = efd_get_value(efd_lookup(this_entry, s_value), cache);

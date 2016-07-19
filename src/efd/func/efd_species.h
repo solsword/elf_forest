@@ -29,6 +29,7 @@ efd_node * efd_fn_weighted_el_prop(
   efd_node const * const node,
   efd_value_cache *cache
 ) {
+  ptrdiff_t null_index;
   efd_generator_state *ids_gen, *weights_gen;
   efd_node *id_node_container, *weight_node_container;
   list *id_nodes, *ids, *species, *weight_nodes, *weights;
@@ -48,10 +49,9 @@ efd_node * efd_fn_weighted_el_prop(
   cleanup_efd_generator_state(ids_gen);
 
   id_nodes = d_as_list(efd_children_dict(id_node_container));
-  cleanup_efd_node(id_node_container);
 
   ids = l_map(id_nodes, &v_efd__v_i);
-  l_foreach(id_nodes, &cleanup_v_efd_node);
+  cleanup_efd_node(id_node_container);
   cleanup_list(id_nodes);
 
   species = l_map(ids, &_map_v_id_to_v_element_species);
@@ -62,11 +62,18 @@ efd_node * efd_fn_weighted_el_prop(
   cleanup_efd_generator_state(weights_gen);
 
   weight_nodes = d_as_list(efd_children_dict(weight_node_container));
-  cleanup_efd_node(weight_node_container);
 
   weights = l_map(weight_nodes, &v_efd__v_n);
-  l_foreach(weight_nodes, &cleanup_v_efd_node);
+  cleanup_efd_node(weight_node_container);
   cleanup_list(weight_nodes);
+
+  // Truncate the species and weight lists if necessary:
+  null_index = l_index_of(species, NULL);
+  while (null_index != -1) {
+    l_remove_item(species, null_index);
+    l_remove_item(weights, null_index);
+    null_index = l_index_of(species, NULL);
+  }
 
   // Construct the result node:
   result = construct_efd_num_node(

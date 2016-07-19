@@ -1080,7 +1080,7 @@ string * efd_type_abbr(efd_node_type t) {
   }
 }
 
-string * efd_addr_string(efd_address *a) {
+string * efd_addr_string(efd_address const * a) {
   string *result = create_empty_string();
   while (a->next != NULL) {
     s_append(result, a->name);
@@ -1569,6 +1569,62 @@ void efd_report_error_full(string *message, efd_node const * const n) {
   cleanup_string(repr);
 }
 
+string * _efd_trace_lookup(
+  efd_node const * const root,
+  efd_address const * addr
+) {
+  string *sofar, *fqn, *ltype;
+  efd_node const *result;
+  SSTR(s_arrow, "\n    -> ", 8);
+  SSTR(s_broken, "\n    -X> ", 9);
+  SSTR(s_done, "\n    . ", 7);
+  SSTR(s_lab, "<", 1);
+  SSTR(s_rab, ">", 1);
+  SSTR(s_lsb, "[", 1);
+  SSTR(s_rsb, "]", 1);
+
+  sofar = create_empty_string();
+
+  fqn = efd_build_fqn(root);
+
+  ltype = create_empty_string();
+  s_append(ltype, s_lab);
+  s_devour(ltype, efd_type_abbr(root->h.type));
+  s_append(ltype, s_rab);
+
+  if (addr == NULL) {
+    s_append(sofar, s_done);
+    s_devour(sofar, ltype);
+    s_append(sofar, S_SPACE);
+    s_devour(sofar, fqn);
+    return sofar;
+  }
+  s_append(sofar, s_arrow);
+  s_devour(sofar, ltype);
+  s_append(sofar, S_SPACE);
+  s_devour(sofar, fqn);
+  s_append(sofar, S_SPACE);
+  s_append(sofar, s_lsb);
+  s_append(sofar, addr->name);
+  s_append(sofar, s_rsb);
+
+  result = root;
+  if (root == EFD_ROOT && s_equals(addr->name, EFD_ROOT_NAME)) {
+    s_devour(sofar, _efd_trace_lookup(root, addr->next));
+  } else {
+    result = efd_lookup(result, addr->name);
+    if (result != NULL) {
+      s_devour(sofar, _efd_trace_lookup(result, addr->next));
+    } else {
+      s_append(sofar, s_broken);
+      s_append(sofar, s_lsb);
+      s_devour(sofar, efd_addr_string(addr));
+      s_append(sofar, s_rsb);
+    }
+  }
+  return sofar;
+}
+
 string *_efd_trace_link(efd_node const * const n, string * sofar) {
   string *fqn, *ltype;
   efd_node *linked;
@@ -1576,6 +1632,8 @@ string *_efd_trace_link(efd_node const * const n, string * sofar) {
   SSTR(s_broken, "\n  -X> ", 7);
   SSTR(s_lab, "<", 1);
   SSTR(s_rab, ">", 1);
+  SSTR(s_details, "  Details:", 10);
+  SSTR(s_no_details, "<no details>", 12);
 
   if (n == NULL) {
     // We should never hit this case while recursing---only from an initial
@@ -1612,7 +1670,7 @@ string *_efd_trace_link(efd_node const * const n, string * sofar) {
       break;
 
     case EFD_NT_LOCAL_LINK:
-      linked = efd(n->h.parent, n->b.as_link.target);
+      linked = efd(efd_get_parent(n), n->b.as_link.target);
       break;
 
     case EFD_NT_VARIABLE:
@@ -1622,9 +1680,32 @@ string *_efd_trace_link(efd_node const * const n, string * sofar) {
   if (linked == NULL) {
     s_append(sofar, s_broken);
     s_devour(sofar, efd_addr_string(n->b.as_link.target));
-    if (n->h.type == EFD_NT_VARIABLE) {
-      s_append(sofar, S_NL);
-      s_devour(sofar, efd_variable_search_trace(n));
+    s_append(sofar, S_NL);
+    s_append(sofar, s_details);
+    switch (n->h.type) {
+      default:
+      case EFD_NT_REROUTE:
+        s_append(sofar, s_no_details);
+        break;
+
+      case EFD_NT_ROOT_LINK:
+        s_devour(sofar, _efd_trace_lookup(EFD_ROOT, n->b.as_link.target));
+        break;
+
+      case EFD_NT_GLOBAL_LINK:
+        s_append(sofar, s_no_details);
+        break;
+
+      case EFD_NT_LOCAL_LINK:
+        s_devour(
+          sofar,
+          _efd_trace_lookup(efd_get_parent(n), n->b.as_link.target)
+        );
+        break;
+
+      case EFD_NT_VARIABLE:
+        s_devour(sofar, efd_variable_search_trace(n));
+        break;
     }
     return sofar;
   } else {
@@ -2144,7 +2225,7 @@ efd_node * efd_create_shadow_clone(efd_node const * const original) {
     result->b.as_reroute.target = original->b.as_reroute.target;
   } else {
     result->b.as_reroute.child = copy_efd_node(original);
-    result->b.as_reroute.target = original->h.parent;
+    result->b.as_reroute.target = efd_get_parent(original);
   }
   result->b.as_reroute.child->h.parent = result;
   return result;
@@ -2263,7 +2344,11 @@ efd_node * efd_find_variable_in(
       }
     }
   }
-  if (result == NULL && node->h.type == EFD_NT_SCOPE && node->h.parent == NULL){
+  if (
+    result == NULL
+ && node->h.type == EFD_NT_SCOPE
+ && efd_get_parent(node) == NULL
+  ) {
     result = efd(node, target);
   }
   efd_pop_error_context();
@@ -2282,7 +2367,7 @@ efd_node * efd_resolve_variable(efd_node const * const var) {
   efd_assert_type(var, EFD_NT_VARIABLE);
   target = var->b.as_link.target;
 
-  scope = var->h.parent;
+  scope = efd_get_parent(var);
 
   result = NULL;
   while (scope != NULL && (result == NULL || result == var)) {
@@ -2290,7 +2375,7 @@ efd_node * efd_resolve_variable(efd_node const * const var) {
       scope = scope->b.as_reroute.target;
     } else {
       result = efd_find_variable_in(scope, target);
-      scope = scope->h.parent;
+      scope = efd_get_parent(scope);
     }
   }
   efd_pop_error_context();
@@ -2307,7 +2392,7 @@ string * efd_variable_search_trace(efd_node const * const var) {
   target = var->b.as_link.target;
   trace = s_("Var trace:");
 
-  scope = var->h.parent;
+  scope = efd_get_parent(var);
 
   result = NULL;
   while (scope != NULL && (result == NULL || result == var)) {
@@ -2317,7 +2402,7 @@ string * efd_variable_search_trace(efd_node const * const var) {
       scope = scope->b.as_reroute.target;
     } else {
       result = efd_find_variable_in(scope, target);
-      scope = scope->h.parent;
+      scope = efd_get_parent(scope);
     }
   }
   if (result != NULL) {
@@ -2354,7 +2439,7 @@ efd_node * efd_concrete(efd_node const * const base) {
       linked = efd_get_global(base->b.as_link.target->name);
       break;
     case EFD_NT_LOCAL_LINK:
-      linked = efd(base->h.parent, base->b.as_link.target);
+      linked = efd(efd_get_parent(base), base->b.as_link.target);
       break;
     case EFD_NT_VARIABLE:
       linked = efd_resolve_variable(base);
@@ -2443,13 +2528,27 @@ efd_node *efd_nth(efd_node const * const node, size_t index) {
   return NULL;
 }
 
+efd_node * efd_get_parent(efd_node const * const node) {
+  efd_node *parent = node->h.parent;
+  while (parent != NULL && efd_is_type(parent, EFD_NT_REROUTE)) {
+    if (parent->b.as_reroute.target == NULL) {
+      efd_report_error(
+        s_("ERROR: EFD reroute node has NULL target:"),
+        parent
+      );
+    }
+    parent = parent->b.as_reroute.target;
+  }
+  return parent;
+}
+
 efd_node * efd_lookup(efd_node const * const node, string const * const key) {
   if (node == NULL) {
     return NULL;
   }
   if (s_equals(key, EFD_ADDR_PARENT_STR)) {
     // Special handling for 'parent' path entries:
-    return node->h.parent;
+    return efd_get_parent(node);
   } else {
     // Normal lookups:
     if (efd_is_link_node(node)) {
@@ -2879,7 +2978,7 @@ void dont_cleanup(void *v) {
 }
 
 efd_node * efd_gen_next(efd_generator_state *gen) {
-  size_t i;
+  size_t i, limit;
   efd_node *node, *scope, *result;
   efd_generator_state *sub;
   list *children;
@@ -2920,23 +3019,38 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
           efd_pop_error_context();
           return NULL;
         case EFD_NT_ARRAY_INT:
+          limit = *efd__ai_count(node);
           efd_pop_error_context();
-          return construct_efd_int_node(
-            gen->name,
-            (*efd__ai(node))[gen->index++]
-          );
+          if (gen->index >= limit) {
+            return NULL;
+          } else {
+            return construct_efd_int_node(
+              gen->name,
+              (*efd__ai(node))[gen->index++]
+            );
+          }
         case EFD_NT_ARRAY_NUM:
+          limit = *efd__an_count(node);
           efd_pop_error_context();
-          return construct_efd_num_node(
-            gen->name,
-            (*efd__an(node))[gen->index++]
-          );
+          if (gen->index >= limit) {
+            return NULL;
+          } else {
+            return construct_efd_num_node(
+              gen->name,
+              (*efd__an(node))[gen->index++]
+            );
+          }
         case EFD_NT_ARRAY_STR:
+          limit = *efd__as_count(node);
           efd_pop_error_context();
-          return construct_efd_str_node(
-            gen->name,
-            (*efd__as(node))[gen->index++]
-          );
+          if (gen->index >= limit) {
+            return NULL;
+          } else {
+            return construct_efd_str_node(
+              gen->name,
+              (*efd__as(node))[gen->index++]
+            );
+          }
       } // all paths return
 
     case EFD_GT_FUNCTION:

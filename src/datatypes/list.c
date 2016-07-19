@@ -186,6 +186,18 @@ int l_contains(list const * const l, void *element) {
   return result;
 }
 
+ptrdiff_t l_index_of(list const * const l, void *element) {
+  size_t i;
+  ptrdiff_t result = -1;
+  for (i = 0; i < l->count; ++i) {
+    if (l->elements[i] == element) {
+      result = i;
+      break;
+    }
+  }
+  return result;
+}
+
 void * l_get_item(list const * const l, size_t i) {
   if (i >= l->count) {
 #ifdef DEBUG

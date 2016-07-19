@@ -937,7 +937,7 @@ string * efd_type_name(efd_node_type t);
 string * efd_type_abbr(efd_node_type t);
 
 // Creates a string from an EFD address.
-string * efd_addr_string(efd_address *a);
+string * efd_addr_string(efd_address const * a);
 
 // Builds a fully-qualified name for the given node and returns a pointer to a
 // newly-allocated string holding this name.
@@ -1059,6 +1059,10 @@ intptr_t efd_normal_child_count(efd_node const * const node);
 
 // Returns the nth child of the given node, not counting scope nodes.
 efd_node * efd_nth(efd_node const * const node, size_t index);
+
+// Returns the parent of the given node, which may not always be n->h.parent
+// (as in the case of REROUTE nodes, for example).
+efd_node * efd_get_parent(efd_node const * const node);
 
 // This function returns the child with the given key in the given node. It
 // iterates over children until it hits one with a matching name, so only the
@@ -1224,8 +1228,17 @@ efd_generator_state * efd_generator_for(
 
 // Type coercion functions:
 static inline efd_int_t efd_as_i(efd_node *n) {
+  efd_node *ct;
   if (efd_is_link_node(n)) {
-    n = efd_concrete(n);
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(s_("ERROR: Broken link passed to efd_as_i."), n);
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_INT) || efd_is_type(n, EFD_NT_FN_NUM)) {
+    // TODO: Staler value here?
+    n = efd_fresh_value(n);
   }
   if (efd_is_type(n, EFD_NT_INTEGER)) {
     return *efd__i(n);
@@ -1240,9 +1253,17 @@ static inline efd_int_t efd_as_i(efd_node *n) {
   }
 }
 
-static inline efd_int_t efd_as_n(efd_node *n) {
+static inline efd_num_t efd_as_n(efd_node *n) {
+  efd_node *ct;
   if (efd_is_link_node(n)) {
-    n = efd_concrete(n);
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(s_("ERROR: Broken link passed to efd_as_n."), n);
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_INT) || efd_is_type(n, EFD_NT_FN_NUM)) {
+    n = efd_fresh_value(n);
   }
   if (efd_is_type(n, EFD_NT_INTEGER)) {
     return efd_cast_to_num(*efd__i(n));
@@ -1258,8 +1279,16 @@ static inline efd_int_t efd_as_n(efd_node *n) {
 }
 
 static inline string* efd_as_s(efd_node *n) {
+  efd_node *ct;
   if (efd_is_link_node(n)) {
-    n = efd_concrete(n);
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(s_("ERROR: Broken link passed to efd_as_s."), n);
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_STR)) {
+    n = efd_fresh_value(n);
   }
   if (efd_is_type(n, EFD_NT_STRING)) {
     return *(efd__s(n));
@@ -1273,8 +1302,16 @@ static inline string* efd_as_s(efd_node *n) {
 }
 
 static inline void* efd_as_o(efd_node *n) {
+  efd_node *ct;
   if (efd_is_link_node(n)) {
-    n = efd_concrete(n);
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(s_("ERROR: Broken link passed to efd_as_o."), n);
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_OBJ)) {
+    n = efd_fresh_value(n);
   }
   if (efd_is_type(n, EFD_NT_OBJECT)) {
     return *(efd__o(n));
@@ -1288,8 +1325,19 @@ static inline void* efd_as_o(efd_node *n) {
 }
 
 static inline void* efd_as_o_fmt(efd_node *n, string const * const fmt) {
+  efd_node *ct;
   if (efd_is_link_node(n)) {
-    n = efd_concrete(n);
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(
+        s_("ERROR: Broken link passed to efd_as_o_fmt."),
+        n
+      );
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_OBJ)) {
+    n = efd_fresh_value(n);
   }
   if (efd_is_type(n, EFD_NT_OBJECT)) {
     efd_assert_object_format(n, fmt);
@@ -1308,8 +1356,23 @@ static inline void* efd_as_o_fmt(efd_node *n, string const * const fmt) {
 }
 
 static inline size_t efd_array_count(efd_node *n) {
+  efd_node *ct;
   if (efd_is_link_node(n)) {
-    n = efd_concrete(n);
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(
+        s_("ERROR: Broken link passed to efd_array_count."),
+        n
+      );
+    }
+    n = ct;
+  }
+  if (
+    efd_is_type(n, EFD_NT_FN_AR_INT)
+ || efd_is_type(n, EFD_NT_FN_AR_NUM)
+ || efd_is_type(n, EFD_NT_FN_AR_STR)
+  ) {
+    n = efd_fresh_value(n);
   }
   if (efd_is_type(n, EFD_NT_ARRAY_INT)) {
     return *efd__ai_count(n);
@@ -1327,8 +1390,19 @@ static inline size_t efd_array_count(efd_node *n) {
 }
 
 static inline efd_int_t* efd_as_ai(efd_node *n) {
+  efd_node *ct;
   if (efd_is_link_node(n)) {
-    n = efd_concrete(n);
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(
+        s_("ERROR: Broken link passed to efd_as_ai."),
+        n
+      );
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_AR_INT)) {
+    n = efd_fresh_value(n);
   }
   if (efd_is_type(n, EFD_NT_ARRAY_INT)) {
     return *efd__ai(n);
@@ -1342,8 +1416,19 @@ static inline efd_int_t* efd_as_ai(efd_node *n) {
 }
 
 static inline efd_num_t* efd_as_an(efd_node *n) {
+  efd_node *ct;
   if (efd_is_link_node(n)) {
-    n = efd_concrete(n);
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(
+        s_("ERROR: Broken link passed to efd_as_an."),
+        n
+      );
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_AR_NUM)) {
+    n = efd_fresh_value(n);
   }
   if (efd_is_type(n, EFD_NT_ARRAY_NUM)) {
     return *efd__an(n);
@@ -1357,8 +1442,19 @@ static inline efd_num_t* efd_as_an(efd_node *n) {
 }
 
 static inline string** efd_as_as(efd_node *n) {
+  efd_node *ct;
   if (efd_is_link_node(n)) {
-    n = efd_concrete(n);
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(
+        s_("ERROR: Broken link passed to efd_as_as."),
+        n
+      );
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_AR_STR)) {
+    n = efd_fresh_value(n);
   }
   if (efd_is_type(n, EFD_NT_ARRAY_NUM)) {
     return *efd__as(n);

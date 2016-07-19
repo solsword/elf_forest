@@ -385,7 +385,7 @@
       [[i ~seed 0]]
     ]]
     [[V locals
-      [[fn ~hash:brng <<v ~seed>> (i 7182731) ]]
+      [[fi ~hash:brng <<v ~seed>> (i 7182731) ]]
       [[fn ~el_brightness:weight
         [[an weights 0.3, 0.7 ]]
         [[fn rng:mult
@@ -405,78 +405,85 @@
           [[i attribute #i:EL_PRP_F_STONE_TND_BRIGHTNESS]]
         ]]
       ]]
-      [[ff ~el_chroma:iterate
-        // TODO: Better color mixing here
-        [[V iter_vars
-          <<v ~constitutents@*constituent>>
-          [[gi *iter:range (i 1) ]]
-        ]]
-        [[fo element:get_element_species <<v *constituent>> ]]
-        [[fn weight:weight
-          [[an weights 0.5, 0.5 ]]
-          [[fn exp:expdist
-            [[fn rng:rng_n
-              [[fn rng:brng
-                <<v ~hash>>
-                [[fi it:mult (i 12131) <<v *iter>> ]]
+      [[c ~el_chroma
+        [[V locals
+          [[ff ~per_constituent:iterate
+            // TODO: Better color mixing here
+            [[V iter_vars
+              <<v ~constituents@*constituent>>
+              [[gi *iter:range (i 1) ]]
+            ]]
+            [[fo element:get_element_species <<v *constituent>> ]]
+            [[fn weight:weight
+              [[an weights 0.5, 0.5 ]]
+              [[fn exp:expdist
+                [[fn rng:rng_n
+                  [[fi rng:brng
+                    <<v ~hash>>
+                    [[fi it:mult (i 12131) <<v *iter>> ]]
+                  ]]
+                ]]
+                [[fn if:if_eq
+                  <<v ~source>>
+                  (i #i:GEO_METAMORPHIC)
+                  (n 1.5)
+                  (n 4)
+                ]]
+              ]]
+              [[fn if:if_eq
+                <<v ~source>>
+                (i #i:GEO_METAMORPHIC)
+                // then:
+                [[fn rng:rng_n
+                  [[fi rng:brng
+                    <<v ~hash>>
+                    [[fi it:mult (i 13151) <<v *iter>> ]]
+                  ]]
+                ]]
+                // else:
+                [[fn norm:rng_normal
+                  [[fi rng:brng
+                    <<v ~hash>>
+                    [[fi it:mult (i 13151) <<v *iter>> ]]
+                  ]]
+                  (n 0.4)
+                  (n 1)
+                ]]
               ]]
             ]]
-            [[fn if:if_eq <<v ~source>> (i #i:GEO_METAMORPHIC) (n 1.5) (n 4)]]
-          ]]
-          [[fn if:if_eq
-            <<v ~source>>
-            (i #i:GEO_METAMORPHIC)
-            // then:
-            [[fn rng:rng_n
-              [[fn rng:brng
-                <<v ~hash>>
-                [[fi it:mult (i 13151) <<v *iter>> ]]
+            [[fn x:mult
+              <<l ^.weight>>
+              [[fn cosine:cosine
+                [[fn chroma:get_el_attr
+                  <<l ^.^.^.element>>
+                  [[i attr #i:EL_PRP_F_STONE_TND_CHROMA]]
+                ]]
               ]]
             ]]
-            // else:
-            [[fn norm:rng_normal
-              [[fn rng:brng
-                <<v ~hash>>
-                [[fi it:mult (i 13151) <<v *iter>> ]]
+            [[fn y:mult
+              <<l ^.weight>>
+              [[fn sine:sine
+                [[fn chroma:get_el_attr
+                  <<l ^.^.^.element>>
+                  [[i attr #i:EL_PRP_F_STONE_TND_CHROMA]]
+                ]]
               ]]
-              (n 0.4)
-              (n 1)
             ]]
           ]]
         ]]
-        [[fn x:mult
-          <<l ^.weight>>
-          [[fn cosine:cosine
-            [[fn chroma:get_el_attr
-              <<l ^.^.^.element>>
-              [[i attr #i:EL_PRP_F_STONE_TND_CHROMA]]
-            ]]
-          ]]
-        ]]
-        [[fn y:mult
-          <<l ^.weight>>
-          [[fn sine:sine
-            [[fn chroma:get_el_attr
-              <<l ^.^.^.element>>
-              [[i attr #i:EL_PRP_F_STONE_TND_CHROMA]]
-            ]]
-          ]]
-        ]]
+        [[ff x_values:peek <<v ~per_constituent>> <<v x>>]]
+        [[ff y_values:peek <<v ~per_constituent>> <<v y>>]]
       ]]
       [[fn ~el_hue:atan2
         // TODO: Better color-mixing algorithm?
-        [[fn avg_y:avg
-          <<v ~el_chroma.y>>
-        ]]
-        [[fn avg_x:avg
-          <<v ~el_chroma.x>>
-        ]]
+        [[fn avg_y:avg <<v ~el_chroma.x_values>> ]]
+        [[fn avg_x:avg <<v ~el_chroma.y_values>> ]]
       ]]
       [[fn ~el_intensity:sqrt
         // TODO: Better color-mixing algorithm?
         [[fn plus:add
-          [[fn x2:pow [[fn avg_x:avg <<v ~el_chroma.x>> ]] (n 2) ]]
-          [[fn y2:pow [[fn avg_y:avg <<v ~el_chroma.y>> ]] (n 2) ]]
+          [[fn x2:pow [[fn avg_x:avg <<v ~el_chroma.x_values>> ]] (n 2) ]]
+          [[fn y2:pow [[fn avg_y:avg <<v ~el_chroma.y_values>> ]] (n 2) ]]
         ]]
       ]]
       [[fn ~el_saturation:mult
@@ -578,7 +585,7 @@
       [[fn L:mult
         <<v ~el_brightness>>
         [[fn brighten:rng_normal
-          [[fn rng:brng <<v ~hash>> (i 10) ]] (n 1) (n 1.4) ]]
+          [[fi rng:brng <<v ~hash>> (i 10) ]] (n 1) (n 1.4) ]]
       ]]
       [[fn c:mult
         <<v ~el_saturation>>
@@ -1074,6 +1081,7 @@
           [[fn liquid_sp_heat:scale <<v ~base_sp_heat>> (n 0.9) (n 2.3) ]]
           [[fn gas_sp_heat:scale <<v ~base_sp_heat>> (n 0.7) (n 1.2) ]]
 
+          // TODO: Really?
           [[n cold_dmg_temp 0]]
           [[fi solidus:scale <<v ~base_tr_temp>> (n 440) (n 1220) ]]
           [[fi liquidus:add
@@ -1116,14 +1124,65 @@
           [[fi hardness:scale <<v ~base_hardness>> (n 30) (n 180) ]]
         ]]
       ]]
+      // Summary array:
+      [[c base_properties
+        [[fn base_density:peek <<l ^.^.typechoice>> <<l base_density>> ]]
+        [[fn base_sp_heat:peek <<l ^.^.typechoice>> <<l base_sp_heat>> ]]
+        [[fn base_tr_temp:peek <<l ^.^.typechoice>> <<l base_tr_temp>> ]]
+        [[fn base_plastic_temp:peek
+          <<l ^.^.typechoice>>
+          <<l base_plastic_temp>>
+        ]]
+        [[fn base_cold_plasticity:peek
+          <<l ^.^.typechoice>>
+          <<l base_cold_plasticity>>
+        ]]
+        [[fn base_warm_plasticity:peek
+          <<l ^.^.typechoice>>
+          <<l base_warm_plasticity>>
+        ]]
+        [[fn base_hardness:peek <<l ^.^.typechoice>> <<l base_hardness>> ]]
+      ]]
+      [[c properties
+        [[fn solid_density:peek <<l ^.^.typechoice>> <<l solid_density>> ]]
+        [[fn liquid_density:peek <<l ^.^.typechoice>> <<l liquid_density>> ]]
+        [[fn gas_density:peek <<l ^.^.typechoice>> <<l gas_density>> ]]
+
+        [[fn solid_sp_heat:peek <<l ^.^.typechoice>> <<l solid_sp_heat>> ]]
+        [[fn liquid_sp_heat:peek <<l ^.^.typechoice>> <<l liquid_sp_heat>> ]]
+        [[fn gas_sp_heat:peek <<l ^.^.typechoice>> <<l gas_sp_heat>> ]]
+
+        [[fn cold_dmg_temp:peek <<l ^.^.typechoice>> <<l cold_dmg_temp>> ]]
+        [[fn solidus:peek <<l ^.^.typechoice>> <<l solidus>> ]]
+        [[fn liquidus:peek <<l ^.^.typechoice>> <<l liquidus>> ]]
+        [[fn boiling_point:peek <<l ^.^.typechoice>> <<l boiling_point>> ]]
+        [[fn ignition_point:peek <<l ^.^.typechoice>> <<l ignition_point>> ]]
+        [[fn flash_point:peek <<l ^.^.typechoice>> <<l flash_point>> ]]
+
+        [[fn cold_plastic_temp:peek
+          <<l ^.^.typechoice>>
+          <<l cold_plastic_temp>>
+        ]]
+        [[fn warm_plastic_temp:peek
+          <<l ^.^.typechoice>>
+          <<l warm_plastic_temp>>
+        ]]
+
+        [[fn cold_plasticity:peek <<l ^.^.typechoice>> <<l cold_plasticity>>]]
+        [[fn warm_plasticity:peek <<l ^.^.typechoice>> <<l warm_plasticity>>]]
+
+        [[fn viscosity:peek <<l ^.^.typechoice>> <<l viscosity>>]]
+
+        [[fn hardness:peek <<l ^.^.typechoice>> <<l hardness>> ]]
+      ]]
     ]]
     [[c ~appearance
       [[V locals
         <<v ~composition.constituents@~constituents>>
         <<v ~composition.traces@~traces>>
-        <<v ~material.base_density@~mat_density>>
-        <<v ~material.base_cold_plasticity@~mat_plasticity>>
-        <<v ~material.base_hardness@~mat_hardness>>
+        <<v ~material.base_properties.base_density@~mat_density>>
+        <<v ~material.base_properties.base_cold_plasticity@~mat_plasticity>>
+        <<v ~material.base_properties.base_hardness@~mat_hardness>>
         [[fn ~softness:weight
           [[an weights 0.15, 0.15, 0.35, 0.35]]
           [[fn rng:rng_normal

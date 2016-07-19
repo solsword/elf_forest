@@ -30,8 +30,6 @@ efd_node * efd_fn_sample_rngtable(
   table = (rngtable*) efd_as_o_fmt(obj, fmt_rngtable);
 
   result = (efd_int_t) rt_pick_result(table, seed);
-  // DEBUG TODO REMOVE
-  fprintf(stderr, "sample_rngtable::%ld\n", result);
 
   return construct_efd_int_node(node->h.name, result);
 }

@@ -49,7 +49,7 @@ efd_node * efd_fn_pick_element(
   seed_node = efd_get_value(efd_nth(node, 3), cache);
 
   // The world map:
-  wm = (world_map*) map_node->b.as_object.value;
+  wm = (world_map*) efd_as_o(map_node);
   if (wm == NULL) {
     efd_report_error(
       s_("ERROR: 'pick_element' got NULL world_map argument."),

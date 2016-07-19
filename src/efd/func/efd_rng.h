@@ -38,9 +38,9 @@ efd_node * efd_fn_brng(efd_node const * const node, efd_value_cache *cache) {
 // Takes a single integer argument (the seed) and returns a corresponding
 // number value in [0, 1).
 efd_node * efd_fn_rng_n(efd_node const * const node, efd_value_cache *cache) {
-  efd_assert_return_type(node, EFD_NT_INTEGER);
-  efd_int_t result = ptrf(efd_as_i(efd_get_value(efd_nth(node, 0), cache)));
-  return construct_efd_int_node(node->h.name, result);
+  efd_assert_return_type(node, EFD_NT_NUMBER);
+  efd_num_t result = ptrf(efd_as_i(efd_get_value(efd_nth(node, 0), cache)));
+  return construct_efd_num_node(node->h.name, result);
 }
 
 // Takes an integer seed value followed by numeric min and max values and
