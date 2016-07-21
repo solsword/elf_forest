@@ -37,7 +37,7 @@ efd_node * efd_fn_peek(efd_node const * const node, efd_value_cache *cache) {
 
   if (count == 2) {
     index = efd_nth(node, 1);
-    if (index->h.type != EFD_NT_LOCAL_LINK) {
+    if (!efd_is_type(index, EFD_NT_LOCAL_LINK)) {
       efd_report_error(
         s_("ERROR: Invalid argument to 'peek' "
            "(if given, second argument must be a local link)."),

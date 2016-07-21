@@ -471,8 +471,8 @@
             ]]
           ]]
         ]]
-        [[ff x_values:peek <<v ~per_constituent>> <<v x>>]]
-        [[ff y_values:peek <<v ~per_constituent>> <<v y>>]]
+        [[ff x_values:peek <<v ~per_constituent>> <<l x>>]]
+        [[ff y_values:peek <<v ~per_constituent>> <<l y>>]]
       ]]
       [[fn ~el_hue:atan2
         // TODO: Better color-mixing algorithm?

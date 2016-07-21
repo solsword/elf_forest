@@ -135,22 +135,32 @@ efd_node * efd_fn_sqrt(efd_node const * const node, efd_value_cache *cache) {
   );
 }
 
-// The average of all arguments.
+// The average of the the argument (which should be able to generate number
+// values).
 efd_node * efd_fn_avg(efd_node const * const node, efd_value_cache *cache) {
   size_t i, count;
   efd_num_t sum;
-  dictionary *children;
-  efd_node *child;
+  efd_generator_state *values_gen;
+  efd_node *values_container, *child;
+  dictionary *values;
 
   efd_assert_return_type(node, EFD_NT_NUMBER);
 
-  children = efd_children_dict(node);
-  count = d_get_count(children);
+  values_gen = efd_generator_for(efd_get_value(efd_nth(node, 0), cache), cache);
+  values_container = efd_gen_all(values_gen);
+  cleanup_efd_generator_state(values_gen);
+
+  values = efd_children_dict(values_container);
+
+  count = d_get_count(values);
   sum = 0;
   for (i = 0; i < count; ++i) {
-    child = (efd_node*) d_get_item(children, i);
+    child = (efd_node*) d_get_item(values, i);
     sum += efd_as_n(efd_get_value(child, cache));
   }
+
+  cleanup_efd_node(values_container);
+  cleanup_dictionary(values);
 
   return construct_efd_num_node(node->h.name, sum / (efd_num_t) count);
 }

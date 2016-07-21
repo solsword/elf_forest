@@ -53,6 +53,13 @@ efd_node * efd_fn_iterate(
 
   generators = create_list();
   iter_vars = efd_get_value(efd_lookup(node, s_ivars), cache);
+  if (iter_vars == NULL || !efd_is_type(iter_vars, EFD_NT_SCOPE)) {
+    efd_report_error(
+      s_("ERROR: 'iterate' node has no 'iter_vars' scope:"),
+      node
+    );
+    exit(EXIT_FAILURE);
+  }
 
   varcount = efd_normal_child_count(iter_vars);
   for (i = 0; i < varcount; ++i) {

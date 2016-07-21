@@ -939,7 +939,10 @@ void efd_assert_type(efd_node const * const n, efd_node_type t) {
     n
   );
   if (n == NULL) {
-    fprintf(stderr, "ERROR: Missing EFD node in efd_assert_type!\n");
+    efd_report_error(
+      s_("ERROR: Missing EFD node in efd_assert_type:"),
+      n
+    );
     exit(EXIT_FAILURE);
   }
 #ifndef EFD_NO_TYPECHECKS
@@ -1060,8 +1063,15 @@ int efd_format_is(efd_node const * const n, string const * const fmt) {
 }
 
 void efd_rename(efd_node * node, string const * const new_name) {
+  efd_node *parent = node->h.parent;
+  if (parent != NULL) {
+    efd_remove_child(parent, node);
+  }
   cleanup_string(node->h.name);
   node->h.name = copy_string(new_name);
+  if (parent != NULL) {
+    efd_add_child(parent, node);
+  }
 }
 
 string * efd_type_name(efd_node_type t) {
@@ -3018,44 +3028,52 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
           fprintf(stderr, "\n");
           efd_pop_error_context();
           return NULL;
+
         case EFD_NT_ARRAY_INT:
           limit = *efd__ai_count(node);
-          efd_pop_error_context();
           if (gen->index >= limit) {
-            return NULL;
+            result = NULL;
           } else {
-            return construct_efd_int_node(
+            result = construct_efd_int_node(
               gen->name,
               (*efd__ai(node))[gen->index++]
             );
           }
+          efd_pop_error_context();
+          return result;
+
         case EFD_NT_ARRAY_NUM:
           limit = *efd__an_count(node);
-          efd_pop_error_context();
           if (gen->index >= limit) {
-            return NULL;
+            result = NULL;
           } else {
-            return construct_efd_num_node(
+            result = construct_efd_num_node(
               gen->name,
               (*efd__an(node))[gen->index++]
             );
           }
+          efd_pop_error_context();
+          return result;
+
         case EFD_NT_ARRAY_STR:
           limit = *efd__as_count(node);
-          efd_pop_error_context();
           if (gen->index >= limit) {
-            return NULL;
+            result = NULL;
           } else {
-            return construct_efd_str_node(
+            result = construct_efd_str_node(
               gen->name,
               (*efd__as(node))[gen->index++]
             );
           }
+          efd_pop_error_context();
+          return result;
+
       } // all paths return
 
     case EFD_GT_FUNCTION:
+      result = ((efd_generator_function) gen->state)(gen);
       efd_pop_error_context();
-      return ((efd_generator_function) gen->state)(gen);
+      return result;
 
     case EFD_GT_EXTEND_RESTART:
       sub = (efd_generator_state*) gen->state;
@@ -3072,8 +3090,9 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
       sub = (efd_generator_state*) gen->state;
       node = efd_gen_next(sub);
       if (node == NULL) {
+        result = efd_create_shadow_clone((efd_node*) gen->stash);
         efd_pop_error_context();
-        return efd_create_shadow_clone((efd_node*) gen->stash);
+        return result;
       }
       if (gen->stash != NULL) {
         fprintf(stderr, "EXT_HOLD generator stash turnover cleanup.\n");

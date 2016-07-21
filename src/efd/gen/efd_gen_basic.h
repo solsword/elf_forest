@@ -13,24 +13,47 @@
 
 // The generator function that implements range as described below.
 efd_node * efd_gn_impl_range(efd_generator_state *state) {
-  efd_node *params = (efd_node*) state->stash;
-  efd_int_t start, stop, step, result;
   SSTR(s_start, "start", 5);
   SSTR(s_stop, "stop", 4);
   SSTR(s_step, "step", 4);
 
-  start = *efd__i(efd_lookup(params, s_start));
-  stop = *efd__i(efd_lookup(params, s_stop));
-  step = *efd__i(efd_lookup(params, s_step));
+  efd_node *params, *start_node, *stop_node, *step_node;
+  efd_int_t start, stop, step, result;
+
+  params = (efd_node*) state->stash;
+
+  efd_push_error_context(s_("...during call to 'range' generator:"));
+
+  start_node = efd_lookup(params, s_start);
+  stop_node = efd_lookup(params, s_stop);
+  step_node = efd_lookup(params, s_step);
+
+  if (start_node == NULL) {
+    start = 0;
+  } else {
+    start = efd_as_i(start_node);
+  }
+  if (stop_node == NULL) {
+    stop = 0;
+  } else {
+    stop = efd_as_i(stop_node);
+  }
+  if (step_node == NULL) {
+    step = 1;
+  } else {
+    step = efd_as_i(step_node);
+  }
 
   result = start + step * state->index;
   if (
     (step >= 0 && result >= stop)
  || (step < 0 && result <= stop)
   ) {
+    efd_pop_error_context();
     return NULL; // finished
   }
   state->index += 1;
+  efd_pop_error_context();
   return construct_efd_int_node(state->name, result);
 }
 
@@ -47,9 +70,14 @@ efd_generator_state * efd_gn_range(
   efd_node const * const node,
   efd_value_cache *cache
 ) {
+  SSTR(s_start, "start", 5);
+  SSTR(s_stop, "stop", 4);
+  SSTR(s_step, "step", 4);
+
   size_t child_count;
-  efd_node *stash;
+  efd_node *stash, *tmp;
   efd_generator_state *result;
+  efd_push_error_context(s_("...during setup of 'range' generator:"));
 
   efd_assert_return_type(node, EFD_NT_INTEGER);
 
@@ -61,19 +89,7 @@ efd_generator_state * efd_gn_range(
   );
 
   child_count = efd_normal_child_count(node);
-  if (child_count == 1) {
-    efd_add_child(stash, copy_efd_node(efd_get_value(efd_nth(node, 0), cache)));
-    efd_add_child(stash, create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME));
-    efd_add_child(stash, construct_efd_int_node(EFD_ANON_NAME, 1));
-  } else if (child_count == 2) {
-    efd_add_child(stash, copy_efd_node(efd_get_value(efd_nth(node, 0), cache)));
-    efd_add_child(stash, copy_efd_node(efd_get_value(efd_nth(node, 1), cache)));
-    efd_add_child(stash, construct_efd_int_node(EFD_ANON_NAME, 1));
-  } else if (child_count == 3) {
-    efd_add_child(stash, copy_efd_node(efd_get_value(efd_nth(node, 0), cache)));
-    efd_add_child(stash, copy_efd_node(efd_get_value(efd_nth(node, 1), cache)));
-    efd_add_child(stash, copy_efd_node(efd_get_value(efd_nth(node, 2), cache)));
-  } else {
+  if (child_count <= 0 || child_count > 3) {
     efd_report_error(
       s_sprintf(
         "ERROR: 'range' iterator must have 1-3 arguments (had %lu):",
@@ -84,9 +100,25 @@ efd_generator_state * efd_gn_range(
     exit(EXIT_FAILURE);
     // TODO: Better here?
   }
+  if (child_count >= 1) {
+    tmp = copy_efd_node(efd_get_value(efd_nth(node, 0), cache));
+    efd_rename(tmp, s_start);
+    efd_add_child(stash, tmp);
+  }
+  if (child_count >= 2) {
+    tmp = copy_efd_node(efd_get_value(efd_nth(node, 0), cache));
+    efd_rename(tmp, s_stop);
+    efd_add_child(stash, tmp);
+  }
+  if (child_count >= 3) {
+    tmp = copy_efd_node(efd_get_value(efd_nth(node, 0), cache));
+    efd_rename(tmp, s_step);
+    efd_add_child(stash, tmp);
+  }
 
   result->stash = (void*) stash;
 
+  efd_pop_error_context();
   return result;
 }
 
@@ -99,14 +131,16 @@ efd_generator_state * efd_gn_extend(
 ) {
   efd_node *child;
   efd_generator_type type;
-  efd_generator_state *sub;
+  efd_generator_state *sub, *result;
+
+  efd_push_error_context(s_("...during setup of 'extend' generator:"));
 
   child = efd_get_value(efd_nth(node, 0), cache);
   efd_assert_return_type(node, efd_return_type_of(child));
 
   sub = efd_generator_for(child, cache);
 
-  type = (efd_generator_type) efd__i(efd_get_value(efd_nth(node, 1), cache));
+  type = (efd_generator_type) efd_as_i(efd_get_value(efd_nth(node, 1), cache));
   if (type != EFD_GT_EXTEND_RESTART && type != EFD_GT_EXTEND_HOLD) {
     efd_report_error(
       s_sprintf(
@@ -119,11 +153,13 @@ efd_generator_state * efd_gn_extend(
     // TODO: better here?
   }
 
-  return create_efd_generator_state(
+  result = create_efd_generator_state(
     type,
     node->h.name,
     (void*) (sub)
   );
+  efd_pop_error_context();
+  return result;
 }
 
 #endif // INCLUDE_EFD_GEN_BASIC_H
