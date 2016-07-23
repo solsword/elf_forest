@@ -12,6 +12,8 @@
 #include "blocks.h"
 #include "measures.h"
 
+#include "boilerplate.h"
+
 /************************
  * Types and Structures *
  ************************/
@@ -161,6 +163,23 @@ static inline specific_heat mat_specific_heat(float relative) {
     return (specific_heat) i;
   }
 }
+
+/******************************
+ * Constructors & Destructors *
+ ******************************/
+
+// Allocates and returns a new material.
+material *create_material(void);
+
+// Allocates and returns a copy of the given material.
+material *copy_material(material *source);
+void *copy_v_material(void *source);
+
+// Frees the memory associated with the given material.
+CLEANUP_DECL(material);
+
+// Copies the values of the source material into the destination material.
+void set_material(material *dest, material const * const source);
 
 /*************
  * Functions *

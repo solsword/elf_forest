@@ -54,6 +54,28 @@ struct mineral_filter_args_s {
 // Generates mineral textures.
 void fltr_mineral(texture *tx, void const * const fargs);
 
+/******************************
+ * Constructors & Destructors *
+ ******************************/
+
+// Allocate and return new mineral_filter args.
+mineral_filter_args *create_mineral_filter_args(void);
+
+// Copy mineral filter args, returning a newly-allocated set of args.
+mineral_filter_args *copy_mineral_filter_args(
+  mineral_filter_args const * const src
+);
+void *copy_v_mineral_filter_args(void *v_src);
+
+// Frees the memory associated with mineral filter args.
+CLEANUP_DECL(mineral_filter_args);
+
+// Copies values from one mineral filter args to another.
+void set_mineral_filter_args(
+  mineral_filter_args *dest,
+  mineral_filter_args const * const src
+);
+
 /*************
  * Functions *
  *************/

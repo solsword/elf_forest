@@ -651,10 +651,11 @@ void efd_parse_function(efd_node *result, efd_parse_state *s) {
 }
 
 void efd_parse_proto(efd_node *result, efd_parse_state *s) {
+  efd_node *redir, *proto;
   result->b.as_proto.format = efd_parse_annotation(s, EFD_PARSER_COLON);
   if (efd_parse_failed(s)) { return; }
 
-  efd_node *proto = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  proto = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
   efd_parse_children(proto, s);
   if (efd_parse_failed(s)) {
 #ifdef DEBUG_TRACE_EFD_CLEANUP
@@ -668,8 +669,9 @@ void efd_parse_proto(efd_node *result, efd_parse_state *s) {
     cleanup_efd_node(proto);
     return;
   }
+  redir = efd_create_reroute(result, proto);
 
-  result->b.as_proto.input = proto;
+  result->b.as_proto.input = redir;
 }
 
 void efd_parse_integer(efd_node *result, efd_parse_state *s) {

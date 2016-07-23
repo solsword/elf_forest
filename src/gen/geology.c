@@ -912,7 +912,7 @@ void generate_geology(world_map *wm) {
   SSTR(vn_seed, "~seed", 5);
 
   SSTR(s_stratum, "stratum", 7);
-  SSTR(s_stone_species, "stone_species", 7);
+  SSTR(s_stone_species, "stone_species", 13);
 
   SSTR(
     s_emissing,

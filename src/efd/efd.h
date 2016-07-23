@@ -289,6 +289,7 @@ extern string const * const EFD_ROOT_NAME;
 
 extern char const * const EFD_NT_NAMES[];
 extern char const * const EFD_NT_ABBRS[];
+extern char const * const EFD_GT_NAMES[];
 
 extern efd_node *EFD_ROOT;
 
@@ -463,6 +464,9 @@ void efd_v_assert_object_format(void *v_node, void *v_fmt);
 void efd_report_error_light(string *message, efd_node const * const n);
 void efd_report_error(string *message, efd_node const * const n);
 void efd_report_error_full(string *message, efd_node const * const n);
+
+// Works like efd_report_error but doesn't require (or print info about) a node.
+void efd_report_free_error(string *message);
 
 // Returns a string containing a trace of resolution of the given link.
 string *efd_trace_link(efd_node const * const n);
@@ -1216,7 +1220,8 @@ efd_node * efd_gen_all(efd_generator_state *gen);
 // Takes an EFD node and returns the corresponding generator object for
 // iteration over that node, getting values from and/or adding them to the
 // given cache when needed. Works with container, generator function, and array
-// nodes, but returns NULL for other node types (including link types).
+// nodes, but returns NULL for other node types. If it is given a link node it
+// calls efd_concrete before attempting to process the result.
 efd_generator_state * efd_generator_for(
   efd_node *node,
   efd_value_cache *cache
@@ -1229,6 +1234,10 @@ efd_generator_state * efd_generator_for(
 // Type coercion functions:
 static inline efd_int_t efd_as_i(efd_node *n) {
   efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to coerce NULL to an integer:"), n);
+    exit(EXIT_FAILURE);
+  }
   if (efd_is_link_node(n)) {
     ct = efd_concrete(n);
     if (ct == NULL) {
@@ -1255,6 +1264,10 @@ static inline efd_int_t efd_as_i(efd_node *n) {
 
 static inline efd_num_t efd_as_n(efd_node *n) {
   efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to coerce NULL to a number:"), n);
+    exit(EXIT_FAILURE);
+  }
   if (efd_is_link_node(n)) {
     ct = efd_concrete(n);
     if (ct == NULL) {
@@ -1280,6 +1293,10 @@ static inline efd_num_t efd_as_n(efd_node *n) {
 
 static inline string* efd_as_s(efd_node *n) {
   efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to coerce NULL to a string:"), n);
+    exit(EXIT_FAILURE);
+  }
   if (efd_is_link_node(n)) {
     ct = efd_concrete(n);
     if (ct == NULL) {
@@ -1303,6 +1320,10 @@ static inline string* efd_as_s(efd_node *n) {
 
 static inline void* efd_as_o(efd_node *n) {
   efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to coerce NULL to an object:"), n);
+    exit(EXIT_FAILURE);
+  }
   if (efd_is_link_node(n)) {
     ct = efd_concrete(n);
     if (ct == NULL) {
@@ -1326,6 +1347,10 @@ static inline void* efd_as_o(efd_node *n) {
 
 static inline void* efd_as_o_fmt(efd_node *n, string const * const fmt) {
   efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to coerce NULL to an object:"), n);
+    exit(EXIT_FAILURE);
+  }
   if (efd_is_link_node(n)) {
     ct = efd_concrete(n);
     if (ct == NULL) {
@@ -1357,6 +1382,10 @@ static inline void* efd_as_o_fmt(efd_node *n, string const * const fmt) {
 
 static inline size_t efd_array_count(efd_node *n) {
   efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to get array count of NULL:"), n);
+    exit(EXIT_FAILURE);
+  }
   if (efd_is_link_node(n)) {
     ct = efd_concrete(n);
     if (ct == NULL) {
@@ -1391,6 +1420,10 @@ static inline size_t efd_array_count(efd_node *n) {
 
 static inline efd_int_t* efd_as_ai(efd_node *n) {
   efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to get int array from NULL:"), n);
+    exit(EXIT_FAILURE);
+  }
   if (efd_is_link_node(n)) {
     ct = efd_concrete(n);
     if (ct == NULL) {
@@ -1417,6 +1450,10 @@ static inline efd_int_t* efd_as_ai(efd_node *n) {
 
 static inline efd_num_t* efd_as_an(efd_node *n) {
   efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to get num array from NULL:"), n);
+    exit(EXIT_FAILURE);
+  }
   if (efd_is_link_node(n)) {
     ct = efd_concrete(n);
     if (ct == NULL) {
@@ -1443,6 +1480,10 @@ static inline efd_num_t* efd_as_an(efd_node *n) {
 
 static inline string** efd_as_as(efd_node *n) {
   efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to get string array from NULL:"), n);
+    exit(EXIT_FAILURE);
+  }
   if (efd_is_link_node(n)) {
     ct = efd_concrete(n);
     if (ct == NULL) {

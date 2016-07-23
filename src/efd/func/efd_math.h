@@ -7,6 +7,9 @@
 { .key = "div",          .function = &efd_fn_div          },
 { .key = "pow",          .function = &efd_fn_pow          },
 { .key = "sqrt",         .function = &efd_fn_sqrt         },
+{ .key = "sine",         .function = &efd_fn_sine         },
+{ .key = "cosine",       .function = &efd_fn_cosine       },
+{ .key = "atan2",        .function = &efd_fn_atan2        },
 { .key = "avg",          .function = &efd_fn_avg          },
 { .key = "scale",        .function = &efd_fn_scale        },
 { .key = "constrain",    .function = &efd_fn_constrain    },
@@ -135,18 +138,55 @@ efd_node * efd_fn_sqrt(efd_node const * const node, efd_value_cache *cache) {
   );
 }
 
+// The sine of the first child.
+efd_node * efd_fn_sine(efd_node const * const node, efd_value_cache *cache) {
+  efd_assert_return_type(node, EFD_NT_NUMBER);
+  return construct_efd_num_node(
+    node->h.name,
+    sin(efd_as_n(efd_get_value(efd_nth(node, 0), cache)))
+  );
+}
+
+// The cosine of the first child.
+efd_node * efd_fn_cosine(efd_node const * const node, efd_value_cache *cache) {
+  efd_assert_return_type(node, EFD_NT_NUMBER);
+  return construct_efd_num_node(
+    node->h.name,
+    cos(efd_as_n(efd_get_value(efd_nth(node, 0), cache)))
+  );
+}
+
+// atan2 of the first two children (first argument is y, second is x).
+efd_node * efd_fn_atan2(efd_node const * const node, efd_value_cache *cache) {
+  efd_assert_return_type(node, EFD_NT_NUMBER);
+  return construct_efd_num_node(
+    node->h.name,
+    atan2(
+      efd_as_n(efd_get_value(efd_nth(node, 0), cache)),
+      efd_as_n(efd_get_value(efd_nth(node, 1), cache))
+    )
+  );
+}
+
 // The average of the the argument (which should be able to generate number
 // values).
 efd_node * efd_fn_avg(efd_node const * const node, efd_value_cache *cache) {
   size_t i, count;
   efd_num_t sum;
   efd_generator_state *values_gen;
-  efd_node *values_container, *child;
+  efd_node *values_node, *values_container, *child;
   dictionary *values;
 
   efd_assert_return_type(node, EFD_NT_NUMBER);
 
-  values_gen = efd_generator_for(efd_get_value(efd_nth(node, 0), cache), cache);
+  values_node = efd_concrete(efd_get_value(efd_nth(node, 0), cache));
+  values_gen = efd_generator_for(values_node, cache);
+  if (values_gen == NULL) {
+    efd_report_error(
+      s_("ERROR: invalid 'avg' call: couldn't construct generator from:"),
+      values_node
+    );
+  }
   values_container = efd_gen_all(values_gen);
   cleanup_efd_generator_state(values_gen);
 
@@ -160,7 +200,7 @@ efd_node * efd_fn_avg(efd_node const * const node, efd_value_cache *cache) {
   }
 
   cleanup_efd_node(values_container);
-  cleanup_dictionary(values);
+  // (values is cleaned up as part of values_container)
 
   return construct_efd_num_node(node->h.name, sum / (efd_num_t) count);
 }

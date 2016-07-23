@@ -195,6 +195,104 @@ void fltr_mineral(texture *tx, void const * const fargs) {
   }
 }
 
+/******************************
+ * Constructors & Destructors *
+ ******************************/
+
+// Allocate and return new mineral_filter args.
+mineral_filter_args *create_mineral_filter_args(void) {
+  mineral_filter_args *result = (mineral_filter_args*) malloc(
+    sizeof(mineral_filter_args)
+  );
+
+  result->seed = 0;
+  result->scale = 0;
+  result->gritty = 0;
+  result->contoured = 0;
+  result->porous = 0;
+  result->bumpy = 0;
+  result->layered = 0;
+  result->layerscale = 0;
+  result->layerwaves = 0;
+  result->wavescale = 0;
+  result->inclusions = 0;
+  result->dscale = 0;
+  result->distortion = 0;
+  result->squash = 0;
+  result->base_color = (pixel) 0;
+  result->alt_color = (pixel) 0;
+  result->sat_noise = 0;
+  result->desaturate = 0;
+  result->brightness = 0;
+
+  return result;
+}
+
+// Copy mineral filter args, returning a newly-allocated set of args.
+mineral_filter_args *copy_mineral_filter_args(
+  mineral_filter_args const * const src
+) {
+  mineral_filter_args *result = (mineral_filter_args*) malloc(
+    sizeof(mineral_filter_args)
+  );
+
+  result->seed = src->seed;
+  result->scale = src->scale;
+  result->gritty = src->gritty;
+  result->contoured = src->contoured;
+  result->porous = src->porous;
+  result->bumpy = src->bumpy;
+  result->layered = src->layered;
+  result->layerscale = src->layerscale;
+  result->layerwaves = src->layerwaves;
+  result->wavescale = src->wavescale;
+  result->inclusions = src->inclusions;
+  result->dscale = src->dscale;
+  result->distortion = src->distortion;
+  result->squash = src->squash;
+  result->base_color = src->base_color;
+  result->alt_color = src->alt_color;
+  result->sat_noise = src->sat_noise;
+  result->desaturate = src->desaturate;
+  result->brightness = src->brightness;
+
+  return result;
+}
+void *copy_v_mineral_filter_args(void *v_src) {
+  return (void*) copy_mineral_filter_args((mineral_filter_args*) v_src);
+}
+
+// Frees the memory associated with mineral filter args.
+CLEANUP_IMPL(mineral_filter_args) {
+  free(doomed);
+}
+
+// Copies values from one mineral filter args to another.
+void set_mineral_filter_args(
+  mineral_filter_args *dest,
+  mineral_filter_args const * const src
+) {
+  dest->seed = src->seed;
+  dest->scale = src->scale;
+  dest->gritty = src->gritty;
+  dest->contoured = src->contoured;
+  dest->porous = src->porous;
+  dest->bumpy = src->bumpy;
+  dest->layered = src->layered;
+  dest->layerscale = src->layerscale;
+  dest->layerwaves = src->layerwaves;
+  dest->wavescale = src->wavescale;
+  dest->inclusions = src->inclusions;
+  dest->dscale = src->dscale;
+  dest->distortion = src->distortion;
+  dest->squash = src->squash;
+  dest->base_color = src->base_color;
+  dest->alt_color = src->alt_color;
+  dest->sat_noise = src->sat_noise;
+  dest->desaturate = src->desaturate;
+  dest->brightness = src->brightness;
+}
+
 /*************
  * Functions *
  *************/

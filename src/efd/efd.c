@@ -109,6 +109,16 @@ char const * const EFD_NT_ABBRS[] = {
   "gas"
 };
 
+char const * const EFD_GT_NAMES[] = {
+  "invalid",
+  "children",
+  "indices",
+  "function",
+  "extend-restart",
+  "extend-hold",
+  "parallel",
+};
+
 efd_node *EFD_ROOT = NULL;
 
 dictionary *EFD_GLOBALS = NULL;
@@ -1579,6 +1589,14 @@ void efd_report_error_full(string *message, efd_node const * const n) {
   cleanup_string(repr);
 }
 
+void efd_report_free_error(string *message) {
+  efd_print_error_context();
+
+  s_fprintln(stderr, message);
+  fprintf(stderr, "\n");
+  cleanup_string(message);
+}
+
 string * _efd_trace_lookup(
   efd_node const * const root,
   efd_address const * addr
@@ -2331,15 +2349,6 @@ efd_node * efd_find_variable_in(
   );
 
   if (!efd_is_container_node(node)) {
-#ifdef DEBUG
-    efd_report_error(
-      s_("Warning: efd_find_variable_in on non-container node:"),
-      node
-    );
-    fprintf(stderr, "Key was:\n  ");
-    s_fprintln(stderr, target->name);
-    fprintf(stderr, "\n");
-#endif
     efd_pop_error_context();
     return NULL;
   }
@@ -2709,7 +2718,7 @@ efd_node * efd_get_value(
   ct = efd_concrete(target);
   if (ct == NULL) {
     efd_report_broken_link(
-      s_("ERROR: Broken link passed to efd_get_value:"),
+      s_("ERROR: Broken link passed to efd_get_value."),
       target
     );
   }
@@ -2897,7 +2906,12 @@ void efd_unpack_node(efd_node *root) {
         root
       );
     }
-    obj = unpacker(p->input); // unpack
+    // Unpack:
+    if (efd_is_type(p->input, EFD_NT_REROUTE)) {
+      obj = unpacker(p->input->b.as_reroute.child);
+    } else {
+      obj = unpacker(p->input);
+    }
 #ifdef DEBUG_TRACE_EFD_CLEANUP
     fprintf(
       stderr,
@@ -3163,12 +3177,26 @@ void efd_gen_reset(efd_generator_state *gen) {
 }
 
 efd_node * efd_gen_all(efd_generator_state *gen) {
+  if (gen == NULL) {
+    efd_push_error_context(s_("...in efd_gen_all <NULL>:"));
+    efd_report_free_error(s_("ERROR: efd_gen_all called with NULL generator."));
+    exit(EXIT_FAILURE);
+  }
+  efd_push_error_context(
+    s_sprintf(
+      "...in efd_gen_all for generator '%.*s' (%s):",
+      s_get_length(gen->name),
+      s_raw(gen->name),
+      EFD_GT_NAMES[gen->type]
+    )
+  );
   efd_node *result = create_efd_node(EFD_NT_CONTAINER, gen->name);
   efd_node *next = efd_gen_next(gen);
   while (next != NULL) {
     efd_add_child(result, next);
     next = efd_gen_next(gen);
   }
+  efd_pop_error_context();
   return result;
 }
 
@@ -3176,9 +3204,16 @@ efd_generator_state * efd_generator_for(
   efd_node *node,
   efd_value_cache *cache
 ) {
+  if (efd_is_link_node(node)) {
+    return efd_generator_for(efd_concrete(node), cache);
+  }
   switch (node->h.type) {
     default:
     case EFD_NT_INVALID:
+      efd_report_error(
+        s_("Warning: Couldn't construct generator for node:"),
+        node
+      );
       return NULL;
 
     case EFD_NT_CONTAINER:
