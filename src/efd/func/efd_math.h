@@ -179,16 +179,18 @@ efd_node * efd_fn_avg(efd_node const * const node, efd_value_cache *cache) {
 
   efd_assert_return_type(node, EFD_NT_NUMBER);
 
-  // DEBUG: TODO: REMOVE
+  /* DEBUG: TODO: REMOVE
   fprintf(stderr, "avg::node\n");
   s_fprintln(stderr, efd_repr(node));
+  */
 
   values_node = efd_concrete(efd_get_value(efd_nth(node, 0), cache));
 
-  // DEBUG: TODO: REMOVE
+  /* DEBUG: TODO: REMOVE
   efd_report_broken_link(s_("avg::link"), efd_nth(node, 0));
   fprintf(stderr, "avg::values\n");
   s_fprintln(stderr, efd_repr(values_node));
+  */
 
   values_gen = efd_generator_for(values_node, cache);
   if (values_gen == NULL) {

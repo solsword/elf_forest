@@ -19,6 +19,7 @@ efd_node * efd_gn_impl_range(efd_generator_state *state) {
 
   efd_node *params, *start_node, *stop_node, *step_node;
   efd_int_t start, stop, step, result;
+  int maystop = 1;
 
   params = (efd_node*) state->stash;
 
@@ -35,6 +36,7 @@ efd_node * efd_gn_impl_range(efd_generator_state *state) {
   }
   if (stop_node == NULL) {
     stop = 0;
+    maystop = 0;
   } else {
     stop = efd_as_i(stop_node);
   }
@@ -45,9 +47,13 @@ efd_node * efd_gn_impl_range(efd_generator_state *state) {
   }
 
   result = start + step * state->index;
+
   if (
-    (step >= 0 && result >= stop)
- || (step < 0 && result <= stop)
+    maystop
+ && (
+      (step >= 0 && result >= stop)
+   || (step < 0 && result <= stop)
+    )
   ) {
     efd_pop_error_context();
     return NULL; // finished

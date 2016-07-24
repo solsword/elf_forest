@@ -82,6 +82,7 @@ efd_node * efd_fn_iterate(
     for (i = 0; i < l_get_length(generators); ++i) {
       gen = (efd_generator_state*) l_get_item(generators, i);
       val = efd_gen_next(gen);
+
       if (val == NULL) {
         cleanup_efd_node(container);
         scope = NULL;
@@ -101,6 +102,7 @@ efd_node * efd_fn_iterate(
       val = efd_fresh_value(tmp);
       cleanup_efd_node(tmp);
       efd_rename(val, EFD_ANON_NAME);
+
       efd_add_child(efd_nth(result, i), val);
     }
     cleanup_efd_node(container);
