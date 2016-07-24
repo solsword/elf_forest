@@ -36,40 +36,41 @@ void* efd__stone_species(efd_node *n) {
 
   efd_assert_type(n, EFD_NT_CONTAINER);
 
-  val = efd_fresh_value(n);
+  val = efd_concrete(efd_fresh_value(n));
 
   result = (stone_species*) malloc(sizeof(stone_species));
   result->id = SP_INVALID; // unregistered
 
   // Source:
-  result->source = (geologic_source) efd_as_i(efd_lookup(val, s_source));
+  result->source = (geologic_source) efd_as_i(
+    efd_lookup_expected(val, s_source)
+  );
 
   // Material:
-  field = efd_lookup(val, s_material);
+  field = efd_fresh_value(efd_lookup_expected(val, s_material));
   set_material(
     &(result->material),
     (material*) efd_as_o_fmt(field, s_material)
   );
 
   // Appearance:
-  field = efd_lookup(val, s_appearance);
+  field = efd_fresh_value(efd_lookup_expected(val, s_appearance));
   set_mineral_filter_args(
     &(result->appearance),
     (mineral_filter_args*) efd_as_o_fmt(field, s_mineral_filter_args)
   );
 
   // Composition values:
-  field = efd_lookup(val, s_composition);
+  field = efd_lookup_expected(val, s_composition);
 
-  result->composition = (mineral_composition) efd_as_i(
-    efd_lookup(field, s_composition)
-  );
+  subfield = efd_lookup_expected(field, s_composition);
+  result->composition = (mineral_composition) efd_as_i(subfield);
 
-  result->trace_composition = (mineral_trace_composition) efd_as_i(
-    efd_lookup(field, s_trace_composition)
-  );
 
-  subfield = efd_lookup(field, s_constituents);
+  subfield = efd_lookup_expected(field, s_trace_composition);
+  result->trace_composition = (mineral_trace_composition) efd_as_i(subfield);
+
+  subfield = efd_lookup_expected(field, s_constituents);
   if (efd_normal_child_count(subfield) != MN_MAX_PRIMARY_CONSTITUENTS) {
     efd_report_error(
       s_sprintf(
@@ -85,7 +86,7 @@ void* efd__stone_species(efd_node *n) {
     result->constituents[i] = (species) efd_as_i(efd_nth(subfield, i));
   }
 
-  subfield = efd_lookup(field, s_traces);
+  subfield = efd_lookup_expected(field, s_traces);
   if (efd_normal_child_count(subfield) != MN_MAX_TRACE_CONSTITUENTS) {
     efd_report_error(
       s_sprintf(

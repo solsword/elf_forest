@@ -53,31 +53,31 @@ void* efd__mineral_filter_args(efd_node *n) {
     exit(EXIT_FAILURE);
   }
 
-  val = efd_fresh_value(efd_nth(n, 0));
+  val = efd_concrete(efd_fresh_value(efd_nth(n, 0)));
 
   efd_assert_type(val, EFD_NT_CONTAINER);
 
   result = create_mineral_filter_args();
 
-  result->seed = efd_as_i(efd_lookup(val, s_seed));
-  result->scale = efd_as_n(efd_lookup(val, s_scale));
-  result->gritty = efd_as_n(efd_lookup(val, s_gritty));
-  result->contoured = efd_as_n(efd_lookup(val, s_contoured));
-  result->porous = efd_as_n(efd_lookup(val, s_porous));
-  result->bumpy = efd_as_n(efd_lookup(val, s_bumpy));
-  result->layered = efd_as_n(efd_lookup(val, s_layered));
-  result->layerscale = efd_as_n(efd_lookup(val, s_layerscale));
-  result->layerwaves = efd_as_n(efd_lookup(val, s_layerwaves));
-  result->wavescale = efd_as_n(efd_lookup(val, s_wavescale));
-  result->inclusions = efd_as_n(efd_lookup(val, s_inclusions));
-  result->dscale = efd_as_n(efd_lookup(val, s_dscale));
-  result->distortion = efd_as_n(efd_lookup(val, s_distortion));
-  result->squash = efd_as_n(efd_lookup(val, s_squash));
-  result->base_color = (pixel) efd_as_i(efd_lookup(val, s_base_color));
-  result->alt_color = (pixel) efd_as_i(efd_lookup(val, s_alt_color));
-  result->sat_noise = efd_as_n(efd_lookup(val, s_sat_noise));
-  result->desaturate = efd_as_n(efd_lookup(val, s_desaturate));
-  result->brightness = efd_as_n(efd_lookup(val, s_brightness));
+  result->seed = efd_as_i(efd_lookup_expected(val, s_seed));
+  result->scale = efd_as_n(efd_lookup_expected(val, s_scale));
+  result->gritty = efd_as_n(efd_lookup_expected(val, s_gritty));
+  result->contoured = efd_as_n(efd_lookup_expected(val, s_contoured));
+  result->porous = efd_as_n(efd_lookup_expected(val, s_porous));
+  result->bumpy = efd_as_n(efd_lookup_expected(val, s_bumpy));
+  result->layered = efd_as_n(efd_lookup_expected(val, s_layered));
+  result->layerscale = efd_as_n(efd_lookup_expected(val, s_layerscale));
+  result->layerwaves = efd_as_n(efd_lookup_expected(val, s_layerwaves));
+  result->wavescale = efd_as_n(efd_lookup_expected(val, s_wavescale));
+  result->inclusions = efd_as_n(efd_lookup_expected(val, s_inclusions));
+  result->dscale = efd_as_n(efd_lookup_expected(val, s_dscale));
+  result->distortion = efd_as_n(efd_lookup_expected(val, s_distortion));
+  result->squash = efd_as_n(efd_lookup_expected(val, s_squash));
+  result->base_color = (pixel) efd_as_i(efd_lookup_expected(val, s_base_color));
+  result->alt_color = (pixel) efd_as_i(efd_lookup_expected(val, s_alt_color));
+  result->sat_noise = efd_as_n(efd_lookup_expected(val, s_sat_noise));
+  result->desaturate = efd_as_n(efd_lookup_expected(val, s_desaturate));
+  result->brightness = efd_as_n(efd_lookup_expected(val, s_brightness));
 
   return (void*) result;
 }

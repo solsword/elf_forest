@@ -1077,6 +1077,12 @@ efd_node * efd_get_parent(efd_node const * const node);
 // results, so the result is never a link node.
 efd_node * efd_lookup(efd_node const * const node, string const * const key);
 
+// Just like efd_lookup but throws an error if it misses.
+efd_node * efd_lookup_expected(
+  efd_node const * const node,
+  string const * const key
+);
+
 // Works like efd_lookup, returns a list of all matching children with the
 // given key, instead of just the first. The list's values are not copies, but
 // the list itself should be cleaned up by the caller. If the 'parent' path
@@ -1160,19 +1166,9 @@ efd_node * efd_call_function(
   efd_node * args
 );
 
-// Unpacks this node and all of its children recursively, turning PROTO nodes
-// containing raw EFD into OBJECT nodes containing unpacked structs.
-void efd_unpack_node(efd_node *root);
-
-// Void version of efd_unpack_node.
-void efd_unpack_v_node(void *v_node);
-
-// Packs this node and all of its children recursively, turning OBJECT nodes
-// containing unpacked structs into PROTO nodes containing EFD COLLECTIONs.
-void efd_pack_node(efd_node *root);
-
-// Void version of efd_pack_node.
-void efd_pack_v_node(void *v_node);
+// Takes an OBJECT node and returns a new PROTO node whose value is the
+// original OBJECT.
+efd_node * efd_pack_object(efd_node const * const object);
 
 // TODO: Serialization (separate files)...
 
@@ -1247,7 +1243,7 @@ static inline efd_int_t efd_as_i(efd_node *n) {
   }
   if (efd_is_type(n, EFD_NT_FN_INT) || efd_is_type(n, EFD_NT_FN_NUM)) {
     // TODO: Staler value here?
-    n = efd_fresh_value(n);
+    n = efd_concrete(efd_fresh_value(n));
   }
   if (efd_is_type(n, EFD_NT_INTEGER)) {
     return *efd__i(n);
@@ -1276,7 +1272,7 @@ static inline efd_num_t efd_as_n(efd_node *n) {
     n = ct;
   }
   if (efd_is_type(n, EFD_NT_FN_INT) || efd_is_type(n, EFD_NT_FN_NUM)) {
-    n = efd_fresh_value(n);
+    n = efd_concrete(efd_fresh_value(n));
   }
   if (efd_is_type(n, EFD_NT_INTEGER)) {
     return efd_cast_to_num(*efd__i(n));
@@ -1305,7 +1301,7 @@ static inline string* efd_as_s(efd_node *n) {
     n = ct;
   }
   if (efd_is_type(n, EFD_NT_FN_STR)) {
-    n = efd_fresh_value(n);
+    n = efd_concrete(efd_fresh_value(n));
   }
   if (efd_is_type(n, EFD_NT_STRING)) {
     return *(efd__s(n));
@@ -1332,7 +1328,7 @@ static inline void* efd_as_o(efd_node *n) {
     n = ct;
   }
   if (efd_is_type(n, EFD_NT_FN_OBJ)) {
-    n = efd_fresh_value(n);
+    n = efd_concrete(efd_fresh_value(n));
   }
   if (efd_is_type(n, EFD_NT_OBJECT)) {
     return *(efd__o(n));
@@ -1362,7 +1358,7 @@ static inline void* efd_as_o_fmt(efd_node *n, string const * const fmt) {
     n = ct;
   }
   if (efd_is_type(n, EFD_NT_FN_OBJ)) {
-    n = efd_fresh_value(n);
+    n = efd_concrete(efd_fresh_value(n));
   }
   if (efd_is_type(n, EFD_NT_OBJECT)) {
     efd_assert_object_format(n, fmt);
@@ -1401,7 +1397,7 @@ static inline size_t efd_array_count(efd_node *n) {
  || efd_is_type(n, EFD_NT_FN_AR_NUM)
  || efd_is_type(n, EFD_NT_FN_AR_STR)
   ) {
-    n = efd_fresh_value(n);
+    n = efd_concrete(efd_fresh_value(n));
   }
   if (efd_is_type(n, EFD_NT_ARRAY_INT)) {
     return *efd__ai_count(n);
@@ -1435,7 +1431,7 @@ static inline efd_int_t* efd_as_ai(efd_node *n) {
     n = ct;
   }
   if (efd_is_type(n, EFD_NT_FN_AR_INT)) {
-    n = efd_fresh_value(n);
+    n = efd_concrete(efd_fresh_value(n));
   }
   if (efd_is_type(n, EFD_NT_ARRAY_INT)) {
     return *efd__ai(n);
@@ -1465,7 +1461,7 @@ static inline efd_num_t* efd_as_an(efd_node *n) {
     n = ct;
   }
   if (efd_is_type(n, EFD_NT_FN_AR_NUM)) {
-    n = efd_fresh_value(n);
+    n = efd_concrete(efd_fresh_value(n));
   }
   if (efd_is_type(n, EFD_NT_ARRAY_NUM)) {
     return *efd__an(n);
@@ -1495,7 +1491,7 @@ static inline string** efd_as_as(efd_node *n) {
     n = ct;
   }
   if (efd_is_type(n, EFD_NT_FN_AR_STR)) {
-    n = efd_fresh_value(n);
+    n = efd_concrete(efd_fresh_value(n));
   }
   if (efd_is_type(n, EFD_NT_ARRAY_NUM)) {
     return *efd__as(n);

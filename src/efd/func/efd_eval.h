@@ -35,6 +35,14 @@ efd_node * efd_fn_peek(efd_node const * const node, efd_value_cache *cache) {
 
   value = efd_get_value(target, cache);
 
+  if (value == NULL) {
+    efd_report_error(
+      s_("ERROR: Primary target of 'peek' node has NULL value:"),
+      node
+    );
+    return NULL;
+  }
+
   if (count == 2) {
     index = efd_nth(node, 1);
     if (!efd_is_type(index, EFD_NT_LOCAL_LINK)) {
@@ -69,7 +77,6 @@ efd_node * efd_fn_peek(efd_node const * const node, efd_value_cache *cache) {
     }
   }
 
-  // TODO: Should this be a straight copy?
   value = efd_create_shadow_clone(value);
   efd_rename(value, node->h.name);
   return value;

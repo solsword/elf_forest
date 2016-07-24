@@ -268,10 +268,6 @@ void load_common_efd(void) {
     &load_common_efd_file,
     NULL
   );
-
-  // Unpack prototypes into objects:
-  efd_unpack_node(EFD_ROOT);
-  d_foreach(EFD_GLOBALS, &efd_unpack_v_node);
 }
 
 void save_common_efd(void) {

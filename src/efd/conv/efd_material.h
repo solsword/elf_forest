@@ -24,7 +24,7 @@ void* efd__material(efd_node *n) {
   efd_node *val;
 
   SSTR(s_origin, "origin", 6);
-  SSTR(s_solid_density, "solid_density", 12);
+  SSTR(s_solid_density, "solid_density", 13);
   SSTR(s_liquid_density, "liquid_density", 14);
   SSTR(s_gas_density, "gas_density", 11);
 
@@ -58,57 +58,75 @@ void* efd__material(efd_node *n) {
     exit(EXIT_FAILURE);
   }
 
-  val = efd_fresh_value(efd_nth(n, 0));
+  val = efd_concrete(efd_fresh_value(efd_nth(n, 0)));
 
   efd_assert_type(val, EFD_NT_CONTAINER);
 
   result = create_material();
 
-  result->origin = (material_origin) efd_as_i(efd_lookup(val, s_origin));
+  result->origin = (material_origin) efd_as_i(
+    efd_lookup_expected(val, s_origin)
+  );
 
-  result->solid_density = (density) efd_as_i(efd_lookup(val, s_solid_density));
-  result->liquid_density = (density)efd_as_i(efd_lookup(val,s_liquid_density));
-  result->gas_density = (density) efd_as_i(efd_lookup(val, s_gas_density));
+  result->solid_density = (density) efd_as_i(
+    efd_lookup_expected(val, s_solid_density)
+  );
+  result->liquid_density = (density) efd_as_i(
+    efd_lookup_expected(val, s_liquid_density)
+  );
+  result->gas_density = (density) efd_as_i(
+    efd_lookup_expected(val, s_gas_density)
+  );
 
   result->solid_specific_heat = (specific_heat) efd_as_i(
-    efd_lookup(val, s_solid_specific_heat)
+    efd_lookup_expected(val, s_solid_specific_heat)
   );
   result->liquid_specific_heat = (specific_heat) efd_as_i(
-    efd_lookup(val, s_liquid_specific_heat)
+    efd_lookup_expected(val, s_liquid_specific_heat)
   );
   result->gas_specific_heat = (specific_heat) efd_as_i(
-    efd_lookup(val, s_gas_specific_heat)
+    efd_lookup_expected(val, s_gas_specific_heat)
   );
 
   result->cold_damage_temp = (temperature) efd_as_i(
-    efd_lookup(val, s_cold_damage_temp)
+    efd_lookup_expected(val, s_cold_damage_temp)
   );
 
-  result->solidus = (temperature) efd_as_i(efd_lookup(val, s_solidus));
-  result->liquidus = (temperature) efd_as_i(efd_lookup(val, s_liquidus));
+  result->solidus = (temperature) efd_as_i(
+    efd_lookup_expected(val, s_solidus)
+  );
+  result->liquidus = (temperature) efd_as_i(
+    efd_lookup_expected(val, s_liquidus)
+  );
   result->boiling_point = (temperature) efd_as_i(
-    efd_lookup(val, s_boiling_point)
+    efd_lookup_expected(val, s_boiling_point)
   );
   result->ignition_point = (temperature) efd_as_i(
-    efd_lookup(val, s_ignition_point)
+    efd_lookup_expected(val, s_ignition_point)
   );
-  result->flash_point = (temperature) efd_as_i(efd_lookup(val, s_flash_point));
+  result->flash_point = (temperature) efd_as_i(
+    efd_lookup_expected(val, s_flash_point)
+  );
 
   result->cold_plastic_temp = (temperature) efd_as_i(
-    efd_lookup(val, s_cold_plastic_temp)
+    efd_lookup_expected(val, s_cold_plastic_temp)
   );
   result->warm_plastic_temp = (temperature) efd_as_i(
-    efd_lookup(val, s_warm_plastic_temp)
+    efd_lookup_expected(val, s_warm_plastic_temp)
   );
   result->cold_plasticity = (temperature) efd_as_i(
-    efd_lookup(val, s_cold_plasticity)
+    efd_lookup_expected(val, s_cold_plasticity)
   );
   result->warm_plasticity = (temperature) efd_as_i(
-    efd_lookup(val, s_warm_plasticity)
+    efd_lookup_expected(val, s_warm_plasticity)
   );
 
-  result->viscosity = (viscosity) efd_as_n(efd_lookup(val, s_viscosity));
-  result->hardness = (hardness) efd_as_i(efd_lookup(val, s_hardness));
+  result->viscosity = (viscosity) efd_as_n(
+    efd_lookup_expected(val, s_viscosity)
+  );
+  result->hardness = (hardness) efd_as_i(
+    efd_lookup_expected(val, s_hardness)
+  );
 
   return (void*) result;
 }

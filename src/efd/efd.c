@@ -1384,6 +1384,10 @@ string * _efd_full_repr(efd_node const * const n, size_t indent) {
   }
   s_append(s_nl, ind);
 
+  if (n == NULL) {
+    return s_("<NULL node>");
+  }
+
   if (n->h.type >= EFD_NUM_TYPES || n->h.type < 0) { // a corrupted node
     return s_sprintf("<corrupt node [%d]>", n->h.type);
   }
@@ -1814,7 +1818,7 @@ int _efd_cmp(
 ) {
   intptr_t i, count;
   dictionary *cmp_ch, *agn_ch;
-  efd_node *cmp_shadow, *agn_shadow;
+  efd_node *cmp_packed, *agn_packed;
 
   string *ctx = s_("...in efd_cmp for nodes:\n");
   s_devour(ctx, efd_repr(cmp));
@@ -1909,18 +1913,9 @@ int _efd_cmp(
 
     case EFD_NT_OBJECT:
       // pack copies of each node and compare them as protos:
-      cmp_shadow = efd_create_shadow_clone(cmp);
-      agn_shadow = efd_create_shadow_clone(agn);
-
-      efd_pack_node(cmp_shadow->b.as_reroute.child);
-      efd_pack_node(agn_shadow->b.as_reroute.child);
-      if (
-        !_efd_cmp(
-          cmp_shadow->b.as_reroute.child,
-          agn_shadow->b.as_reroute.child,
-          strict
-        )
-      ) {
+      cmp_packed = efd_pack_object(cmp);
+      agn_packed = efd_pack_object(agn);
+      if (!_efd_cmp(cmp_packed, agn_packed, strict)) {
 #ifdef DEBUG_TRACE_EFD_CLEANUP
         fprintf(
           stderr,
@@ -1931,8 +1926,8 @@ int _efd_cmp(
           s_raw(agn->h.name)
         );
 #endif
-        cleanup_efd_node(cmp_shadow);
-        cleanup_efd_node(agn_shadow);
+        cleanup_efd_node(cmp_packed);
+        cleanup_efd_node(agn_packed);
 
         efd_pop_error_context();
         return 0;
@@ -1947,8 +1942,8 @@ int _efd_cmp(
         s_raw(agn->h.name)
       );
 #endif
-      cleanup_efd_node(cmp_shadow);
-      cleanup_efd_node(agn_shadow);
+      cleanup_efd_node(cmp_packed);
+      cleanup_efd_node(agn_packed);
       break;
 
     case EFD_NT_INTEGER:
@@ -2578,6 +2573,25 @@ efd_node * efd_lookup(efd_node const * const node, string const * const key) {
   }
 }
 
+efd_node * efd_lookup_expected(
+  efd_node const * const node,
+  string const * const key
+) {
+  efd_node *result = efd_lookup(node, key);
+  if (result == NULL) {
+    efd_report_error(
+      s_sprintf(
+        "Couldn't find field '%.*s' in node:",
+        s_get_length(key),
+        s_raw(key)
+      ),
+      node
+    );
+    exit(EXIT_FAILURE);
+  }
+  return result;
+}
+
 list * efd_lookup_all(
   efd_node const * const node,
   string const * const key
@@ -2630,9 +2644,10 @@ efd_node * efdx(efd_node const * const root, string const * const saddr) {
 }
 
 efd_node * efd_eval(efd_node const * const target, efd_value_cache *cache) {
-  efd_node *result, *trace;
+  efd_node *result, *trace, *input;
   efd_node const *last_active;
   efd_eval_function feval;
+  efd_unpack_function unpacker;
 
   efd_push_error_context_with_node(s_("...during evaluation of node:"), target);
 
@@ -2645,8 +2660,8 @@ efd_node * efd_eval(efd_node const * const target, efd_value_cache *cache) {
     return NULL;
   }
 
-  // If the target is a function node, actually evaluate it:
-  if (efd_is_function_node(target)) {
+  // If the target is a function node or prototype, actually evaluate it:
+  if (efd_is_function_node(target) || efd_is_type(target, EFD_NT_PROTO)) {
     // Check for evaluation cycles:
     if (m1_contains_key(cache->stack, (map_key_t) target)) {
       efd_report_error(
@@ -2673,21 +2688,59 @@ efd_node * efd_eval(efd_node const * const target, efd_value_cache *cache) {
     // Do the evaluation:
     last_active = cache->active;
     cache->active = target;
-    feval = efd_lookup_function(target->b.as_function.function);
-    if (feval == NULL) {
-      efd_report_error(
-        s_("ERROR: function node with invalid function:"),
+    if (efd_is_function_node(target)) {
+      feval = efd_lookup_function(target->b.as_function.function);
+      if (feval == NULL) {
+        efd_report_error(
+          s_sprintf(
+            "ERROR: unknown function '%.*U' during evaluation of node:",
+            s_get_length(target->b.as_function.function),
+            s_raw(target->b.as_function.function)
+          ),
+          target
+        );
+      }
+      efd_push_error_context(
+        s_sprintf(
+          "...during call to function '%.*U':",
+          s_get_length(target->b.as_function.function),
+          s_raw(target->b.as_function.function)
+        )
+      );
+      result = feval(target, cache);
+      efd_pop_error_context();
+    } else {
+      // recurse on the input first:
+      input = efd_concrete(efd_get_value(target->b.as_proto.input, cache));
+      // then get the unpacker:
+      unpacker = efd_lookup_unpacker(target->b.as_proto.format);
+      if (unpacker == NULL) {
+        efd_report_error(
+          s_sprintf(
+            "ERROR: Unknown format '%.*U' during attempt to unpack node:",
+            s_get_length(target->b.as_proto.format),
+            s_raw(target->b.as_proto.format)
+          ),
+          target
+        );
+      }
+
+      // and unpack the object:
+      efd_push_error_context_with_node(
+        s_sprintf(
+          "...while unpacking '%.*U' node:",
+          s_get_length(target->b.as_proto.format),
+          s_raw(target->b.as_proto.format)
+        ),
         target
       );
+      result = construct_efd_obj_node(
+        target->h.name,
+        target->b.as_proto.format,
+        unpacker(input)
+      );
+      efd_pop_error_context();
     }
-    efd_push_error_context(
-      s_sprintf(
-        "...during call to function '%U':",
-        s_raw(target->b.as_function.function)
-      )
-    );
-    result = feval(target, cache);
-    efd_pop_error_context();
     cache->active = last_active;
 
     // Cache the result:
@@ -2749,7 +2802,7 @@ efd_node * efd_get_value(
 efd_node * efd_fresh_value(efd_node const * const target) {
   efd_value_cache *tmp = create_efd_value_cache();
   efd_node *result = efd_get_value(target, tmp);
-  result = copy_efd_node(result); // old result is in the value cache
+  result = efd_create_shadow_clone(result); // old result is in the value cache
   cleanup_efd_value_cache(tmp);
   return result;
 }
@@ -2876,107 +2929,31 @@ efd_value_cache * efd_compute_values(efd_node const * const root) {
   return result;
 }
 
-void efd_unpack_node(efd_node *root) {
-  void *obj;
-  efd_proto *p;
-  efd_object *o;
 
-  efd_push_error_context_with_node(
-    s_("...while unpacking node:"),
-    root
-  );
+efd_node * efd_pack_object(efd_node const * const object) {
+  efd_node *result;
+  efd_pack_function packer;
+  
+  efd_assert_type(object, EFD_NT_OBJECT);
 
-  // First unpack any children recursively:
-  if (efd_is_container_node(root)) {
-    d_foreach(
-      efd_children_dict(root),
-      &efd_unpack_v_node
+  efd_push_error_context_with_node(s_("...while packing object:"), object);
+
+  result = create_efd_node(EFD_NT_PROTO, object->h.name);
+  result->b.as_proto.format = copy_string(object->b.as_object.format);
+  packer = efd_lookup_packer(object->b.as_object.format);
+  if (packer == NULL) {
+    efd_report_error(
+      s_sprintf(
+        "ERROR: no packer for format '%.*U' while packing object:",
+        s_get_length(object->b.as_object.format),
+        s_raw(object->b.as_object.format)
+      ),
+      object
     );
   }
-
-  // Then transform this node into an OBJECT if necessary:
-  if (root->h.type == EFD_NT_PROTO) {
-    root->h.type = EFD_NT_OBJECT; // change the node type
-    p = &(root->b.as_proto);
-    efd_unpack_node(p->input); // First recursively unpack the input
-    efd_unpack_function unpacker = efd_lookup_unpacker(p->format);
-    if (unpacker == NULL) {
-      efd_report_error(
-        s_("Error during attempt to unpack node:"),
-        root
-      );
-    }
-    // Unpack:
-    if (efd_is_type(p->input, EFD_NT_REROUTE)) {
-      obj = unpacker(p->input->b.as_reroute.child);
-    } else {
-      obj = unpacker(p->input);
-    }
-#ifdef DEBUG_TRACE_EFD_CLEANUP
-    fprintf(
-      stderr,
-      "  EFD cleanup[%p]:%s:object-input\n",
-      root,
-      s_raw(root->h.name)
-    );
-#endif
-    cleanup_efd_node(p->input); // free now-unnecessary EFD data
-    o = &(root->b.as_object);
-    // format field should overlap perfectly and thus need no change
-    o->value = obj; // o->value is in the same place as p->input
-  }
+  result->b.as_proto.input = packer(object->b.as_object.value); // pack
   efd_pop_error_context();
-}
-
-void efd_unpack_v_node(void *v_child) {
-  efd_unpack_node((efd_node*) v_child);
-}
-
-void efd_pack_node(efd_node *root) {
-  efd_node *n;
-  efd_proto *p;
-  efd_object *o;
-  dictionary *children;
-
-  efd_push_error_context_with_node(s_("...while packing node:"), root);
-
-  // First pack any children recursively:
-  if (efd_is_container_node(root)) {
-    children = efd_children_dict(root);
-    d_foreach(children, &efd_pack_v_node);
-  }
-
-  // Transform this node into a PROTO if necessary:
-  if (root->h.type == EFD_NT_OBJECT) {
-    root->h.type = EFD_NT_PROTO; // change the node type
-    o = &(root->b.as_object);
-    efd_pack_function packer = efd_lookup_packer(o->format);
-    if (packer == NULL) {
-      efd_report_error(
-        s_("Error finding packer during attempt to pack node:"),
-        root
-      );
-    }
-    efd_destroy_function destructor = efd_lookup_destructor(o->format);
-    if (destructor == NULL) {
-      efd_report_error(
-        s_("Error finding destructor during attempt to pack node:"),
-        root
-      );
-    }
-    n = packer(o->value); // pack
-    destructor(o->value); // free unpacked data
-    efd_pack_node(n); // recursively pack the results
-    p = &(root->b.as_proto);
-    // format field should overlap perfectly and thus need no change
-    p->input = n; // p->input is in the same place as o->value
-  } // else do nothing
-  efd_pop_error_context();
-}
-
-// Private iterator:
-void efd_pack_v_node(void *v_child) {
-  efd_pack_node((efd_node*) v_child);
+  return result;
 }
 
 efd_node* efd_get_global(string const * const key) {

@@ -2,7 +2,8 @@
 // nothing to declare
 #elif defined(EFD_REGISTER_FUNCTIONS)
 { .key = "if_eq",        .function = &efd_fn_if_eq        },
-//{ .key = "",             .function = &efd_fn_             },
+{ .key = "if_lt",        .function = &efd_fn_if_lt        },
+{ .key = "if_le",        .function = &efd_fn_if_le        },
 #else
 #ifndef INCLUDE_EFD_FUNC_COND_H
 #define INCLUDE_EFD_FUNC_COND_H
@@ -41,5 +42,66 @@ efd_node * efd_fn_if_eq(efd_node const * const node, efd_value_cache *cache) {
   }
 }
 
+// Takes four arguments and compares the first two as numbers. If the first is
+// less than the second, takes on the value of its third argument, otherwise
+// uses the value of it's final argument.
+efd_node * efd_fn_if_lt(efd_node const * const node, efd_value_cache *cache) {
+  efd_node *yes, *no;
+  efd_num_t n_first, n_second;
+
+  if (efd_normal_child_count(node) < 3) {
+    efd_report_error(
+      s_("ERROR: 'if_lt' has wrong number of children (must be 4):"),
+      node
+    );
+    exit(EXIT_FAILURE);
+  }
+
+  n_first = efd_as_n(efd_get_value(efd_nth(node, 0), cache));
+  n_second = efd_as_n(efd_get_value(efd_nth(node, 1), cache));
+
+  yes = efd_get_value(efd_nth(node, 2), cache);
+  no = efd_get_value(efd_nth(node, 3), cache);
+
+  efd_assert_return_type(node, yes->h.type);
+  efd_assert_return_type(node, no->h.type);
+
+  if (n_first < n_second) {
+    return efd_create_shadow_clone(yes);
+  } else {
+    return efd_create_shadow_clone(no);
+  }
+}
+
+// Takes four arguments and compares the first two as numbers. If the first is
+// less than or equal to the second, takes on the value of its third argument,
+// otherwise uses the value of it's final argument.
+efd_node * efd_fn_if_le(efd_node const * const node, efd_value_cache *cache) {
+  efd_node *yes, *no;
+  efd_num_t n_first, n_second;
+
+  if (efd_normal_child_count(node) < 3) {
+    efd_report_error(
+      s_("ERROR: 'if_le' has wrong number of children (must be 4):"),
+      node
+    );
+    exit(EXIT_FAILURE);
+  }
+
+  n_first = efd_as_n(efd_get_value(efd_nth(node, 0), cache));
+  n_second = efd_as_n(efd_get_value(efd_nth(node, 1), cache));
+
+  yes = efd_get_value(efd_nth(node, 2), cache);
+  no = efd_get_value(efd_nth(node, 3), cache);
+
+  efd_assert_return_type(node, yes->h.type);
+  efd_assert_return_type(node, no->h.type);
+
+  if (n_first <= n_second) {
+    return efd_create_shadow_clone(yes);
+  } else {
+    return efd_create_shadow_clone(no);
+  }
+}
 #endif // INCLUDE_EFD_FUNC_COND_H
 #endif // EFD_REGISTRATION

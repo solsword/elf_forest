@@ -304,6 +304,13 @@
     ]]
     <<v ~traces@input>>
     [[c entry
+      [[i key #i:MNRL_TRACE_NONE]]
+      [[ai value
+        #i:EL_CATEGORY_NONE,
+        #i:EL_CATEGORY_NONE
+      ]]
+    ]]
+    [[c entry
       [[i key #i:MNRL_TRACE_AIR]]
       [[ai value
         #i:EL_CATEGORY_AIR,
@@ -529,8 +536,8 @@
               <<v ~plasticity>>
             ]]
           ]]
-          (n 0.8)
         ]]
+        (n 0.8)
       ]]
       [[fn c:mult
         <<v ~el_saturation>>
@@ -1150,6 +1157,7 @@
         [[fn base_hardness:peek <<l ^.^.typechoice>> <<l base_hardness>> ]]
       ]]
       [[c properties
+        [[fi origin:peek <<l ^.^.typechoice>> <<l origin>> ]]
         [[fn solid_density:peek <<l ^.^.typechoice>> <<l solid_density>> ]]
         [[fn liquid_density:peek <<l ^.^.typechoice>> <<l liquid_density>> ]]
         [[fn gas_density:peek <<l ^.^.typechoice>> <<l gas_density>> ]]
@@ -1916,7 +1924,7 @@
   ]]
   <<v ~source@source>>
   <<v ~composition@composition>>
-  [[o material:material <<v ~material>> ]]
+  [[o material:material [[ff mat:peek <<v ~material.properties>> ]] ]]
   [[o appearance:mineral_filter_args <<v ~appearance>> ]]
 ]]
 

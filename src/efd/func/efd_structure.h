@@ -194,7 +194,7 @@ efd_node * efd_fn_index_of(
     );
     return NULL;
   } else {
-    return construct_efd_int_node(node->h.name, i);
+    return construct_efd_int_node(node->h.name, i-1);
   }
 }
 
@@ -231,14 +231,7 @@ efd_node * efd_fn_lookup_key(
   }
 
   // Lookup first entry to test return type:
-  this_entry = efd_lookup(node, s_entry);
-  if (this_entry == NULL) {
-    efd_report_error(
-     s_("ERROR: 'lookup_key' contains no 'entry' nodes."),
-      node
-    );
-    return NULL;
-  }
+  this_entry = efd_lookup_expected(node, s_entry);
 
   this_key = efd_lookup(this_entry, s_key);
   if (this_key == NULL) {
@@ -269,14 +262,7 @@ efd_node * efd_fn_lookup_key(
   efd_assert_return_type(node, efd_value_type_of(this_value));
 
   // Find our key node:
-  look_for = efd_lookup(node, s_input);
-  if (look_for == NULL) {
-    efd_report_error(
-     s_("ERROR: 'lookup_key' has no 'input' node."),
-      node
-    );
-    return NULL;
-  }
+  look_for = efd_lookup_expected(node, s_input);
   look_for = efd_get_value(look_for, cache);
 
   // Get all entries and search for a match:
