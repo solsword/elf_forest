@@ -630,6 +630,7 @@ CLEANUP_IMPL(efd_node) {
   cleanup_string(doomed->h.name);
   doomed->h.name = NULL;
   // Clean up the node's value:
+  // TODO: when cleaning up values, set value pointers to NULL?!?
   if (doomed->h.value != NULL) {
     cleanup_efd_node(doomed->h.value);
     doomed->h.value = NULL;
