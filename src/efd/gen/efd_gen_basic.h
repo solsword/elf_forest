@@ -72,10 +72,7 @@ efd_node * efd_gn_impl_range(efd_generator_state *state) {
 // If three values are given they are used as start, stop, and step. A
 // container node may be used in place of the stop value to specify no stop
 // value (an infinite generator) when a step value is to be specified.
-efd_generator_state * efd_gn_range(
-  efd_node const * const node,
-  efd_value_cache *cache
-) {
+efd_generator_state * efd_gn_range(efd_node const * const node) {
   SSTR(s_start, "start", 5);
   SSTR(s_stop, "stop", 4);
   SSTR(s_step, "step", 4);
@@ -107,17 +104,17 @@ efd_generator_state * efd_gn_range(
     // TODO: Better here?
   }
   if (child_count >= 1) {
-    tmp = copy_efd_node(efd_get_value(efd_nth(node, 0), cache));
+    tmp = copy_efd_node(efd_get_value(efd_nth(node, 0)));
     efd_rename(tmp, s_start);
     efd_add_child(stash, tmp);
   }
   if (child_count >= 2) {
-    tmp = copy_efd_node(efd_get_value(efd_nth(node, 0), cache));
+    tmp = copy_efd_node(efd_get_value(efd_nth(node, 0)));
     efd_rename(tmp, s_stop);
     efd_add_child(stash, tmp);
   }
   if (child_count >= 3) {
-    tmp = copy_efd_node(efd_get_value(efd_nth(node, 0), cache));
+    tmp = copy_efd_node(efd_get_value(efd_nth(node, 0)));
     efd_rename(tmp, s_step);
     efd_add_child(stash, tmp);
   }
@@ -131,22 +128,19 @@ efd_generator_state * efd_gn_range(
 // Takes a generator and an integer node containing one of the EFD_GT_EXTEND_*
 // constants and creates a generator which extends the base generator using the
 // given extension method.
-efd_generator_state * efd_gn_extend(
-  efd_node const * const node,
-  efd_value_cache *cache
-) {
+efd_generator_state * efd_gn_extend(efd_node const * const node) {
   efd_node *child;
   efd_generator_type type;
   efd_generator_state *sub, *result;
 
   efd_push_error_context(s_("...during setup of 'extend' generator:"));
 
-  child = efd_get_value(efd_nth(node, 0), cache);
+  child = efd_get_value(efd_nth(node, 0));
   efd_assert_return_type(node, efd_return_type_of(child));
 
-  sub = efd_generator_for(child, cache);
+  sub = efd_generator_for(child);
 
-  type = (efd_generator_type) efd_as_i(efd_get_value(efd_nth(node, 1), cache));
+  type = (efd_generator_type) efd_as_i(efd_get_value(efd_nth(node, 1)));
   if (type != EFD_GT_EXTEND_RESTART && type != EFD_GT_EXTEND_HOLD) {
     efd_report_error(
       s_sprintf(

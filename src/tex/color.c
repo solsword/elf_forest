@@ -1,6 +1,10 @@
 // color.c
 // Color manipulation and format conversion.
 
+#ifdef DEBUG
+  #include <stdio.h>
+#endif
+
 #include <math.h>
 
 #include "color.h"
@@ -177,6 +181,7 @@ void rgb__xyz(pixel p, precise_color *result) {
   b *= 100.0;
   g *= 100.0;
 
+  result->format = CFMT_XYZ;
   result->x = r * 0.4124 + g * 0.3576 + b * 0.1805;
   result->y = r * 0.2126 + g * 0.7152 + b * 0.0722;
   result->z = r * 0.0193 + g * 0.1192 + b * 0.9505;
@@ -185,6 +190,11 @@ void rgb__xyz(pixel p, precise_color *result) {
 
 pixel xyz__rgb(precise_color* color) {
   pixel result = PX_BLACK;
+#ifdef DEBUG
+  if (color->format != CFMT_XYZ) {
+    fprintf(stderr, "Warning: xyz__rgb called on non-XYZ color.\n");
+  }
+#endif
   float x = color->x / 100.0;
   float y = color->y / 100.0;
   float z = color->z / 100.0;
@@ -234,6 +244,11 @@ pixel xyz__rgb(precise_color* color) {
 }
 
 void xyz__lab(precise_color *color) {
+#ifdef DEBUG
+  if (color->format != CFMT_XYZ) {
+    fprintf(stderr, "Warning: xyz__lab called on non-XYZ color.\n");
+  }
+#endif
   // These values correspond to a 2-degree FoV w/ illuminant D65:
   float tx = color->x / 95.047;
   float ty = color->y / 100.0;
@@ -255,12 +270,18 @@ void xyz__lab(precise_color *color) {
     tz = (7.787 * tz) + (16.0 / 116.0);
   }
 
+  color->format = CFMT_LAB;
   color->x = (116.0 * ty) - 16.0;
   color->y = 500.0 * (tx - ty);
   color->z = 200.0 * (ty - tz);
 }
 
 void lab__xyz(precise_color *color) {
+#ifdef DEBUG
+  if (color->format != CFMT_LAB) {
+    fprintf(stderr, "Warning: lab__xyz called on non-Lab color.\n");
+  }
+#endif
   float ty = (color->x + 16.0) / 116.0;
   float tx = color->y / 500.0 + ty;
   float tz = ty - (color->z / 200.0);
@@ -282,12 +303,19 @@ void lab__xyz(precise_color *color) {
   }
 
   // These values correspond to a 2-degree FoV w/ illuminant D65:
+  color->format = CFMT_XYZ;
   color->x = 95.047 * tx;
   color->y = 100.0 * ty;
   color->z = 108.883 * tz;
 }
 
 void lab__lch(precise_color *color) {
+#ifdef DEBUG
+  if (color->format != CFMT_LAB) {
+    fprintf(stderr, "Warning: lab__lch called on non-Lab color.\n");
+  }
+#endif
+  color->format = CFMT_LCH;
   // Note: L ('x' in our struct) is unchanged
   float h = atan2(color->z, color->y);
   color->y = sqrtf( pow(color->y, 2) + pow(color->z, 2) );
@@ -295,10 +323,85 @@ void lab__lch(precise_color *color) {
 }
 
 void lch__lab(precise_color *color) {
+#ifdef DEBUG
+  if (color->format != CFMT_LCH) {
+    fprintf(stderr, "Warning: lch__lab called on non-Lch color.\n");
+  }
+#endif
+  color->format = CFMT_LAB;
+  // Note: L ('x' in our struct) is unchanged
   float y = cosf(color->z) * color->y;
   float z = sinf(color->z) * color->y;
   color->y = y;
   color->z = z;
+}
+
+void convert_to_xyz(precise_color *color) {
+  switch (color->format) {
+    default:
+    case CFMT_INVALID:
+#ifdef DEBUG
+      fprintf(stderr, "Warning: convert_to_xyz target has invalid format.\n");
+#endif
+      return;
+
+    case CFMT_XYZ:
+      return;
+
+    case CFMT_LAB:
+      lab__xyz(color);
+      return;
+
+    case CFMT_LCH:
+      lch__lab(color);
+      lab__xyz(color);
+      return;
+  }
+}
+
+void convert_to_lab(precise_color *color) {
+  switch (color->format) {
+    default:
+    case CFMT_INVALID:
+#ifdef DEBUG
+      fprintf(stderr, "Warning: convert_to_lab target has invalid format.\n");
+#endif
+      return;
+
+    case CFMT_XYZ:
+      xyz__lab(color);
+      return;
+
+    case CFMT_LAB:
+      return;
+
+    case CFMT_LCH:
+      lch__lab(color);
+      return;
+  }
+}
+
+void convert_to_lch(precise_color *color) {
+  switch (color->format) {
+    default:
+    case CFMT_INVALID:
+#ifdef DEBUG
+      fprintf(stderr, "Warning: convert_to_lch target has invalid format.\n");
+#endif
+      return;
+
+    case CFMT_XYZ:
+      xyz__lab(color);
+      lab__lch(color);
+      return;
+
+    case CFMT_LAB:
+      lab__lch(color);
+      return;
+
+    case CFMT_LCH:
+      return;
+  }
 }
 
 pixel blend_precisely(pixel a, pixel b, float blend) {

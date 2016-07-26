@@ -16,14 +16,14 @@
 
 // Uses the second argument as an index into the first, which must be an
 // array-type node.
-efd_node * efd_fn_index(efd_node const * const node, efd_value_cache *cache) {
+efd_node * efd_fn_index(efd_node const * const node) {
   size_t acount;
   efd_int_t index;
   efd_node *array, *result;
 
   efd_assert_child_count(node, 2, 2);
 
-  array = efd_get_value(efd_nth(node, 0), cache);
+  array = efd_get_value(efd_nth(node, 0));
 
   switch (array->h.type) {
     default:
@@ -46,7 +46,7 @@ efd_node * efd_fn_index(efd_node const * const node, efd_value_cache *cache) {
       break;
   }
 
-  index = efd_as_i(efd_get_value(efd_nth(node, 1), cache));
+  index = efd_as_i(efd_get_value(efd_nth(node, 1)));
   if (index < 0) {
     efd_report_error(
       s_("ERROR: 'index' node's index argument must be >= 0."),
@@ -105,7 +105,7 @@ efd_node * efd_fn_index(efd_node const * const node, efd_value_cache *cache) {
 
 // Uses the first argument as an index among the remaining arguments, returning
 // the value of the n+1st child.
-efd_node * efd_fn_choose(efd_node const * const node, efd_value_cache *cache) {
+efd_node * efd_fn_choose(efd_node const * const node) {
   intptr_t count;
   efd_int_t index;
   efd_node *result;
@@ -114,7 +114,7 @@ efd_node * efd_fn_choose(efd_node const * const node, efd_value_cache *cache) {
 
   efd_assert_child_count(node, 2, -1);
   
-  index = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
+  index = efd_as_i(efd_get_value(efd_nth(node, 0)));
   if (index < 0) {
     efd_report_error(
       s_("ERROR: 'choose' node's index argument must be >= 0."),
@@ -135,7 +135,7 @@ efd_node * efd_fn_choose(efd_node const * const node, efd_value_cache *cache) {
     );
     return NULL;
   }
-  result = efd_get_value(efd_nth(node, index + 1), cache);
+  result = efd_get_value(efd_nth(node, index + 1));
   efd_rename(result, node->h.name);
   result->h.context = node;
 
@@ -146,10 +146,7 @@ efd_node * efd_fn_choose(efd_node const * const node, efd_value_cache *cache) {
 // finds a matching value. Returns the index of the match within the remaining
 // elements (i.e. not counting the first). The sought-for value and matching
 // values should all be integers.
-efd_node * efd_fn_index_of(
-  efd_node const * const node,
-  efd_value_cache *cache
-) {
+efd_node * efd_fn_index_of(efd_node const * const node) {
   intptr_t count;
   size_t i;
   efd_int_t look_for;
@@ -161,9 +158,9 @@ efd_node * efd_fn_index_of(
 
   efd_assert_child_count(node, 2, -1);
   
-  look_for = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
+  look_for = efd_as_i(efd_get_value(efd_nth(node, 0)));
   for (i = 1; i < count; ++i) {
-    test = efd_get_value(efd_nth(node, i), cache);
+    test = efd_get_value(efd_nth(node, i));
     if (efd_as_i(test) == look_for) {
       break;
     }
@@ -182,10 +179,7 @@ efd_node * efd_fn_index_of(
 // Looks at the 'input' argument and compares its value against the 'key'
 // values of each 'entry' argument until it finds a match. Returns the first
 // 'value' child of the matching 'entry'.
-efd_node * efd_fn_lookup_key(
-  efd_node const * const node,
-  efd_value_cache *cache
-) {
+efd_node * efd_fn_lookup_key(efd_node const * const node) {
   SSTR(s_entry, "entry", 5);
   SSTR(s_key, "key", 3);
   SSTR(s_value, "value", 5);
@@ -235,7 +229,7 @@ efd_node * efd_fn_lookup_key(
 
   // Find our key node:
   look_for = efd_lookup_expected(node, s_input);
-  look_for = efd_get_value(look_for, cache);
+  look_for = efd_get_value(look_for);
 
   // Get all entries and search for a match:
   entries = efd_lookup_all(node, s_entry);
@@ -243,11 +237,11 @@ efd_node * efd_fn_lookup_key(
   this_value = NULL;
 
   for (i = 0; i < l_get_length(entries); ++i) {
-    this_entry = efd_get_value((efd_node*) l_get_item(entries, i), cache);
-    this_key = efd_get_value(efd_lookup(this_entry, s_key), cache);
+    this_entry = efd_get_value((efd_node*) l_get_item(entries, i));
+    this_key = efd_get_value(efd_lookup(this_entry, s_key));
 
     if (efd_equivalent(look_for, this_key)) {
-      this_value = efd_get_value(efd_lookup(this_entry, s_value), cache);
+      this_value = efd_get_value(efd_lookup(this_entry, s_value));
       break;
     }
   }

@@ -28,8 +28,8 @@ void* efd__rngtable(efd_node *n) {
   SSTR(s_values, "values", 6);
   SSTR(s_weights, "weights", 7);
   efd_assert_type(n, EFD_NT_CONTAINER);
-  s = (size_t) efd_as_i(efd_lookup(n, s_size));
-  field = efd_lookup(n, s_values);
+  s = (size_t) efd_as_i(efd_lookup_expected(n, s_size));
+  field = efd_lookup_expected(n, s_values);
   values = efd_as_ai(field);
   vcount = efd_array_count(field);
   if (vcount != s) {
@@ -40,7 +40,7 @@ void* efd__rngtable(efd_node *n) {
       vcount
     );
   }
-  field = efd_lookup(n, s_weights);
+  field = efd_lookup_expected(n, s_weights);
   weights = efd_as_an(field);
   wcount = efd_array_count(field);
   if (wcount != s) {

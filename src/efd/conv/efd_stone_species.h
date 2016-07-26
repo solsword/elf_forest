@@ -36,7 +36,7 @@ void* efd__stone_species(efd_node *n) {
 
   efd_assert_type(n, EFD_NT_CONTAINER);
 
-  val = efd_concrete(efd_fresh_value(n));
+  val = efd_get_value(n);
 
   result = (stone_species*) malloc(sizeof(stone_species));
   result->id = SP_INVALID; // unregistered
@@ -47,14 +47,14 @@ void* efd__stone_species(efd_node *n) {
   );
 
   // Material:
-  field = efd_fresh_value(efd_lookup_expected(val, s_material));
+  field = efd_lookup_expected(val, s_material);
   set_material(
     &(result->material),
     (material*) efd_as_o_fmt(field, s_material)
   );
 
   // Appearance:
-  field = efd_fresh_value(efd_lookup_expected(val, s_appearance));
+  field = efd_lookup_expected(val, s_appearance);
   set_mineral_filter_args(
     &(result->appearance),
     (mineral_filter_args*) efd_as_o_fmt(field, s_mineral_filter_args)

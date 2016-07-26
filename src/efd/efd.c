@@ -135,6 +135,7 @@ efd_node * create_efd_node(
   result->h.context = context;
   result->h.name = copy_string(name);
   result->h.parent = NULL;
+  result->h.value = NULL;
   switch (t) {
     default:
     case EFD_NT_INTEGER:
@@ -628,6 +629,11 @@ CLEANUP_IMPL(efd_node) {
   // Clean up the node's name:
   cleanup_string(doomed->h.name);
   doomed->h.name = NULL;
+  // Clean up the node's value:
+  if (doomed->h.value != NULL) {
+    cleanup_efd_node(doomed->h.value);
+    doomed->h.value = NULL;
+  }
   // Finally free the memory for this node:
   free(doomed);
   efd_pop_error_context();
@@ -720,31 +726,6 @@ efd_reference* create_efd_reference(
 
 CLEANUP_IMPL(efd_reference) {
   cleanup_efd_address(doomed->addr);
-  free(doomed);
-}
-
-efd_value_cache * create_efd_value_cache(void) {
-  efd_value_cache *result = (efd_value_cache*) malloc(sizeof(efd_value_cache));
-  result->values = create_map(1, EFD_EVAL_MAP_TABLE_SIZE);
-  result->unique = create_map(1, EFD_EVAL_MAP_TABLE_SIZE);
-  result->active = NULL;
-  result->stack = create_map(1, EFD_EVAL_DEP_TABLE_SIZE);
-  return result;
-}
-
-CLEANUP_IMPL(efd_value_cache) {
-  // TODO: Are we sure these nodes aren't children of each other?
-#ifdef DEBUG_TRACE_EFD_CLEANUP
-  fprintf(
-    stderr,
-    "> EFD cleanup{%p}:?:value-cache\n",
-    doomed
-  );
-#endif
-  m1_foreach_key(doomed->unique, &cleanup_v_efd_node);
-  cleanup_map(doomed->unique);
-  cleanup_map(doomed->values);
-  cleanup_map(doomed->stack);
   free(doomed);
 }
 
@@ -2565,10 +2546,12 @@ efd_node * efdx(efd_node const * const root, string const * const saddr) {
   return result;
 }
 
-efd_node * efd_eval(efd_node const * const target, efd_value_cache *cache) {
-  efd_node *result, *input;
+efd_node * efd_eval(efd_node const * const target) {
+  efd_node *result, *input, *cvalue;
   efd_eval_function feval;
   efd_unpack_function unpacker;
+  dictionary *children;
+  size_t i;
 
   efd_push_error_context_with_node(s_("...during evaluation of node:"), target);
 
@@ -2581,291 +2564,119 @@ efd_node * efd_eval(efd_node const * const target, efd_value_cache *cache) {
     return NULL;
   }
 
-  // Push onto the cache's evaluation stack:
-  efd_cache_stack_push(cache, target);
-
-  // If the target is a function node or prototype, actually evaluate it:
-  if (efd_is_function_node(target) || efd_is_type(target, EFD_NT_PROTO)) {
-    // Do the evaluation:
-    if (efd_is_function_node(target)) {
-      feval = efd_lookup_function(target->b.as_function.function);
-      if (feval == NULL) {
-        efd_report_error(
-          s_sprintf(
-            "ERROR: unknown function '%.*U' during evaluation of node:",
-            s_get_length(target->b.as_function.function),
-            s_raw(target->b.as_function.function)
-          ),
-          target
-        );
-      }
-      efd_push_error_context(
+  if (efd_is_function_node(target)) {
+    // If it's a function, call it to get a value:
+    feval = efd_lookup_function(target->b.as_function.function);
+    if (feval == NULL) {
+      efd_report_error(
         s_sprintf(
-          "...during call to function '%.*U':",
+          "ERROR: unknown function '%.*U' during evaluation of node:",
           s_get_length(target->b.as_function.function),
           s_raw(target->b.as_function.function)
-        )
+        ),
+        target
       );
-      result = feval(target, cache);
-      efd_pop_error_context();
-    } else {
-      // recurse on the input first:
-      input = efd_concrete(efd_get_value(target->b.as_proto.input, cache));
-      // then get the unpacker:
-      unpacker = efd_lookup_unpacker(target->b.as_proto.format);
-      if (unpacker == NULL) {
-        efd_report_error(
-          s_sprintf(
-            "ERROR: Unknown format '%.*U' during attempt to unpack node:",
-            s_get_length(target->b.as_proto.format),
-            s_raw(target->b.as_proto.format)
-          ),
-          target
-        );
-      }
-
-      // and unpack the object:
-      efd_push_error_context_with_node(
+    }
+    efd_push_error_context(
+      s_sprintf(
+        "...during call to function '%.*U':",
+        s_get_length(target->b.as_function.function),
+        s_raw(target->b.as_function.function)
+      )
+    );
+    result = feval(target);
+    efd_pop_error_context();
+  } else if (efd_is_type(target, EFD_NT_PROTO)) {
+    // If it's a proto, unpack it to get a value:
+    // recurse on the input first:
+    input = efd_get_value(target->b.as_proto.input);
+    // then get the unpacker:
+    unpacker = efd_lookup_unpacker(target->b.as_proto.format);
+    if (unpacker == NULL) {
+      efd_report_error(
         s_sprintf(
-          "...while unpacking '%.*U' node:",
+          "ERROR: Unknown format '%.*U' during attempt to unpack node:",
           s_get_length(target->b.as_proto.format),
           s_raw(target->b.as_proto.format)
         ),
         target
       );
-      result = construct_efd_obj_node(
-        target->h.name,
-        target->h.context,
-        target->b.as_proto.format,
-        unpacker(input)
-      );
-      efd_pop_error_context();
     }
+
+    // and unpack the object:
+    efd_push_error_context_with_node(
+      s_sprintf(
+        "...while unpacking '%.*U' node:",
+        s_get_length(target->b.as_proto.format),
+        s_raw(target->b.as_proto.format)
+      ),
+      target
+    );
+    result = construct_efd_obj_node(
+      target->h.name,
+      target->h.context,
+      target->b.as_proto.format,
+      unpacker(input)
+    );
+    efd_pop_error_context();
+  } else if (efd_is_container_node(target)) {
+    // For non-function container nodes, their values are containers which have
+    // their children's values as children.
+    result = create_efd_node(target->h.type, target->h.name, target->h.context);
+    children = efd_children_dict(target);
+    for (i = 0; i < d_get_count(children); ++i) {
+      cvalue = efd_get_value(d_get_item(children, i));
+      if (cvalue->h.parent != NULL) {
+        efd_report_error(
+          s_("ERROR: Child value already had parent during evaluation of:"),
+          target
+        );
+        efd_report_error(s_("Child node:"), d_get_item(children, i));
+        efd_report_error(s_("Child value:"), cvalue);
+        exit(EXIT_FAILURE);
+      }
+      efd_add_child(result, cvalue);
+    }
+  } else if (efd_is_link_node(target)) {
+    // The value of a link node is a copy of the value of its target:
+    result = copy_efd_node(efd_get_value(efd_concrete(target)));
   } else {
-    // If the target isn't a function node, just return the target pointer:
+    // If the target is not a container, link, function, or proto, its value is
+    // just a copy of itself:
     result = copy_efd_node(target);
   }
-
-  // Cache the result & pop the evaluation stack:
-  efd_cache_put(cache, target, result);
-  efd_cache_stack_pop(cache, target);
 
   efd_pop_error_context();
   return result;
 }
 
-efd_node * efd_get_value(
-  efd_node const * const target,
-  efd_value_cache * cache
-) {
-  efd_node *result, *ct;
+efd_node * efd_get_value(efd_node *target) {
   efd_push_error_context_with_node(
     s_("...while getting the value of node:"),
     target
   );
   if (target == NULL) {
-    efd_pop_error_context();
-    return NULL;
-  }
-
-  ct = efd_concrete(target);
-  if (ct == NULL) {
-    efd_report_broken_link(
-      s_("ERROR: Broken link passed to efd_get_value."),
-      target
+    fprintf(
+      stderr,
+      "ERROR: NULL target for efd_get_value.\n"
     );
+    exit(EXIT_FAILURE);
   }
-  result = m1_get_value(cache->values, (map_key_t) ct);
 
-  if (result == NULL) { // cache miss
-    result = efd_eval(ct, cache);
+  if (target->h.value == NULL) {
+    target->h.value = efd_eval(target);
 #ifdef DEBUG
-    if (target == NULL) {
-      fprintf(
-        stderr,
-        "ERROR: NULL target for efd_get_value.\n"
-      );
-      exit(EXIT_FAILURE);
-    } else if (result == NULL) {
+    if (target->h.value == NULL) {
       efd_report_error(
         s_("Warning: evaluation result is NULL in efd_get_value:"),
         target
       );
     }
-#endif // ifdef DEBUG
+#endif
   }
 
   efd_pop_error_context();
-  return result;
-}
-
-efd_node * efd_fresh_value(efd_node const * const target) {
-  efd_value_cache *tmp = create_efd_value_cache();
-  efd_node *result = efd_get_value(target, tmp);
-  result = copy_efd_node(result); // old result is in the value cache
-  cleanup_efd_value_cache(tmp);
-  return result;
-}
-
-// Private implementation w/ cache argument:
-efd_node * _efd_flatten(efd_node const * const target, efd_value_cache *cache) {
-  size_t i;
-  dictionary *children;
-  efd_node *sub, *result;
-  efd_push_error_context_with_node(
-    s_("...while flattening node:"),
-    target
-  );
-  if (efd_is_link_node(target)) {
-    sub = efd_concrete(target);
-    if (sub == NULL) {
-      efd_report_broken_link(
-        s_("ERROR: Broken link during efd_flatten."),
-        target
-      );
-    }
-    result = _efd_flatten(sub, cache);
-    efd_rename(result, target->h.name);
-    efd_pop_error_context();
-    return result;
-  } else if (efd_is_function_node(target)) {
-    sub = efd_get_value(target, cache);
-    if (sub == NULL) {
-      efd_report_error(
-        s_("ERROR: Target with NULL value during efd_flatten:"),
-        target
-      );
-    }
-    efd_pop_error_context();
-    return _efd_flatten(sub, cache);
-  } else {
-    if (efd_is_container_node(target)) {
-      result = create_efd_node(
-        target->h.type,
-        target->h.name,
-        target->h.context
-      );
-      children = efd_children_dict(target);
-      for (i = 0; i < d_get_count(children); ++i) {
-        sub = (efd_node*) d_get_item(children, i);
-        if (sub == NULL) {
-          efd_report_error(
-            s_sprintf("ERROR: NULL child (%lu) during efd_flatten:", i),
-            target
-          );
-        }
-        efd_add_child(
-          result,
-          _efd_flatten(sub, cache)
-        );
-      }
-      // If it's a generator instead of just a container or scope we need to
-      // copy the function value:
-      if (efd_is_generator_node(target) /* function node is impossible */) {
-        result->b.as_function.function = copy_string(
-          target->b.as_function.function
-        );
-      }
-      efd_pop_error_context();
-      return result;
-    } else {
-      efd_pop_error_context();
-      return copy_efd_node(target);
-    }
-  }
-}
-
-efd_node * efd_flatten(efd_node const * const target) {
-  efd_value_cache *tmp = create_efd_value_cache();
-  efd_node *result = _efd_flatten(target, tmp);
-  cleanup_efd_value_cache(tmp);
-  return result;
-}
-
-// private helper for efd_compute_values:
-void _efd_compute_values(efd_node const * const root, efd_value_cache * cache) {
-  size_t i;
-  dictionary *children;
-  efd_node *child;
-  if (efd_is_function_node(root)) {
-    /* don't care = */ efd_eval(root, cache);
-  } else if (efd_is_container_node(root)) {
-    children = efd_children_dict(root);
-    for (i = 0; i < d_get_count(children); ++i) {
-      child = d_get_item(children, i);
-      if (efd_is_link_node(child)) {
-        child = efd_concrete(child);
-      }
-      _efd_compute_values(child, cache);
-    }
-  }
-}
-
-efd_value_cache * efd_compute_values(efd_node const * const root) {
-  efd_value_cache *result = create_efd_value_cache();
-  _efd_compute_values(root, result);
-  return result;
-}
-
-int efd_cache_is_on_stack(
-  efd_value_cache *cache,
-  efd_node const * const target
-) {
-  return m1_contains_key(cache->stack, (map_key_t) target);
-}
-
-efd_node * efd_cache_stack_parent(
-  efd_value_cache *cache,
-  efd_node const * const target
-) {
-  return (efd_node*) m1_get_value(cache->stack, (map_key_t) target);
-}
-
-void efd_cache_stack_push(
-  efd_value_cache *cache,
-  efd_node const * const target
-) {
-  efd_node *trace;
-  // Check for evaluation cycles:
-  if (efd_cache_is_on_stack(cache, target)) {
-    efd_report_error(
-      s_("ERROR: Evaluation target depends on its own value."),
-      target
-    );
-    trace = efd_cache_stack_parent(cache, target);
-    while (trace != NULL) {
-      efd_report_error(
-        s_("   ...during evaluation of..."),
-        trace
-      );
-      trace = efd_cache_stack_parent(cache, trace);
-    }
-    fprintf(stderr, "   ...trace finished.\n");
-    exit(EXIT_FAILURE);
-  }
-  // Put the value:
-  m1_put_value(
-    cache->stack,
-    (void*) cache->active,
-    (map_key_t) target
-  );
-  cache->active = target;
-}
-
-void efd_cache_stack_pop(
-  efd_value_cache *cache,
-  efd_node const * const target
-) {
-  cache->active = (efd_node*) m1_pop_value(cache->stack, (map_key_t) target);
-}
-
-void efd_cache_put(
-  efd_value_cache *cache,
-  efd_node const * const original,
-  efd_node const * const value
-) {
-  m1_put_value(cache->unique, NULL, (void*) value);
-  m1_put_value(cache->values, (void*) value, (map_key_t) original);
+  return target->h.value;
 }
 
 efd_node * efd_call_function(
@@ -2889,12 +2700,11 @@ efd_node * efd_call_function(
   );
   efd_add_child(call_node, args);
 
-  result = efd_fresh_value(call_node);
+  result = copy_efd_node(efd_get_value(call_node));
   cleanup_efd_node(call_node);
 
   return result;
 }
-
 
 efd_node * efd_pack_object(efd_node const * const object) {
   efd_node *result;
@@ -3147,12 +2957,9 @@ efd_node * efd_gen_all(efd_generator_state *gen) {
   return result;
 }
 
-efd_generator_state * efd_generator_for(
-  efd_node *node,
-  efd_value_cache *cache
-) {
+efd_generator_state * efd_generator_for(efd_node *node) {
   if (efd_is_link_node(node)) {
-    return efd_generator_for(efd_concrete(node), cache);
+    return efd_generator_for(efd_concrete(node));
   }
   switch (node->h.type) {
     default:
@@ -3188,25 +2995,21 @@ efd_generator_state * efd_generator_for(
     case EFD_NT_GN_AR_INT:
     case EFD_NT_GN_AR_NUM:
     case EFD_NT_GN_AR_STR:
-      return efd_lookup_generator(node->b.as_function.function)(node, cache);
+      return efd_lookup_generator(node->b.as_function.function)(node);
   }
 }
 
-int efd_condition_holds(
-  efd_node const * const cond,
-  efd_node const * const arg,
-  efd_value_cache *cache
-) {
+int efd_condition_holds(efd_node *cond, efd_node *arg) {
   efd_int_t condition;
   efd_node *cval, *aval;
 
   efd_assert_type(cond, EFD_NT_CONTAINER);
   efd_assert_child_count(cond, 2, -1);
 
-  condition = efd_as_i(efd_get_value(efd_nth(cond, 0), cache));
+  condition = efd_as_i(efd_get_value(efd_nth(cond, 0)));
 
-  cval = efd_get_value(efd_nth(cond, 1), cache);
-  aval = efd_get_value(arg, cache);
+  cval = efd_get_value(efd_nth(cond, 1));
+  aval = efd_get_value(arg);
 
   switch (condition) {
     default:
@@ -3221,20 +3024,20 @@ int efd_condition_holds(
 
     case EFD_COND_NOT:
       efd_assert_child_count(cond, 2, 2);
-      return !efd_condition_holds(efd_nth(cond, 1), arg, cache);
+      return !efd_condition_holds(efd_nth(cond, 1), arg);
 
     case EFD_COND_AND:
       efd_assert_child_count(cond, 3, 3);
       return (
-        efd_condition_holds(efd_nth(cond, 1), arg, cache)
-     && efd_condition_holds(efd_nth(cond, 2), arg, cache)
+        efd_condition_holds(efd_nth(cond, 1), arg)
+     && efd_condition_holds(efd_nth(cond, 2), arg)
       );
 
     case EFD_COND_OR:
       efd_assert_child_count(cond, 3, 3);
       return (
-        efd_condition_holds(efd_nth(cond, 1), arg, cache)
-     || efd_condition_holds(efd_nth(cond, 2), arg, cache)
+        efd_condition_holds(efd_nth(cond, 1), arg)
+     || efd_condition_holds(efd_nth(cond, 2), arg)
       );
 
     case EFD_COND_EQUIVALENT:
@@ -3262,4 +3065,279 @@ int efd_condition_holds(
       return efd_as_n(aval) >= efd_as_n(cval);
 
   } // all paths return
+}
+
+efd_int_t efd_as_i(efd_node *n) {
+  efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to coerce NULL to an integer:"), n);
+    exit(EXIT_FAILURE);
+  }
+  if (efd_is_link_node(n)) {
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(s_("ERROR: Broken link passed to efd_as_i."), n);
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_INT) || efd_is_type(n, EFD_NT_FN_NUM)) {
+    n = efd_get_value(n);
+  }
+  if (efd_is_type(n, EFD_NT_INTEGER)) {
+    return *efd__i(n);
+  } else if (efd_is_type(n, EFD_NT_NUMBER)) {
+    return efd_cast_to_int(*(efd__n(n)));
+  } else { // invalid
+    efd_report_error(
+      s_("Error: Attempted to coerce non-numeric type to an integer:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+efd_num_t efd_as_n(efd_node *n) {
+  efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to coerce NULL to a number:"), n);
+    exit(EXIT_FAILURE);
+  }
+  if (efd_is_link_node(n)) {
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(s_("ERROR: Broken link passed to efd_as_n."), n);
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_INT) || efd_is_type(n, EFD_NT_FN_NUM)) {
+    n = efd_get_value(n);
+  }
+  if (efd_is_type(n, EFD_NT_INTEGER)) {
+    return efd_cast_to_num(*efd__i(n));
+  } else if (efd_is_type(n, EFD_NT_NUMBER)) {
+    return *(efd__n(n));
+  } else { // invalid
+    efd_report_error(
+      s_("Error: Attempted to coerce non-numeric type to a number:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+string* efd_as_s(efd_node *n) {
+  efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to coerce NULL to a string:"), n);
+    exit(EXIT_FAILURE);
+  }
+  if (efd_is_link_node(n)) {
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(s_("ERROR: Broken link passed to efd_as_s."), n);
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_STR)) {
+    n = efd_get_value(n);
+  }
+  if (efd_is_type(n, EFD_NT_STRING)) {
+    return *(efd__s(n));
+  } else {
+    efd_report_error(
+      s_("Error: Attempted to coerce non-string node to a string:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+void* efd_as_o(efd_node *n) {
+  efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to coerce NULL to an object:"), n);
+    exit(EXIT_FAILURE);
+  }
+  if (efd_is_link_node(n)) {
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(s_("ERROR: Broken link passed to efd_as_o."), n);
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_OBJ) || efd_is_type(n, EFD_NT_PROTO)) {
+    n = efd_get_value(n);
+  }
+  if (efd_is_type(n, EFD_NT_OBJECT)) {
+    return *(efd__o(n));
+  } else {
+    efd_report_error(
+      s_("Error: Attempted to coerce non-object node to an object:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+void* efd_as_o_fmt(efd_node *n, string const * const fmt) {
+  efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to coerce NULL to an object:"), n);
+    exit(EXIT_FAILURE);
+  }
+  if (efd_is_link_node(n)) {
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(
+        s_("ERROR: Broken link passed to efd_as_o_fmt."),
+        n
+      );
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_OBJ) || efd_is_type(n, EFD_NT_PROTO)) {
+    n = efd_get_value(n);
+  }
+  if (efd_is_type(n, EFD_NT_OBJECT)) {
+    efd_assert_object_format(n, fmt);
+    return *(efd__o(n));
+  } else {
+    efd_report_error(
+      s_sprintf(
+        "Error: Attempted to coerce non-object node to a '%.*s' object:",
+        (int) s_get_length(fmt),
+        s_raw(fmt)
+      ),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+size_t efd_array_count(efd_node *n) {
+  efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to get array count of NULL:"), n);
+    exit(EXIT_FAILURE);
+  }
+  if (efd_is_link_node(n)) {
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(
+        s_("ERROR: Broken link passed to efd_array_count."),
+        n
+      );
+    }
+    n = ct;
+  }
+  if (
+    efd_is_type(n, EFD_NT_FN_AR_INT)
+ || efd_is_type(n, EFD_NT_FN_AR_NUM)
+ || efd_is_type(n, EFD_NT_FN_AR_STR)
+  ) {
+    n = efd_get_value(n);
+  }
+  if (efd_is_type(n, EFD_NT_ARRAY_INT)) {
+    return *efd__ai_count(n);
+  } else if (efd_is_type(n, EFD_NT_ARRAY_NUM)) {
+    return *efd__an_count(n);
+  } else if (efd_is_type(n, EFD_NT_ARRAY_STR)) {
+    return *efd__as_count(n);
+  } else {
+    efd_report_error(
+      s_("Error: Attempted to get array count of non-array node:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+efd_int_t* efd_as_ai(efd_node *n) {
+  efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to get int array from NULL:"), n);
+    exit(EXIT_FAILURE);
+  }
+  if (efd_is_link_node(n)) {
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(
+        s_("ERROR: Broken link passed to efd_as_ai."),
+        n
+      );
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_AR_INT)) {
+    n = efd_get_value(n);
+  }
+  if (efd_is_type(n, EFD_NT_ARRAY_INT)) {
+    return *efd__ai(n);
+  } else {
+    efd_report_error(
+      s_("Error: Attempted to coerce non-array node to an integer array:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+efd_num_t* efd_as_an(efd_node *n) {
+  efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to get num array from NULL:"), n);
+    exit(EXIT_FAILURE);
+  }
+  if (efd_is_link_node(n)) {
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(
+        s_("ERROR: Broken link passed to efd_as_an."),
+        n
+      );
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_AR_NUM)) {
+    n = efd_get_value(n);
+  }
+  if (efd_is_type(n, EFD_NT_ARRAY_NUM)) {
+    return *efd__an(n);
+  } else {
+    efd_report_error(
+      s_("Error: Attempted to coerce non-array node to a number array:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
+string** efd_as_as(efd_node *n) {
+  efd_node *ct;
+  if (n == NULL) {
+    efd_report_error(s_("Error: Attempted to get string array from NULL:"), n);
+    exit(EXIT_FAILURE);
+  }
+  if (efd_is_link_node(n)) {
+    ct = efd_concrete(n);
+    if (ct == NULL) {
+      efd_report_broken_link(
+        s_("ERROR: Broken link passed to efd_as_as."),
+        n
+      );
+    }
+    n = ct;
+  }
+  if (efd_is_type(n, EFD_NT_FN_AR_STR)) {
+    n = efd_get_value(n);
+  }
+  if (efd_is_type(n, EFD_NT_ARRAY_NUM)) {
+    return *efd__as(n);
+  } else {
+    efd_report_error(
+      s_("Error: Attempted to coerce non-array node to a string array:"),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
 }

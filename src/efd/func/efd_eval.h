@@ -3,7 +3,6 @@
 #elif defined(EFD_REGISTER_FUNCTIONS)
 { .key = "peek",          .function = &efd_fn_peek },
 { .key = "call",          .function = &efd_fn_call },
-{ .key = "call_value",    .function = &efd_fn_call_value },
 #else
 #ifndef INCLUDE_EFD_FUNC_EVAL_H
 #define INCLUDE_EFD_FUNC_EVAL_H
@@ -17,23 +16,16 @@
 // of the value of the first argument. If two arguments are given, the second
 // should be a local link and will be treated as a link within the value of the
 // first argument.
-efd_node * efd_fn_peek(efd_node const * const node, efd_value_cache *cache) {
+efd_node * efd_fn_peek(efd_node const * const node) {
   intptr_t count;
   efd_node *target, *index, *value, *sub;
 
+  efd_assert_child_count(node, 1, 2);
   count = efd_normal_child_count(node);
-
-  if (count < 1 || count > 2) {
-    efd_report_error(
-      s_("ERROR: Invalid number of arguments to 'peek' (needs 1 or 2)."),
-      node
-    );
-    return NULL;
-  }
 
   target = efd_nth(node, 0);
 
-  value = efd_get_value(target, cache);
+  value = efd_get_value(target);
 
   if (value == NULL) {
     efd_report_error(
@@ -67,35 +59,33 @@ efd_node * efd_fn_peek(efd_node const * const node, efd_value_cache *cache) {
       return NULL;
     }
 
-    value = efd_get_value(sub, cache);
-
-    if (value == NULL) {
-      efd_report_broken_link(
-        s_("ERROR: broken link within value during 'peek' call."),
-        sub
-      );
-    }
+    value = sub;
   }
 
-  value = copy_efd_node(value); // old value is in cache
+  value = copy_efd_node(value); // TODO: old value is NOT in cache
   efd_rename(value, node->h.name);
   return value;
 }
 
-// Common implementation for efd_fn_call and efd_fn_call_value:
-efd_node * _efd_call_impl(
-  efd_node const * const fn_link,
+// Core implementation for efd_fn_call:
+efd_node * _efd_call_value(
   efd_node const * const target,
-  efd_node const * const args
+  efd_node *args
 ) {
   efd_node *shadow, *targs, *result;
 
+  if (!efd_is_container_node(target)) {
+    efd_report_error(
+      s_("ERROR: Attempt to call non-container node as function:"),
+      target
+    );
+  }
   shadow = copy_efd_node(target);
-  targs = efd_flatten(args);
+  targs = efd_get_value(args);
   efd_prepend_child(shadow, targs); // will be cleaned up when shadow is
 
-  // Get a flat result that doesn't contain any links & which has no parent:
-  result = efd_flatten(shadow);
+  // Get the result (initial value will be cleaned up when shadow is):
+  result = copy_efd_node(efd_get_value(shadow));
 
   // cleanup temporary stuff:
   cleanup_efd_node(shadow);
@@ -105,7 +95,7 @@ efd_node * _efd_call_impl(
 
 // Makes a copy of the given node (first argument), inserts a scope node
 // (second argument) as its first child, and evaluates the result.
-efd_node * efd_fn_call(efd_node const * const node, efd_value_cache *cache) {
+efd_node * efd_fn_call(efd_node const * const node) {
   dictionary *children;
   efd_node *target, *link, *args, *result;
 
@@ -131,16 +121,7 @@ efd_node * efd_fn_call(efd_node const * const node, efd_value_cache *cache) {
     return NULL;
   }
 
-  if (!efd_is_container_node(target)) {
-    efd_report_error(
-      s_("ERROR: Invalid argument to 'call' "
-         "(first argument must be a container type)."),
-      target
-    );
-    return NULL;
-  }
-
-  args = efd_get_value(d_get_item(children, 1), cache);
+  args = efd_get_value(d_get_item(children, 1));
 
   if (args->h.type != EFD_NT_SCOPE) {
     efd_report_error(
@@ -151,56 +132,9 @@ efd_node * efd_fn_call(efd_node const * const node, efd_value_cache *cache) {
     return NULL;
   }
 
-  result = _efd_call_impl(link, target, args);
+  result = _efd_call_value(target, args);
   efd_rename(result, node->h.name);
-
-  return result;
-}
-
-// Works like 'call,' but calls the value of its first argument instead of the
-// first argument itself.
-efd_node * efd_fn_call_value(
-  efd_node const * const node,
-  efd_value_cache *cache
-) {
-  dictionary *children;
-  efd_node *link, *target, *args, *result;
-
-  children = efd_children_dict(node);
-  if (d_get_count(children) != 2) {
-    efd_report_error(
-      s_("ERROR: Invalid number of arguments to 'call_value' "
-         "(needs 2; extra scopes not allowed)."),
-      node
-    );
-    return NULL;
-  }
-
-  link = d_get_item(children, 0);
-  target = efd_get_value(link, cache);
-
-  if (!efd_is_container_node(target)) {
-    efd_report_error(
-      s_("ERROR: Invalid argument to 'call_value' "
-         "(first argument must evaluate to a container type)."),
-      target
-    );
-    return NULL;
-  }
-
-  args = efd_get_value(d_get_item(children, 1), cache);
-
-  if (args->h.type != EFD_NT_SCOPE) {
-    efd_report_error(
-      s_("ERROR: Invalid argument to 'call' "
-         "(second argument must be a SCOPE node)."),
-      args
-    );
-    return NULL;
-  }
-
-  result = _efd_call_impl(link, target, args);
-  efd_rename(result, node->h.name);
+  result->h.context = node;
 
   return result;
 }

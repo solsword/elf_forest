@@ -58,7 +58,7 @@ void* efd__material(efd_node *n) {
     exit(EXIT_FAILURE);
   }
 
-  val = efd_concrete(efd_fresh_value(efd_nth(n, 0)));
+  val = efd_get_value(efd_nth(n, 0));
 
   efd_assert_type(val, EFD_NT_CONTAINER);
 

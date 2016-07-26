@@ -22,7 +22,6 @@
 void* efd__mineral_filter_args(efd_node *n) {
   mineral_filter_args *result;
   efd_node *val;
-  precise_color color;
 
   SSTR(s_seed, "seed", 4);
   SSTR(s_scale, "scale", 5);
@@ -38,7 +37,6 @@ void* efd__mineral_filter_args(efd_node *n) {
   SSTR(s_dscale, "dscale", 6);
   SSTR(s_distortion, "distortion", 10);
   SSTR(s_squash, "squash", 6);
-  SSTR(s_color, "color", 5);
   SSTR(s_base_color, "base_color", 10);
   SSTR(s_alt_color, "alt_color", 9);
   SSTR(s_sat_noise, "sat_noise", 9);
@@ -47,15 +45,9 @@ void* efd__mineral_filter_args(efd_node *n) {
 
   efd_assert_type(n, EFD_NT_CONTAINER);
 
-  if (efd_normal_child_count(n) != 1) {
-    efd_report_error(
-      s_("ERROR: 'mineral_filter_args' proto must have exactly 1 child."),
-      n
-    );
-    exit(EXIT_FAILURE);
-  }
+  efd_assert_child_count(n, 1, 1);
 
-  val = efd_concrete(efd_fresh_value(efd_nth(n, 0)));
+  val = efd_get_value(efd_nth(n, 0));
 
   efd_assert_type(val, EFD_NT_CONTAINER);
 
@@ -75,11 +67,8 @@ void* efd__mineral_filter_args(efd_node *n) {
   result->dscale = efd_as_n(efd_lookup_expected(val, s_dscale));
   result->distortion = efd_as_n(efd_lookup_expected(val, s_distortion));
   result->squash = efd_as_n(efd_lookup_expected(val, s_squash));
-  // TODO: treat these as colors and convert to a pixel value.
-  color = efd_as_o_fmt(efd_lookup_expected(val, s_base_color), s_color);
-  result->base_color = xyz__rgb(color);
-  color = efd_as_o_fmt(efd_lookup_expected(val, s_alt_color), s_color);
-  result->alt_color = xyz__rgb(color);
+  result->base_color = efd_as_i(efd_lookup_expected(val, s_base_color));
+  result->alt_color = efd_as_i(efd_lookup_expected(val, s_alt_color));
   result->sat_noise = efd_as_n(efd_lookup_expected(val, s_sat_noise));
   result->desaturate = efd_as_n(efd_lookup_expected(val, s_desaturate));
   result->brightness = efd_as_n(efd_lookup_expected(val, s_brightness));
@@ -174,7 +163,6 @@ efd_node *mineral_filter_args__efd(void *v_args) {
     child,
     construct_efd_num_node(s_squash, NULL, (efd_num_t) args->squash)
   );
-  // TODO: HERE
   efd_add_child(
     child,
     construct_efd_int_node(s_base_color, NULL, (efd_int_t) args->base_color)

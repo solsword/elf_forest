@@ -970,7 +970,7 @@ efd_int_t efd_parse_int_or_ref(efd_parse_state *s) {
         cleanup_efd_reference(to);
         return efd_as_i(gl);
       } else if (gl->h.type == EFD_NT_FN_INT || gl->h.type == EFD_NT_FN_NUM) {
-        glv = efd_fresh_value(gl);
+        glv = efd_get_value(gl);
         result = efd_as_i(glv);
         cleanup_efd_node(glv);
         cleanup_efd_reference(to);
@@ -1018,7 +1018,7 @@ efd_num_t efd_parse_float_or_ref(efd_parse_state *s) {
         cleanup_efd_reference(to);
         return efd_as_n(gl);
       } else if (gl->h.type == EFD_NT_FN_INT || gl->h.type == EFD_NT_FN_NUM) {
-        glv = efd_fresh_value(gl);
+        glv = efd_get_value(gl);
         result = efd_as_n(glv);
         cleanup_efd_node(glv);
         cleanup_efd_reference(to);
@@ -1066,7 +1066,7 @@ string* efd_parse_str_or_ref(efd_parse_state *s) {
         cleanup_efd_reference(to);
         return copy_string(*efd__s(gl));
       } else if (gl->h.type == EFD_NT_FN_STR) {
-        glv = efd_fresh_value(gl);
+        glv = efd_get_value(gl);
         result = copy_string(*efd__s(glv));
         cleanup_efd_node(glv);
         cleanup_efd_reference(to);
@@ -1115,7 +1115,7 @@ void* efd_parse_obj_ref(efd_parse_state *s) {
         cleanup_efd_reference(to);
         return copier(gl->b.as_object.value);
       } else if (gl->h.type == EFD_NT_FN_OBJ) {
-        glv = efd_fresh_value(gl);
+        glv = efd_get_value(gl);
         result = copy_string(*efd__s(glv));
         copier = efd_lookup_copier(glv->b.as_object.format);
         if (copier == NULL) {

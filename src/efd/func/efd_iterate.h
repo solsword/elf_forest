@@ -38,17 +38,13 @@
 // 'times' node is 2*1, then 3*2, then 4*3. The *iter iterator here is
 // infinite, but the *static iterator is finite, and iteration stops when it is
 // exhausted.
-efd_node * efd_fn_iterate(
-  efd_node const * const node,
-  efd_value_cache *cache
-) {
+efd_node * efd_fn_iterate(efd_node const * const node) {
   SSTR(s_ivars, "iter_vars", 9);
 
   size_t varcount, valcount, i;
   efd_generator_state *gen;
-  efd_node *iter_vars, *container, *scope, *tmp, *val, *result;
+  efd_node *iter_vars, *container, *scope, *tmp, *home, *val, *result;
   list *generators, *gennames;
-  efd_value_cache *tmp_cache;
   string *valname;
 
   efd_assert_return_type(node, EFD_NT_ANY);
@@ -56,7 +52,7 @@ efd_node * efd_fn_iterate(
   generators = create_list();
   gennames = create_list();
 
-  iter_vars = efd_get_value(efd_lookup(node, s_ivars), cache);
+  iter_vars = efd_get_value(efd_lookup(node, s_ivars));
 
   if (iter_vars == NULL || !efd_is_type(iter_vars, EFD_NT_SCOPE)) {
     efd_report_error(
@@ -68,7 +64,7 @@ efd_node * efd_fn_iterate(
 
   varcount = efd_normal_child_count(iter_vars);
   for (i = 0; i < varcount; ++i) {
-    gen = efd_generator_for(efd_get_value(efd_nth(iter_vars, i), cache), cache);
+    gen = efd_generator_for(efd_get_value(efd_nth(iter_vars, i)));
     l_append_element(generators, gen);
     l_append_element(gennames, (void*) (efd_nth(iter_vars, i)->h.name));
   }
@@ -103,18 +99,17 @@ efd_node * efd_fn_iterate(
       break;
     }
     efd_add_child(container, scope);
-    tmp_cache = create_efd_value_cache();
     // get values for each real child
     for (i = 0; i < valcount; ++i) {
       tmp = copy_efd_node(efd_nth(node, i));
       tmp->h.context = container;
       efd_add_child(container, tmp);
-      val = efd_get_value(tmp, tmp_cache); // cleaned up w/ cache
+      val = efd_get_value(tmp); // cleaned up with tmp
       val = copy_efd_node_as(val, EFD_ANON_NAME);
-      val->h.context = efd_nth(result, i);
-      efd_add_child(efd_nth(result, i), val);
+      home = efd_nth(result, i);
+      val->h.context = home;
+      efd_add_child(home, val);
     }
-    cleanup_efd_value_cache(tmp_cache);
     cleanup_efd_node(container);
   }
 

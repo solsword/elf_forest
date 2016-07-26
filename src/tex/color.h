@@ -14,13 +14,13 @@
  * Enums *
  *********/
 
-enum {
+enum color_format_e {
   CFMT_INVALID = 0,
   CFMT_RGB,
   CFMT_XYZ,
   CFMT_LAB,
   CFMT_LCH
-} color_format_e;
+};
 typedef enum color_format_e color_format;
 
 EFD_GL(i, CFMT_INVALID)
@@ -50,6 +50,7 @@ typedef struct precise_color_s precise_color;
  *************************/
 
 struct precise_color_s {
+  color_format format;
   float x, y, z;
   float alpha;
 };
@@ -296,6 +297,11 @@ void lab__xyz(precise_color *color);
 // up with results from other sources.
 void lab__lch(precise_color *color);
 void lch__lab(precise_color *color);
+
+// Conversions from any format to a specific format:
+void convert_to_xyz(precise_color *color);
+void convert_to_lab(precise_color *color);
+void convert_to_lch(precise_color *color);
 
 // Takes two RGB pixels and blends them precisely using:
 //   blend * a + (1 - blend) * b

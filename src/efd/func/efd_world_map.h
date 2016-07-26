@@ -15,10 +15,7 @@
 // Takes four arguments: a world map (an object), category constraint(s) (an
 // integer), a list of elements to ignore (something that can generate
 // element_species objects), and a seed (an integer).
-efd_node * efd_fn_pick_element(
-  efd_node const * const node,
-  efd_value_cache *cache
-) {
+efd_node * efd_fn_pick_element(efd_node const * const node) {
   intptr_t count;
   efd_node *map_node, *categories_node, *ignore_container, *seed_node;
   efd_generator_state *ignore_gen;
@@ -43,10 +40,10 @@ efd_node * efd_fn_pick_element(
   }
 
   // Unpack arguments:
-  map_node = efd_get_value(efd_nth(node, 0), cache);
-  categories_node = efd_get_value(efd_nth(node, 1), cache);
-  ignore_gen = efd_generator_for(efd_get_value(efd_nth(node, 2), cache), cache);
-  seed_node = efd_get_value(efd_nth(node, 3), cache);
+  map_node = efd_get_value(efd_nth(node, 0));
+  categories_node = efd_get_value(efd_nth(node, 1));
+  ignore_gen = efd_generator_for(efd_get_value(efd_nth(node, 2)));
+  seed_node = efd_get_value(efd_nth(node, 3));
 
   // The world map:
   wm = (world_map*) efd_as_o(map_node);

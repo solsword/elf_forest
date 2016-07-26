@@ -14,21 +14,21 @@
 // Takes four arguments and interprets the first as a condition to be applied
 // to the second. If the condition holds, takes on the value of its third
 // argument, otherwise uses the value of its final argument.
-efd_node * efd_fn_if(efd_node const * const node, efd_value_cache *cache) {
+efd_node * efd_fn_if(efd_node const * const node) {
   efd_node *cond, *arg, *yes, *no;
 
   efd_assert_child_count(node, 4, 4);
 
-  cond = efd_get_value(efd_nth(node, 0), cache);
-  arg = efd_get_value(efd_nth(node, 1), cache);
+  cond = efd_get_value(efd_nth(node, 0));
+  arg = efd_get_value(efd_nth(node, 1));
 
-  yes = efd_get_value(efd_nth(node, 2), cache);
-  no = efd_get_value(efd_nth(node, 3), cache);
+  yes = efd_get_value(efd_nth(node, 2));
+  no = efd_get_value(efd_nth(node, 3));
 
   efd_assert_return_type(node, yes->h.type);
   efd_assert_return_type(node, no->h.type);
 
-  if (efd_condition_holds(cond, arg, cache)) {
+  if (efd_condition_holds(cond, arg)) {
     return copy_efd_node(yes);
   } else {
     return copy_efd_node(no);
@@ -38,27 +38,24 @@ efd_node * efd_fn_if(efd_node const * const node, efd_value_cache *cache) {
 // Takes two nodes, a condition, and a generatable. Applies the condition to
 // every generatable item, resulting in a new container consisting of just the
 // items that passed the condition.
-efd_node * efd_fn_filter_keep(
-  efd_node const * const node,
-  efd_value_cache *cache
-) {
+efd_node * efd_fn_filter_keep(efd_node const * const node) {
   efd_node *cond, *container, *val, *result;
   size_t i, count;
   efd_generator_state *gen;
 
   efd_assert_child_count(node, 2, 2);
 
-  cond = efd_get_value(efd_nth(node, 0), cache);
+  cond = efd_get_value(efd_nth(node, 0));
 
-  gen = efd_generator_for(efd_get_value(efd_nth(node, 1), cache), cache);
+  gen = efd_generator_for(efd_get_value(efd_nth(node, 1)));
   container = efd_gen_all(gen);
 
   result = create_efd_node(EFD_NT_CONTAINER, node->h.name, node);
 
   count = efd_normal_child_count(container);
   for (i = 0; i < count; ++i) {
-    val = efd_get_value(efd_nth(container, i), cache);
-    if (efd_condition_holds(cond, val, cache)) {
+    val = efd_get_value(efd_nth(container, i));
+    if (efd_condition_holds(cond, val)) {
       efd_add_child(result, val);
     }
   }

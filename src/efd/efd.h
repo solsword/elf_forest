@@ -223,11 +223,6 @@ typedef struct efd_address_s efd_address;
 struct efd_reference_s;
 typedef struct efd_reference_s efd_reference;
 
-// A cache of function node eval results, including tracking for which node(s)
-// are currently being evaluated to detect circular dependencies.
-struct efd_value_cache_s;
-typedef struct efd_value_cache_s efd_value_cache;
-
 // An entry in the object format registry describes the string key, pack/unpack
 // functions, and copy/destroy functions for an object format.
 struct efd_object_format_s;
@@ -257,16 +252,12 @@ typedef efd_node* (*efd_pack_function)(void *);
 typedef void * (*efd_copy_function)(void *);
 typedef void (*efd_destroy_function)(void *);
 
-typedef efd_node* (*efd_eval_function)(
-  efd_node const * const,
-  efd_value_cache *
-);
+typedef efd_node* (*efd_eval_function)(efd_node const * const);
 
 typedef efd_node* (*efd_generator_function)(efd_generator_state *state);
 
 typedef efd_generator_state * (*efd_generator_constructor)(
-  efd_node const * const base,
-  efd_value_cache *
+  efd_node const * const base
 );
 
 /*************
@@ -325,6 +316,7 @@ struct efd_node_header_s {
   string *name;
   efd_node *parent;
   efd_node const *context;
+  efd_node *value;
 };
 
 struct efd_container_s {
@@ -412,13 +404,6 @@ struct efd_reference_s {
   efd_ref_type type;
   efd_address *addr;
   intptr_t idx;
-};
-
-struct efd_value_cache_s {
-  map *values;
-  map *unique;
-  efd_node const * active;
-  map *stack;
 };
 
 struct efd_object_format_s {
@@ -921,13 +906,6 @@ efd_reference* create_efd_reference(
 // Clean up memory from the given reference, including its address.
 CLEANUP_DECL(efd_reference);
 
-// Allocate and return a new empty EFD value cache.
-efd_value_cache * create_efd_value_cache(void);
-
-// Clean up memory for the given value cache, including all values that it
-// contains. The base nodes those values were computed from are unaffected.
-CLEANUP_DECL(efd_value_cache);
-
 // Allocates and returns a new efd_generator_state, using a copy of the given
 // name string but taking the given state without copying it.
 efd_generator_state * create_efd_generator_state(
@@ -1153,80 +1131,27 @@ efd_node * efd(efd_node const * const root, efd_address const * addr);
 efd_node * efdx(efd_node const * const root, string const * const saddr);
 
 // Evaluates a node, returning a newly-allocated node (which may have newly-
-// allocated children) representing the result. The returned node will be
-// registered in the given value cache with the target node pointer as a key.
-efd_node * efd_eval(efd_node const * const target, efd_value_cache * cache);
+// allocated children) representing the result. External code should almost
+// always call efd_get_value instead, which returns cached values when
+// available and caches new values as they're computed.
+efd_node * efd_eval(efd_node const * const target);
 
-// Gets the value of the given node, either cached within the given value
-// cache, or via efd_eval (thus adding the returned value to the given cache).
-// In either case the caller doesn't need to worry about cleanup for the node
-// as it will be present in the value cache. This function calls efd_concrete
-// on its input before trying to fetch a value, so the result won't be the same
-// as just looking up the target node in the value cache when the target is a
-// link node. If the input is NULL this will return NULL immediately. The
-// returned node will have a NULL parent.
-efd_node * efd_get_value(
-  efd_node const * const target,
-  efd_value_cache * cache
-);
-
-// Gets the value of the given node via efd_get_value using a temporary cache
-// which it cleans up afterwards. A copy of the value from the temporary cache
-// is returned, so the caller is always responsible for cleaning up the
-// returned node.
-efd_node * efd_fresh_value(efd_node const * const target);
-
-// Returns a copy of the given node, but with all links replaced by flattened
-// versions of their destinations and all functions replaced by flattened
-// versions of their values, recursively. The parent of the resulting node is
-// set to NULL.
-efd_node * efd_flatten(efd_node const * const target);
-
-// Evaluates all nodes under the given root node, returning a newly-allocated
-// efd_value_cache that maps node pointers to their values that covers all
-// function- and generator-type nodes found, including nodes linked from the
-// given subtree.
-efd_value_cache * efd_compute_values(efd_node const * const root);
-
-// Returns whether or not the given node is on the given cache's evaluation
-// stack.
-int efd_cache_is_on_stack(
-  efd_value_cache *cache,
-  efd_node const * const target
-);
-
-// Returns the node above the given node on the cache's evaluation stack.
-efd_node * efd_cache_stack_parent(
-  efd_value_cache *cache,
-  efd_node const * const target
-);
-
-// Pushes the given node onto the given value cache's evaluation stack.
-void efd_cache_stack_push(
-  efd_value_cache *cache,
-  efd_node const * const target
-);
-
-// Pops the given node from the given value cache's evaluation stack.
-void efd_cache_stack_pop(
-  efd_value_cache *cache,
-  efd_node const * const target
-);
-
-// Puts the given value into the value cache as the value for the given
-// original node.
-void efd_cache_put(
-  efd_value_cache *cache,
-  efd_node const * const original,
-  efd_node const * const value
-);
+// Gets the value of the given node, either cached in target->h.value, or via
+// efd_eval (in which case it caches the value). In either case the caller
+// doesn't need to worry about cleanup for the node as it will be present in
+// the target's cache. This function calls efd_concrete on its input before
+// trying to fetch a value, so the result won't be the same as just looking up
+// target->h.value when the target is a link node. If the input is NULL this
+// will return NULL immediately. The returned node will have a NULL parent, but
+// its context will be set to the target's context.
+efd_node * efd_get_value(efd_node *target);
 
 // Takes a pointer to an EFD node and creates a temporary function node with
 // function type "call" that calls that node using the given scope node as
 // arguments. Proceeds to evaluate the temporary function node and return its
-// value using efd_fresh_value. The newly-returned node and the first argument
-// are the responsibility of the caller, but the args node is cleaned up during
-// the evaluation process.
+// value. The newly-returned node and the first argument are the responsibility
+// of the caller, but the args node is cleaned up during the evaluation
+// process.
 efd_node * efd_call_function(
   efd_node const * const function,
   efd_node * args
@@ -1280,304 +1205,40 @@ void efd_gen_reset(efd_generator_state *gen);
 efd_node * efd_gen_all(efd_generator_state *gen);
 
 // Takes an EFD node and returns the corresponding generator object for
-// iteration over that node, getting values from and/or adding them to the
-// given cache when needed. Works with container, generator function, and array
-// nodes, but returns NULL for other node types. If it is given a link node it
-// calls efd_concrete before attempting to process the result.
-efd_generator_state * efd_generator_for(
-  efd_node *node,
-  efd_value_cache *cache
-);
+// iteration over that node. Works with container, generator function, and
+// array nodes, but returns NULL for other node types. If it is given a link
+// node it calls efd_concrete before attempting to process the result.
+efd_generator_state * efd_generator_for(efd_node *node);
 
 // Function for testing EFD conditions, which take the form of a container node
 // that has two or more children: first a condition type specified by an
 // integer node, and then some arguments. This function implements checking
 // whether the condition described by that structure holds for node 'arg'.
-int efd_condition_holds(
-  efd_node const * const cond,
-  efd_node const * const arg,
-  efd_value_cache *cache
-);
+int efd_condition_holds(efd_node *cond, efd_node *arg);
 
-/**************************
- * Extra Inline Functions *
- **************************/
+// Type coercion functions.
+// These functions each call efd_concrete and check for NULL inputs, before
+// coercing the given node to an appropriate type and extracting its value.
+// They throw errors if the input node can't be coerced. They accept functions
+// with an appropriate return type as well as plain nodes, in which case they
+// use efd_get_value to get a result.
 
-// Type coercion functions:
-static inline efd_int_t efd_as_i(efd_node *n) {
-  efd_node *ct;
-  if (n == NULL) {
-    efd_report_error(s_("Error: Attempted to coerce NULL to an integer:"), n);
-    exit(EXIT_FAILURE);
-  }
-  if (efd_is_link_node(n)) {
-    ct = efd_concrete(n);
-    if (ct == NULL) {
-      efd_report_broken_link(s_("ERROR: Broken link passed to efd_as_i."), n);
-    }
-    n = ct;
-  }
-  if (efd_is_type(n, EFD_NT_FN_INT) || efd_is_type(n, EFD_NT_FN_NUM)) {
-    // TODO: Staler value here?
-    n = efd_concrete(efd_fresh_value(n));
-  }
-  if (efd_is_type(n, EFD_NT_INTEGER)) {
-    return *efd__i(n);
-  } else if (efd_is_type(n, EFD_NT_NUMBER)) {
-    return efd_cast_to_int(*(efd__n(n)));
-  } else { // invalid
-    efd_report_error(
-      s_("Error: Attempted to coerce non-numeric type to an integer:"),
-      n
-    );
-    exit(EXIT_FAILURE);
-  }
-}
+efd_int_t efd_as_i(efd_node *n);
 
-static inline efd_num_t efd_as_n(efd_node *n) {
-  efd_node *ct;
-  if (n == NULL) {
-    efd_report_error(s_("Error: Attempted to coerce NULL to a number:"), n);
-    exit(EXIT_FAILURE);
-  }
-  if (efd_is_link_node(n)) {
-    ct = efd_concrete(n);
-    if (ct == NULL) {
-      efd_report_broken_link(s_("ERROR: Broken link passed to efd_as_n."), n);
-    }
-    n = ct;
-  }
-  if (efd_is_type(n, EFD_NT_FN_INT) || efd_is_type(n, EFD_NT_FN_NUM)) {
-    n = efd_concrete(efd_fresh_value(n));
-  }
-  if (efd_is_type(n, EFD_NT_INTEGER)) {
-    return efd_cast_to_num(*efd__i(n));
-  } else if (efd_is_type(n, EFD_NT_NUMBER)) {
-    return *(efd__n(n));
-  } else { // invalid
-    efd_report_error(
-      s_("Error: Attempted to coerce non-numeric type to a number:"),
-      n
-    );
-    exit(EXIT_FAILURE);
-  }
-}
+efd_num_t efd_as_n(efd_node *n);
 
-static inline string* efd_as_s(efd_node *n) {
-  efd_node *ct;
-  if (n == NULL) {
-    efd_report_error(s_("Error: Attempted to coerce NULL to a string:"), n);
-    exit(EXIT_FAILURE);
-  }
-  if (efd_is_link_node(n)) {
-    ct = efd_concrete(n);
-    if (ct == NULL) {
-      efd_report_broken_link(s_("ERROR: Broken link passed to efd_as_s."), n);
-    }
-    n = ct;
-  }
-  if (efd_is_type(n, EFD_NT_FN_STR)) {
-    n = efd_concrete(efd_fresh_value(n));
-  }
-  if (efd_is_type(n, EFD_NT_STRING)) {
-    return *(efd__s(n));
-  } else {
-    efd_report_error(
-      s_("Error: Attempted to coerce non-string node to a string:"),
-      n
-    );
-    exit(EXIT_FAILURE);
-  }
-}
+string* efd_as_s(efd_node *n);
 
-static inline void* efd_as_o(efd_node *n) {
-  efd_node *ct;
-  if (n == NULL) {
-    efd_report_error(s_("Error: Attempted to coerce NULL to an object:"), n);
-    exit(EXIT_FAILURE);
-  }
-  if (efd_is_link_node(n)) {
-    ct = efd_concrete(n);
-    if (ct == NULL) {
-      efd_report_broken_link(s_("ERROR: Broken link passed to efd_as_o."), n);
-    }
-    n = ct;
-  }
-  if (efd_is_type(n, EFD_NT_FN_OBJ)) {
-    n = efd_concrete(efd_fresh_value(n));
-  }
-  if (efd_is_type(n, EFD_NT_OBJECT)) {
-    return *(efd__o(n));
-  } else {
-    efd_report_error(
-      s_("Error: Attempted to coerce non-object node to an object:"),
-      n
-    );
-    exit(EXIT_FAILURE);
-  }
-}
+void* efd_as_o(efd_node *n);
 
-static inline void* efd_as_o_fmt(efd_node *n, string const * const fmt) {
-  efd_node *ct;
-  if (n == NULL) {
-    efd_report_error(s_("Error: Attempted to coerce NULL to an object:"), n);
-    exit(EXIT_FAILURE);
-  }
-  if (efd_is_link_node(n)) {
-    ct = efd_concrete(n);
-    if (ct == NULL) {
-      efd_report_broken_link(
-        s_("ERROR: Broken link passed to efd_as_o_fmt."),
-        n
-      );
-    }
-    n = ct;
-  }
-  if (efd_is_type(n, EFD_NT_FN_OBJ)) {
-    n = efd_concrete(efd_fresh_value(n));
-  }
-  if (efd_is_type(n, EFD_NT_OBJECT)) {
-    efd_assert_object_format(n, fmt);
-    return *(efd__o(n));
-  } else {
-    efd_report_error(
-      s_sprintf(
-        "Error: Attempted to coerce non-object node to a '%.*s' object:",
-        (int) s_get_length(fmt),
-        s_raw(fmt)
-      ),
-      n
-    );
-    exit(EXIT_FAILURE);
-  }
-}
+void* efd_as_o_fmt(efd_node *n, string const * const fmt);
 
-static inline size_t efd_array_count(efd_node *n) {
-  efd_node *ct;
-  if (n == NULL) {
-    efd_report_error(s_("Error: Attempted to get array count of NULL:"), n);
-    exit(EXIT_FAILURE);
-  }
-  if (efd_is_link_node(n)) {
-    ct = efd_concrete(n);
-    if (ct == NULL) {
-      efd_report_broken_link(
-        s_("ERROR: Broken link passed to efd_array_count."),
-        n
-      );
-    }
-    n = ct;
-  }
-  if (
-    efd_is_type(n, EFD_NT_FN_AR_INT)
- || efd_is_type(n, EFD_NT_FN_AR_NUM)
- || efd_is_type(n, EFD_NT_FN_AR_STR)
-  ) {
-    n = efd_concrete(efd_fresh_value(n));
-  }
-  if (efd_is_type(n, EFD_NT_ARRAY_INT)) {
-    return *efd__ai_count(n);
-  } else if (efd_is_type(n, EFD_NT_ARRAY_NUM)) {
-    return *efd__an_count(n);
-  } else if (efd_is_type(n, EFD_NT_ARRAY_STR)) {
-    return *efd__as_count(n);
-  } else {
-    efd_report_error(
-      s_("Error: Attempted to get array count of non-array node:"),
-      n
-    );
-    exit(EXIT_FAILURE);
-  }
-}
+size_t efd_array_count(efd_node *n);
 
-static inline efd_int_t* efd_as_ai(efd_node *n) {
-  efd_node *ct;
-  if (n == NULL) {
-    efd_report_error(s_("Error: Attempted to get int array from NULL:"), n);
-    exit(EXIT_FAILURE);
-  }
-  if (efd_is_link_node(n)) {
-    ct = efd_concrete(n);
-    if (ct == NULL) {
-      efd_report_broken_link(
-        s_("ERROR: Broken link passed to efd_as_ai."),
-        n
-      );
-    }
-    n = ct;
-  }
-  if (efd_is_type(n, EFD_NT_FN_AR_INT)) {
-    n = efd_concrete(efd_fresh_value(n));
-  }
-  if (efd_is_type(n, EFD_NT_ARRAY_INT)) {
-    return *efd__ai(n);
-  } else {
-    efd_report_error(
-      s_("Error: Attempted to coerce non-array node to an integer array:"),
-      n
-    );
-    exit(EXIT_FAILURE);
-  }
-}
+efd_int_t* efd_as_ai(efd_node *n);
 
-static inline efd_num_t* efd_as_an(efd_node *n) {
-  efd_node *ct;
-  if (n == NULL) {
-    efd_report_error(s_("Error: Attempted to get num array from NULL:"), n);
-    exit(EXIT_FAILURE);
-  }
-  if (efd_is_link_node(n)) {
-    ct = efd_concrete(n);
-    if (ct == NULL) {
-      efd_report_broken_link(
-        s_("ERROR: Broken link passed to efd_as_an."),
-        n
-      );
-    }
-    n = ct;
-  }
-  if (efd_is_type(n, EFD_NT_FN_AR_NUM)) {
-    n = efd_concrete(efd_fresh_value(n));
-  }
-  if (efd_is_type(n, EFD_NT_ARRAY_NUM)) {
-    return *efd__an(n);
-  } else {
-    efd_report_error(
-      s_("Error: Attempted to coerce non-array node to a number array:"),
-      n
-    );
-    exit(EXIT_FAILURE);
-  }
-}
+efd_num_t* efd_as_an(efd_node *n);
 
-static inline string** efd_as_as(efd_node *n) {
-  efd_node *ct;
-  if (n == NULL) {
-    efd_report_error(s_("Error: Attempted to get string array from NULL:"), n);
-    exit(EXIT_FAILURE);
-  }
-  if (efd_is_link_node(n)) {
-    ct = efd_concrete(n);
-    if (ct == NULL) {
-      efd_report_broken_link(
-        s_("ERROR: Broken link passed to efd_as_as."),
-        n
-      );
-    }
-    n = ct;
-  }
-  if (efd_is_type(n, EFD_NT_FN_AR_STR)) {
-    n = efd_concrete(efd_fresh_value(n));
-  }
-  if (efd_is_type(n, EFD_NT_ARRAY_NUM)) {
-    return *efd__as(n);
-  } else {
-    efd_report_error(
-      s_("Error: Attempted to coerce non-array node to a string array:"),
-      n
-    );
-    exit(EXIT_FAILURE);
-  }
-}
+string** efd_as_as(efd_node *n);
 
 #endif // INCLUDE_EFD_H

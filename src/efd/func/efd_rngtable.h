@@ -14,10 +14,7 @@
 // Calls rt_pick_result, using the first argument as a seed to pick a result
 // from the second argument, which should be an Object node that contains an
 // rngtable.
-efd_node * efd_fn_sample_rngtable(
-  efd_node const * const node,
-  efd_value_cache *cache
-) {
+efd_node * efd_fn_sample_rngtable(efd_node const * const node) {
   SSTR(fmt_rngtable, "rngtable", 8);
   efd_int_t seed, result;
   efd_node *obj;
@@ -25,8 +22,8 @@ efd_node * efd_fn_sample_rngtable(
 
   efd_assert_return_type(node, EFD_NT_INTEGER);
 
-  seed = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
-  obj = efd_get_value(efd_nth(node, 1), cache);
+  seed = efd_as_i(efd_get_value(efd_nth(node, 0)));
+  obj = efd_get_value(efd_nth(node, 1));
   table = (rngtable*) efd_as_o_fmt(obj, fmt_rngtable);
 
   result = (efd_int_t) rt_pick_result(table, seed);

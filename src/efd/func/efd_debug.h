@@ -15,7 +15,7 @@
 // TODO: Make this actually useful! (print at parsing time?)
 
 // Prints debugging information when evaluated and returns NULL.
-efd_node * efd_fn_debug(efd_node const * const node, efd_value_cache *cache) {
+efd_node * efd_fn_debug(efd_node const * const node) {
   fprintf(stderr, "EFD DEBUG:\n");
   s_fprintln(stderr, efd_repr(node));
   return NULL;
