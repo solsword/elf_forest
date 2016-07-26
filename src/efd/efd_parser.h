@@ -15,6 +15,7 @@
 // Different kinds of parsing errors:
 enum efd_parse_error_e {
   EFD_PE_NO_ERROR = 0,     // carry on
+  EFD_PE_ABORT,            // manual abort
   EFD_PE_UNKNOWN,          // ???
   EFD_PE_MISSING,          // no input
   EFD_PE_MALFORMED,        // wrong input
@@ -102,6 +103,7 @@ typedef struct efd_parse_state_s efd_parse_state;
 #define EFD_PARSER_ARRAY_SEP ','
 #define EFD_PARSER_HASH '#'
 #define EFD_PARSER_RENAME '@'
+#define EFD_PARSER_ABORT '!'
 
 /*************************
  * Structure Definitions *

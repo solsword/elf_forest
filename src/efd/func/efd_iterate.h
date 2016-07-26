@@ -47,12 +47,17 @@ efd_node * efd_fn_iterate(
   size_t varcount, valcount, i;
   efd_generator_state *gen;
   efd_node *iter_vars, *container, *scope, *tmp, *val, *result;
-  list *generators;
+  list *generators, *gennames;
+  efd_value_cache *tmp_cache;
+  string *valname;
 
   efd_assert_return_type(node, EFD_NT_ANY);
 
   generators = create_list();
+  gennames = create_list();
+
   iter_vars = efd_get_value(efd_lookup(node, s_ivars), cache);
+
   if (iter_vars == NULL || !efd_is_type(iter_vars, EFD_NT_SCOPE)) {
     efd_report_error(
       s_("ERROR: 'iterate' node has no 'iter_vars' scope:"),
@@ -65,22 +70,24 @@ efd_node * efd_fn_iterate(
   for (i = 0; i < varcount; ++i) {
     gen = efd_generator_for(efd_get_value(efd_nth(iter_vars, i), cache), cache);
     l_append_element(generators, gen);
+    l_append_element(gennames, (void*) (efd_nth(iter_vars, i)->h.name));
   }
 
   valcount = efd_normal_child_count(node);
 
-  result = create_efd_node(EFD_NT_CONTAINER, node->h.name);
+  result = create_efd_node(EFD_NT_CONTAINER, node->h.name, node);
   for (i = 0; i < valcount; ++i) {
     efd_add_child(
       result,
-      create_efd_node(EFD_NT_CONTAINER, efd_nth(node, i)->h.name)
+      create_efd_node(EFD_NT_CONTAINER, efd_nth(node, i)->h.name, NULL)
     );
   }
   while (1) {
-    container = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
-    scope = create_efd_node(EFD_NT_SCOPE, s_ivars);
+    container = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, result);
+    scope = create_efd_node(EFD_NT_SCOPE, s_ivars, container);
     for (i = 0; i < l_get_length(generators); ++i) {
       gen = (efd_generator_state*) l_get_item(generators, i);
+      valname = (string*) l_get_item(gennames, i);
       val = efd_gen_next(gen);
 
       if (val == NULL) {
@@ -88,6 +95,7 @@ efd_node * efd_fn_iterate(
         scope = NULL;
         break;
       } else {
+        efd_rename(val, valname);
         efd_add_child(scope, val);
       }
     }
@@ -95,18 +103,24 @@ efd_node * efd_fn_iterate(
       break;
     }
     efd_add_child(container, scope);
+    tmp_cache = create_efd_value_cache();
     // get values for each real child
     for (i = 0; i < valcount; ++i) {
       tmp = copy_efd_node(efd_nth(node, i));
+      tmp->h.context = container;
       efd_add_child(container, tmp);
-      val = efd_fresh_value(tmp);
-      cleanup_efd_node(tmp);
-      efd_rename(val, EFD_ANON_NAME);
-
+      val = efd_get_value(tmp, tmp_cache); // cleaned up w/ cache
+      val = copy_efd_node_as(val, EFD_ANON_NAME);
+      val->h.context = efd_nth(result, i);
       efd_add_child(efd_nth(result, i), val);
     }
+    cleanup_efd_value_cache(tmp_cache);
     cleanup_efd_node(container);
   }
+
+  // DEBUG: TODO: REMOVE
+  //fprintf(stderr, "iterate::reuslt");
+  //s_fprintln(stderr, efd_full_repr(result));
 
   l_foreach(generators, &cleanup_v_efd_generator_state);
   cleanup_list(generators);

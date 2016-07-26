@@ -17,21 +17,11 @@
 // Uses the second argument as an index into the first, which must be an
 // array-type node.
 efd_node * efd_fn_index(efd_node const * const node, efd_value_cache *cache) {
-  intptr_t count;
   size_t acount;
   efd_int_t index;
   efd_node *array, *result;
 
-  count = efd_normal_child_count(node);
-
-  if (count != 2) {
-    efd_report_error(
-      s_("ERROR: Invalid number of arguments to 'index' (must be 2)."),
-      node
-    );
-    fprintf(stderr, "(%ld arguments found)\n", count);
-    return NULL;
-  }
+  efd_assert_child_count(node, 2, 2);
 
   array = efd_get_value(efd_nth(node, 0), cache);
 
@@ -89,13 +79,25 @@ efd_node * efd_fn_index(efd_node const * const node, efd_value_cache *cache) {
       return NULL;
 #endif
     case EFD_NT_ARRAY_INT:
-      result = construct_efd_int_node(node->h.name, efd_as_ai(array)[index]);
+      result = construct_efd_int_node(
+        node->h.name,
+        node,
+        efd_as_ai(array)[index]
+      );
       break;
     case EFD_NT_ARRAY_NUM:
-      result = construct_efd_num_node(node->h.name, efd_as_an(array)[index]);
+      result = construct_efd_num_node(
+        node->h.name,
+        node,
+        efd_as_an(array)[index]
+      );
       break;
     case EFD_NT_ARRAY_STR:
-      result = construct_efd_str_node(node->h.name, efd_as_as(array)[index]);
+      result = construct_efd_str_node(
+        node->h.name,
+        node,
+        efd_as_as(array)[index]
+      );
       break;
   }
   return result;
@@ -110,14 +112,7 @@ efd_node * efd_fn_choose(efd_node const * const node, efd_value_cache *cache) {
 
   count = efd_normal_child_count(node);
 
-  if (count < 2) {
-    efd_report_error(
-      s_("ERROR: Invalid number of arguments to 'choose' (needs at least 2)."),
-      node
-    );
-    fprintf(stderr, "(%ld arguments found)\n", count);
-    return NULL;
-  }
+  efd_assert_child_count(node, 2, -1);
   
   index = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
   if (index < 0) {
@@ -140,17 +135,9 @@ efd_node * efd_fn_choose(efd_node const * const node, efd_value_cache *cache) {
     );
     return NULL;
   }
-  result = efd_nth(node, index + 1);
-  result = efd_create_reroute((efd_node*) node, efd_get_value(result, cache));
-
-  // TODO: REMOVE
-  //if (s_equals(s_("typechoice"), node->h.name)) {
-  //  efd_report_error(
-  //    s_("TEST: efd_fn_choose."),
-  //    result
-  //  );
-  //  exit(EXIT_FAILURE);
-  //}
+  result = efd_get_value(efd_nth(node, index + 1), cache);
+  efd_rename(result, node->h.name);
+  result->h.context = node;
 
   return result;
 }
@@ -172,13 +159,7 @@ efd_node * efd_fn_index_of(
 
   count = efd_normal_child_count(node);
 
-  if (count < 2) {
-    efd_report_error(
-     s_("ERROR: Invalid number of arguments to 'index_of' (needs at least 2)."),
-      node
-    );
-    return NULL;
-  }
+  efd_assert_child_count(node, 2, -1);
   
   look_for = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
   for (i = 1; i < count; ++i) {
@@ -194,7 +175,7 @@ efd_node * efd_fn_index_of(
     );
     return NULL;
   } else {
-    return construct_efd_int_node(node->h.name, i-1);
+    return construct_efd_int_node(node->h.name, node, i-1);
   }
 }
 
@@ -210,7 +191,6 @@ efd_node * efd_fn_lookup_key(
   SSTR(s_value, "value", 5);
   SSTR(s_input, "input", 5);
 
-  intptr_t count;
   size_t i;
 
   efd_node *look_for;
@@ -220,15 +200,7 @@ efd_node * efd_fn_lookup_key(
   efd_node *this_key;
   efd_node *this_value;
 
-  count = efd_normal_child_count(node);
-
-  if (count < 2) {
-    efd_report_error(
-     s_("ERROR: Too few arguments to 'lookup_key' (needs at least 2)."),
-      node
-    );
-    return NULL;
-  }
+  efd_assert_child_count(node, 2, -1);
 
   // Lookup first entry to test return type:
   this_entry = efd_lookup_expected(node, s_entry);
@@ -281,10 +253,8 @@ efd_node * efd_fn_lookup_key(
   }
   cleanup_list(entries);
   // fail-to-find is not an error
-  if (this_value == NULL) {
-    return NULL;
-  }
-  return efd_create_reroute((efd_node*) node, this_value);
+  efd_rename(this_value, node->h.name);
+  return this_value;
 }
 
 #endif // INCLUDE_EFD_FUNC_STRUCTURE_H

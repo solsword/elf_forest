@@ -60,6 +60,7 @@ efd_node * efd_fn_pick_element(
         s_("(link trace for world map argument)"),
         efd_nth(node, 0)
       );
+      fprintf(stderr, "Full 'pick_element' node:\n");
       s_fprintln(
         stderr,
         efd_full_repr(node)
@@ -88,6 +89,7 @@ efd_node * efd_fn_pick_element(
   // Construct the result node:
   result = construct_efd_int_node(
     node->h.name,
+    node,
     (efd_int_t) pick_element(wm, cat_constraints, ignore_list, seed)
   );
 

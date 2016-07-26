@@ -47,9 +47,9 @@ efd_node * efd_fn_add(efd_node const * const node, efd_value_cache *cache) {
   }
 
   if (use_ints) {
-    return construct_efd_int_node(node->h.name, r_int);
+    return construct_efd_int_node(node->h.name, node, r_int);
   } else {
-    return construct_efd_num_node(node->h.name, r_num);
+    return construct_efd_num_node(node->h.name, node, r_num);
   }
 }
 
@@ -73,9 +73,9 @@ efd_node * efd_fn_mult(efd_node const * const node, efd_value_cache *cache) {
   }
 
   if (use_ints) {
-    return construct_efd_int_node(node->h.name, r_int);
+    return construct_efd_int_node(node->h.name, node, r_int);
   } else {
-    return construct_efd_num_node(node->h.name, r_num);
+    return construct_efd_num_node(node->h.name, node, r_num);
   }
 }
 
@@ -88,12 +88,12 @@ efd_node * efd_fn_sub(efd_node const * const node, efd_value_cache *cache) {
   if (efd_return_type_of(node) == EFD_NT_INTEGER) {
     i_first = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
     i_second = efd_as_i(efd_get_value(efd_nth(node, 1), cache));
-    return construct_efd_int_node(node->h.name, i_first - i_second);
+    return construct_efd_int_node(node->h.name, node, i_first - i_second);
   } else {
     efd_assert_return_type(node, EFD_NT_NUMBER);
     n_first = efd_as_n(efd_get_value(efd_nth(node, 0), cache));
     n_second = efd_as_n(efd_get_value(efd_nth(node, 1), cache));
-    return construct_efd_num_node(node->h.name, n_first - n_second);
+    return construct_efd_num_node(node->h.name, node, n_first - n_second);
   }
 }
 
@@ -108,12 +108,12 @@ efd_node * efd_fn_div(efd_node const * const node, efd_value_cache *cache) {
   if (efd_return_type_of(node) == EFD_NT_INTEGER) {
     i_num = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
     i_den = efd_as_i(efd_get_value(efd_nth(node, 1), cache));
-    return construct_efd_int_node(node->h.name, i_num / i_den);
+    return construct_efd_int_node(node->h.name, node, i_num / i_den);
   } else {
     efd_assert_return_type(node, EFD_NT_NUMBER);
     n_num = efd_as_n(efd_get_value(efd_nth(node, 0), cache));
     n_den = efd_as_n(efd_get_value(efd_nth(node, 1), cache));
-    return construct_efd_num_node(node->h.name, n_num / n_den);
+    return construct_efd_num_node(node->h.name, node, n_num / n_den);
   }
 }
 
@@ -126,7 +126,7 @@ efd_node * efd_fn_pow(efd_node const * const node, efd_value_cache *cache) {
   base = efd_as_n(efd_get_value(efd_nth(node, 0), cache));
   exp = efd_as_n(efd_get_value(efd_nth(node, 1), cache));
 
-  return construct_efd_num_node(node->h.name, pow(base, exp));
+  return construct_efd_num_node(node->h.name, node, pow(base, exp));
 }
 
 // The square root of the first child.
@@ -134,6 +134,7 @@ efd_node * efd_fn_sqrt(efd_node const * const node, efd_value_cache *cache) {
   efd_assert_return_type(node, EFD_NT_NUMBER);
   return construct_efd_num_node(
     node->h.name,
+    node,
     sqrt(efd_as_n(efd_get_value(efd_nth(node, 0), cache)))
   );
 }
@@ -143,6 +144,7 @@ efd_node * efd_fn_sine(efd_node const * const node, efd_value_cache *cache) {
   efd_assert_return_type(node, EFD_NT_NUMBER);
   return construct_efd_num_node(
     node->h.name,
+    node,
     sin(efd_as_n(efd_get_value(efd_nth(node, 0), cache)))
   );
 }
@@ -152,6 +154,7 @@ efd_node * efd_fn_cosine(efd_node const * const node, efd_value_cache *cache) {
   efd_assert_return_type(node, EFD_NT_NUMBER);
   return construct_efd_num_node(
     node->h.name,
+    node,
     cos(efd_as_n(efd_get_value(efd_nth(node, 0), cache)))
   );
 }
@@ -161,6 +164,7 @@ efd_node * efd_fn_atan2(efd_node const * const node, efd_value_cache *cache) {
   efd_assert_return_type(node, EFD_NT_NUMBER);
   return construct_efd_num_node(
     node->h.name,
+    node,
     atan2(
       efd_as_n(efd_get_value(efd_nth(node, 0), cache)),
       efd_as_n(efd_get_value(efd_nth(node, 1), cache))
@@ -214,7 +218,7 @@ efd_node * efd_fn_avg(efd_node const * const node, efd_value_cache *cache) {
   cleanup_efd_node(values_container);
   // (values is cleaned up as part of values_container)
 
-  return construct_efd_num_node(node->h.name, sum / (efd_num_t) count);
+  return construct_efd_num_node(node->h.name, node, sum / (efd_num_t) count);
 }
 
 // The first argument (assumed to be in [0, 1]) scaled to be in the range
@@ -231,10 +235,10 @@ efd_node * efd_fn_scale(efd_node const * const node, efd_value_cache *cache) {
   result = min + input * (max - min);
 
   if (efd_return_type_of(node) == EFD_NT_INTEGER) {
-    return construct_efd_int_node(node->h.name, (efd_int_t) result);
+    return construct_efd_int_node(node->h.name, node, (efd_int_t) result);
   } else {
     efd_assert_return_type(node, EFD_NT_NUMBER);
-    return construct_efd_num_node(node->h.name, result);
+    return construct_efd_num_node(node->h.name, node, result);
   }
 }
 
@@ -272,10 +276,10 @@ efd_node * efd_fn_constrain(
   if (result > max) { result = max; }
 
   if (efd_return_type_of(node) == EFD_NT_INTEGER) {
-    return construct_efd_int_node(node->h.name, (efd_int_t) result);
+    return construct_efd_int_node(node->h.name, node, (efd_int_t) result);
   } else {
     efd_assert_return_type(node, EFD_NT_NUMBER);
-    return construct_efd_num_node(node->h.name, result);
+    return construct_efd_num_node(node->h.name, node, result);
   }
 }
 
@@ -317,7 +321,7 @@ efd_node * efd_fn_weight(efd_node const * const node, efd_value_cache *cache) {
     result = numerator / denominator;
   }
 
-  return construct_efd_num_node(node->h.name, result);
+  return construct_efd_num_node(node->h.name, node, result);
 }
 
 // The expdist function from math/functions.h
@@ -329,7 +333,7 @@ efd_node * efd_fn_expdist(efd_node const * const node, efd_value_cache *cache) {
   base = efd_as_n(efd_get_value(efd_nth(node, 0), cache));
   exp = efd_as_n(efd_get_value(efd_nth(node, 1), cache));
 
-  return construct_efd_num_node(node->h.name, expdist(base, exp));
+  return construct_efd_num_node(node->h.name, node, expdist(base, exp));
 }
 
 // The logdist function from math/functions.h
@@ -341,7 +345,7 @@ efd_node * efd_fn_logdist(efd_node const * const node, efd_value_cache *cache) {
   base = efd_as_n(efd_get_value(efd_nth(node, 0), cache));
   exp = efd_as_n(efd_get_value(efd_nth(node, 1), cache));
 
-  return construct_efd_num_node(node->h.name, logdist(base, exp));
+  return construct_efd_num_node(node->h.name, node, logdist(base, exp));
 }
 
 #endif // INCLUDE_EFD_FUNC_MATH_H

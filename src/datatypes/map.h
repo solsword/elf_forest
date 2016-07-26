@@ -83,7 +83,8 @@ void * m3_get_value(map *m, map_key_t x, map_key_t y, map_key_t z);
 
 // Adds the given value to the map under the given key(s). Allocates new memory
 // to expand the map as necessary. If there is already a value indexed by the
-// given key(s), it returns that value after overwriting it.
+// given key(s), it returns that value after overwriting it, otherwise it
+// returns NULL.
 void * m_put_value(map *m, void *value, ...);
 void * m1_put_value(map *m, void *value, map_key_t x);
 void * m2_put_value(map *m, void *value, map_key_t x, map_key_t y);
@@ -96,16 +97,54 @@ void * m1_pop_value(map *m, map_key_t x);
 void * m2_pop_value(map *m, map_key_t x, map_key_t y);
 void * m3_pop_value(map *m, map_key_t x, map_key_t y, map_key_t z);
 
+// Searches through the map to find if it contains the given *value* (not key).
+int m_contains_value(map *m, void *value);
+
 // Removes all copies of the given value from the given map (uses address
 // comparison). Returns the number of elements removed (possibly 0).
 size_t m_remove_all_values(map *m, void *value);
 
+// Functions for reverse lookups which return key(s) via return arguments.
+// Their return values indicate success (1) or failure (0) of the lookup. If
+// the sought-after value exists multiple times in the map, an arbitrary valid
+// key for it will be returned (this is stable but not if the map is modified).
+int m1_reverse_lookup(map *m, void *value, map_key_t *r_key);
+int m2_reverse_lookup(
+  map *m,
+  void *value,
+  map_key_t *r_k1,
+  map_key_t *r_k2
+);
+int m3_reverse_lookup(
+  map *m,
+  void *value,
+  map_key_t *r_k1,
+  map_key_t *r_k2,
+  map_key_t *r_k3
+);
+
 // Runs the given function sequentially on each value in the map.
 void m_foreach(map *m, void (*f)(void *));
+
+// Functions for calling a function for each keyset in the map (as opposed to
+// each value):
+void m1_foreach_key(map *m, void (*f)(map_key_t));
+void m2_foreach_key(map *m, void (*f)(map_key_t, map_key_t));
+void m3_foreach_key(map *m, void (*f)(map_key_t, map_key_t, map_key_t));
 
 // Runs the given function sequentially on each value in the map with the given
 // extra argument as its second argument.
 void m_witheach(map *m, void *arg, void (*f)(void *, void *));
+
+// Functions for calling a function for each keyset in the map (as opposed to
+// each value) with an extra argument:
+void m1_witheach_key(map *m, void *arg, void (*f)(map_key_t, void*));
+void m2_witheach_key(map *m, void *arg, void (*f)(map_key_t, map_key_t, void*));
+void m3_witheach_key(
+  map *m,
+  void *arg,
+  void (*f)(map_key_t, map_key_t, map_key_t, void*)
+);
 
 // Counts the number of bytes of data/overhead used by the given map. For a
 // map, the data size is the space devoted to storing keys and values, while

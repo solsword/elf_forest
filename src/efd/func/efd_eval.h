@@ -77,7 +77,7 @@ efd_node * efd_fn_peek(efd_node const * const node, efd_value_cache *cache) {
     }
   }
 
-  value = efd_create_shadow_clone(value);
+  value = copy_efd_node(value); // old value is in cache
   efd_rename(value, node->h.name);
   return value;
 }
@@ -88,15 +88,14 @@ efd_node * _efd_call_impl(
   efd_node const * const target,
   efd_node const * const args
 ) {
-  efd_node *shadow, *tmp, *targs, *result;
+  efd_node *shadow, *targs, *result;
 
-  shadow = efd_create_shadow_clone(target);
-  tmp = shadow->b.as_reroute.child;
+  shadow = copy_efd_node(target);
   targs = efd_flatten(args);
-  efd_prepend_child(tmp, targs); // will be cleaned up when tmp is
+  efd_prepend_child(shadow, targs); // will be cleaned up when shadow is
 
   // Get a flat result that doesn't contain any links & which has no parent:
-  result = efd_flatten(tmp);
+  result = efd_flatten(shadow);
 
   // cleanup temporary stuff:
   cleanup_efd_node(shadow);

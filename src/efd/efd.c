@@ -41,7 +41,6 @@ char const * const EFD_NT_NAMES[] = {
   "container",
   "scope",
   "globals",
-  "reroute",
   "root_link",
   "global_link",
   "local_link",
@@ -78,7 +77,6 @@ char const * const EFD_NT_ABBRS[] = {
   "c",
   "V",
   "G",
-  "R",
   "L",
   "GL",
   "l",
@@ -127,9 +125,16 @@ dictionary *EFD_GLOBALS = NULL;
  * Constructors & Destructors *
  ******************************/
 
-efd_node * create_efd_node(efd_node_type t, string const * const name) {
+efd_node * create_efd_node(
+  efd_node_type t,
+  string const * const name,
+  efd_node const *context
+) {
   efd_node *result = (efd_node*) malloc(sizeof(efd_node));
   result->h.type = t;
+  result->h.context = context;
+  result->h.name = copy_string(name);
+  result->h.parent = NULL;
   switch (t) {
     default:
     case EFD_NT_INTEGER:
@@ -143,11 +148,6 @@ efd_node * create_efd_node(efd_node_type t, string const * const name) {
       result->b.as_container.children = create_dictionary(
         EFD_DEFAULT_DICTIONARY_SIZE
       );
-      break;
-
-    case EFD_NT_REROUTE:
-      result->b.as_reroute.child = NULL;
-      result->b.as_reroute.target = NULL;
       break;
 
     case EFD_NT_ROOT_LINK:
@@ -207,17 +207,16 @@ efd_node * create_efd_node(efd_node_type t, string const * const name) {
       result->b.as_str_array.values = NULL;
       break;
   }
-  result->h.name = copy_string(name);
-  result->h.parent = NULL;
   return result;
 }
 
 efd_node * construct_efd_obj_node(
   string const * const name,
+  efd_node const * const context,
   string const * const format,
   void * obj
 ) {
-  efd_node *result = create_efd_node(EFD_NT_OBJECT, name);
+  efd_node *result = create_efd_node(EFD_NT_OBJECT, name, context);
   efd_push_error_context_with_node(
     s_("...during the creation of object node:"),
     result
@@ -235,43 +234,54 @@ efd_node * construct_efd_obj_node(
   return result;
 }
 
-efd_node * construct_efd_int_node(string const * const name, efd_int_t value) {
-  efd_node *result = create_efd_node(EFD_NT_INTEGER, name);
+efd_node * construct_efd_int_node(
+  string const * const name,
+  efd_node const * const context,
+  efd_int_t value
+) {
+  efd_node *result = create_efd_node(EFD_NT_INTEGER, name, context);
   result->b.as_integer.value = value;
   return result;
 }
 
-efd_node * construct_efd_num_node(string const * const name, efd_num_t value) {
-  efd_node *result = create_efd_node(EFD_NT_NUMBER, name);
+efd_node * construct_efd_num_node(
+  string const * const name,
+  efd_node const * const context,
+  efd_num_t value
+) {
+  efd_node *result = create_efd_node(EFD_NT_NUMBER, name, context);
   result->b.as_number.value = value;
   return result;
 }
 
 efd_node * construct_efd_str_node(
   string const * const name,
+  efd_node const * const context,
   string const * const value
 ) {
-  efd_node *result = create_efd_node(EFD_NT_STRING, name);
+  efd_node *result = create_efd_node(EFD_NT_STRING, name, context);
   result->b.as_string.value = copy_string(value);
   return result;
 }
 
 efd_node * construct_efd_link_node_to(
   string const * const name,
+  efd_node const * const context,
   efd_node const * const target
 ) {
-  efd_node *result = create_efd_node(EFD_NT_ROOT_LINK, name);
+  efd_node *result = create_efd_node(EFD_NT_ROOT_LINK, name, context);
   result->b.as_link.target = construct_efd_address_of_node(target);
   return result;
 }
 
 efd_node * construct_efd_function_node(
   string const * const name,
+  efd_node const * const context,
   efd_node_type returns,
   string const * const function
 ) {
   efd_node_type type = efd_function_type_that_returns(returns);
-  efd_node *result = create_efd_node(type, name);
+  efd_node *result = create_efd_node(type, name, context);
   result->b.as_function.function = copy_string(function);
   return result;
 }
@@ -279,14 +289,14 @@ efd_node * construct_efd_function_node(
 efd_node * copy_efd_node(efd_node const * const src) {
   size_t i;
   dictionary *children;
-  efd_node *result;
+  efd_node *child, *result;
 
   efd_push_error_context_with_node(
     s_("...during attempt to copy node:"),
     src
   );
   
-  result = create_efd_node(src->h.type, src->h.name);
+  result = create_efd_node(src->h.type, src->h.name, src->h.context);
   switch (src->h.type) {
     default:
     case EFD_NT_INVALID:
@@ -304,17 +314,10 @@ efd_node * copy_efd_node(efd_node const * const src) {
       // children
       children = src->b.as_container.children;
       for (i = 0; i < d_get_count(children); ++i) {
-        efd_add_child(
-          result,
-          copy_efd_node((efd_node*) d_get_item(children, i))
-        );
+        child = copy_efd_node((efd_node*) d_get_item(children, i));
+        child->h.context = NULL;
+        efd_add_child(result, child);
       }
-      break;
-
-    case EFD_NT_REROUTE:
-      // child & target
-      result->b.as_reroute.child = copy_efd_node(src->b.as_reroute.child);
-      result->b.as_reroute.target = src->b.as_reroute.target;
       break;
 
     case EFD_NT_ROOT_LINK:
@@ -346,10 +349,9 @@ efd_node * copy_efd_node(efd_node const * const src) {
       // children
       children = src->b.as_function.children;
       for (i = 0; i < d_get_count(children); ++i) {
-        efd_add_child(
-          result,
-          copy_efd_node((efd_node*) d_get_item(children, i))
-        );
+        child = copy_efd_node((efd_node*) d_get_item(children, i));
+        child->h.context = NULL;
+        efd_add_child(result, child);
       }
       break;
 
@@ -358,6 +360,7 @@ efd_node * copy_efd_node(efd_node const * const src) {
       result->b.as_proto.format = copy_string(src->b.as_proto.format);
       // input
       result->b.as_proto.input = copy_efd_node(src->b.as_proto.input);
+      result->b.as_proto.input->h.context = result;
       break;
 
     case EFD_NT_OBJECT:
@@ -511,20 +514,6 @@ CLEANUP_IMPL(efd_node) {
         s_raw(doomed->h.name)
       );
 #endif
-      break;
-
-    case EFD_NT_REROUTE:
-      // Clean up our child:
-#ifdef DEBUG_TRACE_EFD_CLEANUP
-      fprintf(
-        stderr,
-        "> EFD cleanup[%p]:%s:reroute-child\n",
-        doomed,
-        s_raw(doomed->h.name)
-      );
-#endif
-      cleanup_efd_node(doomed->b.as_reroute.child);
-      // don't clean up the target
       break;
 
     case EFD_NT_ROOT_LINK:
@@ -737,6 +726,7 @@ CLEANUP_IMPL(efd_reference) {
 efd_value_cache * create_efd_value_cache(void) {
   efd_value_cache *result = (efd_value_cache*) malloc(sizeof(efd_value_cache));
   result->values = create_map(1, EFD_EVAL_MAP_TABLE_SIZE);
+  result->unique = create_map(1, EFD_EVAL_MAP_TABLE_SIZE);
   result->active = NULL;
   result->stack = create_map(1, EFD_EVAL_DEP_TABLE_SIZE);
   return result;
@@ -751,7 +741,8 @@ CLEANUP_IMPL(efd_value_cache) {
     doomed
   );
 #endif
-  m_foreach(doomed->values, &cleanup_v_efd_node);
+  m1_foreach_key(doomed->unique, &cleanup_v_efd_node);
+  cleanup_map(doomed->unique);
   cleanup_map(doomed->values);
   cleanup_map(doomed->stack);
   free(doomed);
@@ -1047,6 +1038,36 @@ void efd_v_assert_object_format(void *v_node, void *v_fmt) {
   efd_assert_object_format((efd_node*) v_node, (string*) v_fmt);
 }
 
+void efd_assert_child_count(
+  efd_node const * const n,
+  intptr_t min,
+  intptr_t max
+) {
+  intptr_t count = efd_normal_child_count(n);
+  if (min >= 0 && count < min) {
+    efd_report_error(
+      s_sprintf(
+        "ERROR: node must have at least %zd children but has only %zd.\n",
+        min,
+        count
+      ),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+  if (max >= 0 && count > max) {
+    efd_report_error(
+      s_sprintf(
+        "ERROR: node must have no more than %zd children but has %zd.\n",
+        max,
+        count
+      ),
+      n
+    );
+    exit(EXIT_FAILURE);
+  }
+}
+
 int efd_is_type(efd_node const * const n, efd_node_type t) {
   if (n == NULL) {
     return 0;
@@ -1124,7 +1145,7 @@ string * efd_repr(efd_node const * const n) {
   string *fqn, *scopes, *contents, *value;
   string *result;
   intptr_t ncount, i;
-  size_t count;
+  size_t count, rlen;
 
   SSTR(s_lsb, "[[", 2);
   SSTR(s_rsb, "]]", 2);
@@ -1135,9 +1156,7 @@ string * efd_repr(efd_node const * const n) {
   SSTR(s_rcb, "{", 1);
   SSTR(s_lcb, "}", 1);
   SSTR(s_dots, "...", 3);
-  SSTR(S_PERCENT, "%", 1);
   SSTR(s_caret, "->", 2);
-  SSTR(s_reroute, "*>", 2);
   SSTR(s_quote, "\"", 1);
 
   if (n == NULL) {
@@ -1167,8 +1186,8 @@ string * efd_repr(efd_node const * const n) {
         s_append(scopes, s_rcb);
         s_append(scopes, child->h.name);
         s_append(scopes, s_lcb);
+        s_append(scopes, S_SPACE);
       }
-      s_append(scopes, S_SPACE);
     }
   } // otherwise it remains empty
   
@@ -1211,13 +1230,6 @@ string * efd_repr(efd_node const * const n) {
   switch (n->h.type) {
     default:
       // leave 'value' empty
-      break;
-
-    case EFD_NT_REROUTE:
-      s_devour(value, efd_repr(n->b.as_reroute.child));
-      s_append(value, S_SPACE);
-      s_append(value, s_reroute);
-      s_devour(value, efd_repr(n->b.as_reroute.target));
       break;
 
     case EFD_NT_ROOT_LINK:
@@ -1332,16 +1344,26 @@ string * efd_repr(efd_node const * const n) {
     s_append(result, s_lsb);
   }
 
+  rlen = s_get_length(result);
   s_devour(result, efd_type_abbr(n->h.type));
-  s_append(result, S_SPACE);
+  if (s_get_length(result) > rlen) {
+    s_append(result, S_SPACE);
+  }
 
+  rlen = s_get_length(result);
   s_devour(result, fqn);
-  s_append(result, S_SPACE);
+  if (s_get_length(result) > rlen) {
+    s_append(result, S_SPACE);
+  }
 
   s_devour(result, scopes);
   // scopes comes with a trailing space when needed
 
+  rlen = s_get_length(result);
   s_devour(result, value);
+  if (s_get_length(result) > rlen) {
+    s_append(result, S_SPACE);
+  }
 
   s_devour(result, contents);
   // contents also contains a trailing space when needed
@@ -1360,7 +1382,7 @@ string * _efd_full_repr(efd_node const * const n, size_t indent) {
   efd_node *child;
   string *fqn, *contents, *value;
   string *result;
-  size_t i, count;
+  size_t i, count, rlen;
 
   SSTR(s_lsb, "[[", 2);
   SSTR(s_rsb, "]]", 2);
@@ -1368,9 +1390,7 @@ string * _efd_full_repr(efd_node const * const n, size_t indent) {
   SSTR(s_srsb, "]", 1);
   SSTR(s_lab, "<<", 2);
   SSTR(s_rab, ">>", 2);
-  SSTR(S_PERCENT, "%", 1);
   SSTR(s_caret, "->", 2);
-  SSTR(s_reroute, "*>", 2);
   SSTR(s_quote, "\"", 1);
 
   string *s_nl = s_("\n");
@@ -1413,13 +1433,6 @@ string * _efd_full_repr(efd_node const * const n, size_t indent) {
   switch (n->h.type) {
     default:
       // leave 'value' empty
-      break;
-
-    case EFD_NT_REROUTE:
-      s_append(value, efd_full_repr(n->b.as_reroute.child));
-      s_append(value, S_SPACE);
-      s_append(value, s_reroute);
-      s_devour(value, efd_full_repr(n->b.as_reroute.target));
       break;
 
     case EFD_NT_ROOT_LINK:
@@ -1528,13 +1541,23 @@ string * _efd_full_repr(efd_node const * const n, size_t indent) {
     s_append(result, s_lsb);
   }
 
+  rlen = s_get_length(result);
   s_devour(result, efd_type_abbr(n->h.type));
-  s_append(result, S_SPACE);
+  if (s_get_length(result) > rlen) {
+    s_append(result, S_SPACE);
+  }
 
+  rlen = s_get_length(result);
   s_devour(result, fqn);
-  s_append(result, S_SPACE);
+  if (s_get_length(result) > rlen) {
+    s_append(result, S_SPACE);
+  }
 
+  rlen = s_get_length(result);
   s_devour(result, value);
+  if (s_get_length(result) > rlen) {
+    s_append(result, S_SPACE);
+  }
 
   s_devour(result, contents);
   // contents contains a trailing space when needed
@@ -1657,6 +1680,24 @@ string * _efd_trace_lookup(
   return sofar;
 }
 
+string *_efd_trace_details(efd_node const * const n) {
+  SSTR(s_no_details, "<no details>", 12);
+  switch (n->h.type) {
+    case EFD_NT_ROOT_LINK:
+      return _efd_trace_lookup(EFD_ROOT, n->b.as_link.target);
+
+    default:
+    case EFD_NT_GLOBAL_LINK:
+      return copy_string(s_no_details);
+
+    case EFD_NT_LOCAL_LINK:
+      return _efd_trace_lookup(n->h.context, n->b.as_link.target);
+
+    case EFD_NT_VARIABLE:
+      return efd_variable_search_trace(n);
+  }
+}
+
 string *_efd_trace_link(efd_node const * const n, string * sofar) {
   string *fqn, *ltype;
   efd_node *linked;
@@ -1664,8 +1705,7 @@ string *_efd_trace_link(efd_node const * const n, string * sofar) {
   SSTR(s_broken, "\n  -X> ", 7);
   SSTR(s_lab, "<", 1);
   SSTR(s_rab, ">", 1);
-  SSTR(s_details, "  Details:", 10);
-  SSTR(s_no_details, "<no details>", 12);
+  SSTR(s_details, "  Failure details:", 18);
 
   if (n == NULL) {
     // We should never hit this case while recursing---only from an initial
@@ -1689,10 +1729,6 @@ string *_efd_trace_link(efd_node const * const n, string * sofar) {
     default:
       return sofar;
 
-    case EFD_NT_REROUTE:
-      linked = n->b.as_reroute.child;
-      break;
-
     case EFD_NT_ROOT_LINK:
       linked = efd(EFD_ROOT, n->b.as_link.target);
       break;
@@ -1702,7 +1738,7 @@ string *_efd_trace_link(efd_node const * const n, string * sofar) {
       break;
 
     case EFD_NT_LOCAL_LINK:
-      linked = efd(efd_get_parent(n), n->b.as_link.target);
+      linked = efd(n->h.context, n->b.as_link.target);
       break;
 
     case EFD_NT_VARIABLE:
@@ -1714,31 +1750,7 @@ string *_efd_trace_link(efd_node const * const n, string * sofar) {
     s_devour(sofar, efd_addr_string(n->b.as_link.target));
     s_append(sofar, S_NL);
     s_append(sofar, s_details);
-    switch (n->h.type) {
-      default:
-      case EFD_NT_REROUTE:
-        s_append(sofar, s_no_details);
-        break;
-
-      case EFD_NT_ROOT_LINK:
-        s_devour(sofar, _efd_trace_lookup(EFD_ROOT, n->b.as_link.target));
-        break;
-
-      case EFD_NT_GLOBAL_LINK:
-        s_append(sofar, s_no_details);
-        break;
-
-      case EFD_NT_LOCAL_LINK:
-        s_devour(
-          sofar,
-          _efd_trace_lookup(efd_get_parent(n), n->b.as_link.target)
-        );
-        break;
-
-      case EFD_NT_VARIABLE:
-        s_devour(sofar, efd_variable_search_trace(n));
-        break;
-    }
+    s_devour(sofar, _efd_trace_details(n));
     return sofar;
   } else {
     return _efd_trace_link(linked, sofar);
@@ -1746,7 +1758,14 @@ string *_efd_trace_link(efd_node const * const n, string * sofar) {
 }
 
 string *efd_trace_link(efd_node const * const n) {
-  return _efd_trace_link(n, s_("Trace:"));
+  SSTR(s_details, "  Details:", 10);
+  string *result;
+  result = _efd_trace_link(n, s_("Trace:"));
+  s_append(result, S_NL);
+  s_append(result, s_details);
+  s_append(result, S_NL);
+  s_devour(result, _efd_trace_details(n));
+  return result;
 }
 
 void efd_report_broken_link(string *message, efd_node const * const n) {
@@ -1856,16 +1875,6 @@ int _efd_cmp(
     case EFD_NT_SCOPE:
     case EFD_NT_GLOBAL:
       // children are compared below
-      break;
-
-    case EFD_NT_REROUTE:
-      if (
-         !_efd_cmp(cmp->b.as_reroute.child, agn->b.as_reroute.child, strict)
-      || (cmp->b.as_reroute.target != agn->b.as_reroute.target)
-      ) {
-        efd_pop_error_context();
-        return 0;
-      }
       break;
 
     case EFD_NT_ROOT_LINK:
@@ -2049,21 +2058,13 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn) {
 }
 
 int efd_equivalent(efd_node const * const cmp, efd_node const * const agn) {
-  efd_node const * _cmp = cmp;
-  efd_node const * _agn = agn;
-  while (efd_is_type(_cmp, EFD_NT_REROUTE)) {
-    _cmp = _cmp->b.as_reroute.child;
-  }
-  while (efd_is_type(_agn, EFD_NT_REROUTE)) {
-    _agn = _agn->b.as_reroute.child;
-  }
-  return _efd_cmp(_cmp, _agn, 0);
+  return _efd_cmp(cmp, agn, 0);
 }
 
 void efd_add_child(efd_node *n, efd_node *child) {
   efd_push_error_context_with_node(s_("...while adding child to node:"), n);
 #ifdef DEBUG
-  if (!efd_is_container_node(n) && n->h.type != EFD_NT_REROUTE) {
+  if (!efd_is_container_node(n)) {
     efd_report_error(
       s_("ERROR: Can't add child to non-container node."),
       n
@@ -2083,19 +2084,10 @@ void efd_add_child(efd_node *n, efd_node *child) {
     fprintf(stderr, "\n");
   }
 #endif
-  if (n->h.type == EFD_NT_REROUTE) {
-    if (n->b.as_reroute.child != NULL) {
-      efd_report_error(
-        s_("ERROR: Can't add child to REROUTE node which already has one:"),
-        n
-      );
-      exit(EXIT_FAILURE);
-    }
-    n->b.as_reroute.child = child;
-    child->h.parent = n;
-  } else {
-    d_add_value_s(efd_children_dict(n), child->h.name, (void*) child);
-    child->h.parent = n;
+  d_add_value_s(efd_children_dict(n), child->h.name, (void*) child);
+  child->h.parent = n;
+  if (child->h.context == NULL) {
+    child->h.context = n;
   }
   efd_pop_error_context();
 }
@@ -2103,7 +2095,7 @@ void efd_add_child(efd_node *n, efd_node *child) {
 void efd_prepend_child(efd_node *n, efd_node *child) {
   efd_push_error_context_with_node(s_("...while prepending child to node:"), n);
 #ifdef DEBUG
-  if (!efd_is_container_node(n) && n->h.type != EFD_NT_REROUTE) {
+  if (!efd_is_container_node(n)) {
     efd_report_error(
       s_("ERROR: Can't add child to non-container node:"),
       n
@@ -2123,19 +2115,10 @@ void efd_prepend_child(efd_node *n, efd_node *child) {
     fprintf(stderr, "\n");
   }
 #endif
-  if (n->h.type == EFD_NT_REROUTE) {
-    if (n->b.as_reroute.child != NULL) {
-      efd_report_error(
-        s_("ERROR: Can't add child to REROUTE node which already has one:"),
-        n
-      );
-      exit(EXIT_FAILURE);
-    }
-    n->b.as_reroute.child = child;
-    child->h.parent = n;
-  } else {
-    d_prepend_value_s(efd_children_dict(n), child->h.name, (void*) child);
-    child->h.parent = n;
+  d_prepend_value_s(efd_children_dict(n), child->h.name, (void*) child);
+  child->h.parent = n;
+  if (child->h.context == NULL) {
+    child->h.context = n;
   }
   efd_pop_error_context();
 }
@@ -2144,7 +2127,7 @@ void efd_remove_child(efd_node *n, efd_node *child) {
   efd_push_error_context_with_node(s_("...while removing child from node:"), n);
 #ifdef DEBUG
   efd_node *r;
-  if (!efd_is_container_node(n) && n->h.type != EFD_NT_REROUTE) {
+  if (!efd_is_container_node(n)) {
     efd_report_error(
       s_("ERROR: Can't remove child from non-container node:"),
       n
@@ -2161,12 +2144,7 @@ void efd_remove_child(efd_node *n, efd_node *child) {
       child
     );
   }
-  if (n->h.type == EFD_NT_REROUTE) {
-    r = n->b.as_reroute.child;
-    n->b.as_reroute.child = NULL;
-  } else {
-    r = (efd_node*) d_remove_value(efd_children_dict(n), (void*) child);
-  }
+  r = (efd_node*) d_remove_value(efd_children_dict(n), (void*) child);
   if (r == NULL || r != child) {
     efd_report_error(
       s_("(while removing from parent:)"),
@@ -2179,11 +2157,7 @@ void efd_remove_child(efd_node *n, efd_node *child) {
     exit(EXIT_FAILURE);
   }
 #else
-  if (n->h.type == EFD_NT_REROUTE) {
-    n->b.as_reroute.child = NULL;
-  } else {
-    d_remove_value(efd_children_dict(n), (void*) child);
-  }
+  d_remove_value(efd_children_dict(n), (void*) child);
 #endif
   child->h.parent = NULL;
   efd_pop_error_context();
@@ -2237,35 +2211,6 @@ efd_address* efd_pop_address(efd_address *a) {
   }
   result = n->next;
   n->next = NULL;
-  return result;
-}
-
-efd_node * efd_create_shadow_clone(efd_node const * const original) {
-  efd_node *result;
-  result = create_efd_node(EFD_NT_REROUTE, original->h.name);
-  if (efd_is_type(original, EFD_NT_REROUTE)) {
-    result->b.as_reroute.child = copy_efd_node(original->b.as_reroute.child);
-    result->b.as_reroute.target = original->b.as_reroute.target;
-  } else {
-    result->b.as_reroute.child = copy_efd_node(original);
-    result->b.as_reroute.target = efd_get_parent(original);
-  }
-  result->b.as_reroute.child->h.parent = result;
-  return result;
-}
-
-efd_node * efd_create_reroute(
-  efd_node *shadow_parent,
-  efd_node const * const original
-) {
-  efd_node *result = create_efd_node(EFD_NT_REROUTE, original->h.name);
-  if (efd_is_type(original, EFD_NT_REROUTE)) {
-    result->b.as_reroute.child = copy_efd_node(original->b.as_reroute.child);
-  } else {
-    result->b.as_reroute.child = copy_efd_node(original);
-  }
-  result->b.as_reroute.target = shadow_parent;
-  result->b.as_reroute.child->h.parent = result;
   return result;
 }
 
@@ -2361,7 +2306,7 @@ efd_node * efd_find_variable_in(
   if (
     result == NULL
  && node->h.type == EFD_NT_SCOPE
- && efd_get_parent(node) == NULL
+ && node->h.context == NULL
   ) {
     result = efd(node, target);
   }
@@ -2371,7 +2316,8 @@ efd_node * efd_find_variable_in(
 
 efd_node * efd_resolve_variable(efd_node const * const var) {
   efd_address *target;
-  efd_node *result, *scope;
+  efd_node *result;
+  efd_node const *scope;
 
   efd_push_error_context_with_node(
     s_("...during efd_resolve_variable for variable:"),
@@ -2381,16 +2327,12 @@ efd_node * efd_resolve_variable(efd_node const * const var) {
   efd_assert_type(var, EFD_NT_VARIABLE);
   target = var->b.as_link.target;
 
-  scope = efd_get_parent(var);
+  scope = var->h.context;
 
   result = NULL;
   while (scope != NULL && (result == NULL || result == var)) {
-    if (scope->h.type == EFD_NT_REROUTE) {
-      scope = scope->b.as_reroute.target;
-    } else {
-      result = efd_find_variable_in(scope, target);
-      scope = efd_get_parent(scope);
-    }
+    result = efd_find_variable_in(scope, target);
+    scope = scope->h.context;
   }
   efd_pop_error_context();
   return result;
@@ -2398,7 +2340,8 @@ efd_node * efd_resolve_variable(efd_node const * const var) {
 
 string * efd_variable_search_trace(efd_node const * const var) {
   efd_address *target;
-  efd_node *result, *scope;
+  efd_node *result;
+  efd_node const *scope;
   string *trace;
   SSTR(s_nl, "\n?-", 3);
 
@@ -2406,18 +2349,14 @@ string * efd_variable_search_trace(efd_node const * const var) {
   target = var->b.as_link.target;
   trace = s_("Var trace:");
 
-  scope = efd_get_parent(var);
+  scope = var->h.context;
 
   result = NULL;
   while (scope != NULL && (result == NULL || result == var)) {
     s_append(trace, s_nl);
     s_devour(trace, efd_repr(scope));
-    if (scope->h.type == EFD_NT_REROUTE) {
-      scope = scope->b.as_reroute.target;
-    } else {
-      result = efd_find_variable_in(scope, target);
-      scope = efd_get_parent(scope);
-    }
+    result = efd_find_variable_in(scope, target);
+    scope = scope->h.context;
   }
   if (result != NULL) {
     s_append(trace, s_nl);
@@ -2443,9 +2382,6 @@ efd_node * efd_concrete(efd_node const * const base) {
     default:
       efd_pop_error_context();
       return (efd_node*) base;
-    case EFD_NT_REROUTE:
-      linked = base->b.as_reroute.child;
-      break;
     case EFD_NT_ROOT_LINK:
       linked = efd(EFD_ROOT, base->b.as_link.target);
       break;
@@ -2453,7 +2389,7 @@ efd_node * efd_concrete(efd_node const * const base) {
       linked = efd_get_global(base->b.as_link.target->name);
       break;
     case EFD_NT_LOCAL_LINK:
-      linked = efd(efd_get_parent(base), base->b.as_link.target);
+      linked = efd(base->h.context, base->b.as_link.target);
       break;
     case EFD_NT_VARIABLE:
       linked = efd_resolve_variable(base);
@@ -2542,27 +2478,13 @@ efd_node *efd_nth(efd_node const * const node, size_t index) {
   return NULL;
 }
 
-efd_node * efd_get_parent(efd_node const * const node) {
-  efd_node *parent = node->h.parent;
-  while (parent != NULL && efd_is_type(parent, EFD_NT_REROUTE)) {
-    if (parent->b.as_reroute.target == NULL) {
-      efd_report_error(
-        s_("ERROR: EFD reroute node has NULL target:"),
-        parent
-      );
-    }
-    parent = parent->b.as_reroute.target;
-  }
-  return parent;
-}
-
 efd_node * efd_lookup(efd_node const * const node, string const * const key) {
   if (node == NULL) {
     return NULL;
   }
   if (s_equals(key, EFD_ADDR_PARENT_STR)) {
     // Special handling for 'parent' path entries:
-    return efd_get_parent(node);
+    return (efd_node*) node->h.context;
   } else {
     // Normal lookups:
     if (efd_is_link_node(node)) {
@@ -2644,8 +2566,7 @@ efd_node * efdx(efd_node const * const root, string const * const saddr) {
 }
 
 efd_node * efd_eval(efd_node const * const target, efd_value_cache *cache) {
-  efd_node *result, *trace, *input;
-  efd_node const *last_active;
+  efd_node *result, *input;
   efd_eval_function feval;
   efd_unpack_function unpacker;
 
@@ -2660,34 +2581,12 @@ efd_node * efd_eval(efd_node const * const target, efd_value_cache *cache) {
     return NULL;
   }
 
+  // Push onto the cache's evaluation stack:
+  efd_cache_stack_push(cache, target);
+
   // If the target is a function node or prototype, actually evaluate it:
   if (efd_is_function_node(target) || efd_is_type(target, EFD_NT_PROTO)) {
-    // Check for evaluation cycles:
-    if (m1_contains_key(cache->stack, (map_key_t) target)) {
-      efd_report_error(
-        s_("ERROR: Evaluation target depends on its own value."),
-        target
-      );
-      trace = (efd_node*) m1_get_value(cache->stack, (map_key_t) target);
-      while (trace != NULL) {
-        efd_report_error(
-          s_("   ...during evaluation of..."),
-          trace
-        );
-        trace = (efd_node*) m1_get_value(cache->stack, (map_key_t) trace);
-      }
-      fprintf(stderr, "   ...trace finished.\n");
-    } else {
-      m1_put_value(
-        cache->stack,
-        (void*) cache->active,
-        (map_key_t) target
-      );
-    }
-
     // Do the evaluation:
-    last_active = cache->active;
-    cache->active = target;
     if (efd_is_function_node(target)) {
       feval = efd_lookup_function(target->b.as_function.function);
       if (feval == NULL) {
@@ -2736,20 +2635,21 @@ efd_node * efd_eval(efd_node const * const target, efd_value_cache *cache) {
       );
       result = construct_efd_obj_node(
         target->h.name,
+        target->h.context,
         target->b.as_proto.format,
         unpacker(input)
       );
       efd_pop_error_context();
     }
-    cache->active = last_active;
-
-    // Cache the result:
-    m1_put_value(cache->values, (void*) result, (map_key_t) target);
-    /* don't care = */ m1_pop_value(cache->stack, (map_key_t) target);
   } else {
     // If the target isn't a function node, just return the target pointer:
-    result = (efd_node*) target;
+    result = copy_efd_node(target);
   }
+
+  // Cache the result & pop the evaluation stack:
+  efd_cache_put(cache, target, result);
+  efd_cache_stack_pop(cache, target);
+
   efd_pop_error_context();
   return result;
 }
@@ -2802,7 +2702,7 @@ efd_node * efd_get_value(
 efd_node * efd_fresh_value(efd_node const * const target) {
   efd_value_cache *tmp = create_efd_value_cache();
   efd_node *result = efd_get_value(target, tmp);
-  result = efd_create_shadow_clone(result); // old result is in the value cache
+  result = copy_efd_node(result); // old result is in the value cache
   cleanup_efd_value_cache(tmp);
   return result;
 }
@@ -2840,7 +2740,11 @@ efd_node * _efd_flatten(efd_node const * const target, efd_value_cache *cache) {
     return _efd_flatten(sub, cache);
   } else {
     if (efd_is_container_node(target)) {
-      result = create_efd_node(target->h.type, target->h.name);
+      result = create_efd_node(
+        target->h.type,
+        target->h.name,
+        target->h.context
+      );
       children = efd_children_dict(target);
       for (i = 0; i < d_get_count(children); ++i) {
         sub = (efd_node*) d_get_item(children, i);
@@ -2897,6 +2801,73 @@ void _efd_compute_values(efd_node const * const root, efd_value_cache * cache) {
   }
 }
 
+efd_value_cache * efd_compute_values(efd_node const * const root) {
+  efd_value_cache *result = create_efd_value_cache();
+  _efd_compute_values(root, result);
+  return result;
+}
+
+int efd_cache_is_on_stack(
+  efd_value_cache *cache,
+  efd_node const * const target
+) {
+  return m1_contains_key(cache->stack, (map_key_t) target);
+}
+
+efd_node * efd_cache_stack_parent(
+  efd_value_cache *cache,
+  efd_node const * const target
+) {
+  return (efd_node*) m1_get_value(cache->stack, (map_key_t) target);
+}
+
+void efd_cache_stack_push(
+  efd_value_cache *cache,
+  efd_node const * const target
+) {
+  efd_node *trace;
+  // Check for evaluation cycles:
+  if (efd_cache_is_on_stack(cache, target)) {
+    efd_report_error(
+      s_("ERROR: Evaluation target depends on its own value."),
+      target
+    );
+    trace = efd_cache_stack_parent(cache, target);
+    while (trace != NULL) {
+      efd_report_error(
+        s_("   ...during evaluation of..."),
+        trace
+      );
+      trace = efd_cache_stack_parent(cache, trace);
+    }
+    fprintf(stderr, "   ...trace finished.\n");
+    exit(EXIT_FAILURE);
+  }
+  // Put the value:
+  m1_put_value(
+    cache->stack,
+    (void*) cache->active,
+    (map_key_t) target
+  );
+  cache->active = target;
+}
+
+void efd_cache_stack_pop(
+  efd_value_cache *cache,
+  efd_node const * const target
+) {
+  cache->active = (efd_node*) m1_pop_value(cache->stack, (map_key_t) target);
+}
+
+void efd_cache_put(
+  efd_value_cache *cache,
+  efd_node const * const original,
+  efd_node const * const value
+) {
+  m1_put_value(cache->unique, NULL, (void*) value);
+  m1_put_value(cache->values, (void*) value, (map_key_t) original);
+}
+
 efd_node * efd_call_function(
   efd_node const * const function,
   efd_node *args
@@ -2908,24 +2879,19 @@ efd_node * efd_call_function(
 
   call_node = construct_efd_function_node(
     EFD_ANON_NAME,
+    NULL,
     EFD_NT_CONTAINER,
     s_ftype
   );
   efd_add_child(
     call_node,
-    construct_efd_link_node_to(EFD_ANON_NAME, function)
+    construct_efd_link_node_to(EFD_ANON_NAME, NULL, function)
   );
   efd_add_child(call_node, args);
 
   result = efd_fresh_value(call_node);
   cleanup_efd_node(call_node);
 
-  return result;
-}
-
-efd_value_cache * efd_compute_values(efd_node const * const root) {
-  efd_value_cache *result = create_efd_value_cache();
-  _efd_compute_values(root, result);
   return result;
 }
 
@@ -2938,7 +2904,7 @@ efd_node * efd_pack_object(efd_node const * const object) {
 
   efd_push_error_context_with_node(s_("...while packing object:"), object);
 
-  result = create_efd_node(EFD_NT_PROTO, object->h.name);
+  result = create_efd_node(EFD_NT_PROTO, object->h.name, object->h.context);
   result->b.as_proto.format = copy_string(object->b.as_object.format);
   packer = efd_lookup_packer(object->b.as_object.format);
   if (packer == NULL) {
@@ -2952,6 +2918,7 @@ efd_node * efd_pack_object(efd_node const * const object) {
     );
   }
   result->b.as_proto.input = packer(object->b.as_object.value); // pack
+  result->b.as_proto.input->h.context = result; // re-contextualize
   efd_pop_error_context();
   return result;
 }
@@ -2999,7 +2966,7 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
     case EFD_GT_CHILDREN:
       node = (efd_node*) gen->state;
       if (gen->index < efd_normal_child_count(node)) {
-        result = efd_create_shadow_clone(efd_nth(node, gen->index));
+        result = copy_efd_node(efd_nth(node, gen->index));
         gen->index += 1;
         efd_pop_error_context();
         return result;
@@ -3027,6 +2994,7 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
           } else {
             result = construct_efd_int_node(
               gen->name,
+              node,
               (*efd__ai(node))[gen->index++]
             );
           }
@@ -3040,6 +3008,7 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
           } else {
             result = construct_efd_num_node(
               gen->name,
+              node,
               (*efd__an(node))[gen->index++]
             );
           }
@@ -3053,6 +3022,7 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
           } else {
             result = construct_efd_str_node(
               gen->name,
+              node,
               (*efd__as(node))[gen->index++]
             );
           }
@@ -3081,7 +3051,7 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
       sub = (efd_generator_state*) gen->state;
       node = efd_gen_next(sub);
       if (node == NULL) {
-        result = efd_create_shadow_clone((efd_node*) gen->stash);
+        result = copy_efd_node((efd_node*) gen->stash);
         efd_pop_error_context();
         return result;
       }
@@ -3090,13 +3060,13 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
         cleanup_v_efd_node(gen->stash);
       }
       efd_rename(node, gen->name);
-      gen->stash = (void*) efd_create_shadow_clone(node);
+      gen->stash = (void*) copy_efd_node(node);
       efd_pop_error_context();
       return node;
 
     case EFD_GT_PARALLEL:
       children = (list*) gen->state;
-      scope = create_efd_node(EFD_NT_SCOPE, gen->name);
+      scope = create_efd_node(EFD_NT_SCOPE, gen->name, NULL);
       for (i = 0; i < l_get_length(children); ++i) {
         sub = (efd_generator_state*) l_get_item(children, i);
         node = efd_gen_next(sub);
@@ -3167,7 +3137,7 @@ efd_node * efd_gen_all(efd_generator_state *gen) {
       EFD_GT_NAMES[gen->type]
     )
   );
-  efd_node *result = create_efd_node(EFD_NT_CONTAINER, gen->name);
+  efd_node *result = create_efd_node(EFD_NT_CONTAINER, gen->name, NULL);
   efd_node *next = efd_gen_next(gen);
   while (next != NULL) {
     efd_add_child(result, next);
@@ -3220,4 +3190,76 @@ efd_generator_state * efd_generator_for(
     case EFD_NT_GN_AR_STR:
       return efd_lookup_generator(node->b.as_function.function)(node, cache);
   }
+}
+
+int efd_condition_holds(
+  efd_node const * const cond,
+  efd_node const * const arg,
+  efd_value_cache *cache
+) {
+  efd_int_t condition;
+  efd_node *cval, *aval;
+
+  efd_assert_type(cond, EFD_NT_CONTAINER);
+  efd_assert_child_count(cond, 2, -1);
+
+  condition = efd_as_i(efd_get_value(efd_nth(cond, 0), cache));
+
+  cval = efd_get_value(efd_nth(cond, 1), cache);
+  aval = efd_get_value(arg, cache);
+
+  switch (condition) {
+    default:
+      efd_report_error(
+        s_sprintf(
+          "ERROR: Condition has invalid condition type %ld:",
+          condition
+        ),
+        cond
+      );
+      exit(EXIT_FAILURE);
+
+    case EFD_COND_NOT:
+      efd_assert_child_count(cond, 2, 2);
+      return !efd_condition_holds(efd_nth(cond, 1), arg, cache);
+
+    case EFD_COND_AND:
+      efd_assert_child_count(cond, 3, 3);
+      return (
+        efd_condition_holds(efd_nth(cond, 1), arg, cache)
+     && efd_condition_holds(efd_nth(cond, 2), arg, cache)
+      );
+
+    case EFD_COND_OR:
+      efd_assert_child_count(cond, 3, 3);
+      return (
+        efd_condition_holds(efd_nth(cond, 1), arg, cache)
+     || efd_condition_holds(efd_nth(cond, 2), arg, cache)
+      );
+
+    case EFD_COND_EQUIVALENT:
+      efd_assert_child_count(cond, 2, 2);
+      return efd_equivalent(cval, aval);
+
+    case EFD_COND_NUM_EQ:
+      efd_assert_child_count(cond, 2, 2);
+      return efd_as_n(aval) == efd_as_n(cval);
+
+    case EFD_COND_NUM_LT:
+      efd_assert_child_count(cond, 2, 2);
+      return efd_as_n(aval) < efd_as_n(cval);
+
+    case EFD_COND_NUM_LE:
+      efd_assert_child_count(cond, 2, 2);
+      return efd_as_n(aval) <= efd_as_n(cval);
+
+    case EFD_COND_NUM_GT:
+      efd_assert_child_count(cond, 2, 2);
+      return efd_as_n(aval) > efd_as_n(cval);
+
+    case EFD_COND_NUM_GE:
+      efd_assert_child_count(cond, 2, 2);
+      return efd_as_n(aval) >= efd_as_n(cval);
+
+  } // all paths return
 }

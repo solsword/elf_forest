@@ -120,57 +120,75 @@ efd_node *stone_species__efd(void *v_sp) {
   SSTR(s_constituents, "constituents", 12);
   SSTR(s_traces, "traces", 6);
   
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, NULL);
 
   // Source:
-  child = construct_efd_int_node(s_source, (efd_int_t) sp->source);
-  efd_add_child(result, child);
+  efd_add_child(
+    result,
+    construct_efd_int_node(s_source, NULL, (efd_int_t) sp->source)
+  );
 
   // Material:
-  child = construct_efd_obj_node(
-    s_material,
-    s_material,
-    (void*) &(sp->material)
+  efd_add_child(
+    result,
+    construct_efd_obj_node(
+      s_material,
+      NULL,
+      s_material,
+      (void*) &(sp->material)
+    )
   );
-  efd_add_child(result, child);
 
   // Appearance:
-  child = construct_efd_obj_node(
-    s_appearance,
-    s_mineral_filter_args,
-    (void*) &(sp->appearance)
+  efd_add_child(
+    result,
+    construct_efd_obj_node(
+      s_appearance,
+      NULL,
+      s_mineral_filter_args,
+      (void*) &(sp->appearance)
+    )
   );
-  efd_add_child(result, child);
 
   // Composition:
-  child = create_efd_node(EFD_NT_CONTAINER, s_composition);
+  child = create_efd_node(EFD_NT_CONTAINER, s_composition, NULL);
 
-  grandchild = construct_efd_int_node(
-    s_composition,
-    (efd_int_t) sp->composition
+  efd_add_child(
+    child,
+    construct_efd_int_node(
+      s_composition,
+      NULL,
+      (efd_int_t) sp->composition
+    )
   );
-  efd_add_child(child, grandchild);
 
-  grandchild = construct_efd_int_node(
-    s_trace_composition,
-    (efd_int_t) sp->trace_composition
+  efd_add_child(
+    child,
+    construct_efd_int_node(
+      s_trace_composition,
+      NULL,
+      (efd_int_t) sp->trace_composition
+    )
   );
-  efd_add_child(child, grandchild);
 
-  grandchild = create_efd_node(EFD_NT_CONTAINER, s_constituents);
+  grandchild = create_efd_node(EFD_NT_CONTAINER, s_constituents, NULL);
   for (i = 0; i < MN_MAX_PRIMARY_CONSTITUENTS; ++i) {
     efd_add_child(
       grandchild,
-      construct_efd_int_node(EFD_ANON_NAME, (efd_int_t) sp->constituents[i])
+      construct_efd_int_node(
+        EFD_ANON_NAME,
+        NULL,
+        (efd_int_t) sp->constituents[i]
+      )
     );
   }
   efd_add_child(child, grandchild);
 
-  grandchild = create_efd_node(EFD_NT_CONTAINER, s_traces);
+  grandchild = create_efd_node(EFD_NT_CONTAINER, s_traces, NULL);
   for (i = 0; i < MN_MAX_TRACE_CONSTITUENTS; ++i) {
     efd_add_child(
       grandchild,
-      construct_efd_int_node(EFD_ANON_NAME, (efd_int_t) sp->traces[i])
+      construct_efd_int_node(EFD_ANON_NAME, NULL, (efd_int_t) sp->traces[i])
     );
   }
   efd_add_child(child, grandchild);

@@ -317,9 +317,15 @@ float el_weighted_property(
   if (l_get_length(species) != l_get_length(weights)) {
     fprintf(
       stderr,
-      "ERROR: species and weight list lengths don't match "
+      "ERROR: species/weight list lengths don't match "
       "in el_weighted_property [%d]!\n",
       property
+    );
+    fprintf(
+      stderr,
+      "(species -> %zu elements; weights -> %zu elements)\n",
+      l_get_length(species),
+      l_get_length(weights)
     );
   }
 #endif

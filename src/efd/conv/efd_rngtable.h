@@ -68,19 +68,21 @@ efd_node *rngtable__efd(void *v_t) {
   SSTR(s_values, "values", 6);
   SSTR(s_weights, "weights", 7);
   
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, NULL);
 
-  n = construct_efd_int_node(s_size, (efd_int_t) t->size);
-  efd_add_child(result, n);
+  efd_add_child(
+    result,
+    construct_efd_int_node(s_size, NULL, (efd_int_t) t->size)
+  );
 
-  n = create_efd_node(EFD_NT_ARRAY_INT, s_values);
+  n = create_efd_node(EFD_NT_ARRAY_INT, s_values, NULL);
   *(efd__ai(n)) = (ptrdiff_t*) malloc(t->size * sizeof(ptrdiff_t));
   for (i = 0; i < t->size; ++i) {
     (*efd__ai(n))[i] = (ptrdiff_t) t->values[i];
   }
   efd_add_child(result, n);
 
-  n = create_efd_node(EFD_NT_ARRAY_NUM, s_weights);
+  n = create_efd_node(EFD_NT_ARRAY_NUM, s_weights, NULL);
   (*efd__an(n)) = (float*) malloc(t->size * sizeof(float));
   for (i = 0; i < t->size; ++i) {
     (*efd__an(n))[i] = t->weights[i];

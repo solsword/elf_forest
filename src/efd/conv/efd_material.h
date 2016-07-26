@@ -160,34 +160,43 @@ efd_node *material__efd(void *v_mat) {
   SSTR(s_viscosity, "viscosity", 9);
   SSTR(s_hardness, "hardness", 8);
 
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, NULL);
 
-  child = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  child = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, NULL);
 
   efd_add_child(result, child);
 
   efd_add_child(
     child,
-    construct_efd_int_node(s_origin, (efd_int_t) mat->origin)
+    construct_efd_int_node(s_origin, NULL, (efd_int_t) mat->origin)
   );
 
   efd_add_child(
     child,
-    construct_efd_int_node(s_solid_density, (efd_int_t) mat->solid_density)
+    construct_efd_int_node(
+      s_solid_density,
+      NULL,
+      (efd_int_t) mat->solid_density
+    )
   );
   efd_add_child(
     child,
-    construct_efd_int_node(s_liquid_density, (efd_int_t) mat->liquid_density)
+    construct_efd_int_node(
+      s_liquid_density,
+      NULL,
+      (efd_int_t) mat->liquid_density
+    )
   );
   efd_add_child(
     child,
-    construct_efd_int_node(s_gas_density, (efd_int_t) mat->gas_density)
+    construct_efd_int_node(s_gas_density, NULL, (efd_int_t) mat->gas_density)
   );
 
   efd_add_child(
     child,
     construct_efd_int_node(
       s_solid_specific_heat,
+      NULL,
       (efd_int_t) mat->solid_specific_heat
     )
   );
@@ -195,6 +204,7 @@ efd_node *material__efd(void *v_mat) {
     child,
     construct_efd_int_node(
       s_liquid_specific_heat,
+      NULL,
       (efd_int_t) mat->liquid_specific_heat
     )
   );
@@ -202,6 +212,7 @@ efd_node *material__efd(void *v_mat) {
     child,
     construct_efd_int_node(
       s_gas_specific_heat,
+      NULL,
       (efd_int_t) mat->gas_specific_heat
     )
   );
@@ -210,35 +221,49 @@ efd_node *material__efd(void *v_mat) {
     child,
     construct_efd_int_node(
       s_cold_damage_temp,
+      NULL,
       (efd_int_t) mat->cold_damage_temp
     )
   );
 
   efd_add_child(
     child,
-    construct_efd_int_node(s_solidus, (efd_int_t) mat->solidus)
+    construct_efd_int_node(s_solidus, NULL, (efd_int_t) mat->solidus)
   );
   efd_add_child(
     child,
-    construct_efd_int_node(s_liquidus, (efd_int_t) mat->liquidus)
+    construct_efd_int_node(s_liquidus, NULL, (efd_int_t) mat->liquidus)
   );
   efd_add_child(
     child,
-    construct_efd_int_node(s_boiling_point, (efd_int_t) mat->boiling_point)
+    construct_efd_int_node(
+      s_boiling_point,
+      NULL,
+      (efd_int_t) mat->boiling_point
+    )
   );
   efd_add_child(
     child,
-    construct_efd_int_node(s_ignition_point, (efd_int_t) mat->ignition_point)
+    construct_efd_int_node(
+      s_ignition_point,
+      NULL,
+      (efd_int_t) mat->ignition_point
+    )
   );
   efd_add_child(
     child,
-    construct_efd_int_node(s_flash_point, (efd_int_t) mat->flash_point)
+    construct_efd_int_node(
+      s_flash_point,
+      NULL,
+      (efd_int_t) mat->flash_point
+    )
   );
 
   efd_add_child(
     child,
     construct_efd_int_node(
       s_cold_plastic_temp,
+      NULL,
       (efd_int_t) mat->cold_plastic_temp
     )
   );
@@ -246,25 +271,34 @@ efd_node *material__efd(void *v_mat) {
     child,
     construct_efd_int_node(
       s_warm_plastic_temp,
+      NULL,
       (efd_int_t) mat->warm_plastic_temp
     )
   );
   efd_add_child(
     child,
-    construct_efd_int_node(s_cold_plasticity, (efd_int_t) mat->cold_plasticity)
+    construct_efd_int_node(
+      s_cold_plasticity,
+      NULL,
+      (efd_int_t) mat->cold_plasticity
+    )
   );
   efd_add_child(
     child,
-    construct_efd_int_node(s_warm_plasticity, (efd_int_t) mat->warm_plasticity)
+    construct_efd_int_node(
+      s_warm_plasticity,
+      NULL,
+      (efd_int_t) mat->warm_plasticity
+    )
   );
 
   efd_add_child(
     child,
-    construct_efd_int_node(s_viscosity, (efd_int_t) mat->viscosity)
+    construct_efd_int_node(s_viscosity, NULL, (efd_int_t) mat->viscosity)
   );
   efd_add_child(
     child,
-    construct_efd_int_node(s_hardness, (efd_int_t) mat->hardness)
+    construct_efd_int_node(s_hardness, NULL, (efd_int_t) mat->hardness)
   );
 
   return result;

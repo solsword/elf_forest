@@ -54,6 +54,7 @@ extern string const * const S_COMMA;
 extern string const * const S_COLON;
 extern string const * const S_SEMI;
 extern string const * const S_TILDE;
+extern string const * const S_PERCENT;
 
 /*************************
  * Structure Definitions *

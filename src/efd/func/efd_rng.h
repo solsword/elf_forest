@@ -18,8 +18,9 @@
 // argument (which must be an integer).
 efd_node * efd_fn_prng(efd_node const * const node, efd_value_cache *cache) {
   efd_assert_return_type(node, EFD_NT_INTEGER);
+  efd_assert_child_count(node, 1, 1);
   efd_int_t result = prng(efd_as_i(efd_get_value(efd_nth(node, 0), cache)));
-  return construct_efd_int_node(node->h.name, result);
+  return construct_efd_int_node(node->h.name, node, result);
 }
 
 // Given a seed and a branch integer, takes a step in a pseudo-random number
@@ -28,19 +29,21 @@ efd_node * efd_fn_prng(efd_node const * const node, efd_value_cache *cache) {
 // quality of the PRGN (not great) affect this somewhat.
 efd_node * efd_fn_brng(efd_node const * const node, efd_value_cache *cache) {
   efd_assert_return_type(node, EFD_NT_INTEGER);
+  efd_assert_child_count(node, 2, 2);
   efd_int_t result = prng(
     efd_as_i(efd_get_value(efd_nth(node, 0), cache))
   + 1173 * (efd_as_i(efd_get_value(efd_nth(node, 1), cache)))
   );
-  return construct_efd_int_node(node->h.name, result);
+  return construct_efd_int_node(node->h.name, node, result);
 }
 
 // Takes a single integer argument (the seed) and returns a corresponding
 // number value in [0, 1).
 efd_node * efd_fn_rng_n(efd_node const * const node, efd_value_cache *cache) {
   efd_assert_return_type(node, EFD_NT_NUMBER);
+  efd_assert_child_count(node, 1, 1);
   efd_num_t result = ptrf(efd_as_i(efd_get_value(efd_nth(node, 0), cache)));
-  return construct_efd_num_node(node->h.name, result);
+  return construct_efd_num_node(node->h.name, node, result);
 }
 
 // Takes an integer seed value followed by numeric min and max values and
@@ -54,12 +57,13 @@ efd_node * efd_fn_rng_uniform(
   efd_num_t min, max;
 
   efd_assert_return_type(node, EFD_NT_NUMBER);
+  efd_assert_child_count(node, 3, 3);
 
   seed = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
   min = efd_as_n(efd_get_value(efd_nth(node, 1), cache));
   max = efd_as_n(efd_get_value(efd_nth(node, 2), cache));
 
-  return construct_efd_num_node(node->h.name, randf(seed, min, max));
+  return construct_efd_num_node(node->h.name, node, randf(seed, min, max));
 }
 
 // Like rng_uniform, except that it uses a pseudo-normal distribution that
@@ -73,12 +77,13 @@ efd_node * efd_fn_rng_normal(
   efd_num_t min, max;
 
   efd_assert_return_type(node, EFD_NT_NUMBER);
+  efd_assert_child_count(node, 3, 3);
 
   seed = efd_as_i(efd_get_value(efd_nth(node, 0), cache));
   min = efd_as_n(efd_get_value(efd_nth(node, 1), cache));
   max = efd_as_n(efd_get_value(efd_nth(node, 2), cache));
 
-  return construct_efd_num_node(node->h.name, randf_pnorm(seed, min, max));
+  return construct_efd_num_node(node->h.name, node,randf_pnorm(seed, min, max));
 }
 
 #endif // INCLUDE_EFD_FUNC_RNG_H

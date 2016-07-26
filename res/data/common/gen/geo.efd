@@ -422,7 +422,6 @@
               <<v ~constituents@*constituent>>
               [[gi *iter:range (i 1) ]]
             ]]
-            [[fo element:get_element_species <<v *constituent>> ]]
             [[fn weight:weight
               [[an weights 0.5, 0.5 ]]
               [[fn exp:expdist
@@ -432,16 +431,22 @@
                     [[fi it:mult (i 12131) <<v *iter>> ]]
                   ]]
                 ]]
-                [[fn if:if_eq
+                [[fn if:if
+                  [[c condition
+                    (i #i:EFD_COND_NUM_EQ)
+                    (i #i:GEO_METAMORPHIC)
+                  ]]
                   <<v ~source>>
-                  (i #i:GEO_METAMORPHIC)
                   (n 1.5)
                   (n 4)
                 ]]
               ]]
-              [[fn if:if_eq
+              [[fn if:if
+                [[c condition
+                  (i #i:EFD_COND_NUM_EQ)
+                  (i #i:GEO_METAMORPHIC)
+                ]]
                 <<v ~source>>
-                (i #i:GEO_METAMORPHIC)
                 // then:
                 [[fn rng:rng_n
                   [[fi rng:brng
@@ -464,7 +469,7 @@
               <<l ^.weight>>
               [[fn cosine:cosine
                 [[fn chroma:get_el_attr
-                  <<l ^.^.^.element>>
+                  <<v *constituent>>
                   [[i attr #i:EL_PRP_F_STONE_TND_CHROMA]]
                 ]]
               ]]
@@ -473,7 +478,7 @@
               <<l ^.weight>>
               [[fn sine:sine
                 [[fn chroma:get_el_attr
-                  <<l ^.^.^.element>>
+                  <<v *constituent>>
                   [[i attr #i:EL_PRP_F_STONE_TND_CHROMA]]
                 ]]
               ]]
@@ -499,7 +504,15 @@
         [[fn range:scale
           [[fn var:expdist
             <<v ~el_intensity>>
-            [[fn if:if_eq <<v ~source>> (i #i:GEO_METAMORPHIC) (n 2) (n 3.5)]]
+            [[fn if:if
+              [[c condition
+                (i #i:EFD_COND_NUM_EQ)
+                (i #i:GEO_METAMORPHIC)
+              ]]
+              <<v ~source>>
+              (n 2)
+              (n 3.5)
+            ]]
           ]]
           (n 60)
           (n 90)
@@ -510,7 +523,15 @@
             [[fn rng:rng_n
               [[fi rng:brng <<v ~hash>> (i 3) ]]
             ]]
-            [[fn if:if_eq <<v ~source>> (i #i:GEO_METAMORPHIC) (n 2.7) (n 5)]]
+            [[fn if:if
+              [[c condition
+                (i #i:EFD_COND_NUM_EQ)
+                (i #i:GEO_METAMORPHIC)
+              ]]
+              <<v ~source>>
+              (n 2.7)
+              (n 5)
+            ]]
           ]]
           <<v ~el_intensity>>
         ]]
@@ -541,9 +562,12 @@
       ]]
       [[fn c:mult
         <<v ~el_saturation>>
-        [[fn factor:if_lt // A bimodal distribution
+        [[fn factor:if // A bimodal distribution
+          [[c condition
+            (i #i:EFD_COND_NUM_LT)
+            (n 0.7)
+          ]]
           [[fn rng:rng_n [[fi rng:brng <<v ~hash>> (i 4) ]] ]]
-          (n 0.7)
           // then:
           [[fn norm:rng_normal
             [[fi rng:brng <<v ~hash>> (i 5) ]] (n 0.05) (n 0.3) ]]
@@ -703,14 +727,32 @@
       // Summary variables arrays:
       <<v ~composition@composition>>
       <<v ~trace_composition@trace_composition>>
-      [[c constituents
-        <<l ^.first_element>>
-        <<l ^.second_element>>
-        <<l ^.third_element>>
+      [[ff constituents:filter_keep
+        [[c condition
+          (i #i:EFD_COND_NOT)
+          [[c subcond
+            (i #i:EFD_COND_NUM_EQ)
+            (i #i:SP_INVALID)
+          ]]
+        ]]
+        [[c items
+          <<l ^.^.first_element>>
+          <<l ^.^.second_element>>
+          <<l ^.^.third_element>>
+        ]]
       ]]
-      [[c traces
-        <<l ^.first_trace>>
-        <<l ^.second_trace>>
+      [[ff traces:filter_keep
+        [[c condition
+          (i #i:EFD_COND_NOT)
+          [[c subcond
+            (i #i:EFD_COND_NUM_EQ)
+            (i #i:SP_INVALID)
+          ]]
+        ]]
+        [[c items
+          <<l ^.^.first_trace>>
+          <<l ^.^.second_trace>>
+        ]]
       ]]
     ]]
     [[c ~material
@@ -718,7 +760,7 @@
         <<v ~composition.constituents@~constituents>>
         <<v ~composition.traces@~traces>>
       ]]
-      [[ff typechoice:choose
+      [[ff choice:choose
         [[fi index:index_of
           <<v ~source@input>>
           [[i entry #i:GEO_IGNEOUS]]
@@ -820,11 +862,11 @@
           [[fn liquid_density:scale <<v ~base_density>> (n 2.5) (n 3.2) ]]
           [[fn gas_density:scale <<v ~base_density>> (n 1.8) (n 2.8) ]]
 
-          [[fn solid_sp_heat:scale <<v ~base_sp_heat>> (n 0.3) (n 1.4) ]]
-          [[fn liquid_sp_heat:scale <<v ~base_sp_heat>> (n 0.8) (n 2.2) ]]
-          [[fn gas_sp_heat:scale <<v ~base_sp_heat>> (n 0.65) (n 1.1) ]]
+          [[fn solid_specific_heat:scale <<v ~base_sp_heat>> (n 0.3) (n 1.4) ]]
+          [[fn liquid_specific_heat:scale <<v ~base_sp_heat>> (n 0.8) (n 2.2) ]]
+          [[fn gas_specific_heat:scale <<v ~base_sp_heat>> (n 0.65) (n 1.1) ]]
 
-          [[n cold_dmg_temp 0]]
+          [[n cold_damage_temp 0]]
           [[fi solidus:scale <<v ~base_tr_temp>> (n 550) (n 1250) ]]
           [[fi liquidus:add
             <<l ^.solidus>>
@@ -954,11 +996,11 @@
           [[fn liquid_density:scale <<v ~base_density>> (n 2.6) (n 3.2) ]]
           [[fn gas_density:scale <<v ~base_density>> (n 1.9) (n 2.8) ]]
 
-          [[fn solid_sp_heat:scale <<v ~base_sp_heat>> (n 0.2) (n 1.5) ]]
-          [[fn liquid_sp_heat:scale <<v ~base_sp_heat>> (n 0.7) (n 2.4) ]]
-          [[fn gas_sp_heat:scale <<v ~base_sp_heat>> (n 0.6) (n 1.15) ]]
+          [[fn solid_specific_heat:scale <<v ~base_sp_heat>> (n 0.2) (n 1.5) ]]
+          [[fn liquid_specific_heat:scale <<v ~base_sp_heat>> (n 0.7) (n 2.4) ]]
+          [[fn gas_specific_heat:scale <<v ~base_sp_heat>> (n 0.6) (n 1.15) ]]
 
-          [[n cold_dmg_temp 0]]
+          [[n cold_damage_temp 0]]
           [[fi solidus:scale <<v ~base_tr_temp>> (n 520) (n 1280) ]]
           [[fi liquidus:add
             <<l ^.solidus>>
@@ -1010,7 +1052,7 @@
                 [[i attribute #i:EL_PRP_F_STONE_TND_DENSITY]]
               ]]
             ]]
-            [[fn ~base_sp_heat:weight
+            [[fn ~base_specific_heat:weight
               [[an weights 0.42, 0.18, 0.4 ]]
               [[fn rng:rng_normal
                 [[fi rng:brng <<v ~hash>> (i 27) ]] (n 0) (n 1) ]]
@@ -1090,12 +1132,12 @@
           [[fn liquid_density:scale <<v ~base_density>> (n 2.6) (n 3.1) ]]
           [[fn gas_density:scale <<v ~base_density>> (n 1.6) (n 2.9) ]]
 
-          [[fn solid_sp_heat:scale <<v ~base_sp_heat>> (n 0.4) (n 1.8) ]]
-          [[fn liquid_sp_heat:scale <<v ~base_sp_heat>> (n 0.9) (n 2.3) ]]
-          [[fn gas_sp_heat:scale <<v ~base_sp_heat>> (n 0.7) (n 1.2) ]]
+          [[fn solid_specific_heat:scale <<v ~base_sp_heat>> (n 0.4) (n 1.8) ]]
+          [[fn liquid_specific_heat:scale <<v ~base_sp_heat>> (n 0.9) (n 2.3) ]]
+          [[fn gas_specific_heat:scale <<v ~base_sp_heat>> (n 0.7) (n 1.2) ]]
 
           // TODO: Really?
-          [[n cold_dmg_temp 0]]
+          [[n cold_damage_temp 0]]
           [[fi solidus:scale <<v ~base_tr_temp>> (n 440) (n 1220) ]]
           [[fi liquidus:add
             <<l ^.solidus>>
@@ -1139,55 +1181,55 @@
       ]]
       // Summary array:
       [[c base_properties
-        [[fn base_density:peek <<l ^.^.typechoice>> <<l base_density>> ]]
-        [[fn base_sp_heat:peek <<l ^.^.typechoice>> <<l base_sp_heat>> ]]
-        [[fn base_tr_temp:peek <<l ^.^.typechoice>> <<l base_tr_temp>> ]]
+        [[fn base_density:peek <<l ^.^.choice>> <<l base_density>> ]]
+        [[fn base_sp_heat:peek <<l ^.^.choice>> <<l base_sp_heat>> ]]
+        [[fn base_tr_temp:peek <<l ^.^.choice>> <<l base_tr_temp>> ]]
         [[fn base_plastic_temp:peek
-          <<l ^.^.typechoice>>
+          <<l ^.^.choice>>
           <<l base_plastic_temp>>
         ]]
         [[fn base_cold_plasticity:peek
-          <<l ^.^.typechoice>>
+          <<l ^.^.choice>>
           <<l base_cold_plasticity>>
         ]]
         [[fn base_warm_plasticity:peek
-          <<l ^.^.typechoice>>
+          <<l ^.^.choice>>
           <<l base_warm_plasticity>>
         ]]
-        [[fn base_hardness:peek <<l ^.^.typechoice>> <<l base_hardness>> ]]
+        [[fn base_hardness:peek <<l ^.^.choice>> <<l base_hardness>> ]]
       ]]
       [[c properties
-        [[fi origin:peek <<l ^.^.typechoice>> <<l origin>> ]]
-        [[fn solid_density:peek <<l ^.^.typechoice>> <<l solid_density>> ]]
-        [[fn liquid_density:peek <<l ^.^.typechoice>> <<l liquid_density>> ]]
-        [[fn gas_density:peek <<l ^.^.typechoice>> <<l gas_density>> ]]
+        [[fi origin:peek <<l ^.^.choice>> <<l origin>> ]]
+        [[fn solid_density:peek <<l ^.^.choice>> <<l solid_density>> ]]
+        [[fn liquid_density:peek <<l ^.^.choice>> <<l liquid_density>> ]]
+        [[fn gas_density:peek <<l ^.^.choice>> <<l gas_density>> ]]
 
-        [[fn solid_sp_heat:peek <<l ^.^.typechoice>> <<l solid_sp_heat>> ]]
-        [[fn liquid_sp_heat:peek <<l ^.^.typechoice>> <<l liquid_sp_heat>> ]]
-        [[fn gas_sp_heat:peek <<l ^.^.typechoice>> <<l gas_sp_heat>> ]]
+        [[fn solid_specific_heat:peek <<l ^.^.choice>> <<l solid_specific_heat>> ]]
+        [[fn liquid_specific_heat:peek <<l ^.^.choice>> <<l liquid_specific_heat>> ]]
+        [[fn gas_specific_heat:peek <<l ^.^.choice>> <<l gas_specific_heat>> ]]
 
-        [[fn cold_dmg_temp:peek <<l ^.^.typechoice>> <<l cold_dmg_temp>> ]]
-        [[fn solidus:peek <<l ^.^.typechoice>> <<l solidus>> ]]
-        [[fn liquidus:peek <<l ^.^.typechoice>> <<l liquidus>> ]]
-        [[fn boiling_point:peek <<l ^.^.typechoice>> <<l boiling_point>> ]]
-        [[fn ignition_point:peek <<l ^.^.typechoice>> <<l ignition_point>> ]]
-        [[fn flash_point:peek <<l ^.^.typechoice>> <<l flash_point>> ]]
+        [[fn cold_damage_temp:peek <<l ^.^.choice>> <<l cold_damage_temp>> ]]
+        [[fn solidus:peek <<l ^.^.choice>> <<l solidus>> ]]
+        [[fn liquidus:peek <<l ^.^.choice>> <<l liquidus>> ]]
+        [[fn boiling_point:peek <<l ^.^.choice>> <<l boiling_point>> ]]
+        [[fn ignition_point:peek <<l ^.^.choice>> <<l ignition_point>> ]]
+        [[fn flash_point:peek <<l ^.^.choice>> <<l flash_point>> ]]
 
         [[fn cold_plastic_temp:peek
-          <<l ^.^.typechoice>>
+          <<l ^.^.choice>>
           <<l cold_plastic_temp>>
         ]]
         [[fn warm_plastic_temp:peek
-          <<l ^.^.typechoice>>
+          <<l ^.^.choice>>
           <<l warm_plastic_temp>>
         ]]
 
-        [[fn cold_plasticity:peek <<l ^.^.typechoice>> <<l cold_plasticity>>]]
-        [[fn warm_plasticity:peek <<l ^.^.typechoice>> <<l warm_plasticity>>]]
+        [[fn cold_plasticity:peek <<l ^.^.choice>> <<l cold_plasticity>>]]
+        [[fn warm_plasticity:peek <<l ^.^.choice>> <<l warm_plasticity>>]]
 
-        [[fn viscosity:peek <<l ^.^.typechoice>> <<l viscosity>>]]
+        [[fn viscosity:peek <<l ^.^.choice>> <<l viscosity>>]]
 
-        [[fn hardness:peek <<l ^.^.typechoice>> <<l hardness>> ]]
+        [[fn hardness:peek <<l ^.^.choice>> <<l hardness>> ]]
       ]]
     ]]
     [[c ~appearance
@@ -1206,7 +1248,7 @@
           [[fn invert:scale <<v ~mat_hardness>> (n 1) (n 0) ]]
         ]]
       ]]
-      [[ff typechoice:choose
+      [[ff choice:choose
         [[fi index:index_of
           <<v ~source@input>>
           [[i entry #i:GEO_IGNEOUS]]
@@ -1410,19 +1452,27 @@
             (n -0.2)
             (n 0.2)
           ]]
-          [[ff color:call
-            <<v %COMPUTE_STONE_COLOR>>
-            [[V args
-              <<v ~constituents@~constituents>>
-              <<v ~traces@~traces>>
-              <<v ~source@~source>>
-              <<v ~mat_density@~density>>
-              <<v ~mat_plasticity@~plasticity>>
-              <<v ~mat_hardness@~hardness>>
-              [[fi ~seed:brng <<v ~hash>> (i 17) ]]
+          [[o base_color:color
+            [[V locals
+              [[ff ~computed:call
+                <<v %COMPUTE_STONE_COLOR>>
+                [[V args
+                  <<v ~constituents@~constituents>>
+                  <<v ~traces@~traces>>
+                  <<v ~source@~source>>
+                  <<v ~mat_density@~density>>
+                  <<v ~mat_plasticity@~plasticity>>
+                  <<v ~mat_hardness@~hardness>>
+                  [[fi ~seed:brng <<v ~hash>> (i 17) ]]
+                ]]
+              ]]
             ]]
+            <<v ~computed.fmt@fmt>>
+            <<v ~computed.L@L>>
+            <<v ~computed.c@c>>
+            <<v ~computed.h@h>>
           ]]
-          [[c alt_color
+          [[o alt_color:color
             [[V locals
               [[ff ~alt_base:call
                 <<v %COMPUTE_STONE_COLOR>>
@@ -1643,19 +1693,27 @@
             (n -0.25)
             (n 0.35)
           ]]
-          [[ff color:call
-            <<v %COMPUTE_STONE_COLOR>>
-            [[V args
-              <<v ~constituents@~constituents>>
-              <<v ~traces@~traces>>
-              <<v ~source@~source>>
-              <<v ~mat_density@~density>>
-              <<v ~mat_plasticity@~plasticity>>
-              <<v ~mat_hardness@~hardness>>
-              [[fi ~seed:brng <<v ~hash>> (i 17) ]]
+          [[o base_color:color
+            [[V locals
+              [[ff ~computed:call
+                <<v %COMPUTE_STONE_COLOR>>
+                [[V args
+                  <<v ~constituents@~constituents>>
+                  <<v ~traces@~traces>>
+                  <<v ~source@~source>>
+                  <<v ~mat_density@~density>>
+                  <<v ~mat_plasticity@~plasticity>>
+                  <<v ~mat_hardness@~hardness>>
+                  [[fi ~seed:brng <<v ~hash>> (i 17) ]]
+                ]]
+              ]]
             ]]
+            <<v ~computed.fmt@fmt>>
+            <<v ~computed.L@L>>
+            <<v ~computed.c@c>>
+            <<v ~computed.h@h>>
           ]]
-          [[c alt_color
+          [[o alt_color:color
             [[V locals
               [[ff ~alt_base:call
                 <<v %COMPUTE_STONE_COLOR>>
@@ -1877,19 +1935,27 @@
             (n -0.05)
             (n 0.35)
           ]]
-          [[ff color:call
-            <<v %COMPUTE_STONE_COLOR>>
-            [[V args
-              <<v ~constituents@~constituents>>
-              <<v ~traces@~traces>>
-              <<v ~source@~source>>
-              <<v ~mat_density@~density>>
-              <<v ~mat_plasticity@~plasticity>>
-              <<v ~mat_hardness@~hardness>>
-              [[fi ~seed:brng <<v ~hash>> (i 17) ]]
+          [[o base_color:color
+            [[V locals
+              [[ff ~computed:call
+                <<v %COMPUTE_STONE_COLOR>>
+                [[V args
+                  <<v ~constituents@~constituents>>
+                  <<v ~traces@~traces>>
+                  <<v ~source@~source>>
+                  <<v ~mat_density@~density>>
+                  <<v ~mat_plasticity@~plasticity>>
+                  <<v ~mat_hardness@~hardness>>
+                  [[fi ~seed:brng <<v ~hash>> (i 17) ]]
+                ]]
+              ]]
             ]]
+            <<v ~computed.fmt@fmt>>
+            <<v ~computed.L@L>>
+            <<v ~computed.c@c>>
+            <<v ~computed.h@h>>
           ]]
-          [[c alt_color
+          [[o alt_color:color
             [[V locals
               [[ff ~alt_base:call
                 <<v %COMPUTE_STONE_COLOR>>
@@ -1925,7 +1991,7 @@
   <<v ~source@source>>
   <<v ~composition@composition>>
   [[o material:material [[ff mat:peek <<v ~material.properties>> ]] ]]
-  [[o appearance:mineral_filter_args <<v ~appearance>> ]]
+  [[o appearance:mineral_filter_args <<v ~appearance.choice>> ]]
 ]]
 
 // TODO: Make this "return" a SCOPE node?
@@ -2000,7 +2066,7 @@
     [[fi ~hash:brng <<v ~seed>> (i 12098491) ]]
   ]]
   <<v ~hash@seed>>
-  [[ff typechoice:choose
+  [[ff choice:choose
     [[fi index:index_of
       <<v ~source@input>>
       [[i entry #i:GEO_IGNEOUS]]

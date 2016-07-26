@@ -22,14 +22,13 @@
  *********/
 
 // Raw types that a single EFD node can take on:
-#define EFD_NUM_TYPES 34
+#define EFD_NUM_TYPES 33
 enum efd_node_type_e {
   EFD_NT_INVALID     = 0, // -    marks an invalid node internally
   EFD_NT_ANY            , // -    stands for any valid type
   EFD_NT_CONTAINER      , //'c'   no data, just children
   EFD_NT_SCOPE          , //'V'   scope
   EFD_NT_GLOBAL         , //'G'   globals declaration
-  EFD_NT_REROUTE        , //'R'   a link for routing var resolution
   EFD_NT_ROOT_LINK      , //'L'   root link
   EFD_NT_GLOBAL_LINK    , //'GL'  global link
   EFD_NT_LOCAL_LINK     , //'l'   local link
@@ -66,7 +65,6 @@ EFD_GL(i, EFD_NT_ANY)
 EFD_GL(i, EFD_NT_CONTAINER)
 EFD_GL(i, EFD_NT_SCOPE)
 EFD_GL(i, EFD_NT_GLOBAL)
-EFD_GL(i, EFD_NT_REROUTE)
 EFD_GL(i, EFD_NT_ROOT_LINK)
 EFD_GL(i, EFD_NT_GLOBAL_LINK)
 EFD_GL(i, EFD_NT_LOCAL_LINK)
@@ -133,6 +131,29 @@ EFD_GL(i, EFD_GT_FUNCTION)
 EFD_GL(i, EFD_GT_EXTEND_RESTART)
 EFD_GL(i, EFD_GT_EXTEND_HOLD)
 EFD_GL(i, EFD_GT_PARALLEL)
+
+enum efd_condition_type_e {
+  EFD_COND_NOT,
+  EFD_COND_AND,
+  EFD_COND_OR,
+  EFD_COND_EQUIVALENT,
+  EFD_COND_NUM_EQ,
+  EFD_COND_NUM_LT,
+  EFD_COND_NUM_LE,
+  EFD_COND_NUM_GT,
+  EFD_COND_NUM_GE,
+};
+typedef enum efd_condition_type_e efd_condition_type;
+
+EFD_GL(i, EFD_COND_NOT)
+EFD_GL(i, EFD_COND_AND)
+EFD_GL(i, EFD_COND_OR)
+EFD_GL(i, EFD_COND_EQUIVALENT)
+EFD_GL(i, EFD_COND_NUM_EQ)
+EFD_GL(i, EFD_COND_NUM_LT)
+EFD_GL(i, EFD_COND_NUM_LE)
+EFD_GL(i, EFD_COND_NUM_GT)
+EFD_GL(i, EFD_COND_NUM_GE)
 
 /*********
  * Types *
@@ -303,6 +324,7 @@ struct efd_node_header_s {
   efd_node_type type;
   string *name;
   efd_node *parent;
+  efd_node const *context;
 };
 
 struct efd_container_s {
@@ -394,6 +416,7 @@ struct efd_reference_s {
 
 struct efd_value_cache_s {
   map *values;
+  map *unique;
   efd_node const * active;
   map *stack;
 };
@@ -452,6 +475,15 @@ void efd_assert_object_format(
 // string.
 void efd_v_assert_object_format(void *v_node, void *v_fmt);
 
+// Asserts that the normal child count of the given node is between min and max
+// inclusive. Throws an error otherwise. Negative constraints indicate "no
+// constraint."
+// TODO: Use this in all function/unpack implementations.
+void efd_assert_child_count(
+  efd_node const * const n,
+  intptr_t min, intptr_t max
+);
+
 /*****************************
  * Error-Reporting Functions *
  *****************************/
@@ -505,8 +537,7 @@ static inline size_t efd_node_depth(efd_node const * const n) {
 
 static inline int efd_is_link_type(efd_node_type t) {
   return (
-    t == EFD_NT_REROUTE
- || t == EFD_NT_ROOT_LINK
+    t == EFD_NT_ROOT_LINK
  || t == EFD_NT_GLOBAL_LINK
  || t == EFD_NT_LOCAL_LINK
  || t == EFD_NT_VARIABLE
@@ -681,7 +712,6 @@ static inline efd_ref_type efd_nt__rt(efd_node_type nt) {
     case EFD_NT_GN_AR_NUM:
     case EFD_NT_GN_AR_STR:
       return EFD_RT_NODE;
-    case EFD_NT_REROUTE:
     case EFD_NT_ROOT_LINK:
     case EFD_NT_GLOBAL_LINK:
     case EFD_NT_LOCAL_LINK:
@@ -782,8 +812,13 @@ static inline efd_node_type efd_value_type_of(efd_node const * const base) {
  ******************************/
 
 // Allocate and return a new EFD node of the given type. The given string is
-// copied, so the caller should clean it up if necessary.
-efd_node * create_efd_node(efd_node_type t, string const * const name);
+// copied, so the caller should clean it up if necessary. The context argument
+// is used for local links and variable lookup, and may be NULL.
+efd_node * create_efd_node(
+  efd_node_type t,
+  string const * const name,
+  efd_node const * const context
+);
 
 // Allocate and return a new EFD node of type EFD_NT_OBJECT containing a copy
 // of the given object, which is produced according to the given format. The
@@ -792,20 +827,30 @@ efd_node * create_efd_node(efd_node_type t, string const * const name);
 // copied, although the resulting node will not be packable.
 efd_node * construct_efd_obj_node(
   string const * const name,
+  efd_node const * const context,
   string const * const format,
   void * obj
 );
 
 // Allocates and returns a new EFD_NT_INTEGER node with the given value.
-efd_node * construct_efd_int_node(string const * const name, efd_int_t value);
+efd_node * construct_efd_int_node(
+  string const * const name,
+  efd_node const * const context,
+  efd_int_t value
+);
 
 // Allocates and returns a new EFD_NT_NUMBER node with the given value.
-efd_node * construct_efd_num_node(string const * const name, efd_num_t value);
+efd_node * construct_efd_num_node(
+  string const * const name,
+  efd_node const * const context,
+  efd_num_t value
+);
 
 // Allocates and returns a new EFD_NT_STRING node using a copy of the given
 // value string.
 efd_node * construct_efd_str_node(
   string const * const name,
+  efd_node const * const context,
   string const * const value
 );
 
@@ -814,6 +859,7 @@ efd_node * construct_efd_str_node(
 // siblings with identical names the link may not be accurate.
 efd_node * construct_efd_link_node_to(
   string const * const name,
+  efd_node const * const context,
   efd_node const * const target
 );
 
@@ -821,6 +867,7 @@ efd_node * construct_efd_link_node_to(
 // given return type. The given function name is copied.
 efd_node * construct_efd_function_node(
   string const * const name,
+  efd_node const * const context,
   efd_node_type returns,
   string const * const function
 );
@@ -829,7 +876,8 @@ efd_node * construct_efd_function_node(
 // includes deep copies of all of the node's children recursively. Note that
 // any objects contained in the node or its children are also copied, as it is
 // assumed that cleanup_efd_node will be sufficient for memory management. The
-// copied node has its parent set to NULL.
+// copied node has its parent set to NULL, but shares the same context pointer
+// as the original.
 efd_node * copy_efd_node(efd_node const * const src);
 
 // Same as copy_efd_node, but renames the new node, using a copy of the given
@@ -975,7 +1023,8 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn);
 int efd_equivalent(efd_node const * const cmp, efd_node const * const agn);
 
 // Adds the given child to the parent's dictionary of children (parent must be
-// a container node).
+// a container node). If the child's context is NULL, sets it to point to the
+// parent, but otherwise leaves it alone.
 void efd_add_child(efd_node *n, efd_node *child);
 
 // Works like efd_add_child but the child is treated as having been defined
@@ -983,8 +1032,9 @@ void efd_add_child(efd_node *n, efd_node *child);
 void efd_prepend_child(efd_node *n, efd_node *child);
 
 // Removes the given child from this node's dictionary of children (this node
-// must be a container node). If DEBUG is on and the parent doesn't contain the
-// child, an error message is printed.
+// must be a container node). Does not affect the child's context pointer. If
+// DEBUG is on and the parent doesn't contain the child, an error message is
+// printed.
 void efd_remove_child(efd_node *n, efd_node *child);
 
 // Appends the given name to the given address:
@@ -1001,17 +1051,6 @@ void efd_push_address(efd_address *a, string const * const name);
 // Removes the deepest level of the given address, returning a pointer to the
 // address that was popped (which should eventually be cleaned up).
 efd_address* efd_pop_address(efd_address *a);
-
-// Creates a new REROUTE node which targets the given node's parent and
-// contains a copy of the given node.
-efd_node * efd_create_shadow_clone(efd_node const * const original);
-
-// Creates a new REROUTE node which targets the given shadow parent and
-// contains a copy of the given node.
-efd_node * efd_create_reroute(
-  efd_node *shadow_parent,
-  efd_node const * const original
-);
 
 // Looks up a child node within a parent, returning NULL if no node with the
 // given name exists as a child of the given node (or when the given node
@@ -1064,10 +1103,6 @@ intptr_t efd_normal_child_count(efd_node const * const node);
 // Returns the nth child of the given node, not counting scope nodes.
 efd_node * efd_nth(efd_node const * const node, size_t index);
 
-// Returns the parent of the given node, which may not always be n->h.parent
-// (as in the case of REROUTE nodes, for example).
-efd_node * efd_get_parent(efd_node const * const node);
-
 // This function returns the child with the given key in the given node. It
 // iterates over children until it hits one with a matching name, so only the
 // first is used if multiple children share a name. The key argument is treated
@@ -1117,21 +1152,19 @@ efd_node * efd(efd_node const * const root, efd_address const * addr);
 // EFD_MAX_NAME_DEPTH, although multiple calls to efd/efdx can overcome this.
 efd_node * efdx(efd_node const * const root, string const * const saddr);
 
-// Evaluates a function or generator node, returning a newly-allocated node
-// (which may have newly-allocated children) representing the result. For any
-// other type of node, the target pointer is returned (the caller can check for
-// this). If the returned node is a new node, it will be registered in the
-// given value cache with the target node pointer as a key.
+// Evaluates a node, returning a newly-allocated node (which may have newly-
+// allocated children) representing the result. The returned node will be
+// registered in the given value cache with the target node pointer as a key.
 efd_node * efd_eval(efd_node const * const target, efd_value_cache * cache);
 
 // Gets the value of the given node, either cached within the given value
-// cache, or via efd_eval_in_context (thus adding the returned value to the
-// given cache). In either case the caller doesn't need to worry about cleanup
-// for the node as it will be present in the value cache. This function calls
-// efd_concrete on its input before trying to fetch a value, so the result
-// won't be the same as just looking up the target node in the value cache when
-// the target is a link node. If the input is NULL this will return NULL
-// immediately. The returned node will have a NULL parent.
+// cache, or via efd_eval (thus adding the returned value to the given cache).
+// In either case the caller doesn't need to worry about cleanup for the node
+// as it will be present in the value cache. This function calls efd_concrete
+// on its input before trying to fetch a value, so the result won't be the same
+// as just looking up the target node in the value cache when the target is a
+// link node. If the input is NULL this will return NULL immediately. The
+// returned node will have a NULL parent.
 efd_node * efd_get_value(
   efd_node const * const target,
   efd_value_cache * cache
@@ -1154,6 +1187,39 @@ efd_node * efd_flatten(efd_node const * const target);
 // function- and generator-type nodes found, including nodes linked from the
 // given subtree.
 efd_value_cache * efd_compute_values(efd_node const * const root);
+
+// Returns whether or not the given node is on the given cache's evaluation
+// stack.
+int efd_cache_is_on_stack(
+  efd_value_cache *cache,
+  efd_node const * const target
+);
+
+// Returns the node above the given node on the cache's evaluation stack.
+efd_node * efd_cache_stack_parent(
+  efd_value_cache *cache,
+  efd_node const * const target
+);
+
+// Pushes the given node onto the given value cache's evaluation stack.
+void efd_cache_stack_push(
+  efd_value_cache *cache,
+  efd_node const * const target
+);
+
+// Pops the given node from the given value cache's evaluation stack.
+void efd_cache_stack_pop(
+  efd_value_cache *cache,
+  efd_node const * const target
+);
+
+// Puts the given value into the value cache as the value for the given
+// original node.
+void efd_cache_put(
+  efd_value_cache *cache,
+  efd_node const * const original,
+  efd_node const * const value
+);
 
 // Takes a pointer to an EFD node and creates a temporary function node with
 // function type "call" that calls that node using the given scope node as
@@ -1220,6 +1286,16 @@ efd_node * efd_gen_all(efd_generator_state *gen);
 // calls efd_concrete before attempting to process the result.
 efd_generator_state * efd_generator_for(
   efd_node *node,
+  efd_value_cache *cache
+);
+
+// Function for testing EFD conditions, which take the form of a container node
+// that has two or more children: first a condition type specified by an
+// integer node, and then some arguments. This function implements checking
+// whether the condition described by that structure holds for node 'arg'.
+int efd_condition_holds(
+  efd_node const * const cond,
+  efd_node const * const arg,
   efd_value_cache *cache
 );
 

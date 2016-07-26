@@ -213,4 +213,37 @@ static inline size_t el_is_member_of_any(
   return (sp->categories & categories) != 0;
 }
 
+static inline int el_prp_is_integer(element_property prp) {
+  switch (prp) {
+    default: // TODO: Return something else here?
+    case EL_PRP_I_CATEGORIES:
+    case EL_PRP_I_FREQUENCY:
+    case EL_PRP_I_SOLUBILITY:
+    case EL_PRP_I_PlANT_NUTRITION:
+    case EL_PRP_I_ANIMAL_NUTRITION:
+      return 1;
+
+    case EL_PRP_F_PH_TENDENCY:
+    case EL_PRP_F_CORROSION_RESISTANCE:
+    case EL_PRP_F_STONE_TND_DENSITY:
+    case EL_PRP_F_STONE_TND_SP_HEAT:
+    case EL_PRP_F_STONE_TND_TR_TEMP:
+    case EL_PRP_F_STONE_TND_PLASTICITY:
+    case EL_PRP_F_STONE_TND_HARDNESS:
+    case EL_PRP_F_STONE_TND_BRIGHTNESS:
+    case EL_PRP_F_STONE_TND_CHROMA:
+    case EL_PRP_F_STONE_TND_OX_CHROMA:
+    case EL_PRP_F_STONE_TND_TN_CHROMA:
+    case EL_PRP_F_METAL_TND_LUSTER:
+    case EL_PRP_F_METAL_TND_HARDNESS:
+    case EL_PRP_F_METAL_TND_PLASTICITY:
+    case EL_PRP_F_METAL_TND_BRIGHTNESS:
+    case EL_PRP_F_METAL_TND_CHROMA:
+    case EL_PRP_F_METAL_TND_OX_CHROMA:
+    case EL_PRP_F_METAL_TND_TN_CHROMA:
+    case EL_PRP_F_ALLOY_PERFORMANCE:
+      return 0;
+  }
+}
+
 #endif // #ifndef ELEMENT_SPECIES_H

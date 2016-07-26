@@ -148,27 +148,25 @@ void* efd__int_test(efd_node *n) {
 
 efd_node *int_test__efd(void *v_t) {
   efd_int_test *t = (efd_int_test*) v_t;
-  efd_node *n;
   efd_node *result;
   SSTR(s_input, "input", 5);
   SSTR(s_expect, "expect", 6);
   SSTR(s_output, "output", 6);
   SSTR(s_remainder, "remainder", 9);
   
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, NULL);
 
-  n = construct_efd_str_node(s_input, t->input);
-  efd_add_child(result, n);
+  efd_add_child(result, construct_efd_str_node(s_input, NULL, t->input));
 
-  n = construct_efd_str_node(s_expect, t->expect);
-  efd_add_child(result, n);
+  efd_add_child(result, construct_efd_str_node(s_expect, NULL, t->expect));
 
-  n = construct_efd_int_node(s_output, t->output);
-  efd_add_child(result, n);
+  efd_add_child(result, construct_efd_int_node(s_output, NULL, t->output));
 
   if (s_equals(t->expect, s_remainder)) {
-    n = construct_efd_str_node(s_remainder, t->remainder);
-    efd_add_child(result, n);
+    efd_add_child(
+      result,
+      construct_efd_str_node(s_remainder, NULL, t->remainder)
+    );
   }
 
   return result;
@@ -268,27 +266,25 @@ void* efd__num_test(efd_node *n) {
 
 efd_node *num_test__efd(void *v_t) {
   efd_num_test *t = (efd_num_test*) v_t;
-  efd_node *n;
   efd_node *result;
   SSTR(s_input, "input", 5);
   SSTR(s_expect, "expect", 6);
   SSTR(s_output, "output", 6);
   SSTR(s_remainder, "remainder", 9);
   
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, NULL);
 
-  n = construct_efd_str_node(s_input, t->input);
-  efd_add_child(result, n);
+  efd_add_child(result, construct_efd_str_node(s_input, NULL, t->input));
 
-  n = construct_efd_str_node(s_expect, t->expect);
-  efd_add_child(result, n);
+  efd_add_child(result, construct_efd_str_node(s_expect, NULL, t->expect));
 
-  n = construct_efd_num_node(s_output, t->output);
-  efd_add_child(result, n);
+  efd_add_child(result, construct_efd_num_node(s_output, NULL, t->output));
 
   if (s_equals(t->expect, s_remainder)) {
-    n = construct_efd_str_node(s_remainder, t->remainder);
-    efd_add_child(result, n);
+    efd_add_child(
+      result,
+      construct_efd_str_node(s_remainder, NULL, t->remainder)
+    );
   }
 
   return result;
@@ -371,23 +367,22 @@ void* efd__parse_test(efd_node *n) {
 
 efd_node *parse_test__efd(void *v_t) {
   efd_parse_test *t = (efd_parse_test*) v_t;
-  efd_node *n;
   efd_node *result;
   SSTR(s_input, "input", 5);
   SSTR(s_expect, "expect", 6);
   SSTR(s_remainder, "remainder", 9);
   
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, NULL);
 
-  n = construct_efd_str_node(s_input, t->input);
-  efd_add_child(result, n);
+  efd_add_child(result, construct_efd_str_node(s_input, NULL, t->input));
 
-  n = construct_efd_str_node(s_expect, t->expect);
-  efd_add_child(result, n);
+  efd_add_child(result, construct_efd_str_node(s_expect, NULL, t->expect));
 
   if (s_equals(t->expect, s_remainder)) {
-    n = construct_efd_str_node(s_remainder, t->remainder);
-    efd_add_child(result, n);
+    efd_add_child(
+      result,
+      construct_efd_str_node(s_remainder, NULL, t->remainder)
+    );
   }
 
   return result;
@@ -436,7 +431,7 @@ void* efd__ev_test(efd_node *n) {
     free(result);
     return NULL;
   }
-  result->compare = efd_create_shadow_clone(result->compare);
+  result->compare = copy_efd_node(result->compare);
 
   result->against = efd_nth(n, 1);
   if (result->against == NULL) {
@@ -444,7 +439,7 @@ void* efd__ev_test(efd_node *n) {
     free(result);
     return NULL;
   }
-  result->against = efd_create_shadow_clone(result->against);
+  result->against = copy_efd_node(result->against);
 
   return (void*) result;
 }
@@ -453,12 +448,10 @@ efd_node *ev_test__efd(void *v_t) {
   efd_ev_test *t = (efd_ev_test*) v_t;
   efd_node *result;
 
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, NULL);
 
-  efd_assert_type(t->compare, EFD_NT_REROUTE);
-  efd_assert_type(t->against, EFD_NT_REROUTE);
-  efd_add_child(result, copy_efd_node(t->compare->b.as_reroute.child));
-  efd_add_child(result, copy_efd_node(t->against->b.as_reroute.child));
+  efd_add_child(result, copy_efd_node(t->compare));
+  efd_add_child(result, copy_efd_node(t->against));
 
   return result;
 }

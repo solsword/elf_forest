@@ -21,7 +21,7 @@ void* efd__null(efd_node *n) {
 }
 
 efd_node *null__efd(void *v_t) {
-  return create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  return create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, NULL);
 }
 
 #endif // INCLUDE_EFD_CONV_NULL_H

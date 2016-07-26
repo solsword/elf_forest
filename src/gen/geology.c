@@ -949,12 +949,12 @@ void generate_geology(world_map *wm) {
     // Create a stratum and append it to the list of all strata...
 
     // Arguments to gen_stone_species:
-    args_node = create_efd_node(EFD_NT_SCOPE, EFD_ANON_NAME);
+    args_node = create_efd_node(EFD_NT_SCOPE, EFD_ANON_NAME, NULL);
     efd_add_child(
       args_node,
-      construct_efd_obj_node(vn_world_map, f_singleton, wm)
+      construct_efd_obj_node(vn_world_map, NULL, f_singleton, wm)
     );
-    efd_add_child(args_node, construct_efd_int_node(vn_seed, hash));
+    efd_add_child(args_node, construct_efd_int_node(vn_seed, NULL, hash));
 
     // Generate and unpack the species for this stratum:
     species_node = efd_call_function(gen_stone_species_node, args_node);
@@ -964,13 +964,25 @@ void generate_geology(world_map *wm) {
     st_id = add_stone_species(st_sp);
 
     // Arguments to gen_strata_params:
-    args_node = create_efd_node(EFD_NT_SCOPE, EFD_ANON_NAME);
-    efd_add_child(args_node, construct_efd_int_node(vn_i, i));
-    efd_add_child(args_node, construct_efd_int_node(vn_wm_seed, wm->seed));
+    args_node = create_efd_node(EFD_NT_SCOPE, EFD_ANON_NAME, NULL);
+    efd_add_child(args_node, construct_efd_int_node(vn_i, NULL, i));
+    efd_add_child(
+      args_node,
+      construct_efd_int_node(vn_wm_seed, NULL, wm->seed)
+    );
     efd_add_child(args_node, copy_efd_node(efd_lookup(species_node,vn_source)));
-    efd_add_child(args_node, construct_efd_int_node(vn_wm_width, wm->width));
-    efd_add_child(args_node, construct_efd_int_node(vn_wm_height, wm->height));
-    efd_add_child(args_node, construct_efd_int_node(vn_species, st_id));
+    efd_add_child(
+      args_node,
+      construct_efd_int_node(vn_wm_width, NULL, wm->width)
+    );
+    efd_add_child(
+      args_node,
+      construct_efd_int_node(vn_wm_height, NULL, wm->height)
+    );
+    efd_add_child(
+      args_node,
+      construct_efd_int_node(vn_species, NULL, st_id)
+    );
 
     // now we can cleanup the species node after copying out its source:
     cleanup_efd_node(species_node);

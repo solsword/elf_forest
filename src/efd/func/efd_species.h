@@ -1,7 +1,8 @@
 #if defined(EFD_REGISTER_DECLARATIONS)
 // nothing to declare
 #elif defined(EFD_REGISTER_FUNCTIONS)
-{ .key = "weighted_el_prop",   .function = &efd_fn_weighted_el_prop },
+{ .key = "weighted_el_prop",   .function = &efd_fn_weighted_el_prop    },
+{ .key = "get_el_attr",        .function = &efd_fn_get_el_attr         },
 #else
 #ifndef INCLUDE_EFD_FUNC_SPECIES_H
 #define INCLUDE_EFD_FUNC_SPECIES_H
@@ -29,7 +30,6 @@ efd_node * efd_fn_weighted_el_prop(
   efd_node const * const node,
   efd_value_cache *cache
 ) {
-  ptrdiff_t null_index;
   efd_generator_state *ids_gen, *weights_gen;
   efd_node *id_node_container, *weight_node_container;
   list *id_nodes, *ids, *species, *weight_nodes, *weights;
@@ -67,17 +67,15 @@ efd_node * efd_fn_weighted_el_prop(
   cleanup_efd_node(weight_node_container);
   cleanup_list(weight_nodes);
 
-  // Truncate the species and weight lists if necessary:
-  null_index = l_index_of(species, NULL);
-  while (null_index != -1) {
-    l_remove_item(species, null_index);
-    l_remove_item(weights, null_index);
-    null_index = l_index_of(species, NULL);
+  // Truncate the weight list if necessary:
+  while (l_get_length(weights) > l_get_length(species)) {
+    l_pop_element(weights);
   }
 
   // Construct the result node:
   result = construct_efd_num_node(
     node->h.name,
+    node,
     el_weighted_property(
       species,
       weights,
@@ -90,6 +88,63 @@ efd_node * efd_fn_weighted_el_prop(
   cleanup_list(weights);
 
   return result;
+}
+
+// Takes two arguments; an integer species ID for an element species, and an
+// integer element property constant (in the EL_PRP family). Returns the value
+// of the specified property of the given element, as either an integer or
+// number. If the property is an integer property, the return type can be
+// either number or integer, otherwise it must be number.
+efd_node * efd_fn_get_el_attr(
+  efd_node const * const node,
+  efd_value_cache *cache
+) {
+  species element;
+  element_property property;
+  element_species *el;
+  int ival;
+
+  efd_assert_child_count(node, 2, 2);
+
+  element = (species) efd_as_i(efd_get_value(efd_nth(node, 0), cache));
+  property = (element_property) efd_as_i(
+    efd_get_value(efd_nth(node, 1), cache)
+  );
+
+  if (el_prp_is_integer(property)) {
+    // TODO: Better error message here
+    if (efd_return_type_of(node) != EFD_NT_INTEGER) {
+      efd_assert_return_type(node, EFD_NT_NUMBER);
+    }
+  } else {
+    efd_assert_return_type(node, EFD_NT_NUMBER);
+  }
+
+  el = get_element_species(element);
+
+  if (el == NULL) {
+    fprintf(
+      stderr,
+      "ERROR: unknown element species %d in get_el_attr.\n",
+      element
+    );
+    exit(EXIT_FAILURE);
+  }
+
+  if (el_prp_is_integer(property)) {
+    ival = el_int_property(el, property);
+    if (efd_return_type_of(node) == EFD_NT_INTEGER) {
+      return construct_efd_int_node(node->h.name, node, (efd_int_t) ival);
+    } else {
+      return construct_efd_num_node(node->h.name, node, (efd_num_t) ival);
+    }
+  } else {
+    return construct_efd_num_node(
+      node->h.name,
+      node,
+      (efd_num_t) el_float_property(el, property)
+    );
+  }
 }
 
 #endif // INCLUDE_EFD_FUNC_SPECIES_H

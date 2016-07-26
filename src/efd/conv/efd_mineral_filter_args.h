@@ -22,6 +22,7 @@
 void* efd__mineral_filter_args(efd_node *n) {
   mineral_filter_args *result;
   efd_node *val;
+  precise_color color;
 
   SSTR(s_seed, "seed", 4);
   SSTR(s_scale, "scale", 5);
@@ -37,6 +38,7 @@ void* efd__mineral_filter_args(efd_node *n) {
   SSTR(s_dscale, "dscale", 6);
   SSTR(s_distortion, "distortion", 10);
   SSTR(s_squash, "squash", 6);
+  SSTR(s_color, "color", 5);
   SSTR(s_base_color, "base_color", 10);
   SSTR(s_alt_color, "alt_color", 9);
   SSTR(s_sat_noise, "sat_noise", 9);
@@ -73,8 +75,11 @@ void* efd__mineral_filter_args(efd_node *n) {
   result->dscale = efd_as_n(efd_lookup_expected(val, s_dscale));
   result->distortion = efd_as_n(efd_lookup_expected(val, s_distortion));
   result->squash = efd_as_n(efd_lookup_expected(val, s_squash));
-  result->base_color = (pixel) efd_as_i(efd_lookup_expected(val, s_base_color));
-  result->alt_color = (pixel) efd_as_i(efd_lookup_expected(val, s_alt_color));
+  // TODO: treat these as colors and convert to a pixel value.
+  color = efd_as_o_fmt(efd_lookup_expected(val, s_base_color), s_color);
+  result->base_color = xyz__rgb(color);
+  color = efd_as_o_fmt(efd_lookup_expected(val, s_alt_color), s_color);
+  result->alt_color = xyz__rgb(color);
   result->sat_noise = efd_as_n(efd_lookup_expected(val, s_sat_noise));
   result->desaturate = efd_as_n(efd_lookup_expected(val, s_desaturate));
   result->brightness = efd_as_n(efd_lookup_expected(val, s_brightness));
@@ -106,85 +111,89 @@ efd_node *mineral_filter_args__efd(void *v_args) {
   SSTR(s_desaturate, "desaturate", 10);
   SSTR(s_brightness, "brightness", 10);
 
-  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  result = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, NULL);
 
-  child = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  child = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, NULL);
 
   efd_add_child(result, child);
 
-  efd_add_child(child, construct_efd_int_node(s_seed, (efd_int_t) args->seed));
+  efd_add_child(
+    child,
+    construct_efd_int_node(s_seed, NULL, (efd_int_t) args->seed)
+  );
 
   efd_add_child(
     child,
-    construct_efd_num_node(s_scale, (efd_num_t) args->scale)
+    construct_efd_num_node(s_scale, NULL, (efd_num_t) args->scale)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_gritty, (efd_num_t) args->gritty)
+    construct_efd_num_node(s_gritty, NULL, (efd_num_t) args->gritty)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_contoured, (efd_num_t) args->contoured)
+    construct_efd_num_node(s_contoured, NULL, (efd_num_t) args->contoured)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_porous, (efd_num_t) args->porous)
+    construct_efd_num_node(s_porous, NULL, (efd_num_t) args->porous)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_bumpy, (efd_num_t) args->bumpy)
+    construct_efd_num_node(s_bumpy, NULL, (efd_num_t) args->bumpy)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_layered, (efd_num_t) args->layered)
+    construct_efd_num_node(s_layered, NULL, (efd_num_t) args->layered)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_layerscale, (efd_num_t) args->layerscale)
+    construct_efd_num_node(s_layerscale, NULL, (efd_num_t) args->layerscale)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_layerwaves, (efd_num_t) args->layerwaves)
+    construct_efd_num_node(s_layerwaves, NULL, (efd_num_t) args->layerwaves)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_wavescale, (efd_num_t) args->wavescale)
+    construct_efd_num_node(s_wavescale, NULL, (efd_num_t) args->wavescale)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_inclusions, (efd_num_t) args->inclusions)
+    construct_efd_num_node(s_inclusions, NULL, (efd_num_t) args->inclusions)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_dscale, (efd_num_t) args->dscale)
+    construct_efd_num_node(s_dscale, NULL, (efd_num_t) args->dscale)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_distortion, (efd_num_t) args->distortion)
+    construct_efd_num_node(s_distortion, NULL, (efd_num_t) args->distortion)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_squash, (efd_num_t) args->squash)
+    construct_efd_num_node(s_squash, NULL, (efd_num_t) args->squash)
+  );
+  // TODO: HERE
+  efd_add_child(
+    child,
+    construct_efd_int_node(s_base_color, NULL, (efd_int_t) args->base_color)
   );
   efd_add_child(
     child,
-    construct_efd_int_node(s_base_color, (efd_int_t) args->base_color)
+    construct_efd_int_node(s_alt_color, NULL, (efd_int_t) args->alt_color)
   );
   efd_add_child(
     child,
-    construct_efd_int_node(s_alt_color, (efd_int_t) args->alt_color)
+    construct_efd_num_node(s_sat_noise, NULL, (efd_num_t) args->sat_noise)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_sat_noise, (efd_num_t) args->sat_noise)
+    construct_efd_num_node(s_desaturate, NULL, (efd_num_t) args->desaturate)
   );
   efd_add_child(
     child,
-    construct_efd_num_node(s_desaturate, (efd_num_t) args->desaturate)
-  );
-  efd_add_child(
-    child,
-    construct_efd_num_node(s_brightness, (efd_num_t) args->brightness)
+    construct_efd_num_node(s_brightness, NULL, (efd_num_t) args->brightness)
   );
 
   return result;

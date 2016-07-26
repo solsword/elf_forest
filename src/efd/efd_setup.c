@@ -100,7 +100,7 @@ void setup_elf_forest_data(int track_error_contexts) {
   EFD_GLOBALS_DIR = fs_dirchild(EFD_DATA_DIR, EFD_GLOBALS_DIR_NAME);
   EFD_COMMON_DIR = fs_dirchild(EFD_DATA_DIR, EFD_COMMON_DIR_NAME);
 
-  EFD_ROOT = create_efd_node(EFD_NT_CONTAINER, EFD_ROOT_NAME);
+  EFD_ROOT = create_efd_node(EFD_NT_CONTAINER, EFD_ROOT_NAME, NULL);
 
   EFD_GLOBALS = create_dictionary(EFD_GLOBALS_TABLE_SIZE);
 

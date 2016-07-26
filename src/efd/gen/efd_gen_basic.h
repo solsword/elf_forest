@@ -60,7 +60,7 @@ efd_node * efd_gn_impl_range(efd_generator_state *state) {
   }
   state->index += 1;
   efd_pop_error_context();
-  return construct_efd_int_node(state->name, result);
+  return construct_efd_int_node(state->name, params, result);
 }
 
 // Takes up to three arguments: the start, stop, and step values. Creates a
@@ -87,7 +87,7 @@ efd_generator_state * efd_gn_range(
 
   efd_assert_return_type(node, EFD_NT_INTEGER);
 
-  stash = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  stash = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, node);
   result = create_efd_generator_state(
     EFD_GT_FUNCTION,
     node->h.name,

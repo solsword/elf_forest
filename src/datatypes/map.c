@@ -653,6 +653,28 @@ void * m3_pop_value(map *m, map_key_t x, map_key_t y, map_key_t z) {
   return result;
 }
 
+int m_contains_value(map *m, void *value) {
+  size_t i = 0, j = 0, length = 0;
+  list *l = NULL;
+  for (i = 0; i < m->table_size; ++i) {
+    l = m->table[i];
+    // If there's no table entry here, keep scanning the table:
+    if (l == NULL) {
+      continue;
+    }
+
+    // Search through the list for an existing entry with the right value:
+    j = 0;
+    length = l_get_length(l);
+    for (j = m->key_arity; j < length; j += m->key_arity + 1) {
+      if (l_get_item(l, j) == value) {
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
 size_t m_remove_all_values(map *m, void *value) {
   size_t i = 0, j = 0, length = 0;
   size_t removed = 0;
@@ -682,7 +704,90 @@ size_t m_remove_all_values(map *m, void *value) {
   return removed;
 }
 
-// Runs the given function sequentially on each value in the map.
+int m1_reverse_lookup(map *m, void *value, map_key_t *r_key) {
+  size_t i = 0, j = 0, length = 0;
+  list *l = NULL;
+  for (i = 0; i < m->table_size; ++i) {
+    l = m->table[i];
+    // If there's no table entry here, keep scanning the table:
+    if (l == NULL) {
+      continue;
+    }
+
+    // Search through the list for an existing entry with the right value:
+    j = 0;
+    length = l_get_length(l);
+    for (j = 1; j < length; j += 2) {
+      if (l_get_item(l, j) == value) {
+        *r_key = (map_key_t) l_get_item(l, j-1);
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+int m2_reverse_lookup(
+  map *m,
+  void *value,
+  map_key_t *r_k1,
+  map_key_t *r_k2
+) {
+  size_t i = 0, j = 0, length = 0;
+  list *l = NULL;
+  for (i = 0; i < m->table_size; ++i) {
+    l = m->table[i];
+    // If there's no table entry here, keep scanning the table:
+    if (l == NULL) {
+      continue;
+    }
+
+    // Search through the list for an existing entry with the right value:
+    j = 0;
+    length = l_get_length(l);
+    for (j = 2; j < length; j += 3) {
+      if (l_get_item(l, j) == value) {
+        *r_k1 = (map_key_t) l_get_item(l, j-2);
+        *r_k2 = (map_key_t) l_get_item(l, j-1);
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+int m3_reverse_lookup(
+  map *m,
+  void *value,
+  map_key_t *r_k1,
+  map_key_t *r_k2,
+  map_key_t *r_k3
+) {
+  size_t i = 0, j = 0, length = 0;
+  list *l = NULL;
+  for (i = 0; i < m->table_size; ++i) {
+    l = m->table[i];
+    // If there's no table entry here, keep scanning the table:
+    if (l == NULL) {
+      continue;
+    }
+
+    // Search through the list for an existing entry with the right value:
+    j = 0;
+    length = l_get_length(l);
+    for (j = 3; j < length; j += 4) {
+      if (l_get_item(l, j) == value) {
+        *r_k1 = (map_key_t) l_get_item(l, j-3);
+        *r_k2 = (map_key_t) l_get_item(l, j-2);
+        *r_k3 = (map_key_t) l_get_item(l, j-1);
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+
 void m_foreach(map *m, void (*f)(void *)) {
   size_t i = 0, j = 0, length = 0;
   list *l = NULL;
@@ -703,6 +808,70 @@ void m_foreach(map *m, void (*f)(void *)) {
   }
 }
 
+void m1_foreach_key(map *m, void (*f)(map_key_t)) {
+  size_t i = 0, j = 0, length = 0;
+  list *l = NULL;
+  // Iterate through each list in the table:
+  for (i = 0; i < m->table_size; ++i) {
+    l = m->table[i];
+    // If there's no table entry here, keep scanning the table:
+    if (l == NULL) {
+      continue;
+    }
+
+    // Iterate through each item in the list:
+    j = 0;
+    length = l_get_length(l);
+    for (j = 0; j < length; j += 2) {
+      f((map_key_t) l_get_item(l, j));
+    }
+  }
+}
+
+void m2_foreach_key(map *m, void (*f)(map_key_t, map_key_t)) {
+  size_t i = 0, j = 0, length = 0;
+  list *l = NULL;
+  // Iterate through each list in the table:
+  for (i = 0; i < m->table_size; ++i) {
+    l = m->table[i];
+    // If there's no table entry here, keep scanning the table:
+    if (l == NULL) {
+      continue;
+    }
+
+    // Iterate through each item in the list:
+    j = 0;
+    length = l_get_length(l);
+    for (j = 0; j < length; j += 3) {
+      f((map_key_t) l_get_item(l, j), (map_key_t) l_get_item(l, j+1));
+    }
+  }
+}
+
+void m3_foreach_key(map *m, void (*f)(map_key_t, map_key_t, map_key_t)) {
+  size_t i = 0, j = 0, length = 0;
+  list *l = NULL;
+  // Iterate through each list in the table:
+  for (i = 0; i < m->table_size; ++i) {
+    l = m->table[i];
+    // If there's no table entry here, keep scanning the table:
+    if (l == NULL) {
+      continue;
+    }
+
+    // Iterate through each item in the list:
+    j = 0;
+    length = l_get_length(l);
+    for (j = 0; j < length; j += 4) {
+      f(
+        (map_key_t) l_get_item(l, j),
+        (map_key_t) l_get_item(l, j+1),
+        (map_key_t) l_get_item(l, j+2)
+      );
+    }
+  }
+}
+
 void m_witheach(map *m, void *arg, void (*f)(void *, void *)) {
   size_t i = 0, j = 0, length = 0;
   list *l = NULL;
@@ -719,6 +888,75 @@ void m_witheach(map *m, void *arg, void (*f)(void *, void *)) {
     length = l_get_length(l);
     for (j = m->key_arity; j < length; j += m->key_arity + 1) {
       f(l_get_item(l, j), arg);
+    }
+  }
+}
+
+void m1_witheach_key(map *m, void *arg, void (*f)(map_key_t, void*)) {
+  size_t i = 0, j = 0, length = 0;
+  list *l = NULL;
+  // Iterate through each list in the table:
+  for (i = 0; i < m->table_size; ++i) {
+    l = m->table[i];
+    // If there's no table entry here, keep scanning the table:
+    if (l == NULL) {
+      continue;
+    }
+
+    // Iterate through each item in the list:
+    j = 0;
+    length = l_get_length(l);
+    for (j = 0; j < length; j += 2) {
+      f((map_key_t) l_get_item(l, j), arg);
+    }
+  }
+}
+
+void m2_witheach_key(map *m, void *arg, void (*f)(map_key_t, map_key_t, void*)){
+  size_t i = 0, j = 0, length = 0;
+  list *l = NULL;
+  // Iterate through each list in the table:
+  for (i = 0; i < m->table_size; ++i) {
+    l = m->table[i];
+    // If there's no table entry here, keep scanning the table:
+    if (l == NULL) {
+      continue;
+    }
+
+    // Iterate through each item in the list:
+    j = 0;
+    length = l_get_length(l);
+    for (j = 0; j < length; j += 3) {
+      f((map_key_t) l_get_item(l, j), (map_key_t) l_get_item(l, j+1), arg);
+    }
+  }
+}
+
+void m3_witheach_key(
+  map *m,
+  void *arg,
+  void (*f)(map_key_t, map_key_t, map_key_t, void*)
+) {
+  size_t i = 0, j = 0, length = 0;
+  list *l = NULL;
+  // Iterate through each list in the table:
+  for (i = 0; i < m->table_size; ++i) {
+    l = m->table[i];
+    // If there's no table entry here, keep scanning the table:
+    if (l == NULL) {
+      continue;
+    }
+
+    // Iterate through each item in the list:
+    j = 0;
+    length = l_get_length(l);
+    for (j = 0; j < length; j += 4) {
+      f(
+        (map_key_t) l_get_item(l, j),
+        (map_key_t) l_get_item(l, j+1),
+        (map_key_t) l_get_item(l, j+2),
+        arg
+      );
     }
   }
 }

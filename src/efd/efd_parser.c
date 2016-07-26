@@ -274,10 +274,10 @@ efd_node* efd_parse_any(efd_parse_state *s) {
     if (existing_node != NULL) {
       result = existing_node;
     } else {
-      result = create_efd_node(type, name);
+      result = create_efd_node(type, name, NULL);
     }
   } else {
-    result = create_efd_node(type, name);
+    result = create_efd_node(type, name, NULL);
   }
   cleanup_string(name);
   parent = s->current_node;
@@ -302,6 +302,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
       );
 #endif
       return NULL;
+
     case EFD_NT_CONTAINER:
     case EFD_NT_SCOPE:
     case EFD_NT_GLOBAL:
@@ -315,6 +316,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
 #endif
       efd_parse_children(result, s);
       break;
+
     case EFD_NT_ROOT_LINK:
     case EFD_NT_GLOBAL_LINK:
     case EFD_NT_LOCAL_LINK:
@@ -329,6 +331,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
 #endif
       efd_parse_link(result, s);
       break;
+
     case EFD_NT_FUNCTION:
     case EFD_NT_FN_OBJ:
     case EFD_NT_FN_INT:
@@ -355,6 +358,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
 #endif
       efd_parse_function(result, s);
       break;
+
     case EFD_NT_PROTO:
 #ifdef DEBUG_TRACE_EFD_PARSING
       fprintf(
@@ -366,6 +370,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
 #endif
       efd_parse_proto(result, s);
       break;
+
     case EFD_NT_INTEGER:
 #ifdef DEBUG_TRACE_EFD_PARSING
       fprintf(
@@ -377,6 +382,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
 #endif
       efd_parse_integer(result, s);
       break;
+
     case EFD_NT_NUMBER:
 #ifdef DEBUG_TRACE_EFD_PARSING
       fprintf(
@@ -388,6 +394,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
 #endif
       efd_parse_number(result, s);
       break;
+
     case EFD_NT_STRING:
 #ifdef DEBUG_TRACE_EFD_PARSING
       fprintf(
@@ -399,6 +406,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
 #endif
       efd_parse_string(result, s);
       break;
+
     case EFD_NT_ARRAY_INT:
 #ifdef DEBUG_TRACE_EFD_PARSING
       fprintf(
@@ -410,6 +418,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
 #endif
       efd_parse_int_array(result, s);
       break;
+
     case EFD_NT_ARRAY_NUM:
 #ifdef DEBUG_TRACE_EFD_PARSING
       fprintf(
@@ -421,6 +430,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
 #endif
       efd_parse_num_array(result, s);
       break;
+
     case EFD_NT_ARRAY_STR:
 #ifdef DEBUG_TRACE_EFD_PARSING
       fprintf(
@@ -442,6 +452,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
         s_raw(result->h.name)
       );
 #endif
+#ifndef DEBUG
 #ifdef DEBUG_TRACE_EFD_CLEANUP
     fprintf(
       stderr,
@@ -451,6 +462,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
     );
 #endif
     cleanup_efd_node(result);
+#endif
     return NULL;
   }
 
@@ -464,6 +476,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
         s_raw(result->h.name)
       );
 #endif
+#ifndef DEBUG
 #ifdef DEBUG_TRACE_EFD_CLEANUP
     fprintf(
       stderr,
@@ -473,6 +486,7 @@ efd_node* efd_parse_any(efd_parse_state *s) {
     );
 #endif
     cleanup_efd_node(result);
+#endif
     return NULL;
   }
 
@@ -651,11 +665,11 @@ void efd_parse_function(efd_node *result, efd_parse_state *s) {
 }
 
 void efd_parse_proto(efd_node *result, efd_parse_state *s) {
-  efd_node *redir, *proto;
+  efd_node *proto;
   result->b.as_proto.format = efd_parse_annotation(s, EFD_PARSER_COLON);
   if (efd_parse_failed(s)) { return; }
 
-  proto = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME);
+  proto = create_efd_node(EFD_NT_CONTAINER, EFD_ANON_NAME, result);
   efd_parse_children(proto, s);
   if (efd_parse_failed(s)) {
 #ifdef DEBUG_TRACE_EFD_CLEANUP
@@ -669,9 +683,8 @@ void efd_parse_proto(efd_node *result, efd_parse_state *s) {
     cleanup_efd_node(proto);
     return;
   }
-  redir = efd_create_reroute(result, proto);
 
-  result->b.as_proto.input = redir;
+  result->b.as_proto.input = proto;
 }
 
 void efd_parse_integer(efd_node *result, efd_parse_state *s) {
@@ -2365,6 +2378,15 @@ void efd_print_parse_error(efd_parse_state *s) {
       }
     }
 
+    // check for manual abort:
+    if (
+      s->pos <= s->input_length - 2
+   && s->input[s->pos] == EFD_PARSER_ABORT
+   && s->input[s->pos+1] == EFD_PARSER_ABORT
+    ) {
+      s->error = EFD_PE_ABORT;
+    }
+
     // figure out our context:
     context = s->context;
     if (context == NULL) {
@@ -2384,10 +2406,17 @@ void efd_print_parse_error(efd_parse_state *s) {
     switch (s->error) {
       default:
       case EFD_PE_UNKNOWN:
-        s->error = EFD_PE_UNKNOWN;
         fprintf(
           stderr,
           "Unknown parsing error while parsing %.*s.\n",
+          EFD_PARSER_MAX_CONTEXT_DISPLAY,
+          context
+        );
+        break;
+      case EFD_PE_ABORT:
+        fprintf(
+          stderr,
+          "Manual abort while parsing %.*s.\n",
           EFD_PARSER_MAX_CONTEXT_DISPLAY,
           context
         );
@@ -2423,6 +2452,14 @@ void efd_print_parse_error(efd_parse_state *s) {
     fprintf(stderr, "%.*s\n", EFD_PARSER_ERROR_LINE, before);
     fprintf(stderr, "%.*s\n", EFD_PARSER_ERROR_LINE, after);
     fprintf(stderr, "%.*s\n", EFD_PARSER_ERROR_LINE, below);
+  }
+
+  // If we're aborting manually, print the current node:
+  if (s->error == EFD_PE_ABORT) {
+    efd_report_error_full(
+      s_("Current node at manual abort:"),
+      s->current_node
+    );
   }
 }
 
