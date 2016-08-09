@@ -193,7 +193,7 @@ static inline ptrdiff_t prng(ptrdiff_t seed) {
 // Note that resolution is roughly 1/2^20, so don't expect too much.
 // Returns a value in [0, 1)
 static inline float ptrf(ptrdiff_t seed) {
-  return ((seed % 524309) + 524309) / 1048617.0;
+  return (float) ((seed % 524309) + 524309) / 1048617.0;
 }
 
 // Simple random int within specific range:
@@ -310,7 +310,8 @@ static inline float mix_angles(float first, float second, float interp) {
 
 static inline void nap(int ms) {
   // TODO: cross-platform BS
-  usleep(ms*1000);
+  // TODO: check return value for error?
+  (void) usleep(ms*1000);
 }
 
 // Looks for an OpenGL error and prints it to stderr, after the given reason.
@@ -320,7 +321,8 @@ static inline int report_opengl_error(char const * const reason) {
   if (e == GL_NO_ERROR) {
     return 0;
   }
-  fprintf(stderr, reason);
+  // TODO: check error here?
+  (void) fputs(reason, stderr);
   switch (e) {
     case GL_INVALID_ENUM:
       fprintf(stderr, "OpenGL: Invalid enumeration.\n");
@@ -338,7 +340,7 @@ static inline int report_opengl_error(char const * const reason) {
       fprintf(stderr, "OpenGL: Out of memory.\n");
       break;
     default:
-      fprintf(stderr, "Unknown OpenGL error: %d.\n", e);
+      fprintf(stderr, "Unknown OpenGL error: %d.\n", (int) e);
   }
   return 1;
 }

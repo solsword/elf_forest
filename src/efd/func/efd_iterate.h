@@ -113,10 +113,6 @@ efd_node * efd_fn_iterate(efd_node const * const node) {
     cleanup_efd_node(container);
   }
 
-  // DEBUG: TODO: REMOVE
-  //fprintf(stderr, "iterate::reuslt");
-  //s_fprintln(stderr, efd_full_repr(result));
-
   l_foreach(generators, &cleanup_v_efd_generator_state);
   cleanup_list(generators);
 

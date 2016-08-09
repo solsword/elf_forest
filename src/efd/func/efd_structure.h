@@ -104,7 +104,8 @@ efd_node * efd_fn_index(efd_node const * const node) {
 }
 
 // Uses the first argument as an index among the remaining arguments, returning
-// the value of the n+1st child.
+// the value of the n+1st child. If the first argument is too large, its
+// modulus will be used.
 efd_node * efd_fn_choose(efd_node const * const node) {
   intptr_t count;
   efd_int_t index;
@@ -123,19 +124,9 @@ efd_node * efd_fn_choose(efd_node const * const node) {
     fprintf(stderr, "(index was %ld)\n", index);
     return NULL;
   } else if (index >= count - 1) {
-    efd_report_error(
-      s_("ERROR: 'choose' node's index is out of range."),
-      node
-    );
-    fprintf(
-      stderr,
-      "(index was %ld but there were only %ld items)\n",
-      index,
-      count - 1
-    );
-    return NULL;
+    index = index % (count - 1);
   }
-  result = efd_get_value(efd_nth(node, index + 1));
+  result = copy_efd_node(efd_get_value(efd_nth(node, index + 1)));
   efd_rename(result, node->h.name);
   result->h.context = node;
 
@@ -241,7 +232,9 @@ efd_node * efd_fn_lookup_key(efd_node const * const node) {
     this_key = efd_get_value(efd_lookup(this_entry, s_key));
 
     if (efd_equivalent(look_for, this_key)) {
-      this_value = efd_get_value(efd_lookup(this_entry, s_value));
+      this_value = copy_efd_node(
+        efd_get_value(efd_lookup(this_entry, s_value))
+      );
       break;
     }
   }

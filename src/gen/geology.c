@@ -884,21 +884,63 @@ float sheet_height(
 // General geology functions:
 // --------------------------
 
+stone_species* generate_stone_species(world_map *wm, ptrdiff_t seed) {
+  stone_species *result;
+
+  efd_node *gen_node, *gen_stone_species_node, *args_node, *species_node;
+
+  SSTR(vn_world_map, "~world_map", 10);
+  SSTR(f_singleton, "SINGLETON", 9);
+  SSTR(vn_seed, "~seed", 5);
+  SSTR(s_stone_species, "stone_species", 13);
+
+  gen_node = efdx(EFD_ROOT, GEO_GEN_KEY);
+  if (gen_node == NULL) {
+    fprintf(
+      stderr,
+      "ERROR: Required node missing for stone species generation:\n"
+    );
+    s_fprintln(stderr, GEO_GEN_KEY);
+  }
+  gen_stone_species_node = efd_lookup_expected(gen_node, GEO_GEN_KEY_SPECIES);
+
+  // Arguments to gen_stone_species:
+  args_node = create_efd_node(EFD_NT_SCOPE, EFD_ANON_NAME, NULL);
+  efd_add_child(
+    args_node,
+    construct_efd_obj_node(vn_world_map, NULL, f_singleton, wm)
+  );
+  efd_add_child(args_node, construct_efd_int_node(vn_seed, NULL, seed));
+
+  // Generate and unpack the species (calling the unpacker directly ensures the
+  // returned species is newly-allocated and won't be cleaned up along with the
+  // underlying node):
+  // TODO: Use an object node & copy its value instead?
+  species_node = efd_call_function(gen_stone_species_node, args_node);
+  result = (stone_species*) efd_lookup_unpacker(s_stone_species)(species_node);
+
+  // Now we can cleanup the species node:
+  cleanup_efd_node(species_node);
+
+  // Add the new species to the global registry (thereby assigning its ID):
+  (void) add_stone_species(result);
+
+  return result;
+}
+
 void generate_geology(world_map *wm) {
   size_t i, j;
   world_map_pos xy;
   global_pos anchor;
   gl_pos_t t;
-  species st_id;
-  stone_species *st_sp;
   stratum *s;
+  stone_species *st_sp;
   ptrdiff_t hash;
 
   efd_node *gen_node;
   efd_node *gen_strata_params_node, *gen_stratum_node;
-  efd_node *gen_stone_species_node;
   efd_node *args_node;
-  efd_node *params_node, *species_node, *stratum_node;
+  efd_node *params_node, *stratum_node;
 
   SSTR(vn_i, "~i", 2);
   SSTR(vn_wm_seed, "~wm_seed", 8);
@@ -906,40 +948,24 @@ void generate_geology(world_map *wm) {
   SSTR(vn_wm_height, "~wm_height", 10);
   SSTR(vn_species, "~species", 8);
 
-  SSTR(vn_world_map, "~world_map", 10);
-  SSTR(f_singleton, "SINGLETON", 9);
-  SSTR(vn_source, "~source", 7);
-  SSTR(vn_seed, "~seed", 5);
+  SSTR(vn_source, "~source", 6);
 
   SSTR(s_stratum, "stratum", 7);
-  SSTR(s_stone_species, "stone_species", 13);
-
-  SSTR(
-    s_emissing,
-    "gen.geo: node required for geology generation is missing:",
-    57
-  );
 
   // collect EFD nodes
   gen_node = efdx(EFD_ROOT, GEO_GEN_KEY);
-  gen_strata_params_node = efd_lookup(gen_node, GEO_GEN_KEY_STRATA_PARAMS);
-  gen_stratum_node = efd_lookup(gen_node, GEO_GEN_KEY_STRATUM);
-  gen_stone_species_node = efd_lookup(gen_node, GEO_GEN_KEY_SPECIES);
-#ifdef DEBUG
   if (gen_node == NULL) {
-    s_fprint(stderr, s_emissing);
+    fprintf(
+      stderr,
+      "ERROR: Required node missing for stone species generation:\n"
+    );
     s_fprintln(stderr, GEO_GEN_KEY);
-  } else if (gen_strata_params_node == NULL) {
-    s_fprint(stderr, s_emissing);
-    s_fprintln(stderr, GEO_GEN_KEY_STRATA_PARAMS);
-  } else if (gen_stratum_node == NULL) {
-    s_fprint(stderr, s_emissing);
-    s_fprintln(stderr, GEO_GEN_KEY_STRATUM);
-  } else if (gen_stone_species_node == NULL) {
-    s_fprint(stderr, s_emissing);
-    s_fprintln(stderr, GEO_GEN_KEY_SPECIES);
   }
-#endif
+  gen_strata_params_node = efd_lookup_expected(
+    gen_node,
+    GEO_GEN_KEY_STRATA_PARAMS
+  );
+  gen_stratum_node = efd_lookup_expected(gen_node, GEO_GEN_KEY_STRATUM);
 
   printf("    ...generating strata...\n");
   world_region *wr;
@@ -947,21 +973,7 @@ void generate_geology(world_map *wm) {
     hash = prng(prng(wm->seed + 567*i));
 
     // Create a stratum and append it to the list of all strata...
-
-    // Arguments to gen_stone_species:
-    args_node = create_efd_node(EFD_NT_SCOPE, EFD_ANON_NAME, NULL);
-    efd_add_child(
-      args_node,
-      construct_efd_obj_node(vn_world_map, NULL, f_singleton, wm)
-    );
-    efd_add_child(args_node, construct_efd_int_node(vn_seed, NULL, hash));
-
-    // Generate and unpack the species for this stratum:
-    species_node = efd_call_function(gen_stone_species_node, args_node);
-    st_sp = (stone_species*) efd_lookup_unpacker(s_stone_species)(species_node);
-
-    // Add the new species to the global registry (thereby assigning its ID):
-    st_id = add_stone_species(st_sp);
+    st_sp = generate_stone_species(wm, hash);
 
     // Arguments to gen_strata_params:
     args_node = create_efd_node(EFD_NT_SCOPE, EFD_ANON_NAME, NULL);
@@ -970,7 +982,10 @@ void generate_geology(world_map *wm) {
       args_node,
       construct_efd_int_node(vn_wm_seed, NULL, wm->seed)
     );
-    efd_add_child(args_node, copy_efd_node(efd_lookup(species_node,vn_source)));
+    efd_add_child(
+      args_node,
+      construct_efd_int_node(vn_source, NULL, (efd_int_t) st_sp->source)
+    );
     efd_add_child(
       args_node,
       construct_efd_int_node(vn_wm_width, NULL, wm->width)
@@ -981,16 +996,11 @@ void generate_geology(world_map *wm) {
     );
     efd_add_child(
       args_node,
-      construct_efd_int_node(vn_species, NULL, st_id)
+      construct_efd_int_node(vn_species, NULL, (efd_int_t) st_sp->id)
     );
-
-    // now we can cleanup the species node after copying out its source:
-    cleanup_efd_node(species_node);
-
 
     // Generate parameters for this stratum
     params_node = efd_call_function(gen_strata_params_node, args_node);
-
 
     // Generate the stratum:
     stratum_node = efd_call_function(gen_stratum_node, params_node);

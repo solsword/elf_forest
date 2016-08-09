@@ -513,6 +513,7 @@ static inline size_t efd_node_depth(efd_node const * const n) {
       p = p->h.parent;
     }
   } while (1);
+  return 0;
 }
 
 static inline int efd_is_link_type(efd_node_type t) {
@@ -1133,7 +1134,7 @@ efd_node * efdx(efd_node const * const root, string const * const saddr);
 // allocated children) representing the result. External code should almost
 // always call efd_get_value instead, which returns cached values when
 // available and caches new values as they're computed.
-efd_node * efd_eval(efd_node const * const target);
+efd_node * _efd_eval(efd_node const * const target);
 
 // Gets the value of the given node, either cached in target->h.value, or via
 // efd_eval (in which case it caches the value). In either case the caller

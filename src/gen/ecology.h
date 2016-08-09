@@ -67,7 +67,10 @@ static inline int biome_is_compatible(biome_category bc, world_region *wr) {
 static inline int has_biome_in_category(world_region *wr, biome_category bc) {
   size_t i;
   for (i = 0; i < WM_MAX_BIOME_OVERLAP; ++i) {
-    if (wr->ecology.biomes[i]->category == bc) {
+    if (
+      wr->ecology.biomes[i] != NULL
+   && wr->ecology.biomes[i]->category == bc
+    ) {
       return 1;
     }
   }

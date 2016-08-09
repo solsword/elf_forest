@@ -1456,7 +1456,7 @@ eco_info const ECO_INFO[] = {
   },
 };
 
-static rngtable DEEP_OCN_WM_BCEGORIES = {
+static rngtable DEEP_OCN_WM_BCATEGORIES = {
   .size = 2,
   .values = (void*[]) {
     (void*) WM_BC_DEEP_AQ,
@@ -1465,7 +1465,7 @@ static rngtable DEEP_OCN_WM_BCEGORIES = {
   .weights = (float[]) { 0.9, 0.1 }
 };
 
-static rngtable PEL_WM_BCEGORIES = {
+static rngtable PEL_WM_BCATEGORIES = {
   .size = 3,
   .values = (void*[]) {
     (void*) WM_BC_SEA_ICE,
@@ -1475,7 +1475,7 @@ static rngtable PEL_WM_BCEGORIES = {
   .weights = (float[]) { 1, 1, 1 }
 };
 
-static rngtable OFS_WM_BCEGORIES = {
+static rngtable OFS_WM_BCATEGORIES = {
   .size = 8,
   .values = (void*[]) {
     (void*) WM_BC_TMP_OFSH,
@@ -1490,7 +1490,7 @@ static rngtable OFS_WM_BCEGORIES = {
   .weights = (float[]) { 1, 0.8, 0.3, 0.3, 0.4, 0.3, 0.4, 0.2 }
 };
 
-static rngtable SHOR_WM_BCEGORIES = {
+static rngtable SHOR_WM_BCATEGORIES = {
   .size = 4,
   .values = (void*[]) {
     (void*) WM_BC_FRZ_SHOR,
@@ -1501,7 +1501,7 @@ static rngtable SHOR_WM_BCEGORIES = {
   .weights = (float[]) { 1, 1.2, 1.2, 1 }
 };
 
-static rngtable LAKE_WM_BCEGORIES = {
+static rngtable LAKE_WM_BCATEGORIES = {
   .size = 6,
   .values = (void*[]) {
     (void*) WM_BC_FRZ_LAKE,
@@ -1514,7 +1514,7 @@ static rngtable LAKE_WM_BCEGORIES = {
   .weights = (float[]) { 0.8, 1, 1, 1, 1, 0.05 }
 };
 
-static rngtable RIVR_WM_BCEGORIES = {
+static rngtable RIVR_WM_BCATEGORIES = {
   .size = 5,
   .values = (void*[]) {
     (void*) WM_BC_FRZ_RIVR,
@@ -1526,7 +1526,7 @@ static rngtable RIVR_WM_BCEGORIES = {
   .weights = (float[]) { 0.8, 1, 1, 1, 1 }
 };
 
-static rngtable ALPN_WM_BCEGORIES = {
+static rngtable ALPN_WM_BCATEGORIES = {
   .size = 8,
   .values = (void*[]) {
     (void*) WM_BC_FRZ_ALPN,
@@ -1541,7 +1541,7 @@ static rngtable ALPN_WM_BCEGORIES = {
   .weights = (float[]) { 0.8, 1, 1, 0.9, 1, 0.9, 1, 0.9 }
 };
 
-static rngtable TERRESTRIAL_WM_BCEGORIES = {
+static rngtable TERRESTRIAL_WM_BCATEGORIES = {
   .size = 37,
   .values = (void*[]) {
     (void*) WM_BC_FRZ_DSRT,
@@ -1713,7 +1713,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &DEEP_OCN_WM_BCEGORIES,
+    &DEEP_OCN_WM_BCATEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1722,7 +1722,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions( // pelagic
     wm,
-    &PEL_WM_BCEGORIES,
+    &PEL_WM_BCATEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1731,7 +1731,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &OFS_WM_BCEGORIES,
+    &OFS_WM_BCATEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1740,7 +1740,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &SHOR_WM_BCEGORIES,
+    &SHOR_WM_BCATEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1749,7 +1749,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &LAKE_WM_BCEGORIES,
+    &LAKE_WM_BCATEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1758,7 +1758,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &RIVR_WM_BCEGORIES,
+    &RIVR_WM_BCATEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1767,7 +1767,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &ALPN_WM_BCEGORIES,
+    &ALPN_WM_BCATEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed
@@ -1776,7 +1776,7 @@ void generate_ecology(world_map *wm) {
 
   fill_with_regions(
     wm,
-    &TERRESTRIAL_WM_BCEGORIES,
+    &TERRESTRIAL_WM_BCATEGORIES,
     &needs_biome_in_table,
     &_fill_biome_from_table,
     seed

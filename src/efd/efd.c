@@ -2692,7 +2692,7 @@ efd_node * efdx(efd_node const * const root, string const * const saddr) {
   return result;
 }
 
-efd_node * efd_eval(efd_node const * const target) {
+efd_node * _efd_eval(efd_node const * const target) {
   efd_node *result, *input, *cvalue, *ct;
   efd_eval_function feval;
   efd_unpack_function unpacker;
@@ -2731,7 +2731,7 @@ efd_node * efd_eval(efd_node const * const target) {
       )
     );
     result = feval(target);
-    efd_pop_error_context();
+    efd_pop_error_context(); // local context
   } else if (efd_is_type(target, EFD_NT_PROTO)) {
     // If it's a proto, unpack it to get a value:
     // recurse on the input first:
@@ -2764,7 +2764,7 @@ efd_node * efd_eval(efd_node const * const target) {
       target->b.as_proto.format,
       unpacker(input)
     );
-    efd_pop_error_context();
+    efd_pop_error_context(); // local context
   } else if (efd_is_container_node(target)) {
     // For non-function container nodes, their values are containers which have
     // their children's values as children.
@@ -2825,17 +2825,39 @@ efd_node * efd_get_value(efd_node *target) {
   }
 
   if (target->h.value == NULL) {
-    target->h.value = efd_eval(target);
+    target->h.value = _efd_eval(target);
 #ifdef DEBUG
     if (target->h.value == NULL) {
       efd_report_error(
-        s_("Warning: evaluation result is NULL in efd_get_value:"),
+        s_("ERROR: evaluation result is NULL in efd_get_value:"),
         target
       );
+    }
+    if (target->h.value->h.base_node != NULL) {
+      efd_report_error(
+        s_("ERROR: evaluation result has non-NULL base_node in efd_get_value:"),
+        target
+      );
+      fprintf(stderr, "Result is:\n");
+      s_fprintln(stderr, efd_repr(target->h.value));
+      exit(EXIT_FAILURE);
     }
 #endif
     target->h.value->h.base_node = target;
   }
+
+#ifdef DEBUG
+  if (target->h.value->h.base_node != target) {
+    efd_report_error(
+      s_("ERROR: efd_get_value left target and value unlinked for target:"),
+      target
+    );
+    fprintf(stderr, "Value is:\n");
+    s_fprintln(stderr, efd_repr(target->h.value));
+    fprintf(stderr, "Alt base is:\n");
+    s_fprintln(stderr, efd_repr(target->h.value->h.base_node));
+  }
+#endif
 
   efd_pop_error_context();
   return target->h.value;

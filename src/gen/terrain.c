@@ -884,11 +884,15 @@ void stone_cell(
   // Where available, persistence values are also a factor:
   if (best != NULL) {
     st = get_stratum(best, h);
-    strbest *= st->persistence;
+    if (st != NULL) {
+      strbest *= st->persistence;
+    }
   }
   if (secondbest != NULL) {
     st = get_stratum(secondbest, h);
-    strsecond *= st->persistence;
+    if (st != NULL) {
+      strsecond *= st->persistence;
+    }
   }
 
   // Now that we know which stratum to use, set the cell's block data:
@@ -900,8 +904,13 @@ void stone_cell(
     result->blocks[0] = b_make_block(B_STONE);
   } else {
     st = get_stratum(best, h);
-    // TODO: veins and inclusions here!
-    result->blocks[0] = b_make_species(B_STONE, st->base_species);
+    if (st == NULL) {
+      // TODO: Something else here?
+      result->blocks[0] = b_make_block(B_STONE);
+    } else {
+      // TODO: veins and inclusions here!
+      result->blocks[0] = b_make_species(B_STONE, st->base_species);
+    }
   }
   result->blocks[1] = b_make_block(B_VOID);
 }

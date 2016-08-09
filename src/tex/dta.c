@@ -43,10 +43,10 @@ dynamic_texture_atlas *create_dynamic_atlas(size_t size) {
   );
   dta->handle = 0;
 
-  // Reserve indices 0 through 3 as 'invalid' textures so that failed map
+  // Reserve indices 0 through 5 as 'invalid' textures so that failed map
   // lookups (which return NULL) will be obvious.
   texture *invalid = load_texture_from_png("res/textures/invalid.png");
-  // Mark 0 through 4 as used:
+  // Mark 0 through 5 as used:
   bm_set_bits(dta->vacancies, 0, 5);
   // Add B_VOID -> 1 to our block id/variant -> index mapping:
   dta_set_index(dta, b_make_block(B_VOID), 1);

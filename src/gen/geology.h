@@ -91,8 +91,8 @@ static float const STRATA_AVG_SIZE = 0.25;
 EFD_GL(n, STRATA_AVG_SIZE)
 
 // Controls how many strata to generate (a multiple of MAX_STRATA_LAYERS).
-//#define STRATA_COMPLEXITY 3.0
-static float const STRATA_COMPLEXITY = (1.0/18.0);
+static float const STRATA_COMPLEXITY = 3.0;
+//static float const STRATA_COMPLEXITY = (1.0/18.0);
 EFD_GL(n, STRATA_COMPLEXITY)
 
 // The base stratum thickness (before an exponential distribution).
@@ -411,12 +411,16 @@ static inline void stratum_lf_noise(
 // Given a world region and a fractional height between 0 and 1, returns the
 // stratum in that region at that height. If h is less than 0, it returns the
 // bottom stratum in the given region, and likewise if h is greater than 1, it
-// returns the top stratum.
+// returns the top stratum. It returns NULL if the given world region doesn't
+// have any strata.
 static inline stratum* get_stratum(
   world_region* wr,
   float h
 ) {
   int i;
+  if (wr->geology.stratum_count == 0) {
+    return NULL;
+  }
   stratum *result = wr->geology.strata[0];
   // Find out which layer we're in:
   for (i = 1; i < wr->geology.stratum_count; i += 1) {
@@ -594,6 +598,9 @@ float sheet_height(
 
 // General geology functions:
 // --------------------------
+
+// Generates and registers a new stone species for the given world map.
+stone_species* generate_stone_species(world_map *wm, ptrdiff_t seed);
 
 // Generates geology for the given world.
 void generate_geology(world_map *wm);

@@ -12,6 +12,7 @@
 #include "terrain.h"
 #include "climate.h"
 #include "ecology.h"
+#include "geology.h"
 
 #include "soil.h"
 
@@ -892,27 +893,42 @@ void create_local_dirt(
       case B_SAND:
         // TODO: Something more complex here.
         soil->alt_species[i] = get_bedrock(wr);
-        soil->alt_strengths[i] = randf_pnorm(seed, 0, 1);
-        seed = prng(seed);
-        soil->alt_hdeps[i] = randf(seed, -0.3, 0.8);
-        seed = prng(seed);
+        if (soil->alt_species[i] == SP_INVALID) {
+          soil->alt_strengths[i] = 0;
+          soil->alt_hdeps[i] = 0;
+        } else {
+          soil->alt_strengths[i] = randf_pnorm(seed, 0, 1);
+          seed = prng(seed);
+          soil->alt_hdeps[i] = randf(seed, -0.3, 0.8);
+          seed = prng(seed);
+        }
         break;
       case B_GRAVEL:
       case B_SCREE:
         // TODO: Something more complex here.
         soil->alt_species[i] = get_bedrock(wr);
-        soil->alt_strengths[i] = expdist(ptrf(seed), 2);
-        seed = prng(seed);
-        soil->alt_hdeps[i] = randf(seed, 0.2, 1.0);
-        seed = prng(seed);
+        if (soil->alt_species[i] == SP_INVALID) {
+          soil->alt_strengths[i] = 0;
+          soil->alt_hdeps[i] = 0;
+        } else {
+          soil->alt_strengths[i] = expdist(ptrf(seed), 2);
+          seed = prng(seed);
+          soil->alt_hdeps[i] = randf(seed, 0.2, 1.0);
+          seed = prng(seed);
+        }
         break;
       case B_STONE:
         // TODO: Something more complex here.
         soil->alt_species[i] = get_bedrock(wr);
-        soil->alt_strengths[i] = expdist(ptrf(seed), 2.5);
-        seed = prng(seed);
-        soil->alt_hdeps[i] = randf(seed, -1.0, -0.4);
-        seed = prng(seed);
+        if (soil->alt_species[i] == SP_INVALID) {
+          soil->alt_strengths[i] = 0;
+          soil->alt_hdeps[i] = 0;
+        } else {
+          soil->alt_strengths[i] = expdist(ptrf(seed), 2.5);
+          seed = prng(seed);
+          soil->alt_hdeps[i] = randf(seed, -1.0, -0.4);
+          seed = prng(seed);
+        }
         break;
     }
   }
@@ -949,6 +965,10 @@ void create_local_sand(
   soil->main_block_type = B_SAND;
   // TODO: create a variant species here?
   soil->main_species = get_bedrock(wr);
+  if (soil->main_species == SP_INVALID) {
+    soil->main_species = generate_stone_species(wr->world, seed)->id;
+    seed = prng(seed);
+  }
 
   for (i = 0; i < WM_MAX_SOIL_ALTS; ++i) {
 #pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
@@ -1006,27 +1026,42 @@ void create_local_sand(
       case B_SAND:
         // TODO: An actual variant here!
         soil->alt_species[i] = get_bedrock(wr);
-        soil->alt_strengths[i] = randf_pnorm(seed, 0, 1);
-        seed = prng(seed);
-        soil->alt_hdeps[i] = randf(seed, -0.3, 0.3);
-        seed = prng(seed);
+        if (soil->alt_species[i] == SP_INVALID) {
+          soil->alt_strengths[i] = 0;
+          soil->alt_hdeps[i] = 0;
+        } else {
+          soil->alt_strengths[i] = randf_pnorm(seed, 0, 1);
+          seed = prng(seed);
+          soil->alt_hdeps[i] = randf(seed, -0.3, 0.3);
+          seed = prng(seed);
+        }
         break;
       case B_GRAVEL:
       case B_SCREE:
         // TODO: Something more complex here.
         soil->alt_species[i] = get_bedrock(wr);
-        soil->alt_strengths[i] = expdist(ptrf(seed), 1.3);
-        seed = prng(seed);
-        soil->alt_hdeps[i] = randf(seed, -1.0, -0.2);
-        seed = prng(seed);
+        if (soil->alt_species[i] == SP_INVALID) {
+          soil->alt_strengths[i] = 0;
+          soil->alt_hdeps[i] = 0;
+        } else {
+          soil->alt_strengths[i] = expdist(ptrf(seed), 1.3);
+          seed = prng(seed);
+          soil->alt_hdeps[i] = randf(seed, -1.0, -0.2);
+          seed = prng(seed);
+        }
         break;
       case B_STONE:
         // TODO: Something more complex here.
         soil->alt_species[i] = get_bedrock(wr);
-        soil->alt_strengths[i] = expdist(ptrf(seed), 1.8);
-        seed = prng(seed);
-        soil->alt_hdeps[i] = randf(seed, -1.0, -0.4);
-        seed = prng(seed);
+        if (soil->alt_species[i] == SP_INVALID) {
+          soil->alt_strengths[i] = 0;
+          soil->alt_hdeps[i] = 0;
+        } else {
+          soil->alt_strengths[i] = expdist(ptrf(seed), 1.8);
+          seed = prng(seed);
+          soil->alt_hdeps[i] = randf(seed, -1.0, -0.4);
+          seed = prng(seed);
+        }
         break;
     }
   }
@@ -1267,6 +1302,7 @@ void fill_dirt_species(
   float sand, clay;
   float organics;
   float tmp;
+  species bedrock;
   seed = prng(seed + 881721);
   list *all_elements = wr->world->all_elements;
   list *nutrients = wr->world->all_nutrients;
@@ -1774,7 +1810,11 @@ void fill_dirt_species(
     }
 
     // adjustments based on bedrock element content
-    if (stone_contains_element(get_stone_species(get_bedrock(wr)), esp->id)) {
+    bedrock = get_bedrock(wr);
+    if (
+      bedrock != SP_INVALID
+   && stone_contains_element(get_stone_species(bedrock), esp->id)
+    ) {
       switch (esp->solubility) {
         case SOLUBILITY_SOLUBLE:
           dsp->nutrients[i] += randi(
@@ -1795,8 +1835,9 @@ void fill_dirt_species(
           break;
       }
     } else if (
-      stone_contains_trace_element(
-        get_stone_species(get_bedrock(wr)),
+      bedrock != SP_INVALID
+   && stone_contains_trace_element(
+        get_stone_species(bedrock),
         esp->id
       )
     ) {
@@ -2278,6 +2319,7 @@ void compute_combined_dirt_color(
   float avg;
   float weight;
 
+  color->format = CFMT_LCH;
   color->x = 0;
   color->y = 0;
   color->z = 0;

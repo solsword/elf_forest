@@ -6,6 +6,7 @@
 { .key = "sub",          .function = &efd_fn_sub          },
 { .key = "div",          .function = &efd_fn_div          },
 { .key = "pow",          .function = &efd_fn_pow          },
+{ .key = "exp",          .function = &efd_fn_exp          },
 { .key = "sqrt",         .function = &efd_fn_sqrt         },
 { .key = "sine",         .function = &efd_fn_sine         },
 { .key = "cosine",       .function = &efd_fn_cosine       },
@@ -127,6 +128,17 @@ efd_node * efd_fn_pow(efd_node const * const node) {
   exp = efd_as_n(efd_get_value(efd_nth(node, 1)));
 
   return construct_efd_num_node(node->h.name, node, pow(base, exp));
+}
+
+// e to the power of the first child.
+efd_node * efd_fn_exp(efd_node const * const node) {
+  efd_num_t exp;
+
+  efd_assert_return_type(node, EFD_NT_NUMBER);
+
+  exp = efd_as_n(efd_get_value(efd_nth(node, 0)));
+
+  return construct_efd_num_node(node->h.name, node, pow(M_E, exp));
 }
 
 // The square root of the first child.

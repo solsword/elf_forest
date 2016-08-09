@@ -748,14 +748,15 @@ struct tectonic_sheet_s {
 
 struct stratum_s {
   ptrdiff_t seed; // seed for various noise sources
+  geologic_source source; // where the material for this layer comes from
+  species base_species; // exact stone species for main mass
 
- // Base parameters:
- // ----------------
+ // Shape parameters:
+ // -----------------
   float cx, cy; // center x/y
   float size; // base radius
   float thickness; // base thickness
   map_function profile; // base profile shape
-  geologic_source source; // where the material for this layer comes from
 
  // Derived noise parameters:
  // -------------------------
@@ -784,19 +785,18 @@ struct stratum_s {
   // negative detail:
   float smoothing; // amount of smooth weathering (fraction of detail removed)
 
- // Derived vein and inclusion information:
- // ---------------------------------------
-  float vein_scale[WM_N_VEIN_TYPES]; // scale of different veins (in blocks)
-  float vein_strength[WM_N_VEIN_TYPES]; // thickness/frequency of veins (0-1)
-  float inclusion_frequency[WM_N_INCLUSION_TYPES]; // inclusion frequency (0-1)
-
- // Derived species information:
- // ----------------------------------
+ // Vein information:
+ // ------------------------------
   // TODO: Clay deposits?
   // TODO: Native metal veins / inclusions?
-  species base_species; // exact stone species for main mass
   species vein_species[WM_N_VEIN_TYPES]; // types for veins
+  float vein_scales[WM_N_VEIN_TYPES]; // scale of different veins (in blocks)
+  float vein_strengths[WM_N_VEIN_TYPES]; // thickness/frequency of veins (0-1)
+
+ // Inclusion information:
+ // -------------------------------
   species inclusion_species[WM_N_INCLUSION_TYPES]; // types for inclusions
+  float inclusion_frequencies[WM_N_INCLUSION_TYPES]; // inclusion freqs (0-1)
 };
 
 // Info
@@ -1177,7 +1177,11 @@ static inline void copy_soil(world_region *from, world_region *to) {
 
 // Convenience function for returning the uppermost rock species in a region:
 static inline species get_bedrock(world_region *wr) {
-  return wr->geology.strata[wr->geology.stratum_count-1]->base_species;
+  if (wr->geology.stratum_count == 0) {
+    return SP_INVALID;
+  } else {
+    return wr->geology.strata[wr->geology.stratum_count-1]->base_species;
+  }
 }
 
 /******************************

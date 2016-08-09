@@ -31,9 +31,9 @@ typedef struct dynamic_texture_atlas_s dynamic_texture_atlas;
  *************/
 
 // The size (side, not total) of the dynamic texture atlases. This gives a
-// total texture capacity of 1024 textures, while itself being a
-// 1024x1024 texel texture assuming that BLOCK_TEXTURE_SIZE is 32.
-static size_t const DYNAMIC_ATLAS_SIZE = 32;
+// total texture capacity of 16384 textures, while itself being a
+// 4096x4096 texel texture assuming that BLOCK_TEXTURE_SIZE is 32.
+static size_t const DYNAMIC_ATLAS_SIZE = 128;
 
 // Stores the additional offset for each specific face (corresponding to how
 // block face textures are organized in individual block texture files). The

@@ -21,7 +21,7 @@
 
 void* efd__stone_species(efd_node *n) {
   stone_species *result;
-  size_t i;
+  size_t i, subchildcount;
   efd_node *val, *field, *subfield;
 
   SSTR(s_source, "source", 6);
@@ -71,35 +71,43 @@ void* efd__stone_species(efd_node *n) {
   result->trace_composition = (mineral_trace_composition) efd_as_i(subfield);
 
   subfield = efd_lookup_expected(field, s_constituents);
-  if (efd_normal_child_count(subfield) != MN_MAX_PRIMARY_CONSTITUENTS) {
+  subchildcount = efd_normal_child_count(subfield);
+  if (subchildcount > MN_MAX_PRIMARY_CONSTITUENTS) {
     efd_report_error(
       s_sprintf(
-        "ERROR: wrong number of 'constituents' (expected %zu, was %zu)",
+        "ERROR: wrong number of 'constituents' (expected <= %zu, found %zu)",
         MN_MAX_PRIMARY_CONSTITUENTS,
-        efd_normal_child_count(subfield)
+        subchildcount
       ),
       subfield
     );
     exit(EXIT_FAILURE);
   }
-  for (i = 0; i < MN_MAX_PRIMARY_CONSTITUENTS; ++i) {
+  for (i = 0; i < subchildcount; ++i) {
     result->constituents[i] = (species) efd_as_i(efd_nth(subfield, i));
+  }
+  for (; i < MN_MAX_PRIMARY_CONSTITUENTS; ++i) {
+    result->constituents[i] = SP_INVALID;
   }
 
   subfield = efd_lookup_expected(field, s_traces);
-  if (efd_normal_child_count(subfield) != MN_MAX_TRACE_CONSTITUENTS) {
+  subchildcount = efd_normal_child_count(subfield);
+  if (subchildcount > MN_MAX_TRACE_CONSTITUENTS) {
     efd_report_error(
       s_sprintf(
-        "ERROR: wrong number of 'traces' (expected %zu, was %zu)",
+        "ERROR: wrong number of 'traces' (expected <= %zu, found %zu)",
         MN_MAX_TRACE_CONSTITUENTS,
-        efd_normal_child_count(subfield)
+        subchildcount
       ),
       subfield
     );
     exit(EXIT_FAILURE);
   }
-  for (i = 0; i < MN_MAX_TRACE_CONSTITUENTS; ++i) {
+  for (i = 0; i < subchildcount; ++i) {
     result->traces[i] = (species) efd_as_i(efd_nth(subfield, i));
+  }
+  for (; i < MN_MAX_TRACE_CONSTITUENTS; ++i) {
+    result->traces[i] = SP_INVALID;
   }
 
   return (void*) result;

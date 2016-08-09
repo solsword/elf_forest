@@ -107,6 +107,8 @@ void setup_species(void) {
   PIGMENT_SPECIES = create_map(1, 1024); // various sources; uniform use
 }
 
+// TODO: Clean up!
+
 void* get_species_data(any_species sp) {
   species id = any_species_species(sp);
   switch(any_species_type(sp)) {

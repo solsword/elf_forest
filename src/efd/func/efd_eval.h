@@ -62,7 +62,7 @@ efd_node * efd_fn_peek(efd_node const * const node) {
     value = sub;
   }
 
-  value = copy_efd_node(value); // TODO: old value is NOT in cache
+  value = copy_efd_node(value);
   efd_rename(value, node->h.name);
   return value;
 }
