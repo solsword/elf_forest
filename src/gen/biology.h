@@ -36,6 +36,11 @@ extern cell_grammar *BIO_CG_SPROUT_ABOVE_SOIL_UNDERWATER;
 #define BIO_RARE_SPECIES_SMOOTHING_EXP 5.0
 #define BIO_RARE_SPECIES_SMOOTHING_ADJUST 1.0
 
+// Growth strength set values:
+#define BIO_GS_PRIORITY_GROW -1
+#define BIO_GS_ALWAYS_GROW 0
+#define BIO_GS_CANT_GROW 1000
+
 /********************
  * Inline Functions *
  ********************/
@@ -135,7 +140,11 @@ float species_compatability(frequent_species fqsp, block substrate);
 // if the given block is not a growing block.
 growth_properties* get_growth_properties(block b);
 
-ptrdiff_t get_species_growth_strength(block b, int resist);
+// Returns the growth strength of the species occupying the given block.
+ptrdiff_t get_species_growth_strength(block b);
+
+// Returns the growth resist of the species occupying the given block.
+ptrdiff_t get_species_growth_resist(block b);
 
 // Species generation functions:
 

@@ -65,7 +65,8 @@ void _get_everything_set_up(ptrdiff_t seed, int argc, char** argv) {
 
   // The EFD data format setup goes first:
   printf("  ...Elf Forest data...\n");
-  setup_elf_forest_data(1);
+  //setup_elf_forest_data(1); // track error contexts
+  setup_elf_forest_data(0); // don't track error contexts
   printf("  ...loading common data...\n");
   load_common_efd();
 

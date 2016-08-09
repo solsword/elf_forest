@@ -221,11 +221,10 @@ efd_node * construct_efd_obj_node(
   string const * const format,
   void * obj
 ) {
+  SSTR(s_ec, "...during the creation of object node:", 38);
+
   efd_node *result = create_efd_node(EFD_NT_OBJECT, name, context);
-  efd_push_error_context_with_node(
-    s_("...during the creation of object node:"),
-    result
-  );
+  efd_push_error_context_with_node(s_ec, result);
   result->b.as_object.format = copy_string(format);
   efd_copy_function copier = efd_lookup_copier(format);
   if (copier == NULL) {
@@ -296,10 +295,9 @@ efd_node * copy_efd_node(efd_node const * const src) {
   dictionary *children;
   efd_node *child, *result;
 
-  efd_push_error_context_with_node(
-    s_("...during attempt to copy node:"),
-    src
-  );
+  SSTR(s_ec, "...during attempt to copy node:", 31);
+
+  efd_push_error_context_with_node(s_ec, src);
 
 #ifdef DEBUG_FAKE_EFD_CLEANUP
   if (src->h.freecount != 0) {
@@ -455,11 +453,11 @@ CLEANUP_IMPL(efd_node) {
   size_t i;
   efd_destroy_function df;
 #endif
+
+  SSTR(s_ec, "...during cleanup of node:", 26);
+
   efd_node *child;
-  efd_push_error_context_with_node(
-    s_("...during cleanup of node:"),
-    doomed
-  );
+  efd_push_error_context_with_node(s_ec, doomed);
 #ifdef DEBUG
   // Recognize double-cleanups:
   if (doomed->h.type >= EFD_NUM_TYPES + 1 || doomed->h.name == NULL) {
@@ -900,28 +898,30 @@ void * v_efd__o(void *v_node) {
   return efd_as_o(n);
 }
 
-void efd_push_error_context(string *context) {
+void efd_push_error_context(string const * const context) {
   if (EFD_TRACK_ERROR_CONTEXTS) {
-    l_append_element(EFD_ERROR_CONTEXT, (void*) context);
+    l_append_element(EFD_ERROR_CONTEXT, (void*) copy_string(context));
   }
 }
 
 void efd_push_error_context_with_node(
-  string *message,
+  string const * const message,
   efd_node const * const node
 ) {
   efd_address *a;
+  string *context;
   if (EFD_TRACK_ERROR_CONTEXTS) {
+    context = copy_string(message);
     if (node == NULL) {
-      s_append(message, S_NL);
-      s_devour(message, s_("<NULL node>"));
+      s_append(context, S_NL);
+      s_devour(context, s_("<NULL node>"));
     } else {
       a = construct_efd_address_of_node(node);
-      s_append(message, S_NL);
-      s_devour(message, efd_addr_string(a));
+      s_append(context, S_NL);
+      s_devour(context, efd_addr_string(a));
       cleanup_efd_address(a);
     }
-    efd_push_error_context(message);
+    l_append_element(EFD_ERROR_CONTEXT, (void*) context);
   }
 }
 
@@ -996,10 +996,10 @@ int efd_ref_types_are_compatible(efd_ref_type from, efd_ref_type to) {
 
 void efd_assert_type(efd_node const * const n, efd_node_type t) {
   string *tn;
-  efd_push_error_context_with_node(
-    s_("...in efd_assert_type for node:"),
-    n
-  );
+
+  SSTR(s_ec, "...in efd_assert_type for node:", 31);
+
+  efd_push_error_context_with_node(s_ec, n);
   if (n == NULL) {
     efd_report_error(
       s_("ERROR: Missing EFD node in efd_assert_type:"),
@@ -1028,11 +1028,10 @@ void efd_assert_type(efd_node const * const n, efd_node_type t) {
 
 void efd_assert_return_type(efd_node const * const n, efd_node_type t) {
 #ifndef EFD_NO_TYPECHECKS
+  SSTR(s_ec, "...in efd_assert_return_type for node:", 38);
+
   efd_node_type rt;
-  efd_push_error_context_with_node(
-    s_("...in efd_assert_return_type for node:"),
-    n
-  );
+  efd_push_error_context_with_node(s_ec, n);
   rt = efd_return_type_of(n);
   if (rt != t) {
     if (rt >= 0
@@ -1071,10 +1070,8 @@ void efd_assert_object_format(
   string const * const fmt
 ) {
 #ifndef EFD_NO_TYPECHECKS
-  efd_push_error_context_with_node(
-    s_("...in efd_assert_object_format for node:"),
-    n
-  );
+  SSTR(s_ec, "...in efd_assert_object_format for node:", 40);
+  efd_push_error_context_with_node(s_ec, n);
   efd_assert_type(n, EFD_NT_OBJECT);
   if (!efd_format_is(n, fmt)) {
 #pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
@@ -1900,11 +1897,18 @@ int _efd_cmp(
   dictionary *cmp_ch, *agn_ch;
   efd_node *cmp_packed, *agn_packed;
 
-  string *ctx = s_("...in efd_cmp for nodes:\n");
-  s_devour(ctx, efd_repr(cmp));
-  s_devour(ctx, s_("\n ...and:\n"));
-  s_devour(ctx, efd_repr(agn));
-  efd_push_error_context(ctx);
+#ifdef EFD_DETAILED_ERROR_CONTEXTS
+  string *s_ec = s_("...in efd_cmp for nodes:");
+  s_devour(s_ec, efd_repr(cmp));
+  s_devour(s_ec, s_("\n ...and:\n"));
+  s_devour(s_ec, efd_repr(agn));
+#else
+  SSTR(s_ec, "...in efd_cmp:", 24);
+#endif
+  efd_push_error_context(s_ec);
+#ifdef EFD_DETAILED_ERROR_CONTEXTS
+  cleanup_string(s_ec);
+#endif
 
   if (cmp == NULL && agn == NULL) {
     efd_pop_error_context();
@@ -2123,7 +2127,8 @@ int efd_equivalent(efd_node const * const cmp, efd_node const * const agn) {
 }
 
 void efd_add_child(efd_node *n, efd_node *child) {
-  efd_push_error_context_with_node(s_("...while adding child to node:"), n);
+  SSTR(s_ec, "...while adding child to node:", 30);
+  efd_push_error_context_with_node(s_ec, n);
 #ifdef DEBUG
   if (!efd_is_container_node(n)) {
     efd_report_error(
@@ -2154,7 +2159,8 @@ void efd_add_child(efd_node *n, efd_node *child) {
 }
 
 void efd_prepend_child(efd_node *n, efd_node *child) {
-  efd_push_error_context_with_node(s_("...while prepending child to node:"), n);
+  SSTR(s_ec, "...while prepending child to node:", 34);
+  efd_push_error_context_with_node(s_ec, n);
 #ifdef DEBUG
   if (!efd_is_container_node(n)) {
     efd_report_error(
@@ -2185,7 +2191,8 @@ void efd_prepend_child(efd_node *n, efd_node *child) {
 }
 
 void efd_remove_child(efd_node *n, efd_node *child) {
-  efd_push_error_context_with_node(s_("...while removing child from node:"), n);
+  SSTR(s_ec, "...while removing child from node:", 34);
+  efd_push_error_context_with_node(s_ec, n);
 #ifdef DEBUG
   efd_node *r;
   if (!efd_is_container_node(n)) {
@@ -2287,10 +2294,8 @@ efd_node * efd_find_child(
   string const * const name
 ) {
   efd_node *result;
-  efd_push_error_context_with_node(
-    s_("...during efd_find_child in parent:"),
-    parent
-  );
+  SSTR(s_ec, "...during efd_find_child in parent:", 35);
+  efd_push_error_context_with_node(s_ec, parent);
   if (!efd_is_container_node(parent)) {
 #ifdef DEBUG
     efd_report_error(
@@ -2314,10 +2319,8 @@ list * efd_find_all_children(
   string const * const name
 ) {
   list *result;
-  efd_push_error_context_with_node(
-    s_("...during efd_find_all_children in parent:"),
-    parent
-  );
+  SSTR(s_ec, "...during efd_find_all_children in parent:", 42);
+  efd_push_error_context_with_node(s_ec, parent);
   if (!efd_is_container_node(parent)) {
 #ifdef DEBUG
     efd_report_error(
@@ -2344,10 +2347,8 @@ efd_node * efd_find_variable_in(
   efd_node *child, *result;
   size_t i;
 
-  efd_push_error_context_with_node(
-    s_("...during efd_find_variable_in node:"),
-    node
-  );
+  SSTR(s_ec, "...during efd_find_variable_in node:", 36);
+  efd_push_error_context_with_node(s_ec, node);
 
   if (!efd_is_container_node(node)) {
     efd_pop_error_context();
@@ -2393,10 +2394,8 @@ string * efd_trace_variable_in(
 
   trace = s_("Search for variable:");
 
-  efd_push_error_context_with_node(
-    s_("...during efd_trace_variable_in node:"),
-    node
-  );
+  SSTR(s_ec, "...during efd_trace_variable_in node:", 37);
+  efd_push_error_context_with_node(s_ec, node);
 
   if (!efd_is_container_node(node)) {
     s_append(trace, s_dead);
@@ -2444,10 +2443,8 @@ efd_node * efd_resolve_variable(efd_node const * const var) {
   efd_node *result;
   efd_node const *scope;
 
-  efd_push_error_context_with_node(
-    s_("...during efd_resolve_variable for variable:"),
-    var
-  );
+  SSTR(s_ec, "...during efd_resolve_variable for variable:", 44);
+  efd_push_error_context_with_node(s_ec, var);
 
   efd_assert_type(var, EFD_NT_VARIABLE);
   target = var->b.as_link.target;
@@ -2496,10 +2493,8 @@ string * efd_variable_search_trace(efd_node const * const var) {
 }
 
 efd_node * efd_concrete(efd_node const * const base) {
-  efd_push_error_context_with_node(
-    s_("...during efd_concrete for node:"),
-    base
-  );
+  SSTR(s_ec, "...during efd_concrete for node:", 32);
+  efd_push_error_context_with_node(s_ec, base);
   if (base == NULL) {
     efd_pop_error_context();
     return NULL;
@@ -2565,10 +2560,15 @@ efd_node *efd_nth(efd_node const * const node, size_t index) {
   dictionary *children;
   efd_node *child;
 
-  efd_push_error_context_with_node(
-    s_sprintf("...while getting nth child of node (n=%zu):", index),
-    node
+#ifdef EFD_DETAILED_ERROR_CONTEXTS
+  string *s_ec = s_sprintf(
+    "...while getting nth child (n = %zu) of node:",
+    index
   );
+#else
+  SSTR(s_ec, "...while getting nth child of node:", 35);
+#endif
+  efd_push_error_context_with_node(s_ec, node);
 
   if (!efd_is_container_node(node)) {
 #ifdef DEBUG
@@ -2646,10 +2646,8 @@ list * efd_lookup_all(
   string const * const key
 ) {
   list *result;
-  efd_push_error_context_with_node(
-    s_("...during efd_lookup_all in node:"),
-    node
-  );
+  SSTR(s_ec, "...during efd_lookup_all in node:", 33);
+  efd_push_error_context_with_node(s_ec, node);
   if (node == NULL) {
     efd_pop_error_context();
     return NULL;
@@ -2699,7 +2697,8 @@ efd_node * _efd_eval(efd_node const * const target) {
   dictionary *children;
   size_t i;
 
-  efd_push_error_context_with_node(s_("...during evaluation of node:"), target);
+  SSTR(s_ec, "...during evaluation of node:", 29);
+  efd_push_error_context_with_node(s_ec, target);
 
   if (target == NULL) {
     efd_report_error(
@@ -2723,13 +2722,19 @@ efd_node * _efd_eval(efd_node const * const target) {
         target
       );
     }
-    efd_push_error_context(
-      s_sprintf(
-        "...during call to function '%.*U':",
-        s_get_length(target->b.as_function.function),
-        s_raw(target->b.as_function.function)
-      )
-    );
+#ifdef EFD_DETAILED_ERROR_CONTEXTS
+    string *s_ec_subf = s_sprintf(
+      "...during call to function '%.*U':",
+      s_get_length(target->b.as_function.function),
+      s_raw(target->b.as_function.function)
+    )
+#else
+    SSTR(s_ec_subf, "...during call to a function:", 29);
+#endif
+    efd_push_error_context(s_ec_subf);
+#ifdef EFD_DETAILED_ERROR_CONTEXTS
+  cleanup_string(s_ec_subf);
+#endif
     result = feval(target);
     efd_pop_error_context(); // local context
   } else if (efd_is_type(target, EFD_NT_PROTO)) {
@@ -2750,14 +2755,19 @@ efd_node * _efd_eval(efd_node const * const target) {
     }
 
     // and unpack the object:
-    efd_push_error_context_with_node(
-      s_sprintf(
-        "...while unpacking '%.*U' node:",
-        s_get_length(target->b.as_proto.format),
-        s_raw(target->b.as_proto.format)
-      ),
-      target
-    );
+#ifdef EFD_DETAILED_ERROR_CONTEXTS
+    string *s_ec_subu = s_sprintf(
+      "...while unpacking '%.*U' node:",
+      s_get_length(target->b.as_proto.format),
+      s_raw(target->b.as_proto.format)
+    )
+#else
+    SSTR(s_ec_subu, "...while unpacking a node:", 26);
+#endif
+    efd_push_error_context_with_node(s_ec_subu, target);
+#ifdef EFD_DETAILED_ERROR_CONTEXTS
+    cleanup_string(s_ec_subu);
+#endif
     result = construct_efd_obj_node(
       target->h.name,
       target->h.context,
@@ -2811,10 +2821,8 @@ efd_node * _efd_eval(efd_node const * const target) {
 }
 
 efd_node * efd_get_value(efd_node *target) {
-  efd_push_error_context_with_node(
-    s_("...while getting the value of node:"),
-    target
-  );
+  SSTR(s_ec, "...while getting the value of node:", 35);
+  efd_push_error_context_with_node(s_ec, target);
   if (target == NULL) {
     fprintf(
       stderr,
@@ -2896,7 +2904,8 @@ efd_node * efd_pack_object(efd_node const * const object) {
   
   efd_assert_type(object, EFD_NT_OBJECT);
 
-  efd_push_error_context_with_node(s_("...while packing object:"), object);
+  SSTR(s_ec, "...while packing object:", 24);
+  efd_push_error_context_with_node(s_ec, object);
 
   result = create_efd_node(EFD_NT_PROTO, object->h.name, object->h.context);
   result->b.as_proto.format = copy_string(object->b.as_object.format);
@@ -2945,7 +2954,8 @@ efd_node * efd_gen_next(efd_generator_state *gen) {
   efd_generator_state *sub;
   list *children;
 
-  efd_push_error_context(s_("...during efd_gen_next:"));
+  SSTR(s_ec, "...during efd_gen_next:", 23);
+  efd_push_error_context(s_ec);
 
   switch (gen->type) {
     default:
@@ -3118,19 +3128,23 @@ void efd_gen_reset(efd_generator_state *gen) {
 }
 
 efd_node * efd_gen_all(efd_generator_state *gen) {
+  SSTR(s_nullec, "...in efd_gen_all <NULL>:", 25);
+#ifdef EFD_DETAILED_ERROR_CONTEXTS
+  string *s_ec = s_sprintf(
+    "...in efd_gen_all for generator '%.*s' (%s):",
+    s_get_length(gen->name),
+    s_raw(gen->name),
+    EFD_GT_NAMES[gen->type]
+  );
+#else
+  SSTR(s_ec, "...in efd_gen_all for a generator:", 34);
+#endif
   if (gen == NULL) {
-    efd_push_error_context(s_("...in efd_gen_all <NULL>:"));
+    efd_push_error_context(s_nullec);
     efd_report_free_error(s_("ERROR: efd_gen_all called with NULL generator."));
     exit(EXIT_FAILURE);
   }
-  efd_push_error_context(
-    s_sprintf(
-      "...in efd_gen_all for generator '%.*s' (%s):",
-      s_get_length(gen->name),
-      s_raw(gen->name),
-      EFD_GT_NAMES[gen->type]
-    )
-  );
+  efd_push_error_context(s_ec);
   efd_node *result = create_efd_node(EFD_NT_CONTAINER, gen->name, NULL);
   efd_node *next = efd_gen_next(gen);
   while (next != NULL) {

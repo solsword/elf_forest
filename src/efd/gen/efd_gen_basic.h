@@ -23,7 +23,8 @@ efd_node * efd_gn_impl_range(efd_generator_state *state) {
 
   params = (efd_node*) state->stash;
 
-  efd_push_error_context(s_("...during call to 'range' generator:"));
+  SSTR(s_ec, "...during call to 'range' generator:", 36);
+  efd_push_error_context(s_ec);
 
   start_node = efd_lookup(params, s_start);
   stop_node = efd_lookup(params, s_stop);
@@ -80,7 +81,8 @@ efd_generator_state * efd_gn_range(efd_node const * const node) {
   size_t child_count;
   efd_node *stash, *tmp;
   efd_generator_state *result;
-  efd_push_error_context(s_("...during setup of 'range' generator:"));
+  SSTR(s_ec, "...during setup of 'range' generator:", 37);
+  efd_push_error_context(s_ec);
 
   efd_assert_return_type(node, EFD_NT_INTEGER);
 
@@ -133,7 +135,8 @@ efd_generator_state * efd_gn_extend(efd_node const * const node) {
   efd_generator_type type;
   efd_generator_state *sub, *result;
 
-  efd_push_error_context(s_("...during setup of 'extend' generator:"));
+  SSTR(s_ec, "...during setup of 'extend' generator:", 38);
+  efd_push_error_context(s_ec);
 
   child = efd_get_value(efd_nth(node, 0));
   efd_assert_return_type(node, efd_return_type_of(child));

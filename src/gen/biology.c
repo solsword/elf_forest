@@ -486,7 +486,7 @@ void add_biology(chunk *c) {
         // TODO: optimize this within a loop...
         fill_cell_neighborhood_exact(idx, &ch_nbh, &cl_nbh);
 
-        cl = cl_nbh.members[NBH_CENTER]; // shortcut for the central cell
+        cl = cl_nbh.members[NBH_CENTER];
         // Array is in xyz order so up/down is +/- 1, north/south is +/- 3, and
         // east/west is +/- 9.
 
@@ -497,19 +497,21 @@ void add_biology(chunk *c) {
           if (b_id(cl->blocks[0]) == B_AIR) {
             // Ephemeral species seeds settle in the air directly on top of
             // dirt/sand/mud/etc.
-            substrate = cl_nbh.members[NBH_CENTER - 1]->blocks[0];
+            substrate = cl_nbh.members[NBH_CENTER - NBH_DIR_UD]->blocks[0];
             if (b_is_natural_terrain(substrate)) {
               sp_list = local_biome->ephemeral_terrestrial_flora;
             }
           } else if (b_id(cl->blocks[0]) == B_WATER) {
             // Aquatic ephemeral species start in water above dirt/sand/mud/etc.
-            substrate = cl_nbh.members[NBH_CENTER-1]->blocks[0];
+            substrate = cl_nbh.members[NBH_CENTER - NBH_DIR_UD]->blocks[0];
             if (b_is_natural_terrain(substrate)) {
               sp_list = local_biome->ephemeral_aquatic_flora;
             }
           } else if (b_is_natural_terrain(cl->blocks[0])) {
             substrate = cl->blocks[0];
-            if (b_id(cl_nbh.members[NBH_CENTER+1]->blocks[0]) == B_AIR) {
+            if (
+              b_id(cl_nbh.members[NBH_CENTER + NBH_DIR_UD]->blocks[0]) == B_AIR
+            ) {
               // Most terrestrial species sprout in the ground with air above.
               // TODO: Subterranean species!
               // Select between spacings:
@@ -522,7 +524,9 @@ void add_biology(chunk *c) {
               } else {
                 sp_list = local_biome->ubiquitous_terrestrial_flora;
               }
-            } else if (b_id(cl_nbh.members[NBH_CENTER+1]->blocks[0])==B_WATER) {
+            } else if (
+              b_id(cl_nbh.members[NBH_CENTER + NBH_DIR_UD]->blocks[0]) ==B_WATER
+            ) {
               // Aquatic plants sprout from seeds in terrain below water.
               // Select between spacings:
               if (wide_spacing_hit(glpos, spacing_hash)) {
@@ -534,7 +538,9 @@ void add_biology(chunk *c) {
               } else {
                 sp_list = local_biome->ubiquitous_aquatic_flora;
               }
-            } else if (b_id(cl_nbh.members[NBH_CENTER-1]->blocks[0]) == B_AIR) {
+            } else if (
+              b_id(cl_nbh.members[NBH_CENTER - NBH_DIR_UD]->blocks[0]) == B_AIR
+            ) {
               // Some plants can also grow down into air from ceilings.
               sp_list = local_biome->hanging_terrestrial_flora;
             }
@@ -598,7 +604,7 @@ frequent_species pick_appropriate_frequent_species(
   if (l_is_empty(sp_list)) {
     // Return an invalid species...
     frequent_species_set_species_type(&fqsp, SPT_NO_SPECIES);
-    frequent_species_set_species(&fqsp, 0);
+    frequent_species_set_species(&fqsp, SP_INVALID);
     frequent_species_set_frequency(&fqsp, 0.0);
     return fqsp;
   }
@@ -647,57 +653,66 @@ growth_properties* get_growth_properties(block b) {
   block__any_species(b, &a_sp);
   species sp = any_species_species(a_sp);
   species_type st = any_species_type(a_sp);
-  if (st == SPT_FUNGUS) {
-    return &(get_fungus_species(sp)->growth);
-  } else if (st == SPT_MOSS) {
-    return &(get_moss_species(sp)->growth);
-  } else if (st == SPT_GRASS) {
-    return &(get_grass_species(sp)->growth);
-  } else if (st == SPT_VINE) {
-    return &(get_vine_species(sp)->growth);
-  } else if (st == SPT_HERB) {
-    return &(get_herb_species(sp)->growth);
-  } else if (st == SPT_BUSH) {
-    return &(get_bush_species(sp)->growth);
-  } else if (st == SPT_SHRUB) {
-    return &(get_shrub_species(sp)->growth);
-  } else if (st == SPT_TREE) {
-    return &(get_tree_species(sp)->growth);
-  } else if (st == SPT_AQUATIC_GRASS) {
-    return &(get_aquatic_grass_species(sp)->growth);
-  } else if (st == SPT_AQUATIC_PLANT) {
-    return &(get_aquatic_plant_species(sp)->growth);
-  } else if (st == SPT_CORAL) {
-    return &(get_coral_species(sp)->growth);
-  } else { // Not a growing species.
-    return NULL;
+  switch (st) {
+    case SPT_FUNGUS:
+      return &(get_fungus_species(sp)->growth);
+    case SPT_MOSS:
+      return &(get_moss_species(sp)->growth);
+    case SPT_GRASS:
+      return &(get_grass_species(sp)->growth);
+    case SPT_VINE:
+      return &(get_vine_species(sp)->growth);
+    case SPT_HERB:
+      return &(get_herb_species(sp)->growth);
+    case SPT_BUSH:
+      return &(get_bush_species(sp)->growth);
+    case SPT_SHRUB:
+      return &(get_shrub_species(sp)->growth);
+    case SPT_TREE:
+      return &(get_tree_species(sp)->growth);
+    case SPT_AQUATIC_GRASS:
+      return &(get_aquatic_grass_species(sp)->growth);
+    case SPT_AQUATIC_PLANT:
+      return &(get_aquatic_plant_species(sp)->growth);
+    case SPT_CORAL:
+      return &(get_coral_species(sp)->growth);
+    default: // not a growing species.
+      return NULL;
   }
 }
 
 
-ptrdiff_t get_species_growth_strength(block b, int resist) {
+ptrdiff_t get_species_growth_strength(block b) {
   block id = b_id(b);
   growth_properties *grp = get_growth_properties(b);
   if (id == B_VOID) {
-    return 0;
+    return BIO_GS_ALWAYS_GROW;
   } else if (id == B_AIR || id == B_ETHER) {
-    return -1;
+    return BIO_GS_PRIORITY_GROW;
   } else if (grp == NULL) {
     // A non-air non-water non-plant block: can't grow here.
-    return 1000;
+    return BIO_GS_CANT_GROW;
   }
-  // Unpack the desired property:
-  if (resist) {
-    if (bi_seed(b)) {
-      return grp->seed_growth_resist;
-    } else {
-      return grp->growth_resist;
-    }
-  } else {
-    return grp->growth_strength;
-  }
+  return grp->growth_strength;
 }
 
+ptrdiff_t get_species_growth_resist(block b) {
+  block id = b_id(b);
+  growth_properties *grp = get_growth_properties(b);
+  if (id == B_VOID) {
+    return BIO_GS_ALWAYS_GROW;
+  } else if (id == B_AIR || id == B_ETHER) {
+    return BIO_GS_PRIORITY_GROW;
+  } else if (grp == NULL) {
+    // A non-air non-water non-plant block: can't grow here.
+    return BIO_GS_CANT_GROW;
+  }
+  if (bi_seed(b)) {
+    return grp->seed_growth_resist;
+  } else {
+    return grp->growth_resist;
+  }
+}
 
 
 species create_new_fungus_species(ptrdiff_t seed) {

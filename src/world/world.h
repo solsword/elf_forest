@@ -190,6 +190,10 @@ static chunk_flag const   CF_QUEUED_FOR_BIOGEN = 0x0040;
 
 // The index of the central member in a 3x3x3 neighborhood:
 static int const NBH_CENTER = 13;
+// Offsets to move in cardinal directions within a 3x3x3 x/y/z neighborhood:
+static int const NBH_DIR_UD = 1;
+static int const NBH_DIR_NS = 3;
+static int const NBH_DIR_EW = 9;
 
 /*************************
  * Structure Definitions *

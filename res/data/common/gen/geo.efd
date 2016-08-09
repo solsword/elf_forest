@@ -2043,7 +2043,7 @@
         <<v ~wm_height>>
       ]]
     ]]
-    [[i bias #i:STRATA_AVG_SIZE]]
+    [[n bias #n:STRATA_AVG_SIZE]]
     [[i unit #i:WORLD_REGION_BLOCKS]]
     [[fn offset:rng_uniform
       [[fi rng:brng <<v ~hash>> (i 3) ]]

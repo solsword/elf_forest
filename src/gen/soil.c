@@ -966,6 +966,10 @@ void create_local_sand(
   // TODO: create a variant species here?
   soil->main_species = get_bedrock(wr);
   if (soil->main_species == SP_INVALID) {
+#ifdef DEBUG
+    fprintf(stderr, "Warning: no bedrock for sand composition at: ");
+    fprintf(stderr, "(%ld, %ld)\n", wr->pos.x, wr->pos.y);
+#endif
     soil->main_species = generate_stone_species(wr->world, seed)->id;
     seed = prng(seed);
   }

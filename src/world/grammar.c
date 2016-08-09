@@ -29,16 +29,17 @@ static inline int _check_block(
   block compare,
   block mask
 ) {
+  ptrdiff_t resist, strength;
   if (strategy == CGCS_CAN_GROW || strategy == CGCS_ROOT_CAN_GROW) {
-    ptrdiff_t resist = get_species_growth_strength(b, 1);
-    ptrdiff_t strength = get_species_growth_strength(compare, 0);
+    resist = get_species_growth_resist(b);
+    strength = get_species_growth_strength(compare);
     return resist < strength;
   } else if (strategy == CGCS_CANT_GROW || strategy == CGCS_ROOT_CANT_GROW) {
-    ptrdiff_t resist = get_species_growth_strength(b, 1);
-    ptrdiff_t strength = get_species_growth_strength(compare, 0);
+    resist = get_species_growth_resist(b);
+    strength = get_species_growth_strength(compare);
     return resist >= strength;
   } else if (strategy == CGCS_BLOCKS_GROWTH) {
-    return get_species_growth_strength(b, 1) >= compare;
+    return get_species_growth_resist(b) >= compare;
   } else if (strategy == CGCS_BLOCK_INFO) {
     return (b_info(b) & mask) == (block_info) (compare & mask);
   } else {

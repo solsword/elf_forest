@@ -31,6 +31,7 @@ struct list_s {
  * Private Functions *
  *********************/
 
+// TODO: Exponential rather than linear growth?
 static inline void _grow_if_necessary(list *l) {
   if (l->count == l->size * l->chunk_size) { // We need more memory.
     void ** new_elements = (void **) realloc(

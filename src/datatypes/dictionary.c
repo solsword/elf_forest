@@ -206,6 +206,12 @@ size_t d_get_count(dictionary const * const d) {
 
 void* d_get_item(dictionary const * const d, size_t index) {
   dictionary_entry *e = (dictionary_entry*) l_get_item(d->ordered, index);
+  if (e == NULL) {
+#ifdef DEBUG
+    fprintf(stderr, "Warning: d_get_item on out-of-bounds item.\n");
+#endif
+    return NULL;
+  }
   return e->value;
 }
 

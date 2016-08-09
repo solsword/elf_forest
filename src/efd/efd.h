@@ -261,13 +261,9 @@ typedef efd_generator_state * (*efd_generator_constructor)(
  * Constants *
  *************/
 
-#define EFD_GLOBALS_KEY_ARITY 4
 #define EFD_GLOBALS_TABLE_SIZE 2048
 
-#define EFD_DEFAULT_DICTIONARY_SIZE 8
-
-#define EFD_EVAL_MAP_TABLE_SIZE 1024
-#define EFD_EVAL_DEP_TABLE_SIZE 128
+#define EFD_DEFAULT_DICTIONARY_SIZE 16
 
 #define EFD_ADDR_SEP_CHR '.'
 #define EFD_ADDR_PARENT_CHR '^'
@@ -924,14 +920,14 @@ void * v_efd__v_s(void *v_node);
 void * v_efd__o(void *v_node);
 
 // TODO: Make this stuff thread-safe!
-// Sets the EFD error context. The given string is devoured, so the caller
-// should abdicate responsibility for it.
-void efd_push_error_context(string *context);
+// Sets the EFD error context. The given string is copied, so the caller
+// retains responsibility for it.
+void efd_push_error_context(string const * const context);
 
 // Sets the EFD error context including details of the given node. The given
-// message is devoured so the caller should abdicate responsibility for it.
+// message is copied.
 void efd_push_error_context_with_node(
-  string *message,
+  string const * const message,
   efd_node const * const node
 );
 

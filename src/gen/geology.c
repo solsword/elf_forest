@@ -1017,7 +1017,7 @@ void generate_geology(world_map *wm) {
         // this stratum:
         compute_region_anchor(wm, &xy, &anchor);
         t = compute_stratum_height(s, &anchor);
-        // If any corner has material, add this stratum to this region:
+        // If the anchor has material, add this stratum to this region:
         if (t > 0) {
           //TODO: Real logging/debugging
           wr = get_world_region(wm, &xy); // no need to worry about NULL here
@@ -1042,20 +1042,21 @@ void generate_geology(world_map *wm) {
         }
       }
     }
-    if (i % 10 == 0) {
+    if (i % 20 == 0) {
       printf(
         "      ...%zu / %zu strata done...\r",
         i,
         (size_t) (WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
       );
+      fflush(stdout);
     }
   }
+  // TODO: REMOVE (PROF/DEBUG)
   printf(
-    "      ...%zu / %zu strata done...\r",
+    "      ...%zu / %zu strata done...\n",
     (size_t) (WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY),
     (size_t) (WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
   );
-  printf("\n");
 }
 
 gl_pos_t compute_stratum_height(stratum *st, global_pos *glpos) {
