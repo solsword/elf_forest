@@ -174,9 +174,6 @@ typedef struct efd_node_header_s efd_node_header;
 struct efd_container_s;
 typedef struct efd_container_s efd_container;
 
-struct efd_reroute_s;
-typedef struct efd_reroute_s efd_reroute;
-
 struct efd_link_s;
 typedef struct efd_link_s efd_link;
 
@@ -317,15 +314,14 @@ struct efd_node_header_s {
   efd_node *parent;
   efd_node const *context;
   efd_node *value;
+  efd_node *base_node;
+#ifdef DEBUG_FAKE_EFD_CLEANUP
+  int freecount;
+#endif
 };
 
 struct efd_container_s {
   dictionary *children;
-};
-
-struct efd_reroute_s {
-  efd_node *child;
-  efd_node *target;
 };
 
 struct efd_link_s {
@@ -376,7 +372,6 @@ struct efd_array_str_s {
 
 union efd_node_body_u {
   efd_container as_container;
-  efd_reroute as_reroute;
   efd_link as_link;
   efd_function as_function;
   efd_proto as_proto;
@@ -995,9 +990,7 @@ int efd_equals(efd_node const * const cmp, efd_node const * const agn);
 
 // Compares two nodes as with efd_equals, but only looks at values and ignores
 // node names (including for children). Also ignores scopes entirely, testing
-// just normal nodes. Finally, equivalent ignores reroute nodes entirely,
-// comparing their children when one or more are given. NULL arguments are
-// accepted.
+// just normal nodes. NULL arguments are accepted.
 int efd_equivalent(efd_node const * const cmp, efd_node const * const agn);
 
 // Adds the given child to the parent's dictionary of children (parent must be
@@ -1052,6 +1045,12 @@ list * efd_find_all_children(
 // variable within them in order, setting the given scope path to the path to
 // the matching variable or NULL if there is no match.
 efd_node * efd_find_variable_in(
+  efd_node const * const base,
+  efd_address const * const target
+);
+
+// Returns a trace of the search for a variable within a node.
+string * efd_trace_variable_in(
   efd_node const * const base,
   efd_address const * const target
 );

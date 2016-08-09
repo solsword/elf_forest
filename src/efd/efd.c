@@ -136,6 +136,10 @@ efd_node * create_efd_node(
   result->h.name = copy_string(name);
   result->h.parent = NULL;
   result->h.value = NULL;
+  result->h.base_node = NULL;
+#ifdef DEBUG_FAKE_EFD_CLEANUP
+  result->h.freecount = 0;
+#endif
   switch (t) {
     default:
     case EFD_NT_INTEGER:
@@ -296,6 +300,16 @@ efd_node * copy_efd_node(efd_node const * const src) {
     s_("...during attempt to copy node:"),
     src
   );
+
+#ifdef DEBUG_FAKE_EFD_CLEANUP
+  if (src->h.freecount != 0) {
+    efd_report_error(
+      s_("ERROR: copy_efd_node called on already-cleaned-up node:"),
+      src
+    );
+    fprintf(stderr, "Freecount was: %d\n", src->h.freecount);
+  }
+#endif
   
   result = create_efd_node(src->h.type, src->h.name, src->h.context);
   switch (src->h.type) {
@@ -437,15 +451,17 @@ efd_node * copy_efd_node_as(
 }
 
 CLEANUP_IMPL(efd_node) {
+#ifndef DEBUG_FAKE_EFD_CLEANUP
   size_t i;
-  efd_node *child;
   efd_destroy_function df;
+#endif
+  efd_node *child;
   efd_push_error_context_with_node(
     s_("...during cleanup of node:"),
     doomed
   );
 #ifdef DEBUG
-  // recognize double-cleanups:
+  // Recognize double-cleanups:
   if (doomed->h.type >= EFD_NUM_TYPES + 1 || doomed->h.name == NULL) {
 #ifdef DEBUG_TRACE_EFD_CLEANUP
     fprintf(
@@ -460,7 +476,7 @@ CLEANUP_IMPL(efd_node) {
       doomed
     );
     efd_pop_error_context();
-    return;
+    exit(EXIT_FAILURE);
 #ifdef DEBUG_TRACE_EFD_CLEANUP
   } else {
     fprintf(
@@ -472,6 +488,42 @@ CLEANUP_IMPL(efd_node) {
 #endif
   }
 #endif
+  // Clean up the node's value:
+  if (doomed->h.value != NULL) {
+#ifdef DEBUG
+    if (doomed->h.value->h.base_node != doomed) {
+      efd_report_error(
+        s_("ERROR: Doomed node's value has improper base:"),
+        doomed->h.value
+      );
+      fprintf(stderr, "Doomed base:\n");
+      s_fprintln(stderr, efd_repr(doomed));
+      fprintf(stderr, "Actual base:\n");
+      s_fprintln(stderr, efd_repr(doomed->h.value->h.base_node));
+    }
+#endif
+    cleanup_efd_node(doomed->h.value);
+#ifdef DEBUG
+    if (doomed->h.value != NULL) {
+      efd_report_error(
+        s_("ERROR: Doomed node's value didn't clean up cleanly:"),
+        doomed->h.value
+      );
+    }
+#endif
+  }
+  // Set the base node's 'value' field to NULL:
+  if (doomed->h.base_node != NULL) {
+#ifdef DEBUG
+    if (doomed->h.base_node->h.value != doomed) {
+      efd_report_error(
+        s_("ERROR: Doomed node's base node doesn't have it as a value:"),
+        doomed->h.base_node
+      );
+    }
+#endif
+    doomed->h.base_node->h.value = NULL;
+  }
   // Special-case cleanup:
   switch (doomed->h.type) {
     default:
@@ -506,7 +558,9 @@ CLEANUP_IMPL(efd_node) {
         efd_remove_child(doomed, child);
         cleanup_efd_node(child);
       }
+#ifndef DEBUG_FAKE_EFD_CLEANUP
       cleanup_dictionary(doomed->b.as_container.children);
+#endif
 #ifdef DEBUG_TRACE_EFD_CLEANUP
       fprintf(
         stderr,
@@ -521,10 +575,12 @@ CLEANUP_IMPL(efd_node) {
     case EFD_NT_GLOBAL_LINK:
     case EFD_NT_LOCAL_LINK:
     case EFD_NT_VARIABLE:
+#ifndef DEBUG_FAKE_EFD_CLEANUP
       // Clean up our target address:
       if (doomed->b.as_link.target != NULL) {
         cleanup_efd_address(doomed->b.as_link.target);
       }
+#endif
       break;
 
     case EFD_NT_FUNCTION:
@@ -553,11 +609,15 @@ CLEANUP_IMPL(efd_node) {
       );
 #endif
       while (d_get_count(doomed->b.as_function.children) > 0) {
-        cleanup_v_efd_node(d_get_item(doomed->b.as_function.children, 0));
+        child = (efd_node*) d_get_item(doomed->b.as_function.children, 0);
+        efd_remove_child(doomed, child);
+        cleanup_efd_node(child);
       }
+#ifndef DEBUG_FAKE_EFD_CLEANUP
       cleanup_dictionary(doomed->b.as_function.children);
       // Clean up the function name:
       cleanup_string(doomed->b.as_function.function);
+#endif
       break;
 
     case EFD_NT_PROTO:
@@ -573,12 +633,15 @@ CLEANUP_IMPL(efd_node) {
 #endif
         cleanup_efd_node(doomed->b.as_proto.input);
       }
+#ifndef DEBUG_FAKE_EFD_CLEANUP
       // Clean up the format string *afterwards*:
       cleanup_string(doomed->b.as_proto.format);
+#endif
       break;
 
     case EFD_NT_OBJECT:
       // Clean up the object:
+#ifndef DEBUG_FAKE_EFD_CLEANUP
       df = efd_lookup_destructor(doomed->b.as_object.format);
       if (df == NULL) {
         efd_report_error(
@@ -591,35 +654,56 @@ CLEANUP_IMPL(efd_node) {
       // the destructor must call free if needed
       // Clean up the format string *afterwards*:
       cleanup_string(doomed->b.as_object.format);
+#endif
       break;
 
     case EFD_NT_STRING:
+#ifndef DEBUG_FAKE_EFD_CLEANUP
       if (doomed->b.as_string.value != NULL) {
         cleanup_string(doomed->b.as_string.value);
       }
+#endif
       break;
 
     case EFD_NT_ARRAY_INT:
+#ifndef DEBUG_FAKE_EFD_CLEANUP
       if (doomed->b.as_int_array.values != NULL) {
         free(doomed->b.as_int_array.values);
       }
+#endif
       break;
 
     case EFD_NT_ARRAY_NUM:
+#ifndef DEBUG_FAKE_EFD_CLEANUP
       if (doomed->b.as_num_array.values != NULL) {
         free(doomed->b.as_num_array.values);
       }
+#endif
       break;
 
     case EFD_NT_ARRAY_STR:
+#ifndef DEBUG_FAKE_EFD_CLEANUP
       if (doomed->b.as_str_array.values != NULL) {
         for (i = 0; i < doomed->b.as_str_array.count; ++i) {
           cleanup_string(doomed->b.as_str_array.values[i]);
         }
         free(doomed->b.as_str_array.values);
       }
+#endif
       break;
   }
+#ifdef DEBUG_FAKE_EFD_CLEANUP
+  if (doomed->h.freecount != 0) {
+    efd_report_error(
+      s_sprintf(
+        "Node %p subject to double cleanup.\n",
+        doomed
+      ),
+      doomed
+    );
+  }
+  doomed->h.freecount += 1;
+#else
   // Mark the node as corrupt:
   doomed->h.type = EFD_NUM_TYPES + 1;
   // If this node is a child, remove it from its parent's children:
@@ -629,14 +713,9 @@ CLEANUP_IMPL(efd_node) {
   // Clean up the node's name:
   cleanup_string(doomed->h.name);
   doomed->h.name = NULL;
-  // Clean up the node's value:
-  // TODO: when cleaning up values, set value pointers to NULL?!?
-  if (doomed->h.value != NULL) {
-    cleanup_efd_node(doomed->h.value);
-    doomed->h.value = NULL;
-  }
   // Finally free the memory for this node:
   free(doomed);
+#endif // ifdef DEBUG_FAKE_EFD_CLEANUP
   efd_pop_error_context();
 }
 
@@ -2296,6 +2375,70 @@ efd_node * efd_find_variable_in(
   return result;
 }
 
+string * efd_trace_variable_in(
+  efd_node const * const node,
+  efd_address const * const target
+) {
+  SSTR(s_dead, "\n  -| ", 6);
+  SSTR(s_maybe, "\n  -? ", 6);
+  SSTR(s_missing, "\n*missing*", 10);
+  SSTR(s_found, "\n*found*", 8);
+  SSTR(s_lab, "<", 1);
+  SSTR(s_rab, ">", 1);
+
+  string *trace;
+  dictionary *children;
+  efd_node *child, *result;
+  size_t i;
+
+  trace = s_("Search for variable:");
+
+  efd_push_error_context_with_node(
+    s_("...during efd_trace_variable_in node:"),
+    node
+  );
+
+  if (!efd_is_container_node(node)) {
+    s_append(trace, s_dead);
+    s_append(trace, s_lab);
+    s_devour(trace, efd_type_abbr(node->h.type));
+    s_append(trace, s_rab);
+    s_append(trace, S_SPACE);
+    s_append(trace, node->h.name);
+    efd_pop_error_context();
+    return trace;
+  }
+  children = efd_children_dict(node);
+  result = NULL;
+  for (i = 0; i < d_get_count(children); ++i) {
+    child = (efd_node*) d_get_item(children, i);
+    if (child->h.type == EFD_NT_SCOPE) {
+      s_append(trace, s_maybe);
+      s_devour(trace, _efd_trace_lookup(child, target));
+      result = efd(child, target);
+      if (result != NULL) {
+        break;
+      }
+    }
+  }
+  if (
+    result == NULL
+ && node->h.type == EFD_NT_SCOPE
+ && node->h.context == NULL
+  ) {
+    s_append(trace, s_maybe);
+    s_devour(trace, _efd_trace_lookup(node, target));
+    result = efd(node, target);
+  }
+  if (result == NULL) {
+    s_append(trace, s_missing);
+  } else {
+    s_append(trace, s_found);
+  }
+  efd_pop_error_context();
+  return trace;
+}
+
 efd_node * efd_resolve_variable(efd_node const * const var) {
   efd_address *target;
   efd_node *result;
@@ -2337,6 +2480,8 @@ string * efd_variable_search_trace(efd_node const * const var) {
   while (scope != NULL && (result == NULL || result == var)) {
     s_append(trace, s_nl);
     s_devour(trace, efd_repr(scope));
+    s_append(trace, S_NL);
+    s_devour(trace, efd_trace_variable_in(scope, target));
     result = efd_find_variable_in(scope, target);
     scope = scope->h.context;
   }
@@ -2548,7 +2693,7 @@ efd_node * efdx(efd_node const * const root, string const * const saddr) {
 }
 
 efd_node * efd_eval(efd_node const * const target) {
-  efd_node *result, *input, *cvalue;
+  efd_node *result, *input, *cvalue, *ct;
   efd_eval_function feval;
   efd_unpack_function unpacker;
   dictionary *children;
@@ -2624,6 +2769,12 @@ efd_node * efd_eval(efd_node const * const target) {
     // For non-function container nodes, their values are containers which have
     // their children's values as children.
     result = create_efd_node(target->h.type, target->h.name, target->h.context);
+    if (efd_is_generator_node(result)) {
+      // have to copy over the function name as well as the children
+      result->b.as_function.function = copy_string(
+        target->b.as_function.function
+      );
+    }
     children = efd_children_dict(target);
     for (i = 0; i < d_get_count(children); ++i) {
       cvalue = efd_get_value(d_get_item(children, i));
@@ -2640,7 +2791,15 @@ efd_node * efd_eval(efd_node const * const target) {
     }
   } else if (efd_is_link_node(target)) {
     // The value of a link node is a copy of the value of its target:
-    result = copy_efd_node(efd_get_value(efd_concrete(target)));
+    ct = efd_concrete(target);
+    if (ct == NULL) {
+      efd_report_broken_link(
+        s_("Broken link during eval for link node."),
+        target
+      );
+      exit(EXIT_FAILURE);
+    }
+    result = copy_efd_node_as(efd_get_value(ct), target->h.name);
   } else {
     // If the target is not a container, link, function, or proto, its value is
     // just a copy of itself:
@@ -2661,6 +2820,7 @@ efd_node * efd_get_value(efd_node *target) {
       stderr,
       "ERROR: NULL target for efd_get_value.\n"
     );
+    efd_print_error_context();
     exit(EXIT_FAILURE);
   }
 
@@ -2674,6 +2834,7 @@ efd_node * efd_get_value(efd_node *target) {
       );
     }
 #endif
+    target->h.value->h.base_node = target;
   }
 
   efd_pop_error_context();

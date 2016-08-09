@@ -543,103 +543,97 @@
       [[i entry #i:GEO_METAMORPHIC]]
       [[i entry #i:GEO_SEDIMENTARY]]
     ]]
-    [[fi igneous_color:color__pixel
-      [[o precise:color
-        [[i fmt #i:CFMT_LCH]]
-        [[fn L:pow
-          [[fn w:weight
-            [[an weights 0.6, 0.4 ]]
-            <<v ~el_brightness>>
-            [[fn mult:mult
-              (n 100)
-              [[fn mat_influence:weight
-                [[an weights 0.6, 0.4]]
-                [[fn invert:scale <<v ~density>> (n 1) (n 0) ]]
-                <<v ~plasticity>>
-              ]]
-            ]]
-          ]]
-          (n 0.8)
-        ]]
-        [[fn c:mult
-          <<v ~el_saturation>>
-          [[fn factor:if // A bimodal distribution
-            [[c condition
-              (i #i:EFD_COND_NUM_LT)
-              (n 0.7)
-            ]]
-            [[fn rng:rng_n [[fi rng:brng <<v ~hash>> (i 4) ]] ]]
-            // then:
-            [[fn norm:rng_normal
-              [[fi rng:brng <<v ~hash>> (i 5) ]] (n 0.05) (n 0.3) ]]
-            // else:
-            [[fn norm:rng_normal
-              [[fi rng:brng <<v ~hash>> (i 5) ]] (n 0.6) (n 0.8) ]]
-          ]]
-        ]]
-        [[fn h:add
-          <<v ~el_hue>>
-          [[fn rng:rng_normal
-            [[fi rng:brng <<v ~hash>> (i 6) ]]
-            [[fn min:div (n #n:M_PI) (n -16.0) ]]
-            [[fn max:div (n #n:M_PI) (n 16.0) ]]
-          ]]
-        ]]
-      ]]
-    ]]
-    [[fi metamorphic_color:color__pixel
-      [[o precise:color
-        [[i fmt #i:CFMT_LCH]]
-        <<v ~el_brightness@L>> // unmodified
-        [[fn c:weight
-          [[V locals
-            [[fn ~boost:rng_normal
-              [[fi rng:brng <<v ~hash>> (i 7) ]] (n 0.0) (n 0.4) ]]
-          ]]
-          [[c weights
-            [[fn inv:scale <<v ~boost>> (n 1) (n 0) ]]
-            <<v ~boost>>
-          ]]
-          <<v ~el_saturation>>
-          [[fn s:scale
-            [[fn rng:rng_n [[fi rng:brng <<v ~hash>> (i 8) ]] ]]
-            (n 30)
-            (n 100)
-          ]]
-        ]]
-        [[fn h:add
-          <<v ~el_hue>>
-          [[fn rng:rng_normal
-            [[fi rng:brng <<v ~hash>> (i 9) ]]
-            [[fn min:div (n #n:M_PI) (n -6.0) ]]
-            [[fn max:div (n #n:M_PI) (n 6.0) ]]
-          ]]
-        ]]
-      ]]
-    ]]
-    [[fi sedimentary_color:color__pixel
-      [[o precise:color
-        [[i fmt #i:CFMT_LCH]]
-        [[fn L:mult
+    [[c igneous_color
+      [[i fmt #i:CFMT_LCH]]
+      [[fn L:pow
+        [[fn w:weight
+          [[an weights 0.6, 0.4 ]]
           <<v ~el_brightness>>
-          [[fn brighten:rng_normal
-            [[fi rng:brng <<v ~hash>> (i 10) ]] (n 1) (n 1.4) ]]
-        ]]
-        [[fn c:mult
-          <<v ~el_saturation>>
-          [[fn factor:expdist
-            [[fn rng:rng_normal
-              [[fi rng:brng <<v ~hash>> (i 11) ]] (n 0.3) (n 1) ]]
-            (n 2)
+          [[fn mult:mult
+            (n 100)
+            [[fn mat_influence:weight
+              [[an weights 0.6, 0.4]]
+              [[fn invert:scale <<v ~density>> (n 1) (n 0) ]]
+              <<v ~plasticity>>
+            ]]
           ]]
         ]]
-        [[fn h:add
-          <<v ~el_hue>>
+        (n 0.8)
+      ]]
+      [[fn c:mult
+        <<v ~el_saturation>>
+        [[fn factor:if // A bimodal distribution
+          [[c condition
+            (i #i:EFD_COND_NUM_LT)
+            (n 0.7)
+          ]]
+          [[fn rng:rng_n [[fi rng:brng <<v ~hash>> (i 4) ]] ]]
+          // then:
+          [[fn norm:rng_normal
+            [[fi rng:brng <<v ~hash>> (i 5) ]] (n 0.05) (n 0.3) ]]
+          // else:
+          [[fn norm:rng_normal
+            [[fi rng:brng <<v ~hash>> (i 5) ]] (n 0.6) (n 0.8) ]]
+        ]]
+      ]]
+      [[fn h:add
+        <<v ~el_hue>>
+        [[fn rng:rng_normal
+          [[fi rng:brng <<v ~hash>> (i 6) ]]
+          [[fn min:div (n #n:M_PI) (n -16.0) ]]
+          [[fn max:div (n #n:M_PI) (n 16.0) ]]
+        ]]
+      ]]
+    ]]
+    [[c metamorphic_color
+      [[i fmt #i:CFMT_LCH]]
+      <<v ~el_brightness@L>> // unmodified
+      [[fn c:weight
+        [[V locals
+          [[fn ~boost:rng_normal
+            [[fi rng:brng <<v ~hash>> (i 7) ]] (n 0.0) (n 0.4) ]]
+        ]]
+        [[c weights
+          [[fn inv:scale <<v ~boost>> (n 1) (n 0) ]]
+          <<v ~boost>>
+        ]]
+        <<v ~el_saturation>>
+        [[fn s:scale
+          [[fn rng:rng_n [[fi rng:brng <<v ~hash>> (i 8) ]] ]]
+          (n 30)
+          (n 100)
+        ]]
+      ]]
+      [[fn h:add
+        <<v ~el_hue>>
+        [[fn rng:rng_normal
+          [[fi rng:brng <<v ~hash>> (i 9) ]]
+          [[fn min:div (n #n:M_PI) (n -6.0) ]]
+          [[fn max:div (n #n:M_PI) (n 6.0) ]]
+        ]]
+      ]]
+    ]]
+    [[c sedimentary_color
+      [[i fmt #i:CFMT_LCH]]
+      [[fn L:mult
+        <<v ~el_brightness>>
+        [[fn brighten:rng_normal
+          [[fi rng:brng <<v ~hash>> (i 10) ]] (n 1) (n 1.4) ]]
+      ]]
+      [[fn c:mult
+        <<v ~el_saturation>>
+        [[fn factor:expdist
           [[fn rng:rng_normal
-            [[fi rng:brng <<v ~hash>> (i 12) ]]
-            [[fn min:div (n #n:M_PI) (n -12.0) ]]
-            [[fn max:div (n #n:M_PI) (n 12.0) ]]
-          ]]
+            [[fi rng:brng <<v ~hash>> (i 11) ]] (n 0.3) (n 1) ]]
+          (n 2)
+        ]]
+      ]]
+      [[fn h:add
+        <<v ~el_hue>>
+        [[fn rng:rng_normal
+          [[fi rng:brng <<v ~hash>> (i 12) ]]
+          [[fn min:div (n #n:M_PI) (n -12.0) ]]
+          [[fn max:div (n #n:M_PI) (n 12.0) ]]
         ]]
       ]]
     ]]
@@ -1474,10 +1468,10 @@
                   ]]
                 ]]
               ]]
-              <<v ~computed.fmt@fmt>>
-              <<v ~computed.L@L>>
-              <<v ~computed.c@c>>
-              <<v ~computed.h@h>>
+              [[fi fmt:peek <<v ~computed>> <<l fmt>> ]]
+              [[fi L:peek <<v ~computed>> <<l L>> ]]
+              [[fi c:peek <<v ~computed>> <<l c>> ]]
+              [[fi h:peek <<v ~computed>> <<l h>> ]]
             ]]
           ]]
           [[fi alt_color:color__pixel
@@ -1496,7 +1490,7 @@
                   ]]
                 ]]
               ]]
-              [[i fmt #i:CFMT_LCH]]
+              [[fi fmt:peek <<v ~alt_base>> <<l fmt>> ]]
               // Inclusions are usually darker and less saturated
               [[fn L:mult
                 [[fn L:peek <<v ~alt_base>> <<l L>> ]]
@@ -1719,10 +1713,10 @@
                   ]]
                 ]]
               ]]
-              <<v ~computed.fmt@fmt>>
-              <<v ~computed.L@L>>
-              <<v ~computed.c@c>>
-              <<v ~computed.h@h>>
+              [[fi fmt:peek <<v ~computed>> <<l fmt>> ]]
+              [[fi L:peek <<v ~computed>> <<l L>> ]]
+              [[fi c:peek <<v ~computed>> <<l c>> ]]
+              [[fi h:peek <<v ~computed>> <<l h>> ]]
             ]]
           ]]
           [[fi alt_color:color__pixel
@@ -1741,7 +1735,7 @@
                   ]]
                 ]]
               ]]
-              [[i fmt #i:CFMT_LCH]]
+              [[fi fmt:peek <<v ~alt_base>> <<l fmt>> ]]
               // Inclusions tend to be more saturated:
               [[fn L:peek <<v ~alt_base>> <<l L>> ]]
               [[fn c:mult
@@ -1965,10 +1959,10 @@
                   ]]
                 ]]
               ]]
-              <<v ~computed.fmt@fmt>>
-              <<v ~computed.L@L>>
-              <<v ~computed.c@c>>
-              <<v ~computed.h@h>>
+              [[fi fmt:peek <<v ~computed>> <<l fmt>> ]]
+              [[fi L:peek <<v ~computed>> <<l L>> ]]
+              [[fi c:peek <<v ~computed>> <<l c>> ]]
+              [[fi h:peek <<v ~computed>> <<l h>> ]]
             ]]
           ]]
           [[fi alt_color:color__pixel
@@ -1987,7 +1981,7 @@
                   ]]
                 ]]
               ]]
-              [[i fmt #i:CFMT_LCH]]
+              [[fi fmt:peek <<v ~alt_base>> <<l fmt>> ]]
               // Inclusions are generally darker and less saturated:
               [[fn L:mult
                 [[fn L:peek <<v ~alt_base>> <<l L>> ]]
