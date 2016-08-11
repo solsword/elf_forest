@@ -8,6 +8,7 @@ int WINDOW_HEIGHT = 800;
 int GRID_SIZE = 100;
 int BLOB_SIZE = 1200;
 int BLOB_COUNT = 3;
+int SMOOTHNESS = 20;
 //String MODE = "overwrite";
 String MODE = "exclude";
 
@@ -82,7 +83,7 @@ void blobfill(int grid[][], int x, int y, int size, int hue) {
     }
     grid[here.x][here.y] = hue;
     total += 1;
-    if (total % 5 == 0) {
+    if (total % SMOOTHNESS == 0) {
       indices = new IntList();
       for (i = 0; i < q.size(); ++i) {
         indices.append(i);
@@ -121,8 +122,9 @@ void new_colors(int count) {
   int i;
   color base;
   COLORS = new color[count+1];
-  base = color(random(1.0), random(0.7, 0.9), random(0.4, 0.8));
   COLORS[0] = color(0, 0, 0.2);
+  //COLORS[0] = color(0, 0, 1.0);
+  base = color(random(1.0), random(0.7, 0.9), random(0.6, 0.8));
   for (i = 1; i < count+1; ++i) {
     COLORS[i] = color(
       hue(base) + random(-0.05, 0.05),
