@@ -83,7 +83,13 @@ eco_info const ECO_INFO[] = {
     .salinity_compatibility = WM_SL_SALINE,
     .altitude_compatibility = WM_AC_CONT_SHELF,
     .precipitation_compatibility = -1,
-    .temperature_compatibility = -1
+    .temperature_compatibility = (
+      WM_TC_COLD_FROST
+    | WM_TC_COLD_RARE_FROST
+    | WM_TC_MILD_FROST
+    | WM_TC_MILD_RARE_FROST
+    | WM_TC_WARM_FROST
+    )
   },
   { // WM_BC_TRP_OFSH,
     .max_size = EC_BIOME_HUGE_SIZE,
@@ -91,30 +97,60 @@ eco_info const ECO_INFO[] = {
     .salinity_compatibility = WM_SL_SALINE,
     .altitude_compatibility = WM_AC_CONT_SHELF,
     .precipitation_compatibility = -1,
-    .temperature_compatibility = -1
+    .temperature_compatibility = (
+      WM_TC_WARM_NO_FROST
+    | WM_TC_HOT
+    | WM_TC_TROPICAL
+    )
   },
-  { // WM_BC_AQ_GSLD,
+  { // WM_BC_TMP_AQ_GSLD,
     .max_size = EC_BIOME_SMALL_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN | WM_HS_OCEAN_SHORE,
     .salinity_compatibility = WM_SL_SALINE,
     .altitude_compatibility = WM_AC_CONT_SHELF | WM_AC_COASTAL_PLAINS,
     .precipitation_compatibility = -1,
     .temperature_compatibility = ~(
-      WM_TC_ARCTIC
-    | WM_TC_TUNDRA
-    | WM_TC_COLD_FROST
+      WM_TC_COLD_FROST
+    | WM_TC_COLD_RARE_FROST
+    | WM_TC_MILD_FROST
+    | WM_TC_MILD_RARE_FROST
+    | WM_TC_WARM_FROST
     )
   },
-  { // WM_BC_AQ_FRST,
+  { // WM_BC_TRP_AQ_GSLD,
+    .max_size = EC_BIOME_SMALL_SIZE,
+    .hydro_state_compatibility = WM_HS_OCEAN | WM_HS_OCEAN_SHORE,
+    .salinity_compatibility = WM_SL_SALINE,
+    .altitude_compatibility = WM_AC_CONT_SHELF | WM_AC_COASTAL_PLAINS,
+    .precipitation_compatibility = -1,
+    .temperature_compatibility = ~(
+      WM_TC_WARM_FROST
+    | WM_TC_WARM_NO_FROST
+    | WM_TC_HOT
+    | WM_TC_TROPICAL
+    )
+  },
+  { // WM_BC_TMP_AQ_FRST,
     .max_size = EC_BIOME_MEDIUM_SIZE,
     .hydro_state_compatibility = WM_HS_OCEAN,
     .salinity_compatibility = WM_SL_SALINE,
     .altitude_compatibility = WM_AC_CONT_SHELF,
     .precipitation_compatibility = -1,
     .temperature_compatibility = (
-      WM_TC_MILD_FROST
+      WM_TC_COLD_RARE_FROST
+    | WM_TC_MILD_FROST
     | WM_TC_MILD_RARE_FROST
     | WM_TC_WARM_FROST
+    )
+  },
+  { // WM_BC_TRP_AQ_FRST,
+    .max_size = EC_BIOME_MEDIUM_SIZE,
+    .hydro_state_compatibility = WM_HS_OCEAN,
+    .salinity_compatibility = WM_SL_SALINE,
+    .altitude_compatibility = WM_AC_CONT_SHELF,
+    .precipitation_compatibility = -1,
+    .temperature_compatibility = (
+      WM_TC_WARM_FROST
     | WM_TC_WARM_NO_FROST
     | WM_TC_HOT
     | WM_TC_TROPICAL
@@ -1692,7 +1728,7 @@ int _fill_biome_from_table(world_region *wr, void *v_table, ptrdiff_t seed) {
 
   ei = ECO_INFO[bc];
   b = create_biome(bc);
-  // TODO: Generate biome info for this biome!
+  init_any_biome(b, wr);
   breadth_first_iter(
     wr->world,
     &(wr->pos),
@@ -1711,7 +1747,7 @@ int _fill_biome_from_table(world_region *wr, void *v_table, ptrdiff_t seed) {
 void generate_ecology(world_map *wm) {
   ptrdiff_t seed = prng(wm->seed = 18182);
 
-  fill_with_regions(
+  fill_with_regions( // deep ocean
     wm,
     &DEEP_OCN_WM_BCATEGORIES,
     &needs_biome_in_table,
@@ -1729,7 +1765,7 @@ void generate_ecology(world_map *wm) {
   );
   seed = prng(seed);
 
-  fill_with_regions(
+  fill_with_regions( // offshore
     wm,
     &OFS_WM_BCATEGORIES,
     &needs_biome_in_table,
@@ -1738,7 +1774,7 @@ void generate_ecology(world_map *wm) {
   );
   seed = prng(seed);
 
-  fill_with_regions(
+  fill_with_regions( //shore
     wm,
     &SHOR_WM_BCATEGORIES,
     &needs_biome_in_table,
@@ -1747,7 +1783,7 @@ void generate_ecology(world_map *wm) {
   );
   seed = prng(seed);
 
-  fill_with_regions(
+  fill_with_regions( // lake
     wm,
     &LAKE_WM_BCATEGORIES,
     &needs_biome_in_table,
@@ -1756,7 +1792,7 @@ void generate_ecology(world_map *wm) {
   );
   seed = prng(seed);
 
-  fill_with_regions(
+  fill_with_regions( // river
     wm,
     &RIVR_WM_BCATEGORIES,
     &needs_biome_in_table,
@@ -1765,7 +1801,7 @@ void generate_ecology(world_map *wm) {
   );
   seed = prng(seed);
 
-  fill_with_regions(
+  fill_with_regions( // alpine
     wm,
     &ALPN_WM_BCATEGORIES,
     &needs_biome_in_table,
@@ -1774,7 +1810,7 @@ void generate_ecology(world_map *wm) {
   );
   seed = prng(seed);
 
-  fill_with_regions(
+  fill_with_regions( // terrestrial
     wm,
     &TERRESTRIAL_WM_BCATEGORIES,
     &needs_biome_in_table,
@@ -2055,7 +2091,32 @@ void init_any_biome(biome *b, world_region *wr) {
 }
 
 void init_deep_aquatic_biome(biome *b, world_region *wr) {
-  // TODO: HERE
+  size_t i;
+  ptrdiff_t hash = wr->seed + 177771;
+  // Deep aquatic biomes don't have terrestrial flora
+  // b->hanging_terrestrial_flora
+  // b->ephemeral_terrestrial_flora
+  // b->ubiquitous_terrestrial_flora
+  // b->close_spaced_terrestrial_flora
+  // b->medium_spaced_terrestrial_flora
+  // b->wide_spaced_terrestrial_flora
+
+  for (i = 0; i < randi(hash, 
+      // TODO: HERE!
+  /*
+  b->hanging_subterranean_flora
+  b->ephemeral_subterranean_flora
+  b->ubiquitous_subterranean_flora
+  b->close_spaced_subterranean_flora
+  b->medium_spaced_subterranean_flora
+  b->wide_spaced_subterranean_flora
+
+  b->ephemeral_aquatic_flora
+  b->ubiquitous_aquatic_flora
+  b->close_spaced_aquatic_flora
+  b->medium_spaced_aquatic_flora
+  b->wide_spaced_aquatic_flora
+  */
 }
 
 void init_ocean_vents_biome(biome *b, world_region *wr) {

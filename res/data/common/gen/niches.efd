@@ -1,0 +1,14 @@
+{{c gen
+{{c eco
+{{c niches
+
+[[o subterranean_hanging_flora:niche
+  [[c energy_sources
+    (i #i:ECO_ES_MAGIC_FLUX)
+    (i #i:ECO_ES_MAGIC_FLUX)
+  ]]
+]]
+
+}} // niches
+}} // eco
+}} // gen

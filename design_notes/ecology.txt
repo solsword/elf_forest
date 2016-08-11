@@ -1,0 +1,92 @@
+Resource requirements:
+  - Energy
+  - Nutrients
+  - Water
+  - Air
+  - Heating
+  - Cooling
+  - Stability/Mobility
+  - Anti-disease
+  - Anti-parasite
+  - Anti-predator
+
+A typical plant:
+  - Energy: photosynthesis
+  - Nutrients: roots in soil
+  - Water: roots in soil
+  - Air: leaves
+  - Heating: restricted to temperate climates (seed form in winter)
+  - Cooling: restricted to temperate climates
+  - Stability: roots + stems
+  - Anti-disease: basic defenses
+  - Anti-parasite: basic defenses
+  - Anti-predator: basic defenses
+
+
+Energy sources:
+  - Autotrophic:
+    - photosynthesis (requires sunlight)
+    - thaumoconversion (requires magical flux)
+    - chemosynthesis (requires chemical substrate)
+  - Symbiotic:
+    - symbiotic absorption (requires symbiont)
+  - Parasitic:
+    - parasitic absorption (requires victim)
+  - Saprotrophic:
+    - saprotrophic digestion (requires decaying matter)
+  - Holozoic:
+    - detrivorous digestion (requires decaying matter)
+    - herbivorous digestion (requires plants)
+    - carnivorous digestion (requires prey)
+
+Nutrient sources:
+  - Detritus absorption (requires decaying matter)
+  - Herbivorous digestion (requires plants)
+  - Insectivorous digestion (requires insects)
+  - Carnivorous digestion (requires prey)
+  - Parasitic absorption (requires victim)
+  - Symbiotic absorption (requires symbiont)
+
+Water sources:
+  - Ground absorption (requires damp medium)
+  - Air absorption (requires humidity)
+  - Drinking (requires fresh water sources)
+  - Prey content (requires appropriate diet)
+  - Filtration (requires non-fresh water source)
+
+Air sources:
+  - Respiration (requires air supply)
+  - Filtration (requires aerated water)
+  - Substitution (requires chemosynthesis & chemical substrate)
+
+Heating sources:
+  - Ambience (requires ambient heat)
+  - Thermogenesis (requires energy)
+  - Kleptothermy (requires host)
+
+Cooling sources:
+  - Ambience (requires cool temperatures)
+  - Water (requires water supply)
+  - Shade (requires appropriate flora)
+
+Stability sources:
+  - Root structures (requires substrate)
+  - Woody stems/trunks (increases wind profile)
+  - Water (requires aqueous environment)
+
+Anti-disease:
+  - Basic resistance
+
+Anti-parasite:
+  - Basic resistance
+  - Symbiont strategy (requires parasite-eating symbiont)
+
+Anti-predator:
+  - Outgrow strategy (requires fast growth/broad proliferation)
+  - Poison strategy (requires poisonous tissue)
+  - Tough strategy (requires tough tissues)
+  - Thorns strategy (requires thorns)
+  - Grand-predator attraction strategy (requires grand-predator)
+  - Grouping strategy (requires coordination & communication)
+  - Camouflage strategy (requires appropriate coloration/behavior)
+  - Mimicry strategy (requires suitable mimic subject)

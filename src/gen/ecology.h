@@ -7,12 +7,88 @@
 #include "world/world_map.h"
 #include "world/species.h"
 
+/*********
+ * Enums *
+ *********/
+
+// Energy sources within an ecosystem:
+enum energy_source_e {
+  EC_ENS_NONE          =  0x00,
+  EC_ENS_SUNLIGHT      =  0x01,
+  EC_ENS_SOIL          =  0x02,
+  EC_ENS_DEADWOOD      =  0x04,
+  EC_ENS_MARINE_SNOW   =  0x08,
+  EC_ENS_ELEMENT_SEEP  =  0x10,
+  EC_ENS_MAGIC         =  0x20,
+};
+typedef enum energy_source_e energy_source;
+
+// Nutrient sources within an ecosystem:
+enum nutrient_source_e {
+  EC_NTS_NONE          =  0x00,
+  EC_NTS_PLANKTON      =  0x01,
+  EC_NTS_MARINE_SNOW   =  0x02,
+  EC_NTS_SOIL          =  0x04,
+  EC_NTS_PLANTS        =  0x08,
+  EC_NTS_INSECTS       =  0x10,
+  EC_NTS_ANIMALS       =  0x20,
+};
+typedef enum nutrient_source_e nutrient_source;
+
+enum water_source_e {
+  EC_WTS_NONE           =  0x00,
+  EC_WTS_GROUNDWATER    =  0x01,
+  EC_WTS_SURFACE_WATER  =  0x02,
+  EC_WTS_SALTWATER      =  0x04,
+  EC_WTS_HUMIDITY       =  0x08,
+  EC_WTS_PREY_CONTENT   =  0x10,
+};
+typedef enum water_source_e water_source;
+
+enum air_source_e {
+  EC_ARS_NONE               =  0x00,
+  EC_ARS_SURFACE_AIR        =  0x01,
+  EC_ARS_DISSOLVED_AIR      =  0x02,
+  EC_ARS_ALTERNATE_ELEMENT  =  0x04,
+};
+typedef enum air_source_e air_source;
+
+enum heat_source_e {
+  EC_HTS_NONE           =  0x00,
+  EC_HTS_AMBIENT_TEMP   =  0x01,
+  EC_HTS_THERMOGENESIS  =  0x02,
+  EC_HTS_KLEPTOTHERMY   =  0x04,
+};
+typedef enum heat_source_e heat_source;
+
+enum cooling_source_e {
+  EC_CLS_NONE             =  0x00,
+  EC_CLS_AMBIENT_TEMP     =  0x01,
+  EC_CLS_AQUATIC_COOLING  =  0x02,
+  EC_CLS_SHADE            =  0x04,
+};
+typedef enum cooling_source_e cooling_source;
+
+enum stability_source_e {
+  EC_STS_NONE                =  0x00,
+  EC_STS_FLAT_SUBSTRATE      =  0x01,
+  EC_STS_SHEER_SUBSTRATE     =  0x02,
+  EC_STS_INVERTED_SUBSTRATE  =  0x04,
+  EC_STS_SHALLOW_WATER       =  0x08,
+  EC_STS_DEEP_WATER          =  0x10,
+};
+typedef enum stability_source_e stability_source;
+
+
 /**************
  * Structures *
  **************/
 
 struct eco_info_s;
 typedef struct eco_info_s eco_info;
+
+struct niche_s;
+typedef struct niche_s niche;
 
 /*************
  * Constants *
@@ -37,6 +113,19 @@ struct eco_info_s { // Note: int better have at least 9 bits...
   int precipitation_compatibility;
   int temperature_compatibility;
 };
+
+struct niche_s {
+  climate_info climate;
+  gl_pos_t altitude;
+
+  energy_source energy;
+  nutrient_source nutrients;
+  water_source water;
+  air_source air;
+  heat_source heat;
+  cooling_source cooling;
+  stability_source stability;
+}
 
 // must be declared after the structure is concrete...
 extern eco_info const ECO_INFO[];

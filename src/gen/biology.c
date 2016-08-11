@@ -595,11 +595,13 @@ frequent_species pick_appropriate_frequent_species(
   block substrate,
   ptrdiff_t seed
 ) {
+  float weight;
   float total_weight = 0;
   float choice;
   float rare_smoothing;
   size_t i;
   frequent_species fqsp = 0;
+  list *weights = create_list();
 
   if (l_is_empty(sp_list)) {
     // Return an invalid species...
@@ -614,24 +616,25 @@ frequent_species pick_appropriate_frequent_species(
 
   for (i = 0; i < l_get_length(sp_list); ++i) {
     fqsp = (frequent_species) l_get_item(sp_list, i);
-    total_weight += (
+    weight = (
       species_compatability(fqsp, substrate)
     * frequent_species_frequency(fqsp)
     ) + rare_smoothing;
+    l_append_element(weights, f_as_p(weight));
+    total_weight += weight;
   }
 
   choice = ptrf(prng(seed + 866859)) * total_weight;
 
   for (i = 0; i < l_get_length(sp_list); ++i) {
     fqsp = (frequent_species) l_get_item(sp_list, i);
-    choice -= (
-      species_compatability(fqsp, substrate)
-    * frequent_species_frequency(fqsp)
-    ) + rare_smoothing;
+    choice -= p_as_f(l_get_item(weights, i));
     if (choice < 0) {
+      cleanup_list(weights);
       return fqsp;
     }
   }
+  cleanup_list(weights);
 #ifdef DEBUG
   printf("Error: Ran out of appropriate species to pick from!\n");
   exit(EXIT_FAILURE);
