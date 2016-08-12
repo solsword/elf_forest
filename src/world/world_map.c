@@ -605,7 +605,7 @@ int breadth_first_iter(
     process(SSTEP_INIT, this, arg);
   }
 
-  while (!q_is_empty(open) && (max_size < 0 || size <= max_size) ) {
+  while (!q_is_empty(open) && (max_size < 0 || size <= max_size)) {
     // Grab the next open region:
     this = (world_region*) q_pop_element(open);
     sresult = process(SSTEP_PROCESS, this, arg);
@@ -615,10 +615,10 @@ int breadth_first_iter(
       process(SSTEP_CLEANUP, this, arg);
       return 0;
     } else if (sresult == SRESULT_FINISHED) {
-      cleanup_queue(open);
-      cleanup_map(visited);
       process(SSTEP_FINISH, this, arg);
       process(SSTEP_CLEANUP, this, arg);
+      cleanup_queue(open);
+      cleanup_map(visited);
       return 1;
     } else if (sresult == SRESULT_IGNORE) {
       continue;
@@ -663,6 +663,112 @@ int breadth_first_iter(
   // Otherwise we should finish, cleanup, and succeed.
   process(SSTEP_FINISH, NULL, arg);
   process(SSTEP_CLEANUP, NULL, arg);
+  cleanup_queue(open);
+  cleanup_map(visited);
+  return 1;
+}
+
+int blob_first_iter(
+  world_map *wm,
+  world_map_pos *origin,
+  int min_size,
+  int max_size,
+  int fill_edges,
+  int smoothness,
+  void *arg,
+  step_result (*process)(search_step, world_region*, void*)
+) {
+  world_map_pos wmpos;
+  queue *open = create_queue();
+  map *visited = create_map(1, 2048);
+  world_region *this, *next;
+
+  int size = 0, sresult, stopping = 0;
+
+  this = get_world_region(wm, origin);
+  if (this != NULL) {
+    q_push_element(open, this);
+    m_put_value(visited, (void*) 1, (map_key_t) this);
+    process(SSTEP_INIT, this, arg);
+  }
+
+  while (
+    !q_is_empty(open)
+ && (fill_edges || max_size < 0 || size <= max_size)
+  ) {
+    if (fill_edges && max_size >= 0 && size > max_size) {
+      stopping = 1;
+    }
+    // Shuffle the queue regularly:
+    if (size % smoothness == 0) {
+      q_shuffle(open);
+    }
+    // Grab the next open region:
+    this = (world_region*) q_pop_element(open);
+    sresult = process(SSTEP_PROCESS, this, arg);
+    if (sresult == SRESULT_ABORT) {
+      process(SSTEP_CLEANUP, this, arg);
+      cleanup_queue(open);
+      cleanup_map(visited);
+      return 0;
+    } else if (sresult == SRESULT_FINISHED) {
+      if (fill_edges) {
+        size += 1;
+        stopping = 1;
+      } else {
+        process(SSTEP_FINISH, this, arg);
+        process(SSTEP_CLEANUP, this, arg);
+        cleanup_queue(open);
+        cleanup_map(visited);
+        return 1;
+      }
+    } else if (sresult == SRESULT_IGNORE) {
+      continue;
+    } else { // SRESULT_CONTINUE
+      size += 1;
+      if (!stopping) {
+        // Add our neighbors to the open list:
+        wmpos.x = this->pos.x + 1;
+        wmpos.y = this->pos.y;
+        next = get_world_region(wm, &wmpos);
+        if (next != NULL && !m_contains_key(visited, (map_key_t) next)) {
+          q_push_element(open, next);
+          m_put_value(visited, (void*) 1, (map_key_t) next);
+        }
+        wmpos.x -= 2;
+        next = get_world_region(wm, &wmpos);
+        if (next != NULL && !m_contains_key(visited, (map_key_t) next)) {
+          q_push_element(open, next);
+          m_put_value(visited, (void*) 1, (map_key_t) next);
+        }
+        wmpos.x += 2;
+        wmpos.y -= 1;
+        next = get_world_region(wm, &wmpos);
+        if (next != NULL && !m_contains_key(visited, (map_key_t) next)) {
+          q_push_element(open, next);
+          m_put_value(visited, (void*) 1, (map_key_t) next);
+        }
+        wmpos.y += 2;
+        next = get_world_region(wm, &wmpos);
+        if (next != NULL && !m_contains_key(visited, (map_key_t) next)) {
+          q_push_element(open, next);
+          m_put_value(visited, (void*) 1, (map_key_t) next);
+        }
+      }
+    }
+  }
+  if ((!fill_edges && max_size >= 0 && size > max_size) || size < min_size) {
+    // We hit one of the size limits: cleanup without finishing and fail.
+    cleanup_queue(open);
+    cleanup_map(visited);
+    process(SSTEP_CLEANUP, NULL, arg);
+    return 0;
+  }
+  // Otherwise we should finish, cleanup, and succeed.
+  process(SSTEP_FINISH, NULL, arg);
+  process(SSTEP_CLEANUP, NULL, arg);
+  cleanup_queue(open);
+  cleanup_map(visited);
   return 1;
 }
 

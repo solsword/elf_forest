@@ -293,6 +293,22 @@ void * q_scan_elements(queue *q, void *ref, int (*match)(void *, void *)) {
   return NULL;
 }
 
+// A simple in-place Fisher-Yates shuffle using a weak in-place PRNG.
+// Same behavior per-seed as l_shuffle.
+void q_shuffle(queue *q, ptrdiff_t seed) {
+  size_t i;
+  size_t j;
+  ptrdiff_t rng = seed;
+  void *phased;
+  for (i = q->count - 1; i > 0; --i) {
+    rng = (rng * 39181 + 19991); // <- both are primes
+    j = rng % (i+1);
+    phased = q->elements[QIDX(q,i)];
+    q->elements[QIDX(q,i)] = q->elements[j];
+    q->elements[QIDX(q,j)] = phased;
+  }
+}
+
 size_t q_data_size(queue *q) {
   return q->count * sizeof(void *);
 }

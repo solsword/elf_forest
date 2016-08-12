@@ -1301,6 +1301,24 @@ int breadth_first_iter(
   step_result (*process)(search_step, world_region*, void*)
 );
 
+// Works like breadth_first_iter, but takes extra "fill_edges" and "smoothness"
+// arguments. If the "fill_edges" argument is nonzero, then when a halt
+// condition is met, instead of stopping, the algorithm finishes out the
+// current queue (which means that SRESULT_FINISHED won't immediately stop
+// iteration). The smoothness argument dictates how often the queue should be
+// shuffled. Values between about 1 and 50 are reasonable, although this
+// depends somewhat on the size of the world map.
+int blob_first_iter(
+  world_map *wm,
+  world_map_pos *origin,
+  int min_size,
+  int max_size,
+  int fill_edges,
+  int smoothness,
+  void *arg,
+  step_result (*process)(search_step, world_region*, void*)
+);
+
 // Fills valid regions of the map with multiple blob-shaped regions by first
 // running the validate function to figure out which regions count as valid
 // (1 -> valid, 0-> invalid), and then calling the fill function on a random

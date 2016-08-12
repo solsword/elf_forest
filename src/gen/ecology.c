@@ -1729,11 +1729,13 @@ int _fill_biome_from_table(world_region *wr, void *v_table, ptrdiff_t seed) {
   ei = ECO_INFO[bc];
   b = create_biome(bc);
   init_any_biome(b, wr);
-  breadth_first_iter(
+  blob_first_iter(
     wr->world,
     &(wr->pos),
-    0,
-    ei.max_size,
+    0, // min size
+    ei.max_size, // max size
+    0, // fill edges?
+    25, // smoothness
     (void*) b,
     &fill_with_biome
   );
