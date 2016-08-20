@@ -2,10 +2,35 @@
 {{c eco
 {{c niches
 
-[[o subterranean_hanging_flora:niche
-  [[c energy_sources
-    (i #i:ECO_ES_MAGIC_FLUX)
-    (i #i:ECO_ES_MAGIC_FLUX)
+[[ff %GET_NICHES:lookup_key
+  [[V default_arguments
+    [[i ~category #i:WM_BC_UNKNOWN]]
+    [[o ~world_region:NULL]]
+  ]]
+  <<v ~category@input>>
+  [[c subterranean
+    [[i key #i:WM_BC_SUBTERRANEAN]]
+    [[c value
+      [[o cave_interior:niche
+        <<v ~world_region@region>>
+        [[ai energy
+          #i:EC_ENS_SOIL, #i:EC_ENS_PLANTS, #i:EC_ENS_BUGS, #i:EC_ENS_ANIMALS,
+          #i:EC_ENS_MAGIC
+        ]]
+        [[ai nutrients
+          #i:EC_NTS_SOIL, #i:EC_NTS_PLANTS, #i:EC_NTS_BUGS, #i:EC_NTS_ANIMALS
+        ]]
+        [[ai water
+          #i:EC_WTS_GROUNDWATER, #i:EC_WTS_SURFACE_WATER, #i:EC_WTS_HUMIDITY,
+          #i:EC_WTS_PREY_CONTENT
+        ]]
+        [[ai air #i:EC_ARS_SURFACE_AIR ]]
+        [[ai structure
+          #i:EC_NCS_FLAT_SUBSTRATE, #i:EC_NCS_SHEER_SUBSTRATE,
+          #i:EC_NCS_INVERTED_SUBSTRATE
+        ]]
+      ]]
+    ]]
   ]]
 ]]
 

@@ -62,11 +62,12 @@ world_map *create_world_map(ptrdiff_t seed, wm_pos_t width, wm_pos_t height) {
 }
 
 void cleanup_world_map(world_map *wm) {
-  // none of these need special cleanup beyond a free()
+  // most of these don't need special cleanup beyond a free()
   destroy_list(wm->all_strata);
   destroy_list(wm->all_water);
   destroy_list(wm->all_rivers);
-  destroy_list(wm->all_biomes);
+  l_foreach(wm->all_biomes, &cleanup_v_biome);
+  cleanup_list(wm->all_biomes);
   destroy_list(wm->all_civs);
   free(wm->regions);
   free(wm);
@@ -74,8 +75,9 @@ void cleanup_world_map(world_map *wm) {
 
 biome* create_biome(biome_category category) {
   biome *result = (biome*) malloc(sizeof(biome));
-
   result->category = category;
+
+  result->niches = create_list();
 
   result->hanging_terrestrial_flora = create_list();
   result->ephemeral_terrestrial_flora = create_list();
@@ -101,6 +103,32 @@ biome* create_biome(biome_category category) {
   // TODO: Fauna
 
   return result;
+}
+
+CLEANUP_IMPL(biome) {
+  destroy_list(doomed->niches); // free() is enough for a niche
+
+  cleanup_list(doomed->hanging_terrestrial_flora);
+  cleanup_list(doomed->ephemeral_terrestrial_flora);
+  cleanup_list(doomed->ubiquitous_terrestrial_flora);
+  cleanup_list(doomed->close_spaced_terrestrial_flora);
+  cleanup_list(doomed->medium_spaced_terrestrial_flora);
+  cleanup_list(doomed->wide_spaced_terrestrial_flora);
+
+  cleanup_list(doomed->hanging_subterranean_flora);
+  cleanup_list(doomed->ephemeral_subterranean_flora);
+  cleanup_list(doomed->ubiquitous_subterranean_flora);
+  cleanup_list(doomed->close_spaced_subterranean_flora);
+  cleanup_list(doomed->medium_spaced_subterranean_flora);
+  cleanup_list(doomed->wide_spaced_subterranean_flora);
+
+  cleanup_list(doomed->ephemeral_aquatic_flora);
+  cleanup_list(doomed->ubiquitous_aquatic_flora);
+  cleanup_list(doomed->close_spaced_aquatic_flora);
+  cleanup_list(doomed->medium_spaced_aquatic_flora);
+  cleanup_list(doomed->wide_spaced_aquatic_flora);
+
+  free(doomed);
 }
 
 biome* create_merged_biome(
@@ -675,6 +703,7 @@ int blob_first_iter(
   int max_size,
   int fill_edges,
   int smoothness,
+  ptrdiff_t seed,
   void *arg,
   step_result (*process)(search_step, world_region*, void*)
 ) {
@@ -682,6 +711,7 @@ int blob_first_iter(
   queue *open = create_queue();
   map *visited = create_map(1, 2048);
   world_region *this, *next;
+  seed = prng(seed);
 
   int size = 0, sresult, stopping = 0;
 
@@ -700,8 +730,9 @@ int blob_first_iter(
       stopping = 1;
     }
     // Shuffle the queue regularly:
-    if (size % smoothness == 0) {
-      q_shuffle(open);
+    if (size % smoothness == 1 || smoothness <= 1) {
+      q_shuffle(open, seed);
+      seed = prng(seed);
     }
     // Grab the next open region:
     this = (world_region*) q_pop_element(open);

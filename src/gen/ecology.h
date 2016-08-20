@@ -13,13 +13,18 @@
 
 // Energy sources within an ecosystem:
 enum energy_source_e {
-  EC_ENS_NONE          =  0x00,
-  EC_ENS_SUNLIGHT      =  0x01,
-  EC_ENS_SOIL          =  0x02,
-  EC_ENS_DEADWOOD      =  0x04,
-  EC_ENS_MARINE_SNOW   =  0x08,
-  EC_ENS_ELEMENT_SEEP  =  0x10,
-  EC_ENS_MAGIC         =  0x20,
+  EC_ENS_NONE          =  0x000,
+  EC_ENS_SUNLIGHT      =  0x001,
+  EC_ENS_MAGMA         =  0x002,
+  EC_ENS_SOIL          =  0x004,
+  EC_ENS_DEADWOOD      =  0x008,
+  EC_ENS_PLANKTON      =  0x010,
+  EC_ENS_MARINE_SNOW   =  0x020,
+  EC_ENS_ELEMENT_SEEP  =  0x040,
+  EC_ENS_PLANTS        =  0x080,
+  EC_ENS_BUGS          =  0x100,
+  EC_ENS_ANIMALS       =  0x200,
+  EC_ENS_MAGIC         =  0x400,
 };
 typedef enum energy_source_e energy_source;
 
@@ -30,18 +35,19 @@ enum nutrient_source_e {
   EC_NTS_MARINE_SNOW   =  0x02,
   EC_NTS_SOIL          =  0x04,
   EC_NTS_PLANTS        =  0x08,
-  EC_NTS_INSECTS       =  0x10,
+  EC_NTS_BUGS          =  0x10,
   EC_NTS_ANIMALS       =  0x20,
 };
 typedef enum nutrient_source_e nutrient_source;
 
 enum water_source_e {
-  EC_WTS_NONE           =  0x00,
-  EC_WTS_GROUNDWATER    =  0x01,
-  EC_WTS_SURFACE_WATER  =  0x02,
-  EC_WTS_SALTWATER      =  0x04,
-  EC_WTS_HUMIDITY       =  0x08,
-  EC_WTS_PREY_CONTENT   =  0x10,
+  EC_WTS_NONE               =  0x00,
+  EC_WTS_GROUNDWATER        =  0x01,
+  EC_WTS_SURFACE_WATER      =  0x02,
+  EC_WTS_SURROUNDING_WATER  =  0x04,
+  EC_WTS_ICE                =  0x08,
+  EC_WTS_HUMIDITY           =  0x10,
+  EC_WTS_PREY_CONTENT       =  0x20,
 };
 typedef enum water_source_e water_source;
 
@@ -53,31 +59,36 @@ enum air_source_e {
 };
 typedef enum air_source_e air_source;
 
-enum heat_source_e {
-  EC_HTS_NONE           =  0x00,
-  EC_HTS_AMBIENT_TEMP   =  0x01,
-  EC_HTS_THERMOGENESIS  =  0x02,
-  EC_HTS_KLEPTOTHERMY   =  0x04,
+enum niche_structure_e {
+  EC_NCS_NONE                =  0x000,
+  EC_NCS_FLAT_SUBSTRATE      =  0x001,
+  EC_NCS_SHEER_SUBSTRATE     =  0x002,
+  EC_NCS_INVERTED_SUBSTRATE  =  0x004,
+  EC_NCS_WATER_SURFACE       =  0x008,
+  EC_NCS_RUNNING_WATER       =  0x010,
+  EC_NCS_SHALLOW_PELAGIC     =  0x020,
+  EC_NCS_SHALLOW_BENTHIC     =  0x040,
+  EC_NCS_DEEP_PELAGIC        =  0x080,
+  EC_NCS_DEEP_BENTHIC        =  0x100,
 };
-typedef enum heat_source_e heat_source;
+typedef enum niche_structure_e niche_structure;
 
-enum cooling_source_e {
-  EC_CLS_NONE             =  0x00,
-  EC_CLS_AMBIENT_TEMP     =  0x01,
-  EC_CLS_AQUATIC_COOLING  =  0x02,
-  EC_CLS_SHADE            =  0x04,
+enum heating_mechanism_e {
+  EC_HTM_NONE           =  0x00,
+  EC_HTM_AMBIENT_AIR    =  0x01,
+  EC_HTM_AMBIENT_WATER  =  0x02,
+  EC_HTM_THERMOGENESIS  =  0x04,
+  EC_HTM_KLEPTOTHERMY   =  0x08,
 };
-typedef enum cooling_source_e cooling_source;
+typedef enum heating_mechanism_e heating_mechanism;
 
-enum stability_source_e {
-  EC_STS_NONE                =  0x00,
-  EC_STS_FLAT_SUBSTRATE      =  0x01,
-  EC_STS_SHEER_SUBSTRATE     =  0x02,
-  EC_STS_INVERTED_SUBSTRATE  =  0x04,
-  EC_STS_SHALLOW_WATER       =  0x08,
-  EC_STS_DEEP_WATER          =  0x10,
+enum cooling_mechanism_e {
+  EC_CLM_NONE             =  0x00,
+  EC_CLM_AMBIENT_AIR      =  0x01,
+  EC_CLM_AMBIENT_WATER    =  0x02,
+  EC_CLM_SHADE            =  0x04,
 };
-typedef enum stability_source_e stability_source;
+typedef enum cooling_mechanism_e cooling_mechanism;
 
 
 /**************
@@ -101,6 +112,11 @@ typedef struct niche_s niche;
 #define EC_BIOME_HUGE_SIZE 300
 #define EC_BIOME_GIGANTIC_SIZE 410
 
+// The size values are divided by this number to compute smoothness
+#define EC_BIOME_SMOOTHNESS_DENOM 6
+// Max allowed smoothness
+#define EC_BIOME_SMOOTHNESS_MAX 30
+
 /*************************
  * Structure Definitions *
  *************************/
@@ -115,16 +131,14 @@ struct eco_info_s { // Note: int better have at least 9 bits...
 };
 
 struct niche_s {
-  climate_info climate;
+  climate_info *climate; // TODO: Make this a composite?
   gl_pos_t altitude;
 
   energy_source energy;
   nutrient_source nutrients;
   water_source water;
   air_source air;
-  heat_source heat;
-  cooling_source cooling;
-  stability_source stability;
+  niche_structure structure;
 }
 
 // must be declared after the structure is concrete...

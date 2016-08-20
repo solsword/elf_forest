@@ -76,6 +76,9 @@ int main(int argc, char **argv) {
     printf("### No support for OpenGL core version 4.0.\n");
     status = EXIT_FAILURE;
   }
+  if (GLEW_VERSION_4_5) {
+    printf("*** OpenGL core version 4.5 supported.\n");
+  }
   if (GLEW_ARB_vertex_buffer_object) {
     printf("OpenGL vertex buffer object ARB supported.\n");
   } else {

@@ -19,6 +19,7 @@
 #include "math/functions.h"
 
 #include "util.h"
+#include "boilerplate.h"
 
 /*********
  * Enums *
@@ -53,8 +54,8 @@ enum hydro_state_e {
   WM_HS_LAND = 0x01,
   WM_HS_OCEAN = 0x02,
   WM_HS_LAKE = 0x04,
-  WM_HS_OCEAN_SHORE = 0x08,
-  WM_HS_LAKE_SHORE = 0x10,
+  WM_HS_OCEAN_SHOREE = 0x08,
+  WM_HS_LAKE_SHOREE = 0x10,
   WM_HS_RIVER = 0x20
 };
 typedef enum hydro_state_e hydro_state;
@@ -62,8 +63,8 @@ typedef enum hydro_state_e hydro_state;
 EFD_GL(i, WM_HS_LAND)
 EFD_GL(i, WM_HS_OCEAN)
 EFD_GL(i, WM_HS_LAKE)
-EFD_GL(i, WM_HS_OCEAN_SHORE)
-EFD_GL(i, WM_HS_LAKE_SHORE)
+EFD_GL(i, WM_HS_OCEAN_SHOREE)
+EFD_GL(i, WM_HS_LAKE_SHOREE)
 EFD_GL(i, WM_HS_RIVER)
 
 enum salinity_e {
@@ -155,61 +156,67 @@ EFD_GL(i, WM_TC_TROPICAL)
 // ------
 
 enum biome_category_e {
-  WM_BC_UNK = 0,
+  WM_BC_UNKNOWN = 0,
+
+  // Subterranean biomes:
+  // These biomes describe life inside of caves that are deep enough to be
+  // isolated from the surface.
+  WM_BC_SUBTERRANEAN,
+  WM_BC_GEOTHERMAL_SUBTERRANEAN,
 
   // Deep ocean biomes:
   // These biomes describe life in the deep ocean, below the thermocline in the
   // aphotic zone.
-  WM_BC_DEEP_AQ,
-  WM_BC_OCN_VNTS,
+  WM_BC_DEEP_AQUATIC,
+  WM_BC_OCEAN_VENTS,
 
   // Pelagic ocean biomes:
   // These biomes describe species that live above the thermocline in the
   // photic zone of the open ocean, including some non-swimming animals like
   // migratory birds and ice-dwelling mammals.
   WM_BC_SEA_ICE,
-  WM_BC_TMP_PEL,
-  WM_BC_TRP_PEL,
+  WM_BC_TEMPERATE_PELAGIC,
+  WM_BC_TROPICAL_PELAGIC,
 
   // Offshore ocean biomes:
   // These describe species that live above the continental shelf, from
   // bottom-dwelling invertebrates to seabirds.
-  WM_BC_TMP_OFSH,
-  WM_BC_TRP_OFSH,
-  WM_BC_TMP_AQ_GSLD,
-  WM_BC_TRP_AQ_GSLD,
-  WM_BC_TMP_AQ_FRST,
-  WM_BC_TRP_AQ_FRST,
-  WM_BC_CLD_REEF,
-  WM_BC_WRM_REEF,
+  WM_BC_TEMPERATE_OFFSHORE,
+  WM_BC_TROPICAL_OFFSHORE,
+  WM_BC_TEMPERATE_AQUATIC_GRASSLAND,
+  WM_BC_TROPICAL_AQUATIC_GRASSLAND,
+  WM_BC_TEMPERATE_AQUATIC_FOREST,
+  WM_BC_TROPICAL_AQUATIC_FOREST,
+  WM_BC_COLD_REEF,
+  WM_BC_WARM_REEF,
 
   // Beach biomes:
   // These biomes are found at the edges of oceans (lake beaches don't get
   // their own biomes). They describe species endemic to these zones, and
   // usually overlap with at least one ocean biome and at least one land biome.
-  WM_BC_FRZ_SHOR,
-  WM_BC_CLD_SHOR,
-  WM_BC_WRM_SHOR,
-  WM_BC_TRP_SHOR,
+  WM_BC_FREEZING_SHORE,
+  WM_BC_COLD_SHORE,
+  WM_BC_WARM_SHORE,
+  WM_BC_TROPICAL_SHORE,
 
   // Lake biomes:
   // These biomes describe the animals endemic to and dependent upon lakes.
   // Terrestrial animals may be included when depend on the lake.
-  WM_BC_FRZ_LAKE,
-  WM_BC_CLD_LAKE,
-  WM_BC_TMP_LAKE,
-  WM_BC_WRM_LAKE,
-  WM_BC_TRP_LAKE,
+  WM_BC_FREEZING_LAKE,
+  WM_BC_COLD_LAKE,
+  WM_BC_TEMPERATE_LAKE,
+  WM_BC_WARM_LAKE,
+  WM_BC_TROPICAL_LAKE,
   WM_BC_SALT_LAKE,
 
   // River biomes:
   // These biomes describe animals that live in or depend on rivers. Many
   // species endemic to riparian zones are included.
-  WM_BC_FRZ_RIVR,
-  WM_BC_CLD_RIVR,
-  WM_BC_TMP_RIVR,
-  WM_BC_WRM_RIVR,
-  WM_BC_TRP_RIVR,
+  WM_BC_FREEZING_RIVER,
+  WM_BC_COLD_RIVER,
+  WM_BC_TEMPERATE_RIVER,
+  WM_BC_WARM_RIVER,
+  WM_BC_TROPICAL_RIVER,
 
   // Alpine biomes:
   // These biomes are prevalent in areas of high elevation (above the
@@ -217,156 +224,156 @@ enum biome_category_e {
   // plethora of adaptations for high-altitude living. Their species are
   // usually present below the treeline as well, but another biome will be used
   // to describe most of a mountain's flora and fauna.
-  WM_BC_FRZ_ALPN,
-  WM_BC_CLD_ALPN,
-  WM_BC_TMP_WET_ALPN,
-  WM_BC_TMP_DRY_ALPN,
-  WM_BC_WRM_WET_ALPN,
-  WM_BC_WRM_DRY_ALPN,
-  WM_BC_TRP_WET_ALPN,
-  WM_BC_TRP_DRY_ALPN,
+  WM_BC_FREEZING_ALPINE,
+  WM_BC_COLD_ALPINE,
+  WM_BC_TEMPERATE_WET_ALPINE,
+  WM_BC_TEMPERATE_DRY_ALPINE,
+  WM_BC_WARM_WET_ALPINE,
+  WM_BC_WARM_DRY_ALPINE,
+  WM_BC_TROPICAL_WET_ALPINE,
+  WM_BC_TROPICAL_DRY_ALPINE,
 
   // Desert biomes:
   // These are characterized by extreme dryness, although they will include
   // some oasis species.
-  WM_BC_FRZ_DSRT,
-  WM_BC_CLD_DSRT,
-  WM_BC_TMP_DSRT,
-  WM_BC_WRM_DSRT,
-  WM_BC_HOT_DSRT,
+  WM_BC_FREEZING_DESERT,
+  WM_BC_COLD_DESERT,
+  WM_BC_TEMPERATE_DESERT,
+  WM_BC_WARM_DESERT,
+  WM_BC_HOT_DESERT,
 
   // Grassland biomes:
   // Biomes dominated by grassy herbs, usually due to some combination of poor
   // soil fertility, regular disruptions (grazing, fire, etc.) and/or low
   // annual rainfall.
-  WM_BC_CLD_GSLD,
-  WM_BC_TMP_GSLD,
-  WM_BC_WRM_GSLD,
-  WM_BC_TRP_GSLD,
+  WM_BC_COLD_GRASSLAND,
+  WM_BC_TEMPERATE_GRASSLAND,
+  WM_BC_WARM_GRASSLAND,
+  WM_BC_TROPICAL_GRASSLAND,
 
   // Shrubland biomes:
   // Biomes where shrubs, bushes, and herbs are common, with few trees.
-  WM_BC_CLD_SBLD,
-  WM_BC_TMP_SBLD,
-  WM_BC_WRM_SBLD,
-  WM_BC_TRP_SBLD,
+  WM_BC_COLD_SHRUBLAND,
+  WM_BC_TEMPERATE_SHRUBLAND,
+  WM_BC_WARM_SHRUBLAND,
+  WM_BC_TROPICAL_SHRUBLAND,
 
   // Savanna biomes:
   // Biomes where trees may be common, but do not form a canopy, allowing
   // grasses and shrubs to grow beneath and between them.
-  WM_BC_TMP_SVNA,
-  WM_BC_WRM_SVNA,
-  WM_BC_TRP_SVNA,
+  WM_BC_TEMPERATE_SAVANA,
+  WM_BC_WARM_SAVANA,
+  WM_BC_TROPICAL_SAVANA,
 
   // Coniferous forest biomes:
   // Biomes dominated by coniferous trees, often extremely homogeneous.
   // Broadleaf trees may also be present, but are distinctly outnumbered.
-  WM_BC_CLD_CNF_FRST,
-  WM_BC_TMP_CNF_FRST,
-  WM_BC_WRM_CNF_FRST,
-  WM_BC_TRP_CNF_FRST,
+  WM_BC_COLD_CONIFER_FOREST,
+  WM_BC_TEMPERATE_CONIFER_FOREST,
+  WM_BC_WARM_CONIFER_FOREST,
+  WM_BC_TROPICAL_CONIFER_FOREST,
 
   // Broadleaf forest biomes:
   // Biomes dominated by broadleaf trees which are usually quite diverse. Some
   // conifers may also be present, but they are usually rare.
-  WM_BC_TMP_BDL_FRST,
-  WM_BC_WRM_WET_BDL_FRST,
-  WM_BC_WRM_DRY_BDL_FRST,
-  WM_BC_TRP_WET_BDL_FRST,
-  WM_BC_TRP_DRY_BDL_FRST,
+  WM_BC_TEMPERATE_BROADLEAF_FOREST,
+  WM_BC_WARM_WET_BROADLEAF_FOREST,
+  WM_BC_WARM_DRY_BROADLEAF_FOREST,
+  WM_BC_TROPICAL_WET_BROADLEAF_FOREST,
+  WM_BC_TROPICAL_DRY_BROADLEAF_FOREST,
 
   // Wetland biomes:
   // Biomes with seasonal or sustained flooding, usually found near lakes,
   // rivers, or oceans. Wetlands adjacent to the ocean are brackish.
-  WM_BC_TND,
-  WM_BC_CLD_FW_WTLD,
-  WM_BC_CLD_SW_WTLD,
-  WM_BC_TMP_FW_WTLD,
-  WM_BC_TMP_SW_WTLD,
-  WM_BC_WRM_FW_WTLD,
-  WM_BC_WRM_FW_FRST_WTLD,
-  WM_BC_WRM_SW_WTLD,
-  WM_BC_TRP_FW_WTLD,
-  WM_BC_TRP_FW_FRST_WTLD,
-  WM_BC_TRP_SW_WTLD,
-  WM_BC_TRP_SW_FRST_WTLD
+  WM_BC_TUNDRA,
+  WM_BC_COLD_FRESHWATER_WETLAND,
+  WM_BC_COLD_SALTWATER_WETLAND,
+  WM_BC_TEMPERATE_FRESHWATER_WETLAND,
+  WM_BC_TEMPERATE_SALTWATER_WETLAND,
+  WM_BC_WARM_FRESHWATER_WETLAND,
+  WM_BC_WARM_FRESHWATER_FORESTED_WETLAND,
+  WM_BC_WARM_SALTWATER_WETLAND,
+  WM_BC_TROPICAL_FRESHWATER_WETLAND,
+  WM_BC_TROPICAL_FRESHWATER_FORESTED_WETLAND,
+  WM_BC_TROPICAL_SALTWATER_WETLAND,
+  WM_BC_TROPICAL_SALTWATER_FORESTED_WETLAND
 };
 typedef enum biome_category_e biome_category;
 
-EFD_GL(i, WM_BC_UNK)
-EFD_GL(i, WM_BC_DEEP_AQ)
-EFD_GL(i, WM_BC_OCN_VNTS)
+EFD_GL(i, WM_BC_UNKNOWN)
+EFD_GL(i, WM_BC_DEEP_AQUATIC)
+EFD_GL(i, WM_BC_OCEAN_VENTS)
 EFD_GL(i, WM_BC_SEA_ICE)
-EFD_GL(i, WM_BC_TMP_PEL)
-EFD_GL(i, WM_BC_TRP_PEL)
-EFD_GL(i, WM_BC_TMP_OFSH)
-EFD_GL(i, WM_BC_TRP_OFSH)
-EFD_GL(i, WM_BC_TMP_AQ_GSLD)
-EFD_GL(i, WM_BC_TRP_AQ_GSLD)
-EFD_GL(i, WM_BC_TMP_AQ_FRST)
-EFD_GL(i, WM_BC_TRP_AQ_FRST)
-EFD_GL(i, WM_BC_CLD_REEF)
-EFD_GL(i, WM_BC_WRM_REEF)
-EFD_GL(i, WM_BC_FRZ_SHOR)
-EFD_GL(i, WM_BC_CLD_SHOR)
-EFD_GL(i, WM_BC_WRM_SHOR)
-EFD_GL(i, WM_BC_TRP_SHOR)
-EFD_GL(i, WM_BC_FRZ_LAKE)
-EFD_GL(i, WM_BC_CLD_LAKE)
-EFD_GL(i, WM_BC_TMP_LAKE)
-EFD_GL(i, WM_BC_WRM_LAKE)
-EFD_GL(i, WM_BC_TRP_LAKE)
+EFD_GL(i, WM_BC_TEMPERATE_PELAGIC)
+EFD_GL(i, WM_BC_TROPICAL_PELAGIC)
+EFD_GL(i, WM_BC_TEMPERATE_OFFSHORE)
+EFD_GL(i, WM_BC_TROPICAL_OFFSHORE)
+EFD_GL(i, WM_BC_TEMPERATE_AQUATIC_GRASSLAND)
+EFD_GL(i, WM_BC_TROPICAL_AQUATIC_GRASSLAND)
+EFD_GL(i, WM_BC_TEMPERATE_AQUATIC_FOREST)
+EFD_GL(i, WM_BC_TROPICAL_AQUATIC_FOREST)
+EFD_GL(i, WM_BC_COLD_REEF)
+EFD_GL(i, WM_BC_WARM_REEF)
+EFD_GL(i, WM_BC_FREEZING_SHORE)
+EFD_GL(i, WM_BC_COLD_SHORE)
+EFD_GL(i, WM_BC_WARM_SHORE)
+EFD_GL(i, WM_BC_TROPICAL_SHORE)
+EFD_GL(i, WM_BC_FREEZING_LAKE)
+EFD_GL(i, WM_BC_COLD_LAKE)
+EFD_GL(i, WM_BC_TEMPERATE_LAKE)
+EFD_GL(i, WM_BC_WARM_LAKE)
+EFD_GL(i, WM_BC_TROPICAL_LAKE)
 EFD_GL(i, WM_BC_SALT_LAKE)
-EFD_GL(i, WM_BC_FRZ_RIVR)
-EFD_GL(i, WM_BC_CLD_RIVR)
-EFD_GL(i, WM_BC_TMP_RIVR)
-EFD_GL(i, WM_BC_WRM_RIVR)
-EFD_GL(i, WM_BC_TRP_RIVR)
-EFD_GL(i, WM_BC_FRZ_ALPN)
-EFD_GL(i, WM_BC_CLD_ALPN)
-EFD_GL(i, WM_BC_TMP_WET_ALPN)
-EFD_GL(i, WM_BC_TMP_DRY_ALPN)
-EFD_GL(i, WM_BC_WRM_WET_ALPN)
-EFD_GL(i, WM_BC_WRM_DRY_ALPN)
-EFD_GL(i, WM_BC_TRP_WET_ALPN)
-EFD_GL(i, WM_BC_TRP_DRY_ALPN)
-EFD_GL(i, WM_BC_FRZ_DSRT)
-EFD_GL(i, WM_BC_CLD_DSRT)
-EFD_GL(i, WM_BC_TMP_DSRT)
-EFD_GL(i, WM_BC_WRM_DSRT)
-EFD_GL(i, WM_BC_HOT_DSRT)
-EFD_GL(i, WM_BC_CLD_GSLD)
-EFD_GL(i, WM_BC_TMP_GSLD)
-EFD_GL(i, WM_BC_WRM_GSLD)
-EFD_GL(i, WM_BC_TRP_GSLD)
-EFD_GL(i, WM_BC_CLD_SBLD)
-EFD_GL(i, WM_BC_TMP_SBLD)
-EFD_GL(i, WM_BC_WRM_SBLD)
-EFD_GL(i, WM_BC_TRP_SBLD)
-EFD_GL(i, WM_BC_TMP_SVNA)
-EFD_GL(i, WM_BC_WRM_SVNA)
-EFD_GL(i, WM_BC_TRP_SVNA)
-EFD_GL(i, WM_BC_CLD_CNF_FRST)
-EFD_GL(i, WM_BC_TMP_CNF_FRST)
-EFD_GL(i, WM_BC_WRM_CNF_FRST)
-EFD_GL(i, WM_BC_TRP_CNF_FRST)
-EFD_GL(i, WM_BC_TMP_BDL_FRST)
-EFD_GL(i, WM_BC_WRM_WET_BDL_FRST)
-EFD_GL(i, WM_BC_WRM_DRY_BDL_FRST)
-EFD_GL(i, WM_BC_TRP_WET_BDL_FRST)
-EFD_GL(i, WM_BC_TRP_DRY_BDL_FRST)
-EFD_GL(i, WM_BC_TND)
-EFD_GL(i, WM_BC_CLD_FW_WTLD)
-EFD_GL(i, WM_BC_CLD_SW_WTLD)
-EFD_GL(i, WM_BC_TMP_FW_WTLD)
-EFD_GL(i, WM_BC_TMP_SW_WTLD)
-EFD_GL(i, WM_BC_WRM_FW_WTLD)
-EFD_GL(i, WM_BC_WRM_FW_FRST_WTLD)
-EFD_GL(i, WM_BC_WRM_SW_WTLD)
-EFD_GL(i, WM_BC_TRP_FW_WTLD)
-EFD_GL(i, WM_BC_TRP_FW_FRST_WTLD)
-EFD_GL(i, WM_BC_TRP_SW_WTLD)
-EFD_GL(i, WM_BC_TRP_SW_FRST_WTLD)
+EFD_GL(i, WM_BC_FREEZING_RIVER)
+EFD_GL(i, WM_BC_COLD_RIVER)
+EFD_GL(i, WM_BC_TEMPERATE_RIVER)
+EFD_GL(i, WM_BC_WARM_RIVER)
+EFD_GL(i, WM_BC_TROPICAL_RIVER)
+EFD_GL(i, WM_BC_FREEZING_ALPINE)
+EFD_GL(i, WM_BC_COLD_ALPINE)
+EFD_GL(i, WM_BC_TEMPERATE_WET_ALPINE)
+EFD_GL(i, WM_BC_TEMPERATE_DRY_ALPINE)
+EFD_GL(i, WM_BC_WARM_WET_ALPINE)
+EFD_GL(i, WM_BC_WARM_DRY_ALPINE)
+EFD_GL(i, WM_BC_TROPICAL_WET_ALPINE)
+EFD_GL(i, WM_BC_TROPICAL_DRY_ALPINE)
+EFD_GL(i, WM_BC_FREEZING_DESERT)
+EFD_GL(i, WM_BC_COLD_DESERT)
+EFD_GL(i, WM_BC_TEMPERATE_DESERT)
+EFD_GL(i, WM_BC_WARM_DESERT)
+EFD_GL(i, WM_BC_HOT_DESERT)
+EFD_GL(i, WM_BC_COLD_GRASSLAND)
+EFD_GL(i, WM_BC_TEMPERATE_GRASSLAND)
+EFD_GL(i, WM_BC_WARM_GRASSLAND)
+EFD_GL(i, WM_BC_TROPICAL_GRASSLAND)
+EFD_GL(i, WM_BC_COLD_SHRUBLAND)
+EFD_GL(i, WM_BC_TEMPERATE_SHRUBLAND)
+EFD_GL(i, WM_BC_WARM_SHRUBLAND)
+EFD_GL(i, WM_BC_TROPICAL_SHRUBLAND)
+EFD_GL(i, WM_BC_TEMPERATE_SAVANA)
+EFD_GL(i, WM_BC_WARM_SAVANA)
+EFD_GL(i, WM_BC_TROPICAL_SAVANA)
+EFD_GL(i, WM_BC_COLD_CONIFER_FOREST)
+EFD_GL(i, WM_BC_TEMPERATE_CONIFER_FOREST)
+EFD_GL(i, WM_BC_WARM_CONIFER_FOREST)
+EFD_GL(i, WM_BC_TROPICAL_CONIFER_FOREST)
+EFD_GL(i, WM_BC_TEMPERATE_BROADLEAF_FOREST)
+EFD_GL(i, WM_BC_WARM_WET_BROADLEAF_FOREST)
+EFD_GL(i, WM_BC_WARM_DRY_BROADLEAF_FOREST)
+EFD_GL(i, WM_BC_TROPICAL_WET_BROADLEAF_FOREST)
+EFD_GL(i, WM_BC_TROPICAL_DRY_BROADLEAF_FOREST)
+EFD_GL(i, WM_BC_TUNDRA)
+EFD_GL(i, WM_BC_COLD_FRESHWATER_WETLAND)
+EFD_GL(i, WM_BC_COLD_SALTWATER_WETLAND)
+EFD_GL(i, WM_BC_TEMPERATE_FRESHWATER_WETLAND)
+EFD_GL(i, WM_BC_TEMPERATE_SALTWATER_WETLAND)
+EFD_GL(i, WM_BC_WARM_FRESHWATER_WETLAND)
+EFD_GL(i, WM_BC_WARM_FRESHWATER_FORESTED_WETLAND)
+EFD_GL(i, WM_BC_WARM_SALTWATER_WETLAND)
+EFD_GL(i, WM_BC_TROPICAL_FRESHWATER_WETLAND)
+EFD_GL(i, WM_BC_TROPICAL_FRESHWATER_FORESTED_WETLAND)
+EFD_GL(i, WM_BC_TROPICAL_SALTWATER_WETLAND)
+EFD_GL(i, WM_BC_TROPICAL_SALTWATER_FORESTED_WETLAND)
 
 /************************
  * Types and Structures *
@@ -580,7 +587,7 @@ EFD_GL(i, WM_MAX_RIVERS)
 // -------
 
 // Maximum number of biomes that can overlap in the same world region
-#define WM_MAX_BIOME_OVERLAP 6
+#define WM_MAX_BIOME_OVERLAP 8
 EFD_GL(i, WM_MAX_BIOME_OVERLAP)
 
 // Biome plant variant caps
@@ -633,6 +640,8 @@ typedef uint64_t frequent_species;
 
 struct biome_s {
   biome_category category;
+  // niches within this biome:
+  list *niches;
   // species types, IDs, and frequencies for flora (each list entry is a
   // frequent_species)
   list *hanging_terrestrial_flora;
@@ -1198,6 +1207,9 @@ void cleanup_world_map(world_map *wm);
 // Allocates a new blank biome with the given category.
 biome* create_biome(biome_category category);
 
+// Cleans up memory associated with a biome.
+CLEANUP_DECL(biome);
+
 // Allocates a new biome and merges information from all of the biomes in the
 // given two world regions into it.
 biome* create_merged_biome(
@@ -1301,9 +1313,9 @@ int breadth_first_iter(
   step_result (*process)(search_step, world_region*, void*)
 );
 
-// Works like breadth_first_iter, but takes extra "fill_edges" and "smoothness"
-// arguments. If the "fill_edges" argument is nonzero, then when a halt
-// condition is met, instead of stopping, the algorithm finishes out the
+// Works like breadth_first_iter, but takes extra "fill_edges", "smoothness",
+// and "seed" arguments. If the "fill_edges" argument is nonzero, then when a
+// halt condition is met, instead of stopping, the algorithm finishes out the
 // current queue (which means that SRESULT_FINISHED won't immediately stop
 // iteration). The smoothness argument dictates how often the queue should be
 // shuffled. Values between about 1 and 50 are reasonable, although this
@@ -1315,6 +1327,7 @@ int blob_first_iter(
   int max_size,
   int fill_edges,
   int smoothness,
+  ptrdiff_t seed,
   void *arg,
   step_result (*process)(search_step, world_region*, void*)
 );

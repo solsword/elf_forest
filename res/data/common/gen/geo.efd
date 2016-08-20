@@ -1808,7 +1808,7 @@
           ]]
           [[fn layered:scale
             [[fn rng:weight
-              [[an weights 0.4, 0.2, 0.3, 0.1]]
+              [[an weights 0.2, 0.3, 0.3, 0.2]]
               [[fn rng:rng_uniform
                 [[fi rng:brng <<v ~hash>> (i 5) ]] (n 0) (n 1) ]]
               <<v ~mat_density>>
@@ -2183,7 +2183,7 @@
       [[fn ridges:rng_uniform
         [[fi rng:brng <<v ~hash>> (i 24) ]] (n 0.4) (n 3.8) ]]
       [[fn smoothing:rng_uniform
-        [[fi rng:brng <<v ~hash>> (i 25) ]] (n 0.15) (n 0.60) ]]
+        [[fi rng:brng <<v ~hash>> (i 25) ]] (n 0.15) (n 0.6) ]]
       // TODO: Vein scale/strength/species
       [[c vein_scales /* TODO: HERE */ ]]
       [[c vein_strengths /* TODO: HERE */ ]]
@@ -2233,7 +2233,7 @@
       [[fn ridges:rng_uniform
         [[fi rng:brng <<v ~hash>> (i 37) ]] (n 0.8) (n 5.3) ]]
       [[fn smoothing:rng_uniform
-        [[fi rng:brng <<v ~hash>> (i 38) ]] (n 1.12) (n 0.52) ]]
+        [[fi rng:brng <<v ~hash>> (i 38) ]] (n 0.15) (n 0.6) ]]
       // TODO: Vein scale/strength/species
       [[c vein_scales /* TODO: HERE */ ]]
       [[c vein_strengths /* TODO: HERE */ ]]

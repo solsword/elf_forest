@@ -146,6 +146,15 @@ static inline int fastceil(float x) {
   return ix + (ix < x);
 }
 
+// Integer min/max
+static inline int imin(int a, int b) {
+  return a < b? a : b;
+}
+
+static inline int imax(int a, int b) {
+  return a > b? a : b;
+}
+
 // Rounds a floating point value to the nearest fraction with the given integer
 // denominator.
 static inline float rounddenom(float x, int denom) {
