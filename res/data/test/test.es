@@ -1,4 +1,5 @@
-<test.parse>
+<elfscript.internal.test>
+<unit.parse>
 // line comment
 /*
   block comment
@@ -196,10 +197,19 @@ units = [
   #parse_test { as = "expression"; expect = "fail"; input = "+1+2"; },
   #parse_test { as = "expression"; expect = "fail"; input = "(1+2"; },
   #parse_test { as = "expression"; expect = "fail"; input = "1+2)"; },
+  #parse_test {
+    as = "object";
+    expect = "succeed";
+    input = "#parse_test {
+      as = 'int';
+      expect = 'succeed';
+      input = '12';
+      output = 12 }";
+  },
 ];
-</test.parse>
+</unit.parse>
 
-<test.unit>
+<unit.general>
 evaluation = [
   #eval_test { input = "5e7 + 0x5e7"; output = 50001511; },
   #eval_test { input = "1 + 1"; output = 2; },
@@ -224,6 +234,7 @@ evaluation = [
   #eval_test { input = "7.5 // 2.3"; output = 3; },
   #eval_test { input = "7.5 // 2.9"; output = 2; },
   #eval_test { input = "4**0.5"; output = 2; },
+  #eval_test { input = "9**0.5"; output = 3; },
   #eval_test { input = "5 / 4 / 2"; output = 0.625; },
   #eval_test { input = "5 / (4 / 2)"; output = 2.5; },
   #eval_test { input = "5 / 4 * 2"; output = 2.5; },
@@ -288,39 +299,62 @@ evaluation = [
   #eval_test { input = "3 >> 4 / 4"; output = 0; },
   #eval_test { input = "(3 >> 4) / 4"; output = 0; },
   #eval_test { input = "3 >> (4 / 4)"; output = 1; },
-]
-scope = [
-  #func {x = 0} {
-    !assert x == 0;
+];
+scope = {
+  tf1 = !f (x = 0) {
+    !assert(x == 0);
     x = 3;
     y = 5;
     nested = {
-      !assert x == 3;
-      !assert y == 5;
+      !assert(x == 3);
+      !assert(y == 5);
       x = 55;
       ~y = 17
-      !assert x == 55;
-      !assert y == 17;
+      !assert(x == 55);
+      !assert(y == 17);
     };
     nested2 = {
-      !assert x == 3;
-      !assert y == 17;
+      !assert(x == 3);
+      !assert(y == 17);
       ~y = -5;
-      !assert y == -5;
+      !assert(y == -5);
       y = 7;
-      !assert y == 7;
+      !assert(y == 7);
     };
+    reassign = {
+      !assert(x == 3);
+      !assert(y == -5);
+      x = 5;
+      !assert(x == 5);
+      x = 7;
+      !assert(x == 7);
+      x = 9;
+      !assert(x == 9);
+    }
     empty = {
     };
-    !assert x == 3;
-    !assert y == -5;
-    !assert nested.x == 55;
-    !assert nested.y == -5;
-    !assert nested2.x == 3;
-    !assert nested2.y == -5;
-    !assert empty.x = 3;
-    !assert empty.y = -5;
-    !assert !undefined z;
+    { // an unnamed scope
+      x = 231;
+      y = 795;
+      !assert(x == 231);
+      !assert(y == 795);
+      ~x = 3;
+      !assert(x == 3);
+    };
+    // final assertions
+    !assert(x == 3);
+    !assert(y == -5);
+    !assert(nested.x == 55);
+    !assert(nested.y == -5);
+    !assert(nested2.x == 3);
+    !assert(nested2.y == -5);
+    !assert(empty.x == 3);
+    !assert(empty.y == -5);
+    !return(x);
   };
-];
-</test.unit>
+  // call our test function
+  tf1(0);
+  tf1();
+};
+</unit.general>
+</elfscript.internal.test>
