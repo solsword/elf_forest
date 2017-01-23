@@ -1,6 +1,6 @@
-// comment
-<elfscript.internal.test>
-<unit.simple>
+` comment
+>>elfscript.internal.test
+>>unit.simple
 
 int = 1;
 num = 5.0;
@@ -15,5 +15,5 @@ scope = {
   other = 4;
 }
 
-</unit.simple>
-</elfscript.internal.test>
+<<unit.simple
+<<elfscript.internal.test

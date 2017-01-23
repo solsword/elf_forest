@@ -1,5 +1,5 @@
-<elfscript.internal.test>
-<unit.gen>
+>>elfscript.internal.test
+>>unit.gen
 
 deep_underground_hanging_flora_diversity = !f (!seed) {
   !return @rng(
@@ -91,7 +91,7 @@ COMPUTE_STONE_COLOR = !f (
     )
   );
   per_constituent = @unroll(
-    // TODO: Better color mixing here
+    ` TODO: Better color mixing here
     @map(
       {
         constituents,
@@ -141,7 +141,8 @@ COMPUTE_STONE_COLOR = !f (
   color = @switch(
     source,
     {
-      $GEO_IGNEOUS = !f () {
+      ` Note the use of ':' here to eval lhs before assignment
+      $GEO_IGNEOUS : !f () {
         !return {
           fmt = $CFMT_LCH;
           L = @weight(
@@ -161,7 +162,7 @@ COMPUTE_STONE_COLOR = !f (
           h = el_hue + @rng_pnorm(!seed, -$M_PI / 16, $M_PI / 16);
         };
       };
-      $GEO_METAMORPHIC = !f () {
+      $GEO_METAMORPHIC : !f () {
         !return {
           fmt = $CFMT_LCH;
           L = el_brightness;
@@ -174,12 +175,12 @@ COMPUTE_STONE_COLOR = !f (
           h = el_hue + @rng_pnorm(!seed, -$M_PI / 6, $M_PI / 6);
         };
       };
-      $GEO_SEDIMENTARY = !f () {
+      $GEO_SEDIMENTARY : !f () {
         !return {
           fmt = $CFMT_LCH;
           L = el_brightness * @rng_pnorm(!seed, 1, 1.4);
           c = el_saturation * @expdist(@rng_pnorm(!seed, 0.3, 1), 2);
-          h = el_hue + @rng_pnorm(!seed, -M_PI/12, M_PI/12);
+          h = el_hue + @rng_pnorm(!seed, -$M_PI/12, $M_PI/12);
         };
       };
     }
@@ -187,5 +188,5 @@ COMPUTE_STONE_COLOR = !f (
   }
 };
 
-</unit.gen>
-</elfscript.internal.test>
+<<unit.gen
+<<elfscript.internal.test

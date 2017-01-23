@@ -12,104 +12,83 @@
  * Enums *
  *********/
 
-// Different kinds of parsing errors:
-enum elfscript_parse_error_e {
-  ELFSCRIPT_PE_NO_ERROR = 0,     // carry on
-  ELFSCRIPT_PE_ABORT,            // manual abort
-  ELFSCRIPT_PE_UNKNOWN,          // ???
-  ELFSCRIPT_PE_MISSING,          // no input
-  ELFSCRIPT_PE_MALFORMED,        // wrong input
-  ELFSCRIPT_PE_CLOSING_BRACE,    // wrong input (closing brace)
-  ELFSCRIPT_PE_INCOMPLETE,       // partial input
-  ELFSCRIPT_PE_SKIP_CHILD,       // elfscript_parse_children should skip this node
-  ELFSCRIPT_PE_CHILDREN_DONE     // elfscript_parse_children should terminate
+// Parse errors
+enum es_parse_error_e {
+  ES_PE_NO_ERROR = 0,
+  ES_PE_MALFORMED,
+  ES_PE_INCOMPLETE,
+  ES_PE_MISSING,
 };
-typedef enum elfscript_parse_error_e elfscript_parse_error;
-
-// States for parsing integers:
-enum elfscript_int_state_e {
-  ELFSCRIPT_INT_STATE_PRE,
-  ELFSCRIPT_INT_STATE_BASE,
-  ELFSCRIPT_INT_STATE_PRE_DIGITS,
-  ELFSCRIPT_INT_STATE_DIGITS,
-  ELFSCRIPT_INT_STATE_DONE,
-};
-typedef enum elfscript_int_state_e elfscript_int_state;
-
-// States for parsing floats:
-enum elfscript_float_state_e {
-  ELFSCRIPT_FLOAT_STATE_PRE,
-  ELFSCRIPT_FLOAT_STATE_ZERO,
-  ELFSCRIPT_FLOAT_STATE_CHAR,
-  ELFSCRIPT_FLOAT_STATE_MANT,
-  ELFSCRIPT_FLOAT_STATE_EXP,
-  ELFSCRIPT_FLOAT_STATE_EXP_SIGN,
-  ELFSCRIPT_FLOAT_STATE_EXP_DIGITS,
-  ELFSCRIPT_FLOAT_STATE_DONE,
-};
-typedef enum elfscript_float_state_e elfscript_float_state;
+typedef enum es_parse_error_e es_parse_error;
 
 // States for grabbing quoted strings:
-enum elfscript_quote_state_e {
-  ELFSCRIPT_QUOTE_STATE_NORMAL,
-  ELFSCRIPT_QUOTE_STATE_MAYBE_DONE,
-  ELFSCRIPT_QUOTE_STATE_DONE,
+enum es_quote_state_e {
+  ES_QUOTE_STATE_NORMAL,
+  ES_QUOTE_STATE_MAYBE_DONE,
+  ES_QUOTE_STATE_DONE,
 };
-typedef enum elfscript_quote_state_e elfscript_quote_state;
+typedef enum es_quote_state_e es_quote_state;
 
 // States for skipping whitespace and comments:
-enum elfscript_skip_state_e {
-  ELFSCRIPT_SKIP_STATE_NORMAL,
-  ELFSCRIPT_SKIP_STATE_MAYBE_COMMENT,
-  ELFSCRIPT_SKIP_STATE_LINE_COMMENT,
-  ELFSCRIPT_SKIP_STATE_BLOCK_COMMENT,
-  ELFSCRIPT_SKIP_STATE_MAYBE_BLOCK_END,
-  ELFSCRIPT_SKIP_STATE_DONE,
+enum es_skip_state_e {
+  ES_SKIP_STATE_NORMAL,
+  ES_SKIP_STATE_MAYBE_COMMENT,
+  ES_SKIP_STATE_LINE_COMMENT,
+  ES_SKIP_STATE_BLOCK_COMMENT,
+  ES_SKIP_STATE_MAYBE_BLOCK_END,
+  ES_SKIP_STATE_DONE,
 };
-typedef enum elfscript_skip_state_e elfscript_skip_state;
+typedef enum es_skip_state_e es_skip_state;
 
 /**************
  * Structures *
  **************/
 
-struct elfscript_parse_state_s;
-typedef struct elfscript_parse_state_s elfscript_parse_state;
+struct es_parse_state_s;
+typedef struct es_parse_state_s es_parse_state;
+
+struct es_expr_fragment_s;
+typedef struct es_expr_fragment_s es_expr_fragment;
+
+struct es_expr_tree_s;
+typedef struct es_expr_tree_s es_expr_tree;
 
 /*************
  * Constants *
  *************/
 
-#define ELFSCRIPT_PARSER_MAX_FILENAME_DISPLAY 4096
-#define ELFSCRIPT_PARSER_MAX_CONTEXT_DISPLAY 160
-#define ELFSCRIPT_PARSER_ERROR_BEFORE 35
-#define ELFSCRIPT_PARSER_ERROR_AFTER 35
-#define ELFSCRIPT_PARSER_ERROR_LINE 80
-// note: (LINE / 2) - BEFORE must be >= 3 and (LINE / 2) - AFTER must be >= 4
-
-#define ELFSCRIPT_PARSER_MAX_DIGITS 1024
-#define ELFSCRIPT_PARSER_INT_ERROR 1717
-#define ELFSCRIPT_PARSER_NUM_ERROR 9995.5
-
-#define ELFSCRIPT_PARSER_COLON ':'
-#define ELFSCRIPT_PARSER_OPEN_BRACE '['
-#define ELFSCRIPT_PARSER_CLOSE_BRACE ']'
-#define ELFSCRIPT_PARSER_OPEN_ANGLE '<'
-#define ELFSCRIPT_PARSER_CLOSE_ANGLE '>'
-#define ELFSCRIPT_PARSER_OPEN_CURLY '{'
-#define ELFSCRIPT_PARSER_CLOSE_CURLY '}'
-#define ELFSCRIPT_PARSER_OPEN_PAREN '('
-#define ELFSCRIPT_PARSER_CLOSE_PAREN ')'
-#define ELFSCRIPT_PARSER_EQUALS '='
-#define ELFSCRIPT_PARSER_ARRAY_SEP ','
-#define ELFSCRIPT_PARSER_HASH '#'
-#define ELFSCRIPT_PARSER_RENAME '@'
-#define ELFSCRIPT_PARSER_ABORT '!'
+#define ES_CH_STATEMENT_END ';'
+#define ES_CH_STATEMENTS_SEP ':'
+#define ES_CH_OPEN_PAREN '('
+#define ES_CH_CLOSE_PAREN ')'
+#define ES_CH_OPEN_SLICE '['
+#define ES_CH_CLOSE_SLICE ']'
+#define ES_CH_OPEN_SCOPE '{'
+#define ES_CH_CLOSE_SCOPE '}'
+#define ES_CH_ACCESS '.'
+#define ES_CH_GLOBAL '$'
+#define ES_CH_ADD '+'
+#define ES_CH_SUBTRACT '-'
+#define ES_CH_MULTIPLY '*'
+#define ES_CH_DIVIDE '/'
+#define ES_CH_MOD '%'
+#define ES_CH_EXPONENTIATE '^'
+#define ES_CH_AND '&'
+#define ES_CH_OR '|'
+#define ES_CH_XOR '!'
+#define ES_CH_NOT '~'
+#define ES_CH_LESS '<'
+#define ES_CH_GREATER '>'
+#define ES_CH_EQUALS '='
+#define ES_CH_COMMENT '`'
+#define ES_CH_BLOCK_COMMENT '*'
+#define ES_CH_NEWLINE '\n'
 
 /*************************
  * Structure Definitions *
  *************************/
 
-struct elfscript_parse_state_s {
+struct es_parse_state_s {
   char const * input;
   ptrdiff_t input_length;
   ptrdiff_t pos;
@@ -117,250 +96,95 @@ struct elfscript_parse_state_s {
   ptrdiff_t lineno;
   char next_closing_brace;
   char const * context;
-  elfscript_parse_error error;
-  elfscript_address *current_address;
-  elfscript_node *current_node;
-  ptrdiff_t current_index;
+  es_parse_error error;
+};
+
+struct es_expr_fragment_s {
+  int pdepth;
+  es_bytecode *valcode;
+  es_instruction op;
+};
+
+struct es_expr_tree_s {
+  es_expr_fragment *here;
+  es_expr_tree_s *parent;
+  es_expr_tree_s *left;
+  es_expr_tree_s *right;
 };
 
 /********************
  * Inline Functions *
  ********************/
 
-static inline int is_whitespace(char c) {
-  return c == ' ' || c == '\n' || c == '\t' || c == '\r';
-}
-
-static inline int is_special(char c) {
-  switch (c) {
-    default:
-      return 0;
-    case ELFSCRIPT_ADDR_SEP_CHR:
-    case ELFSCRIPT_ADDR_PARENT_CHR:
-    case ELFSCRIPT_PARSER_COLON:
-    case ELFSCRIPT_PARSER_OPEN_BRACE:
-    case ELFSCRIPT_PARSER_CLOSE_BRACE:
-    case ELFSCRIPT_PARSER_OPEN_ANGLE:
-    case ELFSCRIPT_PARSER_CLOSE_ANGLE:
-    case ELFSCRIPT_PARSER_OPEN_CURLY:
-    case ELFSCRIPT_PARSER_CLOSE_CURLY:
-    case ELFSCRIPT_PARSER_OPEN_PAREN:
-    case ELFSCRIPT_PARSER_CLOSE_PAREN:
-    case ELFSCRIPT_PARSER_EQUALS:
-    case ELFSCRIPT_PARSER_ARRAY_SEP:
-    case ELFSCRIPT_PARSER_HASH:
-    case ELFSCRIPT_PARSER_RENAME:
-      return 1;
-  }
-}
-
-static inline int is_opening_brace(char c) {
-  switch (c) {
-    default:
-      return 0;
-    case ELFSCRIPT_PARSER_OPEN_BRACE:
-    case ELFSCRIPT_PARSER_OPEN_ANGLE:
-    case ELFSCRIPT_PARSER_OPEN_CURLY:
-    case ELFSCRIPT_PARSER_OPEN_PAREN:
-    case ELFSCRIPT_PARSER_HASH:
-      return 1;
-  }
-}
-
-static inline int is_closing_brace(char c) {
-  switch (c) {
-    default:
-      return 0;
-    case ELFSCRIPT_PARSER_CLOSE_BRACE:
-    case ELFSCRIPT_PARSER_CLOSE_ANGLE:
-    case ELFSCRIPT_PARSER_CLOSE_CURLY:
-    case ELFSCRIPT_PARSER_CLOSE_PAREN:
-    case ELFSCRIPT_PARSER_HASH:
-      return 1;
-  }
-}
-
-static inline char closing_brace_for(char o) {
-  switch (o) {
-    default:
-      fprintf(stderr, "ERROR: Invalid opening brace type '%c'.", o);
-      return '\0';
-    case ELFSCRIPT_PARSER_OPEN_BRACE:
-      return ELFSCRIPT_PARSER_CLOSE_BRACE;
-    case ELFSCRIPT_PARSER_OPEN_ANGLE:
-      return ELFSCRIPT_PARSER_CLOSE_ANGLE;
-    case ELFSCRIPT_PARSER_OPEN_CURLY:
-      return ELFSCRIPT_PARSER_CLOSE_CURLY;
-    case ELFSCRIPT_PARSER_OPEN_PAREN:
-      return ELFSCRIPT_PARSER_CLOSE_PAREN;
-    case ELFSCRIPT_PARSER_HASH:
-      return ELFSCRIPT_PARSER_HASH;
-  }
-}
-
 // Checks whether the current character is NUL or beyond the end of the input
 // (if input_length is non-negative) and returns 1 if so or 0 otherwise.
-static inline int elfscript_parse_atend(elfscript_parse_state *s) {
+static inline int es_parse_atend(es_parse_state *s) {
   return (
     (s->input_length != 0 && s->pos >= s->input_length)
  || s->input[s->pos] == '\0'
   );
 }
 
+// Checks whether an error has occurred.
+static inline int es_parse_failed(es_parse_state *s) {
+  return s->error != EFD_PE_NO_ERROR;
+}
+
+/******************************
+ * Constructors & Destructors *
+ ******************************/
+
+// Creates a new expression fragment. The given bytecode is consumed, and
+// becomes the responsibility of the expression fragment.
+es_expr_fragment *create_es_expr_fragment(
+  int pdepth,
+  es_bytecode *valcode,
+  es_instruction op
+);
+
+// Cleanup for expression fragments.
+CLEANUP_DECL(es_expr_fragment);
+
+// Creates an empty expression tree node.
+es_expr_tree *create_es_expr_tree(void);
+
+// Cleanup for expression trees.
+CLEANUP_DECL(es_expr_tree);
+
 /*************
  * Functions *
  *************/
 
-// State copying for backtracking (input and current node aren't copied):
-void elfscript_parse_copy_state(elfscript_parse_state *from, elfscript_parse_state *to);
+// State copying for backtracking (input isn't copied):
+void es_parse_copy_state(es_parse_state *from, es_parse_state *to);
 
-// Cleans up the state's current address for backtracking:
-void elfscript_parse_scrub_state(elfscript_parse_state *state);
+// Parse a statement
+bytecode es_parse_statement(es_parse_state *s);
 
-// Parses an entire file, adding node(s) encountered as children of the given
-// parent node (must be a container). Nodes encountered are unpacked and global
-// reference values are filled in. Returns 1 if it succeeds or 0 otherwise.
-int elfscript_parse_file(
-  elfscript_node *parent,
-  char const * const filename
-);
+// Parses the left-hand-side of an assignment and returns bytecode that
+// implements the assignment, to be run after the expression code for the
+// right-hand side.
+bytecode es_parse_lhs(es_parse_state *s);
 
-// Parses a string as an ELFSCRIPT address and returns a newly-allocated address.
-elfscript_address* elfscript_parse_string_address(string const * const astr);
+// Parses an expression, returning bytecode that leaves that expression's value
+// alone on top of the value stack.
+bytecode es_parse_expression(es_parse_state *s);
 
-// Top level parsing function that delegates to the more specific functions:
-elfscript_node* elfscript_parse_any(elfscript_parse_state *s);
+// Takes a list of es_expr_fragments which ends with some at the given paren
+// depth, and collapses those into a single fragment, paying attention to the
+// order of operations.
+void es_parse_aggregate_fragments(list *fragments, int pdepth);
 
+// Propagates bytecode from the leaves upwards to the top of the given
+// expression tree. As it goes the lower bytecode is destroyed.
+void es_parse_collect_bytecode(tree);
 
-// Parsing functions for the ELFSCRIPT primitive types:
-//-----------------------------------------------
+// Parses a unary operator, returning the corresponding instruction. Note that
+// some instructions may be refined later based on datatypes.
+es_instruction es_parse_unop(es_parse_state *s);
 
-void elfscript_parse_children(elfscript_node *result, elfscript_parse_state *s);
-
-void elfscript_parse_link(elfscript_node *result, elfscript_parse_state *s);
-
-void elfscript_parse_function(elfscript_node *result, elfscript_parse_state *s);
-
-void elfscript_parse_proto(elfscript_node *result, elfscript_parse_state *s);
-
-void elfscript_parse_integer(elfscript_node *result, elfscript_parse_state *s);
-
-void elfscript_parse_number(elfscript_node *result, elfscript_parse_state *s);
-
-void elfscript_parse_string(elfscript_node *result, elfscript_parse_state *s);
-
-void elfscript_parse_obj_array(elfscript_node *result, elfscript_parse_state *s);
-
-void elfscript_parse_int_array(elfscript_node *result, elfscript_parse_state *s);
-
-void elfscript_parse_num_array(elfscript_node *result, elfscript_parse_state *s);
-
-void elfscript_parse_str_array(elfscript_node *result, elfscript_parse_state *s);
-
-
-// Parsing functions for ELFSCRIPT globals:
-//-----------------------------------
-
-void elfscript_parse_int_global(elfscript_node *result, elfscript_parse_state *s);
-
-void elfscript_parse_num_global(elfscript_node *result, elfscript_parse_state *s);
-
-void elfscript_parse_str_global(elfscript_node *result, elfscript_parse_state *s);
-
-
-// Functions for parsing pieces that might be references:
-//-------------------------------------------------------
-
-elfscript_int_t elfscript_parse_int_or_ref(elfscript_parse_state *s);
-
-elfscript_num_t elfscript_parse_float_or_ref(elfscript_parse_state *s);
-
-string * elfscript_parse_str_or_ref(elfscript_parse_state *s);
-
-void * elfscript_parse_obj_ref(elfscript_parse_state *s);
-
-
-// Functions for parsing bits & pieces:
-//-------------------------------------
-
-// Parsers for node open/close brackets. The first returns a character tracking
-// the type of bracket used, and the second accepts that character to ensure a
-// match.
-char elfscript_parse_open(elfscript_parse_state *s);
-void elfscript_parse_close(elfscript_parse_state *s);
-
-// Parses a node type off of the front of the input:
-elfscript_node_type elfscript_parse_type(elfscript_parse_state *s);
-
-// Parses a node name off of the front of the input.
-string* elfscript_parse_name(elfscript_parse_state *s);
-
-// Parses the annotation part of an 'o', 'l', or 'L' declaration, including the
-// leading separator character (which must match the given 'sep' argument.
-string* elfscript_parse_annotation(elfscript_parse_state *s, char sep);
-
-// Parses an integer off of the front of the input:
-elfscript_int_t elfscript_parse_int(elfscript_parse_state *s);
-
-// Parses a floating-point number off of the front of the input:
-elfscript_num_t elfscript_parse_float(elfscript_parse_state *s);
-
-// Parses a quoted string off of the front of the input. Returns a newly
-// malloc'd string if it succeeds or NULL if it fails (so if it fails, freeing
-// the result is unnecessary).
-string* elfscript_parse_str(elfscript_parse_state *s);
-
-// Starts at the initial position and finds an opening quote, setting the
-// starting point to point to that quote. Then it scans until it finds an
-// (unescaped) closing quote that matches the type (single or double) of the
-// first and sets the end to point to that closing quote.
-void elfscript_grab_string_limits(
-  elfscript_parse_state *s,
-  ptrdiff_t *start,
-  ptrdiff_t *end
-);
-
-// Takes an underlying input string and start/end markers and transfers the
-// characters between those markers (exclusive) to a newly-malloc'd string.
-// Along the way, replaces double-instances of the opening limiter with single
-// instances. The caller should free the return value.
-char * elfscript_purify_string(
-  char const * const input,
-  ptrdiff_t start,
-  ptrdiff_t end
-);
-
-
-// Constructs and returns a newly-allocated reference to the node being parsed.
-elfscript_reference* construct_elfscript_reference_to_here(elfscript_parse_state* s);
-
-// Parses a reference off of the front of the input, allocating and returning a
-// new elfscript_reference.
-elfscript_reference* elfscript_parse_global_ref(elfscript_parse_state *s);
-
-// Parses an address off of the front of the input, allocating and returning a
-// new elfscript_address.
-elfscript_address* elfscript_parse_address(elfscript_parse_state *s);
-
-// Skips whitespace and comments (// to end of line and /* to */):
-void elfscript_parse_skip(elfscript_parse_state *s);
-
-// Parses optional whitespace followed by a separator.
-void elfscript_parse_sep(elfscript_parse_state *s);
-
-// Helper functions:
-//------------------
-
-// Checks that the most recent parsing function succeeded and returns 0 if it
-// did, or 1 if it indicated an error.
-int elfscript_parse_failed(elfscript_parse_state *s);
-
-// Prints the error for the given parse state (if there is one; otherwise does
-// nothing).
-void elfscript_print_parse_error(elfscript_parse_state *s);
-
-// Checks if the given parse state reports an error and if it does prints that
-// error and exits.
-void elfscript_throw_parse_error(elfscript_parse_state *s);
+// Parses a binary operator, returning the corresponding instruction. Note that
+// some instructions will be refined later based on datatypes.
+es_instruction es_parse_binop(es_parse_state *s);
 
 #endif // INCLUDE_ELFSCRIPT_PARSER_H

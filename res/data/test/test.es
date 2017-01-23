@@ -1,15 +1,15 @@
-<elfscript.internal.test>
-<unit.parse>
-// line comment
-/*
+>>elfscript.internal.test
+>>unit.parse
+` line comment
+`*
   block comment
-  // test
+  ` test
   long
   whatever
-  /*
-*/
-//* line comment
-// /* line comment
+  `*
+*`
+` * line comment
+` `* line comment
 basic = {
   delims = [
     [1; 2; 3;],
@@ -67,10 +67,10 @@ objects = [
       6, 7
     ],
     weights = [
-      0.40, 0.35, // 75% |  75%
-      0.10,       // 10% |  85%
-      0.05, 0.05, // 10% |  95%
-      0.03, 0.02, //  5% | 100%
+      0.40, 0.35, ` 75% |  75%
+      0.10,       ` 10% |  85%
+      0.05, 0.05, ` 10% |  95%
+      0.03, 0.02, `  5% | 100%
     ];
   };
 ];
@@ -333,7 +333,7 @@ scope = {
     }
     empty = {
     };
-    { // an unnamed scope
+    { ` an unnamed scope
       x = 231;
       y = 795;
       !assert(x == 231);
@@ -341,7 +341,7 @@ scope = {
       ~x = 3;
       !assert(x == 3);
     };
-    // final assertions
+    ` final assertions
     !assert(x == 3);
     !assert(y == -5);
     !assert(nested.x == 55);
@@ -352,9 +352,9 @@ scope = {
     !assert(empty.y == -5);
     !return(x);
   };
-  // call our test function
+  ` call our test function
   tf1(0);
   tf1();
 };
-</unit.general>
-</elfscript.internal.test>
+<<unit.general
+<<elfscript.internal.test

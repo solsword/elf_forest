@@ -93,6 +93,9 @@ ptrdiff_t l_index_of(list const * const l, void *element);
 // Returns the ith element of the given list, or NULL if i is out of range.
 void * l_get_item(list const * const l, size_t i);
 
+// Returns the last element in the given list, or NULL if the list is empty.
+void * l_get_last(list const * const l);
+
 // Returns a pointer to the ith element of the given list. This function should
 // normally be avoided and the pointers it returns aren't safe to use if the
 // list grows or shrinks. It also doesn't do any bounds checking, and it isn't

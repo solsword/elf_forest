@@ -213,6 +213,16 @@ void ** _l_get_pointer(list *l, size_t i) {
   return &(l->elements[i]);
 }
 
+void * l_get_last(list const * const l) {
+  if (l->count == 0) {
+#ifdef DEBUG
+    fprintf(stderr, "Warning: l_get_last on empty list.\n");
+#endif
+    return NULL;
+  }
+  return l_get_item(l, l->count-1);
+}
+
 void * l_remove_item(list *l, size_t i) {
   if (i >= l->count) {
 #ifdef DEBUG
