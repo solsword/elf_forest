@@ -1,55 +1,55 @@
-#ifndef INCLUDE_EFD_SETUP_H
-#define INCLUDE_EFD_SETUP_H
+#ifndef INCLUDE_ELFSCRIPT_SETUP_H
+#define INCLUDE_ELFSCRIPT_SETUP_H
 
-// efd_setup.h
-// Gathers Elf Forest Data conversion registrations and defines EFD setup.
+// elfscript_setup.h
+// Gathers elfscript conversion registrations and defines elfscript setup.
 
-#include "efd.h"
+#include "elfscript.h"
 
 /***********
  * Globals *
  ***********/
 
-extern efd_function_declaration const EFD_FUNCTION_REGISTRY[];
-extern efd_generator_declaration const EFD_GENERATOR_REGISTRY[];
-extern efd_object_format const EFD_FORMAT_REGISTRY[];
+extern es_function_declaration const ES_FUNCTION_REGISTRY[];
+extern es_generator_declaration const ES_GENERATOR_REGISTRY[];
+extern es_object_format const ES_FORMAT_REGISTRY[];
 
-extern size_t EFD_FUNCTION_REGISTRY_SIZE;
-extern size_t EFD_GENERATOR_REGISTRY_SIZE;
-extern size_t EFD_FORMAT_REGISTRY_SIZE;
+extern size_t ES_FUNCTION_REGISTRY_SIZE;
+extern size_t ES_GENERATOR_REGISTRY_SIZE;
+extern size_t ES_FORMAT_REGISTRY_SIZE;
 
-extern dictionary *EFD_FUNCTION_DICT;
-extern dictionary *EFD_GENERATOR_DICT;
-extern dictionary *EFD_FORMAT_DICT;
+extern dictionary *ES_FUNCTION_DICT;
+extern dictionary *ES_GENERATOR_DICT;
+extern dictionary *ES_FORMAT_DICT;
 
 /*************************
  * Included Declarations *
  *************************/
 
-#define EFD_REGISTER_DECLARATIONS
+#define ES_REGISTER_DECLARATIONS
 #include "func.list"
 #include "gen.list"
 #include "conv.list"
-#undef EFD_REGISTER_DECLARATIONS
+#undef ES_REGISTER_DECLARATIONS
 
 /*************
  * Functions *
  *************/
 
-// Gets the data system set up.
-void setup_elf_forest_data(int track_error_contexts);
+// Gets the elfscript system set up.
+void setup_elfscript(int track_error_contexts);
 
-// Cleans up the data system.
-void cleanup_elf_forest_data(void);
+// Cleans up the elfscript system.
+void cleanup_elfscript(void);
 
-// Note that the lookup functions declared earlier in efd.h are defined in
-// efd_setup.c
+// Note that the lookup functions declared earlier in elfscript.h are defined in
+// elfscript_setup.c
 
-// Loads the common Elf Forest Data from res/data, recursively looking for
-// *.efd files and loading each under EFD_ROOT, before unpacking EFD_ROOT.
-void load_common_efd(void);
+// Loads common elfscript code from res/script, recursively looking for
+// *.es files and loading each.
+void load_common_elfscript(void);
 
 // TODO: This function!
-void save_common_efd(void);
+void save_common_elfscript(void);
 
-#endif // INCLUDE_EFD_SETUP_H
+#endif // INCLUDE_ELFSCRIPT_SETUP_H

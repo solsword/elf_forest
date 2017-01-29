@@ -1,6 +1,8 @@
 // elfscript.c
 // Definition and implementation of ElfScript.
 
+#include <arpa/inet.h>
+
 #include "elfscript.h"
 
 /***********
@@ -11,7 +13,7 @@
 int ELFSCRIPT_TRACK_ERROR_CONTEXTS = 1;
 list *ELFSCRIPT_ERROR_CONTEXT = NULL;
 
-CSTR(EFD_FILE_EXTENSION, "es", 2);
+CSTR(ELFSCRIPT_FILE_EXTENSION, "es", 2);
 
 CSTR(ELFSCRIPT_SCRIPT_DIR_NAME, "script", 6);
 
@@ -109,6 +111,47 @@ CLEANUP_IMPL(es_slice) {
  * Functions *
  *************/
 
+void es_write_esb(char const * const filename, es_bytecode *code) {
+  FILE *fout = fopen(filename, "w");
+  fprintf(fout, "esb\n");
+  size_t written = fwrite(code->bytes, 1, code->len, fout);
+#ifdef DEBUG
+  if (written != code->len) {
+    fprintf(
+      stderr,
+      "ERROR: es_write_esb only wrote %zu/%zu bytes!\n",
+      written,
+      code->len
+    );
+  }
+#endif
+  fclose(fout);
+}
+
+es_bytecode * es_load_esb(char const * const filename) {
+  FILE *fin = fopen(filename, "r");
+  char c;
+  char *expect = "esb\n";
+  es_bytecode *result = create_es_bytecode_sized(ELFSCRIPT_BYTECODE_LARGE_SIZE);
+  while (!feof(fin)) {
+    c = fgetc(fin);
+    if (*expect != '\0') { // check the header
+      if (c != *expect) {
+#ifdef DEBUG
+        fprintf(stderr, "ERROR: es_load_esb: file is missing header.\n");
+#endif
+        fclose(fin);
+        return NULL;
+      }
+      expect += 1;
+    } else { // past the header
+      es_add_instruction(result, (es_instruction) c);
+    }
+  }
+  fclose(fin);
+  return result;
+}
+
 es_bytecode* es_join_bytecode(es_bytecode *first, es_bytecode *second) {
   es_bytecode *result = create_es_bytecode_sized(
     first->len + second->len + ELFSCRIPT_BYTECODE_STARTING_SIZE
@@ -122,15 +165,76 @@ es_bytecode* es_join_bytecode(es_bytecode *first, es_bytecode *second) {
 }
 
 void es_add_instruction(es_bytecode *code, es_instruction instr) {
-  char *new;
-  // ensure capacity
-  if (code->len == code->capacity) {
-    code->capacity *= 2;
-    new = (char*) malloc(sizeof(char) * code->capacity);
-    memcpy(new, code->bytes, code->len);
-    free(code->bytes);
-    code->bytes = new;
-  }
+  es_ensure_bytecode_capacity(code, 1);
   code->bytes[code->len] = (char) instr;
   code->len += 1;
+}
+
+void es_add_int_literal(es_bytecode *code, es_int_t value) {
+  es_ensure_bytecode_capacity(code, 1 + sizeof(es_int_t));
+  code->bytes[code->len] = ES_INSTR_LINT;
+  code->len += 1;
+  // TODO: Something about byte order?
+  memcpy((void*) (code->bytes + code->len), (void*) &value, sizeof(es_int_t));
+  code->len += sizeof(es_int_t);
+}
+
+void es_add_num_literal(es_bytecode *code, es_num_t value) {
+  es_ensure_bytecode_capacity(code, 1 + sizeof(es_num_t));
+  code->bytes[code->len] = ES_INSTR_LNUM;
+  code->len += 1;
+  // TODO: Something about byte order?
+  memcpy((void*) (code->bytes + code->len), (void*) &value, sizeof(es_num_t));
+  code->len += sizeof(es_num_t);
+}
+
+void es_add_str_literal(es_bytecode *code, string *value) {
+  es_int_t slen = s_count_bytes(value);
+  es_ensure_bytecode_capacity(code, 1 + sizeof(es_int_t) + slen);
+  code->bytes[code->len] = ES_INSTR_LSTR;
+  code->len += 1;
+  // TODO: Something about byte order?
+  memcpy((void*) (code->bytes + code->len), (void*) &slen, sizeof(es_num_t));
+  code->len += sizeof(es_num_t);
+  memcpy(
+    (void*) (code->bytes + code->len),
+    (void*) s_raw(value),
+    slen
+  );
+  code->len += sizeof(es_num_t);
+  // TODO: Ending sentinel value?
+}
+
+void es_add_str_literal(es_bytecode *code, string *value) {
+  es_int_t slen = s_count_bytes(value);
+  es_ensure_bytecode_capacity(code, 1 + sizeof(es_int_t) + slen);
+  code->bytes[code->len] = ES_INSTR_LSTR;
+  code->len += 1;
+  // TODO: Something about byte order?
+  memcpy((void*) (code->bytes + code->len), (void*) &slen, sizeof(es_num_t));
+  code->len += sizeof(es_num_t);
+  memcpy(
+    (void*) (code->bytes + code->len),
+    (void*) s_raw(value),
+    slen
+  );
+  code->len += sizeof(es_num_t);
+  // TODO: Ending sentinel value?
+}
+
+void es_add_var(es_bytecode *code, string *varname) {
+  es_int_t slen = s_count_bytes(value);
+  es_ensure_bytecode_capacity(code, 1 + sizeof(es_int_t) + slen);
+  code->bytes[code->len] = ES_INSTR_VAR;
+  code->len += 1;
+  // TODO: Something about byte order?
+  memcpy((void*) (code->bytes + code->len), (void*) &slen, sizeof(es_num_t));
+  code->len += sizeof(es_num_t);
+  memcpy(
+    (void*) (code->bytes + code->len),
+    (void*) s_raw(value),
+    slen
+  );
+  code->len += sizeof(es_num_t);
+  // TODO: Ending sentinel value?
 }

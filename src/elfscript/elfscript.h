@@ -15,7 +15,7 @@
 #include "boilerplate.h"
 #include "util.h"
 
-#include "es_gl.h"
+#include "elfscript_gl.h"
 
 /*********
  * Enums *
@@ -26,24 +26,27 @@
 enum es_instruction_e {
   ES_INSTR_NOP        =   0, // -    a no-op
   ES_INSTR_INVALID    =   1, // -    an invalid instruction
+  // control flow operations
+  ES_INSTR_BRANCH     =  63, //'?'   conditionally execute the following
+  ES_INSTR_ELSE       =  58, //':'   beginning of 'else' code
+  ES_INSTR_DONE       =  59, //';'   end of block
   // constant operations
-  ES_INSTR_CINT       = 105, //'i'   constant int
-  ES_INSTR_CNUM       = 110, //'n'   constant number
-  ES_INSTR_CSTR       = 115, //'s'   constant string
+  ES_INSTR_LINT       = 105, //'i'   literal int
+  ES_INSTR_LNUM       = 110, //'n'   literal number
+  ES_INSTR_LSTR       = 115, //'s'   literal string
   // object operations
   ES_INSTR_POBJ       = 111, //'o'   package last scope as a primitive
-  ES_INSTR_OPROP      =  46, //'.'   get property of a primitive object
   ES_INSTR_PSCOPE     =  47, //'O'   push last scope as an object
-  ES_INSTR_SCPROP     =  58, //':'   get property of a scope object
+  ES_INSTR_GET_PROP   =  46, //'.'   get property of an object
   // scope operations
   ES_INSTR_OSC        = 123, //'{'   open scope
   ES_INSTR_CSC        = 125, //'}'   close scope
   ES_INSTR_LIDX       =  40, //'('   load variable by index
   ES_INSTR_SIDX       =  41, //')'   store anonymous value
-  ES_INSTR_LVAR       =  91, //'['   load variable by name
-  ES_INSTR_SVAR       =  93, //']'   store variable by name
-  ES_INSTR_LGLB       =  36, //'$'   load global
-  ES_INSTR_SGLB       =  35, //'#'   store global
+  ES_INSTR_VAR        =  36, //'$'   reference variable by name
+  ES_INSTR_SVAR       =  35, //'#'   store variable by name
+  ES_INSTR_LGLB       =  91, //'['   load global
+  ES_INSTR_SGLB       =  93, //']'   store global
   // math operations
   ES_INSTR_ADD        =  43, //'+'   addition
   ES_INSTR_SUB        =  45, //'-'   subtraction
@@ -86,20 +89,21 @@ typedef enum es_instruction_e es_instruction;
 ES_GL(i, ES_INSTR_NOP)
 ES_GL(i, ES_INSTR_INVALID)
 
-ES_GL(i, ES_INSTR_CINT)
-ES_GL(i, ES_INSTR_CNUM)
-ES_GL(i, ES_INSTR_CSTR)
+ES_GL(i, ES_INSTR_BRANCH)
+
+ES_GL(i, ES_INSTR_LINT)
+ES_GL(i, ES_INSTR_LNUM)
+ES_GL(i, ES_INSTR_LSTR)
 
 ES_GL(i, ES_INSTR_POBJ)
-ES_GL(i, ES_INSTR_OPROP)
 ES_GL(i, ES_INSTR_PSCOPE)
-ES_GL(i, ES_INSTR_SCPROP)
+ES_GL(i, ES_INSTR_GET_PROP)
 
 ES_GL(i, ES_INSTR_OSC)
 ES_GL(i, ES_INSTR_CSC)
 ES_GL(i, ES_INSTR_LIDX)
 ES_GL(i, ES_INSTR_SIDX)
-ES_GL(i, ES_INSTR_LVAR)
+ES_GL(i, ES_INSTR_VAR)
 ES_GL(i, ES_INSTR_SVAR)
 ES_GL(i, ES_INSTR_LGLB)
 ES_GL(i, ES_INSTR_SGLB)
@@ -211,7 +215,7 @@ typedef struct es_slice_s es_slice;
 struct es_stack_s;
 typedef struct es_stack_s es_stack;
 
-// An entry on the value stack
+// An entry on the Elfscript value stack
 struct es_stack_entry_s;
 typedef struct es_stack_entry_s es_stack_entry;
 
@@ -222,10 +226,6 @@ typedef struct es_scope_s es_scope;
 // An Elfscript variable (to be stored in a scope)
 struct es_var_s;
 typedef sruct es_var_s es_var;
-
-// For storing expressions as they're parsed
-struct es_expression_s;
-typedef struct es_expression_s es_expression;
 
 // An entry in the object format registry describes the string key, pack/unpack
 // functions, and copy/destroy functions for an object format.
@@ -252,8 +252,8 @@ typedef struct es_generator_state_s es_generator_state;
  ******************/
 
 // Functions for working with primitive objects
-typedef es_probj_t (*es_probj_package_function)(es_scope *);
 typedef es_scope* (*es_probj_unpackage_function)(es_probj_t);
+typedef es_probj_t (*es_probj_package_function)(es_scope *);
 typedef es_val_t (*es_probj_access_function)(es_probj_t);
 typedef es_probj_t (*es_probj_copy_function)(es_probj_t);
 typedef void (*es_probj_destroy_function)(es_probj_t);
@@ -275,6 +275,7 @@ typedef es_generator_state * (*es_generator_constructor)(
 #define ELFSCRIPT_DEFAULT_DICTIONARY_SIZE 16
 
 #define ELFSCRIPT_BYTECODE_STARTING_SIZE 16
+#define ELFSCRIPT_BYTECODE_LARGE_SIZE 128
 
 #define ELFSCRIPT_ADDR_SEP_CHR '.'
 
@@ -323,25 +324,21 @@ struct es_stack_s {
   list *values;
 };
 
-// HERE
+struct es_stack_entry_s {
+  es_type type;
+  es_val_t value;
+  // TODO: HERE?
+};
 
-// An entry on the value stack
-struct es_stack_entry_s;
-typedef struct es_stack_entry_s es_stack_entry;
+struct es_scope_s {
+  dictionary *variables;
+  // TODO: HERE?
+};
 
-// An Elfscript scope
-struct es_scope_s;
-typedef struct es_scope_s es_scope;
-
-// An Elfscript variable (to be stored in a scope)
-struct es_var_s;
-typedef sruct es_var_s es_var;
-
-// For storing expressions as they're parsed
-struct es_expression_s;
-typedef struct es_expression_s es_expression;
-
-// HERE
+struct es_var_s {
+  es_type type;
+  es_val_t value;
+};
 
 struct es_object_format_s {
   char *key;
@@ -369,78 +366,6 @@ struct es_generator_state_s {
   void *stash;
 };
 
-/*******************
- * Early Functions *
- *******************/
-
-// Asserts that a type matches and throws an error if it does not (or if it's
-// NULL). Can be turned off by defining ELFSCRIPT_NO_TYPECHECKS, although the
-// NULL check will still take place.
-void es_assert_type(es_node const * const n, es_node_type t);
-
-// Asserts that the given node is a function or generator node and that its
-// return type matches the given type. Throws an error if the type doesn't
-// match. Defining ELFSCRIPT_NO_TYPECHECKS will make this a no-op. Unlike
-// es_assert_type, this does not check whether the incoming node is NULL.
-void es_assert_return_type(es_node const * const n, es_node_type t);
-
-// Asserts that the given node is an object node with the given format. Throws
-// an error if either of those assertions are false. Defining
-// ELFSCRIPT_NO_TYPECHECKS will make this a no-op. Calls es_assert_type which
-// performs a NULL check.
-void es_assert_object_format(
-  es_node const * const n,
-  string const * const fmt
-);
-
-// For use with e.g. l_witheach to verify that multiple objects have a given
-// format. The first argument must be an es_node while the second must be a
-// string.
-void es_v_assert_object_format(void *v_node, void *v_fmt);
-
-// Asserts that the normal child count of the given node is between min and max
-// inclusive. Throws an error otherwise. Negative constraints indicate "no
-// constraint."
-// TODO: Use this in all function/unpack implementations.
-void es_assert_child_count(
-  es_node const * const n,
-  intptr_t min, intptr_t max
-);
-
-/*****************************
- * Error-Reporting Functions *
- *****************************/
-
-// Reports an error with the given node, displaying the given message on stderr
-// along with a representation of the given node. Devours the given message, so
-// the caller doesn't need to free it. The _full version prints a full
-// representation of the given node instead of an abbreviation, while the
-// _light version prints just the node's address.
-void es_report_error_light(string *message, es_node const * const n);
-void es_report_error(string *message, es_node const * const n);
-void es_report_error_full(string *message, es_node const * const n);
-
-// Works like es_report_error but doesn't require (or print info about) a node.
-void es_report_free_error(string *message);
-
-// Returns a string containing a trace of resolution of the given link.
-string *es_trace_link(es_node const * const n);
-
-// Reports an error with a link, printing the given message on stderr as well
-// as an analysis of where the given node (which should be a link node) fails
-// to resolve. Devours the given message.
-void es_report_broken_link(string *message, es_node const * const n);
-
-// Report an error with evaluation, displaying the given message along with a
-// summary of the original node and a full report of the (partial) evaluation
-// result. Devours the given message.
-void es_report_eval_error(
-  es_node const * const orig,
-  es_node const * const evald,
-  string *message
-);
-
-
 /********************
  * Inline Functions *
  ********************/
@@ -458,6 +383,23 @@ static inline es_int_t es_cast_to_int(es_num_t value) {
 
 static inline es_num_t es_cast_to_num(es_int_t value) {
   return (es_num_t) value;
+}
+
+// Code to ensure that a bytecode object has capacity for the given number of
+// extra bytes:
+static inline void es_ensure_bytecode_capacity(es_bytecode *code, size_t extra){
+  char *expanded;
+  if (code->len + code->extra <= code->capacity) {
+    return; // do nothing; capacity is fine
+  }
+  // Need to reallocate:
+  while (code->len + code->extra > code->capacity) {
+    code->capacity *= 2;
+  }
+  expanded = (char*) malloc(sizeof(char) * code->capacity);
+  memcpy(expanded, code->bytes, code->len);
+  free(code->bytes);
+  code->bytes = expanded;
 }
 
 /******************************
@@ -496,9 +438,43 @@ CLEANUP_DECL(es_generator_state);
  * Functions *
  *************/
 
+// Writes the given code to the given filename, overwriting the previous
+// contents if there were any. The format includes a header.
+void es_write_esb(char const * const filename, es_bytecode *code);
+
+// Reads the contents of a .esb file and returns the bytecode stored within.
+es_bytecode * es_load_esb(char const * const filename);
+
 // Returns a new bytecode object which concatenates the bytecode from the given
 // two objects. Frees each of the given objects.
 es_bytecode* es_join_bytecode(es_bytecode *first, es_bytecode *second);
 
 // Adds the given instruction to the end of the given code.
 void es_add_instruction(es_bytecode *code, es_instruction instr);
+
+// Functions for adding literals to bytecode.
+void es_add_int_literal(es_bytecode *code, es_int_t value);
+void es_add_num_literal(es_bytecode *code, es_num_t value);
+void es_add_str_literal(es_bytecode *code, string *value);
+
+// Adds a variable reference to bytecode.
+void es_add_var(es_bytecode *code, string *value);
+
+/********************
+ * Lookup Functions *
+ ********************/
+
+// Note: these are defined in elfscript_setup.c, not elfscript.c.
+
+// Lookup for functions
+es_eval_function es_lookup_function(string const * const key);
+
+// Lookup for generator constructors
+es_generator_constructor es_lookup_generator(string const * const key);
+
+// Lookups for packers, unpackers, copiers, and destructors.
+es_object_format * es_lookup_format(string const * const key);
+es_probj_unpackage_function es_lookup_unpacker(string const * const key);
+es_probj_package_function es_lookup_packer(string const * const key);
+es_probj_copy_function es_lookup_copier(string const * const key);
+es_probj_destroy_function es_lookup_destructor(string const * const key);

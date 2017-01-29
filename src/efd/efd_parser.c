@@ -1714,8 +1714,8 @@ efd_num_t efd_parse_float(efd_parse_state *s) {
 
   efd_parse_skip(s);
   if (efd_parse_failed(s)) {
-    s->context = "integer (pre)";
-    return EFD_PARSER_INT_ERROR;
+    s->context = "number (pre)";
+    return EFD_PARSER_NUM_ERROR;
   }
 
   state = EFD_FLOAT_STATE_PRE;
