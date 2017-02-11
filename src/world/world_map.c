@@ -128,6 +128,8 @@ CLEANUP_IMPL(biome) {
   cleanup_list(doomed->medium_spaced_aquatic_flora);
   cleanup_list(doomed->wide_spaced_aquatic_flora);
 
+  // TODO: fauna
+
   free(doomed);
 }
 
@@ -137,7 +139,7 @@ biome* create_merged_biome(
   float str1,
   float str2
 ) {
-  biome *result = create_biome(WM_BC_UNK);
+  biome *result = create_biome(WM_BC_UNKNOWN);
   
   if (str1 + str2 == 0) {
 #ifdef DEBUG
@@ -158,32 +160,6 @@ biome* create_merged_biome(
     merge_all_biomes_into(wr2, str2 / (str1 + str2), result);
   }
   return result;
-}
-
-void cleanup_biome(biome *b) {
-  cleanup_list(b->hanging_terrestrial_flora);
-  cleanup_list(b->ephemeral_terrestrial_flora);
-  cleanup_list(b->ubiquitous_terrestrial_flora);
-  cleanup_list(b->close_spaced_terrestrial_flora);
-  cleanup_list(b->medium_spaced_terrestrial_flora);
-  cleanup_list(b->wide_spaced_terrestrial_flora);
-
-  cleanup_list(b->hanging_subterranean_flora);
-  cleanup_list(b->ephemeral_subterranean_flora);
-  cleanup_list(b->ubiquitous_subterranean_flora);
-  cleanup_list(b->close_spaced_subterranean_flora);
-  cleanup_list(b->medium_spaced_subterranean_flora);
-  cleanup_list(b->wide_spaced_subterranean_flora);
-
-  cleanup_list(b->ephemeral_aquatic_flora);
-  cleanup_list(b->ubiquitous_aquatic_flora);
-  cleanup_list(b->close_spaced_aquatic_flora);
-  cleanup_list(b->medium_spaced_aquatic_flora);
-  cleanup_list(b->wide_spaced_aquatic_flora);
-
-  // TODO: Fauna
-
-  free(b);
 }
 
 /*************

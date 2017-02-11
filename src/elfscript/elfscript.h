@@ -478,3 +478,5 @@ es_probj_unpackage_function es_lookup_unpacker(string const * const key);
 es_probj_package_function es_lookup_packer(string const * const key);
 es_probj_copy_function es_lookup_copier(string const * const key);
 es_probj_destroy_function es_lookup_destructor(string const * const key);
+
+#endif // INCLUDE_ELFSCRIPT_H

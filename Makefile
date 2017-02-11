@@ -98,9 +98,9 @@ CORE_OBJECTS=$(OBJ_DIR)/world.o \
              $(OBJ_DIR)/ptime.o \
              $(OBJ_DIR)/pmem.o \
              $(OBJ_DIR)/jobs.o \
-             $(OBJ_DIR)/efd.o \
-             $(OBJ_DIR)/efd_setup.o \
-             $(OBJ_DIR)/efd_parser.o \
+             $(OBJ_DIR)/elfscript.o \
+             $(OBJ_DIR)/elfscript_parser.o \
+             $(OBJ_DIR)/elfscript_setup.o \
              $(OBJ_DIR)/ui.o
 
 MAIN_OBJECTS=$(OBJ_DIR)/main.o
@@ -124,26 +124,26 @@ CHECKGL_OBJECTS=$(OBJ_DIR)/check_gl_version.o
 # The default goal:
 .DEFAULT_GOAL := game
 
-.PHONY: all clean game test viewer unit_tests test_noise checkgl src_lists efd_globals
+.PHONY: all clean game test viewer unit_tests test_noise checkgl src_lists elfscript_globals
 
-all: src_lists game test viewer unit_tests test_noise efd_globals
+all: src_lists game test viewer unit_tests test_noise elfscript_globals
 
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(BIN_DIR)
 	rm -rf $(OUT_DIR)
-	rm -f $(DATA_DIR)/globals/auto.efd
-	rm -f $(SRC_DIR)/efd/func.list
-	rm -f $(SRC_DIR)/efd/gen.list
-	rm -f $(SRC_DIR)/efd/conv.list
+	rm -f $(DATA_DIR)/globals/auto.es
+	rm -f $(SRC_DIR)/elfscript/func.list
+	rm -f $(SRC_DIR)/elfscript/gen.list
+	rm -f $(SRC_DIR)/elfscript/conv.list
 
-game: $(BIN_DIR)/elf_forest efd_globals
+game: $(BIN_DIR)/elf_forest elfscript_globals
 
-test: $(BIN_DIR)/test efd_globals
+test: $(BIN_DIR)/test elfscript_globals
 
-viewer: $(BIN_DIR)/viewer efd_globals
+viewer: $(BIN_DIR)/viewer elfscript_globals
 
-unit_tests: $(BIN_DIR)/unit_tests efd_globals
+unit_tests: $(BIN_DIR)/unit_tests elfscript_globals
 
 noise_perf: $(BIN_DIR)/noise_perf
 
@@ -153,42 +153,42 @@ test_noise: $(BIN_DIR)/test_noise $(TEST_DIR)
 checkgl: $(BIN_DIR)/checkgl
 	./$(BIN_DIR)/checkgl
 
-efd_globals: $(DATA_DIR)/globals/auto.efd
+elfscript_globals: $(DATA_DIR)/globals/auto.es
 
 src_lists: \
- $(SRC_DIR)/efd/func.list \
- $(SRC_DIR)/efd/gen.list \
- $(SRC_DIR)/efd/conv.list
+ $(SRC_DIR)/elfscript/func.list \
+ $(SRC_DIR)/elfscript/gen.list \
+ $(SRC_DIR)/elfscript/conv.list
 
-$(SRC_DIR)/efd/func.list: $(SRC_DIR) $(SRC_DIR)/efd/func/*
-	echo "// auto-generated functions list" > $(SRC_DIR)/efd/func.list
-	echo "// vim:syntax=c" >> $(SRC_DIR)/efd/func.list
-	ls $(SRC_DIR)/efd/func \
+$(SRC_DIR)/elfscript/func.list: $(SRC_DIR) $(SRC_DIR)/elfscript/func/*
+	echo "// auto-generated functions list" > $(SRC_DIR)/elfscript/func.list
+	echo "// vim:syntax=c" >> $(SRC_DIR)/elfscript/func.list
+	ls $(SRC_DIR)/elfscript/func \
 		| sed "s/^/#include \"func\//" \
 		| sed "s/$$/\"/" \
-		>> $(SRC_DIR)/efd/func.list
+		>> $(SRC_DIR)/elfscript/func.list
 
-$(SRC_DIR)/efd/gen.list: $(SRC_DIR) $(SRC_DIR)/efd/gen/*
-	echo "// auto-generated generators list" > $(SRC_DIR)/efd/gen.list
-	echo "// vim:syntax=c" >> $(SRC_DIR)/efd/gen.list
-	ls $(SRC_DIR)/efd/gen \
+$(SRC_DIR)/elfscript/gen.list: $(SRC_DIR) $(SRC_DIR)/elfscript/gen/*
+	echo "// auto-generated generators list" > $(SRC_DIR)/elfscript/gen.list
+	echo "// vim:syntax=c" >> $(SRC_DIR)/elfscript/gen.list
+	ls $(SRC_DIR)/elfscript/gen \
 		| sed "s/^/#include \"gen\//" \
 		| sed "s/$$/\"/" \
-		>> $(SRC_DIR)/efd/gen.list
+		>> $(SRC_DIR)/elfscript/gen.list
 
-$(SRC_DIR)/efd/conv.list: $(SRC_DIR) $(SRC_DIR)/efd/conv/*
-	echo "// auto-generated conversions list" > $(SRC_DIR)/efd/conv.list
-	echo "// vim:syntax=c" >> $(SRC_DIR)/efd/conv.list
-	ls $(SRC_DIR)/efd/conv \
+$(SRC_DIR)/elfscript/conv.list: $(SRC_DIR) $(SRC_DIR)/elfscript/conv/*
+	echo "// auto-generated conversions list" > $(SRC_DIR)/elfscript/conv.list
+	echo "// vim:syntax=c" >> $(SRC_DIR)/elfscript/conv.list
+	ls $(SRC_DIR)/elfscript/conv \
 		| sed "s/^/#include \"conv\//" \
 		| sed "s/$$/\"/" \
-		>> $(SRC_DIR)/efd/conv.list
+		>> $(SRC_DIR)/elfscript/conv.list
 
-$(DYN_DIR)/print_efd_globals.c: $(DYN_DIR) $(OBJ_DIR)/*
-	./collect_efd_globals.sh $(SRC_DIR) $(DYN_DIR)
+$(DYN_DIR)/print_elfscript_globals.c: $(DYN_DIR) $(OBJ_DIR)/*
+	./collect_elfscript_globals.sh $(SRC_DIR) $(DYN_DIR)
 
-$(DATA_DIR)/globals/auto.efd: $(BIN_DIR)/print_efd_globals
-	$(BIN_DIR)/print_efd_globals > $(DATA_DIR)/globals/auto.efd
+$(DATA_DIR)/globals/auto.es: $(BIN_DIR)/print_elfscript_globals
+	$(BIN_DIR)/print_elfscript_globals > $(DATA_DIR)/globals/auto.es
 
 $(DYN_DIR):
 	mkdir -p $(DYN_DIR)
@@ -224,9 +224,9 @@ $(OBJ_DIR)/obj.d: \
  $(SRC_DIR)/*/*.c \
  $(SRC_DIR)/*.h \
  $(SRC_DIR)/*/*.h  \
- $(SRC_DIR)/efd/func.list \
- $(SRC_DIR)/efd/gen.list \
- $(SRC_DIR)/efd/conv.list \
+ $(SRC_DIR)/elfscript/func.list \
+ $(SRC_DIR)/elfscript/gen.list \
+ $(SRC_DIR)/elfscript/conv.list \
  $(OBJ_DIR)
 	$(CC) -MM $(INCLUDE_FLAGS) $(SRC_DIR)/*.c $(SRC_DIR)/*/*.c \
 		| sed "s/^\([^ ]\)/$(OBJ_DIR)\/\1/" \
@@ -244,11 +244,11 @@ $(OBJ_DIR)/%.o:
 	$(CC) $(CFLAGS) $< -o $@
 
 # Dynamic sources:
-$(OBJ_DIR)/print_efd_globals.o: $(DYN_DIR)/print_efd_globals.c
+$(OBJ_DIR)/print_elfscript_globals.o: $(DYN_DIR)/print_elfscript_globals.c
 	$(CC) $(CFLAGS) $< -o $@
 
-$(BIN_DIR)/print_efd_globals: $(OBJ_DIR)/print_efd_globals.o $(BIN_DIR)
-	$(CC) $(OBJ_DIR)/print_efd_globals.o $(LFLAGS) -o $(BIN_DIR)/print_efd_globals
+$(BIN_DIR)/print_elfscript_globals: $(OBJ_DIR)/print_elfscript_globals.o $(BIN_DIR)
+	$(CC) $(OBJ_DIR)/print_elfscript_globals.o $(LFLAGS) -o $(BIN_DIR)/print_elfscript_globals
 
 $(BIN_DIR)/elf_forest: $(CORE_OBJECTS) $(MAIN_OBJECTS) $(BIN_DIR) $(OUT_DIR)
 	$(CC) $(CORE_OBJECTS) $(MAIN_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/elf_forest
