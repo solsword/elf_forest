@@ -10,6 +10,7 @@
 #include "datatypes/list.h"
 #include "datatypes/string.h"
 #include "datatypes/dictionary.h"
+#include "datatypes/dict_string_keys.h"
 #include "datatypes/map.h"
 
 #include "boilerplate.h"
@@ -86,62 +87,62 @@ enum es_instruction_e {
 };
 typedef enum es_instruction_e es_instruction;
 
-ES_GL(i, ES_INSTR_NOP)
-ES_GL(i, ES_INSTR_INVALID)
+ELFSCRIPT_GL(i, ES_INSTR_NOP)
+ELFSCRIPT_GL(i, ES_INSTR_INVALID)
 
-ES_GL(i, ES_INSTR_BRANCH)
+ELFSCRIPT_GL(i, ES_INSTR_BRANCH)
 
-ES_GL(i, ES_INSTR_LINT)
-ES_GL(i, ES_INSTR_LNUM)
-ES_GL(i, ES_INSTR_LSTR)
+ELFSCRIPT_GL(i, ES_INSTR_LINT)
+ELFSCRIPT_GL(i, ES_INSTR_LNUM)
+ELFSCRIPT_GL(i, ES_INSTR_LSTR)
 
-ES_GL(i, ES_INSTR_POBJ)
-ES_GL(i, ES_INSTR_PSCOPE)
-ES_GL(i, ES_INSTR_GET_PROP)
+ELFSCRIPT_GL(i, ES_INSTR_POBJ)
+ELFSCRIPT_GL(i, ES_INSTR_PSCOPE)
+ELFSCRIPT_GL(i, ES_INSTR_GET_PROP)
 
-ES_GL(i, ES_INSTR_OSC)
-ES_GL(i, ES_INSTR_CSC)
-ES_GL(i, ES_INSTR_LIDX)
-ES_GL(i, ES_INSTR_SIDX)
-ES_GL(i, ES_INSTR_VAR)
-ES_GL(i, ES_INSTR_SVAR)
-ES_GL(i, ES_INSTR_LGLB)
-ES_GL(i, ES_INSTR_SGLB)
+ELFSCRIPT_GL(i, ES_INSTR_OSC)
+ELFSCRIPT_GL(i, ES_INSTR_CSC)
+ELFSCRIPT_GL(i, ES_INSTR_LIDX)
+ELFSCRIPT_GL(i, ES_INSTR_SIDX)
+ELFSCRIPT_GL(i, ES_INSTR_VAR)
+ELFSCRIPT_GL(i, ES_INSTR_SVAR)
+ELFSCRIPT_GL(i, ES_INSTR_LGLB)
+ELFSCRIPT_GL(i, ES_INSTR_SGLB)
 
-ES_GL(i, ES_INSTR_ADD)
-ES_GL(i, ES_INSTR_SUB)
-ES_GL(i, ES_INSTR_NEG)
-ES_GL(i, ES_INSTR_ABS)
-ES_GL(i, ES_INSTR_MULT)
-ES_GL(i, ES_INSTR_FDIV)
-ES_GL(i, ES_INSTR_IDIV)
-ES_GL(i, ES_INSTR_MOD)
-ES_GL(i, ES_INSTR_POW)
-ES_GL(i, ES_INSTR_LOG)
+ELFSCRIPT_GL(i, ES_INSTR_ADD)
+ELFSCRIPT_GL(i, ES_INSTR_SUB)
+ELFSCRIPT_GL(i, ES_INSTR_NEG)
+ELFSCRIPT_GL(i, ES_INSTR_ABS)
+ELFSCRIPT_GL(i, ES_INSTR_MULT)
+ELFSCRIPT_GL(i, ES_INSTR_FDIV)
+ELFSCRIPT_GL(i, ES_INSTR_IDIV)
+ELFSCRIPT_GL(i, ES_INSTR_MOD)
+ELFSCRIPT_GL(i, ES_INSTR_POW)
+ELFSCRIPT_GL(i, ES_INSTR_LOG)
 
-ES_GL(i, ES_INSTR_BIT_AND)
-ES_GL(i, ES_INSTR_BIT_OR)
-ES_GL(i, ES_INSTR_BIT_XOR)
-ES_GL(i, ES_INSTR_BIT_NOT)
+ELFSCRIPT_GL(i, ES_INSTR_BIT_AND)
+ELFSCRIPT_GL(i, ES_INSTR_BIT_OR)
+ELFSCRIPT_GL(i, ES_INSTR_BIT_XOR)
+ELFSCRIPT_GL(i, ES_INSTR_BIT_NOT)
 
-ES_GL(i, ES_INSTR_AND)
-ES_GL(i, ES_INSTR_OR)
-ES_GL(i, ES_INSTR_NOT)
-ES_GL(i, ES_INSTR_LT)
-ES_GL(i, ES_INSTR_LE)
-ES_GL(i, ES_INSTR_EQ)
-ES_GL(i, ES_INSTR_GE)
-ES_GL(i, ES_INSTR_GT)
+ELFSCRIPT_GL(i, ES_INSTR_AND)
+ELFSCRIPT_GL(i, ES_INSTR_OR)
+ELFSCRIPT_GL(i, ES_INSTR_NOT)
+ELFSCRIPT_GL(i, ES_INSTR_LT)
+ELFSCRIPT_GL(i, ES_INSTR_LE)
+ELFSCRIPT_GL(i, ES_INSTR_EQ)
+ELFSCRIPT_GL(i, ES_INSTR_GE)
+ELFSCRIPT_GL(i, ES_INSTR_GT)
 
-ES_GL(i, ES_INSTR_FDEF)
-ES_GL(i, ES_INSTR_MDEF)
-ES_GL(i, ES_INSTR_GDEF)
-ES_GL(i, ES_INSTR_GMDEF)
-ES_GL(i, ES_INSTR_FCALL)
-ES_GL(i, ES_INSTR_MCALL)
-ES_GL(i, ES_INSTR_BCALL)
-ES_GL(i, ES_INSTR_FJUMP)
-ES_GL(i, ES_INSTR_RET)
+ELFSCRIPT_GL(i, ES_INSTR_FDEF)
+ELFSCRIPT_GL(i, ES_INSTR_MDEF)
+ELFSCRIPT_GL(i, ES_INSTR_GDEF)
+ELFSCRIPT_GL(i, ES_INSTR_GMDEF)
+ELFSCRIPT_GL(i, ES_INSTR_FCALL)
+ELFSCRIPT_GL(i, ES_INSTR_MCALL)
+ELFSCRIPT_GL(i, ES_INSTR_BCALL)
+ELFSCRIPT_GL(i, ES_INSTR_FJUMP)
+ELFSCRIPT_GL(i, ES_INSTR_RET)
 
 // Elfscript data types
 enum es_type_e {
@@ -150,6 +151,7 @@ enum es_type_e {
   ES_DT_INT            , //'i'  integer
   ES_DT_NUM            , //'n'  number
   ES_DT_STR            , //'s'  string
+  ES_DT_SCP            , //'S'  scope
   ES_DT_OBJ            , //'o'  object
   ES_DT_FCN            , //'f'  function
   ES_DT_MTH            , //'m'  method
@@ -158,16 +160,17 @@ enum es_type_e {
 };
 typedef enum es_type_e es_type;
 
-ES_GL(i, ES_DT_INVALID)
-ES_GL(i, ES_DT_ANY)
-ES_GL(i, ES_DT_INT)
-ES_GL(i, ES_DT_NUM)
-ES_GL(i, ES_DT_STR)
-ES_GL(i, ES_DT_OBJ)
-ES_GL(i, ES_DT_FCN)
-ES_GL(i, ES_DT_MTH)
-ES_GL(i, ES_DT_GEN)
-ES_GL(i, ES_DT_GNM)
+ELFSCRIPT_GL(i, ES_DT_INVALID)
+ELFSCRIPT_GL(i, ES_DT_ANY)
+ELFSCRIPT_GL(i, ES_DT_INT)
+ELFSCRIPT_GL(i, ES_DT_NUM)
+ELFSCRIPT_GL(i, ES_DT_STR)
+ELFSCRIPT_GL(i, ES_DT_SCP)
+ELFSCRIPT_GL(i, ES_DT_OBJ)
+ELFSCRIPT_GL(i, ES_DT_FCN)
+ELFSCRIPT_GL(i, ES_DT_MTH)
+ELFSCRIPT_GL(i, ES_DT_GEN)
+ELFSCRIPT_GL(i, ES_DT_GNM)
 
 // Elfscript generator types
 enum es_generator_type_e {
@@ -181,13 +184,13 @@ enum es_generator_type_e {
 };
 typedef enum es_generator_type_e es_generator_type;
 
-ES_GL(i, ES_GT_INVALID)
-ES_GL(i, ES_GT_VARIABLES)
-ES_GL(i, ES_GT_INDICES)
-ES_GL(i, ES_GT_FUNCTION)
-ES_GL(i, ES_GT_EXTEND_RESTART)
-ES_GL(i, ES_GT_EXTEND_HOLD)
-ES_GL(i, ES_GT_PARALLEL)
+ELFSCRIPT_GL(i, ES_GT_INVALID)
+ELFSCRIPT_GL(i, ES_GT_VARIABLES)
+ELFSCRIPT_GL(i, ES_GT_INDICES)
+ELFSCRIPT_GL(i, ES_GT_FUNCTION)
+ELFSCRIPT_GL(i, ES_GT_EXTEND_RESTART)
+ELFSCRIPT_GL(i, ES_GT_EXTEND_HOLD)
+ELFSCRIPT_GL(i, ES_GT_PARALLEL)
 
 /*********
  * Types *
@@ -225,7 +228,12 @@ typedef struct es_scope_s es_scope;
 
 // An Elfscript variable (to be stored in a scope)
 struct es_var_s;
-typedef sruct es_var_s es_var;
+typedef struct es_var_s es_var;
+
+// A header for an object specifying its format and pointing to the object
+// itself.
+struct es_obj_s;
+typedef struct es_obj_s es_obj;
 
 // An entry in the object format registry describes the string key, pack/unpack
 // functions, and copy/destroy functions for an object format.
@@ -336,16 +344,22 @@ struct es_scope_s {
 };
 
 struct es_var_s {
+  int refcount;
   es_type type;
   es_val_t value;
 };
 
+struct es_obj_s {
+  es_object_format *format;
+  es_probj_t value;
+};
+
 struct es_object_format_s {
   char *key;
-  es_unpack_function unpacker;
-  es_pack_function packer;
-  es_copy_function copier;
-  es_destroy_function destructor;
+  es_probj_unpackage_function unpacker;
+  es_probj_package_function packer;
+  es_probj_copy_function copier;
+  es_probj_destroy_function destructor;
 };
 
 struct es_function_declaration_s {
@@ -366,6 +380,64 @@ struct es_generator_state_s {
   void *stash;
 };
 
+/******************************
+ * Constructors & Destructors *
+ ******************************/
+
+// Allocates and returns a new bytecode object.
+es_bytecode* create_es_bytecode(void);
+
+// Creates a new bytecode object with a specific starting capacity.
+es_bytecode* create_es_bytecode_sized(size_t size);
+
+// Copies the given bytecode object.
+es_bytecode* copy_es_bytecode(es_bytecode *src);
+
+// Clean up memory from the given bytecode.
+CLEANUP_DECL(es_bytecode);
+
+// Allocates and returns a new scope object.
+es_scope* create_es_scope(void);
+
+// Cleans up memory from the given scope object. As part of this process,
+// decrements the refcounts of each variable in the scope, potentially causing
+// them to be cleaned up as a result.
+CLEANUP_DECL(es_scope);
+
+// These allocate and return new variable objects of the appropriate types.
+es_var* create_es_var(es_type type, es_val_t value);
+es_var* create_es_int_var(es_int_t value);
+es_var* create_es_num_var(es_num_t value);
+es_var* create_es_str_var(string* value);
+es_var* create_es_obj_var(es_obj* value);
+es_var* create_es_scp_var(es_scope* value);
+
+// Clean up memory from the given variable.
+CLEANUP_DECL(es_var);
+
+// Allocates and returns a new object.
+es_obj* create_es_obj(es_object_format *format, es_probj_t obj);
+
+// Cleans up the given object.
+CLEANUP_DECL(es_obj);
+
+// Allocates and returns a new slice object.
+es_slice* create_es_slice(void);
+
+// Clean up memory from a slice.
+CLEANUP_DECL(es_slice);
+
+// Allocates and returns a new es_generator_state, using a copy of the given
+// name string but taking the given state without copying it.
+es_generator_state * create_es_generator_state(
+  es_generator_type type,
+  string const * const name,
+  void *state
+);
+
+// Clean up memory from a generator state.
+CLEANUP_DECL(es_generator_state);
+
 /********************
  * Inline Functions *
  ********************/
@@ -382,6 +454,7 @@ static inline es_int_t es_cast_to_int(es_num_t value) {
 }
 
 static inline es_num_t es_cast_to_num(es_int_t value) {
+  // TODO: fulfill promise about out-of-bounds values above?
   return (es_num_t) value;
 }
 
@@ -389,11 +462,11 @@ static inline es_num_t es_cast_to_num(es_int_t value) {
 // extra bytes:
 static inline void es_ensure_bytecode_capacity(es_bytecode *code, size_t extra){
   char *expanded;
-  if (code->len + code->extra <= code->capacity) {
+  if (code->len + extra <= code->capacity) {
     return; // do nothing; capacity is fine
   }
   // Need to reallocate:
-  while (code->len + code->extra > code->capacity) {
+  while (code->len + extra > code->capacity) {
     code->capacity *= 2;
   }
   expanded = (char*) malloc(sizeof(char) * code->capacity);
@@ -402,37 +475,116 @@ static inline void es_ensure_bytecode_capacity(es_bytecode *code, size_t extra){
   code->bytes = expanded;
 }
 
-/******************************
- * Constructors & Destructors *
- ******************************/
+// Gets the value of a variable and converts it to an integer. Works on int-
+// and num-type variables.
+static inline es_int_t es_as_i(es_var *var) {
+  switch (var->type) {
+    case ES_DT_INT:
+      return (es_int_t) var->value;
+    case ES_DT_NUM:
+      return es_cast_to_int((es_num_t) var->value);
+    default:
+#ifdef DEBUG
+      fprintf(stderr, "ERROR: es_as_i called on non-numeric variable.\n");
+#endif
+      return 0;
+  }
+}
 
-// Allocates and returns a new bytecode object.
-es_bytecode* create_es_bytecode(void);
+// Gets the value of a variable and converts it to a number. Works on int- and
+// num-type variables.
+static inline es_num_t es_as_n(es_var *var) {
+  switch (var->type) {
+    case ES_DT_INT:
+      return es_cast_to_num((es_int_t) var->value);
+    case ES_DT_NUM:
+      return (es_num_t) var->value;
+    default:
+#ifdef DEBUG
+      fprintf(stderr, "ERROR: es_as_n called on non-numeric variable.\n");
+#endif
+      return 0.0;
+  }
+}
 
-// Creates a new bytecode object with a specific starting capacity.
-es_bytecode* create_es_bytecode_sized(size_t size);
+// Gets the value of a variable and converts it to a string. Only works on
+// str-type variables.
+static inline string* es_as_s(es_var *var) {
+  switch (var->type) {
+    case ES_DT_STR:
+      return (string*) var->value;
+    default:
+#ifdef DEBUG
+      fprintf(stderr, "ERROR: es_as_s called on non-string variable.\n");
+#endif
+      return NULL;
+  }
+}
 
-// Copies the given bytecode object.
-es_bytecode* copy_es_bytecode(es_bytecode *src);
+// Gets the value of a variable and converts it to an object. Only works on
+// obj-type variables.
+static inline es_obj* es_as_obj(es_var *var) {
+  switch (var->type) {
+    case ES_DT_OBJ:
+      return (es_obj*) var->value;
+    default:
+#ifdef DEBUG
+      fprintf(stderr, "ERROR: es_as_obj called on non-object variable.\n");
+#endif
+      return NULL;
+  }
+}
 
-// Clean up memory from the given object.
-CLEANUP_DECL(es_bytecode);
+// Gets the value of a variable and converts it to a scope. Only works on
+// scp-type variables.
+static inline es_scope* es_as_scope(es_var *var) {
+  switch (var->type) {
+    case ES_DT_OBJ:
+      return (es_scope*) var->value;
+    default:
+#ifdef DEBUG
+      fprintf(stderr, "ERROR: es_as_scope called on non-string variable.\n");
+#endif
+      return NULL;
+  }
+}
 
-// Allocates and returns a new slice object.
-es_slice* create_es_slice(void);
+// Gets the raw value of a variable as a void*. "Works" on any kind of variable.
+static inline void* es_raw_value(es_var *var) {
+  return (void*) var->value;
+}
 
-// Clean up memory from a slice.
-CLEANUP_DECL(es_slice);
+// Increments the reference counter of the given variable.
+static inline void es_incref(es_var *var) {
+  var->refcount += 1;
+}
 
-// Allocates and returns a new es_generator_state, using a copy of the given
-// name string but taking the given state without copying it.
-es_generator_state * create_es_generator_state(
-  es_generator_type type,
-  string const * const name,
-  void *state
-);
+// Decrements the reference counter of the given variable, cleaning it up if
+// the reference counter becomes <= 0.
+static inline void es_decref(es_var *var) {
+  var->refcount -= 1;
+  if (var->refcount <= 0) {
+    cleanup_es_var(var);
+  }
+}
 
-CLEANUP_DECL(es_generator_state);
+// Version for use with data structures; as a real function so it can be
+// pointed to.
+void es_v_decref(void *v_var);
+
+// Ensures that the value stored in the given object has the given format
+// (specified by its key), and returns the value. If the format doesn't match,
+// it returns NULL.
+static inline es_probj_t es_obj_as_fmt(es_obj *obj, string const * const fmt) {
+  if (s_check_bytes(fmt, obj->format->key)) {
+    return obj->value;
+#ifdef DEBUG
+  } else {
+    fprintf(stderr, "ERROR: es_obj_as_fmt format mismatch.\n");
+  }
+#endif
+  return NULL;
+}
 
 /*************
  * Functions *
@@ -459,6 +611,29 @@ void es_add_str_literal(es_bytecode *code, string *value);
 
 // Adds a variable reference to bytecode.
 void es_add_var(es_bytecode *code, string *value);
+
+// Returns the number of variables in the given scope.
+size_t es_scope_size(es_scope *sc);
+
+// Returns the nth variable in the given scope. Starts counting from zero.
+es_var * es_read_nth(es_scope *sc, size_t n);
+
+// Looks up the given name within the given scope and returns a pointer to the
+// associated variable, or NULL if that name doesn't exist in the given scope.
+es_var * es_read_var(es_scope *sc, string *name);
+
+// Adds the given value as the last element of the given scope, giving it the
+// name ELFSCRIPT_ANON_NAME (thus potentially shadowing anything that had that
+// name previously; see datatypes/dictionary.h for the relevant behavior).
+void es_write_last(es_scope *sc, es_var *value);
+
+// Sets the given name within the given scope to the given value. If there was
+// a value there previously, it is kicked out and its reference count is
+// decreased, possibly causing it to be destroyed.
+void es_write_var(es_scope *sc, string *name, es_var *value);
+
+// Reports an error during Elfscript evaluation.
+void es_report_error(string *message);
 
 /********************
  * Lookup Functions *

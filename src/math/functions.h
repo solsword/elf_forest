@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-#include "efd/efd_gl.h"
+#include "elfscript/elfscript_gl.h"
 
 /*********
  * Enums *
@@ -27,17 +27,17 @@ enum map_function_e {
 };
 typedef enum map_function_e map_function;
 
-EFD_GL(i, MFN_LINEAR)
-EFD_GL(i, MFN_QUADRATIC)
-EFD_GL(i, MFN_CUBIC)
-EFD_GL(i, MFN_SQRT)
-EFD_GL(i, MFN_EXPONENTIAL)
-EFD_GL(i, MFN_EX_EXPONENTIAL)
-EFD_GL(i, MFN_SIGMOID)
-EFD_GL(i, MFN_HILL)
-EFD_GL(i, MFN_TERRACE)
-EFD_GL(i, MFN_SPREAD_UP)
-EFD_GL(i, MFN_SPREAD_DOWN)
+ELFSCRIPT_GL(i, MFN_LINEAR)
+ELFSCRIPT_GL(i, MFN_QUADRATIC)
+ELFSCRIPT_GL(i, MFN_CUBIC)
+ELFSCRIPT_GL(i, MFN_SQRT)
+ELFSCRIPT_GL(i, MFN_EXPONENTIAL)
+ELFSCRIPT_GL(i, MFN_EX_EXPONENTIAL)
+ELFSCRIPT_GL(i, MFN_SIGMOID)
+ELFSCRIPT_GL(i, MFN_HILL)
+ELFSCRIPT_GL(i, MFN_TERRACE)
+ELFSCRIPT_GL(i, MFN_SPREAD_UP)
+ELFSCRIPT_GL(i, MFN_SPREAD_DOWN)
 
 /********************
  * Inline Functions *

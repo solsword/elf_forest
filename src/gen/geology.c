@@ -11,7 +11,7 @@
 #include "world/species.h"
 #include "world/world_map.h"
 #include "tex/color.h"
-#include "efd/efd.h"
+#include "elfscript/elfscript.h"
 
 #include "util.h"
 
@@ -885,8 +885,10 @@ float sheet_height(
 // --------------------------
 
 stone_species* generate_stone_species(world_map *wm, ptrdiff_t seed) {
-  stone_species *result;
+  stone_species *result = NULL;
 
+  /*
+   * TODO: Fix this!
   efd_node *gen_node, *gen_stone_species_node, *args_node, *species_node;
 
   SSTR(vn_world_map, "~world_map", 10);
@@ -894,7 +896,7 @@ stone_species* generate_stone_species(world_map *wm, ptrdiff_t seed) {
   SSTR(vn_seed, "~seed", 5);
   SSTR(s_stone_species, "stone_species", 13);
 
-  gen_node = efdx(EFD_ROOT, GEO_GEN_KEY);
+  gen_node = efdx(ELFSCRIPT_ROOT, GEO_GEN_KEY);
   if (gen_node == NULL) {
     fprintf(
       stderr,
@@ -905,7 +907,7 @@ stone_species* generate_stone_species(world_map *wm, ptrdiff_t seed) {
   gen_stone_species_node = efd_lookup_expected(gen_node, GEO_GEN_KEY_SPECIES);
 
   // Arguments to gen_stone_species:
-  args_node = create_efd_node(EFD_NT_SCOPE, EFD_ANON_NAME, NULL);
+  args_node = create_efd_node(ELFSCRIPT_NT_SCOPE, ELFSCRIPT_ANON_NAME, NULL);
   efd_add_child(
     args_node,
     construct_efd_obj_node(vn_world_map, NULL, f_singleton, wm)
@@ -924,6 +926,7 @@ stone_species* generate_stone_species(world_map *wm, ptrdiff_t seed) {
 
   // Add the new species to the global registry (thereby assigning its ID):
   (void) add_stone_species(result);
+  */
 
   return result;
 }
@@ -937,6 +940,8 @@ void generate_geology(world_map *wm) {
   stone_species *st_sp;
   ptrdiff_t hash;
 
+  /*
+   * TODO: Fix this!
   efd_node *gen_node;
   efd_node *gen_strata_params_node, *gen_stratum_node;
   efd_node *args_node;
@@ -952,8 +957,8 @@ void generate_geology(world_map *wm) {
 
   SSTR(s_stratum, "stratum", 7);
 
-  // collect EFD nodes
-  gen_node = efdx(EFD_ROOT, GEO_GEN_KEY);
+  // collect ELFSCRIPT nodes
+  gen_node = efdx(ELFSCRIPT_ROOT, GEO_GEN_KEY);
   if (gen_node == NULL) {
     fprintf(
       stderr,
@@ -976,7 +981,7 @@ void generate_geology(world_map *wm) {
     st_sp = generate_stone_species(wm, hash);
 
     // Arguments to gen_strata_params:
-    args_node = create_efd_node(EFD_NT_SCOPE, EFD_ANON_NAME, NULL);
+    args_node = create_efd_node(ELFSCRIPT_NT_SCOPE, ELFSCRIPT_ANON_NAME, NULL);
     efd_add_child(args_node, construct_efd_int_node(vn_i, NULL, i));
     efd_add_child(
       args_node,
@@ -1057,6 +1062,7 @@ void generate_geology(world_map *wm) {
     (size_t) (WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY),
     (size_t) (WM_MAX_STRATA_LAYERS * STRATA_COMPLEXITY)
   );
+  */
 }
 
 gl_pos_t compute_stratum_height(stratum *st, global_pos *glpos) {

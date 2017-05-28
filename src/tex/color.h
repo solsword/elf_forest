@@ -6,8 +6,9 @@
 
 #include <stdint.h>
 
-#include "efd/efd_gl.h"
+#include "elfscript/elfscript_gl.h"
 
+#include "boilerplate.h"
 #include "util.h"
 
 /*********
@@ -23,11 +24,11 @@ enum color_format_e {
 };
 typedef enum color_format_e color_format;
 
-EFD_GL(i, CFMT_INVALID)
-EFD_GL(i, CFMT_RGB)
-EFD_GL(i, CFMT_XYZ)
-EFD_GL(i, CFMT_LAB)
-EFD_GL(i, CFMT_LCH)
+ELFSCRIPT_GL(i, CFMT_INVALID)
+ELFSCRIPT_GL(i, CFMT_RGB)
+ELFSCRIPT_GL(i, CFMT_XYZ)
+ELFSCRIPT_GL(i, CFMT_LAB)
+ELFSCRIPT_GL(i, CFMT_LCH)
 
 /*********
  * Types *
@@ -261,6 +262,16 @@ static inline pixel px_interp(pixel from, pixel to, float interp) {
   px_set_alpha(&result, interp * px_alpha(to) + (1 - interp) * px_alpha(from));
   return result;
 }
+
+/******************************
+ * Constructors & Destructors *
+ ******************************/
+
+// Allocates and returns a new precise color object. The default color is XYZ
+// 0, 0, 0 with alpha 1.0.
+precise_color* create_precise_color();
+
+CLEANUP_DECL(precise_color);
 
 /*************
  * Functions *

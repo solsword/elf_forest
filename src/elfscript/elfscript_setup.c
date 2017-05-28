@@ -152,7 +152,7 @@ void cleanup_elf_forest_data(void) {
   cleanup_list(ELFSCRIPT_ERROR_CONTEXT);
 }
 
-// Note that these lookup functions are declared in efd.h
+// Note that these lookup functions are declared in elfscript.h
 
 es_eval_function es_lookup_function(string const * const key) {
   es_eval_function result;

@@ -94,6 +94,87 @@ CLEANUP_IMPL(es_bytecode) {
   free(code);
 }
 
+es_scope* create_es_scope(void) {
+  es_scope *result = (es_scope*) malloc(sizeof(es_scope));
+  result->variables = create_dictionary(ELFSCRIPT_DEFAULT_DICTIONARY_SIZE);
+  // TODO: More here?
+  return result;
+}
+
+CLEANUP_IMPL(es_scope) {
+  d_foreach(doomed->variables, &es_v_decref);
+  cleanup_dictionary(doomed->variables);
+  // TODO: More here?
+  free(doomed);
+}
+
+es_var* create_es_var(es_type type, es_val_t value);
+es_var* create_es_int_var(es_int_t value) {
+  create_es_var(ES_DT_INT, (es_val_t) value);
+}
+es_var* create_es_num_var(es_num_t value) {
+  create_es_var(ES_DT_NUM, (es_val_t) value);
+}
+es_var* create_es_str_var(string* value) {
+  create_es_var(ES_DT_STR, (es_val_t) value);
+}
+
+es_var* create_es_obj_var(es_scope* value) {
+  create_es_var(ES_DT_OBJ, (es_val_t) value);
+}
+
+es_var* create_es_scp_var(es_scope* value) {
+  create_es_var(ES_DT_SCP, (es_val_t) value);
+}
+
+CLEANUP_IMPL(es_var) {
+  switch(doomed->type) {
+    default:
+    case ES_DT_INVALID:
+    case ES_DT_ANY:
+#ifdef DEBUG
+      fprintf(stderr, "Warning: cleanup of elfscript var with invalid type!\n");
+      // and fall through
+#endif
+    case ES_DT_INT:
+    case ES_DT_NUM:
+      break;
+    case ES_DT_STR:
+      cleanup_string((string*) doomed->value);
+      break;
+    case ES_DT_SCP:
+      cleanup_es_scope((es_scope*) doomed->value);
+      break;
+    case ES_DT_OBJ:
+      cleanup_es_obj((es_obj*) doomed->value);
+      break;
+    case ES_DT_FCN:
+    case ES_DT_MTH:
+      cleanup_es_bytecode((es_bytecode*) doomed->value);
+      break;
+    case ES_DT_GEN:
+    case ES_DT_GNM:
+      // TODO: Modify es_generator_state as necessary
+      cleanup_es_generator_state((es_generator_state*) doomed->value);
+      break;
+  }
+  free(doomed);
+  return;
+}
+
+es_obj* create_es_obj(es_object_format *format, es_probj_t obj) {
+  es_obj* result = (es_obj*) malloc(sizeof(es_obj));
+  result->format = format;
+  result->value = obj;
+  return result;
+}
+
+CLEANUP_IMPL(es_obj) {
+  doomed->format->destructor(doomed->value);
+  // Note: format is not owned by object
+  free(doomed);
+}
+
 es_slice* create_es_slice(void) {
   es_slice* result = (es_slice*) malloc(sizeof(es_slice));
   result->start = 0;
@@ -110,6 +191,10 @@ CLEANUP_IMPL(es_slice) {
 /*************
  * Functions *
  *************/
+
+void es_v_decref(void *v_var) {
+  es_decref((es_var*) v_var);
+}
 
 void es_write_esb(char const * const filename, es_bytecode *code) {
   FILE *fout = fopen(filename, "w");
@@ -237,4 +322,35 @@ void es_add_var(es_bytecode *code, string *varname) {
   );
   code->len += sizeof(es_num_t);
   // TODO: Ending sentinel value?
+}
+
+size_t es_scope_size(es_scope *sc) {
+  return d_get_count(sc->variables);
+}
+
+es_var * es_read_nth(es_scope *sc, size_t n) {
+  return d_get_item(sc->variables, n);
+}
+
+es_var * es_read_var(es_scope *sc, string *name) {
+  return (es_var*) d_get_value_s(sc->variables, name);
+}
+
+void es_write_last(es_scope *sc, es_var *value) {
+  d_add_value_s(sc->variables, ELFSCRIPT_ANON_NAME, (void*) value);
+}
+
+void es_write_var(es_scope *sc, string *name, es_var *value) {
+  es_var *old = (es_var*) d_pop_value_s(sc->variables, name);
+  while (old != NULL) {
+    es_decref(old);
+    old = d_pop_value_s(sc->variables, name)
+  }
+  d_set_value_s(sc->variables, name, (void*) value);
+}
+
+void es_report_error(string *message) {
+  // TODO: line numbers etc. here
+  fprintf(stderr, "Elfscript error during evaluation:\n");
+  s_fprintln(stderr, message);
 }

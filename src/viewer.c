@@ -52,9 +52,9 @@ int main(int argc, char** argv) {
   // Set up the viewing area:
   printf("Setting up viewing area...\n");
 
-  // Set up EFD first:
+  // Set up ELFSCRIPT first:
   setup_elf_forest_data(1);
-  load_common_efd();
+  load_common_elfscript();
 
   // Initialize stateless subsystems:
   init_control();

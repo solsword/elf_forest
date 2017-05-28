@@ -1,7 +1,7 @@
 #ifndef INCLUDE_ELFSCRIPT_GL_H
 #define INCLUDE_ELFSCRIPT_GL_H
 
-// efd_gl.h
+// elfscript_gl.h
 // Definition of the ELFSCRIPT_GL macro for defining constants accessible from
 // ELFSCRIPT.
 

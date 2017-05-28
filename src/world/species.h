@@ -170,7 +170,7 @@ typedef uint32_t any_species;
 // Species '0' is reserved as an 'invalid species' indicator.
 #define SP_INVALID 0
 
-EFD_GL(i, SP_INVALID)
+ELFSCRIPT_GL(i, SP_INVALID)
 
 // This number needs to be at least as large as the maximum number of life
 // elements (each of which is a nutrient) plus the sum of the maximums of each

@@ -166,7 +166,7 @@ static inline int es_parse_atend(es_parse_state *s) {
 
 // Checks whether an error has occurred.
 static inline int es_parse_failed(es_parse_state *s) {
-  return s->error != EFD_PE_NO_ERROR;
+  return s->error != ES_PE_NO_ERROR;
 }
 
 static inline int es_is_whitespace(char c) {
@@ -321,6 +321,6 @@ void es_parse_skip(es_parse_state *s);
 /********************
  * Helper Functions *
  ********************/
-void efd_print_parse_error(efd_parse_state *s);
+void es_print_parse_error(es_parse_state *s);
 
 #endif // INCLUDE_ELFSCRIPT_PARSER_H

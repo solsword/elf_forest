@@ -65,7 +65,7 @@ int d_is_empty(dictionary const * const d);
 size_t d_get_count(dictionary const * const d);
 
 // Gets the nth item in the dictionary, according to the order in which items
-// were added.
+// were added. Returns NULL for out-of-bounds indices.
 void * d_get_item(dictionary const * const d, size_t index);
 
 // Gets the nth key in the dictionary, according to the order in which items

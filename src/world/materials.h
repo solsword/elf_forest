@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "efd/efd_gl.h"
+#include "elfscript/elfscript_gl.h"
 
 #include "blocks.h"
 #include "measures.h"
@@ -37,21 +37,21 @@ enum material_origin_e {
 };
 typedef enum material_origin_e material_origin;
 
-EFD_GL(i, MO_UNKNOWN)
-EFD_GL(i, MO_PURE_ELEMENT)
-EFD_GL(i, MO_ATMOSPHERE)
-EFD_GL(i, MO_WATER)
-EFD_GL(i, MO_IGNEOUS_MINERAL)
-EFD_GL(i, MO_SEDIMENTARY_MINERAL)
-EFD_GL(i, MO_METAMORPHIC_MINERAL)
-EFD_GL(i, MO_METALLIC)
-EFD_GL(i, MO_ERODED)
-EFD_GL(i, MO_DECOMPOSED)
-EFD_GL(i, MO_ORGANIC)
-EFD_GL(i, MO_REACTION)
-EFD_GL(i, MO_COMBUSTION)
-EFD_GL(i, MO_MIXTURE)
-EFD_GL(i, MO_MAGIC)
+ELFSCRIPT_GL(i, MO_UNKNOWN)
+ELFSCRIPT_GL(i, MO_PURE_ELEMENT)
+ELFSCRIPT_GL(i, MO_ATMOSPHERE)
+ELFSCRIPT_GL(i, MO_WATER)
+ELFSCRIPT_GL(i, MO_IGNEOUS_MINERAL)
+ELFSCRIPT_GL(i, MO_SEDIMENTARY_MINERAL)
+ELFSCRIPT_GL(i, MO_METAMORPHIC_MINERAL)
+ELFSCRIPT_GL(i, MO_METALLIC)
+ELFSCRIPT_GL(i, MO_ERODED)
+ELFSCRIPT_GL(i, MO_DECOMPOSED)
+ELFSCRIPT_GL(i, MO_ORGANIC)
+ELFSCRIPT_GL(i, MO_REACTION)
+ELFSCRIPT_GL(i, MO_COMBUSTION)
+ELFSCRIPT_GL(i, MO_MIXTURE)
+ELFSCRIPT_GL(i, MO_MAGIC)
 
 // A material carries with it the basic properties of origin and form as well
 // as general physical properties, some of which are only applicable to certain

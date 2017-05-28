@@ -2352,7 +2352,7 @@ void compute_combined_dirt_color(
 
   // Lightness
   avg = 0.5;
-  // TODO: Transition this algorithm to EFD!
+  // TODO: Transition this algorithm to ELFSCRIPT!
   /*
   AVERAGE_ELEMENT_PROPERTY(
     species->trace_minerals,

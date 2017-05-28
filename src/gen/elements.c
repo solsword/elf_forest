@@ -172,7 +172,7 @@ static rngtable GENERAL_SOLUBILITY_DISTRIBUTION = {
 
 // Generates elements for the world.
 void generate_elements(world_map *wm) {
-  // TODO: Convert this to EFD
+  // TODO: Convert this to ELFSCRIPT
   size_t c_air, c_water, c_life, c_stone, c_metal, c_rare;
   size_t o_air_water, o_air_water_life, o_life_stone, o_life_metal,
          o_stone_metal;

@@ -9,6 +9,24 @@
 
 #include "color.h"
 
+/******************************
+ * Constructors & Destructors *
+ ******************************/
+
+precise_color* create_precise_color() {
+  precise_color *result = (precise_color*) malloc(sizeof(precise_color));
+  result->format = CFMT_XYZ;
+  result->x = 0;
+  result->y = 0;
+  result->z = 0;
+  result->alpha = 1.0;
+  return result;
+}
+
+CLEANUP_IMPL(precise_color) {
+  free(doomed);
+}
+
 /*************
  * Functions *
  *************/
