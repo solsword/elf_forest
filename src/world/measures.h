@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-#include "elfscript/elfscript_gl.h"
+#include "snek/feed.h"
 
 #include "util.h"
 
@@ -81,11 +81,11 @@ typedef float pH;
 // densities and of air (~1.2 kg/m^3) on the 0-255 scale used for gas
 // densities.
 static density const BASE_DENSITY = 12;
-ELFSCRIPT_GL(i, BASE_DENSITY);
+FEED_SNEK(i, BASE_DENSITY);
 
 // Specific heat of air (~1 J/gK) on the 0-255 scale used for specific heat.
 static specific_heat const BASE_SPECIFIC_HEAT;
-ELFSCRIPT_GL(i, BASE_SPECIFIC_HEAT);
+FEED_SNEK(i, BASE_SPECIFIC_HEAT);
 
 // Viscosity of water in centiPoise at ~20C:
 static viscosity const NO_VISCOSITY = 0.0001;
@@ -97,21 +97,21 @@ static viscosity const HONEY_VISCOSITY = 5000.0;
 static viscosity const LARD_VISCOSITY = 100000.0;
 static viscosity const PITCH_VISCOSITY = 2e11;
 
-ELFSCRIPT_GL(n, NO_VISCOSITY)
-ELFSCRIPT_GL(n, GAS_VISCOSITY)
-ELFSCRIPT_GL(n, WATER_VISCOSITY)
-ELFSCRIPT_GL(n, SMOOTH_OIL_VISCOSITY)
-ELFSCRIPT_GL(n, THICK_OIL_VISCOSITY)
-ELFSCRIPT_GL(n, HONEY_VISCOSITY)
-ELFSCRIPT_GL(n, LARD_VISCOSITY)
-ELFSCRIPT_GL(n, PITCH_VISCOSITY)
+FEED_SNEK(n, NO_VISCOSITY)
+FEED_SNEK(n, GAS_VISCOSITY)
+FEED_SNEK(n, WATER_VISCOSITY)
+FEED_SNEK(n, SMOOTH_OIL_VISCOSITY)
+FEED_SNEK(n, THICK_OIL_VISCOSITY)
+FEED_SNEK(n, HONEY_VISCOSITY)
+FEED_SNEK(n, LARD_VISCOSITY)
+FEED_SNEK(n, PITCH_VISCOSITY)
 
 // Hardness is an arbitrary scale, but the following constants pin it down:
 static hardness const GENERIC_WOOD_HARDNESS = 60;
 static hardness const GENERIC_STONE_HARDNESS = 180;
 
-ELFSCRIPT_GL(i, GENERIC_WOOD_HARDNESS)
-ELFSCRIPT_GL(i, GENERIC_STONE_HARDNESS)
+FEED_SNEK(i, GENERIC_WOOD_HARDNESS)
+FEED_SNEK(i, GENERIC_STONE_HARDNESS)
 
 // Plasticity is an arbitrary scale; these are some landmarks:
 static plasticity const NO_PLASTICITY = 0; // glass, ceramic
@@ -119,19 +119,19 @@ static plasticity const LOW_PLASTICITY = 10; // chilled metals
 static plasticity const MEDIUM_PLASTICITY = 120; // copper
 static plasticity const HIGH_PLASTICITY = 200; // clay
 
-ELFSCRIPT_GL(i, NO_PLASTICITY)
-ELFSCRIPT_GL(i, LOW_PLASTICITY)
-ELFSCRIPT_GL(i, MEDIUM_PLASTICITY)
-ELFSCRIPT_GL(i, HIGH_PLASTICITY)
+FEED_SNEK(i, NO_PLASTICITY)
+FEED_SNEK(i, LOW_PLASTICITY)
+FEED_SNEK(i, MEDIUM_PLASTICITY)
+FEED_SNEK(i, HIGH_PLASTICITY)
 
 // pH constants are those you'd expect:
 static pH const PH_PURE_ACID = 0.0;
 static pH const PH_NEUTRAL = 7.0;
 static pH const PH_PURE_BASE = 14.0;
 
-ELFSCRIPT_GL(n, PH_PURE_ACID)
-ELFSCRIPT_GL(n, PH_NEUTRAL)
-ELFSCRIPT_GL(n, PH_PURE_BASE)
+FEED_SNEK(n, PH_PURE_ACID)
+FEED_SNEK(n, PH_NEUTRAL)
+FEED_SNEK(n, PH_PURE_BASE)
 
 /**********
  * Limits *
@@ -140,25 +140,25 @@ ELFSCRIPT_GL(n, PH_PURE_BASE)
 static density const MAT_MIN_DENSITY = 0;
 static density const MAT_MAX_DENSITY = 255;
 
-ELFSCRIPT_GL(i, MAT_MIN_DENSITY)
-ELFSCRIPT_GL(i, MAT_MAX_DENSITY)
+FEED_SNEK(i, MAT_MIN_DENSITY)
+FEED_SNEK(i, MAT_MAX_DENSITY)
 
 static specific_heat const MAT_MIN_SP_HEAT = 0;
 static specific_heat const MAT_MAX_SP_HEAT = 255;
 
-ELFSCRIPT_GL(i, MAT_MIN_SP_HEAT)
-ELFSCRIPT_GL(i, MAT_MAX_SP_HEAT)
+FEED_SNEK(i, MAT_MIN_SP_HEAT)
+FEED_SNEK(i, MAT_MAX_SP_HEAT)
 
 static temperature const MAT_MIN_TEMP = 0;
 static temperature const MAT_MAX_TEMP = 65535;
 
-ELFSCRIPT_GL(i, MAT_MIN_TEMP)
-ELFSCRIPT_GL(i, MAT_MAX_TEMP)
+FEED_SNEK(i, MAT_MIN_TEMP)
+FEED_SNEK(i, MAT_MAX_TEMP)
 
 static plasticity const MAT_MIN_PLASTICITY = 0;
 static plasticity const MAT_MAX_PLASTICITY = 255;
 
-ELFSCRIPT_GL(i, MAT_MIN_PLASTICITY)
-ELFSCRIPT_GL(i, MAT_MAX_PLASTICITY)
+FEED_SNEK(i, MAT_MIN_PLASTICITY)
+FEED_SNEK(i, MAT_MAX_PLASTICITY)
 
 #endif // #ifndef MEASURES_H

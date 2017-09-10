@@ -11,7 +11,7 @@
 #include "world/species.h"
 #include "world/world_map.h"
 #include "tex/color.h"
-#include "elfscript/elfscript.h"
+#include "snek/snek.h"
 
 #include "util.h"
 

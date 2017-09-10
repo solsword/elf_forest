@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "elfscript/elfscript_gl.h"
+#include "snek/feed.h"
 
 #include "blocks.h"
 #include "measures.h"
@@ -37,21 +37,21 @@ enum material_origin_e {
 };
 typedef enum material_origin_e material_origin;
 
-ELFSCRIPT_GL(i, MO_UNKNOWN)
-ELFSCRIPT_GL(i, MO_PURE_ELEMENT)
-ELFSCRIPT_GL(i, MO_ATMOSPHERE)
-ELFSCRIPT_GL(i, MO_WATER)
-ELFSCRIPT_GL(i, MO_IGNEOUS_MINERAL)
-ELFSCRIPT_GL(i, MO_SEDIMENTARY_MINERAL)
-ELFSCRIPT_GL(i, MO_METAMORPHIC_MINERAL)
-ELFSCRIPT_GL(i, MO_METALLIC)
-ELFSCRIPT_GL(i, MO_ERODED)
-ELFSCRIPT_GL(i, MO_DECOMPOSED)
-ELFSCRIPT_GL(i, MO_ORGANIC)
-ELFSCRIPT_GL(i, MO_REACTION)
-ELFSCRIPT_GL(i, MO_COMBUSTION)
-ELFSCRIPT_GL(i, MO_MIXTURE)
-ELFSCRIPT_GL(i, MO_MAGIC)
+FEED_SNEK(i, MO_UNKNOWN)
+FEED_SNEK(i, MO_PURE_ELEMENT)
+FEED_SNEK(i, MO_ATMOSPHERE)
+FEED_SNEK(i, MO_WATER)
+FEED_SNEK(i, MO_IGNEOUS_MINERAL)
+FEED_SNEK(i, MO_SEDIMENTARY_MINERAL)
+FEED_SNEK(i, MO_METAMORPHIC_MINERAL)
+FEED_SNEK(i, MO_METALLIC)
+FEED_SNEK(i, MO_ERODED)
+FEED_SNEK(i, MO_DECOMPOSED)
+FEED_SNEK(i, MO_ORGANIC)
+FEED_SNEK(i, MO_REACTION)
+FEED_SNEK(i, MO_COMBUSTION)
+FEED_SNEK(i, MO_MIXTURE)
+FEED_SNEK(i, MO_MAGIC)
 
 // A material carries with it the basic properties of origin and form as well
 // as general physical properties, some of which are only applicable to certain

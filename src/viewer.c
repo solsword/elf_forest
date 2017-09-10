@@ -9,6 +9,8 @@
 
 #include "graphics/gfx.h"
 
+#include "snek/summon.h"
+
 #include "world/blocks.h"
 #include "world/world.h"
 #include "world/entities.h"
@@ -54,7 +56,7 @@ int main(int argc, char** argv) {
 
   // Set up ELFSCRIPT first:
   setup_elf_forest_data(1);
-  load_common_elfscript();
+  summon_snek();
 
   // Initialize stateless subsystems:
   init_control();

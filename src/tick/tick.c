@@ -10,7 +10,7 @@
 
 #include "tick.h"
 
-#include "elfscript/elfscript_setup.h"
+#include "snek/summon.h"
 #include "world/world.h"
 #include "world/entities.h"
 #include "world/species.h"
@@ -68,7 +68,7 @@ void _get_everything_set_up(ptrdiff_t seed, int argc, char** argv) {
   //setup_elf_forest_data(1); // track error contexts
   setup_elf_forest_data(0); // don't track error contexts
   printf("  ...loading common data...\n");
-  load_common_elfscript();
+  summon_snek();
 
   // Initialize stateless subsystems:
   printf("  ...control...\n");

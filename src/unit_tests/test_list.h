@@ -2,8 +2,6 @@
 
 #include "suites/test_util.h"
 DEFINE_IMPORTED_BUILDER
-#include "suites/test_elfscript.h"
-DEFINE_IMPORTED_BUILDER
 #include "suites/test_color.h"
 DEFINE_IMPORTED_BUILDER
 #include "suites/test_list.h"
@@ -34,9 +32,6 @@ DEFINE_IMPORTED_BUILDER
 
 #ifdef TEST_LIST_SETUP
 #include "suites/test_util.h"
-ts = INVOKE_IMPORTED_BUILDER;
-l_append_element(ALL_TEST_SUITES, ts);
-#include "suites/test_elfscript.h"
 ts = INVOKE_IMPORTED_BUILDER;
 l_append_element(ALL_TEST_SUITES, ts);
 #include "suites/test_color.h"

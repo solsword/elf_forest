@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-#include "elfscript/elfscript_gl.h"
+#include "snek/feed.h"
 
 #include "boilerplate.h"
 #include "util.h"
@@ -24,11 +24,11 @@ enum color_format_e {
 };
 typedef enum color_format_e color_format;
 
-ELFSCRIPT_GL(i, CFMT_INVALID)
-ELFSCRIPT_GL(i, CFMT_RGB)
-ELFSCRIPT_GL(i, CFMT_XYZ)
-ELFSCRIPT_GL(i, CFMT_LAB)
-ELFSCRIPT_GL(i, CFMT_LCH)
+FEED_SNEK(i, CFMT_INVALID)
+FEED_SNEK(i, CFMT_RGB)
+FEED_SNEK(i, CFMT_XYZ)
+FEED_SNEK(i, CFMT_LAB)
+FEED_SNEK(i, CFMT_LCH)
 
 /*********
  * Types *
