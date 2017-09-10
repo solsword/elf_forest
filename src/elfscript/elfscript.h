@@ -156,7 +156,6 @@ enum es_type_e {
   ES_DT_FCN            , //'f'  function
   ES_DT_MTH            , //'m'  method
   ES_DT_GEN            , //'g'  generator
-  ES_DT_GNM            , //'M'  generator method
 };
 typedef enum es_type_e es_type;
 
@@ -170,17 +169,18 @@ ELFSCRIPT_GL(i, ES_DT_OBJ)
 ELFSCRIPT_GL(i, ES_DT_FCN)
 ELFSCRIPT_GL(i, ES_DT_MTH)
 ELFSCRIPT_GL(i, ES_DT_GEN)
-ELFSCRIPT_GL(i, ES_DT_GNM)
 
 // Elfscript generator types
 enum es_generator_type_e {
   ES_GT_INVALID        = 0,
   ES_GT_VARIABLES         , // iterate through variables in a scope
-  ELFSCRIPT_GT_INDICES           , // iterate through array entries
+  ES_GT_INDICES           , // iterate through array entries
   ES_GT_FUNCTION          , // call a generator function
+  ES_GT_METHOD            , // call a generator function w/ an extra argument
   ES_GT_EXTEND_RESTART    , // extend by restarting
   ES_GT_EXTEND_HOLD       , // extend repeating the final value
   ES_GT_PARALLEL          , // generate parallel results
+  ES_GT_SINGLE            , // yield a single value
 };
 typedef enum es_generator_type_e es_generator_type;
 
@@ -188,6 +188,7 @@ ELFSCRIPT_GL(i, ES_GT_INVALID)
 ELFSCRIPT_GL(i, ES_GT_VARIABLES)
 ELFSCRIPT_GL(i, ES_GT_INDICES)
 ELFSCRIPT_GL(i, ES_GT_FUNCTION)
+ELFSCRIPT_GL(i, ES_GT_METHOD)
 ELFSCRIPT_GL(i, ES_GT_EXTEND_RESTART)
 ELFSCRIPT_GL(i, ES_GT_EXTEND_HOLD)
 ELFSCRIPT_GL(i, ES_GT_PARALLEL)
@@ -539,11 +540,40 @@ static inline es_obj* es_as_obj(es_var *var) {
 // scp-type variables.
 static inline es_scope* es_as_scope(es_var *var) {
   switch (var->type) {
-    case ES_DT_OBJ:
+    case ES_DT_SCP:
       return (es_scope*) var->value;
     default:
 #ifdef DEBUG
-      fprintf(stderr, "ERROR: es_as_scope called on non-string variable.\n");
+      fprintf(stderr, "ERROR: es_as_scope called on non-scope variable.\n");
+#endif
+      return NULL;
+  }
+}
+
+// Gets the value of a variable and converts it to a function. Only works on
+// fcn- and mth-type variables.
+static inline es_bytecode* es_as_func(es_var *var) {
+  switch (var->type) {
+    case ES_DT_FCN:
+    case ES_DT_MTH:
+      return (es_bytecode*) var->value;
+    default:
+#ifdef DEBUG
+      fprintf(stderr, "ERROR: es_as_func called on non-function variable.\n");
+#endif
+      return NULL;
+  }
+}
+
+// Gets the value of a variable and converts it to a generator. Only works on
+// gen- and gnm-type variables.
+static inline es_generator_state* es_as_gen(es_var *var) {
+  switch (var->type) {
+    case ES_DT_GEN:
+      return (es_generator_state*) var->value;
+    default:
+#ifdef DEBUG
+      fprintf(stderr, "ERROR: es_as_gen called on non-generator variable.\n");
 #endif
       return NULL;
   }
@@ -590,12 +620,13 @@ static inline es_probj_t es_obj_as_fmt(es_obj *obj, string const * const fmt) {
  * Functions *
  *************/
 
-// Writes the given code to the given filename, overwriting the previous
-// contents if there were any. The format includes a header.
-void es_write_esb(char const * const filename, es_bytecode *code);
+// Writes the given code to the given file, overwriting the previous contents
+// if there were any. The format includes a header.
+void es_write_esb(FILE* fout, es_bytecode *code);
 
-// Reads the contents of a .esb file and returns the bytecode stored within.
-es_bytecode * es_load_esb(char const * const filename);
+// Reads the contents of a .esb file (or stream) and returns the bytecode
+// stored within.
+es_bytecode * es_load_esb(FILE* fin);
 
 // Returns a new bytecode object which concatenates the bytecode from the given
 // two objects. Frees each of the given objects.
@@ -635,6 +666,20 @@ void es_write_var(es_scope *sc, string *name, es_var *value);
 // Reports an error during Elfscript evaluation.
 void es_report_error(string *message);
 
+// Coerces a variety of variable types into generator state objects, creating a
+// new generator even if the target variable is already a generator. Results
+// are as follows:
+//
+//   int -> iterator yielding a single integer
+//   num -> iterator yielding a single number
+//   str -> iterator yielding individual character strings
+//   obj -> iterator yielding a single object
+//   scp -> iterator yielding items from the scope by index.
+//   fcn/mth -> iterator yielding a single function/method object
+//   gen/gnm -> copy of the generator
+//
+es_generator_state * es_generator_for(es_var *var);
+
 /********************
  * Lookup Functions *
  ********************/
@@ -647,11 +692,25 @@ es_eval_function es_lookup_function(string const * const key);
 // Lookup for generator constructors
 es_generator_constructor es_lookup_generator(string const * const key);
 
-// Lookups for packers, unpackers, copiers, and destructors.
+// Lookups for formats, packers, unpackers, copiers, and destructors.
 es_object_format * es_lookup_format(string const * const key);
 es_probj_unpackage_function es_lookup_unpacker(string const * const key);
 es_probj_package_function es_lookup_packer(string const * const key);
 es_probj_copy_function es_lookup_copier(string const * const key);
 es_probj_destroy_function es_lookup_destructor(string const * const key);
+
+/***************************
+ * Error Context Functions *
+ ***************************/
+
+// Note: these are also defined in elfscript_setup.c.
+
+// Adds the given string as a new layer of error context, or does nothing if
+// error tracking is disabled.
+void es_push_error_context(string* ec);
+
+// Removes the deepest layer of error context, or does nothing if error
+// tracking is disabled.
+void es_pop_error_context(void);
 
 #endif // INCLUDE_ELFSCRIPT_H

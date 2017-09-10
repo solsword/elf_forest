@@ -26,28 +26,28 @@
  * Globals *
  ***********/
 
-#define ES_REGISTER_FUNCTIONS
-es_function_declaration const ES_FUNCTION_REGISTRY[] = {
+#define ELFSCRIPT_REGISTER_FUNCTIONS
+es_function_declaration const ELFSCRIPT_FUNCTION_REGISTRY[] = {
   #include "func.list"
   { // for the trailing comma
     .key = NULL,
     .function = NULL
   }
 };
-#undef ES_REGISTER_FUNCTIONS
+#undef ELFSCRIPT_REGISTER_FUNCTIONS
 
-#define ES_REGISTER_GENERATORS
-es_generator_declaration const ES_GENERATOR_REGISTRY[] = {
+#define ELFSCRIPT_REGISTER_GENERATORS
+es_generator_declaration const ELFSCRIPT_GENERATOR_REGISTRY[] = {
   #include "gen.list"
   { // for the trailing comma
     .key = NULL,
     .constructor = NULL
   }
 };
-#undef ES_REGISTER_GENERATORS
+#undef ELFSCRIPT_REGISTER_GENERATORS
 
-#define ES_REGISTER_FORMATS
-es_object_format const ES_FORMAT_REGISTRY[] = {
+#define ELFSCRIPT_REGISTER_FORMATS
+es_object_format const ELFSCRIPT_FORMAT_REGISTRY[] = {
   #include "conv.list"
   { // for the trailing comma
     .key = NULL,
@@ -57,22 +57,22 @@ es_object_format const ES_FORMAT_REGISTRY[] = {
     .destructor = NULL
   }
 };
-#undef ES_REGISTER_FORMATS
+#undef ELFSCRIPT_REGISTER_FORMATS
 
-size_t ES_FUNCTION_REGISTRY_SIZE = (
-  sizeof(ES_FUNCTION_REGISTRY) / sizeof(es_function_declaration)
+size_t ELFSCRIPT_FUNCTION_REGISTRY_SIZE = (
+  sizeof(ELFSCRIPT_FUNCTION_REGISTRY) / sizeof(es_function_declaration)
 ) - 1; // -1 for the extra entry
-size_t ES_GENERATOR_REGISTRY_SIZE = (
-  sizeof(ES_GENERATOR_REGISTRY) / sizeof(es_generator_declaration)
+size_t ELFSCRIPT_GENERATOR_REGISTRY_SIZE = (
+  sizeof(ELFSCRIPT_GENERATOR_REGISTRY) / sizeof(es_generator_declaration)
 ) - 1; // -1 for the extra entry
-size_t ES_FORMAT_REGISTRY_SIZE = (
-  sizeof(ES_FORMAT_REGISTRY) / sizeof(es_object_format)
+size_t ELFSCRIPT_FORMAT_REGISTRY_SIZE = (
+  sizeof(ELFSCRIPT_FORMAT_REGISTRY) / sizeof(es_object_format)
 ) - 1; // -1 for the extra entry
 
 
-dictionary *ES_FUNCTION_DICT = NULL;
-dictionary *ES_GENERATOR_DICT = NULL;
-dictionary *ES_FORMAT_DICT = NULL;
+dictionary *ELFSCRIPT_FUNCTION_DICT = NULL;
+dictionary *ELFSCRIPT_GENERATOR_DICT = NULL;
+dictionary *ELFSCRIPT_FORMAT_DICT = NULL;
 
 /*************
  * Functions *
@@ -96,36 +96,44 @@ void setup_elfscript(int track_error_contexts) {
     );
   }
 
-  ES_DATA_DIR = fs_dirchild(FS_RES_DIR, ES_DATA_DIR_NAME);
-  ES_GLOBALS_DIR = fs_dirchild(ES_DATA_DIR, ES_GLOBALS_DIR_NAME);
-  ES_COMMON_DIR = fs_dirchild(ES_DATA_DIR, ES_COMMON_DIR_NAME);
+  ELFSCRIPT_DATA_DIR = fs_dirchild(FS_RES_DIR, ELFSCRIPT_DATA_DIR_NAME);
+  ELFSCRIPT_GLOBALS_DIR = fs_dirchild(
+    ELFSCRIPT_DATA_DIR,
+    ELFSCRIPT_GLOBALS_DIR_NAME
+  );
+  ELFSCRIPT_COMMON_DIR = fs_dirchild(
+    ELFSCRIPT_DATA_DIR,
+    ELFSCRIPT_COMMON_DIR_NAME
+  );
 
-  ES_ROOT = create_es_node(ES_NT_CONTAINER, ES_ROOT_NAME, NULL);
+  ELFSCRIPT_GLOBAL_SCOPE = create_es_scope();
 
-  ES_GLOBALS = create_dictionary(ES_GLOBALS_TABLE_SIZE);
+  ELFSCRIPT_GLOBALS = create_dictionary(ELFSCRIPT_GLOBALS_TABLE_SIZE);
 
-  ES_FUNCTION_DICT = create_dictionary(ES_FUNCTION_REGISTRY_SIZE);
-  ES_GENERATOR_DICT = create_dictionary(ES_GENERATOR_REGISTRY_SIZE);
-  ES_FORMAT_DICT = create_dictionary(ES_FORMAT_REGISTRY_SIZE);
+  ELFSCRIPT_FUNCTION_DICT = create_dictionary(ELFSCRIPT_FUNCTION_REGISTRY_SIZE);
+  ELFSCRIPT_GENERATOR_DICT = create_dictionary(
+    ELFSCRIPT_GENERATOR_REGISTRY_SIZE
+  );
+  ELFSCRIPT_FORMAT_DICT = create_dictionary(ELFSCRIPT_FORMAT_REGISTRY_SIZE);
 
-  for (i = 0; i < ES_FUNCTION_REGISTRY_SIZE; ++i) {
-    fd = &(ES_FUNCTION_REGISTRY[i]);
+  for (i = 0; i < ELFSCRIPT_FUNCTION_REGISTRY_SIZE; ++i) {
+    fd = &(ELFSCRIPT_FUNCTION_REGISTRY[i]);
     s = create_string_from_ntchars(fd->key);
-    d_add_value_s(ES_FUNCTION_DICT, s, (void*) fd->function);
+    d_add_value_s(ELFSCRIPT_FUNCTION_DICT, s, (void*) fd->function);
     cleanup_string(s);
   }
 
-  for (i = 0; i < ES_GENERATOR_REGISTRY_SIZE; ++i) {
-    gd = &(ES_GENERATOR_REGISTRY[i]);
+  for (i = 0; i < ELFSCRIPT_GENERATOR_REGISTRY_SIZE; ++i) {
+    gd = &(ELFSCRIPT_GENERATOR_REGISTRY[i]);
     s = create_string_from_ntchars(gd->key);
-    d_add_value_s(ES_GENERATOR_DICT, s, (void*) gd->constructor);
+    d_add_value_s(ELFSCRIPT_GENERATOR_DICT, s, (void*) gd->constructor);
     cleanup_string(s);
   }
 
-  for (i = 0; i < ES_FORMAT_REGISTRY_SIZE; ++i) {
-    of = &(ES_FORMAT_REGISTRY[i]);
+  for (i = 0; i < ELFSCRIPT_FORMAT_REGISTRY_SIZE; ++i) {
+    of = &(ELFSCRIPT_FORMAT_REGISTRY[i]);
     s = create_string_from_ntchars(of->key);
-    d_add_value_s(ES_FORMAT_DICT, s, (void*) of);
+    d_add_value_s(ELFSCRIPT_FORMAT_DICT, s, (void*) of);
     cleanup_string(s);
   }
 
@@ -137,16 +145,16 @@ void setup_elfscript(int track_error_contexts) {
 }
 
 void cleanup_elf_forest_data(void) {
-  cleanup_string(ES_DATA_DIR);
-  cleanup_string(ES_COMMON_DIR);
+  cleanup_string(ELFSCRIPT_DATA_DIR);
+  cleanup_string(ELFSCRIPT_COMMON_DIR);
 
-  cleanup_es_node(ES_ROOT);
+  cleanup_es_node(ELFSCRIPT_ROOT);
 
-  d_foreach(ES_GLOBALS, &cleanup_v_es_node);
-  cleanup_dictionary(ES_GLOBALS);
+  d_foreach(ELFSCRIPT_GLOBALS, &cleanup_v_es_node);
+  cleanup_dictionary(ELFSCRIPT_GLOBALS);
 
-  cleanup_dictionary(ES_FUNCTION_DICT);
-  cleanup_dictionary(ES_FORMAT_DICT);
+  cleanup_dictionary(ELFSCRIPT_FUNCTION_DICT);
+  cleanup_dictionary(ELFSCRIPT_FORMAT_DICT);
 
   l_foreach(ELFSCRIPT_ERROR_CONTEXT, &cleanup_v_string);
   cleanup_list(ELFSCRIPT_ERROR_CONTEXT);
@@ -156,7 +164,7 @@ void cleanup_elf_forest_data(void) {
 
 es_eval_function es_lookup_function(string const * const key) {
   es_eval_function result;
-  result = (es_eval_function) d_get_value_s(ES_FUNCTION_DICT, key);
+  result = (es_eval_function) d_get_value_s(ELFSCRIPT_FUNCTION_DICT, key);
   if (result == NULL) {
     fprintf(
       stderr,
@@ -171,7 +179,10 @@ es_eval_function es_lookup_function(string const * const key) {
 
 es_generator_constructor es_lookup_generator(string const * const key) {
   es_generator_constructor result;
-  result = (es_generator_constructor) d_get_value_s(ES_GENERATOR_DICT, key);
+  result = (es_generator_constructor) d_get_value_s(
+    ELFSCRIPT_GENERATOR_DICT,
+    key
+  );
   if (result == NULL) {
     fprintf(
       stderr,
@@ -186,7 +197,7 @@ es_generator_constructor es_lookup_generator(string const * const key) {
 
 es_object_format * es_lookup_format(string const * const key) {
   es_object_format* result;
-  result = (es_object_format*) d_get_value_s(ES_FORMAT_DICT, key);
+  result = (es_object_format*) d_get_value_s(ELFSCRIPT_FORMAT_DICT, key);
   if (result == NULL) {
     fprintf(
       stderr,
@@ -242,30 +253,30 @@ void _load_common_es_file(
   void* v_context
 ) {
   // TODO: consider return value?
-  es_parse_file(ES_ROOT, s_raw(filename));
+  es_parse_file(ELFSCRIPT_ROOT, s_raw(filename));
 }
 
 void load_common_es(void) {
   walk_dir_tree(
-    ES_GLOBALS_DIR,
+    ELFSCRIPT_GLOBALS_DIR,
     &fs_walk_filter_handle_all,
     NULL,
     &fs_walk_filter_ignore_hidden,
     NULL,
     &fs_walk_filter_by_extension,
-    (void*) s_raw(ES_FILE_EXTENSION),
+    (void*) s_raw(ELFSCRIPT_FILE_EXTENSION),
     &_load_common_es_file,
     NULL
   );
 
   walk_dir_tree(
-    ES_COMMON_DIR,
+    ELFSCRIPT_COMMON_DIR,
     &fs_walk_filter_handle_all,
     NULL,
     &fs_walk_filter_ignore_hidden,
     NULL,
     &fs_walk_filter_by_extension,
-    (void*) s_raw(ES_FILE_EXTENSION),
+    (void*) s_raw(ELFSCRIPT_FILE_EXTENSION),
     &_load_common_es_file,
     NULL
   );
@@ -273,4 +284,22 @@ void load_common_es(void) {
 
 void save_common_es(void) {
   // TODO: HERE!
+}
+
+/***************************
+ * Error Context Functions *
+ ***************************/
+
+// Note: these were declared in elfscript.h
+
+void es_push_error_context(string* ec) {
+  if (ELFSCRIPT_TRACK_ERROR_CONTEXTS) {
+    l_append_element(ELFSCRIPT_ERROR_CONTEXT, (void*) ec);
+  }
+}
+
+void es_pop_error_context(void) {
+  if (ELFSCRIPT_TRACK_ERROR_CONTEXTS) {
+    l_pop_element(ELFSCRIPT_ERROR_CONTEXT);
+  }
 }

@@ -153,7 +153,6 @@ CLEANUP_IMPL(es_var) {
       cleanup_es_bytecode((es_bytecode*) doomed->value);
       break;
     case ES_DT_GEN:
-    case ES_DT_GNM:
       // TODO: Modify es_generator_state as necessary
       cleanup_es_generator_state((es_generator_state*) doomed->value);
       break;
@@ -196,8 +195,7 @@ void es_v_decref(void *v_var) {
   es_decref((es_var*) v_var);
 }
 
-void es_write_esb(char const * const filename, es_bytecode *code) {
-  FILE *fout = fopen(filename, "w");
+void es_write_esb(FILE fout, es_bytecode *code) {
   fprintf(fout, "esb\n");
   size_t written = fwrite(code->bytes, 1, code->len, fout);
 #ifdef DEBUG
@@ -213,8 +211,7 @@ void es_write_esb(char const * const filename, es_bytecode *code) {
   fclose(fout);
 }
 
-es_bytecode * es_load_esb(char const * const filename) {
-  FILE *fin = fopen(filename, "r");
+es_bytecode * es_load_esb(FILE *fin) {
   char c;
   char *expect = "esb\n";
   es_bytecode *result = create_es_bytecode_sized(ELFSCRIPT_BYTECODE_LARGE_SIZE);
@@ -338,6 +335,7 @@ es_var * es_read_var(es_scope *sc, string *name) {
 
 void es_write_last(es_scope *sc, es_var *value) {
   d_add_value_s(sc->variables, ELFSCRIPT_ANON_NAME, (void*) value);
+  es_incref(value)
 }
 
 void es_write_var(es_scope *sc, string *name, es_var *value) {
@@ -347,10 +345,30 @@ void es_write_var(es_scope *sc, string *name, es_var *value) {
     old = d_pop_value_s(sc->variables, name)
   }
   d_set_value_s(sc->variables, name, (void*) value);
+  es_incref(value)
 }
 
 void es_report_error(string *message) {
   // TODO: line numbers etc. here
   fprintf(stderr, "Elfscript error during evaluation:\n");
   s_fprintln(stderr, message);
+}
+
+es_generator_state * es_generator_for(es_var *var) {
+  es_generator_state *result;
+  switch (var->type) {
+    case ES_DT_INT:
+    case ES_DT_NUM:
+    case ES_DT_STR:
+    case ES_DT_FCN:
+    case ES_DT_MTH:
+      result = create_es_generator_state();
+      return result;
+
+    case ES_DT_OBJ:
+    case ES_DT_SCP:
+
+
+    case ES_DT_GEN:
+  }
 }

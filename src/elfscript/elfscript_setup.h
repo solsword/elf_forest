@@ -42,8 +42,8 @@ void setup_elfscript(int track_error_contexts);
 // Cleans up the elfscript system.
 void cleanup_elfscript(void);
 
-// Note that the lookup functions declared earlier in elfscript.h are defined in
-// elfscript_setup.c
+// Note that the lookup functions declared earlier in elfscript.h are defined
+// in elfscript_setup.c
 
 // Loads common elfscript code from res/script, recursively looking for
 // *.es files and loading each.

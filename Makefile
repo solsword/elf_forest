@@ -107,6 +107,8 @@ MAIN_OBJECTS=$(OBJ_DIR)/main.o
 
 TEST_OBJECTS=$(OBJ_DIR)/test.o
 
+ES_OBJECTS=$(OBJ_DIR)/es.o
+
 VIEWER_OBJECTS=$(OBJ_DIR)/viewer.o
 
 UNIT_TEST_OBJECTS=$(OBJ_DIR)/test_suite.o \
@@ -124,10 +126,10 @@ CHECKGL_OBJECTS=$(OBJ_DIR)/check_gl_version.o
 # The default goal:
 .DEFAULT_GOAL := game
 
-.PHONY: all clean game test viewer unit_tests test_noise checkgl src_lists elfscript_globals
-
+.PHONY: all
 all: src_lists game test viewer unit_tests test_noise elfscript_globals
 
+.PHONY: clean
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(BIN_DIR)
@@ -137,24 +139,36 @@ clean:
 	rm -f $(SRC_DIR)/elfscript/gen.list
 	rm -f $(SRC_DIR)/elfscript/conv.list
 
+.PHONY: game
 game: $(BIN_DIR)/elf_forest elfscript_globals
 
+.PHONY: es
+es: $(BIN_DIR)/es elfscript_globals
+
+.PHONY: test
 test: $(BIN_DIR)/test elfscript_globals
 
+.PHONY: viewer
 viewer: $(BIN_DIR)/viewer elfscript_globals
 
+.PHONY: unit_tests
 unit_tests: $(BIN_DIR)/unit_tests elfscript_globals
 
+.PHONY: noise_perf
 noise_perf: $(BIN_DIR)/noise_perf
 
+.PHONY: test_noise
 test_noise: $(BIN_DIR)/test_noise $(TEST_DIR)
 	cd $(TEST_DIR) && ../../$(BIN_DIR)/test_noise
 
+.PHONY: checkgl
 checkgl: $(BIN_DIR)/checkgl
 	./$(BIN_DIR)/checkgl
 
+.PHONY: elfscript_globals
 elfscript_globals: $(DATA_DIR)/globals/auto.es
 
+.PHONY: src_lists
 src_lists: \
  $(SRC_DIR)/elfscript/func.list \
  $(SRC_DIR)/elfscript/gen.list \
@@ -252,6 +266,9 @@ $(BIN_DIR)/print_elfscript_globals: $(OBJ_DIR)/print_elfscript_globals.o $(BIN_D
 
 $(BIN_DIR)/elf_forest: $(CORE_OBJECTS) $(MAIN_OBJECTS) $(BIN_DIR) $(OUT_DIR)
 	$(CC) $(CORE_OBJECTS) $(MAIN_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/elf_forest
+
+$(BIN_DIR)/es: $(CORE_OBJECTS) $(ES_OBJECTS) $(BIN_DIR) $(OUT_DIR)
+	$(CC) $(CORE_OBJECTS) $(TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/es
 
 $(BIN_DIR)/test: $(CORE_OBJECTS) $(TEST_OBJECTS) $(BIN_DIR) $(OUT_DIR)
 	$(CC) $(CORE_OBJECTS) $(TEST_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/test
