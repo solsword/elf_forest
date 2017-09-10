@@ -127,7 +127,7 @@ CHECKGL_OBJECTS=$(OBJ_DIR)/check_gl_version.o
 .DEFAULT_GOAL := game
 
 .PHONY: all
-all: src_lists game test viewer unit_tests test_noise elfscript_globals
+all: src_lists game test viewer unit_tests test_noise python_globals
 
 .PHONY: clean
 clean:
@@ -135,24 +135,24 @@ clean:
 	rm -rf $(BIN_DIR)
 	rm -rf $(OUT_DIR)
 	rm -f $(DATA_DIR)/globals/auto.es
-	rm -f $(SRC_DIR)/elfscript/func.list
-	rm -f $(SRC_DIR)/elfscript/gen.list
-	rm -f $(SRC_DIR)/elfscript/conv.list
+	rm -f $(SRC_DIR)/snek/func.list
+	rm -f $(SRC_DIR)/snek/gen.list
+	rm -f $(SRC_DIR)/snek/conv.list
 
 .PHONY: game
-game: $(BIN_DIR)/elf_forest elfscript_globals
+game: $(BIN_DIR)/elf_forest python_globals
 
 .PHONY: es
-es: $(BIN_DIR)/es elfscript_globals
+es: $(BIN_DIR)/es python_globals
 
 .PHONY: test
-test: $(BIN_DIR)/test elfscript_globals
+test: $(BIN_DIR)/test python_globals
 
 .PHONY: viewer
-viewer: $(BIN_DIR)/viewer elfscript_globals
+viewer: $(BIN_DIR)/viewer python_globals
 
 .PHONY: unit_tests
-unit_tests: $(BIN_DIR)/unit_tests elfscript_globals
+unit_tests: $(BIN_DIR)/unit_tests python_globals
 
 .PHONY: noise_perf
 noise_perf: $(BIN_DIR)/noise_perf
@@ -165,44 +165,44 @@ test_noise: $(BIN_DIR)/test_noise $(TEST_DIR)
 checkgl: $(BIN_DIR)/checkgl
 	./$(BIN_DIR)/checkgl
 
-.PHONY: elfscript_globals
-elfscript_globals: $(DATA_DIR)/globals/auto.es
+.PHONY: python_globals
+python_globals: $(DATA_DIR)/globals/auto.es
 
 .PHONY: src_lists
 src_lists: \
- $(SRC_DIR)/elfscript/func.list \
- $(SRC_DIR)/elfscript/gen.list \
- $(SRC_DIR)/elfscript/conv.list
+ $(SRC_DIR)/snek/func.list \
+ $(SRC_DIR)/snek/gen.list \
+ $(SRC_DIR)/snek/conv.list
 
-$(SRC_DIR)/elfscript/func.list: $(SRC_DIR) $(SRC_DIR)/elfscript/func/*
-	echo "// auto-generated functions list" > $(SRC_DIR)/elfscript/func.list
-	echo "// vim:syntax=c" >> $(SRC_DIR)/elfscript/func.list
-	ls $(SRC_DIR)/elfscript/func \
+$(SRC_DIR)/snek/func.list: $(SRC_DIR) $(SRC_DIR)/snek/func/*
+	echo "// auto-generated functions list" > $(SRC_DIR)/snek/func.list
+	echo "// vim:syntax=c" >> $(SRC_DIR)/snek/func.list
+	ls $(SRC_DIR)/snek/func \
 		| sed "s/^/#include \"func\//" \
 		| sed "s/$$/\"/" \
-		>> $(SRC_DIR)/elfscript/func.list
+		>> $(SRC_DIR)/snek/func.list
 
-$(SRC_DIR)/elfscript/gen.list: $(SRC_DIR) $(SRC_DIR)/elfscript/gen/*
-	echo "// auto-generated generators list" > $(SRC_DIR)/elfscript/gen.list
-	echo "// vim:syntax=c" >> $(SRC_DIR)/elfscript/gen.list
-	ls $(SRC_DIR)/elfscript/gen \
+$(SRC_DIR)/snek/gen.list: $(SRC_DIR) $(SRC_DIR)/snek/gen/*
+	echo "// auto-generated generators list" > $(SRC_DIR)/snek/gen.list
+	echo "// vim:syntax=c" >> $(SRC_DIR)/snek/gen.list
+	ls $(SRC_DIR)/snek/gen \
 		| sed "s/^/#include \"gen\//" \
 		| sed "s/$$/\"/" \
-		>> $(SRC_DIR)/elfscript/gen.list
+		>> $(SRC_DIR)/snek/gen.list
 
-$(SRC_DIR)/elfscript/conv.list: $(SRC_DIR) $(SRC_DIR)/elfscript/conv/*
-	echo "// auto-generated conversions list" > $(SRC_DIR)/elfscript/conv.list
-	echo "// vim:syntax=c" >> $(SRC_DIR)/elfscript/conv.list
-	ls $(SRC_DIR)/elfscript/conv \
+$(SRC_DIR)/snek/conv.list: $(SRC_DIR) $(SRC_DIR)/snek/conv/*
+	echo "// auto-generated conversions list" > $(SRC_DIR)/snek/conv.list
+	echo "// vim:syntax=c" >> $(SRC_DIR)/snek/conv.list
+	ls $(SRC_DIR)/snek/conv \
 		| sed "s/^/#include \"conv\//" \
 		| sed "s/$$/\"/" \
-		>> $(SRC_DIR)/elfscript/conv.list
+		>> $(SRC_DIR)/snek/conv.list
 
-$(DYN_DIR)/print_elfscript_globals.c: $(DYN_DIR) $(OBJ_DIR)/*
-	./collect_elfscript_globals.sh $(SRC_DIR) $(DYN_DIR)
+$(DYN_DIR)/offer_snek_food.c: $(DYN_DIR) $(OBJ_DIR)/*
+	./collect_snek_food.sh $(SRC_DIR) $(DYN_DIR)
 
-$(DATA_DIR)/globals/auto.es: $(BIN_DIR)/print_elfscript_globals
-	$(BIN_DIR)/print_elfscript_globals > $(DATA_DIR)/globals/auto.es
+$(DATA_DIR)/globals/auto.es: $(BIN_DIR)/offer_snek_food
+	$(BIN_DIR)/offer_snek_food > $(DATA_DIR)/globals/auto.es
 
 $(DYN_DIR):
 	mkdir -p $(DYN_DIR)
@@ -238,9 +238,9 @@ $(OBJ_DIR)/obj.d: \
  $(SRC_DIR)/*/*.c \
  $(SRC_DIR)/*.h \
  $(SRC_DIR)/*/*.h  \
- $(SRC_DIR)/elfscript/func.list \
- $(SRC_DIR)/elfscript/gen.list \
- $(SRC_DIR)/elfscript/conv.list \
+ $(SRC_DIR)/snek/func.list \
+ $(SRC_DIR)/snek/gen.list \
+ $(SRC_DIR)/snek/conv.list \
  $(OBJ_DIR)
 	$(CC) -MM $(INCLUDE_FLAGS) $(SRC_DIR)/*.c $(SRC_DIR)/*/*.c \
 		| sed "s/^\([^ ]\)/$(OBJ_DIR)\/\1/" \
@@ -258,11 +258,11 @@ $(OBJ_DIR)/%.o:
 	$(CC) $(CFLAGS) $< -o $@
 
 # Dynamic sources:
-$(OBJ_DIR)/print_elfscript_globals.o: $(DYN_DIR)/print_elfscript_globals.c
+$(OBJ_DIR)/offer_snek_food.o: $(DYN_DIR)/offer_snek_food.c
 	$(CC) $(CFLAGS) $< -o $@
 
-$(BIN_DIR)/print_elfscript_globals: $(OBJ_DIR)/print_elfscript_globals.o $(BIN_DIR)
-	$(CC) $(OBJ_DIR)/print_elfscript_globals.o $(LFLAGS) -o $(BIN_DIR)/print_elfscript_globals
+$(BIN_DIR)/offer_snek_food: $(OBJ_DIR)/offer_snek_food.o $(BIN_DIR)
+	$(CC) $(OBJ_DIR)/offer_snek_food.o $(LFLAGS) -o $(BIN_DIR)/offer_snek_food
 
 $(BIN_DIR)/elf_forest: $(CORE_OBJECTS) $(MAIN_OBJECTS) $(BIN_DIR) $(OUT_DIR)
 	$(CC) $(CORE_OBJECTS) $(MAIN_OBJECTS) $(LFLAGS) -o $(BIN_DIR)/elf_forest
